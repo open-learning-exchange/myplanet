@@ -9,7 +9,6 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -54,7 +53,6 @@ class ImprovedSyncManager @Inject constructor(
     
     private var isSyncing = false
     private var listener: SyncListener? = null
-    private var syncJob: Job? = null
     private val syncScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     
     // Table sync order for dependencies
@@ -99,7 +97,7 @@ class ImprovedSyncManager @Inject constructor(
     }
     
     private fun startSyncProcess(syncMode: SyncMode, syncTables: List<String>?) {
-        syncJob = syncScope.launch {
+        syncScope.launch {
             try {
                 if (TransactionSyncManager.authenticate()) {
                     performSync(syncMode, syncTables)
@@ -232,24 +230,6 @@ class ImprovedSyncManager @Inject constructor(
             org.ole.planet.myplanet.MainApplication.syncFailedCount++
             listener?.onSyncFailed(message)
         }
-    }
-    
-    fun cancelSync() {
-        syncJob?.cancel()
-        syncJob = null
-        cleanup()
-    }
-    
-    fun getPerformanceReport(): String {
-        return performanceMonitor.exportMetrics()
-    }
-    
-    fun getCircuitBreakerStatus(): Map<String, org.ole.planet.myplanet.service.sync.CircuitState> {
-        return errorRecovery.getCircuitBreakerStatus()
-    }
-    
-    fun resetErrorRecovery() {
-        errorRecovery.resetAllCircuitBreakers()
     }
     
     suspend fun shutdown() {
