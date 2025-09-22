@@ -105,10 +105,8 @@ object NetworkModule {
     @Singleton
     fun provideApiClient(
         @StandardRetrofit retrofit: Retrofit,
-        @EnhancedRetrofit enhancedRetrofit: Retrofit,
     ): ApiClient {
         ApiClient.client = retrofit
-        ApiClient.enhancedRetrofit = enhancedRetrofit
         return ApiClient
     }
 }

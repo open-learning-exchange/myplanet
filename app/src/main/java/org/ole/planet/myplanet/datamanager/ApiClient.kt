@@ -10,12 +10,6 @@ import retrofit2.Retrofit
 
 object ApiClient {
     lateinit var client: Retrofit
-    lateinit var enhancedRetrofit: Retrofit
-
-    fun getEnhancedClient(): ApiInterface {
-        return enhancedRetrofit.create(ApiInterface::class.java)
-    }
-
     fun <T> executeWithRetry(operation: () -> Response<T>?): Response<T>? = runBlocking {
         RetryUtils.retry(
             maxAttempts = 3,
