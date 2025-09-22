@@ -50,6 +50,18 @@ class AdapterTeamList(
     private var adapterScope: CoroutineScope = CoroutineScope(Dispatchers.Main.immediate + scopeJob)
     private val teamStateCache = mutableMapOf<String, TeamMembershipState>()
     private val teamStateJobs = mutableMapOf<String, Job>()
+    private val teamComparator = Comparator<RealmMyTeam> { first, second ->
+        val firstPriority = getTeamPriority(first)
+        val secondPriority = getTeamPriority(second)
+        when {
+            firstPriority != secondPriority -> secondPriority.compareTo(firstPriority)
+            else -> {
+                val firstVisits = RealmTeamLog.getVisitByTeam(mRealm, first._id)
+                val secondVisits = RealmTeamLog.getVisitByTeam(mRealm, second._id)
+                secondVisits.compareTo(firstVisits)
+            }
+        }
+    }
 
     private data class TeamMembershipState(
         val isMember: Boolean = false,
@@ -338,19 +350,6 @@ class AdapterTeamList(
             notifyItemChanged(currentIndex)
         } else {
             notifyItemChanged(currentIndex)
-        }
-    }
-
-    private val teamComparator = Comparator<RealmMyTeam> { first, second ->
-        val firstPriority = getTeamPriority(first)
-        val secondPriority = getTeamPriority(second)
-        when {
-            firstPriority != secondPriority -> secondPriority.compareTo(firstPriority)
-            else -> {
-                val firstVisits = RealmTeamLog.getVisitByTeam(mRealm, first._id)
-                val secondVisits = RealmTeamLog.getVisitByTeam(mRealm, second._id)
-                secondVisits.compareTo(firstVisits)
-            }
         }
     }
 
