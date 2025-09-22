@@ -123,6 +123,16 @@ class AdapterTeamList(
         when {
             user?.isGuest() == true -> joinLeave.visibility = View.GONE
 
+            isTeamLeader -> {
+                joinLeave.apply {
+                    isEnabled = true
+                    contentDescription = "${context.getString(R.string.edit)} ${team.name}"
+                    visibility = View.VISIBLE
+                    setImageResource(R.drawable.ic_edit)
+                    clearColorFilter()
+                }
+            }
+
             isMyTeam && !isTeamLeader -> {
                 joinLeave.apply {
                     isEnabled = true
@@ -149,16 +159,6 @@ class AdapterTeamList(
                     contentDescription = "${context.getString(R.string.request_to_join)} ${team.name}"
                     visibility = View.VISIBLE
                     setImageResource(R.drawable.ic_join_request)
-                    clearColorFilter()
-                }
-            }
-
-            isTeamLeader -> {
-                joinLeave.apply {
-                    isEnabled = true
-                    contentDescription = "${context.getString(R.string.edit)} ${team.name}"
-                    visibility = View.VISIBLE
-                    setImageResource(R.drawable.ic_edit)
                     clearColorFilter()
                 }
             }
