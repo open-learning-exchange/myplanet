@@ -277,7 +277,8 @@ class AdapterTeamList(
 
     private suspend fun requestToJoin(team: RealmMyTeam, user: RealmUserModel?) {
         val teamId = team._id?.takeIf { it.isNotBlank() } ?: return
-        withContext(Dispatchers.IO) { teamRepository.requestToJoin(teamId, user, team.teamType) }
+        val teamType = team.teamType
+        withContext(Dispatchers.IO) { teamRepository.requestToJoin(teamId, user, teamType) }
     }
 
     private suspend fun leaveTeam(team: RealmMyTeam, userId: String?) {
