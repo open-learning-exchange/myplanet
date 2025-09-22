@@ -56,6 +56,7 @@ class TeamRepositoryImpl @Inject constructor(
     override suspend fun getTeamById(teamId: String): RealmMyTeam? {
         if (teamId.isBlank()) return null
         return findByField(RealmMyTeam::class.java, "_id", teamId)
+            ?: findByField(RealmMyTeam::class.java, "teamId", teamId)
     }
 
     override suspend fun isMember(userId: String?, teamId: String): Boolean {
@@ -170,6 +171,7 @@ class TeamRepositoryImpl @Inject constructor(
             return null
         }
         return findByField(RealmTeamTask::class.java, "id", taskId)
+            ?: findByField(RealmTeamTask::class.java, "_id", taskId)
     }
 
     override suspend fun getJoinRequestById(joinRequestId: String?): RealmMyTeam? {
