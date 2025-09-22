@@ -44,6 +44,9 @@ class MyPersonalRepositoryImpl @Inject constructor(
 
             val listener =
                 RealmChangeListener { managed: io.realm.RealmResults<RealmMyPersonal> ->
+                    if (!managed.isLoaded || !managed.isValid) {
+                        return@RealmChangeListener
+                    }
                     trySend(realm.copyFromRealm(managed))
                 }
 
@@ -51,7 +54,7 @@ class MyPersonalRepositoryImpl @Inject constructor(
             try {
                 results.addChangeListener(listener)
                 listenerRegistered = true
-                if (results.isLoaded) {
+                if (results.isLoaded && results.isValid) {
                     trySend(realm.copyFromRealm(results))
                 }
                 awaitClose {
