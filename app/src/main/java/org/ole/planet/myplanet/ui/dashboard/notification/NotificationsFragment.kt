@@ -25,12 +25,10 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.R.array.status_options
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentNotificationsBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNotification
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.repository.NotificationRepository
+import org.ole.planet.myplanet.repository.SubmissionRepository
+import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
@@ -43,9 +41,11 @@ import org.ole.planet.myplanet.utilities.NotificationUtils
 class NotificationsFragment : Fragment() {
     private var _binding: FragmentNotificationsBinding? = null
     @Inject
-    lateinit var databaseService: DatabaseService
-    @Inject
     lateinit var notificationRepository: NotificationRepository
+    @Inject
+    lateinit var submissionRepository: SubmissionRepository
+    @Inject
+    lateinit var teamRepository: TeamRepository
     private lateinit var adapter: AdapterNotification
     private lateinit var userId: String
     private var notificationUpdateListener: NotificationListener? = null
@@ -121,10 +121,8 @@ class NotificationsFragment : Fragment() {
                 startActivity(intent)
             }
             "survey" -> {
-                databaseService.withRealm { realm ->
-                    val currentStepExam = realm.where(RealmStepExam::class.java)
-                        .equalTo("name", notification.relatedId)
-                        .findFirst()
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val currentStepExam = submissionRepository.getStepExamByName(notification.relatedId)
                     if (currentStepExam != null && activity is OnHomeItemClickListener) {
                         AdapterMySubmission.openSurvey(
                             activity as OnHomeItemClickListener,
@@ -137,27 +135,24 @@ class NotificationsFragment : Fragment() {
                 }
             }
             "task" -> {
-                databaseService.withRealm { realm ->
-                    val taskId = notification.relatedId
-                    val task = realm.where(RealmTeamTask::class.java)
-                        .equalTo("id", taskId)
-                        .findFirst()
+                val taskId = notification.relatedId
+                if (taskId?.isNotEmpty() == true && activity is OnHomeItemClickListener) {
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        val task = teamRepository.getTaskById(taskId)
+                        val linkJson = JSONObject(task?.link ?: "{}")
+                        val teamId = linkJson.optString("teams")
+                        if (teamId.isNotEmpty()) {
+                            val teamObject = teamRepository.getTeamById(teamId)
+                            val f = TeamDetailFragment.newInstance(
+                                teamId = teamId,
+                                teamName = teamObject?.name ?: "",
+                                teamType = teamObject?.type ?: "",
+                                isMyTeam = true,
+                                navigateToPage = TasksPage,
+                            )
 
-                    val linkJson = JSONObject(task?.link ?: "{}")
-                    val teamId = linkJson.optString("teams")
-                    if (teamId.isNotEmpty() && activity is OnHomeItemClickListener) {
-                        val teamObject = realm.where(RealmMyTeam::class.java)
-                            .equalTo("_id", teamId)
-                            .findFirst()
-                        val f = TeamDetailFragment.newInstance(
-                            teamId = teamId,
-                            teamName = teamObject?.name ?: "",
-                            teamType = teamObject?.type ?: "",
-                            isMyTeam = true,
-                            navigateToPage = TasksPage,
-                        )
-
-                        (activity as OnHomeItemClickListener).openCallFragment(f)
+                            (activity as OnHomeItemClickListener).openCallFragment(f)
+                        }
                     }
                 }
             }
@@ -169,12 +164,8 @@ class NotificationsFragment : Fragment() {
                     } else {
                         joinRequestId
                     }
-                    databaseService.withRealm { realm ->
-                        val joinRequest = realm.where(RealmMyTeam::class.java)
-                            .equalTo("_id", actualJoinRequestId)
-                            .equalTo("docType", "request")
-                            .findFirst()
-
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        val joinRequest = teamRepository.getJoinRequestById(actualJoinRequestId)
                         val teamId = joinRequest?.teamId
                         if (teamId?.isNotEmpty() == true) {
                             val f = TeamDetailFragment()

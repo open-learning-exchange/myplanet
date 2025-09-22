@@ -165,6 +165,26 @@ class TeamRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getTaskById(taskId: String?): RealmTeamTask? {
+        if (taskId.isNullOrBlank()) {
+            return null
+        }
+        return findByField(RealmTeamTask::class.java, "id", taskId)
+    }
+
+    override suspend fun getJoinRequestById(joinRequestId: String?): RealmMyTeam? {
+        if (joinRequestId.isNullOrBlank()) {
+            return null
+        }
+        return withRealm { realm ->
+            realm.where(RealmMyTeam::class.java)
+                .equalTo("_id", joinRequestId)
+                .equalTo("docType", "request")
+                .findFirst()
+                ?.let { realm.copyFromRealm(it) }
+        }
+    }
+
     override suspend fun syncTeamActivities(context: Context) {
         val applicationContext = context.applicationContext
         val settings = applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)

@@ -102,6 +102,13 @@ class SubmissionRepositoryImpl @Inject constructor(
         }.toMap()
     }
 
+    override suspend fun getStepExamByName(name: String?): RealmStepExam? {
+        if (name.isNullOrBlank()) {
+            return null
+        }
+        return findByField(RealmStepExam::class.java, "name", name)
+    }
+
     override suspend fun getExamQuestionCount(stepId: String): Int {
         return findByField(RealmStepExam::class.java, "stepId", stepId)?.noOfQuestions ?: 0
     }
