@@ -13,7 +13,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
@@ -33,7 +32,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private var _binding: FragmentLibraryDetailBinding? = null
     private val binding get() = _binding!!
     private var libraryId: String? = null
-    private lateinit var library: RealmMyLibrary
+    private var library: RealmMyLibrary? = null
     var userModel: RealmUserModel? = null
     private val fragmentScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
@@ -51,29 +50,33 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
 
     override fun onDownloadComplete() {
         super.onDownloadComplete()
+        val currentLibraryId = libraryId ?: return
         fragmentScope.launch {
             val userId = withContext(Dispatchers.Main) {
                 profileDbHandler?.userModel?.id
             }
             withContext(Dispatchers.IO) {
                 try {
-                    val backgroundLibrary = fetchLibrary(libraryId!!)
-                    if (backgroundLibrary != null && backgroundLibrary.userId?.contains(userId) != true && userId != null) {
-                        library = libraryRepository.updateUserLibrary(libraryId!!, userId, true)!!
-                    } else if (backgroundLibrary != null) {
-                        library = backgroundLibrary
+                    val backgroundLibrary = fetchLibrary(currentLibraryId)
+                    library = if (backgroundLibrary != null && userId != null && backgroundLibrary.userId?.contains(userId) != true) {
+                        libraryRepository.updateUserLibrary(currentLibraryId, userId, true) ?: backgroundLibrary
+                    } else {
+                        backgroundLibrary
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
             }
             withContext(Dispatchers.Main) {
-                binding.btnDownload.setImageResource(R.drawable.ic_play)
+                val currentBinding = _binding ?: return@withContext
+                val updatedLibrary = library ?: return@withContext
+                currentBinding.btnDownload.setImageResource(R.drawable.ic_play)
                 val currentUserId = profileDbHandler?.userModel?.id
-                if (currentUserId != null && library.userId?.contains(currentUserId) != true) {
+                if (currentUserId != null && updatedLibrary.userId?.contains(currentUserId) != true) {
                     Utilities.toast(activity, getString(R.string.added_to_my_library))
-                    binding.btnRemove.setImageResource(R.drawable.close_x)
+                    currentBinding.btnRemove.setImageResource(R.drawable.close_x)
                 }
+                setLibraryData()
             }
         }
     }
@@ -82,35 +85,47 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         super.onCreateView(inflater, container, savedInstanceState)
         _binding = FragmentLibraryDetailBinding.inflate(inflater, container, false)
         userModel = UserProfileDbHandler(requireContext()).userModel!!
-        library = runBlocking {
-            fetchLibrary(libraryId!!)
-        }!!
+        setLoadingState(true)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        initRatingView("resource", library.resourceId, library.title, this@ResourceDetailFragment)
-        setLibraryData()
+        fragmentScope.launch {
+            val fetchedLibrary = libraryId?.let { id ->
+                withContext(Dispatchers.IO) { fetchLibrary(id) }
+            }
+            if (fetchedLibrary != null) {
+                library = fetchedLibrary
+                initRatingView("resource", fetchedLibrary.resourceId, fetchedLibrary.title, this@ResourceDetailFragment)
+                setLibraryData()
+                setLoadingState(false)
+            } else {
+                Utilities.toast(activity, getString(R.string.link_not_available))
+                setLoadingState(true)
+            }
+        }
     }
 
     private fun setLibraryData() {
-        with(binding) {
-            tvTitle.text = library.title
-            timesRated.text = requireContext().getString(R.string.num_total, library.timesRated)
-            setTextViewVisibility(tvAuthor, llAuthor, library.author)
-            setTextViewVisibility(tvPublished, llPublisher, library.publisher)
-            setTextViewVisibility(tvMedia, llMedia, library.mediaType)
-            setTextViewVisibility(tvSubject, llSubject, library.subjectsAsString)
-            setTextViewVisibility(tvLanguage, llLanguage, library.language)
-            setTextViewVisibility(tvLicense, llLicense, library.linkToLicense)
-            setTextViewVisibility(tvResource, llResource, listToString(library.resourceFor))
-            setTextViewVisibility(tvType, llType, library.resourceType)
+        val currentBinding = _binding ?: return
+        val currentLibrary = library ?: return
+        with(currentBinding) {
+            tvTitle.text = currentLibrary.title
+            timesRated.text = requireContext().getString(R.string.num_total, currentLibrary.timesRated)
+            setTextViewVisibility(tvAuthor, llAuthor, currentLibrary.author)
+            setTextViewVisibility(tvPublished, llPublisher, currentLibrary.publisher)
+            setTextViewVisibility(tvMedia, llMedia, currentLibrary.mediaType)
+            setTextViewVisibility(tvSubject, llSubject, currentLibrary.subjectsAsString)
+            setTextViewVisibility(tvLanguage, llLanguage, currentLibrary.language)
+            setTextViewVisibility(tvLicense, llLicense, currentLibrary.linkToLicense)
+            setTextViewVisibility(tvResource, llResource, listToString(currentLibrary.resourceFor))
+            setTextViewVisibility(tvType, llType, currentLibrary.resourceType)
         }
         fragmentScope.launch {
             withContext(Dispatchers.Main) {
                 try {
-                    profileDbHandler?.setResourceOpenCount(library)
+                    profileDbHandler?.setResourceOpenCount(currentLibrary)
                 } catch (ex: Exception) {
                     ex.printStackTrace()
                 }
@@ -121,28 +136,29 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                 } catch (ex: Exception) {
                     ex.printStackTrace()
                 }
-                setupDownloadButton()
+                setupDownloadButton(currentLibrary)
                 setClickListeners()
             }
         }
     }
 
-    private fun setupDownloadButton() {
-        binding.btnDownload.visibility = if (TextUtils.isEmpty(library.resourceLocalAddress)) View.GONE else View.VISIBLE
-        binding.btnDownload.setImageResource(
-            if (!library.resourceOffline || library.isResourceOffline()) {
+    private fun setupDownloadButton(currentLibrary: RealmMyLibrary) {
+        val currentBinding = _binding ?: return
+        currentBinding.btnDownload.visibility = if (TextUtils.isEmpty(currentLibrary.resourceLocalAddress)) View.GONE else View.VISIBLE
+        currentBinding.btnDownload.setImageResource(
+            if (!currentLibrary.resourceOffline || currentLibrary.isResourceOffline()) {
                 R.drawable.ic_eye
             } else {
                 R.drawable.ic_download
             })
-        binding.btnDownload.contentDescription =
-            if (!library.resourceOffline || library.isResourceOffline()) {
+        currentBinding.btnDownload.contentDescription =
+            if (!currentLibrary.resourceOffline || currentLibrary.isResourceOffline()) {
                 getString(R.string.view)
             } else {
                 getString(R.string.download)
             }
-        if (getFileExtension(library.resourceLocalAddress) == "mp4") {
-            binding.btnDownload.setImageResource(R.drawable.ic_play)
+        if (getFileExtension(currentLibrary.resourceLocalAddress) == "mp4") {
+            currentBinding.btnDownload.setImageResource(R.drawable.ic_play)
         }
     }
 
@@ -156,45 +172,52 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     }
 
     private fun setClickListeners() {
-        binding.btnDownload.setOnClickListener {
-            if (TextUtils.isEmpty(library.resourceLocalAddress)) {
+        val currentBinding = _binding ?: return
+        val currentLibrary = library ?: return
+        currentBinding.btnDownload.setOnClickListener {
+            val latestLibrary = library
+            if (latestLibrary == null || TextUtils.isEmpty(latestLibrary.resourceLocalAddress)) {
                 Toast.makeText(activity, getString(R.string.link_not_available), Toast.LENGTH_LONG).show()
                 return@setOnClickListener
             }
-            openResource(library)
+            openResource(latestLibrary)
         }
         val userId = profileDbHandler?.userModel?.id
-        val isAdd = userId?.let { library.userId?.contains(it) } != true
+        val isAdd = userId?.let { currentLibrary.userId?.contains(it) } != true
         if (userModel?.isGuest() != true) {
-            binding.btnRemove.setImageResource(
+            currentBinding.btnRemove.visibility = View.VISIBLE
+            currentBinding.btnRemove.setImageResource(
                 if (isAdd) {
                     R.drawable.ic_add_library
                 } else {
                     R.drawable.close_x
                 }
             )
-            binding.btnRemove.contentDescription =
+            currentBinding.btnRemove.contentDescription =
                 if (isAdd) {
                     getString(R.string.add_to_mylib)
                 } else {
                     getString(R.string.btn_remove_lib)
                 }
         } else {
-            binding.btnRemove.visibility = View.GONE
+            currentBinding.btnRemove.visibility = View.GONE
         }
-        binding.btnRemove.setOnClickListener {
+        currentBinding.btnRemove.setOnClickListener {
             val userId = profileDbHandler?.userModel?.id
+            val currentLibraryId = libraryId ?: return@setOnClickListener
+            var updatedLibrary: RealmMyLibrary? = null
             fragmentScope.launch {
                 withContext(Dispatchers.IO) {
                     try {
                         if (userId != null) {
-                            library = libraryRepository.updateUserLibrary(libraryId!!, userId, isAdd)!!
+                            updatedLibrary = libraryRepository.updateUserLibrary(currentLibraryId, userId, isAdd)
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }
                 }
                 withContext(Dispatchers.Main) {
+                    updatedLibrary?.let { library = it }
                     Utilities.toast(activity, getString(R.string.resources) + " " +
                             if (isAdd) getString(R.string.added_to_my_library)
                             else getString(R.string.removed_from_mylibrary))
@@ -202,7 +225,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                 }
             }
         }
-        binding.btnBack.setOnClickListener {
+        currentBinding.btnBack.setOnClickListener {
             val activity = requireActivity()
             if (activity is AddResourceActivity) {
                 activity.finish()
@@ -213,10 +236,20 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     }
 
     override fun onRatingChanged() {
+        val currentLibrary = library ?: return
         val `object` = databaseService.withRealm { realm ->
-            getRatingsById(realm, "resource", library.resourceId, userModel?.id)
+            getRatingsById(realm, "resource", currentLibrary.resourceId, userModel?.id)
         }
         setRatings(`object`)
+    }
+
+    private fun setLoadingState(isLoading: Boolean) {
+        val currentBinding = _binding ?: return
+        currentBinding.btnDownload.isEnabled = !isLoading
+        currentBinding.btnRemove.isEnabled = !isLoading
+        val alpha = if (isLoading) 0.5f else 1f
+        currentBinding.btnDownload.alpha = alpha
+        currentBinding.btnRemove.alpha = alpha
     }
     override fun onDestroy() {
         fragmentScope.cancel()
