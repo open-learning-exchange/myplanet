@@ -40,6 +40,23 @@ class DatabaseService(context: Context) {
         }
     }
 
+    fun executeTransactionAsync(
+        transaction: (Realm) -> Unit,
+        onSuccess: (() -> Unit)? = null,
+        onError: ((Throwable) -> Unit)? = null,
+    ) {
+        val realm = Realm.getDefaultInstance()
+        realm.executeTransactionAsync({ backgroundRealm ->
+            transaction(backgroundRealm)
+        }, {
+            realm.close()
+            onSuccess?.invoke()
+        }, { error ->
+            realm.close()
+            onError?.invoke(error)
+        })
+    }
+
     suspend fun executeTransactionAsync(transaction: (Realm) -> Unit) {
         withContext(Dispatchers.IO) {
             withRealmInstance { realm ->
