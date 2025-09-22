@@ -771,6 +771,8 @@
     <string name="feedback_priority_is_required">Feedback priority is required.</string>
     <string name="feedback_type_is_required">Feedback type is required.</string>
     <string name="thank_you_your_feedback_has_been_submitted">Thank you, your feedback has been submitted</string>
+    <string name="feedback_status_open">Open</string>
+    <string name="feedback_status_closed">Closed</string>
     <string name="feedback_saved">Feedback Saved..</string>
     <string name="name_colon">"Name: "</string>
     <string name="email_colon">"Email: "</string>

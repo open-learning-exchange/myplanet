@@ -102,7 +102,7 @@ class FeedbackDetailActivity : AppCompatActivity() {
     }
 
     private fun updateForClosed() {
-        if (feedback?.status.equals("Closed", ignoreCase = true)) {
+        if (feedback?.statusEnum?.isClosed == true) {
             activityFeedbackDetailBinding.closeFeedback.isEnabled = false
             activityFeedbackDetailBinding.replyFeedback.isEnabled = false
             activityFeedbackDetailBinding.feedbackReplyEditText.visibility = View.INVISIBLE

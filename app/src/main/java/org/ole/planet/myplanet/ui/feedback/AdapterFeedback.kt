@@ -23,7 +23,7 @@ class AdapterFeedback :
                 oldItem.title == newItem.title &&
                     oldItem.type == newItem.type &&
                     oldItem.priority == newItem.priority &&
-                    oldItem.status == newItem.status &&
+                    oldItem.statusEnum == newItem.statusEnum &&
                     oldItem.openTime == newItem.openTime
             }
         )
@@ -42,9 +42,11 @@ class AdapterFeedback :
         binding.tvTitle.text = feedback.title
         binding.tvType.text = feedback.type
         binding.tvPriority.text = feedback.priority
-        binding.tvStatus.text = feedback.status
+        val status = feedback.statusEnum
+        val statusText = status.displayText(context)
+        binding.tvStatus.text = statusText
         val contentDescription = "${feedback.title}, ${feedback.type}, " +
-                "${context.getString(R.string.status)}: ${feedback.status}, ${context.getString(R.string.priority)}: ${feedback.priority}, " +
+                "${context.getString(R.string.status)}: $statusText, ${context.getString(R.string.priority)}: ${feedback.priority}, " +
                 "${context.getString(R.string.open_date)}: ${getFormattedDate(feedback.openTime)}"
         binding.feedbackCardView.contentDescription = contentDescription
 
@@ -57,11 +59,7 @@ class AdapterFeedback :
         }
         binding.tvStatus.background = ResourcesCompat.getDrawable(
             context.resources,
-            if ("open".equals(feedback.status, ignoreCase = true)) {
-                R.drawable.bg_primary
-            } else {
-                R.drawable.bg_grey
-            },
+            status.backgroundRes,
             null
         )
         binding.tvOpenDate.text = getFormattedDate(feedback.openTime)

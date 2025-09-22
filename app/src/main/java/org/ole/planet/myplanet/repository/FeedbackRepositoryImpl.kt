@@ -9,6 +9,7 @@ import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.model.FeedbackStatus
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.RealmUserModel
 
@@ -39,7 +40,7 @@ class FeedbackRepositoryImpl @Inject constructor(
         feedback.openTime = Date().time
         feedback.owner = user
         feedback.source = user
-        feedback.status = "Open"
+        feedback.statusEnum = FeedbackStatus.OPEN
         feedback.priority = urgent
         feedback.type = type
         feedback.parentCode = "dev"
@@ -70,7 +71,7 @@ class FeedbackRepositoryImpl @Inject constructor(
     override suspend fun closeFeedback(id: String?) {
         id?.let {
             update(RealmFeedback::class.java, "id", it) { feedback ->
-                feedback.status = "Closed"
+                feedback.statusEnum = FeedbackStatus.CLOSED
             }
         }
     }

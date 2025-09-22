@@ -8,6 +8,7 @@ import com.google.gson.JsonParser
 import com.google.gson.stream.JsonReader
 import io.realm.Realm
 import io.realm.RealmObject
+import io.realm.annotations.Ignore
 import io.realm.annotations.PrimaryKey
 import java.io.StringReader
 import org.ole.planet.myplanet.utilities.JsonUtils
@@ -19,6 +20,13 @@ open class RealmFeedback : RealmObject() {
     var title: String? = null
     var source: String? = null
     var status: String? = null
+    @Ignore
+    var statusEnum: FeedbackStatus = FeedbackStatus.OPEN
+        get() = FeedbackStatus.fromPersistedValue(status)
+        set(value) {
+            field = value
+            status = value.persistedValue
+        }
     var priority: String? = null
     var owner: String? = null
     var openTime: Long = 0
@@ -86,7 +94,7 @@ open class RealmFeedback : RealmObject() {
             val `object` = JsonObject()
             `object`.addProperty("title", feedback.title)
             `object`.addProperty("source", feedback.source)
-            `object`.addProperty("status", feedback.status)
+            `object`.addProperty("status", feedback.statusEnum.persistedValue)
             `object`.addProperty("priority", feedback.priority)
             `object`.addProperty("owner", feedback.owner)
             `object`.addProperty("openTime", feedback.openTime)
@@ -116,7 +124,8 @@ open class RealmFeedback : RealmObject() {
             feedback?._id = JsonUtils.getString("_id", act)
             feedback?.title = JsonUtils.getString("title", act)
             feedback?.source = JsonUtils.getString("source", act)
-            feedback?.status = JsonUtils.getString("status", act)
+            feedback?.statusEnum =
+                FeedbackStatus.fromPersistedValue(JsonUtils.getString("status", act))
             feedback?.priority = JsonUtils.getString("priority", act)
             feedback?.owner = JsonUtils.getString("owner", act)
             feedback?.openTime = JsonUtils.getLong("openTime", act)
