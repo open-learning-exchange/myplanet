@@ -38,3 +38,8 @@ For the app usage manual, please visit the [myPlanet Manual page](https://open-l
 ## Contact
 
 For any questions or feedback, please join [our Discord server](https://discord.gg/BVrFEeNtQZ).
+
+## Developer Notes
+
+- Sync diagnostics that previously exposed performance reports and circuit breaker status have been removed from the app code.
+  These tools were internal experiments and are intentionally unavailable in current builds.
