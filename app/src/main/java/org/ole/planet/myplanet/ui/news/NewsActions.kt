@@ -19,7 +19,6 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.team.teamMember.MemberDetailFragment
-import org.ole.planet.myplanet.utilities.Constants
 
 object NewsActions {
     data class EditDialogComponents(
