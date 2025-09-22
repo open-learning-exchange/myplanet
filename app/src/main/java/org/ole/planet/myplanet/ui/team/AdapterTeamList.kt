@@ -16,12 +16,12 @@ import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemTeamListBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
