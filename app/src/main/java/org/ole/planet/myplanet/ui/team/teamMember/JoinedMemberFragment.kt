@@ -5,7 +5,6 @@ import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import io.realm.Realm
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -106,23 +105,24 @@ class JoinedMemberFragment : BaseMemberFragment() {
 
     private fun handleRemoveMember(member: JoinedMemberData) {
         viewLifecycleOwner.lifecycleScope.launch {
-            val canRemove = databaseService.withRealmAsync { realm ->
-                val currentUserId = user?.id
-                if (currentUserId != member.user.id) {
-                    member.user.id?.let { removeMember(realm, it) }
-                    true
+            val memberId = member.user.id
+            val currentUserId = user?.id
+            if (memberId.isNullOrBlank()) return@launch
+
+            val canRemove = if (currentUserId != memberId) {
+                true
+            } else {
+                val nextOfKinId = getNextOfKin(memberId)?.id
+                if (nextOfKinId.isNullOrBlank()) {
+                    false
                 } else {
-                    val nextOfKin = getNextOfKin(realm)
-                    if (nextOfKin != null && nextOfKin.id != null) {
-                        makeLeader(realm, nextOfKin.id!!)
-                        member.user.id?.let { removeMember(realm, it) }
-                        true
-                    } else {
-                        false
-                    }
+                    teamRepository.promoteMemberToLeader(teamId, nextOfKinId)
+                    true
                 }
             }
+
             if (canRemove) {
+                teamRepository.removeMember(teamId, memberId)
                 memberChangeListener.onMemberChanged()
                 refreshMembers()
             } else {
@@ -133,9 +133,7 @@ class JoinedMemberFragment : BaseMemberFragment() {
 
     private fun handleMakeLeader(userId: String) {
         viewLifecycleOwner.lifecycleScope.launch {
-            databaseService.withRealmAsync { realm ->
-                makeLeader(realm, userId)
-            }
+            teamRepository.promoteMemberToLeader(teamId, userId)
             Toast.makeText(requireContext(), getString(R.string.leader_selected), Toast.LENGTH_SHORT).show()
             memberChangeListener.onMemberChanged()
             refreshMembers()
@@ -150,59 +148,15 @@ class JoinedMemberFragment : BaseMemberFragment() {
         showNoData(binding.tvNodata, members.size, "members")
     }
 
-    private fun makeLeader(realm: Realm, userId: String) {
-        realm.executeTransaction { r ->
-            val currentLeader = r.where(RealmMyTeam::class.java)
-                .equalTo("teamId", teamId)
-                .equalTo("isLeader", true)
-                .findFirst()
-            val newLeader = r.where(RealmMyTeam::class.java)
-                .equalTo("teamId", teamId)
-                .equalTo("userId", userId)
-                .findFirst()
-            currentLeader?.isLeader = false
-            newLeader?.isLeader = true
-        }
-    }
-
-    private fun removeMember(realm: Realm, userId: String) {
-        realm.executeTransaction { r ->
-            val team = r.where(RealmMyTeam::class.java)
-                .equalTo("teamId", teamId)
-                .equalTo("userId", userId)
-                .findFirst()
-            team?.deleteFromRealm()
-        }
-    }
-
-    private fun getNextOfKin(realm: Realm): RealmUserModel? {
-        val members: List<RealmMyTeam> = realm.where(RealmMyTeam::class.java)
-            .equalTo("teamId", teamId)
-            .equalTo("isLeader", false)
-            .notEqualTo("status", "archived")
-            .findAll()
-
-        if (members.isEmpty()) {
-            return null
-        }
-
-        var successorTeamMember: RealmMyTeam? = null
-        var maxVisitCount: Long = -1
-
-        for (member in members) {
-            val user = realm.where(RealmUserModel::class.java).equalTo("id", member.userId).findFirst()
-            if (user != null) {
-                val visitCount = RealmTeamLog.getVisitCount(realm, user.name, teamId)
-                if (visitCount > maxVisitCount) {
-                    maxVisitCount = visitCount
-                    successorTeamMember = member
-                }
-            }
-        }
-
-        return successorTeamMember?.userId?.let { id ->
-            realm.where(RealmUserModel::class.java).equalTo("id", id).findFirst()?.let { realm.copyFromRealm(it) }
-        }
+    private fun getNextOfKin(excludeUserId: String?): RealmUserModel? {
+        if (excludeUserId.isNullOrBlank()) return null
+        return joinedMembers
+            .asSequence()
+            .filter { !it.isLeader }
+            .filter { it.user.id != excludeUserId }
+            .filter { !it.user.isArchived }
+            .maxByOrNull { it.visitCount }
+            ?.user
     }
 
     override fun onNewsItemClick(news: RealmNews?) {}
