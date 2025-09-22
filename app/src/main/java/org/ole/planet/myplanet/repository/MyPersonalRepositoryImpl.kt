@@ -1,14 +1,17 @@
 package org.ole.planet.myplanet.repository
 
+import io.realm.RealmChangeListener
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyPersonal
 
 class MyPersonalRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService
+    private val databaseService: DatabaseService
 ) : RealmRepository(databaseService), MyPersonalRepository {
 
     override suspend fun savePersonalResource(
@@ -32,7 +35,42 @@ class MyPersonalRepositoryImpl @Inject constructor(
     }
 
     override fun getPersonalResources(userId: String?): Flow<List<RealmMyPersonal>> =
-        queryListFlow(RealmMyPersonal::class.java) {
-            equalTo("userId", userId)
+        callbackFlow {
+            val realm = databaseService.realmInstance
+            val results =
+                realm.where(RealmMyPersonal::class.java)
+                    .equalTo("userId", userId)
+                    .findAllAsync()
+
+            val listener =
+                RealmChangeListener { managed: io.realm.RealmResults<RealmMyPersonal> ->
+                    trySend(realm.copyFromRealm(managed))
+                }
+
+            var listenerRegistered = false
+            try {
+                results.addChangeListener(listener)
+                listenerRegistered = true
+                if (results.isLoaded) {
+                    trySend(realm.copyFromRealm(results))
+                }
+                awaitClose {
+                    if (listenerRegistered && results.isValid) {
+                        results.removeChangeListener(listener)
+                    }
+                    if (!realm.isClosed) {
+                        realm.close()
+                    }
+                }
+            } finally {
+                if (!listenerRegistered) {
+                    if (results.isValid) {
+                        results.removeChangeListener(listener)
+                    }
+                    if (!realm.isClosed) {
+                        realm.close()
+                    }
+                }
+            }
         }
 }
