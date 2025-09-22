@@ -1,16 +1,21 @@
 package org.ole.planet.myplanet.repository
 
+import android.os.Handler
+import android.os.HandlerThread
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import io.realm.Realm
 import io.realm.RealmChangeListener
 import io.realm.RealmQuery
 import io.realm.RealmResults
 import io.realm.Sort
 import java.util.Date
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.channels.trySendBlocking
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -60,12 +65,11 @@ class FeedbackRepositoryImpl @Inject constructor(
 
     override fun getFeedback(userModel: RealmUserModel?): Flow<List<RealmFeedback>> =
         callbackFlow {
-            val realm = try {
-                databaseService.realmInstance
-            } catch (error: Throwable) {
-                close(error)
-                return@callbackFlow
-            }
+            val realmRef = AtomicReference<Realm?>()
+            val resultsRef = AtomicReference<RealmResults<RealmFeedback>?>(null)
+
+            val realmThread = HandlerThread("FeedbackRealmThread").apply { start() }
+            val handler = Handler(realmThread.looper)
 
             val builder: RealmQuery<RealmFeedback>.() -> Unit = {
                 if (userModel?.isManager() == true) {
@@ -78,29 +82,43 @@ class FeedbackRepositoryImpl @Inject constructor(
 
             val listener =
                 RealmChangeListener<RealmResults<RealmFeedback>> { realmResults ->
-                    if (realmResults.isLoaded && realmResults.isValid) {
-                        trySend(realm.copyFromRealm(realmResults))
+                    val realm = realmRef.get()
+                    if (realmResults.isLoaded && realmResults.isValid && realm != null) {
+                        trySendBlocking(realm.copyFromRealm(realmResults))
                     }
                 }
 
-            val results =
-                try {
-                    realm.where(RealmFeedback::class.java).apply(builder).findAllAsync()
+            handler.post {
+                val realm = try {
+                    databaseService.realmInstance
                 } catch (error: Throwable) {
-                    realm.close()
                     close(error)
-                    return@callbackFlow
+                    return@post
                 }
-            if (results.isLoaded && results.isValid) {
-                trySend(realm.copyFromRealm(results))
+                realmRef.set(realm)
+
+                val results =
+                    try {
+                        realm.where(RealmFeedback::class.java).apply(builder).findAllAsync()
+                    } catch (error: Throwable) {
+                        realm.close()
+                        realmRef.set(null)
+                        close(error)
+                        return@post
+                    }
+
+                resultsRef.set(results)
+                if (results.isLoaded && results.isValid) {
+                    trySendBlocking(realm.copyFromRealm(results))
+                }
+                results.addChangeListener(listener)
             }
-            results.addChangeListener(listener)
 
             awaitClose {
-                try {
-                    results.removeChangeListener(listener)
-                } finally {
-                    realm.close()
+                handler.post {
+                    resultsRef.getAndSet(null)?.removeChangeListener(listener)
+                    realmRef.getAndSet(null)?.close()
+                    realmThread.quitSafely()
                 }
             }
         }
