@@ -192,12 +192,10 @@ class TeamRepositoryImpl @Inject constructor(
         executeTransaction { realm ->
             val currentLeader = realm.where(RealmMyTeam::class.java)
                 .equalTo("teamId", teamId)
-                .equalTo("docType", "membership")
                 .equalTo("isLeader", true)
                 .findFirst()
             val newLeader = realm.where(RealmMyTeam::class.java)
                 .equalTo("teamId", teamId)
-                .equalTo("docType", "membership")
                 .equalTo("userId", userId)
                 .findFirst()
             currentLeader?.isLeader = false
@@ -210,10 +208,9 @@ class TeamRepositoryImpl @Inject constructor(
         executeTransaction { realm ->
             realm.where(RealmMyTeam::class.java)
                 .equalTo("teamId", teamId)
-                .equalTo("docType", "membership")
                 .equalTo("userId", userId)
-                .findAll()
-                .deleteAllFromRealm()
+                .findFirst()
+                ?.deleteFromRealm()
         }
     }
 
