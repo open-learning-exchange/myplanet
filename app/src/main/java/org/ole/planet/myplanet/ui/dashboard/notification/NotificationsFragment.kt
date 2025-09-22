@@ -217,7 +217,9 @@ class NotificationsFragment : Fragment() {
     }
 
     private fun updateMarkAllAsReadButtonVisibility() {
-        binding.btnMarkAllAsRead.visibility = if (unreadCountCache > 0) View.VISIBLE else View.GONE
+        _binding?.let { binding ->
+            binding.btnMarkAllAsRead.visibility = if (unreadCountCache > 0) View.VISIBLE else View.GONE
+        }
     }
 
     private fun getUnreadNotificationsSize(): Int {
@@ -229,15 +231,17 @@ class NotificationsFragment : Fragment() {
     }
 
     fun refreshNotificationsList() {
-        if (::adapter.isInitialized && _binding != null) {
-            val selectedFilter = binding.status.selectedItem.toString().lowercase()
-            val notifications = loadNotifications(userId, selectedFilter)
-            adapter.updateNotifications(notifications)
-            refreshUnreadCountCache()
-            updateMarkAllAsReadButtonVisibility()
-            updateUnreadCount()
+        _binding?.let { binding ->
+            if (::adapter.isInitialized) {
+                val selectedFilter = binding.status.selectedItem.toString().lowercase()
+                val notifications = loadNotifications(userId, selectedFilter)
+                adapter.updateNotifications(notifications)
+                refreshUnreadCountCache()
+                updateMarkAllAsReadButtonVisibility()
+                updateUnreadCount()
 
-            binding.emptyData.visibility = if (notifications.isEmpty()) View.VISIBLE else View.GONE
+                binding.emptyData.visibility = if (notifications.isEmpty()) View.VISIBLE else View.GONE
+            }
         }
     }
 
@@ -251,10 +255,11 @@ class NotificationsFragment : Fragment() {
         backgroundAction: suspend () -> Set<String>,
     ) {
         viewLifecycleOwner.lifecycleScope.launch {
+            val binding = _binding ?: return@launch
             val selectedFilter = binding.status.selectedItem.toString().lowercase()
             val previousList = adapter.currentList.toList()
             val previousUnreadCount = unreadCountCache
-            val appContext = requireContext().applicationContext
+            val appContext = context?.applicationContext
 
             val updatedList = if (notificationIdsForUi.isNotEmpty()) {
                 getUpdatedListAfterMarkingRead(previousList, notificationIdsForUi, selectedFilter)
@@ -284,18 +289,25 @@ class NotificationsFragment : Fragment() {
             try {
                 withContext(Dispatchers.IO) {
                     val idsToClear = backgroundAction()
-                    val notificationManager = NotificationUtils.getInstance(appContext)
-                    idsToClear.forEach { notificationManager.clearNotification(it) }
+                    if (appContext != null) {
+                        val notificationManager = NotificationUtils.getInstance(appContext)
+                        idsToClear.forEach { notificationManager.clearNotification(it) }
+                    }
                 }
             } catch (e: Exception) {
                 unreadCountCache = previousUnreadCount
                 if (notificationIdsForUi.isNotEmpty()) {
                     adapter.submitList(previousList)
-                    binding.emptyData.visibility = if (previousList.isEmpty()) View.VISIBLE else View.GONE
+                    _binding?.let { currentBinding ->
+                        currentBinding.emptyData.visibility = if (previousList.isEmpty()) View.VISIBLE else View.GONE
+                    }
                 }
                 updateMarkAllAsReadButtonVisibility()
                 updateUnreadCount()
-                Snackbar.make(binding.root, getString(R.string.failed_to_mark_as_read), Snackbar.LENGTH_LONG).show()
+                _binding?.let { currentBinding ->
+                    Snackbar.make(currentBinding.root, getString(R.string.failed_to_mark_as_read), Snackbar.LENGTH_LONG)
+                        .show()
+                }
             }
         }
     }
