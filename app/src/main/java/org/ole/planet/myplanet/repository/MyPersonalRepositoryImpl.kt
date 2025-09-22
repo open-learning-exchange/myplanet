@@ -42,23 +42,27 @@ class MyPersonalRepositoryImpl @Inject constructor(
                     .equalTo("userId", userId)
                     .findAllAsync()
 
+            fun copyAndEmit(collection: io.realm.RealmResults<RealmMyPersonal>) {
+                if (!collection.isLoaded || !collection.isValid || realm.isClosed) {
+                    return
+                }
+                val snapshot = collection.createSnapshot()
+                val detached = realm.copyFromRealm(snapshot).filter { it.userId == userId }
+                trySend(detached)
+            }
+
             val listener =
-                RealmChangeListener { managed: io.realm.RealmResults<RealmMyPersonal> ->
-                    if (!managed.isLoaded || !managed.isValid) {
-                        return@RealmChangeListener
-                    }
-                    trySend(realm.copyFromRealm(managed))
+                RealmChangeListener<io.realm.RealmResults<RealmMyPersonal>> { managed ->
+                    copyAndEmit(managed)
                 }
 
             var listenerRegistered = false
             try {
                 results.addChangeListener(listener)
                 listenerRegistered = true
-                if (results.isLoaded && results.isValid) {
-                    trySend(realm.copyFromRealm(results))
-                }
+                copyAndEmit(results)
                 awaitClose {
-                    if (listenerRegistered && results.isValid) {
+                    if (listenerRegistered && !realm.isClosed && results.isValid) {
                         results.removeChangeListener(listener)
                     }
                     if (!realm.isClosed) {
@@ -67,7 +71,7 @@ class MyPersonalRepositoryImpl @Inject constructor(
                 }
             } finally {
                 if (!listenerRegistered) {
-                    if (results.isValid) {
+                    if (!realm.isClosed && results.isValid) {
                         results.removeChangeListener(listener)
                     }
                     if (!realm.isClosed) {
