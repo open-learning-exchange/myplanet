@@ -166,10 +166,12 @@ open class RealmUserModel : RealmObject() {
             val obj = element.asJsonObject
             val entries = obj.entrySet()
             for ((key1) in entries) {
-                userImage = UrlUtils.getUserImageUrl(id, key1)
+                val remoteImageUrl = UrlUtils.getUserImageUrl(id, key1)
+                userImage = UrlUtils.sanitizeUserImageUrl(remoteImageUrl)
                 break
             }
         }
+        userImage = UrlUtils.sanitizeUserImageUrl(userImage)
     }
 
     fun isManager(): Boolean {

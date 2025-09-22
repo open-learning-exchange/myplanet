@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowJoinedUserBinding
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
+import org.ole.planet.myplanet.utilities.UrlUtils
 
 data class JoinedMemberData(
     val user: RealmUserModel,
@@ -58,8 +59,9 @@ class AdapterJoinedMember(
             R.string.last_visit,
             memberData.lastVisitDate
         )
+        val sanitizedUserImage = UrlUtils.sanitizeUserImageUrl(member.userImage)
         Glide.with(binding.memberImage.context)
-            .load(member.userImage)
+            .load(sanitizedUserImage)
             .placeholder(R.drawable.profile)
             .error(R.drawable.profile)
             .into(binding.memberImage)
@@ -88,7 +90,7 @@ class AdapterJoinedMember(
                 memberData.profileLastVisit,
                 "${member.firstName} ${member.lastName}",
                 member.level.toString(),
-                member.userImage
+                sanitizedUserImage
             )
             NavigationHelper.replaceFragment(
                 activity.supportFragmentManager,

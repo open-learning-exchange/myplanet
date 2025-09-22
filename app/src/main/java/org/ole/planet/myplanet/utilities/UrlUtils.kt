@@ -74,7 +74,17 @@ object UrlUtils {
     }
 
     fun getUserImageUrl(userId: String?, imageName: String): String {
-        return "${getUrl()}/_users/$userId/$imageName"
+        val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val base = baseUrl(settings).trimEnd('/')
+        return "$base/_users/$userId/$imageName"
+    }
+
+    fun sanitizeUserImageUrl(url: String?): String? {
+        if (url.isNullOrEmpty()) {
+            return url
+        }
+        val sanitized = url.replace("/db/_users/", "/_users/")
+        return sanitized.replace("//_users/", "/_users/")
     }
 
     fun getUrl(): String {

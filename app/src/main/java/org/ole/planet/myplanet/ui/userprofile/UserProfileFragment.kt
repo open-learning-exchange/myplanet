@@ -62,6 +62,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.TimeUtils
+import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
@@ -179,7 +180,7 @@ class UserProfileFragment : Fragment() {
 
     private fun loadProfileImage() {
         val binding = _binding ?: return
-        val profileImageUrl = model?.userImage
+        val profileImageUrl = UrlUtils.sanitizeUserImageUrl(model?.userImage)
 
         if (profileImageUrl.isNullOrBlank()) {
             binding.image.setImageResource(R.drawable.profile)

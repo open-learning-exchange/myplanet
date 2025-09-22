@@ -53,6 +53,7 @@ import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.FileUtils
+import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCallback,
@@ -88,9 +89,10 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             v.findViewById<LinearLayout>(R.id.ll_prompt).visibility = View.GONE
         }
         val imageView = v.findViewById<ImageView>(R.id.imageView)
-        if (!TextUtils.isEmpty(model?.userImage)) {
+        val userImageUrl = UrlUtils.sanitizeUserImageUrl(model?.userImage)
+        if (!TextUtils.isEmpty(userImageUrl)) {
             Glide.with(requireActivity())
-                .load(model?.userImage)
+                .load(userImageUrl)
                 .placeholder(R.drawable.profile)
                 .error(R.drawable.profile)
                 .into(imageView)

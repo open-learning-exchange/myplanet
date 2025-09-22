@@ -12,6 +12,7 @@ import com.bumptech.glide.Glide
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.TimeUtils
+import org.ole.planet.myplanet.utilities.UrlUtils
 
 class UserListArrayAdapter(activity: Activity, val view: Int, var list: List<RealmUserModel>) : ArrayAdapter<RealmUserModel>(activity, view, list) {
     private class ViewHolder {
@@ -41,10 +42,11 @@ class UserListArrayAdapter(activity: Activity, val view: Int, var list: List<Rea
             holder.joined?.text = context.getString(R.string.joined_colon, TimeUtils.formatDate(um.joinDate))
         }
 
-        if (!TextUtils.isEmpty(um?.userImage)) {
+        val sanitizedUserImage = UrlUtils.sanitizeUserImageUrl(um?.userImage)
+        if (!TextUtils.isEmpty(sanitizedUserImage)) {
             holder.image?.let {
                 Glide.with(it.context)
-                    .load(um?.userImage)
+                    .load(sanitizedUserImage)
                     .placeholder(R.drawable.profile)
                     .error(R.drawable.profile)
                     .into(it)

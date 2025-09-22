@@ -6,9 +6,10 @@ import org.ole.planet.myplanet.R
 
 object ImageUtils {
     fun loadImage(userImage: String?, imageView: ImageView) {
-        if (!userImage.isNullOrEmpty()) {
+        val sanitizedUrl = UrlUtils.sanitizeUserImageUrl(userImage)
+        if (!sanitizedUrl.isNullOrEmpty()) {
             Glide.with(imageView.context)
-                .load(userImage)
+                .load(sanitizedUrl)
                 .placeholder(R.drawable.profile)
                 .error(R.drawable.profile)
                 .into(imageView)
