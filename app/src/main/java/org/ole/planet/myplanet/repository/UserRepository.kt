@@ -4,6 +4,5 @@ import org.ole.planet.myplanet.model.RealmUserModel
 
 interface UserRepository {
     suspend fun getUserById(userId: String): RealmUserModel?
-    suspend fun getUserByName(username: String): RealmUserModel?
     suspend fun getAllUsers(): List<RealmUserModel>
 }
