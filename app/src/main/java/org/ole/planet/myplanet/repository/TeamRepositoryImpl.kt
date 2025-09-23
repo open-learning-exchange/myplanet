@@ -5,6 +5,7 @@ import androidx.core.net.toUri
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import java.util.Date
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
@@ -178,6 +179,38 @@ class TeamRepositoryImpl @Inject constructor(
             task.assignee = assigneeId
             task.isUpdated = true
         }
+    }
+
+    override suspend fun updateTeamDetails(
+        teamId: String,
+        name: String,
+        description: String,
+        services: String,
+        rules: String,
+        teamType: String,
+        isPublic: Boolean,
+        createdBy: String,
+    ): Boolean {
+        if (teamId.isBlank()) return false
+        val updated = AtomicBoolean(false)
+        val applyUpdates: (RealmMyTeam) -> Unit = { team ->
+            team.name = name
+            team.description = description
+            team.services = services
+            team.rules = rules
+            team.teamType = teamType
+            team.isPublic = isPublic
+            team.createdBy = createdBy.takeIf { it.isNotBlank() } ?: team.createdBy
+            team.updated = true
+            updated.set(true)
+        }
+
+        update(RealmMyTeam::class.java, "_id", teamId, applyUpdates)
+        if (!updated.get()) {
+            update(RealmMyTeam::class.java, "teamId", teamId, applyUpdates)
+        }
+
+        return updated.get()
     }
 
     override suspend fun syncTeamActivities(context: Context) {

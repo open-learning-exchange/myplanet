@@ -82,9 +82,18 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         super.onCreateView(inflater, container, savedInstanceState)
         _binding = FragmentLibraryDetailBinding.inflate(inflater, container, false)
         userModel = UserProfileDbHandler(requireContext()).userModel!!
-        library = runBlocking {
+
+        val fetchedLibrary = runBlocking {
             fetchLibrary(libraryId!!)
-        }!!
+        }
+
+        if (fetchedLibrary == null) {
+            Toast.makeText(requireContext(), "Resource not found", Toast.LENGTH_LONG).show()
+            NavigationHelper.popBackStack(parentFragmentManager)
+            return binding.root
+        }
+
+        library = fetchedLibrary
         return binding.root
     }
 
