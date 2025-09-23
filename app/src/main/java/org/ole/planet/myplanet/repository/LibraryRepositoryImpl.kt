@@ -47,6 +47,28 @@ class LibraryRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getCourseResourcesByOfflineState(
+        courseId: String,
+        isOffline: Boolean,
+    ): List<RealmMyLibrary> {
+        if (courseId.isBlank()) {
+            return emptyList()
+        }
+        return queryList(RealmMyLibrary::class.java) {
+            equalTo("courseId", courseId)
+            equalTo("resourceOffline", isOffline)
+            isNotNull("resourceLocalAddress")
+        }
+    }
+
+    override suspend fun getCourseOnlineResources(courseId: String): List<RealmMyLibrary> {
+        return getCourseResourcesByOfflineState(courseId, isOffline = false)
+    }
+
+    override suspend fun getCourseOfflineResources(courseId: String): List<RealmMyLibrary> {
+        return getCourseResourcesByOfflineState(courseId, isOffline = true)
+    }
+
     override suspend fun saveLibraryItem(item: RealmMyLibrary) {
         save(item)
     }

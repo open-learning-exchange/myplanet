@@ -28,8 +28,12 @@ class CourseRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getCourseById(courseId: String): RealmMyCourse? {
+        return findByField(RealmMyCourse::class.java, "courseId", courseId)
+    }
+
     override suspend fun getCourseByCourseId(courseId: String?): RealmMyCourse? {
-        return courseId?.let { findByField(RealmMyCourse::class.java, "courseId", it) }
+        return courseId?.let { getCourseById(it) }
     }
 
     override suspend fun getCourseOnlineResources(courseId: String?): List<RealmMyLibrary> {
