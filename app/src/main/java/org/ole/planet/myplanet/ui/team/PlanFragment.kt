@@ -10,7 +10,6 @@ import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
-import io.realm.Realm
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
@@ -59,11 +58,11 @@ class PlanFragment : BaseTeamFragment() {
             return
         }
         team?.let {
-            showCreateTeamDialog(requireContext(), requireActivity(), mRealm, it)
+            showCreateTeamDialog(requireContext(), requireActivity(), it)
         }
     }
 
-    private fun showCreateTeamDialog(context: Context, activity: FragmentActivity, realm: Realm, team: RealmMyTeam) {
+    private fun showCreateTeamDialog(context: Context, activity: FragmentActivity, team: RealmMyTeam) {
         val alertCreateTeamBinding = AlertCreateTeamBinding.inflate(LayoutInflater.from(context))
         setupDialogFields(alertCreateTeamBinding, team)
 
@@ -76,7 +75,7 @@ class PlanFragment : BaseTeamFragment() {
 
         dialog.setOnShowListener {
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                handleSaveButtonClick(alertCreateTeamBinding, activity, context, realm, team, dialog)
+                handleSaveButtonClick(alertCreateTeamBinding, activity, context, team, dialog)
             }
         }
         dialog.show()
@@ -107,7 +106,13 @@ class PlanFragment : BaseTeamFragment() {
         binding.switchPublic.isChecked = team.isPublic
     }
 
-    private fun handleSaveButtonClick(binding: AlertCreateTeamBinding, activity: FragmentActivity, context: Context, realm: Realm, team: RealmMyTeam, dialog: AlertDialog) {
+    private fun handleSaveButtonClick(
+        binding: AlertCreateTeamBinding,
+        activity: FragmentActivity,
+        context: Context,
+        team: RealmMyTeam,
+        dialog: AlertDialog,
+    ) {
         val name = binding.etName.text.toString().trim()
         if (name.isEmpty()) {
             Utilities.toast(activity, context.getString(R.string.name_is_required))
@@ -116,7 +121,13 @@ class PlanFragment : BaseTeamFragment() {
         }
 
         val userId = UserProfileDbHandler(activity).userModel?._id
-        val teamId = team._id
+        val createdBy = userId.orEmpty()
+        val teamIdentifier = team._id?.takeIf { it.isNotBlank() }
+            ?: team.teamId?.takeIf { it.isNotBlank() }
+        if (teamIdentifier == null) {
+            Utilities.toast(activity, context.getString(R.string.failed_to_add_please_retry))
+            return
+        }
         val servicesToSave = binding.etServices.text.toString()
         val rulesToSave = binding.etRules.text.toString()
         val descriptionToSave = binding.etDescription.text.toString()
@@ -127,29 +138,45 @@ class PlanFragment : BaseTeamFragment() {
         }
         val isPublic = binding.switchPublic.isChecked
 
-        realm.executeTransactionAsync({ r ->
-            val realmTeam = r.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
-            realmTeam?.let {
-                it.name = name
-                it.services = servicesToSave
-                it.rules = rulesToSave
-                it.description = descriptionToSave
-                it.teamType = teamType
-                it.isPublic = isPublic
-                it.createdBy = userId
-                it.updated = true
-            }
-        }, {
-            viewLifecycleOwner.lifecycleScope.launch {
-                updateUIWithTeamData(team)
-                Utilities.toast(requireContext(), context.getString(R.string.added_successfully))
-                dialog.dismiss()
-            }
-        }, {
-            viewLifecycleOwner.lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val wasUpdated = teamRepository.updateTeamDetails(
+                    teamId = teamIdentifier,
+                    name = name,
+                    description = descriptionToSave,
+                    services = servicesToSave,
+                    rules = rulesToSave,
+                    teamType = teamType,
+                    isPublic = isPublic,
+                    createdBy = createdBy,
+                )
+
+                if (wasUpdated) {
+                    val refreshedTeam = teamRepository.getTeamByDocumentIdOrTeamId(teamIdentifier)
+                        ?: (this@PlanFragment.team ?: team)
+
+                    refreshedTeam.apply {
+                        this.name = name
+                        this.services = servicesToSave
+                        this.rules = rulesToSave
+                        this.description = descriptionToSave
+                        this.teamType = teamType
+                        this.isPublic = isPublic
+                        this.createdBy = createdBy.takeIf { it.isNotBlank() } ?: this.createdBy
+                        this.updated = true
+                    }
+
+                    this@PlanFragment.team = refreshedTeam
+                    updateUIWithTeamData(refreshedTeam)
+                    Utilities.toast(requireContext(), context.getString(R.string.added_successfully))
+                    dialog.dismiss()
+                } else {
+                    Utilities.toast(requireContext(), context.getString(R.string.failed_to_add_please_retry))
+                }
+            } catch (e: Exception) {
                 Utilities.toast(requireContext(), context.getString(R.string.failed_to_add_please_retry))
             }
-        })
+        }
     }
 
     private fun updateUIWithTeamData(updatedTeam: RealmMyTeam?) {
