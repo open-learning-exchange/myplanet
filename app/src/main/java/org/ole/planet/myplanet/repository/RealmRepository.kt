@@ -9,7 +9,6 @@ import kotlinx.coroutines.channels.ProducerScope
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.runBlocking
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.applyEqualTo
 import org.ole.planet.myplanet.datamanager.findCopyByField
@@ -36,15 +35,15 @@ open class RealmRepository(private val databaseService: DatabaseService) {
         clazz: Class<T>,
         builder: RealmQuery<T>.() -> Unit = {},
     ): Flow<List<T>> =
-        withRealmFlow { realm, scope ->
+        withRealmFlow { realm, scope, registerClose ->
             val results = realm.where(clazz).apply(builder).findAllAsync()
             val listener =
                 RealmChangeListener<RealmResults<T>> {
                     scope.trySend(realm.queryList(clazz, builder))
                 }
-            results.addChangeListener(listener)
             scope.trySend(realm.queryList(clazz, builder))
-            scope.awaitClose { results.removeChangeListener(listener) }
+            results.addChangeListener(listener)
+            registerClose { results.removeChangeListener(listener) }
         }
 
     protected suspend fun <T : RealmObject, V : Any> findByField(
@@ -98,10 +97,30 @@ open class RealmRepository(private val databaseService: DatabaseService) {
         return databaseService.withRealmAsync(operation)
     }
 
-    protected fun <T> withRealmFlow(block: suspend (Realm, ProducerScope<T>) -> Unit): Flow<T> =
+    protected fun <T> withRealmFlow(
+        block: suspend (
+            realm: Realm,
+            scope: ProducerScope<T>,
+            registerClose: (onClose: () -> Unit) -> Unit,
+        ) -> Unit,
+    ): Flow<T> =
         callbackFlow {
-            databaseService.withRealm { realm ->
-                runBlocking { block(realm, this@callbackFlow) }
+            val realm = Realm.getDefaultInstance()
+            var closeAction: (() -> Unit)? = null
+            try {
+                block(realm, this@callbackFlow) { onClose ->
+                    closeAction = onClose
+                }
+            } catch (throwable: Throwable) {
+                realm.close()
+                throw throwable
+            }
+            awaitClose {
+                try {
+                    closeAction?.invoke()
+                } finally {
+                    realm.close()
+                }
             }
         }
 
