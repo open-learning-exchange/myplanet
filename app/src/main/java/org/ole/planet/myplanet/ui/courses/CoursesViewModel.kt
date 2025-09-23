@@ -4,9 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
@@ -32,6 +34,8 @@ class CoursesViewModel @Inject constructor(
     private val _syncState = MutableStateFlow<SyncState>(SyncState.Idle)
     val syncState: StateFlow<SyncState> = _syncState.asStateFlow()
 
+    private var progressCollectionJob: Job? = null
+
     sealed class CoursesUiState {
         object Loading : CoursesUiState()
         data class Success(
@@ -53,24 +57,43 @@ class CoursesViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 _coursesState.value = CoursesUiState.Loading
-                
+
                 val courses = courseRepository.getAllCourses()
                 val filteredCourses = if (isMyCourseLib) {
                     courses.filter { it.isMyCourse }
                 } else {
                     courses
                 }
-                
+
                 val ratings = ratingRepository.getRatings("course", userId)
                 val progress = courseProgressRepository.getCourseProgress(userId)
-                
+
                 _coursesState.value = CoursesUiState.Success(
                     courses = filteredCourses,
                     ratings = ratings,
                     progress = progress
                 )
+
+                observeCourseProgress(userId)
             } catch (e: Exception) {
                 _coursesState.value = CoursesUiState.Error(e.message ?: "Unknown error")
+            }
+        }
+    }
+
+    private fun observeCourseProgress(userId: String?) {
+        progressCollectionJob?.cancel()
+        if (userId.isNullOrEmpty()) {
+            progressCollectionJob = null
+            return
+        }
+
+        progressCollectionJob = viewModelScope.launch {
+            courseProgressRepository.observeCourseProgress(userId).collectLatest { progress ->
+                val currentState = _coursesState.value
+                if (currentState is CoursesUiState.Success) {
+                    _coursesState.value = currentState.copy(progress = progress)
+                }
             }
         }
     }
@@ -105,5 +128,10 @@ class CoursesViewModel @Inject constructor(
 
     fun setSyncState(state: SyncState) {
         _syncState.value = state
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        progressCollectionJob?.cancel()
     }
 }
