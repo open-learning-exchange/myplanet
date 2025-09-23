@@ -5,28 +5,36 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.FragmentCourseDetailBinding
+import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getCourseSteps
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmRating.Companion.getRatingsById
-import org.ole.planet.myplanet.model.RealmStepExam.Companion.getNoOfExam
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.CourseRepository
+import org.ole.planet.myplanet.repository.RatingRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 
+@AndroidEntryPoint
 class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private var _binding: FragmentCourseDetailBinding? = null
     private val binding get() = _binding!!
     var courses: RealmMyCourse? = null
     var user: RealmUserModel? = null
     var id: String? = null
+    @Inject
+    lateinit var courseRepository: CourseRepository
+    @Inject
+    lateinit var ratingRepository: RatingRepository
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) {
@@ -36,56 +44,44 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentCourseDetailBinding.inflate(inflater, container, false)
-        courses = databaseService.withRealm { realm ->
-            realm.where(RealmMyCourse::class.java)
-                .equalTo("courseId", id)
-                .findFirst()
-                ?.let { realm.copyFromRealm(it) }
-        }
         user = UserProfileDbHandler(requireContext()).userModel
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        initRatingView("course", courses?.courseId, courses?.courseTitle, this)
-        setCourseData()
+        viewLifecycleOwner.lifecycleScope.launch {
+            courses = id?.let { courseRepository.getCourseByCourseId(it) }
+            initRatingView("course", id ?: courses?.courseId, courses?.courseTitle, this@CourseDetailFragment)
+            courses?.let { bindCourseData(it) }
+        }
     }
 
-    private fun setCourseData() {
-        setTextViewVisibility(binding.subjectLevel, courses?.subjectLevel, binding.ltSubjectLevel)
-        setTextViewVisibility(binding.method, courses?.method, binding.ltMethod)
-        setTextViewVisibility(binding.gradeLevel, courses?.gradeLevel, binding.ltGradeLevel)
-        setTextViewVisibility(binding.language, courses?.languageOfInstruction, binding.ltLanguage)
+    private suspend fun bindCourseData(course: RealmMyCourse) {
+        setTextViewVisibility(binding.subjectLevel, course.subjectLevel, binding.ltSubjectLevel)
+        setTextViewVisibility(binding.method, course.method, binding.ltMethod)
+        setTextViewVisibility(binding.gradeLevel, course.gradeLevel, binding.ltGradeLevel)
+        setTextViewVisibility(binding.language, course.languageOfInstruction, binding.ltLanguage)
         val markdownContentWithLocalPaths = prependBaseUrlToImages(
-            courses?.description,
+            course.description,
             "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/",
             600,
             350
         )
         setMarkdownText(binding.description, markdownContentWithLocalPaths)
-        databaseService.withRealm { realm ->
-            binding.noOfExams.text = context?.getString(
-                R.string.number_placeholder,
-                getNoOfExam(realm, id)
-            )
-            val resources: List<RealmMyLibrary> = realm.where(RealmMyLibrary::class.java)
-                .equalTo("courseId", id)
-                .equalTo("resourceOffline", false)
-                .isNotNull("resourceLocalAddress")
-                .findAll()
-                .let { realm.copyFromRealm(it) }
-            setResourceButton(resources, binding.btnResources)
-            val downloadedResources: List<RealmMyLibrary> = realm.where(RealmMyLibrary::class.java)
-                .equalTo("resourceOffline", true)
-                .equalTo("courseId", id)
-                .isNotNull("resourceLocalAddress")
-                .findAll()
-                .let { realm.copyFromRealm(it) }
-            setOpenResourceButton(downloadedResources, binding.btnOpen)
-        }
-        onRatingChanged()
-        setStepsList()
+        val courseId = course.courseId
+        val examCount = courseRepository.getCourseExamCount(courseId)
+        binding.noOfExams.text = context?.getString(
+            R.string.number_placeholder,
+            examCount
+        )
+        val resources = courseRepository.getCourseOnlineResources(courseId)
+        setResourceButton(resources, binding.btnResources)
+        val downloadedResources = courseRepository.getCourseOfflineResources(courseId)
+        setOpenResourceButton(downloadedResources, binding.btnOpen)
+        val steps = courseRepository.getCourseSteps(courseId)
+        setStepsList(steps)
+        refreshRatings()
     }
 
     private fun setTextViewVisibility(textView: TextView, content: String?, layout: View) {
@@ -96,24 +92,39 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         }
     }
 
-    private fun setStepsList() {
-        val steps = databaseService.withRealm { realm ->
-            getCourseSteps(realm, courses?.courseId).let { realm.copyFromRealm(it) }
-        }
+    private fun setStepsList(steps: List<RealmCourseStep>) {
         binding.stepsList.layoutManager = LinearLayoutManager(activity)
         binding.stepsList.adapter = AdapterSteps(requireActivity(), steps, submissionRepository)
     }
 
     override fun onRatingChanged() {
-        databaseService.withRealm { realm ->
-            val `object` = getRatingsById(realm, "course", courses?.courseId, user?.id)
-            setRatings(`object`)
+        viewLifecycleOwner.lifecycleScope.launch {
+            refreshRatings()
+        }
+    }
+
+    private suspend fun refreshRatings() {
+        val courseId = courses?.courseId
+        val userId = user?.id
+        if (courseId != null && userId != null) {
+            val ratingSummary = ratingRepository.getRatingSummary("course", courseId, userId)
+            val jsonObject = com.google.gson.JsonObject().apply {
+                addProperty("averageRating", ratingSummary.averageRating)
+                addProperty("total", ratingSummary.totalRatings)
+                ratingSummary.userRating?.let { addProperty("userRating", it) }
+            }
+            setRatings(jsonObject)
+        } else {
+            setRatings(null)
         }
     }
 
     override fun onDownloadComplete() {
         super.onDownloadComplete()
-        setCourseData()
+        viewLifecycleOwner.lifecycleScope.launch {
+            courses = id?.let { courseRepository.getCourseByCourseId(it) } ?: courses
+            courses?.let { bindCourseData(it) }
+        }
     }
 
     override fun onDestroyView() {
