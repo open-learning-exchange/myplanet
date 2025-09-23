@@ -31,6 +31,7 @@ class CoursesViewModel @Inject constructor(
 
     private val _syncState = MutableStateFlow<SyncState>(SyncState.Idle)
     val syncState: StateFlow<SyncState> = _syncState.asStateFlow()
+    private var currentUserId: String? = null
 
     sealed class CoursesUiState {
         object Loading : CoursesUiState()
@@ -53,17 +54,22 @@ class CoursesViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 _coursesState.value = CoursesUiState.Loading
-                
-                val courses = courseRepository.getAllCourses()
+
+                currentUserId = userId
+
+                val allCourses = courseRepository.getAllCourses()
+                val coursesWithMembership = userId?.let {
+                    RealmMyCourse.getAllCourses(it, allCourses)
+                } ?: allCourses
                 val filteredCourses = if (isMyCourseLib) {
-                    courses.filter { it.isMyCourse }
+                    coursesWithMembership.filter { it.isMyCourse }
                 } else {
-                    courses
+                    coursesWithMembership
                 }
-                
+
                 val ratings = ratingRepository.getRatings("course", userId)
                 val progress = courseProgressRepository.getCourseProgress(userId)
-                
+
                 _coursesState.value = CoursesUiState.Success(
                     courses = filteredCourses,
                     ratings = ratings,
@@ -77,8 +83,10 @@ class CoursesViewModel @Inject constructor(
 
     suspend fun addCoursesToMyList(courses: List<RealmMyCourse>) {
         try {
-            val courseIds = courses.mapNotNull { it.courseId }
-            courseRepository.updateMyCourseFlag(courseIds, true)
+            val userId = currentUserId ?: return
+            val courseIds = courses.mapNotNull { it.courseId }.distinct()
+            if (courseIds.isEmpty()) return
+            courseRepository.addUserToCourses(courseIds, userId)
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -86,8 +94,10 @@ class CoursesViewModel @Inject constructor(
 
     suspend fun removeCoursesFromMyList(courses: List<RealmMyCourse>) {
         try {
-            val courseIds = courses.mapNotNull { it.courseId }
-            courseRepository.updateMyCourseFlag(courseIds, false)
+            val userId = currentUserId ?: return
+            val courseIds = courses.mapNotNull { it.courseId }.distinct()
+            if (courseIds.isEmpty()) return
+            courseRepository.removeUserFromCourses(courseIds, userId)
         } catch (e: Exception) {
             e.printStackTrace()
         }

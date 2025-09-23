@@ -35,6 +35,24 @@ open class RealmRemovedLog : RealmObject() {
         }
 
         @JvmStatic
+        fun clearRemovalLogs(realm: Realm, type: String, userId: String, docId: String?) {
+            realm.where(RealmRemovedLog::class.java)
+                .equalTo("type", type)
+                .equalTo("userId", userId)
+                .equalTo("docId", docId)
+                .findAll()
+                .deleteAllFromRealm()
+        }
+
+        @JvmStatic
+        fun createRemovalLog(realm: Realm, type: String, userId: String, docId: String?) {
+            val log = realm.createObject(RealmRemovedLog::class.java, UUID.randomUUID().toString())
+            log.docId = docId
+            log.userId = userId
+            log.type = type
+        }
+
+        @JvmStatic
         fun removedIds(realm: Realm?, type: String, userId: String?): Array<String> {
             val removedLibs = realm?.where(RealmRemovedLog::class.java)
                 ?.equalTo("userId", userId)
