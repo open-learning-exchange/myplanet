@@ -6,6 +6,7 @@ import com.google.gson.Gson
 import com.google.gson.JsonObject
 import java.util.Date
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -22,7 +23,6 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
-import java.util.UUID
 
 class TeamRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,

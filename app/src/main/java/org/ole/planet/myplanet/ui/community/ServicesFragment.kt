@@ -6,17 +6,17 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentServicesBinding
+import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
-import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.model.RealmMyTeam
 
 class ServicesFragment : BaseTeamFragment() {
     private var binding: FragmentServicesBinding? = null

@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.team.teamDiscussion
 
-import android.content.DialogInterface
 import android.content.res.Configuration
 import android.os.Bundle
 import android.text.TextUtils
@@ -33,7 +32,6 @@ import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.news.AdapterNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
-import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
