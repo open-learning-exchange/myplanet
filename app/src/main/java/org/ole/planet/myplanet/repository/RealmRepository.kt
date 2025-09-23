@@ -57,7 +57,7 @@ open class RealmRepository(private val databaseService: DatabaseService) {
         }
 
     protected suspend fun <T : RealmObject> findFirst(clazz: Class<T>): T? =
-        withRealm { realm ->
+        withRealmAsync { realm ->
             realm.where(clazz)
                 .findFirst()
                 ?.let { realm.copyFromRealm(it) }
@@ -94,7 +94,7 @@ open class RealmRepository(private val databaseService: DatabaseService) {
         }
     }
 
-    protected suspend fun <T> withRealm(operation: (Realm) -> T): T {
+    protected suspend fun <T> withRealmAsync(operation: (Realm) -> T): T {
         return databaseService.withRealmAsync(operation)
     }
 
