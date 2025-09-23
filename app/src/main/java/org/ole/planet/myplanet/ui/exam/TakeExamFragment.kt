@@ -13,6 +13,7 @@ import android.widget.RadioButton
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
 import com.google.gson.JsonObject
@@ -37,6 +38,9 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getStringAsJsonArray
 import org.ole.planet.myplanet.utilities.KeyboardUtils.hideSoftKeyboard
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.Utilities.toast
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButton.OnCheckedChangeListener, ImageCaptureCallback {
     private var _binding: FragmentTakeExamBinding? = null
@@ -649,38 +653,43 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     private fun clearAllExistingAnswers() {
-        try {
-            mRealm.executeTransaction { realm ->
-                val parentIdToSearch = if (!TextUtils.isEmpty(exam?.courseId)) {
-                    "${exam?.id ?: id}@${exam?.courseId}"
-                } else {
-                    exam?.id ?: id
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                databaseService.executeTransactionAsync { realm ->
+                    val parentIdToSearch = if (!TextUtils.isEmpty(exam?.courseId)) {
+                        "${exam?.id ?: id}@${exam?.courseId}"
+                    } else {
+                        exam?.id ?: id
+                    }
+
+                    val allSubmissions = realm.where(RealmSubmission::class.java)
+                        .equalTo("userId", user?.id)
+                        .equalTo("parentId", parentIdToSearch)
+                        .findAll()
+
+                    allSubmissions.forEach { submission ->
+                        submission.answers?.deleteAllFromRealm()
+                        submission.deleteFromRealm()
+                    }
                 }
 
-                val allSubmissions = realm.where(RealmSubmission::class.java)
-                    .equalTo("userId", user?.id)
-                    .equalTo("parentId", parentIdToSearch)
-                    .findAll()
-
-                allSubmissions.forEach { submission ->
-                    submission.answers?.deleteAllFromRealm()
-                    submission.deleteFromRealm()
+                withContext(Dispatchers.Main) {
+                    answerCache.clear()
+                    clearAnswer()
+                    ans = ""
+                    listAns?.clear()
+                    sub = null
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    answerCache.clear()
+                    clearAnswer()
+                    ans = ""
+                    listAns?.clear()
+                    sub = null
                 }
             }
-
-            answerCache.clear()
-            clearAnswer()
-            ans = ""
-            listAns?.clear()
-
-            sub = null
-        } catch (e: Exception) {
-            e.printStackTrace()
-            answerCache.clear()
-            clearAnswer()
-            ans = ""
-            listAns?.clear()
-            sub = null
         }
     }
 

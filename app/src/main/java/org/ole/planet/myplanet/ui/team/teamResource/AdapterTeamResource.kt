@@ -1,31 +1,23 @@
 package org.ole.planet.myplanet.ui.team.teamResource
 
 import android.content.Context
-import android.content.SharedPreferences
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.snackbar.Snackbar
-import io.realm.Realm
-import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.RowTeamResourceBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getTeamLeader
 
 class AdapterTeamResource(
     private val context: Context,
     private val list: MutableList<RealmMyLibrary>,
-    private val mRealm: Realm,
-    teamId: String?,
-    private val settings: SharedPreferences,
-    private val updateListener: ResourceUpdateListner
+    private val canRemoveResources: Boolean,
+    private val updateListener: ResourceUpdateListner,
+    private val onRemoveResource: (RealmMyLibrary, Int) -> Unit,
 ) : RecyclerView.Adapter<AdapterTeamResource.ViewHolderTeamResource>() {
 
     private var listener: OnHomeItemClickListener? = null
-    private val teamLeader: String = getTeamLeader(teamId, mRealm)
 
     init {
         if (context is OnHomeItemClickListener) {
@@ -48,16 +40,14 @@ class AdapterTeamResource(
             listener?.openLibraryDetailFragment(resource)
         }
 
-        holder.rowTeamResourceBinding.ivRemove.setOnClickListener {
-            removeResource(resource, position, holder.itemView)
-        }
-
-        val isLeader = settings.getString("userId", "--").equals(teamLeader, ignoreCase = true)
-        if (!isLeader) {
-            holder.rowTeamResourceBinding.ivRemove.visibility = View.GONE
-        }else{
-            holder.rowTeamResourceBinding.ivRemove.visibility = View.VISIBLE
-
+        holder.rowTeamResourceBinding.ivRemove.apply {
+            visibility = if (canRemoveResources) View.VISIBLE else View.GONE
+            setOnClickListener {
+                val adapterPosition = holder.bindingAdapterPosition
+                if (adapterPosition != RecyclerView.NO_POSITION) {
+                    onRemoveResource(resource, adapterPosition)
+                }
+            }
         }
     }
 
@@ -65,32 +55,11 @@ class AdapterTeamResource(
         return list.size
     }
 
-    fun removeResource(resource: RealmMyLibrary, position: Int, view: View? = null) {
+    fun removeResourceAt(position: Int) {
         if (position < 0 || position >= list.size) return
-
-        val resourceId = resource.id
-
-        mRealm.executeTransactionAsync({ realm ->
-            val itemToDelete = realm.where(RealmMyTeam::class.java)
-                .equalTo("resourceId", resourceId)
-                .findFirst()
-
-            itemToDelete?.let {
-                it.resourceId = ""
-                it.updated = true
-            }
-        }, {
-            list.removeAt(position)
-            notifyItemRemoved(position)
-
-            if (list.isEmpty()) {
-                updateListener.onResourceListUpdated()
-            }
-        }, {
-            view?.let {
-                Snackbar.make(it, context.getString(R.string.failed_to_remove_resource), Snackbar.LENGTH_LONG).show()
-            }
-        })
+        list.removeAt(position)
+        notifyItemRemoved(position)
+        updateListener.onResourceListUpdated()
     }
 
     class ViewHolderTeamResource(val rowTeamResourceBinding: RowTeamResourceBinding) : RecyclerView.ViewHolder(rowTeamResourceBinding.root)
