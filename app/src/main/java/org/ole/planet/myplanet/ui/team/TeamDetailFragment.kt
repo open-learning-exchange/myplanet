@@ -388,10 +388,15 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     }
 
     override fun onMemberChanged() {
-        if(getJoinedMemberCount("${team?._id}", mRealm) <= 1){
-            binding.btnLeave.visibility = View.GONE
-        } else{
-            binding.btnLeave.visibility = View.VISIBLE
+        _binding ?: return
+        _binding?.let { binding ->
+            val teamId = team?._id ?: return@let
+            val joinedCount = getJoinedMemberCount(teamId, mRealm)
+            binding.btnLeave.visibility = if (joinedCount <= 1) {
+                View.GONE
+            } else {
+                View.VISIBLE
+            }
         }
     }
 

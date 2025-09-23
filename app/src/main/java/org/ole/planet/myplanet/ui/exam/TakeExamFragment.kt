@@ -13,6 +13,7 @@ import android.widget.RadioButton
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
 import com.google.gson.JsonObject
@@ -37,6 +38,9 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getStringAsJsonArray
 import org.ole.planet.myplanet.utilities.KeyboardUtils.hideSoftKeyboard
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.Utilities.toast
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButton.OnCheckedChangeListener, ImageCaptureCallback {
     private var _binding: FragmentTakeExamBinding? = null
@@ -105,6 +109,9 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: Editable?) {
+                val questionsSize = questions?.size ?: 0
+                if (currentIndex < 0 || currentIndex >= questionsSize) return
+
                 val currentQuestion = questions?.get(currentIndex)
                 currentQuestion?.id?.let { questionId ->
                     val answerData = answerCache.getOrPut(questionId) { AnswerData() }
@@ -123,6 +130,9 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     private fun saveCurrentAnswer() {
+        val questionsSize = questions?.size ?: 0
+        if (currentIndex < 0 || currentIndex >= questionsSize) return
+
         val currentQuestion = questions?.get(currentIndex) ?: return
         val questionId = currentQuestion.id ?: return
 
@@ -177,6 +187,9 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     private fun isQuestionAnswered(): Boolean {
+        val questionsSize = questions?.size ?: 0
+        if (currentIndex < 0 || currentIndex >= questionsSize) return false
+
         val currentQuestion = questions?.get(currentIndex)
         val questionId = currentQuestion?.id ?: return false
         val answerData = answerCache[questionId]
@@ -547,6 +560,9 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
 
     private fun updateAnsDb(): Boolean {
+        val questionsSize = questions?.size ?: 0
+        if (currentIndex < 0 || currentIndex >= questionsSize) return true
+
         val currentQuestion = questions?.get(currentIndex) ?: return true
         val otherText = if (binding.etAnswer.isVisible) {
             binding.etAnswer.text.toString()
@@ -573,6 +589,9 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         } else {
             handleUnchecked(compoundButton)
         }
+
+        val questionsSize = questions?.size ?: 0
+        if (currentIndex < 0 || currentIndex >= questionsSize) return
 
         val currentQuestion = questions?.get(currentIndex)
         currentQuestion?.id?.let { questionId ->
@@ -634,38 +653,43 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     private fun clearAllExistingAnswers() {
-        try {
-            mRealm.executeTransaction { realm ->
-                val parentIdToSearch = if (!TextUtils.isEmpty(exam?.courseId)) {
-                    "${exam?.id ?: id}@${exam?.courseId}"
-                } else {
-                    exam?.id ?: id
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                databaseService.executeTransactionAsync { realm ->
+                    val parentIdToSearch = if (!TextUtils.isEmpty(exam?.courseId)) {
+                        "${exam?.id ?: id}@${exam?.courseId}"
+                    } else {
+                        exam?.id ?: id
+                    }
+
+                    val allSubmissions = realm.where(RealmSubmission::class.java)
+                        .equalTo("userId", user?.id)
+                        .equalTo("parentId", parentIdToSearch)
+                        .findAll()
+
+                    allSubmissions.forEach { submission ->
+                        submission.answers?.deleteAllFromRealm()
+                        submission.deleteFromRealm()
+                    }
                 }
 
-                val allSubmissions = realm.where(RealmSubmission::class.java)
-                    .equalTo("userId", user?.id)
-                    .equalTo("parentId", parentIdToSearch)
-                    .findAll()
-
-                allSubmissions.forEach { submission ->
-                    submission.answers?.deleteAllFromRealm()
-                    submission.deleteFromRealm()
+                withContext(Dispatchers.Main) {
+                    answerCache.clear()
+                    clearAnswer()
+                    ans = ""
+                    listAns?.clear()
+                    sub = null
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    answerCache.clear()
+                    clearAnswer()
+                    ans = ""
+                    listAns?.clear()
+                    sub = null
                 }
             }
-
-            answerCache.clear()
-            clearAnswer()
-            ans = ""
-            listAns?.clear()
-
-            sub = null
-        } catch (e: Exception) {
-            e.printStackTrace()
-            answerCache.clear()
-            clearAnswer()
-            ans = ""
-            listAns?.clear()
-            sub = null
         }
     }
 
