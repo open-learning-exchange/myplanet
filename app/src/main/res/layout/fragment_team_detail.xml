@@ -8,6 +8,7 @@
     tools:context=".ui.team.TeamDetailFragment">
 
     <LinearLayout
+        android:id="@+id/contentContainer"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">
@@ -93,4 +94,23 @@
                 android:background="@color/secondary_bg" />
         </LinearLayout>
     </LinearLayout>
+    <ProgressBar
+        android:id="@+id/progressBar"
+        style="@style/Widget.AppCompat.ProgressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/emptyStateText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:gravity="center"
+        android:padding="16dp"
+        android:text="@string/no_team_available"
+        android:textColor="@color/daynight_textColor"
+        android:visibility="gone" />
+
 </FrameLayout>

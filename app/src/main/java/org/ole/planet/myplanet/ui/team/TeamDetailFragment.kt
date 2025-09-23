@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
+import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.snackbar.Snackbar
@@ -16,7 +17,6 @@ import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
@@ -127,33 +127,61 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
 
         val teamId = requireArguments().getString("id" ) ?: ""
         val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
-        val user = UserProfileDbHandler(requireContext()).userModel
+        val user = userProfileDbHandler.userModel
         mRealm = databaseService.realmInstance
 
-        val resolvedTeam = when {
-            shouldQueryRealm(teamId) && teamId.isNotEmpty() -> {
-                runBlocking { teamRepository.getTeamByDocumentIdOrTeamId(teamId) }
-            }
+        showLoadingState()
 
-            else -> {
-                val effectiveTeamId = (directTeamId ?: "").ifEmpty { teamId }
-                if (effectiveTeamId.isNotEmpty()) {
-                    runBlocking { teamRepository.getTeamById(effectiveTeamId) }
-                } else {
-                    null
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+            val resolvedTeam = when {
+                shouldQueryRealm(teamId) && teamId.isNotEmpty() -> {
+                    teamRepository.getTeamByDocumentIdOrTeamId(teamId)
+                }
+
+                else -> {
+                    val effectiveTeamId = (directTeamId ?: "").ifEmpty { teamId }
+                    if (effectiveTeamId.isNotEmpty()) {
+                        teamRepository.getTeamById(effectiveTeamId)
+                    } else {
+                        null
+                    }
                 }
             }
+
+            withContext(Dispatchers.Main) {
+                if (!isAdded || _binding == null) return@withContext
+
+                if (shouldQueryRealm(teamId) && resolvedTeam == null) {
+                    showEmptyState(getString(R.string.no_team_available))
+                    return@withContext
+                }
+
+                resolvedTeam?.let { team = it }
+                showContentState()
+                setupTeamDetails(isMyTeam, user)
+            }
         }
-
-        if (shouldQueryRealm(teamId) && resolvedTeam == null) {
-            throw IllegalArgumentException("Team not found for ID: $teamId")
-        }
-
-        resolvedTeam?.let { team = it }
-
-        setupTeamDetails(isMyTeam, user)
 
         return binding.root
+    }
+
+    private fun showLoadingState() {
+        binding.progressBar?.isVisible = true
+        binding.contentContainer?.isVisible = false
+        binding.emptyStateText?.isVisible = false
+    }
+
+    private fun showContentState() {
+        binding.progressBar?.isVisible = false
+        binding.emptyStateText?.isVisible = false
+        binding.contentContainer?.isVisible = true
+    }
+
+    private fun showEmptyState(message: String) {
+        binding.progressBar?.isVisible = false
+        binding.contentContainer?.isVisible = false
+        binding.emptyStateText?.isVisible = true
+        binding.emptyStateText?.text = message
     }
 
     private fun startTeamSync() {
