@@ -111,5 +111,4 @@ class RatingRepositoryImpl @Inject constructor(
             this.title = title
         }
     }
-
 }
