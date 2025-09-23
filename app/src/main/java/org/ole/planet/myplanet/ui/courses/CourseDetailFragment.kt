@@ -104,8 +104,19 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     }
 
     private suspend fun refreshRatings() {
-        val ratingSummary = ratingRepository.getRatingSummary("course", courses?.courseId, user?.id)
-        setRatings(ratingSummary)
+        val courseId = courses?.courseId
+        val userId = user?.id
+        if (courseId != null && userId != null) {
+            val ratingSummary = ratingRepository.getRatingSummary("course", courseId, userId)
+            val jsonObject = com.google.gson.JsonObject().apply {
+                addProperty("averageRating", ratingSummary.averageRating)
+                addProperty("total", ratingSummary.totalRatings)
+                ratingSummary.userRating?.let { addProperty("userRating", it) }
+            }
+            setRatings(jsonObject)
+        } else {
+            setRatings(null)
+        }
     }
 
     override fun onDownloadComplete() {
