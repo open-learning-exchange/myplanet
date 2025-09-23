@@ -109,6 +109,9 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: Editable?) {
+                val questionsSize = questions?.size ?: 0
+                if (currentIndex < 0 || currentIndex >= questionsSize) return
+
                 val currentQuestion = questions?.get(currentIndex)
                 currentQuestion?.id?.let { questionId ->
                     val answerData = answerCache.getOrPut(questionId) { AnswerData() }
@@ -127,6 +130,9 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     private fun saveCurrentAnswer() {
+        val questionsSize = questions?.size ?: 0
+        if (currentIndex < 0 || currentIndex >= questionsSize) return
+
         val currentQuestion = questions?.get(currentIndex) ?: return
         val questionId = currentQuestion.id ?: return
 
@@ -181,6 +187,9 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     private fun isQuestionAnswered(): Boolean {
+        val questionsSize = questions?.size ?: 0
+        if (currentIndex < 0 || currentIndex >= questionsSize) return false
+
         val currentQuestion = questions?.get(currentIndex)
         val questionId = currentQuestion?.id ?: return false
         val answerData = answerCache[questionId]
@@ -551,6 +560,9 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
 
     private fun updateAnsDb(): Boolean {
+        val questionsSize = questions?.size ?: 0
+        if (currentIndex < 0 || currentIndex >= questionsSize) return true
+
         val currentQuestion = questions?.get(currentIndex) ?: return true
         val otherText = if (binding.etAnswer.isVisible) {
             binding.etAnswer.text.toString()
@@ -577,6 +589,9 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         } else {
             handleUnchecked(compoundButton)
         }
+
+        val questionsSize = questions?.size ?: 0
+        if (currentIndex < 0 || currentIndex >= questionsSize) return
 
         val currentQuestion = questions?.get(currentIndex)
         currentQuestion?.id?.let { questionId ->
