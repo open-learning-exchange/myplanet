@@ -10,6 +10,7 @@ import retrofit2.Retrofit
 
 object ApiClient {
     lateinit var client: Retrofit
+
     fun <T> executeWithRetry(operation: () -> Response<T>?): Response<T>? = runBlocking {
         RetryUtils.retry(
             maxAttempts = 3,

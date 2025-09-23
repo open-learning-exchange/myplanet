@@ -28,10 +28,6 @@ annotation class EnhancedHttpClient
 @Retention(AnnotationRetention.BINARY)
 annotation class StandardRetrofit
 
-@Qualifier
-@Retention(AnnotationRetention.BINARY)
-annotation class EnhancedRetrofit
-
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
@@ -72,20 +68,6 @@ object NetworkModule {
     @StandardRetrofit
     fun provideStandardRetrofit(
         @StandardHttpClient okHttpClient: OkHttpClient,
-        gson: Gson
-    ): Retrofit {
-        return Retrofit.Builder()
-            .baseUrl("https://vi.media.mit.edu/")
-            .client(okHttpClient)
-            .addConverterFactory(GsonConverterFactory.create(gson))
-            .build()
-    }
-
-    @Provides
-    @Singleton
-    @EnhancedRetrofit
-    fun provideEnhancedRetrofit(
-        @EnhancedHttpClient okHttpClient: OkHttpClient,
         gson: Gson
     ): Retrofit {
         return Retrofit.Builder()
