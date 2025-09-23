@@ -28,6 +28,15 @@ class CourseRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getCoursesByIds(courseIds: Collection<String>): List<RealmMyCourse> {
+        if (courseIds.isEmpty()) {
+            return emptyList()
+        }
+        return queryList(RealmMyCourse::class.java) {
+            `in`("id", courseIds.toTypedArray())
+        }
+    }
+
     override suspend fun getCourseByCourseId(courseId: String?): RealmMyCourse? {
         return courseId?.let { findByField(RealmMyCourse::class.java, "courseId", it) }
     }

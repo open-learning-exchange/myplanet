@@ -10,6 +10,7 @@ interface CourseRepository {
     suspend fun updateMyCourseFlag(courseIds: List<String>, isMyCourse: Boolean) {
         courseIds.forEach { updateMyCourseFlag(it, isMyCourse) }
     }
+    suspend fun getCoursesByIds(courseIds: Collection<String>): List<RealmMyCourse>
     suspend fun getCourseByCourseId(courseId: String?): RealmMyCourse?
     suspend fun getCourseOnlineResources(courseId: String?): List<RealmMyLibrary>
     suspend fun getCourseOfflineResources(courseId: String?): List<RealmMyLibrary>
