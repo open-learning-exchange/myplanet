@@ -10,7 +10,6 @@ import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyHealthPojo
-import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmOfflineActivity
@@ -33,7 +32,6 @@ object Constants {
     const val DISCLAIMER = R.string.disclaimer
     const val ABOUT = R.string.about
     const val PREFS_NAME = "OLE_PLANET"
-    private val COLOR_MAP = mutableMapOf<Class<*>, Int>()
     var classList = mutableMapOf<String, Class<*>>()
     var LABELS = mutableMapOf<String, String>()
     const val KEY_NOTIFICATION_SHOWN = "notification_shown"
@@ -46,14 +44,6 @@ object Constants {
             ShelfData("meetupIds", "meetups", "meetupId"),
             ShelfData("courseIds", "courses", "courseId"),
             ShelfData("myTeamIds", "teams", "teamId")
-        )
-        COLOR_MAP.putAll(
-            mapOf(
-                RealmMyLibrary::class.java to R.color.md_red_200,
-                RealmMyCourse::class.java to R.color.md_amber_200,
-                RealmMyTeam::class.java to R.color.md_green_200,
-                RealmMeetup::class.java to R.color.md_purple_200
-            )
         )
         LABELS = mutableMapOf(
             "Help Wanted" to "help",
