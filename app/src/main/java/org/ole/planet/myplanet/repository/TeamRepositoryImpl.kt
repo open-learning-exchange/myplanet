@@ -5,6 +5,8 @@ import androidx.core.net.toUri
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import java.util.Date
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -42,20 +44,8 @@ class TeamRepositoryImpl @Inject constructor(
 
     override suspend fun getTeamByDocumentIdOrTeamId(id: String): RealmMyTeam? {
         if (id.isBlank()) return null
-        return withRealm { realm ->
-            val teamByDocumentId = realm.where(RealmMyTeam::class.java)
-                .equalTo("_id", id)
-                .findFirst()
-
-            if (teamByDocumentId != null) {
-                realm.copyFromRealm(teamByDocumentId)
-            } else {
-                realm.where(RealmMyTeam::class.java)
-                    .equalTo("teamId", id)
-                    .findFirst()
-                    ?.let { realm.copyFromRealm(it) }
-            }
-        }
+        return findByField(RealmMyTeam::class.java, "_id", id)
+            ?: findByField(RealmMyTeam::class.java, "teamId", id)
     }
 
     override suspend fun getTeamLinks(): List<RealmMyTeam> {
@@ -76,16 +66,6 @@ class TeamRepositoryImpl @Inject constructor(
             equalTo("teamId", teamId)
             equalTo("docType", "membership")
         }.isNotEmpty()
-    }
-
-    override suspend fun getTeamLeaderId(teamId: String): String? {
-        if (teamId.isBlank()) return null
-        return withRealm { realm ->
-            realm.where(RealmMyTeam::class.java)
-                .equalTo("teamId", teamId)
-                .equalTo("isLeader", true)
-                .findFirst()?.userId
-        }
     }
 
     override suspend fun isTeamLeader(teamId: String, userId: String?): Boolean {
@@ -138,6 +118,28 @@ class TeamRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun addResourceLinks(
+        teamId: String,
+        resources: List<RealmMyLibrary>,
+        user: RealmUserModel?,
+    ) {
+        if (teamId.isBlank() || resources.isEmpty() || user == null) return
+        executeTransaction { realm ->
+            resources.forEach { resource ->
+                val teamResource = realm.createObject(RealmMyTeam::class.java, UUID.randomUUID().toString())
+                teamResource.teamId = teamId
+                teamResource.title = resource.title
+                teamResource.status = user.parentCode
+                teamResource.resourceId = resource._id
+                teamResource.docType = "resourceLink"
+                teamResource.updated = true
+                teamResource.teamType = "local"
+                teamResource.teamPlanetCode = user.planetCode
+                teamResource.userPlanetCode = user.planetCode
+            }
+        }
+    }
+
     override suspend fun deleteTask(taskId: String) {
         delete(RealmTeamTask::class.java, "id", taskId)
     }
@@ -162,6 +164,38 @@ class TeamRepositoryImpl @Inject constructor(
             task.assignee = assigneeId
             task.isUpdated = true
         }
+    }
+
+    override suspend fun updateTeamDetails(
+        teamId: String,
+        name: String,
+        description: String,
+        services: String,
+        rules: String,
+        teamType: String,
+        isPublic: Boolean,
+        createdBy: String,
+    ): Boolean {
+        if (teamId.isBlank()) return false
+        val updated = AtomicBoolean(false)
+        val applyUpdates: (RealmMyTeam) -> Unit = { team ->
+            team.name = name
+            team.description = description
+            team.services = services
+            team.rules = rules
+            team.teamType = teamType
+            team.isPublic = isPublic
+            team.createdBy = createdBy.takeIf { it.isNotBlank() } ?: team.createdBy
+            team.updated = true
+            updated.set(true)
+        }
+
+        update(RealmMyTeam::class.java, "_id", teamId, applyUpdates)
+        if (!updated.get()) {
+            update(RealmMyTeam::class.java, "teamId", teamId, applyUpdates)
+        }
+
+        return updated.get()
     }
 
     override suspend fun syncTeamActivities(context: Context) {

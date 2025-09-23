@@ -100,7 +100,7 @@ class SyncManager @Inject constructor(
 
     private fun destroy() {
         if (betaSync) {
-            cleanup()
+            syncScope.cancel()
             ThreadSafeRealmHelper.closeThreadRealm()
         }
         cancelBackgroundSync()
@@ -554,10 +554,14 @@ class SyncManager @Inject constructor(
         cancel(context, 111)
         isSyncing = false
         if (!betaSync) {
-            if (::mRealm.isInitialized && !mRealm.isClosed) {
-                mRealm.close()
-                td?.interrupt()
+            try {
+                if (::mRealm.isInitialized) {
+                    mRealm.close()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
+            td?.interrupt()
         } else {
             td?.interrupt()
         }
@@ -1272,33 +1276,6 @@ class SyncManager @Inject constructor(
         }
 
         return processedCount
-    }
-
-    fun cleanup() {
-        syncScope.cancel()
-        ThreadSafeRealmHelper.closeThreadRealm()
-    }
-    
-    fun getPerformanceReport(): String {
-        return if (::improvedSyncManager.isInitialized) {
-            improvedSyncManager.getPerformanceReport()
-        } else {
-            "Improved sync manager not initialized"
-        }
-    }
-    
-    fun getCircuitBreakerStatus(): Map<String, String> {
-        return if (::improvedSyncManager.isInitialized) {
-            improvedSyncManager.getCircuitBreakerStatus().mapValues { it.value.toString() }
-        } else {
-            emptyMap()
-        }
-    }
-    
-    fun resetErrorRecovery() {
-        if (::improvedSyncManager.isInitialized) {
-            improvedSyncManager.resetErrorRecovery()
-        }
     }
 
     // Backward compatibility constructor for code that still uses singleton pattern

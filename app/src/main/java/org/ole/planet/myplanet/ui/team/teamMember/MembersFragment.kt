@@ -5,7 +5,6 @@ import android.content.res.Configuration
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 import org.ole.planet.myplanet.base.BaseMemberFragment
 import org.ole.planet.myplanet.callback.MemberChangeListener
 import org.ole.planet.myplanet.model.RealmMyTeam

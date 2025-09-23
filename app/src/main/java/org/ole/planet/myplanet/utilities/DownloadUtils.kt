@@ -13,12 +13,19 @@ import androidx.core.content.edit
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.components.SingletonComponent
 import java.util.regex.Pattern
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.datamanager.DownloadWorker
 import org.ole.planet.myplanet.datamanager.MyDownloadService
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.repository.LibraryRepository
 
 object DownloadUtils {
     private const val DOWNLOAD_CHANNEL = "DownloadChannel"
@@ -238,19 +245,30 @@ object DownloadUtils {
     @JvmStatic
     fun updateResourceOfflineStatus(url: String) {
         val currentFileName = FileUtils.getFileNameFromUrl(url)
-        try {
-            MainApplication.service.withRealm { realm ->
-                realm.executeTransaction {
-                    realm.where(RealmMyLibrary::class.java)
-                        .equalTo("resourceLocalAddress", currentFileName)
-                        .findAll()?.forEach {
-                            it.resourceOffline = true
-                            it.downloadedRev = it._rev
-                        }
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
+        if (currentFileName.isBlank()) {
+            return
         }
+
+        MainApplication.applicationScope.launch(Dispatchers.IO) {
+            try {
+                libraryRepository.markResourceOfflineByLocalAddress(currentFileName)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    private val libraryRepository: LibraryRepository by lazy {
+        val entryPoint = EntryPointAccessors.fromApplication(
+            MainApplication.context,
+            DownloadUtilsEntryPoint::class.java
+        )
+        entryPoint.libraryRepository()
+    }
+
+    @EntryPoint
+    @InstallIn(SingletonComponent::class)
+    interface DownloadUtilsEntryPoint {
+        fun libraryRepository(): LibraryRepository
     }
 }

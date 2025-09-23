@@ -39,13 +39,6 @@ class LibraryRepositoryImpl @Inject constructor(
             .filter { it.userId?.contains(userId) == true }
     }
 
-    override suspend fun getAllLibraryList(): List<RealmMyLibrary> {
-        val results = queryList(RealmMyLibrary::class.java) {
-            equalTo("resourceOffline", false)
-        }
-        return filterLibrariesNeedingUpdate(results)
-    }
-
     override suspend fun getCourseLibraryItems(courseIds: List<String>): List<RealmMyLibrary> {
         return queryList(RealmMyLibrary::class.java) {
             `in`("courseId", courseIds.toTypedArray())
@@ -92,12 +85,20 @@ class LibraryRepositoryImpl @Inject constructor(
             ?: getLibraryItemByResourceId(resourceId)
     }
 
-    override suspend fun deleteLibraryItem(id: String) {
-        delete(RealmMyLibrary::class.java, "id", id)
-    }
-
     override suspend fun updateLibraryItem(id: String, updater: (RealmMyLibrary) -> Unit) {
         update(RealmMyLibrary::class.java, "id", id, updater)
+    }
+
+    override suspend fun markResourceOfflineByLocalAddress(localAddress: String) {
+        executeTransaction { realm ->
+            realm.where(RealmMyLibrary::class.java)
+                .equalTo("resourceLocalAddress", localAddress)
+                .findAll()
+                ?.forEach { library ->
+                    library.resourceOffline = true
+                    library.downloadedRev = library._rev
+                }
+        }
     }
 
     private fun filterLibrariesNeedingUpdate(results: Collection<RealmMyLibrary>): List<RealmMyLibrary> {
