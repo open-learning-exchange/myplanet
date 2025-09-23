@@ -83,7 +83,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         return userProfileDbHandler.userModel
     }
 
-    private fun getCurrentUserCopy(): RealmUserModel? {
+    private fun detachCurrentUser(): RealmUserModel? {
         val userModel = getCurrentUser() ?: return null
         val realmInstance = userProfileDbHandler.mRealm
         return realmInstance.copyFromRealm(userModel)
@@ -137,7 +137,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
 
         val teamId = requireArguments().getString("id" ) ?: ""
         val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
-        val user = getCurrentUserCopy()
+        val user = detachCurrentUser()
         mRealm = databaseService.realmInstance
 
         val resolvedTeam = when {
