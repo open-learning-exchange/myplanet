@@ -134,7 +134,7 @@ class AdapterNotification(
             }
         }
 
-        private fun formatJoinRequestMessage(context: Context, requesterName: String, teamName: String): String {
+        private fun formatJoinRequestMessage(context: Context, requesterName: String?, teamName: String?): String {
             return "<b>${context.getString(R.string.join_request_prefix)}</b> " +
                 context.getString(R.string.user_requested_to_join_team, requesterName, teamName)
         }
@@ -144,8 +144,8 @@ class AdapterNotification(
                 val metadata = withContext(Dispatchers.IO) {
                     notificationRepository.getJoinRequestMetadata(notification.relatedId)
                 }
-                val requesterName = metadata?.requesterName ?: "Unknown User"
-                val teamName = metadata?.teamName ?: "Unknown Team"
+                val requesterName = metadata?.requesterName
+                val teamName = metadata?.teamName
                 if (isBoundTo(notification.id)) {
                     val context = rowNotificationsBinding.root.context
                     val formatted = formatJoinRequestMessage(context, requesterName, teamName)

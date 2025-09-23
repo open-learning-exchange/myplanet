@@ -65,27 +65,32 @@ class NotificationRepositoryImpl @Inject constructor(
             return
         }
 
-        val existingNotification = findByField(RealmNotification::class.java, "id", notificationId)
-        val now = Date()
+        // Use executeTransaction for atomic operations to prevent locking issues
+        executeTransaction { realm ->
+            val existingNotification = realm.where(RealmNotification::class.java)
+                .equalTo("id", notificationId)
+                .findFirst()
 
-        val notification = existingNotification?.apply {
-            if (this.message != trimmedMessage) {
-                this.message = trimmedMessage
-                this.createdAt = now
+            if (existingNotification != null) {
+                // Update existing notification if message changed
+                if (existingNotification.message != trimmedMessage) {
+                    existingNotification.message = trimmedMessage
+                    existingNotification.createdAt = Date()
+                }
+                existingNotification.type = type
+                existingNotification.relatedId = relatedId
+                existingNotification.userId = ownerId
+            } else {
+                // Create new notification
+                val newNotification = realm.createObject(RealmNotification::class.java, notificationId)
+                newNotification.userId = ownerId
+                newNotification.type = type
+                newNotification.message = trimmedMessage
+                newNotification.relatedId = relatedId
+                newNotification.createdAt = Date()
+                newNotification.isRead = false
             }
-            this.type = type
-            this.relatedId = relatedId
-            this.userId = ownerId
-        } ?: RealmNotification().apply {
-            id = notificationId
-            this.userId = ownerId
-            this.type = type
-            this.message = trimmedMessage
-            this.relatedId = relatedId
-            this.createdAt = now
         }
-
-        save(notification)
     }
 
     override suspend fun getNotifications(userId: String, filter: String): List<RealmNotification> {

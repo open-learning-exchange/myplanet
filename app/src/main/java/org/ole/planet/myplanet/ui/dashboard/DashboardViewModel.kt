@@ -77,6 +77,8 @@ class DashboardViewModel @Inject constructor(
     }
 
     suspend fun getUnreadNotificationsSize(userId: String?): Int {
-        return notificationRepository.getUnreadCount(userId)
+        val count = notificationRepository.getUnreadCount(userId)
+        android.util.Log.d("DashboardViewModel", "getUnreadNotificationsSize: returning $count for userId $userId")
+        return count
     }
 }
