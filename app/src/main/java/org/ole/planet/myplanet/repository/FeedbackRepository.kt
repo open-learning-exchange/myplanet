@@ -6,17 +6,16 @@ import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.RealmUserModel
 
 interface FeedbackRepository {
-    fun createFeedback(
+    suspend fun submitFeedback(
         user: String?,
         urgent: String,
         type: String,
         message: String,
         item: String? = null,
         state: String? = null,
-    ): RealmFeedback
+    )
     fun getFeedback(userModel: RealmUserModel?): Flow<List<RealmFeedback>>
     suspend fun getFeedbackById(id: String?): RealmFeedback?
     suspend fun closeFeedback(id: String?)
     suspend fun addReply(id: String?, obj: JsonObject)
-    suspend fun saveFeedback(feedback: RealmFeedback)
 }

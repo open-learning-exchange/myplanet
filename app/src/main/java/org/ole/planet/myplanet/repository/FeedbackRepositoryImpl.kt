@@ -17,40 +17,41 @@ class FeedbackRepositoryImpl @Inject constructor(
     private val gson: Gson
 ) : RealmRepository(databaseService), FeedbackRepository {
 
-    override fun createFeedback(
+    override suspend fun submitFeedback(
         user: String?,
         urgent: String,
         type: String,
         message: String,
         item: String?,
         state: String?,
-    ): RealmFeedback {
-        val feedback = RealmFeedback()
-        feedback.id = UUID.randomUUID().toString()
-        if (state != null) {
-            feedback.title = "Question regarding /$state"
-            feedback.url = "/$state"
-            feedback.state = state
-            feedback.item = item
-        } else {
-            feedback.title = "Question regarding /"
-            feedback.url = "/"
+    ) {
+        val feedback = RealmFeedback().apply {
+            id = UUID.randomUUID().toString()
+            if (state != null) {
+                title = "Question regarding /$state"
+                url = "/$state"
+                this.state = state
+                this.item = item
+            } else {
+                title = "Question regarding /"
+                url = "/"
+            }
+            openTime = Date().time
+            owner = user
+            source = user
+            status = "Open"
+            priority = urgent
+            this.type = type
+            parentCode = "dev"
+            val obj = JsonObject().apply {
+                addProperty("message", message)
+                addProperty("time", Date().time.toString())
+                addProperty("user", user + "")
+            }
+            val msgArray = JsonArray().apply { add(obj) }
+            setMessages(msgArray)
         }
-        feedback.openTime = Date().time
-        feedback.owner = user
-        feedback.source = user
-        feedback.status = "Open"
-        feedback.priority = urgent
-        feedback.type = type
-        feedback.parentCode = "dev"
-        val obj = JsonObject().apply {
-            addProperty("message", message)
-            addProperty("time", Date().time.toString() + "")
-            addProperty("user", user + "")
-        }
-        val msgArray = JsonArray().apply { add(obj) }
-        feedback.setMessages(msgArray)
-        return feedback
+        save(feedback)
     }
 
     override fun getFeedback(userModel: RealmUserModel?): Flow<List<RealmFeedback>> =
@@ -85,7 +86,4 @@ class FeedbackRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun saveFeedback(feedback: RealmFeedback) {
-        save(feedback)
-    }
 }
