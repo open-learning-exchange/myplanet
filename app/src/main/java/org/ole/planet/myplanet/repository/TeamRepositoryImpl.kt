@@ -140,6 +140,21 @@ class TeamRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun removeResourceLink(teamId: String, resourceId: String) {
+        if (teamId.isBlank() || resourceId.isBlank()) return
+        executeTransaction { realm ->
+            realm.where(RealmMyTeam::class.java)
+                .equalTo("teamId", teamId)
+                .equalTo("resourceId", resourceId)
+                .equalTo("docType", "resourceLink")
+                .findFirst()
+                ?.let { teamResource ->
+                    teamResource.resourceId = ""
+                    teamResource.updated = true
+                }
+        }
+    }
+
     override suspend fun deleteTask(taskId: String) {
         delete(RealmTeamTask::class.java, "id", taskId)
     }
