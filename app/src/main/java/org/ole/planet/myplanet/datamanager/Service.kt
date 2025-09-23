@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.datamanager
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.net.Uri
 import android.text.TextUtils
 import androidx.core.content.edit
 import androidx.core.net.toUri
@@ -383,20 +382,6 @@ class Service @Inject constructor(
 
     fun showAlertDialog(message: String?, playStoreRedirect: Boolean) {
         configurationManager.showAlertDialog(message, playStoreRedirect)
-    }
-
-    private fun getUrl(couchdbURL: String): String {
-        return UrlUtils.dbUrl(couchdbURL)
-    }
-
-    private fun getUserInfo(uri: Uri): Array<String> {
-        val ar = arrayOf("", "")
-        val info = uri.userInfo?.split(":".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()
-        if ((info?.size ?: 0) > 1) {
-            ar[0] = "${info?.get(0)}"
-            ar[1] = "${info?.get(1)}"
-        }
-        return ar
     }
 
     private fun shouldPromptForSettings(settings: SharedPreferences): Boolean {
