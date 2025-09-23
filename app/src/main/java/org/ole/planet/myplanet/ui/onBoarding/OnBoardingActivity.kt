@@ -98,35 +98,36 @@ class OnBoardingActivity : AppCompatActivity() {
     }
 
     private fun loadData() {
-        val descArrayPage1 = intArrayOf(R.string.ob_desc1)
-        val descArrayPage2 = intArrayOf(R.string.ob_desc2_1, R.string.ob_desc2_2)
-        val descArrayPage3 = intArrayOf(R.string.ob_desc3_1, R.string.ob_desc3_2)
-        val descArrayPage4 = intArrayOf(R.string.ob_desc4_1, R.string.ob_desc4_2, R.string.ob_desc4_3, R.string.ob_desc4_4, R.string.ob_desc4_5)
-        val header = intArrayOf(R.string.welcome_to_myPlanet, R.string.learn_offline, R.string.open_learning, R.string.unleash_learning_power)
-        val imageId = intArrayOf(R.drawable.ole_logo, R.drawable.o_a, R.drawable.b_b, R.drawable.c_c)
+        val descriptionResourceLists = listOf(
+            listOf(R.string.ob_desc1),
+            listOf(R.string.ob_desc2_1, R.string.ob_desc2_2),
+            listOf(R.string.ob_desc3_1, R.string.ob_desc3_2),
+            listOf(R.string.ob_desc4_1, R.string.ob_desc4_2, R.string.ob_desc4_3, R.string.ob_desc4_4, R.string.ob_desc4_5)
+        )
+        val headers = listOf(
+            R.string.welcome_to_myPlanet,
+            R.string.learn_offline,
+            R.string.open_learning,
+            R.string.unleash_learning_power
+        )
+        val imageIds = listOf(R.drawable.ole_logo, R.drawable.o_a, R.drawable.b_b, R.drawable.c_c)
 
-        for (i in imageId.indices) {
-            val descResourceArray = when (i) {
-                0 -> descArrayPage1
-                1 -> descArrayPage2
-                2 -> descArrayPage3
-                3 -> descArrayPage4
-                else -> intArrayOf()
+        val items = imageIds.zip(headers).mapIndexed { index, (imageRes, headerRes) ->
+            val descResourceArray = descriptionResourceLists.getOrNull(index).orEmpty()
+            val description = descResourceArray
+                .map { getString(it) }
+                .joinToString(separator = "\n")
+                .let { if (it.isEmpty()) it else "$it\n" }
+
+            OnBoardItem().apply {
+                imageID = imageRes
+                title = getString(headerRes)
+                this.description = description
             }
-
-            val stringBuilder = StringBuilder()
-
-            for (descResId in descResourceArray) {
-                stringBuilder.append(resources.getString(descResId)).append("\n")
-            }
-
-            val item = OnBoardItem().apply {
-                imageID = imageId[i]
-                title = resources.getString(header[i])
-                description = stringBuilder.toString()
-            }
-            onBoardItems.add(item)
         }
+
+        onBoardItems.clear()
+        onBoardItems.addAll(items)
     }
 
     private fun setUiPageViewController() {

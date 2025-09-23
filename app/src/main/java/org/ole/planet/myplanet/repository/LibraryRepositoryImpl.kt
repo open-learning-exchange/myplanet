@@ -89,6 +89,18 @@ class LibraryRepositoryImpl @Inject constructor(
         update(RealmMyLibrary::class.java, "id", id, updater)
     }
 
+    override suspend fun markResourceOfflineByLocalAddress(localAddress: String) {
+        executeTransaction { realm ->
+            realm.where(RealmMyLibrary::class.java)
+                .equalTo("resourceLocalAddress", localAddress)
+                .findAll()
+                ?.forEach { library ->
+                    library.resourceOffline = true
+                    library.downloadedRev = library._rev
+                }
+        }
+    }
+
     private fun filterLibrariesNeedingUpdate(results: Collection<RealmMyLibrary>): List<RealmMyLibrary> {
         return results.filter { it.needToUpdate() }
     }

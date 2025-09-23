@@ -543,7 +543,6 @@
         <item>Zika</item>
     </string-array>
 
-    <string name="title_activity_news_detail">Detalles de noticias</string>
     <string name="add_story">Ajouter une histoire</string>
     <string name="txt_myprogress">myProgress</string>
     <string name="more_action">Filtrer</string>
