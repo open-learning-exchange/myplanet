@@ -17,13 +17,17 @@ import android.widget.TextView
 import androidx.appcompat.view.ContextThemeWrapper
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
+import java.util.HashMap
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
@@ -38,10 +42,9 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.callback.TableDataUpdate
 import org.ole.planet.myplanet.callback.TagClickListener
-import org.ole.planet.myplanet.model.RealmCourseProgress.Companion.getCourseProgress
+import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmRating.Companion.getRatings
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmTag.Companion.getTagsArray
@@ -70,6 +73,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         }
     }
 
+    private val viewModel: CoursesViewModel by viewModels()
     private lateinit var tvAddToLib: TextView
     private lateinit var tvSelected: TextView
     private lateinit var etSearch: EditText
@@ -88,6 +92,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     lateinit var prefManager: SharedPrefManager
     private val serverUrlMapper = ServerUrlMapper()
+    private var courses: List<RealmMyCourse> = emptyList()
+    private var ratingsMap: HashMap<String?, JsonObject> = HashMap()
+    private var progressMap: HashMap<String?, JsonObject> = HashMap()
 
     @Inject
     lateinit var syncManager: SyncManager
@@ -131,42 +138,21 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         syncManager.start(object : SyncListener {
             override fun onSyncStarted() {
                 viewLifecycleOwner.lifecycleScope.launch {
-                    if (isAdded && !requireActivity().isFinishing) {
-                        customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-                        customProgressDialog?.setText(getString(R.string.syncing_courses_data))
-                        customProgressDialog?.show()
-                    }
+                    viewModel.setSyncState(CoursesViewModel.SyncState.Syncing)
                 }
             }
 
             override fun onSyncComplete() {
                 viewLifecycleOwner.lifecycleScope.launch {
-                    if (isAdded) {
-                        customProgressDialog?.setText(getString(R.string.loading_courses))
-
-                        lifecycleScope.launch {
-                            delay(3000)
-                            withContext(Dispatchers.Main) {
-                                customProgressDialog?.dismiss()
-                                customProgressDialog = null
-                                refreshCoursesData()
-                            }
-                        }
-                        prefManager.setCoursesSynced(true)
-                    }
+                    viewModel.setSyncState(CoursesViewModel.SyncState.Success)
+                    prefManager.setCoursesSynced(true)
+                    viewModel.loadCourses(model?.id, isMyCourseLib)
                 }
             }
 
             override fun onSyncFailed(msg: String?) {
                 viewLifecycleOwner.lifecycleScope.launch {
-                    if (isAdded) {
-                        customProgressDialog?.dismiss()
-                        customProgressDialog = null
-
-                        Snackbar.make(requireView(), "Sync failed: ${msg ?: "Unknown error"}", Snackbar.LENGTH_LONG).setAction("Retry") {
-                            startCoursesSync()
-                        }.show()
-                    }
+                    viewModel.setSyncState(CoursesViewModel.SyncState.Error(msg ?: "Unknown error"))
                 }
             }
         }, "full", listOf("courses"))
@@ -187,60 +173,59 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     private fun getFullCourseList(): List<RealmMyCourse?> {
-        val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java)
-            .filterIsInstance<RealmMyCourse?>()
-            .filter { !it?.courseTitle.isNullOrBlank() }
-        return courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
+        if (courses.isEmpty()) return emptyList()
+        return courses.filter { !it.courseTitle.isNullOrBlank() }
+            .sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
     }
 
     private fun refreshCoursesData() {
         if (!isAdded || requireActivity().isFinishing) return
+        viewModel.loadCourses(model?.id, isMyCourseLib)
+    }
 
-        try {
-            mRealm.refresh()
-            val map = getRatings(mRealm, "course", model?.id)
-            val progressMap = getCourseProgress(mRealm, model?.id)
-            val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>().filter { !it?.courseTitle.isNullOrBlank() }
-            val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
-
-            recyclerView.adapter = null
-            adapterCourses = AdapterCourses(requireActivity(), sortedCourseList, map, userProfileDbHandler)
-            adapterCourses.setProgressMap(progressMap)
-            adapterCourses.setmRealm(mRealm)
-            adapterCourses.setListener(this)
-            adapterCourses.setRatingChangeListener(this)
-            recyclerView.adapter = adapterCourses
-
-            if (isMyCourseLib) {
-                val courseIds = courseList.mapNotNull { it?.id }
-                resources = mRealm.where(RealmMyLibrary::class.java)
-                    .`in`("courseId", courseIds.toTypedArray())
-                    .equalTo("resourceOffline", false)
-                    .isNotNull("resourceLocalAddress")
-                    .findAll()
+    private fun observeCourses() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.coursesState.collect { state ->
+                    when (state) {
+                        CoursesViewModel.CoursesUiState.Loading -> showCoursesLoading()
+                        is CoursesViewModel.CoursesUiState.Success -> handleCoursesSuccess(state)
+                        is CoursesViewModel.CoursesUiState.Error -> handleCoursesError(state.message)
+                    }
+                }
             }
-            checkList()
-            showNoData(tvMessage, adapterCourses.itemCount, "courses")
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
     }
 
-    override fun getAdapter(): RecyclerView.Adapter<*> {
-        mRealm.refresh()
+    private fun observeSyncState() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.syncState.collect { state ->
+                    when (state) {
+                        CoursesViewModel.SyncState.Idle -> dismissSyncDialog()
+                        CoursesViewModel.SyncState.Syncing -> showSyncDialog(getString(R.string.syncing_courses_data))
+                        CoursesViewModel.SyncState.Success -> onSyncCompleted()
+                        is CoursesViewModel.SyncState.Error -> onSyncError(state.message)
+                    }
+                }
+            }
+        }
+    }
 
-        val map = getRatings(mRealm, "course", model?.id)
-        val progressMap = getCourseProgress(mRealm, model?.id)
-        val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>().filter { !it?.courseTitle.isNullOrBlank() }
-        val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
-        adapterCourses = AdapterCourses(requireActivity(), sortedCourseList, map, userProfileDbHandler)
-        adapterCourses.setProgressMap(progressMap)
-        adapterCourses.setmRealm(mRealm)
-        adapterCourses.setListener(this)
-        adapterCourses.setRatingChangeListener(this)
+    private fun showCoursesLoading() {
+        if (!isAdded) return
+        tvMessage.visibility = View.VISIBLE
+        tvMessage.text = getString(R.string.loading_courses)
+    }
+
+    private fun handleCoursesSuccess(state: CoursesViewModel.CoursesUiState.Success) {
+        if (!isAdded) return
+        courses = state.courses
+        ratingsMap = convertRatings(state.ratings)
+        progressMap = convertProgress(state.progress)
 
         if (isMyCourseLib) {
-            val courseIds = courseList.mapNotNull { it?.id }
+            val courseIds = courses.mapNotNull { it.id }
             resources = mRealm.where(RealmMyLibrary::class.java)
                 .`in`("courseId", courseIds.toTypedArray())
                 .equalTo("resourceOffline", false)
@@ -248,6 +233,45 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 .findAll()
             courseLib = "courses"
         }
+
+        val sortedCourses = getFullCourseList()
+        recyclerView.adapter = null
+        adapterCourses = AdapterCourses(requireActivity(), sortedCourses, ratingsMap, userProfileDbHandler)
+        adapterCourses.setProgressMap(progressMap)
+        adapterCourses.setmRealm(mRealm)
+        adapterCourses.setListener(this)
+        adapterCourses.setRatingChangeListener(this)
+        recyclerView.adapter = adapterCourses
+
+        if (filterApplied()) {
+            adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), searchTags))
+        }
+
+        clearAllSelections()
+        changeButtonStatus()
+        checkList()
+        showNoData(tvMessage, adapterCourses.itemCount, "courses")
+        tvMessage.visibility = if (adapterCourses.itemCount == 0) View.VISIBLE else View.GONE
+    }
+
+    private fun handleCoursesError(message: String) {
+        if (!isAdded) return
+        dismissSyncDialog()
+        tvMessage.visibility = View.VISIBLE
+        tvMessage.text = message
+        Snackbar.make(requireView(), getString(R.string.sync_failed) + ": " + message, Snackbar.LENGTH_LONG)
+            .setAction(R.string.retry) { startCoursesSync() }
+            .show()
+    }
+
+    override fun getAdapter(): RecyclerView.Adapter<*> {
+        val sortedCourseList = getFullCourseList()
+        adapterCourses = AdapterCourses(requireActivity(), sortedCourseList, ratingsMap, userProfileDbHandler)
+        adapterCourses.setProgressMap(progressMap)
+        adapterCourses.setmRealm(mRealm)
+        adapterCourses.setListener(this)
+        adapterCourses.setRatingChangeListener(this)
+
         return adapterCourses
     }
 
@@ -269,6 +293,10 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
         realtimeSyncHelper = RealtimeSyncHelper(this, this)
         realtimeSyncHelper.setupRealtimeSync()
+
+        observeCourses()
+        observeSyncState()
+        viewModel.loadCourses(model?.id, isMyCourseLib)
     }
 
     private fun setupButtonVisibility() {
@@ -311,10 +339,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             }
             alertDialogBuilder.setMessage(message)
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                    deleteSelected(true)
-                    val newFragment = CoursesFragment()
-                    recreateFragment(newFragment)
-                    checkList()
+                    performCourseRemoval()
                 }
                 .setNegativeButton(R.string.no, null).show()
         }
@@ -328,10 +353,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             }
             alertDialogBuilder.setMessage(message)
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                    deleteSelected(true)
-                    val newFragment = CoursesFragment()
-                    recreateFragment(newFragment)
-                    checkList()
+                    performCourseRemoval()
                 }
                 .setNegativeButton(R.string.no, null).show()
         }
@@ -386,12 +408,18 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private fun initializeView() {
         tvAddToLib = requireView().findViewById(R.id.tv_add)
         tvAddToLib.setOnClickListener {
-            if ((selectedItems?.size ?: 0) > 0) {
+            val selectedCourses = getSelectedCourses()
+            if (selectedCourses.isNotEmpty()) {
                 confirmation = createAlertDialog()
                 confirmation.show()
-                addToMyList()
+                viewLifecycleOwner.lifecycleScope.launch {
+                    viewModel.addCoursesToMyList(selectedCourses)
+                    viewModel.loadCourses(model?.id, isMyCourseLib)
+                }
                 selectedItems?.clear()
+                clearAllSelections()
                 tvAddToLib.isEnabled = false
+                changeButtonStatus()
                 checkList()
             }
         }
@@ -479,6 +507,103 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 selectAll.visibility = if (allMyCourses) View.GONE else View.VISIBLE
             }
         }
+    }
+
+    private fun showSyncDialog(message: String) {
+        if (!isAdded || requireActivity().isFinishing) return
+        if (customProgressDialog == null) {
+            customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
+        }
+        customProgressDialog?.setText(message)
+        if (customProgressDialog?.isShowing == false) {
+            customProgressDialog?.show()
+        }
+    }
+
+    private fun dismissSyncDialog() {
+        customProgressDialog?.dismiss()
+        customProgressDialog = null
+    }
+
+    private fun onSyncCompleted() {
+        if (!isAdded) return
+        showSyncDialog(getString(R.string.loading_courses))
+        viewLifecycleOwner.lifecycleScope.launch {
+            delay(1500)
+            dismissSyncDialog()
+            viewModel.setSyncState(CoursesViewModel.SyncState.Idle)
+        }
+        prefManager.setCoursesSynced(true)
+    }
+
+    private fun onSyncError(message: String) {
+        if (!isAdded) return
+        dismissSyncDialog()
+        Snackbar.make(requireView(), "Sync failed: $message", Snackbar.LENGTH_LONG)
+            .setAction(R.string.retry) { startCoursesSync() }
+            .show()
+        viewModel.setSyncState(CoursesViewModel.SyncState.Idle)
+    }
+
+    private fun convertRatings(ratings: Map<String, Int>): HashMap<String?, JsonObject> {
+        val result = HashMap<String?, JsonObject>()
+        ratings.forEach { (courseId, rating) ->
+            val jsonObject = JsonObject().apply {
+                addProperty("ratingByUser", rating)
+                addProperty("averageRating", rating.toFloat())
+                addProperty("total", if (rating > 0) 1 else 0)
+            }
+            result[courseId] = jsonObject
+        }
+        return result
+    }
+
+    private fun convertProgress(progress: Map<String, RealmCourseProgress>): HashMap<String?, JsonObject> {
+        val result = HashMap<String?, JsonObject>()
+        val stepsByCourseId = courses.associateBy({ it.courseId }, { it.getNumberOfSteps() })
+        progress.forEach { (courseId, courseProgress) ->
+            val jsonObject = JsonObject().apply {
+                addProperty("current", courseProgress.stepNum)
+                val maxSteps = stepsByCourseId[courseId] ?: courseProgress.stepNum
+                addProperty("max", maxSteps)
+            }
+            result[courseId] = jsonObject
+        }
+        return result
+    }
+
+    private fun getSelectedCourses(): List<RealmMyCourse> {
+        return selectedItems?.mapNotNull { it as? RealmMyCourse } ?: emptyList()
+    }
+
+    private fun performCourseRemoval() {
+        val coursesToRemove = getSelectedCourses()
+        if (coursesToRemove.isEmpty()) return
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.removeCoursesFromMyList(coursesToRemove)
+            viewModel.loadCourses(model?.id, isMyCourseLib)
+        }
+        selectedItems?.clear()
+        clearAllSelections()
+        tvAddToLib.isEnabled = false
+        changeButtonStatus()
+        checkList()
+    }
+
+    private fun filterCourseByTag(query: String, tags: List<RealmTag>): List<RealmMyCourse?> {
+        if (courses.isEmpty()) return emptyList()
+        if (query.isEmpty() && tags.isEmpty() && gradeLevel.isEmpty() && subjectLevel.isEmpty()) {
+            return getFullCourseList()
+        }
+
+        val filteredFromRealm = super.filterCourseByTag(query, tags)
+        if (filteredFromRealm.isEmpty()) {
+            return emptyList()
+        }
+        val filteredIds = filteredFromRealm.mapNotNull { it.courseId }.toSet()
+        return courses.filter { filteredIds.contains(it.courseId) }
+            .sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
+            .map { it as RealmMyCourse? }
     }
 
     private val itemSelectedListener: AdapterView.OnItemSelectedListener = object : AdapterView.OnItemSelectedListener {
