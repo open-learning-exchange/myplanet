@@ -515,7 +515,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
         }
         customProgressDialog?.setText(message)
-        if (customProgressDialog?.isShowing == false) {
+        if (customProgressDialog?.isShowing() == false) {
             customProgressDialog?.show()
         }
     }
@@ -590,7 +590,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         checkList()
     }
 
-    private fun filterCourseByTag(query: String, tags: List<RealmTag>): List<RealmMyCourse?> {
+    override fun filterCourseByTag(query: String, tags: List<RealmTag>): List<RealmMyCourse?> {
         if (courses.isEmpty()) return emptyList()
         if (query.isEmpty() && tags.isEmpty() && gradeLevel.isEmpty() && subjectLevel.isEmpty()) {
             return getFullCourseList()

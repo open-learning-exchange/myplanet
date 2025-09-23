@@ -120,6 +120,7 @@
     <string name="collections">Collections</string>
     <string name="filter_by_category">Filter By Category</string>
     <string name="ok">OK</string>
+    <string name="retry">Retry</string>
     <string name="inactive_message">User not activated, please contact administrator or manager to activate your account.</string>
     <string name="archive_mycourse">Archive myCourse</string>
     <string name="menu_achievement">Achievements</string>
