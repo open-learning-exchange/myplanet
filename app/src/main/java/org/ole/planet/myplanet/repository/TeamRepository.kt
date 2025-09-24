@@ -17,8 +17,19 @@ interface TeamRepository {
     suspend fun requestToJoin(teamId: String, user: RealmUserModel?, teamType: String?)
     suspend fun leaveTeam(teamId: String, userId: String?)
     suspend fun addResourceLinks(teamId: String, resources: List<RealmMyLibrary>, user: RealmUserModel?)
+    suspend fun removeResourceLink(teamId: String, resourceId: String)
     suspend fun deleteTask(taskId: String)
     suspend fun upsertTask(task: RealmTeamTask)
     suspend fun assignTask(taskId: String, assigneeId: String?)
+    suspend fun updateTeamDetails(
+        teamId: String,
+        name: String,
+        description: String,
+        services: String,
+        rules: String,
+        teamType: String,
+        isPublic: Boolean,
+        createdBy: String,
+    ): Boolean
     suspend fun syncTeamActivities(context: Context)
 }

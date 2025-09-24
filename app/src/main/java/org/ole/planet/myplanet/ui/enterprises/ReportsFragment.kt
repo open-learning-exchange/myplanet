@@ -235,6 +235,8 @@ class ReportsFragment : BaseTeamFragment() {
     }
 
     fun updatedReportsList(results: RealmResults<RealmMyTeam>) {
+        if (_binding == null) return
+
         viewLifecycleOwner.lifecycleScope.launch {
             adapterReports = AdapterReports(requireContext(), results)
             adapterReports.setNonTeamMember(!isMember())
