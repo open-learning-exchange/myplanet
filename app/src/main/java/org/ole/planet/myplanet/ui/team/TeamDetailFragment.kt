@@ -79,6 +79,16 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         get() = settings.getString("serverURL", "") ?: ""
     private var pageConfigs: List<TeamPageConfig> = emptyList()
 
+    private fun getCurrentUser(): RealmUserModel? {
+        return userProfileDbHandler.userModel
+    }
+
+    private fun detachCurrentUser(): RealmUserModel? {
+        val userModel = getCurrentUser() ?: return null
+        val realmInstance = userProfileDbHandler.mRealm
+        return realmInstance.copyFromRealm(userModel)
+    }
+
     private fun pageIndexById(pageId: String?): Int? {
         pageId ?: return null
         val idx = pageConfigs.indexOfFirst { it.id == pageId }
@@ -127,7 +137,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
 
         val teamId = requireArguments().getString("id" ) ?: ""
         val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
-        val user = UserProfileDbHandler(requireContext()).userModel
+        val user = detachCurrentUser()
         mRealm = databaseService.realmInstance
 
         val resolvedTeam = when {
@@ -388,10 +398,15 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     }
 
     override fun onMemberChanged() {
-        if(getJoinedMemberCount("${team?._id}", mRealm) <= 1){
-            binding.btnLeave.visibility = View.GONE
-        } else{
-            binding.btnLeave.visibility = View.VISIBLE
+        _binding ?: return
+        _binding?.let { binding ->
+            val teamId = team?._id ?: return@let
+            val joinedCount = getJoinedMemberCount(teamId, mRealm)
+            binding.btnLeave.visibility = if (joinedCount <= 1) {
+                View.GONE
+            } else {
+                View.VISIBLE
+            }
         }
     }
 
@@ -409,7 +424,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     }
 
     private fun createTeamLog() {
-        val userModel = UserProfileDbHandler(requireContext()).userModel ?: return
+        val userModel = getCurrentUser() ?: return
         val userName = userModel.name
         val userPlanetCode = userModel.planetCode
         val userParentCode = userModel.parentCode
