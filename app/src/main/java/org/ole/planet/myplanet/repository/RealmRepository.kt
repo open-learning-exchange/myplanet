@@ -7,6 +7,7 @@ import io.realm.RealmQuery
 import io.realm.RealmResults
 import kotlinx.coroutines.channels.ProducerScope
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.channels.invokeOnClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -38,16 +39,17 @@ open class RealmRepository(private val databaseService: DatabaseService) {
         withRealmFlow { realm, scope ->
             val results = realm.where(clazz).apply(builder).findAllAsync()
             val listener =
-                RealmChangeListener<RealmResults<T>> {
-                    scope.trySend(realm.queryList(clazz, builder))
+                RealmChangeListener<RealmResults<T>> { updatedResults ->
+                    if (updatedResults.isValid && updatedResults.isLoaded) {
+                        scope.trySend(realm.copyFromRealm(updatedResults))
+                    }
                 }
             results.addChangeListener(listener)
-            scope.trySend(realm.queryList(clazz, builder))
-            scope.awaitClose {
+            if (results.isLoaded) {
+                scope.trySend(realm.copyFromRealm(results))
+            }
+            scope.invokeOnClose {
                 results.removeChangeListener(listener)
-                if (!realm.isClosed) {
-                    realm.close()
-                }
             }
         }
 
@@ -112,6 +114,12 @@ open class RealmRepository(private val databaseService: DatabaseService) {
                     realm.close()
                 }
                 close(throwable)
+                return@callbackFlow
+            }
+            awaitClose {
+                if (!realm.isClosed) {
+                    realm.close()
+                }
             }
         }
 
