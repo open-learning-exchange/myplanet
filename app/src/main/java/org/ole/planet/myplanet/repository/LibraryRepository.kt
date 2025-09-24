@@ -9,6 +9,9 @@ interface LibraryRepository {
     suspend fun getLibraryItemsByLocalAddress(localAddress: String): List<RealmMyLibrary>
     suspend fun getLibraryListForUser(userId: String?): List<RealmMyLibrary>
     suspend fun getCourseLibraryItems(courseIds: List<String>): List<RealmMyLibrary>
+    suspend fun getCourseResourcesByOfflineState(courseId: String, isOffline: Boolean): List<RealmMyLibrary>
+    suspend fun getCourseOnlineResources(courseId: String): List<RealmMyLibrary>
+    suspend fun getCourseOfflineResources(courseId: String): List<RealmMyLibrary>
     suspend fun saveLibraryItem(item: RealmMyLibrary)
     suspend fun markResourceAdded(userId: String?, resourceId: String)
     suspend fun updateUserLibrary(resourceId: String, userId: String, isAdd: Boolean): RealmMyLibrary?

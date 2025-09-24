@@ -9,6 +9,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
@@ -17,6 +19,7 @@ import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.FragmentCourseDetailBinding
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse
+import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.CourseRepository
 import org.ole.planet.myplanet.repository.RatingRepository
@@ -35,6 +38,10 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     lateinit var courseRepository: CourseRepository
     @Inject
     lateinit var ratingRepository: RatingRepository
+    private var courseOnlineResources: List<RealmMyLibrary> = emptyList()
+    private var courseOfflineResources: List<RealmMyLibrary> = emptyList()
+    private var courseSteps: List<RealmCourseStep> = emptyList()
+    private var courseExamCount: Int = 0
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) {
@@ -51,13 +58,62 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         viewLifecycleOwner.lifecycleScope.launch {
-            courses = id?.let { courseRepository.getCourseByCourseId(it) }
-            initRatingView("course", id ?: courses?.courseId, courses?.courseTitle, this@CourseDetailFragment)
-            courses?.let { bindCourseData(it) }
+            loadCourseDetails()
         }
     }
 
-    private suspend fun bindCourseData(course: RealmMyCourse) {
+    private suspend fun loadCourseDetails() {
+        val courseId = id?.takeIf { it.isNotBlank() }
+        courseOnlineResources = emptyList()
+        courseOfflineResources = emptyList()
+        courseSteps = emptyList()
+        courseExamCount = 0
+        if (courseId.isNullOrBlank()) {
+            courses = null
+            initRatingView("course", null, null, this@CourseDetailFragment)
+            renderCourseDetails(null)
+            setRatings(null)
+            return
+        }
+        val course = courseRepository.getCourseById(courseId)
+        courses = course
+        initRatingView("course", course?.courseId ?: courseId, course?.courseTitle, this@CourseDetailFragment)
+        if (course == null) {
+            renderCourseDetails(null)
+            setRatings(null)
+            return
+        }
+        val effectiveCourseId = course.courseId?.takeIf { it.isNotBlank() } ?: courseId
+        courseExamCount = courseRepository.getCourseExamCount(effectiveCourseId)
+        coroutineScope {
+            val onlineResourcesDeferred = async {
+                libraryRepository.getCourseOnlineResources(effectiveCourseId)
+            }
+            val offlineResourcesDeferred = async {
+                libraryRepository.getCourseOfflineResources(effectiveCourseId)
+            }
+            val stepsDeferred = async { courseRepository.getCourseSteps(effectiveCourseId) }
+            courseOnlineResources = onlineResourcesDeferred.await()
+            courseOfflineResources = offlineResourcesDeferred.await()
+            courseSteps = stepsDeferred.await()
+        }
+        renderCourseDetails(course)
+        refreshRatings()
+    }
+
+    private fun renderCourseDetails(course: RealmMyCourse?) {
+        if (course == null) {
+            setTextViewVisibility(binding.subjectLevel, null, binding.ltSubjectLevel)
+            setTextViewVisibility(binding.method, null, binding.ltMethod)
+            setTextViewVisibility(binding.gradeLevel, null, binding.ltGradeLevel)
+            setTextViewVisibility(binding.language, null, binding.ltLanguage)
+            setMarkdownText(binding.description, "")
+            binding.noOfExams.text = context?.getString(R.string.number_placeholder, 0)
+            setResourceButton(courseOnlineResources, binding.btnResources)
+            setOpenResourceButton(courseOfflineResources, binding.btnOpen)
+            setStepsList(courseSteps)
+            return
+        }
         setTextViewVisibility(binding.subjectLevel, course.subjectLevel, binding.ltSubjectLevel)
         setTextViewVisibility(binding.method, course.method, binding.ltMethod)
         setTextViewVisibility(binding.gradeLevel, course.gradeLevel, binding.ltGradeLevel)
@@ -69,25 +125,21 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             350
         )
         setMarkdownText(binding.description, markdownContentWithLocalPaths)
-        val courseId = course.courseId
-        val examCount = courseRepository.getCourseExamCount(courseId)
         binding.noOfExams.text = context?.getString(
             R.string.number_placeholder,
-            examCount
+            courseExamCount
         )
-        val resources = courseRepository.getCourseOnlineResources(courseId)
-        setResourceButton(resources, binding.btnResources)
-        val downloadedResources = courseRepository.getCourseOfflineResources(courseId)
-        setOpenResourceButton(downloadedResources, binding.btnOpen)
-        val steps = courseRepository.getCourseSteps(courseId)
-        setStepsList(steps)
-        refreshRatings()
+        setResourceButton(courseOnlineResources, binding.btnResources)
+        setOpenResourceButton(courseOfflineResources, binding.btnOpen)
+        setStepsList(courseSteps)
     }
 
     private fun setTextViewVisibility(textView: TextView, content: String?, layout: View) {
-        if (content?.isEmpty() == true) {
+        if (content.isNullOrEmpty()) {
             layout.visibility = View.GONE
+            textView.text = ""
         } else {
+            layout.visibility = View.VISIBLE
             textView.text = content
         }
     }
@@ -122,8 +174,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     override fun onDownloadComplete() {
         super.onDownloadComplete()
         viewLifecycleOwner.lifecycleScope.launch {
-            courses = id?.let { courseRepository.getCourseByCourseId(it) } ?: courses
-            courses?.let { bindCourseData(it) }
+            loadCourseDetails()
         }
     }
 
