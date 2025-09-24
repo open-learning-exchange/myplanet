@@ -56,13 +56,6 @@ open class RealmRepository(private val databaseService: DatabaseService) {
             realm.findCopyByField(clazz, fieldName, value)
         }
 
-    protected suspend fun <T : RealmObject> findFirst(clazz: Class<T>): T? =
-        withRealmAsync { realm ->
-            realm.where(clazz)
-                .findFirst()
-                ?.let { realm.copyFromRealm(it) }
-        }
-
     protected suspend fun <T : RealmObject> save(item: T) {
         executeTransaction { realm ->
             realm.copyToRealmOrUpdate(item)
