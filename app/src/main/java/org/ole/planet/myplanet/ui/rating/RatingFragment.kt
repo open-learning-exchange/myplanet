@@ -14,6 +14,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import dagger.hilt.android.AndroidEntryPoint
+import dagger.hilt.android.internal.lifecycle.HiltViewModelFactory
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
@@ -26,7 +27,9 @@ import org.ole.planet.myplanet.utilities.Utilities
 class RatingFragment : DialogFragment() {
     private var _binding: FragmentRatingBinding? = null
     private val binding get() = _binding!!
-    private val viewModel: RatingViewModel by viewModels()
+    private val viewModel: RatingViewModel by viewModels {
+        HiltViewModelFactory.create(this, arguments)
+    }
     private var currentUser: RealmUserModel? = null
     var id: String? = ""
     var type: String? = ""
