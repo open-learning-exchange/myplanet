@@ -135,7 +135,6 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
         val currentQuestion = questions?.get(currentIndex) ?: return
         val questionId = currentQuestion.id ?: return
-
         val answerData = answerCache.getOrPut(questionId) { AnswerData() }
 
         when (currentQuestion.type) {
@@ -156,7 +155,6 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                 answerData.singleAnswer = binding.etAnswer.text.toString()
             }
         }
-
         updateAnsDb()
     }
 
@@ -226,6 +224,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         try {
             sub = createSubmission(null, mRealm)
             setParentId()
+
             sub?.userId = user?.id
             sub?.status = "pending"
             sub?.type = type
@@ -569,7 +568,14 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         } else {
             null
         }
-        return ExamSubmissionUtils.saveAnswer(
+        
+        if (sub == null) {
+            sub = mRealm.where(RealmSubmission::class.java)
+                .equalTo("status", "pending")
+                .findAll().lastOrNull()
+        }
+
+        val result = ExamSubmissionUtils.saveAnswer(
             mRealm,
             sub,
             currentQuestion,
@@ -581,6 +587,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             currentIndex,
             questions?.size ?: 0
         )
+        return result
     }
 
     override fun onCheckedChanged(compoundButton: CompoundButton, isChecked: Boolean) {
