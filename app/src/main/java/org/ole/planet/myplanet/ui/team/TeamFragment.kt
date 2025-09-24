@@ -33,10 +33,11 @@ import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.Constants
+import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
-class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
+class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamList.OnDataLoadedCallback {
     private var _binding: FragmentTeamBinding? = null
     private val binding get() = _binding!!
     private lateinit var alertCreateTeamBinding: AlertCreateTeamBinding
@@ -51,6 +52,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     private var teamList: RealmResults<RealmMyTeam>? = null
     private lateinit var adapterTeamList: AdapterTeamList
     private var conditionApplied: Boolean = false
+    private var progressDialog: DialogUtils.CustomProgressDialog? = null
     private val settings by lazy {
         requireActivity().getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
     }
@@ -293,8 +295,10 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                         mRealm,
                         childFragmentManager,
                         teamRepository,
+                        viewLifecycleOwner.lifecycleScope,
                     )
                     adapterTeamList.setTeamListener(this@TeamFragment)
+                    adapterTeamList.setDataLoadedCallback(this@TeamFragment)
                     binding.rvTeamList.adapter = adapterTeamList
                     listContentDescription(conditionApplied)
                 }
@@ -321,10 +325,11 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     private fun setTeamList() {
         val list = teamList ?: return
         adapterTeamList = activity?.let {
-            AdapterTeamList(it, list, mRealm, childFragmentManager, teamRepository)
+            AdapterTeamList(it, list, mRealm, childFragmentManager, teamRepository, viewLifecycleOwner.lifecycleScope)
         } ?: return
         adapterTeamList.setType(type)
         adapterTeamList.setTeamListener(this@TeamFragment)
+        adapterTeamList.setDataLoadedCallback(this@TeamFragment)
         requireView().findViewById<View>(R.id.type).visibility =
             if (type == null) {
                 View.GONE
@@ -333,11 +338,11 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
             }
         binding.rvTeamList.adapter = adapterTeamList
         listContentDescription(conditionApplied)
-        val itemCount = adapterTeamList.itemCount
-
-        if (itemCount == 0) {
-            showNoResultsMessage(true)
+        // Show loading initially if the list is empty
+        if (list.isEmpty()) {
+            showLoadingIndicator()
         } else {
+            hideLoadingIndicator()
             showNoResultsMessage(false)
         }
     }
@@ -345,6 +350,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     private fun refreshTeamList() {
         mRealm.refresh()
         teamList?.removeAllChangeListeners()
+        hideLoadingIndicator()
 
         if (fromDashboard) {
             teamList = getMyTeamsByUserId(mRealm, settings)
@@ -369,7 +375,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
 
     private fun sortTeams(list: List<RealmMyTeam>): List<RealmMyTeam> {
         val user = user?.id
-        return list.sortedWith(compareByDescending<RealmMyTeam> { team ->
+        return list.sortedWith(compareByDescending { team ->
             when {
                 RealmMyTeam.isTeamLeader(team.teamId, user, mRealm) -> 3
                 team.isMyTeam(user, mRealm) -> 2
@@ -382,6 +388,24 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         team?.let { createTeamAlert(it) }
     }
 
+    override fun onDataLoaded(hasData: Boolean) {
+        // Hide loading indicator and show appropriate message
+        if (!isAdded || isDetached) return
+        requireActivity().runOnUiThread {
+            hideLoadingIndicator()
+            showNoResultsMessage(!hasData)
+        }
+    }
+
+    override fun onLoadingStarted() {
+        // Show loading indicator while teams are being loaded and sorted
+        if (!isAdded || isDetached) return
+        requireActivity().runOnUiThread {
+            showLoadingIndicator()
+            showNoResultsMessage(false) // Hide "no teams" message while loading
+        }
+    }
+
     private fun updatedTeamList() {
         viewLifecycleOwner.lifecycleScope.launch {
             val list = teamList ?: return@launch
@@ -392,9 +416,11 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                 mRealm,
                 childFragmentManager,
                 teamRepository,
+                viewLifecycleOwner.lifecycleScope,
             ).apply {
                 setType(type)
                 setTeamListener(this@TeamFragment)
+                setDataLoadedCallback(this@TeamFragment)
             }
 
             binding.rvTeamList.adapter = adapterTeamList
@@ -435,8 +461,25 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         }
     }
 
+    private fun showLoadingIndicator() {
+        hideLoadingIndicator() // Ensure previous dialog is properly dismissed
+        progressDialog = DialogUtils.getCustomProgressDialog(requireContext())
+        progressDialog?.setTitle("Loading Teams")
+        progressDialog?.setText("Loading and sorting teams...")
+        progressDialog?.show()
+    }
+
+    private fun hideLoadingIndicator() {
+        progressDialog?.let { dialog ->
+            if (dialog.isShowing()) {
+                dialog.dismiss()
+            }
+        }
+        progressDialog = null
+    }
     override fun onDestroyView() {
         teamList?.removeAllChangeListeners()
+        hideLoadingIndicator()
         if (this::mRealm.isInitialized && !mRealm.isClosed) {
             mRealm.close()
         }

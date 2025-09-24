@@ -14,8 +14,13 @@ import androidx.core.graphics.toColorInt
 import androidx.fragment.app.FragmentManager
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemTeamListBinding
@@ -35,19 +40,36 @@ class AdapterTeamList(
     private val mRealm: Realm,
     private val fragmentManager: FragmentManager,
     private val teamRepository: TeamRepository,
+    private val coroutineScope: CoroutineScope,
 ) : RecyclerView.Adapter<AdapterTeamList.ViewHolderTeam>() {
     private lateinit var itemTeamListBinding: ItemTeamListBinding
     private var type: String? = ""
     private var teamListener: OnClickTeamItem? = null
-    private var filteredList: List<RealmMyTeam> = emptyList()
+    private var dataLoadedCallback: OnDataLoadedCallback? = null
+    private var filteredList: List<RealmMyTeam> = list
+    private val teamDataCache = mutableMapOf<String, TeamMembershipData>()
     private lateinit var prefData: SharedPrefManager
 
     interface OnClickTeamItem {
         fun onEditTeam(team: RealmMyTeam?)
     }
 
+    interface OnDataLoadedCallback {
+        fun onDataLoaded(hasData: Boolean)
+        fun onLoadingStarted()
+    }
+
     fun setTeamListener(teamListener: OnClickTeamItem?) {
         this.teamListener = teamListener
+    }
+
+    fun setDataLoadedCallback(callback: OnDataLoadedCallback?) {
+        this.dataLoadedCallback = callback
+        if (filteredList.isEmpty()) {
+            callback?.onLoadingStarted()
+        } else {
+            callback?.onDataLoaded(filteredList.isNotEmpty())
+        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderTeam {
@@ -57,7 +79,14 @@ class AdapterTeamList(
     }
 
     init {
-        updateList()
+        filteredList = emptyList()
+
+        coroutineScope.launch {
+            withContext(Dispatchers.Main) {
+                dataLoadedCallback?.onLoadingStarted()
+            }
+            updateListAsync()
+        }
     }
 
     override fun onBindViewHolder(holder: ViewHolderTeam, position: Int) {
@@ -73,13 +102,26 @@ class AdapterTeamList(
 
             val teamId = team._id
             val userId = user?.id
-            val isMyTeam = isMemberOfTeam(teamId, userId)
-            val isTeamLeader = isUserTeamLeader(teamId, userId)
-            val hasPendingRequest = hasPendingRequest(teamId, userId)
-            showActionButton(isMyTeam, isTeamLeader, hasPendingRequest, team, user)
+
+            val cachedData = teamDataCache[teamId]
+            if (cachedData != null) {
+                showActionButton(cachedData.isMember, cachedData.isLeader, false, team, user)
+            } else {
+                showActionButton(false, false, false, team, user)
+                coroutineScope.launch {
+                    val isMyTeam = isMemberOfTeam(teamId, userId)
+                    val isTeamLeader = isUserTeamLeader(teamId, userId)
+                    val hasPendingRequest = hasPendingRequest(teamId, userId)
+
+                    withContext(Dispatchers.Main) {
+                        showActionButton(isMyTeam, isTeamLeader, hasPendingRequest, team, user)
+                    }
+                }
+            }
 
             root.setOnClickListener {
                 val activity = context as? AppCompatActivity ?: return@setOnClickListener
+                val isMyTeam = cachedData?.isMember ?: false
                 val fragment = TeamDetailFragment.newInstance(
                     teamId = "${team._id}",
                     teamName = "${team.name}",
@@ -170,64 +212,103 @@ class AdapterTeamList(
     private fun handleJoinLeaveClick(team: RealmMyTeam, user: RealmUserModel?) {
         val teamId = team._id
         val userId = user?.id
-        val isMyTeam = isMemberOfTeam(teamId, userId)
-        if (isMyTeam) {
-            if (isUserTeamLeader(teamId, userId)) {
-                teamListener?.onEditTeam(team)
-            } else {
-                AlertDialog.Builder(context, R.style.CustomAlertDialog).setMessage(R.string.confirm_exit)
-                    .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                        leaveTeam(team, userId)
-                        updateList()
-                    }.setNegativeButton(R.string.no, null).show()
+        coroutineScope.launch {
+            val isMyTeam = isMemberOfTeam(teamId, userId)
+            val isTeamLeader = if (isMyTeam) isUserTeamLeader(teamId, userId) else false
+
+            withContext(Dispatchers.Main) {
+                if (isMyTeam) {
+                    if (isTeamLeader) {
+                        teamListener?.onEditTeam(team)
+                    } else {
+                        AlertDialog.Builder(context, R.style.CustomAlertDialog).setMessage(R.string.confirm_exit)
+                            .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
+                                leaveTeam(team, userId)
+                                coroutineScope.launch { updateList() }
+                            }.setNegativeButton(R.string.no, null).show()
+                    }
+                } else {
+                    requestToJoin(team, user)
+                    coroutineScope.launch { updateList() }
+                }
+                syncTeamActivities()
             }
-        } else {
-            requestToJoin(team, user)
-            updateList()
         }
-        syncTeamActivities()
     }
 
-    private fun updateList() {
+    private suspend fun updateListAsync() {
         val user: RealmUserModel? = UserProfileDbHandler(context).userModel
         val userId = user?.id
-
         val validTeams = list.filter { it.status?.isNotEmpty() == true }
+
+        coroutineScope {
+            val teamDataJobs = validTeams.mapNotNull { team ->
+                val teamId = team._id ?: return@mapNotNull null
+                if (teamDataCache.containsKey(teamId)) return@mapNotNull null
+
+                async {
+                    val isLeader = isUserTeamLeader(teamId, userId)
+                    val isMember = isMemberOfTeam(teamId, userId)
+                    val visitCount = RealmTeamLog.getVisitByTeam(mRealm, teamId).toInt()
+
+                    teamId to TeamMembershipData(isLeader, isMember, visitCount)
+                }
+            }
+
+            teamDataJobs.awaitAll().forEach { (teamId, data) ->
+                teamDataCache[teamId] = data
+            }
+        }
+
         filteredList = validTeams.sortedWith(compareByDescending<RealmMyTeam> { team ->
+            val data = teamDataCache[team._id]
             when {
-                isUserTeamLeader(team._id, userId) -> 3
-                isMemberOfTeam(team._id, userId) -> 2
+                data?.isLeader == true -> 3
+                data?.isMember == true -> 2
                 else -> 1
             }
         }.thenByDescending { team ->
-            RealmTeamLog.getVisitByTeam(mRealm, team._id)
+            teamDataCache[team._id]?.visitCount ?: 0
         })
-        notifyDataSetChanged()
+
+        withContext(Dispatchers.Main) {
+            notifyDataSetChanged()
+            dataLoadedCallback?.onDataLoaded(filteredList.isNotEmpty())
+        }
+    }
+    fun updateList() {
+        coroutineScope.launch {
+            updateListAsync()
+        }
     }
 
-    private fun isMemberOfTeam(teamId: String?, userId: String?): Boolean {
+    private suspend fun isMemberOfTeam(teamId: String?, userId: String?): Boolean {
         if (teamId.isNullOrBlank()) return false
-        return runBlocking { teamRepository.isMember(userId, teamId) }
+        return teamRepository.isMember(userId, teamId)
     }
 
-    private fun isUserTeamLeader(teamId: String?, userId: String?): Boolean {
+    private suspend fun isUserTeamLeader(teamId: String?, userId: String?): Boolean {
         if (teamId.isNullOrBlank()) return false
-        return runBlocking { teamRepository.isTeamLeader(teamId, userId) }
+        return teamRepository.isTeamLeader(teamId, userId)
     }
 
-    private fun hasPendingRequest(teamId: String?, userId: String?): Boolean {
+    private suspend fun hasPendingRequest(teamId: String?, userId: String?): Boolean {
         if (teamId.isNullOrBlank()) return false
-        return runBlocking { teamRepository.hasPendingRequest(teamId, userId) }
+        return teamRepository.hasPendingRequest(teamId, userId)
     }
 
     private fun requestToJoin(team: RealmMyTeam, user: RealmUserModel?) {
         val teamId = team._id ?: return
-        runBlocking { teamRepository.requestToJoin(teamId, user, team.teamType) }
+        coroutineScope.launch {
+            teamRepository.requestToJoin(teamId, user, team.teamType)
+        }
     }
 
     private fun leaveTeam(team: RealmMyTeam, userId: String?) {
         val teamId = team._id ?: return
-        runBlocking { teamRepository.leaveTeam(teamId, userId) }
+        coroutineScope.launch {
+            teamRepository.leaveTeam(teamId, userId)
+        }
     }
 
     private fun syncTeamActivities() {
@@ -250,5 +331,12 @@ class AdapterTeamList(
 
     override fun getItemCount(): Int = filteredList.size
 
+    private data class TeamMembershipData(
+        val isLeader: Boolean,
+        val isMember: Boolean,
+        val visitCount: Int
+    )
+
     class ViewHolderTeam(val binding: ItemTeamListBinding) : RecyclerView.ViewHolder(binding.root)
 }
+
