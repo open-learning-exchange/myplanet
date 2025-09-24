@@ -7,13 +7,13 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
+import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
@@ -51,6 +51,9 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
 
     override fun onDownloadComplete() {
         super.onDownloadComplete()
+        if (!::library.isInitialized) {
+            return
+        }
         fragmentScope.launch {
             val userId = withContext(Dispatchers.Main) {
                 profileDbHandler?.userModel?.id
@@ -82,25 +85,46 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         super.onCreateView(inflater, container, savedInstanceState)
         _binding = FragmentLibraryDetailBinding.inflate(inflater, container, false)
         userModel = UserProfileDbHandler(requireContext()).userModel!!
-
-        val fetchedLibrary = runBlocking {
-            fetchLibrary(libraryId!!)
-        }
-
-        if (fetchedLibrary == null) {
-            Toast.makeText(requireContext(), "Resource not found", Toast.LENGTH_LONG).show()
-            NavigationHelper.popBackStack(parentFragmentManager)
-            return binding.root
-        }
-
-        library = fetchedLibrary
+        setLoadingState(true)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        initRatingView("resource", library.resourceId, library.title, this@ResourceDetailFragment)
-        setLibraryData()
+        viewLifecycleOwner.lifecycleScope.launch {
+            val id = libraryId
+            if (id.isNullOrBlank()) {
+                handleLibraryNotFound()
+                return@launch
+            }
+
+            val fetchedLibrary = withContext(Dispatchers.IO) {
+                fetchLibrary(id)
+            }
+
+            if (fetchedLibrary == null) {
+                handleLibraryNotFound()
+                return@launch
+            }
+
+            library = fetchedLibrary
+            setLoadingState(false)
+            initRatingView("resource", library.resourceId, library.title, this@ResourceDetailFragment)
+            setLibraryData()
+        }
+    }
+
+    private fun setLoadingState(isLoading: Boolean) {
+        binding.btnDownload.isEnabled = !isLoading
+        binding.btnRemove.isEnabled = !isLoading
+        val alpha = if (isLoading) 0.5f else 1f
+        binding.btnDownload.alpha = alpha
+        binding.btnRemove.alpha = alpha
+    }
+
+    private fun handleLibraryNotFound() {
+        Toast.makeText(requireContext(), "Resource not found", Toast.LENGTH_LONG).show()
+        NavigationHelper.popBackStack(parentFragmentManager)
     }
 
     private fun setLibraryData() {
