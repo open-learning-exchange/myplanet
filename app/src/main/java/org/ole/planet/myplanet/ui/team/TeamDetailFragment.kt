@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
+import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.snackbar.Snackbar
@@ -16,7 +17,6 @@ import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
@@ -75,6 +75,9 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     lateinit var prefManager: SharedPrefManager
     private val serverUrlMapper = ServerUrlMapper()
     private val teamLastPage = mutableMapOf<String, String>()
+    private var argumentTeamId: String = ""
+    private var argumentIsMyTeam: Boolean = false
+    private var argumentUser: RealmUserModel? = null
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
     private var pageConfigs: List<TeamPageConfig> = emptyList()
@@ -135,33 +138,12 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         directTeamName = requireArguments().getString("teamName")
         directTeamType = requireArguments().getString("teamType")
 
-        val teamId = requireArguments().getString("id" ) ?: ""
-        val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
-        val user = detachCurrentUser()
+        argumentTeamId = requireArguments().getString("id") ?: ""
+        argumentIsMyTeam = requireArguments().getBoolean("isMyTeam", false)
+        argumentUser = detachCurrentUser()
         mRealm = databaseService.realmInstance
 
-        val resolvedTeam = when {
-            shouldQueryRealm(teamId) && teamId.isNotEmpty() -> {
-                runBlocking { teamRepository.getTeamByDocumentIdOrTeamId(teamId) }
-            }
-
-            else -> {
-                val effectiveTeamId = (directTeamId ?: "").ifEmpty { teamId }
-                if (effectiveTeamId.isNotEmpty()) {
-                    runBlocking { teamRepository.getTeamById(effectiveTeamId) }
-                } else {
-                    null
-                }
-            }
-        }
-
-        if (shouldQueryRealm(teamId) && resolvedTeam == null) {
-            throw IllegalArgumentException("Team not found for ID: $teamId")
-        }
-
-        resolvedTeam?.let { team = it }
-
-        setupTeamDetails(isMyTeam, user)
+        showLoadingState()
 
         return binding.root
     }
@@ -412,6 +394,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        loadTeamDetails()
         setupRealtimeSync()
         createTeamLog()
     }
@@ -459,6 +442,93 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
 
     private fun shouldQueryRealm(teamId: String): Boolean {
         return teamId.isNotEmpty()
+    }
+
+    private fun loadTeamDetails() {
+        showLoadingState()
+
+        val teamId = argumentTeamId
+        val isMyTeam = argumentIsMyTeam
+        val user = argumentUser
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            val teamResult = withContext(Dispatchers.IO) {
+                runCatching { fetchTeam(teamId) }
+            }
+
+            if (!isAdded || _binding == null) {
+                return@launch
+            }
+
+            teamResult.onSuccess { resolvedTeam ->
+                if (shouldQueryRealm(teamId) && resolvedTeam == null) {
+                    showTeamMissingError()
+                    return@onSuccess
+                }
+
+                resolvedTeam?.let { team = it }
+
+                setupTeamDetails(isMyTeam, user)
+                showContentState()
+            }.onFailure { throwable ->
+                showTeamLoadError(throwable)
+            }
+        }
+    }
+
+    private suspend fun fetchTeam(teamId: String): RealmMyTeam? {
+        return when {
+            shouldQueryRealm(teamId) && teamId.isNotEmpty() -> {
+                teamRepository.getTeamByDocumentIdOrTeamId(teamId)
+            }
+
+            else -> {
+                val effectiveTeamId = (directTeamId ?: "").ifEmpty { teamId }
+                if (effectiveTeamId.isNotEmpty()) {
+                    teamRepository.getTeamById(effectiveTeamId)
+                } else {
+                    null
+                }
+            }
+        }
+    }
+
+    private fun showLoadingState() {
+        _binding ?: return
+        binding.title.text = getEffectiveTeamName()
+        binding.subtitle.text = getString(R.string.syncing_team_data)
+        binding.tabLayout.isVisible = false
+        binding.viewPager2.isVisible = false
+        binding.llActionButtons.isVisible = false
+    }
+
+    private fun showContentState() {
+        _binding ?: return
+        binding.tabLayout.isVisible = true
+        binding.viewPager2.isVisible = true
+        binding.llActionButtons.isVisible = true
+    }
+
+    private fun showErrorState(message: String) {
+        _binding ?: return
+        binding.title.text = getEffectiveTeamName()
+        binding.subtitle.text = message
+        binding.tabLayout.isVisible = false
+        binding.viewPager2.isVisible = false
+        binding.llActionButtons.isVisible = false
+    }
+
+    private fun showTeamMissingError() {
+        showErrorState(getString(R.string.no_team_available))
+        Snackbar.make(binding.root, getString(R.string.no_team_available), Snackbar.LENGTH_LONG).show()
+    }
+
+    private fun showTeamLoadError(throwable: Throwable) {
+        throwable.printStackTrace()
+        val message = throwable.localizedMessage?.takeIf { it.isNotBlank() }
+            ?: getString(R.string.no_data_available_please_check_and_try_again)
+        showErrorState(message)
+        Snackbar.make(binding.root, message, Snackbar.LENGTH_LONG).show()
     }
 
     override fun onDestroyView() {
