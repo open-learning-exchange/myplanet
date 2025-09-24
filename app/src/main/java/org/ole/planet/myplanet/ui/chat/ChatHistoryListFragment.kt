@@ -22,6 +22,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
@@ -60,6 +61,8 @@ class ChatHistoryListFragment : Fragment() {
     lateinit var syncManager: SyncManager
     @Inject
     lateinit var databaseService: DatabaseService
+    @Inject
+    lateinit var userRepository: UserRepository
     private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
     private lateinit var realtimeSyncListener: BaseRealtimeSyncListener
     private val serverUrl: String
@@ -74,10 +77,11 @@ class ChatHistoryListFragment : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentChatHistoryListBinding.inflate(inflater, container, false)
-        user = databaseService.withRealm { realm ->
-            realm.where(RealmUserModel::class.java)
-                .equalTo("id", settings.getString("userId", ""))
-                .findFirst()?.let { realm.copyFromRealm(it) }
+        lifecycleScope.launch {
+            user = settings.getString("userId", "")?.let { userId ->
+                userRepository.getUserById(userId)
+            }
+            refreshChatHistoryList()
         }
 
         return binding.root
@@ -238,10 +242,11 @@ class ChatHistoryListFragment : Fragment() {
     }
 
     fun refreshChatHistoryList() {
+        val currentUser = user ?: return
         val list = databaseService.withRealm { realm ->
             realm.copyFromRealm(
                 realm.where(RealmChatHistory::class.java)
-                    .equalTo("user", user?.name)
+                    .equalTo("user", currentUser.name)
                     .sort("id", Sort.DESCENDING)
                     .findAll()
             )
