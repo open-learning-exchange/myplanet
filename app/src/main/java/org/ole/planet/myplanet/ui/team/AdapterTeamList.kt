@@ -115,55 +115,47 @@ class AdapterTeamList(
         team: RealmMyTeam,
         user: RealmUserModel?,
     ) {
-        if (isMyTeam) {
-            name.setTypeface(null, Typeface.BOLD)
-        } else {
-            name.setTypeface(null, Typeface.NORMAL)
+        val typefaceStyle = if (isMyTeam) Typeface.BOLD else Typeface.NORMAL
+        name.setTypeface(null, typefaceStyle)
+
+        val state = when {
+            user?.isGuest() == true -> TeamActionButtonState.Hidden
+            isMyTeam && !isTeamLeader -> TeamActionButtonState.Leave(
+                "${context.getString(R.string.leave)} ${team.name}",
+            )
+            !isMyTeam && hasPendingRequest -> TeamActionButtonState.Requested(
+                "${context.getString(R.string.requested)} ${team.name}",
+                "#9fa0a4".toColorInt(),
+            )
+            !isMyTeam -> TeamActionButtonState.Join(
+                "${context.getString(R.string.request_to_join)} ${team.name}",
+            )
+            isTeamLeader -> TeamActionButtonState.Edit(
+                "${context.getString(R.string.edit)} ${team.name}",
+            )
+            else -> TeamActionButtonState.Hidden
         }
-        when {
-            user?.isGuest() == true -> joinLeave.visibility = View.GONE
 
-            isMyTeam && !isTeamLeader -> {
-                joinLeave.apply {
-                    isEnabled = true
-                    contentDescription = "${context.getString(R.string.leave)} ${team.name}"
-                    visibility = View.VISIBLE
-                    setImageResource(R.drawable.logout)
-                    clearColorFilter()
-                }
+        applyActionButtonState(state)
+    }
+
+    private fun ItemTeamListBinding.applyActionButtonState(state: TeamActionButtonState) {
+        if (state is TeamActionButtonState.Hidden) {
+            joinLeave.visibility = View.GONE
+            return
+        }
+
+        joinLeave.apply {
+            visibility = View.VISIBLE
+            isEnabled = state.isEnabled
+            contentDescription = state.contentDescription
+            state.iconRes?.let { iconRes -> setImageResource(iconRes) }
+            val tintColor = state.tintColor
+            if (tintColor != null) {
+                setColorFilter(tintColor, PorterDuff.Mode.SRC_IN)
+            } else {
+                clearColorFilter()
             }
-
-            !isMyTeam && hasPendingRequest -> {
-                joinLeave.apply {
-                    isEnabled = false
-                    contentDescription = "${context.getString(R.string.requested)} ${team.name}"
-                    visibility = View.VISIBLE
-                    setImageResource(R.drawable.baseline_hourglass_top_24)
-                    setColorFilter("#9fa0a4".toColorInt(), PorterDuff.Mode.SRC_IN)
-                }
-            }
-
-            !isMyTeam -> {
-                joinLeave.apply {
-                    isEnabled = true
-                    contentDescription = "${context.getString(R.string.request_to_join)} ${team.name}"
-                    visibility = View.VISIBLE
-                    setImageResource(R.drawable.ic_join_request)
-                    clearColorFilter()
-                }
-            }
-
-            isTeamLeader -> {
-                joinLeave.apply {
-                    isEnabled = true
-                    contentDescription = "${context.getString(R.string.edit)} ${team.name}"
-                    visibility = View.VISIBLE
-                    setImageResource(R.drawable.ic_edit)
-                    clearColorFilter()
-                }
-            }
-
-            else -> joinLeave.visibility = View.GONE
         }
     }
 
