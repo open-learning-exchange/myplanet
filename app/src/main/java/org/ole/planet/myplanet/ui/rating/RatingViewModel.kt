@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.rating
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,6 +14,7 @@ import org.ole.planet.myplanet.repository.RatingRepository
 import org.ole.planet.myplanet.repository.RatingSummary
 import org.ole.planet.myplanet.repository.UserRepository
 
+@HiltViewModel
 class RatingViewModel @Inject constructor(
     private val ratingRepository: RatingRepository,
     private val userRepository: UserRepository
