@@ -38,11 +38,11 @@ open class RealmRepository(private val databaseService: DatabaseService) {
         withRealmFlow { realm, scope ->
             val results = realm.where(clazz).apply(builder).findAllAsync()
             val listener =
-                RealmChangeListener<RealmResults<T>> {
-                    scope.trySend(realm.queryList(clazz, builder))
+                RealmChangeListener<RealmResults<T>> { updatedResults ->
+                    scope.trySend(updatedResults)
                 }
             results.addChangeListener(listener)
-            scope.trySend(realm.queryList(clazz, builder))
+            scope.trySend(results)
             return@withRealmFlow { results.removeChangeListener(listener) }
         }
 
