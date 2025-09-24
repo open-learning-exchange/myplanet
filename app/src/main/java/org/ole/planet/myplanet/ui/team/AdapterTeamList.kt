@@ -35,12 +35,14 @@ class AdapterTeamList(
     private val mRealm: Realm,
     private val fragmentManager: FragmentManager,
     private val teamRepository: TeamRepository,
+    private val userProfileDbHandler: UserProfileDbHandler,
 ) : RecyclerView.Adapter<AdapterTeamList.ViewHolderTeam>() {
     private lateinit var itemTeamListBinding: ItemTeamListBinding
     private var type: String? = ""
     private var teamListener: OnClickTeamItem? = null
     private var filteredList: List<RealmMyTeam> = emptyList()
     private lateinit var prefData: SharedPrefManager
+    private var currentUser: RealmUserModel? = userProfileDbHandler.userModel
 
     interface OnClickTeamItem {
         fun onEditTeam(team: RealmMyTeam?)
@@ -48,6 +50,10 @@ class AdapterTeamList(
 
     fun setTeamListener(teamListener: OnClickTeamItem?) {
         this.teamListener = teamListener
+    }
+
+    fun refreshCurrentUser() {
+        currentUser = userProfileDbHandler.userModel
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderTeam {
@@ -62,7 +68,10 @@ class AdapterTeamList(
 
     override fun onBindViewHolder(holder: ViewHolderTeam, position: Int) {
         val team = filteredList[position]
-        val user: RealmUserModel? = UserProfileDbHandler(context).userModel
+        val user: RealmUserModel? = currentUser ?: run {
+            refreshCurrentUser()
+            currentUser
+        }
 
         with(holder.binding) {
             created.text = TimeUtils.getFormattedDate(team.createdDate)
@@ -189,8 +198,8 @@ class AdapterTeamList(
     }
 
     private fun updateList() {
-        val user: RealmUserModel? = UserProfileDbHandler(context).userModel
-        val userId = user?.id
+        refreshCurrentUser()
+        val userId = currentUser?.id
 
         val validTeams = list.filter { it.status?.isNotEmpty() == true }
         filteredList = validTeams.sortedWith(compareByDescending<RealmMyTeam> { team ->

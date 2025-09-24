@@ -298,6 +298,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                         mRealm,
                         childFragmentManager,
                         teamRepository,
+                        userProfileDbHandler,
                     )
                     adapterTeamList.setTeamListener(this@TeamFragment)
                     binding.rvTeamList.adapter = adapterTeamList
@@ -326,8 +327,9 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     private fun setTeamList() {
         val list = teamList ?: return
         adapterTeamList = activity?.let {
-            AdapterTeamList(it, list, mRealm, childFragmentManager, teamRepository)
+            AdapterTeamList(it, list, mRealm, childFragmentManager, teamRepository, userProfileDbHandler)
         } ?: return
+        adapterTeamList.refreshCurrentUser()
         adapterTeamList.setType(type)
         adapterTeamList.setTeamListener(this@TeamFragment)
         requireView().findViewById<View>(R.id.type).visibility =
@@ -397,7 +399,9 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                 mRealm,
                 childFragmentManager,
                 teamRepository,
+                userProfileDbHandler,
             ).apply {
+                refreshCurrentUser()
                 setType(type)
                 setTeamListener(this@TeamFragment)
             }
