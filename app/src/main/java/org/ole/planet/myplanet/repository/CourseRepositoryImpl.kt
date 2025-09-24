@@ -44,7 +44,7 @@ class CourseRepositoryImpl @Inject constructor(
         if (courseId.isNullOrEmpty()) {
             return 0
         }
-        return withRealm { realm ->
+        return withRealmAsync { realm ->
             getNoOfExam(realm, courseId)
         }
     }
@@ -53,7 +53,7 @@ class CourseRepositoryImpl @Inject constructor(
         if (courseId.isNullOrEmpty()) {
             return emptyList()
         }
-        return withRealm { realm ->
+        return withRealmAsync { realm ->
             val steps = RealmMyCourse.getCourseSteps(realm, courseId)
             if (steps.isEmpty()) {
                 emptyList()
