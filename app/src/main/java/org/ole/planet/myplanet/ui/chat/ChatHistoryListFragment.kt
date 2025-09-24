@@ -77,13 +77,6 @@ class ChatHistoryListFragment : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentChatHistoryListBinding.inflate(inflater, container, false)
-        lifecycleScope.launch {
-            user = settings.getString("userId", "")?.let { userId ->
-                userRepository.getUserById(userId)
-            }
-            refreshChatHistoryList()
-        }
-
         return binding.root
     }
 
@@ -242,40 +235,58 @@ class ChatHistoryListFragment : Fragment() {
     }
 
     fun refreshChatHistoryList() {
-        val currentUser = user ?: return
-        val list = databaseService.withRealm { realm ->
-            realm.copyFromRealm(
-                realm.where(RealmChatHistory::class.java)
-                    .equalTo("user", currentUser.name)
-                    .sort("id", Sort.DESCENDING)
-                    .findAll()
-            )
+        if (!isAdded || view == null) {
+            return
         }
-
-        val adapter = binding.recyclerView.adapter as? ChatHistoryListAdapter
-        if (adapter == null) {
-            val newAdapter = ChatHistoryListAdapter(requireContext(), list, this, databaseService, settings)
-            newAdapter.setChatHistoryItemClickListener(object : ChatHistoryListAdapter.ChatHistoryItemClickListener {
-                override fun onChatHistoryItemClicked(conversations: List<Conversation>?, id: String, rev: String?, aiProvider: String?) {
-                    conversations?.let { sharedViewModel.setSelectedChatHistory(it) }
-                    sharedViewModel.setSelectedId(id)
-                    rev?.let { sharedViewModel.setSelectedRev(it) }
-                    aiProvider?.let { sharedViewModel.setSelectedAiProvider(it) }
-                    binding.slidingPaneLayout.openPane()
+        viewLifecycleOwner.lifecycleScope.launch {
+            val currentUser = ensureUserLoaded() ?: return@launch
+            val list = withContext(Dispatchers.IO) {
+                databaseService.withRealm { realm ->
+                    realm.copyFromRealm(
+                        realm.where(RealmChatHistory::class.java)
+                            .equalTo("user", currentUser.name)
+                            .sort("id", Sort.DESCENDING)
+                            .findAll()
+                    )
                 }
-            })
-            binding.recyclerView.adapter = newAdapter
-        } else {
-            adapter.updateChatHistory(list)
-            binding.searchBar.visibility = View.VISIBLE
-            binding.recyclerView.visibility = View.VISIBLE
-        }
+            }
 
-        showNoData(binding.noChats, list.size, "chatHistory")
-        if (list.isEmpty()) {
-            binding.searchBar.visibility = View.GONE
-            binding.recyclerView.visibility = View.GONE
+            val adapter = binding.recyclerView.adapter as? ChatHistoryListAdapter
+            if (adapter == null) {
+                val newAdapter = ChatHistoryListAdapter(requireContext(), list, this@ChatHistoryListFragment, databaseService, settings)
+                newAdapter.setChatHistoryItemClickListener(object : ChatHistoryListAdapter.ChatHistoryItemClickListener {
+                    override fun onChatHistoryItemClicked(conversations: List<Conversation>?, id: String, rev: String?, aiProvider: String?) {
+                        conversations?.let { sharedViewModel.setSelectedChatHistory(it) }
+                        sharedViewModel.setSelectedId(id)
+                        rev?.let { sharedViewModel.setSelectedRev(it) }
+                        aiProvider?.let { sharedViewModel.setSelectedAiProvider(it) }
+                        binding.slidingPaneLayout.openPane()
+                    }
+                })
+                binding.recyclerView.adapter = newAdapter
+            } else {
+                adapter.updateChatHistory(list)
+                binding.searchBar.visibility = View.VISIBLE
+                binding.recyclerView.visibility = View.VISIBLE
+            }
+
+            showNoData(binding.noChats, list.size, "chatHistory")
+            if (list.isEmpty()) {
+                binding.searchBar.visibility = View.GONE
+                binding.recyclerView.visibility = View.GONE
+            }
         }
+    }
+
+    private suspend fun ensureUserLoaded(): RealmUserModel? {
+        user?.let { return it }
+        val userId = settings.getString("userId", null).orEmpty()
+        if (userId.isEmpty()) {
+            return null
+        }
+        val fetchedUser = userRepository.getUserById(userId)
+        user = fetchedUser
+        return fetchedUser
     }
 
     private fun setupRealtimeSync() {
