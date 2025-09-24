@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.MainApplication.Companion.context
 
 object Utilities {
 
+    // only for DEBUG ... not #deadcode
     @JvmStatic
     fun log(message: String) {
         Log.d("OLE ", "log: $message")
