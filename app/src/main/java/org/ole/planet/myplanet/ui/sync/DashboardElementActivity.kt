@@ -33,7 +33,6 @@ import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.dashboard.BellDashboardFragment
-import org.ole.planet.myplanet.ui.dashboard.DashboardFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.rating.RatingFragment.Companion.newInstance
@@ -277,8 +276,6 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
             } else {
                 navigationView.menu.findItem(R.id.menu_library).isChecked = true
             }
-        } else if (f is DashboardFragment) {
-            navigationView.menu.findItem(R.id.menu_home).isChecked = true
         }
     }
 
