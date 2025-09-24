@@ -18,7 +18,7 @@ object Utilities {
 
     @JvmStatic
     fun log(message: String) {
-        // Used for debug logging so this method is not considered dead code.
+        // debug-use
         Log.d("OLE ", "log: $message")
     }
 
