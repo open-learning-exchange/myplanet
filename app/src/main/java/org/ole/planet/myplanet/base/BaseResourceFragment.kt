@@ -81,6 +81,9 @@ abstract class BaseResourceFragment : Fragment() {
     @AppPreferences
     lateinit var settings: SharedPreferences
     private var resourceNotFoundDialog: AlertDialog? = null
+    private var downloadSuggestionDialog: AlertDialog? = null
+    private var pendingSurveyDialog: AlertDialog? = null
+    private var stayOnlineDialog: AlertDialog? = null
 
     protected fun isRealmInitialized(): Boolean {
         return ::mRealm.isInitialized && !mRealm.isClosed
@@ -119,12 +122,17 @@ abstract class BaseResourceFragment : Fragment() {
 
     private var stateReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            AlertDialog.Builder(requireContext()).setMessage(R.string.do_you_want_to_stay_online)
+            stayOnlineDialog?.dismiss()
+            stayOnlineDialog = AlertDialog.Builder(requireContext()).setMessage(R.string.do_you_want_to_stay_online)
                 .setPositiveButton(R.string.yes, null)
                 .setNegativeButton(R.string.no) { _: DialogInterface?, _: Int ->
                     val wifi = requireContext().applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
                     wifi.setWifiEnabled(false)
-                }.show()
+                }.create()
+            stayOnlineDialog?.setOnDismissListener {
+                stayOnlineDialog = null
+            }
+            stayOnlineDialog?.show()
         }
     }
     private val broadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
@@ -182,10 +190,17 @@ abstract class BaseResourceFragment : Fragment() {
                             }
                             startDownload(downloadAllFiles(librariesForDialog))
                         }.setNegativeButton(R.string.txt_cancel, null)
-                    val alertDialog = alertDialogBuilder.create()
-                    createListView(librariesForDialog, alertDialog)
-                    alertDialog.show()
-                    alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = (lv?.selectedItemsList?.size ?: 0) > 0
+                    downloadSuggestionDialog?.dismiss()
+                    downloadSuggestionDialog = alertDialogBuilder.create()
+                    downloadSuggestionDialog?.let { dialog ->
+                        createListView(librariesForDialog, dialog)
+                        dialog.setOnDismissListener {
+                            downloadSuggestionDialog = null
+                        }
+                        dialog.show()
+                        dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = (lv?.selectedItemsList?.size
+                            ?: 0) > 0
+                    }
                 }
             }
 
@@ -205,10 +220,15 @@ abstract class BaseResourceFragment : Fragment() {
             if (list.isEmpty()) return@launch
             val exams = getExamMap(mRealm, list)
             val arrayAdapter = createSurveyAdapter(list, exams)
-            AlertDialog.Builder(requireActivity()).setTitle("Pending Surveys")
+            pendingSurveyDialog?.dismiss()
+            pendingSurveyDialog = AlertDialog.Builder(requireActivity()).setTitle("Pending Surveys")
                 .setAdapter(arrayAdapter) { _: DialogInterface?, i: Int ->
                     AdapterMySubmission.openSurvey(homeItemClickListener, list[i].id, true, false, "")
-                }.setPositiveButton(R.string.dismiss, null).show()
+                }.setPositiveButton(R.string.dismiss, null).create()
+            pendingSurveyDialog?.setOnDismissListener {
+                pendingSurveyDialog = null
+            }
+            pendingSurveyDialog?.show()
         }
     }
 
@@ -424,7 +444,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     fun addAllToLibrary(libraryItems: List<RealmMyLibrary?>) {
         if (!isRealmInitialized()) return
-        
+
         val userId = profileDbHandler?.userModel?.id ?: return
 
         try {
@@ -449,6 +469,19 @@ abstract class BaseResourceFragment : Fragment() {
             throw e
         }
         Utilities.toast(activity, getString(R.string.added_to_my_library))
+    }
+
+    override fun onDestroyView() {
+        downloadSuggestionDialog?.dismiss()
+        downloadSuggestionDialog = null
+        pendingSurveyDialog?.dismiss()
+        pendingSurveyDialog = null
+        stayOnlineDialog?.dismiss()
+        stayOnlineDialog = null
+        resourceNotFoundDialog?.dismiss()
+        resourceNotFoundDialog = null
+        convertView = null
+        super.onDestroyView()
     }
 
     override fun onDestroy() {
