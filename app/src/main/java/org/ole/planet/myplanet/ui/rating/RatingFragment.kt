@@ -11,6 +11,7 @@ import android.widget.RatingBar.OnRatingBarChangeListener
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import dagger.hilt.android.AndroidEntryPoint
@@ -27,9 +28,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 class RatingFragment : DialogFragment() {
     private var _binding: FragmentRatingBinding? = null
     private val binding get() = _binding!!
-    private val viewModel: RatingViewModel by viewModels {
-        HiltViewModelFactory.create(this, arguments)
-    }
+    private val viewModel: RatingViewModel by viewModels()
     private var currentUser: RealmUserModel? = null
     var id: String? = ""
     var type: String? = ""
@@ -151,7 +150,7 @@ class RatingFragment : DialogFragment() {
         val comment = binding.etComment.text.toString()
         val rating = binding.ratingBar.rating
         val userId = settings.getString("userId", "") ?: ""
-        
+
         if (type != null && id != null && title != null && currentUser != null && userId.isNotEmpty()) {
             viewModel.submitRating(
                 type = type!!,
@@ -162,6 +161,10 @@ class RatingFragment : DialogFragment() {
                 comment = comment
             )
         }
+    }
+
+    override fun getDefaultViewModelProviderFactory(): ViewModelProvider.Factory {
+        return HiltViewModelFactory.createInternal(requireActivity(), this, arguments)
     }
 
 
