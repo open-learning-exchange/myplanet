@@ -10,6 +10,7 @@ import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
+import io.realm.RealmObject
 import java.io.File
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSelectedMyPersonal
@@ -35,7 +36,12 @@ class AdapterMyPersonal(private val context: Context, private var list: MutableL
     }
 
     fun updateList(newList: List<RealmMyPersonal>) {
-        val safeNewList = realm?.copyFromRealm(newList) ?: newList
+        val safeNewList =
+            if (realm != null && newList.any { RealmObject.isManaged(it) }) {
+                realm!!.copyFromRealm(newList)
+            } else {
+                newList
+            }
         val diffResult = DiffUtils.calculateDiff(
             list,
             safeNewList,
