@@ -34,27 +34,6 @@ object EdgeToEdgeUtils {
     }
 
     /**
-     * Sets up edge-to-edge display with custom inset handling
-     * @param activity The activity to apply edge-to-edge to
-     * @param rootView The root view that should handle window insets
-     * @param lightStatusBar Whether to use light status bar icons (default: true)
-     * @param lightNavigationBar Whether to use light navigation bar icons (default: true)
-     * @param customInsetsHandler Custom handler for window insets
-     */
-    fun setupEdgeToEdge(
-        activity: Activity,
-        rootView: View,
-        lightStatusBar: Boolean = true,
-        lightNavigationBar: Boolean = true,
-        customInsetsHandler: (View, WindowInsetsCompat) -> WindowInsetsCompat
-    ) {
-        configureEdgeToEdge(activity, rootView, lightStatusBar, lightNavigationBar)
-
-        // Set up custom window insets listener
-        ViewCompat.setOnApplyWindowInsetsListener(rootView, customInsetsHandler)
-    }
-
-    /**
      * Extension function to set transparent system bars with proper SDK handling
      */
     private fun Window.setTransparentSystemBars() {
