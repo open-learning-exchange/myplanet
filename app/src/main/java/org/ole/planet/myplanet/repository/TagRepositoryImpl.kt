@@ -39,15 +39,20 @@ class TagRepositoryImpl @Inject constructor(
         if (links.isEmpty()) {
             return emptyList()
         }
-        val parents = mutableListOf<RealmTag>()
-        for (link in links) {
-            val tagId = link.tagId ?: continue
-            val parent = findByField(RealmTag::class.java, "id", tagId)
-            if (parent != null) {
-                parents.add(parent)
-            }
+        val tagIds = links.mapNotNull { it.tagId }.distinct()
+        if (tagIds.isEmpty()) {
+            return emptyList()
         }
-        return parents
+
+        val parents = queryList(RealmTag::class.java) {
+            `in`("id", tagIds.toTypedArray())
+        }
+        if (parents.isEmpty()) {
+            return emptyList()
+        }
+
+        val parentsById = parents.associateBy { it.id }
+        return tagIds.mapNotNull { parentsById[it] }
     }
 }
 
