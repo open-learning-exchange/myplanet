@@ -35,7 +35,12 @@ class AdapterMyPersonal(private val context: Context, private var list: MutableL
     }
 
     fun updateList(newList: List<RealmMyPersonal>) {
-        val safeNewList = realm?.copyFromRealm(newList) ?: newList
+        val safeNewList = try {
+            realm?.copyFromRealm(newList) ?: newList
+        } catch (e: IllegalArgumentException) {
+            // Objects are already unmanaged, use them directly
+            newList
+        }
         val diffResult = DiffUtils.calculateDiff(
             list,
             safeNewList,
