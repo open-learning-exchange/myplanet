@@ -51,6 +51,7 @@ import org.ole.planet.myplanet.model.Data
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.addConversationToChatHistory
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
@@ -78,6 +79,8 @@ class ChatDetailFragment : Fragment() {
     @Inject
     lateinit var databaseService: DatabaseService
     @Inject
+    lateinit var userRepository: UserRepository
+    @Inject
     lateinit var chatApiHelper: ChatApiHelper
     private val gson = Gson()
     private val serverUrlMapper = ServerUrlMapper()
@@ -98,26 +101,27 @@ class ChatDetailFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        initChatComponents()
-        val newsRev = arguments?.getString("newsRev")
-        val newsConversations = arguments?.getString("conversations")
-        checkAiProviders()
-        setupSendButton()
-        setupMessageInputListeners()
-        if (newsId != null) {
-            loadNewsConversations(newsId, newsRev, newsConversations)
-        } else {
-            observeViewModelData()
+        viewLifecycleOwner.lifecycleScope.launch {
+            user = withContext(Dispatchers.IO) {
+                val userId = settings.getString("userId", "") ?: ""
+                userRepository.getUserById(userId)
+            }
+            initChatComponents()
+            val newsRev = arguments?.getString("newsRev")
+            val newsConversations = arguments?.getString("conversations")
+            checkAiProviders()
+            setupSendButton()
+            setupMessageInputListeners()
+            if (newsId != null) {
+                loadNewsConversations(newsId, newsRev, newsConversations)
+            } else {
+                observeViewModelData()
+            }
+            view.post { clearChatDetail() }
         }
-        view.post { clearChatDetail() }
     }
 
     private fun initChatComponents() {
-        user = databaseService.withRealm { realm ->
-            realm.where(RealmUserModel::class.java)
-                .equalTo("id", settings.getString("userId", ""))
-                .findFirst()?.let { realm.copyFromRealm(it) }
-        }
         mAdapter = ChatAdapter(requireContext(), binding.recyclerGchat)
         binding.recyclerGchat.apply {
             adapter = mAdapter
