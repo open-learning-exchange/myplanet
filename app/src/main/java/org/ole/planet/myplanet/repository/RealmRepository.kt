@@ -24,6 +24,17 @@ open class RealmRepository(private val databaseService: DatabaseService) {
             realm.queryList(clazz, builder)
         }
 
+    protected suspend fun <T : RealmObject> findFirst(
+        clazz: Class<T>,
+        builder: RealmQuery<T>.() -> Unit = {},
+    ): T? =
+        databaseService.withRealmAsync { realm ->
+            realm.where(clazz)
+                .apply(builder)
+                .findFirst()
+                ?.let { realm.copyFromRealm(it) }
+        }
+
     protected suspend fun <T : RealmObject> count(
         clazz: Class<T>,
         builder: RealmQuery<T>.() -> Unit = {},

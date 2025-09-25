@@ -40,10 +40,10 @@ class NotificationRepositoryImpl @Inject constructor(
             count
         }
 
-        val existingNotification = queryList(RealmNotification::class.java) {
+        val existingNotification = findFirst(RealmNotification::class.java) {
             equalTo("userId", userId)
             equalTo("type", "resource")
-        }.firstOrNull()
+        }
 
         if (resourceCount > 0) {
             val notification = existingNotification?.apply {
@@ -129,10 +129,11 @@ class NotificationRepositoryImpl @Inject constructor(
         val rawId = joinRequestId?.takeUnless { it.isBlank() } ?: return null
         val sanitizedId = rawId.removePrefix("join_request_")
 
-        val joinRequest = queryList(RealmMyTeam::class.java) {
-            equalTo("_id", sanitizedId)
-            equalTo("docType", "request")
-        }.firstOrNull() ?: return null
+        val joinRequest =
+            findFirst(RealmMyTeam::class.java) {
+                equalTo("_id", sanitizedId)
+                equalTo("docType", "request")
+            } ?: return null
 
         val teamName = joinRequest.teamId?.let { teamId ->
             findByField(RealmMyTeam::class.java, "_id", teamId)?.name

@@ -58,11 +58,11 @@ class RatingRepositoryImpl @Inject constructor(
         val userId = user.id ?: user._id
         require(!userId.isNullOrBlank()) { "User ID is required to submit a rating" }
 
-        val existingRating = queryList(RealmRating::class.java) {
+        val existingRating = findFirst(RealmRating::class.java) {
             equalTo("type", type)
             equalTo("userId", userId)
             equalTo("item", itemId)
-        }.firstOrNull()
+        }
 
         if (existingRating == null || existingRating.id.isNullOrBlank()) {
             val newRating = RealmRating().apply {
