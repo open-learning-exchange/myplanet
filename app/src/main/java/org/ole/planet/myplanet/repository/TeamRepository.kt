@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
+import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamTask
@@ -8,6 +9,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 
 interface TeamRepository {
     suspend fun getTeamResources(teamId: String): List<RealmMyLibrary>
+    suspend fun getTeamCourses(teamId: String): List<RealmMyCourse>
     suspend fun getTeamByDocumentIdOrTeamId(id: String): RealmMyTeam?
     suspend fun getTeamLinks(): List<RealmMyTeam>
     suspend fun getTeamById(teamId: String): RealmMyTeam?
