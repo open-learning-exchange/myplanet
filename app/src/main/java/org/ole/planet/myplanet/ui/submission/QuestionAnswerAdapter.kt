@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.submission
 
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -23,6 +24,7 @@ class QuestionAnswerAdapter : RecyclerView.Adapter<QuestionAnswerAdapter.ViewHol
         questionAnswerPairs.clear()
         questionAnswerPairs.addAll(pairs)
         notifyDataSetChanged()
+        Log.d("RecyclerViewDebug", "Adapter notified of ${questionAnswerPairs.size} items")
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -36,6 +38,9 @@ class QuestionAnswerAdapter : RecyclerView.Adapter<QuestionAnswerAdapter.ViewHol
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         holder.bind(questionAnswerPairs[position])
+        if (position < 5 || position >= questionAnswerPairs.size - 2) {
+            Log.d("RecyclerViewDebug", "Binding item at position $position")
+        }
     }
 
     override fun getItemCount(): Int = questionAnswerPairs.size

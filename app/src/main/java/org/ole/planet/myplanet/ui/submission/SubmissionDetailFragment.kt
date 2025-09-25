@@ -1,11 +1,14 @@
 package org.ole.planet.myplanet.ui.submission
 
+import android.content.Context
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
 import org.json.JSONObject
 import org.ole.planet.myplanet.databinding.FragmentSubmissionDetailBinding
@@ -40,8 +43,45 @@ class SubmissionDetailFragment : Fragment() {
 
     private fun setupRecyclerView() {
         adapter = QuestionAnswerAdapter()
-        binding.rvQuestionsAnswers.layoutManager = LinearLayoutManager(context)
+
+        // Use a LinearLayoutManager that forces full height calculation
+        val layoutManager = object : LinearLayoutManager(context) {
+            override fun canScrollVertically(): Boolean {
+                return false
+            }
+
+            override fun onMeasure(recycler: RecyclerView.Recycler, state: RecyclerView.State, widthSpec: Int, heightSpec: Int) {
+                if (itemCount == 0) {
+                    // No items, use default measurement
+                    super.onMeasure(recycler, state, widthSpec, heightSpec)
+                    return
+                }
+
+                // Calculate total height for all items
+                var totalHeight = 0
+                try {
+                    for (i in 0 until itemCount) {
+                        val view = recycler.getViewForPosition(i)
+                        addView(view)
+                        measureChild(view, 0, 0)
+                        totalHeight += getDecoratedMeasuredHeight(view)
+                        removeAndRecycleView(view, recycler)
+                    }
+
+                    val width = View.MeasureSpec.getSize(widthSpec)
+                    setMeasuredDimension(width, totalHeight)
+                    Log.d("RecyclerViewDebug", "Calculated total height: $totalHeight for $itemCount items")
+                } catch (e: Exception) {
+                    Log.e("RecyclerViewDebug", "Error calculating height, falling back to default", e)
+                    super.onMeasure(recycler, state, widthSpec, heightSpec)
+                }
+            }
+        }
+
+        binding.rvQuestionsAnswers.layoutManager = layoutManager
         binding.rvQuestionsAnswers.adapter = adapter
+        binding.rvQuestionsAnswers.setHasFixedSize(false)
+        binding.rvQuestionsAnswers.isNestedScrollingEnabled = false
     }
 
     private fun loadSubmissionDetails() {
@@ -105,109 +145,17 @@ class SubmissionDetailFragment : Fragment() {
             .equalTo("examId", examId)
             .findAll()
 
+        Log.d("RecyclerViewDebug", "Found ${questions.size} questions, updating adapter")
+
         val questionAnswerPairs = questions.map { question ->
             val answer = submission.answers?.find { it.questionId == question.id }
             QuestionAnswerPair(question, answer)
         }
 
         adapter.updateData(questionAnswerPairs)
+        Log.d("RecyclerViewDebug", "Adapter updated with ${questionAnswerPairs.size} items")
     }
 
-    private fun logDetailedAnswers(submission: RealmSubmission, questionAnswerPairs: List<QuestionAnswerPair>) {
-        Log.d("SubmissionAnswers", "=== SUBMISSION ANSWERS LOG ===")
-        Log.d("SubmissionAnswers", "Submission ID: ${submission.id}")
-        Log.d("SubmissionAnswers", "Submission _ID: ${submission._id}")
-        Log.d("SubmissionAnswers", "Submission ParentID: ${submission.parentId}")
-        Log.d("SubmissionAnswers", "Status: ${submission.status}")
-        Log.d("SubmissionAnswers", "Total Questions: ${questionAnswerPairs.size}")
-        Log.d("SubmissionAnswers", "Answered Questions: ${questionAnswerPairs.count { it.answer != null }}")
-        Log.d("SubmissionAnswers", "")
-
-        debugRealmAnswerTable(submission)
-
-        Log.d("SubmissionAnswers", "=== SUBMISSION ANSWERS COLLECTION DEBUG ===")
-        if (submission.answers == null) {
-            Log.d("SubmissionAnswers", "submission.answers is NULL")
-        } else if (submission.answers!!.isEmpty()) {
-            Log.d("SubmissionAnswers", "submission.answers is EMPTY (size: ${submission.answers!!.size})")
-        } else {
-            Log.d("SubmissionAnswers", "submission.answers has ${submission.answers!!.size} items:")
-            submission.answers!!.forEachIndexed { index, answer ->
-                Log.d("SubmissionAnswers", "  Answer ${index + 1}: id=${answer.id}, questionId=${answer.questionId}, submissionId=${answer.submissionId}")
-            }
-        }
-        Log.d("SubmissionAnswers", "")
-
-        questionAnswerPairs.forEachIndexed { index, pair ->
-            val question = pair.question
-            val answer = pair.answer
-
-            Log.d("SubmissionAnswers", "--- Question ${index + 1} ---")
-            Log.d("SubmissionAnswers", "Question ID: ${question.id}")
-            Log.d("SubmissionAnswers", "Question Type: ${question.type}")
-            Log.d("SubmissionAnswers", "Question Header: ${question.header ?: "No header"}")
-            Log.d("SubmissionAnswers", "Question Body: ${question.body?.take(100) ?: "No body"}${if ((question.body?.length ?: 0) > 100) "..." else ""}")
-
-            if (answer != null) {
-                Log.d("SubmissionAnswers", "Answer ID: ${answer.id}")
-                Log.d("SubmissionAnswers", "Answer Value: ${answer.value ?: "null"}")
-
-                if (answer.valueChoices != null && answer.valueChoices!!.isNotEmpty()) {
-                    Log.d("SubmissionAnswers", "Answer Choices Count: ${answer.valueChoices!!.size}")
-                    answer.valueChoices!!.forEachIndexed { choiceIndex, choice ->
-                        Log.d("SubmissionAnswers", "  Choice ${choiceIndex + 1}: $choice")
-                    }
-                }
-
-                Log.d("SubmissionAnswers", "Answer Grade: ${answer.grade}")
-                Log.d("SubmissionAnswers", "Answer Passed: ${answer.isPassed}")
-                Log.d("SubmissionAnswers", "Answer Mistakes: ${answer.mistakes}")
-
-                val displayText = formatAnswerForDisplay(question, answer)
-                Log.d("SubmissionAnswers", "Formatted Answer: $displayText")
-            } else {
-                Log.d("SubmissionAnswers", "Answer: NO ANSWER PROVIDED")
-            }
-
-            Log.d("SubmissionAnswers", "")
-        }
-
-        Log.d("SubmissionAnswers", "=== END SUBMISSION ANSWERS LOG ===")
-    }
-
-    private fun debugRealmAnswerTable(submission: RealmSubmission) {
-        Log.d("SubmissionAnswers", "=== REALM ANSWER TABLE DEBUG ===")
-        val allAnswers = mRealm.where(RealmAnswer::class.java).findAll()
-        Log.d("SubmissionAnswers", "Total answers in RealmAnswer table: ${allAnswers.size}")
-
-        if (allAnswers.isNotEmpty()) {
-            Log.d("SubmissionAnswers", "All answers in table:")
-            allAnswers.forEachIndexed { index, answer ->
-                Log.d("SubmissionAnswers", "  Answer ${index + 1}: id=${answer.id}, questionId=${answer.questionId}, submissionId=${answer.submissionId}, examId=${answer.examId}, value=${answer.value ?: "null"}")
-            }
-        }
-
-        val answersBySubmissionId = mRealm.where(RealmAnswer::class.java)
-            .equalTo("submissionId", submission.id)
-            .findAll()
-        Log.d("SubmissionAnswers", "Answers with submissionId='${submission.id}': ${answersBySubmissionId.size}")
-        answersBySubmissionId.forEachIndexed { index, answer ->
-            Log.d("SubmissionAnswers", "  Match ${index + 1}: id=${answer.id}, value=${answer.value}, choices=${answer.valueChoices?.size ?: 0}")
-        }
-
-        val answersBySubmission_Id = mRealm.where(RealmAnswer::class.java)
-            .equalTo("submissionId", submission._id)
-            .findAll()
-        Log.d("SubmissionAnswers", "Answers with submissionId='${submission._id}': ${answersBySubmission_Id.size}")
-
-        val examId = getExamId(submission.parentId)
-        val answersByExamId = mRealm.where(RealmAnswer::class.java)
-            .equalTo("examId", examId)
-            .findAll()
-        Log.d("SubmissionAnswers", "Answers with examId='$examId': ${answersByExamId.size}")
-
-        Log.d("SubmissionAnswers", "")
-    }
 
     private fun formatAnswerForDisplay(question: RealmExamQuestion, answer: RealmAnswer?): String {
         return when {
