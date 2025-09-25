@@ -30,6 +30,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.core.view.children
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
@@ -63,6 +64,7 @@ import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class UserProfileFragment : Fragment() {
@@ -95,6 +97,7 @@ class UserProfileFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         pickImageLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (!isAdded) return@registerForActivityResult
             if (result.resultCode == RESULT_OK && result.data != null) {
                 val url = result.data?.data
                 imageUrl = url.toString()
@@ -102,20 +105,26 @@ class UserProfileFragment : Fragment() {
                 val path = FileUtils.getRealPathFromURI(requireActivity(), url)
                 photoURI = path?.toUri()
                 startIntent(photoURI)
-                binding.image.setImageURI(url)
+                _binding?.let { binding ->
+                    binding.image.setImageURI(url)
+                }
             }
         }
 
         captureImageLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { isSuccess ->
+            if (!isAdded) return@registerForActivityResult
             if (isSuccess) {
                 startIntent(photoURI)
-                binding.image.setImageURI(photoURI)
+                _binding?.let { binding ->
+                    binding.image.setImageURI(photoURI)
+                }
             }
         }
 
         requestCameraLauncher = registerForActivityResult(
             ActivityResultContracts.RequestPermission()
         ) { isGranted ->
+            if (!isAdded) return@registerForActivityResult
             if (isGranted) {
                 takePhoto()
             } else {
@@ -358,7 +367,9 @@ class UserProfileFragment : Fragment() {
                 selectedGender,
                 date?: model?.dob
             ) {
-                updateUIWithUserData(model)
+                viewLifecycleOwner.lifecycleScope.launch {
+                    updateUIWithUserData(model)
+                }
             }
             realm.close()
             dialog.dismiss()
@@ -499,6 +510,7 @@ class UserProfileFragment : Fragment() {
     }
 
     private fun updateUIWithUserData(model: RealmUserModel?) {
+        val binding = _binding ?: return
         model?.let {
             binding.txtName.text = String.format("%s %s %s", it.firstName, it.middleName, it.lastName)
             binding.txtEmail.text = getString(R.string.two_strings, getString(R.string.email_colon), Utilities.checkNA(it.email))
