@@ -45,6 +45,8 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     lateinit var databaseService: DatabaseService
     @Inject
     lateinit var teamRepository: TeamRepository
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
     var type: String? = null
     private var fromDashboard: Boolean = false
     var user: RealmUserModel? = null
@@ -69,7 +71,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTeamBinding.inflate(inflater, container, false)
         mRealm = databaseService.realmInstance
-        user = UserProfileDbHandler(requireActivity()).userModel
+        user = userProfileDbHandler.userModel?.let { userProfileDbHandler.mRealm.copyFromRealm(it) }
 
         if (user?.isGuest() == true) {
             binding.addTeam.visibility = View.GONE
@@ -200,10 +202,13 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     }
 
     private suspend fun createTeam(name: String?, type: String?, map: HashMap<String, String>, isPublic: Boolean) {
+        val user = userProfileDbHandler.userModel?.let {
+            userProfileDbHandler.mRealm.copyFromRealm(it)
+        } ?: return
+
         withContext(Dispatchers.IO) {
             val backgroundRealm = databaseService.realmInstance
             try {
-                val user = UserProfileDbHandler(requireContext()).userModel ?: return@withContext
                 if (!backgroundRealm.isInTransaction) backgroundRealm.beginTransaction()
                 val teamId = AndroidDecrypter.generateIv()
                 val team = backgroundRealm.createObject(RealmMyTeam::class.java, teamId)
