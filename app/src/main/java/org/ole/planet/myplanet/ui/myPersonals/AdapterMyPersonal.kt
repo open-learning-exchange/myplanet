@@ -126,7 +126,7 @@ class AdapterMyPersonal(private val context: Context, private var list: MutableL
                 val title = alertMyPersonalBinding.etDescription.text.toString().trim { it <= ' ' }
                 val desc = alertMyPersonalBinding.etTitle.text.toString().trim { it <= ' ' }
                 if (title.isEmpty()) {
-                    Utilities.toast(context, R.string.please_enter_title.toString())
+                    Utilities.toast(context, context.getString(R.string.please_enter_title))
                     return@setPositiveButton
                 }
                 if (!realm?.isInTransaction!!) realm?.beginTransaction()
