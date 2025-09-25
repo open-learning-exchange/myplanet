@@ -14,7 +14,6 @@ import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.TextView
-import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -36,11 +35,6 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_RESOURCE_DOWNLOAD
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
-import org.ole.planet.myplanet.ui.viewer.AudioPlayerActivity
-import org.ole.planet.myplanet.ui.viewer.CSVViewerActivity
-import org.ole.planet.myplanet.ui.viewer.ImageViewerActivity
-import org.ole.planet.myplanet.ui.viewer.MarkdownViewerActivity
-import org.ole.planet.myplanet.ui.viewer.TextFileViewerActivity
 import org.ole.planet.myplanet.ui.viewer.WebViewActivity
 import org.ole.planet.myplanet.utilities.CourseRatingUtils
 import org.ole.planet.myplanet.utilities.FileUtils
@@ -224,44 +218,6 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                     profileDbHandler?.setResourceOpenCount(items, KEY_RESOURCE_DOWNLOAD)
                 }
             }
-        }
-    }
-
-    private fun checkFileExtension(items: RealmMyLibrary) {
-        val filenameArray = items.resourceLocalAddress?.split("\\.".toRegex())?.toTypedArray()
-        val extension = filenameArray?.get(filenameArray.size - 1)
-        val mimetype = Utilities.getMimeType(items.resourceLocalAddress)
-
-        if (mimetype != null) {
-            if (mimetype.contains("image")) {
-                ResourceOpener.openIntent(requireActivity(), items, ImageViewerActivity::class.java)
-            } else if (mimetype.contains("pdf")) {
-                ResourceOpener.openPdf(requireActivity(), items)
-            } else if (mimetype.contains("audio")) {
-                ResourceOpener.openIntent(requireActivity(), items, AudioPlayerActivity::class.java)
-            } else {
-                checkMoreFileExtensions(extension, items)
-            }
-        }
-    }
-
-    private fun checkMoreFileExtensions(extension: String?, items: RealmMyLibrary) {
-        when (extension) {
-            "txt" -> {
-                ResourceOpener.openIntent(requireActivity(), items, TextFileViewerActivity::class.java)
-            }
-            "md" -> {
-                ResourceOpener.openIntent(requireActivity(), items, MarkdownViewerActivity::class.java)
-            }
-            "csv" -> {
-                ResourceOpener.openIntent(requireActivity(), items, CSVViewerActivity::class.java)
-            }
-            "apk" -> {
-                if (!BuildConfig.LITE) {
-                    installApk(items)
-                }
-            }
-            else -> Toast.makeText(activity, getString(R.string.this_file_type_is_currently_unsupported), Toast.LENGTH_LONG).show()
         }
     }
 
