@@ -12,6 +12,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
+import io.realm.Realm
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
@@ -33,6 +34,7 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
     private var submissions: List<RealmSubmission>? = null
     private var allSubmissions: List<RealmSubmission> = emptyList()
     var user: RealmUserModel? = null
+    private var mRealm: Realm? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,6 +45,7 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
         _binding = FragmentMySubmissionBinding.inflate(inflater, container, false)
         exams = HashMap()
         user = UserProfileDbHandler(requireContext()).userModel
+        mRealm = Realm.getDefaultInstance()
         return binding.root
     }
 
@@ -118,6 +121,7 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
         submissions = uniqueSubmissions
 
         val adapter = AdapterMySubmission(requireActivity(), submissions, exams)
+        adapter.setmRealm(mRealm)
         val itemCount = adapter.itemCount
 
         if (s.isEmpty()) {
@@ -146,6 +150,7 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
     }
 
     override fun onDestroyView() {
+        mRealm?.close()
         _binding = null
         super.onDestroyView()
     }

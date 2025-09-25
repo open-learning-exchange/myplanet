@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.submission
 
 import android.content.Context
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -16,6 +17,7 @@ import org.json.JSONObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.RowMysurveyBinding
+import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -77,6 +79,7 @@ class AdapterMySubmission(
             rowMySurveyBinding.title.text = examHashMap[submission.parentId]?.name
         }
         holder.itemView.setOnClickListener {
+            logSubmissionQuestionsAndAnswers(submission)
             if (type == "survey") {
                 openSurvey(listener, submission.id, true, false, "")
             } else {
@@ -115,6 +118,12 @@ class AdapterMySubmission(
         if (type != null) {
             this.type = type
         }
+    }
+
+    private fun logSubmissionQuestionsAndAnswers(submission: RealmSubmission) {
+        // Only log basic info for debugging
+        val submissionTitle = examHashMap?.get(submission.parentId)?.name ?: "Unknown Submission"
+        Log.d("SubmissionClick", "Clicked: $submissionTitle - ${submission.answers?.size ?: 0} answers")
     }
 
     class ViewHolderMySurvey(rowMySurveyBinding: RowMysurveyBinding) : RecyclerView.ViewHolder(rowMySurveyBinding.root)

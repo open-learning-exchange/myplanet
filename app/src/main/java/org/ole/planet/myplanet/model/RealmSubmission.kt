@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.model
 
 import android.content.Context
 import android.text.TextUtils
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -49,9 +50,16 @@ open class RealmSubmission : RealmObject() {
     companion object {
         @JvmStatic
         fun insert(mRealm: Realm, submission: JsonObject) {
+            Log.d("RealmSubmissionSync", "=== Inserting Submission to Realm ===")
+
             if (submission.has("_attachments")) {
+                Log.d("RealmSubmissionSync", "Submission has attachments, skipping")
                 return
             }
+
+            val id = JsonUtils.getString("_id", submission)
+            Log.d("RealmSubmissionSync", "Submission ID: $id")
+            Log.d("RealmSubmissionSync", "Submission JSON: $submission")
 
             var transactionStarted = false
 
@@ -59,12 +67,18 @@ open class RealmSubmission : RealmObject() {
                 if (!mRealm.isInTransaction) {
                     mRealm.beginTransaction()
                     transactionStarted = true
+                    Log.d("RealmSubmissionSync", "Started Realm transaction")
                 }
 
-                val id = JsonUtils.getString("_id", submission)
                 var sub = mRealm.where(RealmSubmission::class.java).equalTo("_id", id).findFirst()
+                val isNewSubmission = sub == null
+                Log.d("RealmSubmissionSync", "Is new submission: $isNewSubmission")
+
                 if (sub == null) {
                     sub = mRealm.createObject(RealmSubmission::class.java, id)
+                    Log.d("RealmSubmissionSync", "Created new RealmSubmission object")
+                } else {
+                    Log.d("RealmSubmissionSync", "Using existing RealmSubmission object")
                 }
                 sub?._id = id
                 sub?.status = JsonUtils.getString("status", submission)
@@ -100,13 +114,64 @@ open class RealmSubmission : RealmObject() {
                     userId
                 }
 
+                Log.d("RealmSubmissionSync", "Submission data populated:")
+                Log.d("RealmSubmissionSync", "  Status: ${sub?.status}")
+                Log.d("RealmSubmissionSync", "  Type: ${sub?.type}")
+                Log.d("RealmSubmissionSync", "  Parent ID: ${sub?.parentId}")
+                Log.d("RealmSubmissionSync", "  User ID: ${sub?.userId}")
+                Log.d("RealmSubmissionSync", "  Grade: ${sub?.grade}")
+                Log.d("RealmSubmissionSync", "  Start Time: ${sub?.startTime}")
+                Log.d("RealmSubmissionSync", "  Last Update: ${sub?.lastUpdateTime}")
+
+                // Log answers if present in JSON
+                if (submission.has("answers")) {
+                    val answersArray = submission.get("answers").asJsonArray
+                    Log.d("RealmSubmissionSync", "Submission contains ${answersArray.size()} answers in JSON")
+                    for (i in 0 until answersArray.size()) {
+                        val answer = answersArray[i].asJsonObject
+                        Log.d("RealmSubmissionSync", "  Answer $i: ${answer}")
+                    }
+                } else {
+                    Log.d("RealmSubmissionSync", "No answers found in submission JSON")
+                }
+
+                // Parse and save answers from JSON
+                if (submission.has("answers")) {
+                    val answersArray = submission.get("answers").asJsonArray
+                    sub?.answers = RealmList<RealmAnswer>()
+
+                    for (i in 0 until answersArray.size()) {
+                        val answerJson = answersArray[i].asJsonObject
+                        val realmAnswer = mRealm.createObject(RealmAnswer::class.java, UUID.randomUUID().toString())
+
+                        realmAnswer.value = JsonUtils.getString("value", answerJson)
+                        realmAnswer.mistakes = JsonUtils.getInt("mistakes", answerJson)
+                        realmAnswer.isPassed = JsonUtils.getBoolean("passed", answerJson)
+                        realmAnswer.submissionId = sub?._id
+                        realmAnswer.examId = sub?.parentId
+
+                        // For surveys, generate questionId based on index
+                        realmAnswer.questionId = "${sub?.parentId?.split("@")?.get(0) ?: sub?.parentId}-$i"
+
+                        sub?.answers?.add(realmAnswer)
+                        Log.d("RealmSubmissionSync", "Added answer $i: value=${realmAnswer.value}, questionId=${realmAnswer.questionId}")
+                    }
+                    Log.d("RealmSubmissionSync", "Successfully added ${sub?.answers?.size} answers to submission")
+                }
+
+                Log.d("RealmSubmissionSync", "Current answers in RealmSubmission: ${sub?.answers?.size ?: 0}")
+
                 if (transactionStarted) {
                     mRealm.commitTransaction()
+                    Log.d("RealmSubmissionSync", "Transaction committed successfully")
                 }
+                Log.d("RealmSubmissionSync", "=== Submission Insert Complete ===")
             } catch (e: Exception) {
+                Log.e("RealmSubmissionSync", "Error inserting submission", e)
                 e.printStackTrace()
                 if (transactionStarted && mRealm.isInTransaction) {
                     mRealm.cancelTransaction()
+                    Log.d("RealmSubmissionSync", "Transaction cancelled due to error")
                 }
             }
         }
