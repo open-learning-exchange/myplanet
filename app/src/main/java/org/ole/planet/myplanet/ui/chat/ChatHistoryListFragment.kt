@@ -17,11 +17,11 @@ import androidx.lifecycle.lifecycleScope
 import androidx.slidingpanelayout.widget.SlidingPaneLayout
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Sort
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
@@ -29,13 +29,13 @@ import org.ole.planet.myplanet.callback.BaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.callback.TableDataUpdate
 import org.ole.planet.myplanet.databinding.FragmentChatHistoryListBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.Conversation
-import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
+import org.ole.planet.myplanet.repository.ChatRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
@@ -59,7 +59,9 @@ class ChatHistoryListFragment : Fragment() {
     @Inject
     lateinit var syncManager: SyncManager
     @Inject
-    lateinit var databaseService: DatabaseService
+    lateinit var chatRepository: ChatRepository
+    @Inject
+    lateinit var userRepository: UserRepository
     private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
     private lateinit var realtimeSyncListener: BaseRealtimeSyncListener
     private val serverUrl: String
@@ -74,12 +76,6 @@ class ChatHistoryListFragment : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentChatHistoryListBinding.inflate(inflater, container, false)
-        user = databaseService.withRealm { realm ->
-            realm.where(RealmUserModel::class.java)
-                .equalTo("id", settings.getString("userId", ""))
-                .findFirst()?.let { realm.copyFromRealm(it) }
-        }
-
         return binding.root
     }
 
@@ -238,39 +234,49 @@ class ChatHistoryListFragment : Fragment() {
     }
 
     fun refreshChatHistoryList() {
-        val list = databaseService.withRealm { realm ->
-            realm.copyFromRealm(
-                realm.where(RealmChatHistory::class.java)
-                    .equalTo("user", user?.name)
-                    .sort("id", Sort.DESCENDING)
-                    .findAll()
-            )
-        }
+        viewLifecycleOwner.lifecycleScope.launch {
+            val currentUser = loadCurrentUser()
+            val list = chatRepository.getChatHistoryForUser(currentUser?.name)
 
-        val adapter = binding.recyclerView.adapter as? ChatHistoryListAdapter
-        if (adapter == null) {
-            val newAdapter = ChatHistoryListAdapter(requireContext(), list, this, databaseService, settings)
-            newAdapter.setChatHistoryItemClickListener(object : ChatHistoryListAdapter.ChatHistoryItemClickListener {
-                override fun onChatHistoryItemClicked(conversations: List<Conversation>?, id: String, rev: String?, aiProvider: String?) {
-                    conversations?.let { sharedViewModel.setSelectedChatHistory(it) }
-                    sharedViewModel.setSelectedId(id)
-                    rev?.let { sharedViewModel.setSelectedRev(it) }
-                    aiProvider?.let { sharedViewModel.setSelectedAiProvider(it) }
-                    binding.slidingPaneLayout.openPane()
-                }
-            })
-            binding.recyclerView.adapter = newAdapter
-        } else {
-            adapter.updateChatHistory(list)
-            binding.searchBar.visibility = View.VISIBLE
-            binding.recyclerView.visibility = View.VISIBLE
-        }
+            val adapter = binding.recyclerView.adapter as? ChatHistoryListAdapter
+            if (adapter == null) {
+                val newAdapter = ChatHistoryListAdapter(requireContext(), list, this@ChatHistoryListFragment, MainApplication.service, settings)
+                newAdapter.setChatHistoryItemClickListener(object : ChatHistoryListAdapter.ChatHistoryItemClickListener {
+                    override fun onChatHistoryItemClicked(conversations: List<Conversation>?, id: String, rev: String?, aiProvider: String?) {
+                        conversations?.let { sharedViewModel.setSelectedChatHistory(it) }
+                        sharedViewModel.setSelectedId(id)
+                        rev?.let { sharedViewModel.setSelectedRev(it) }
+                        aiProvider?.let { sharedViewModel.setSelectedAiProvider(it) }
+                        binding.slidingPaneLayout.openPane()
+                    }
+                })
+                binding.recyclerView.adapter = newAdapter
+            } else {
+                adapter.updateChatHistory(list)
+                binding.searchBar.visibility = View.VISIBLE
+                binding.recyclerView.visibility = View.VISIBLE
+            }
 
-        showNoData(binding.noChats, list.size, "chatHistory")
-        if (list.isEmpty()) {
-            binding.searchBar.visibility = View.GONE
-            binding.recyclerView.visibility = View.GONE
+            showNoData(binding.noChats, list.size, "chatHistory")
+            if (list.isEmpty()) {
+                binding.searchBar.visibility = View.GONE
+                binding.recyclerView.visibility = View.GONE
+            }
         }
+    }
+
+    private suspend fun loadCurrentUser(): RealmUserModel? {
+        val cachedUser = user
+        if (cachedUser != null) {
+            return cachedUser
+        }
+        val userId = settings.getString("userId", "")
+        if (userId.isNullOrEmpty()) {
+            return null
+        }
+        val fetchedUser = userRepository.getUserById(userId)
+        user = fetchedUser
+        return fetchedUser
     }
 
     private fun setupRealtimeSync() {

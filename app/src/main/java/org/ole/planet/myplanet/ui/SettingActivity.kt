@@ -193,9 +193,9 @@ class SettingActivity : AppCompatActivity() {
                                 }, {
                                     val f = File(FileUtils.getOlePath(requireContext()))
                                     deleteRecursive(f)
-                                    Utilities.toast(requireActivity(), R.string.data_cleared.toString())
+                                    Utilities.toast(requireActivity(), getString(R.string.data_cleared))
                                 }) {
-                                    Utilities.toast(requireActivity(), R.string.unable_to_clear_files.toString())
+                                    Utilities.toast(requireActivity(), getString(R.string.unable_to_clear_files))
                                 }
                             }
                         }.setNegativeButton("No", null).show()
