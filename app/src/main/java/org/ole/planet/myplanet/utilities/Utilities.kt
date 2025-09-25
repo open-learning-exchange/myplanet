@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.MainApplication.Companion.context
 
 object Utilities {
 
+    // only for DEBUG ... not #deadcode
     @JvmStatic
     fun log(message: String) {
         Log.d("OLE ", "log: $message")
@@ -26,10 +27,10 @@ object Utilities {
     }
 
     @JvmStatic
-    fun toast(context: Context?, s: String?, duration: Int = Toast.LENGTH_LONG) {
+    fun toast(context: Context?, message: CharSequence?, duration: Int = Toast.LENGTH_LONG) {
         context ?: return
         MainApplication.applicationScope.launch(Dispatchers.Main) {
-            Toast.makeText(context, s, duration).show()
+            Toast.makeText(context, message, duration).show()
         }
     }
 
