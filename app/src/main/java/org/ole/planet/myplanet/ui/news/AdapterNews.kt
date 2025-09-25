@@ -101,6 +101,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     private val gson = Gson()
     private val profileDbHandler = userProfileDbHandler
     lateinit var settings: SharedPreferences
+    private val userCache = mutableMapOf<String, RealmUserModel?>()
     private val leadersList: List<RealmUserModel> by lazy {
         val raw = settings.getString("communityLeaders", "") ?: ""
         RealmUserModel.parseLeadersJson(raw)
@@ -235,9 +236,30 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     }
 
     private fun configureUser(holder: ViewHolderNews, news: RealmNews): RealmUserModel? {
-        val userModel = mRealm.where(RealmUserModel::class.java)
-            .equalTo("id", news.userId)
-            .findFirst()
+        val userId = news.userId
+        val userModel = when {
+            userId.isNullOrEmpty() -> null
+            userCache.containsKey(userId) -> userCache[userId]
+            ::mRealm.isInitialized -> {
+                val managedUser = mRealm.where(RealmUserModel::class.java)
+                    .equalTo("id", userId)
+                    .findFirst()
+                val detachedUser = managedUser?.let {
+                    try {
+                        mRealm.copyFromRealm(it)
+                    } catch (e: Exception) {
+                        null
+                    }
+                }
+                if (detachedUser != null) {
+                    userCache[userId] = detachedUser
+                } else if (managedUser == null) {
+                    userCache[userId] = null
+                }
+                detachedUser ?: managedUser
+            }
+            else -> null
+        }
         val userFullName = userModel?.getFullNameWithMiddleName()?.trim()
         if (userModel != null && currentUser != null) {
             holder.rowNewsBinding.tvName.text =
@@ -371,6 +393,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     }
 
     private fun submitListSafely(list: List<RealmNews?>, commitCallback: Runnable? = null) {
+        userCache.clear()
         val detachedList = list.map { news ->
             if (news?.isValid == true && ::mRealm.isInitialized) {
                 try {
