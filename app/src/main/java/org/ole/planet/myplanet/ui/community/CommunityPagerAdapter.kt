@@ -14,24 +14,12 @@ import org.ole.planet.myplanet.ui.team.TeamCalendarFragment
 class CommunityPagerAdapter(private val fm: FragmentActivity, private val id: String, private var fromLogin: Boolean, val settings: SharedPreferences) : FragmentStateAdapter(fm) {
     override fun createFragment(position: Int): Fragment {
         val fragment: Fragment = when (position) {
-            0 -> {
-                NewsFragment()
-            }
-            1 -> {
-                LeadersFragment()
-            }
-            2 -> {
-                TeamCalendarFragment()
-            }
-            3 -> {
-                ServicesFragment()
-            }
-            4 -> {
-                FinanceFragment()
-            }
-            else -> {
-                ReportsFragment()
-            }
+            0 -> NewsFragment()
+            1 -> TeamCalendarFragment()
+            2 -> ServicesFragment()
+            3 -> FinanceFragment()
+            4 -> ReportsFragment()
+            else -> throw IndexOutOfBoundsException("Invalid position $position")
         }
         val b = Bundle()
         b.putString("id", id)
@@ -41,23 +29,15 @@ class CommunityPagerAdapter(private val fm: FragmentActivity, private val id: St
         return fragment
     }
 
-    override fun getItemCount(): Int {
-        return if (fromLogin) 3 else 6
-    }
+    override fun getItemCount(): Int = if (fromLogin) 2 else 5
 
     fun getPageTitle(position: Int): CharSequence {
-        val leaders = if (settings.getString("planetType", "") == "community") {
-            fm.getString(R.string.community_leaders)
-        } else {
-            fm.getString(R.string.nation_leaders)
-        }
         return when (position) {
             0 -> fm.getString(R.string.our_voices)
-            1 -> leaders
-            2 -> fm.getString(R.string.calendar)
-            3 -> if (!fromLogin) fm.getString(R.string.services) else ""
-            4 -> if (!fromLogin) fm.getString(R.string.finances) else ""
-            5 -> if (!fromLogin) fm.getString(R.string.reports) else ""
+            1 -> fm.getString(R.string.calendar)
+            2 -> if (!fromLogin) fm.getString(R.string.services) else ""
+            3 -> if (!fromLogin) fm.getString(R.string.finances) else ""
+            4 -> if (!fromLogin) fm.getString(R.string.reports) else ""
             else -> ""
         }
     }
