@@ -48,9 +48,11 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     @Inject
     lateinit var feedbackRepository: FeedbackRepository
     private val serverUrlMapper = ServerUrlMapper()
-    
+
     @Inject
     lateinit var syncManager: SyncManager
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
     
@@ -67,7 +69,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentFeedbackListBinding.inflate(inflater, container, false)
-        userModel = UserProfileDbHandler(requireContext()).userModel
+        userModel = userProfileDbHandler.userModel
 
         binding.fab.setOnClickListener {
             val feedbackFragment = FeedbackFragment()
@@ -176,6 +178,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
         if (::realtimeSyncListener.isInitialized) {
             syncCoordinator.removeListener(realtimeSyncListener)
         }
+        userModel = null
         _binding = null
         super.onDestroyView()
     }
