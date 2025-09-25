@@ -242,7 +242,7 @@ class TeamRepositoryImpl @Inject constructor(
             }
             val apiInterface = client?.create(ApiInterface::class.java)
             withContext(Dispatchers.IO) {
-                withRealm { realm ->
+                withRealmAsync { realm ->
                     realm.executeTransaction { transactionRealm ->
                         uploadManager.uploadTeamActivities(transactionRealm, apiInterface)
                     }
