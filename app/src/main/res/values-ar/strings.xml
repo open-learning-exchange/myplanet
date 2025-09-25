@@ -152,8 +152,6 @@
     <string name="enter_username">أدخل اسم المستخدم</string>
     <string name="login">تسجيل الدخول</string>
     <string name="child_mode">وضع سهل</string>
-    <string name="joined_members">الأعضاء المنضمين</string>
-    <string name="requested_member">عضو مطلوب</string>
     <string name="courses">الدورات</string>
     <string name="enter_message_here">أدخل الرسالة هنا</string>
     <string name="what_would">ما الذي ترغب في مشاركته؟</string>
@@ -175,7 +173,6 @@
     <string name="priority">الأولوية</string>
     <string name="status">الحالة</string>
     <string name="title_not_compulsary">العنوان (غير مطلوب)</string>
-    <string name="discussion">المناقشة</string>
     <string name="add_message">إضافة رسالة</string>
     <string name="enter_message">أدخل رسالتك هنا…</string>
     <string name="added_by">أُضيف بواسطة</string>
@@ -613,8 +610,6 @@
     <string name="public_public">عام</string>
     <string name="type_asterisk">اكتب*</string>
     <string name="joined_members_colon">الأعضاء المنضمون:</string>
-    <string name="requested_members_colon">الأعضاء المطلوبين:</string>
-    <string name="courses_colon">الدورات:</string>
     <string name="title">العنوان</string>
     <string name="source">المصدر</string>
     <string name="cloud_url">سحاب</string>

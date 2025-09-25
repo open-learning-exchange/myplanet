@@ -152,8 +152,6 @@
     <string name="enter_username">Entrer le nom d\'utilisateur</string>
     <string name="login">Connexion</string>
     <string name="child_mode">Mode facile</string>
-    <string name="joined_members">Membres inscrits</string>
-    <string name="requested_member">Membre demandé</string>
     <string name="courses">Cours</string>
     <string name="enter_message_here">Saisissez votre message ici</string>
     <string name="what_would">Que souhaitez-vous partager ?</string>
@@ -175,7 +173,6 @@
     <string name="priority">Priorité</string>
     <string name="status">Statut</string>
     <string name="title_not_compulsary">Titre</string>
-    <string name="discussion">Discussion</string>
     <string name="add_message">Ajouter un message</string>
     <string name="enter_message">Entrez votre message ici…</string>
     <string name="added_by">Ajouté par</string>
@@ -613,8 +610,6 @@
     <string name="public_public">Public</string>
     <string name="type_asterisk">Type*</string>
     <string name="joined_members_colon">Membres inscrits :</string>
-    <string name="requested_members_colon">Membres demandés :</string>
-    <string name="courses_colon">Cours :</string>
     <string name="title">Titre</string>
     <string name="source">Source</string>
     <string name="cloud_url">nuage</string>
