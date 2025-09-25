@@ -23,7 +23,6 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TeamRepository
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
@@ -35,6 +34,7 @@ class AdapterTeamList(
     private val mRealm: Realm,
     private val fragmentManager: FragmentManager,
     private val teamRepository: TeamRepository,
+    private val currentUser: RealmUserModel?,
 ) : RecyclerView.Adapter<AdapterTeamList.ViewHolderTeam>() {
     private lateinit var itemTeamListBinding: ItemTeamListBinding
     private var type: String? = ""
@@ -62,7 +62,7 @@ class AdapterTeamList(
 
     override fun onBindViewHolder(holder: ViewHolderTeam, position: Int) {
         val team = filteredList[position]
-        val user: RealmUserModel? = UserProfileDbHandler(context).userModel
+        val user = currentUser
 
         with(holder.binding) {
             created.text = TimeUtils.getFormattedDate(team.createdDate)
@@ -103,7 +103,7 @@ class AdapterTeamList(
             }
 
             joinLeave.setOnClickListener {
-                handleJoinLeaveClick(team, user)
+                handleJoinLeaveClick(team)
             }
         }
     }
@@ -167,7 +167,8 @@ class AdapterTeamList(
         }
     }
 
-    private fun handleJoinLeaveClick(team: RealmMyTeam, user: RealmUserModel?) {
+    private fun handleJoinLeaveClick(team: RealmMyTeam) {
+        val user = currentUser
         val teamId = team._id
         val userId = user?.id
         val isMyTeam = isMemberOfTeam(teamId, userId)
@@ -182,15 +183,14 @@ class AdapterTeamList(
                     }.setNegativeButton(R.string.no, null).show()
             }
         } else {
-            requestToJoin(team, user)
+            requestToJoin(team)
             updateList()
         }
         syncTeamActivities()
     }
 
     private fun updateList() {
-        val user: RealmUserModel? = UserProfileDbHandler(context).userModel
-        val userId = user?.id
+        val userId = currentUser?.id
 
         val validTeams = list.filter { it.status?.isNotEmpty() == true }
         filteredList = validTeams.sortedWith(compareByDescending<RealmMyTeam> { team ->
@@ -220,7 +220,8 @@ class AdapterTeamList(
         return runBlocking { teamRepository.hasPendingRequest(teamId, userId) }
     }
 
-    private fun requestToJoin(team: RealmMyTeam, user: RealmUserModel?) {
+    private fun requestToJoin(team: RealmMyTeam) {
+        val user = currentUser
         val teamId = team._id ?: return
         runBlocking { teamRepository.requestToJoin(teamId, user, team.teamType) }
     }

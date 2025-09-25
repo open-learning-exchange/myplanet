@@ -255,6 +255,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                         mRealm,
                         childFragmentManager,
                         teamRepository,
+                        user,
                     )
                     adapterTeamList.setTeamListener(this@TeamFragment)
                     binding.rvTeamList.adapter = adapterTeamList
@@ -283,7 +284,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     private fun setTeamList() {
         val list = teamList ?: return
         adapterTeamList = activity?.let {
-            AdapterTeamList(it, list, mRealm, childFragmentManager, teamRepository)
+            AdapterTeamList(it, list, mRealm, childFragmentManager, teamRepository, user)
         } ?: return
         adapterTeamList.setType(type)
         adapterTeamList.setTeamListener(this@TeamFragment)
@@ -354,6 +355,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                 mRealm,
                 childFragmentManager,
                 teamRepository,
+                user,
             ).apply {
                 setType(type)
                 setTeamListener(this@TeamFragment)
@@ -402,6 +404,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         if (this::mRealm.isInitialized && !mRealm.isClosed) {
             mRealm.close()
         }
+        userProfileDbHandler.onDestroy()
         _binding = null
         super.onDestroyView()
     }
