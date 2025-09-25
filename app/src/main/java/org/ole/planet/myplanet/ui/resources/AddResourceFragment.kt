@@ -288,7 +288,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
                 .setPositiveButton("Save") { _: DialogInterface?, _: Int ->
                     val title = etTitle.text.toString().trim { it <= ' ' }
                     if (title.isEmpty()) {
-                        Utilities.toast(context, R.string.title_is_required.toString())
+                        Utilities.toast(context, context.getString(R.string.title_is_required))
                         return@setPositiveButton
                     }
                     val desc = etDesc.text.toString().trim { it <= ' ' }
