@@ -31,6 +31,7 @@ import org.ole.planet.myplanet.callback.TableDataUpdate
 import org.ole.planet.myplanet.databinding.FragmentChatHistoryListBinding
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.Conversation
+import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
@@ -55,6 +56,7 @@ class ChatHistoryListFragment : Fragment() {
     @AppPreferences
     lateinit var settings: SharedPreferences
     private val serverUrlMapper = ServerUrlMapper()
+    private var sharedNewsMessages: List<RealmNews> = emptyList()
     
     @Inject
     lateinit var syncManager: SyncManager
@@ -236,11 +238,19 @@ class ChatHistoryListFragment : Fragment() {
     fun refreshChatHistoryList() {
         viewLifecycleOwner.lifecycleScope.launch {
             val currentUser = loadCurrentUser()
+            sharedNewsMessages = chatRepository.getPlanetNewsMessages(currentUser?.planetCode)
             val list = chatRepository.getChatHistoryForUser(currentUser?.name)
 
             val adapter = binding.recyclerView.adapter as? ChatHistoryListAdapter
             if (adapter == null) {
-                val newAdapter = ChatHistoryListAdapter(requireContext(), list, this@ChatHistoryListFragment, MainApplication.service, settings)
+                val newAdapter = ChatHistoryListAdapter(
+                    requireContext(),
+                    list,
+                    this@ChatHistoryListFragment,
+                    settings,
+                    currentUser,
+                    sharedNewsMessages,
+                )
                 newAdapter.setChatHistoryItemClickListener(object : ChatHistoryListAdapter.ChatHistoryItemClickListener {
                     override fun onChatHistoryItemClicked(conversations: List<Conversation>?, id: String, rev: String?, aiProvider: String?) {
                         conversations?.let { sharedViewModel.setSelectedChatHistory(it) }
@@ -252,6 +262,7 @@ class ChatHistoryListFragment : Fragment() {
                 })
                 binding.recyclerView.adapter = newAdapter
             } else {
+                adapter.updateCachedData(currentUser, sharedNewsMessages)
                 adapter.updateChatHistory(list)
                 binding.searchBar.visibility = View.VISIBLE
                 binding.recyclerView.visibility = View.VISIBLE

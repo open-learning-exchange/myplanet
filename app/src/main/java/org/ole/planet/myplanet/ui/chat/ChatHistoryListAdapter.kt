@@ -11,16 +11,15 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
-import io.realm.Case
 import java.text.Normalizer
 import java.util.Date
 import java.util.Locale
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AddNoteDialogBinding
 import org.ole.planet.myplanet.databinding.ChatShareDialogBinding
 import org.ole.planet.myplanet.databinding.GrandChildRecyclerviewDialogBinding
 import org.ole.planet.myplanet.databinding.RowChatHistoryBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmMyTeam
@@ -35,8 +34,9 @@ class ChatHistoryListAdapter(
     var context: Context,
     private var chatHistory: List<RealmChatHistory>,
     private val fragment: ChatHistoryListFragment,
-    private val databaseService: DatabaseService,
-    private val settings: SharedPreferences
+    private val settings: SharedPreferences,
+    private var currentUser: RealmUserModel?,
+    private var newsList: List<RealmNews>
 ) : ListAdapter<RealmChatHistory, ChatHistoryListAdapter.ViewHolderChat>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem ->
@@ -59,12 +59,15 @@ class ChatHistoryListAdapter(
     private lateinit var expandableListAdapter: ExpandableListAdapter
     private lateinit var expandableTitleList: List<String>
     private lateinit var expandableDetailList: HashMap<String, List<String>>
-    var user: RealmUserModel? = null
-    private var newsList: List<RealmNews> = emptyList()
 
     init {
         chatHistory = chatHistory.sortedByDescending { it.lastUsed }
         submitList(chatHistory)
+    }
+
+    fun updateCachedData(user: RealmUserModel?, sharedNews: List<RealmNews>) {
+        currentUser = user
+        newsList = sharedNews
     }
 
     interface ChatHistoryItemClickListener {
@@ -156,21 +159,6 @@ class ChatHistoryListAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderChat {
         rowChatHistoryBinding = RowChatHistoryBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        databaseService.withRealm { realm ->
-            val userId = settings.getString("userId", "")
-            user = realm.where(RealmUserModel::class.java)
-                .equalTo("id", userId)
-                .findFirst()?.let { realm.copyFromRealm(it) }
-
-            newsList = user?.planetCode?.let { planetCode ->
-                realm.copyFromRealm(
-                    realm.where(RealmNews::class.java)
-                        .equalTo("docType", "message", Case.INSENSITIVE)
-                        .equalTo("createdOn", planetCode, Case.INSENSITIVE)
-                        .findAll()
-                )
-            } ?: emptyList()
-        }
         return ViewHolderChat(rowChatHistoryBinding)
     }
 
@@ -220,7 +208,7 @@ class ChatHistoryListAdapter(
 
                 chatShareDialogBinding.listView.setOnChildClickListener { _, _, groupPosition, childPosition, _ ->
                     if (expandableTitleList[groupPosition] == context.getString(R.string.share_with_team_enterprise)) {
-                        databaseService.withRealm { realm ->
+                        MainApplication.service.withRealm { realm ->
                             val teamList = realm.copyFromRealm(
                                 realm.where(RealmMyTeam::class.java)
                                     .isEmpty("teamId").notEqualTo("status", "archived")
@@ -243,7 +231,7 @@ class ChatHistoryListAdapter(
                         val sParentcode = settings.getString("parentCode", "")
                         val communityName = settings.getString("communityName", "")
                         val teamId = "$communityName@$sParentcode"
-                        databaseService.withRealm { realm ->
+                        MainApplication.service.withRealm { realm ->
                             val community = realm.where(RealmMyTeam::class.java)
                                 .equalTo("_id", teamId)
                                 .findFirst()?.let { realm.copyFromRealm(it) }
@@ -323,16 +311,13 @@ class ChatHistoryListAdapter(
             map["chat"] = "true"
             map["news"] = Gson().toJson(serializedMap)
 
-            databaseService.withRealm { realm ->
-                createNews(map, realm, user, null)
-                newsList = user?.planetCode?.let { planetCode ->
-                    realm.copyFromRealm(
-                        realm.where(RealmNews::class.java)
-                            .equalTo("docType", "message", Case.INSENSITIVE)
-                            .equalTo("createdOn", planetCode, Case.INSENSITIVE)
-                            .findAll()
-                    )
-                } ?: emptyList()
+            MainApplication.service.withRealm { realm ->
+                val createdNews = createNews(map, realm, currentUser, null)
+                newsList = if (currentUser?.planetCode == null) {
+                    newsList
+                } else {
+                    newsList + createdNews
+                }
             }
 
             val position = currentList.indexOfFirst { it._id == chatHistory._id }
