@@ -90,17 +90,6 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         }
     }
 
-    fun validateEditText(textField: EditText, textLayout: TextInputLayout, errMessage: String?): Boolean {
-        if (textField.text.toString().trim { it <= ' ' }.isEmpty()) {
-            textLayout.error = errMessage
-            requestFocus(textField)
-            return false
-        } else {
-            textLayout.isErrorEnabled = false
-        }
-        return true
-    }
-
     fun checkDownloadResult(download: Download?) {
         runOnUiThread {
             if (!isFinishing && !isDestroyed) {
