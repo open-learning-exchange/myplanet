@@ -25,7 +25,7 @@ import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.CheckboxListView
 
 @AndroidEntryPoint
-class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdateListner {
+class TeamResourceFragment : BaseTeamFragment(), ResourceUpdateListner {
     private var _binding: FragmentTeamResourceBinding? = null
     private val binding get() = _binding!!
     private lateinit var adapterLibrary: AdapterTeamResource
@@ -150,10 +150,6 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdat
                 onResourceUpdateFailed(R.string.failed_to_remove_resource)
             }
         }
-    }
-
-    override fun onAddDocument() {
-        showResourceListDialog()
     }
 
     override fun onDestroyView() {

@@ -14,6 +14,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.callback.TeamPageListener
 import org.ole.planet.myplanet.databinding.FragmentTeamCourseBinding
 import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding
 import org.ole.planet.myplanet.model.RealmMyCourse
@@ -22,7 +23,7 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.CheckboxListView
 
-class TeamCourseFragment : BaseTeamFragment() {
+class TeamCourseFragment : BaseTeamFragment(), TeamPageListener {
     private var _binding: FragmentTeamCourseBinding? = null
     private val binding get() = _binding!!
     private var adapterTeamCourse: AdapterTeamCourse? = null
@@ -109,6 +110,10 @@ class TeamCourseFragment : BaseTeamFragment() {
     override fun clearImages() {
         imageList.clear()
         llImage?.removeAllViews()
+    }
+
+    override fun onAddCourse() {
+        showCourseListDialog()
     }
 
     override fun onDestroyView() {

@@ -10,9 +10,10 @@ import org.ole.planet.myplanet.ui.team.TeamPageConfig.ApplicantsPage
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.DocumentsPage
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.JoinRequestsPage
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.MembersPage
-import org.ole.planet.myplanet.ui.team.TeamPageConfig.ResourcesPage
+import org.ole.planet.myplanet.ui.team.TeamPageConfig.CoursesPage
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.SurveyPage
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.TeamPage
+import org.ole.planet.myplanet.ui.team.teamCourse.TeamCourseFragment
 import org.ole.planet.myplanet.ui.team.teamMember.JoinedMemberFragment
 import org.ole.planet.myplanet.ui.team.teamMember.MembersFragment
 import org.ole.planet.myplanet.ui.team.teamResource.TeamResourceFragment
@@ -54,7 +55,7 @@ class TeamPagerAdapter(
             ApplicantsPage, JoinRequestsPage -> if (fragment is MembersFragment) {
                 fragment.setMemberChangeListener(memberChangeListener)
             }
-            DocumentsPage, ResourcesPage -> if (fragment is TeamResourceFragment) {
+            CoursesPage -> if (fragment is TeamCourseFragment) {
                 MainApplication.listener = fragment
             }
             SurveyPage -> {
