@@ -10,6 +10,15 @@ object SecurePrefs {
     private const val FILE_NAME = "secure_prefs"
 
     private fun prefs(context: Context): SharedPreferences {
+        return try {
+            createEncryptedPrefs(context)
+        } catch (e: Exception) {
+            context.deleteSharedPreferences(FILE_NAME)
+            createEncryptedPrefs(context)
+        }
+    }
+
+    private fun createEncryptedPrefs(context: Context): SharedPreferences {
         val masterKey = MasterKey.Builder(context)
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
             .build()
