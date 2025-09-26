@@ -21,7 +21,6 @@ import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
@@ -31,11 +30,15 @@ import org.ole.planet.myplanet.callback.TableDataUpdate
 import org.ole.planet.myplanet.databinding.FragmentChatHistoryListBinding
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.Conversation
+import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.NewsRepository
+import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
@@ -46,7 +49,7 @@ class ChatHistoryListFragment : Fragment() {
     private var _binding: FragmentChatHistoryListBinding? = null
     private val binding get() = _binding!!
     private lateinit var sharedViewModel: ChatViewModel
-    var user: RealmUserModel? = null
+    private var cachedUser: RealmUserModel? = null
     private var isFullSearch: Boolean = false
     private var isQuestion: Boolean = false
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
@@ -62,6 +65,10 @@ class ChatHistoryListFragment : Fragment() {
     lateinit var chatRepository: ChatRepository
     @Inject
     lateinit var userRepository: UserRepository
+    @Inject
+    lateinit var newsRepository: NewsRepository
+    @Inject
+    lateinit var teamRepository: TeamRepository
     private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
     private lateinit var realtimeSyncListener: BaseRealtimeSyncListener
     private val serverUrl: String
@@ -236,11 +243,26 @@ class ChatHistoryListFragment : Fragment() {
     fun refreshChatHistoryList() {
         viewLifecycleOwner.lifecycleScope.launch {
             val currentUser = loadCurrentUser()
+            val news = loadNewsForUser(currentUser)
+            val teams = teamRepository.getRootTeamsByType("team")
+            val enterprises = teamRepository.getRootTeamsByType("enterprise")
+            val community = loadCommunityTeam()
             val list = chatRepository.getChatHistoryForUser(currentUser?.name)
 
             val adapter = binding.recyclerView.adapter as? ChatHistoryListAdapter
             if (adapter == null) {
-                val newAdapter = ChatHistoryListAdapter(requireContext(), list, this@ChatHistoryListFragment, MainApplication.service, settings)
+                val newAdapter =
+                    ChatHistoryListAdapter(
+                        requireContext(),
+                        list,
+                        this@ChatHistoryListFragment,
+                        currentUser,
+                        news,
+                        teams,
+                        enterprises,
+                        community,
+                        newsRepository,
+                    )
                 newAdapter.setChatHistoryItemClickListener(object : ChatHistoryListAdapter.ChatHistoryItemClickListener {
                     override fun onChatHistoryItemClicked(conversations: List<Conversation>?, id: String, rev: String?, aiProvider: String?) {
                         conversations?.let { sharedViewModel.setSelectedChatHistory(it) }
@@ -252,7 +274,14 @@ class ChatHistoryListFragment : Fragment() {
                 })
                 binding.recyclerView.adapter = newAdapter
             } else {
-                adapter.updateChatHistory(list)
+                adapter.updateChatHistory(
+                    list,
+                    currentUser,
+                    news,
+                    teams,
+                    enterprises,
+                    community,
+                )
                 binding.searchBar.visibility = View.VISIBLE
                 binding.recyclerView.visibility = View.VISIBLE
             }
@@ -266,17 +295,32 @@ class ChatHistoryListFragment : Fragment() {
     }
 
     private suspend fun loadCurrentUser(): RealmUserModel? {
-        val cachedUser = user
-        if (cachedUser != null) {
-            return cachedUser
+        val cached = cachedUser
+        if (cached != null) {
+            return cached
         }
         val userId = settings.getString("userId", "")
         if (userId.isNullOrEmpty()) {
             return null
         }
         val fetchedUser = userRepository.getUserById(userId)
-        user = fetchedUser
+        cachedUser = fetchedUser
         return fetchedUser
+    }
+
+    private suspend fun loadNewsForUser(user: RealmUserModel?): List<RealmNews> {
+        val planetCode = user?.planetCode ?: return emptyList()
+        return newsRepository.getMessagesForPlanet(planetCode)
+    }
+
+    private suspend fun loadCommunityTeam(): RealmMyTeam? {
+        val parentCode = settings.getString("parentCode", "") ?: ""
+        val communityName = settings.getString("communityName", "") ?: ""
+        if (parentCode.isEmpty() || communityName.isEmpty()) {
+            return null
+        }
+        val teamId = "$communityName@$parentCode"
+        return teamRepository.getTeamById(teamId)
     }
 
     private fun setupRealtimeSync() {

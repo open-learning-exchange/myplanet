@@ -59,6 +59,15 @@ class TeamRepositoryImpl @Inject constructor(
         return findByField(RealmMyTeam::class.java, "_id", teamId)
     }
 
+    override suspend fun getRootTeamsByType(type: String): List<RealmMyTeam> {
+        if (type.isBlank()) return emptyList()
+        return queryList(RealmMyTeam::class.java) {
+            isEmpty("teamId")
+            notEqualTo("status", "archived")
+            equalTo("type", type)
+        }
+    }
+
     override suspend fun isMember(userId: String?, teamId: String): Boolean {
         userId ?: return false
         return queryList(RealmMyTeam::class.java) {

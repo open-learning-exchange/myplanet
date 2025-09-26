@@ -2,31 +2,30 @@ package org.ole.planet.myplanet.ui.chat
 
 import android.app.AlertDialog
 import android.content.Context
-import android.content.SharedPreferences
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toDrawable
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
-import io.realm.Case
 import java.text.Normalizer
 import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AddNoteDialogBinding
 import org.ole.planet.myplanet.databinding.ChatShareDialogBinding
 import org.ole.planet.myplanet.databinding.GrandChildRecyclerviewDialogBinding
 import org.ole.planet.myplanet.databinding.RowChatHistoryBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.NewsRepository
 import org.ole.planet.myplanet.ui.news.ExpandableListAdapter
 import org.ole.planet.myplanet.ui.news.GrandChildAdapter
 import org.ole.planet.myplanet.utilities.DiffUtils
@@ -35,8 +34,12 @@ class ChatHistoryListAdapter(
     var context: Context,
     private var chatHistory: List<RealmChatHistory>,
     private val fragment: ChatHistoryListFragment,
-    private val databaseService: DatabaseService,
-    private val settings: SharedPreferences
+    initialUser: RealmUserModel?,
+    initialNews: List<RealmNews>,
+    initialTeams: List<RealmMyTeam>,
+    initialEnterprises: List<RealmMyTeam>,
+    initialCommunity: RealmMyTeam?,
+    private val newsRepository: NewsRepository,
 ) : ListAdapter<RealmChatHistory, ChatHistoryListAdapter.ViewHolderChat>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem ->
@@ -59,8 +62,11 @@ class ChatHistoryListAdapter(
     private lateinit var expandableListAdapter: ExpandableListAdapter
     private lateinit var expandableTitleList: List<String>
     private lateinit var expandableDetailList: HashMap<String, List<String>>
-    var user: RealmUserModel? = null
-    private var newsList: List<RealmNews> = emptyList()
+    private var user: RealmUserModel? = initialUser
+    private var newsIds: MutableSet<String> = initialNews.mapNotNull { it.newsId }.toMutableSet()
+    private var teamList: List<RealmMyTeam> = initialTeams
+    private var enterpriseList: List<RealmMyTeam> = initialEnterprises
+    private var communityTeam: RealmMyTeam? = initialCommunity
 
     init {
         chatHistory = chatHistory.sortedByDescending { it.lastUsed }
@@ -156,26 +162,23 @@ class ChatHistoryListAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderChat {
         rowChatHistoryBinding = RowChatHistoryBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        databaseService.withRealm { realm ->
-            val userId = settings.getString("userId", "")
-            user = realm.where(RealmUserModel::class.java)
-                .equalTo("id", userId)
-                .findFirst()?.let { realm.copyFromRealm(it) }
-
-            newsList = user?.planetCode?.let { planetCode ->
-                realm.copyFromRealm(
-                    realm.where(RealmNews::class.java)
-                        .equalTo("docType", "message", Case.INSENSITIVE)
-                        .equalTo("createdOn", planetCode, Case.INSENSITIVE)
-                        .findAll()
-                )
-            } ?: emptyList()
-        }
         return ViewHolderChat(rowChatHistoryBinding)
     }
 
-    fun updateChatHistory(newChatHistory: List<RealmChatHistory>) {
+    fun updateChatHistory(
+        newChatHistory: List<RealmChatHistory>,
+        updatedUser: RealmUserModel?,
+        updatedNews: List<RealmNews>,
+        teams: List<RealmMyTeam>,
+        enterprises: List<RealmMyTeam>,
+        community: RealmMyTeam?,
+    ) {
         chatHistory = newChatHistory.sortedByDescending { it.lastUsed }
+        user = updatedUser
+        newsIds = updatedNews.mapNotNull { it.newsId }.toMutableSet()
+        teamList = teams
+        enterpriseList = enterprises
+        communityTeam = community
         submitList(chatHistory)
     }
 
@@ -201,9 +204,7 @@ class ChatHistoryListAdapter(
             )
         }
 
-        val isInNewsList = newsList.any { newsItem ->
-            newsItem.newsId == item._id
-        }
+        val isInNewsList = item._id?.let { newsIds.contains(it) } ?: false
 
         if (isInNewsList) {
             holder.rowChatHistoryBinding.shareChat.setImageResource(R.drawable.baseline_check_24)
@@ -220,35 +221,15 @@ class ChatHistoryListAdapter(
 
                 chatShareDialogBinding.listView.setOnChildClickListener { _, _, groupPosition, childPosition, _ ->
                     if (expandableTitleList[groupPosition] == context.getString(R.string.share_with_team_enterprise)) {
-                        databaseService.withRealm { realm ->
-                            val teamList = realm.copyFromRealm(
-                                realm.where(RealmMyTeam::class.java)
-                                    .isEmpty("teamId").notEqualTo("status", "archived")
-                                    .equalTo("type", "team").findAll()
-                            )
-
-                            val enterpriseList = realm.copyFromRealm(
-                                realm.where(RealmMyTeam::class.java)
-                                    .isEmpty("teamId").notEqualTo("status", "archived")
-                                    .equalTo("type", "enterprise").findAll()
-                            )
-
-                            if (expandableDetailList[expandableTitleList[groupPosition]]?.get(childPosition) == context.getString(R.string.teams)) {
-                                showGrandChildRecyclerView(teamList, context.getString(R.string.teams), item)
-                            } else {
-                                showGrandChildRecyclerView(enterpriseList, context.getString(R.string.enterprises), item)
-                            }
+                        val selectedSection =
+                            expandableDetailList[expandableTitleList[groupPosition]]?.get(childPosition)
+                        if (selectedSection == context.getString(R.string.teams)) {
+                            showGrandChildRecyclerView(teamList, context.getString(R.string.teams), item)
+                        } else {
+                            showGrandChildRecyclerView(enterpriseList, context.getString(R.string.enterprises), item)
                         }
                     } else {
-                        val sParentcode = settings.getString("parentCode", "")
-                        val communityName = settings.getString("communityName", "")
-                        val teamId = "$communityName@$sParentcode"
-                        databaseService.withRealm { realm ->
-                            val community = realm.where(RealmMyTeam::class.java)
-                                .equalTo("_id", teamId)
-                                .findFirst()?.let { realm.copyFromRealm(it) }
-                            showEditTextAndShareButton(community, context.getString(R.string.community), item)
-                        }
+                        showEditTextAndShareButton(communityTeam, context.getString(R.string.community), item)
                     }
                     dialog?.dismiss()
                     false
@@ -302,7 +283,7 @@ class ChatHistoryListAdapter(
         val addNoteDialogBinding = AddNoteDialogBinding.inflate(LayoutInflater.from(context))
         val builder = AlertDialog.Builder(context, R.style.AlertDialogTheme)
         builder.setView(addNoteDialogBinding.root)
-        builder.setPositiveButton(context.getString(R.string.share_chat)) { dialog, _ ->
+        builder.setPositiveButton(context.getString(R.string.share_chat)) { _, _ ->
             val serializedConversations = chatHistory.conversations?.map { serializeConversation(it) }
             val serializedMap = HashMap<String?, String>()
             serializedMap["_id"] = chatHistory._id ?: ""
@@ -322,26 +303,19 @@ class ChatHistoryListAdapter(
             map["messagePlanetCode"] = team?.teamPlanetCode ?: ""
             map["chat"] = "true"
             map["news"] = Gson().toJson(serializedMap)
-
-            databaseService.withRealm { realm ->
-                createNews(map, realm, user, null)
-                newsList = user?.planetCode?.let { planetCode ->
-                    realm.copyFromRealm(
-                        realm.where(RealmNews::class.java)
-                            .equalTo("docType", "message", Case.INSENSITIVE)
-                            .equalTo("createdOn", planetCode, Case.INSENSITIVE)
-                            .findAll()
-                    )
-                } ?: emptyList()
+            val currentUser = user ?: return@setPositiveButton
+            fragment.lifecycleScope.launch {
+                val createdNews = newsRepository.createChatNews(map, currentUser)
+                val newsId = createdNews?.newsId?.takeIf { it.isNotBlank() } ?: chatHistory._id
+                newsId?.let { chatId ->
+                    newsIds.add(chatId)
+                    val position = currentList.indexOfFirst { it._id == chatId }
+                    if (position != -1) {
+                        notifyItemChanged(position)
+                    }
+                }
+                fragment.refreshChatHistoryList()
             }
-
-            val position = currentList.indexOfFirst { it._id == chatHistory._id }
-            if (position != -1) {
-                notifyItemChanged(position)
-            }
-
-            fragment.refreshChatHistoryList()
-            dialog.dismiss()
         }
         builder.setNegativeButton(context.getString(R.string.cancel)) { dialog, _ ->
             dialog.dismiss()
