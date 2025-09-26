@@ -15,7 +15,6 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toDrawable
@@ -410,14 +409,12 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     private fun setMemberClickListeners(holder: ViewHolderNews, userModel: RealmUserModel?, currentLeader: RealmUserModel?) {
         if (!fromLogin) {
             holder.rowNewsBinding.imgUser.setOnClickListener {
-                val activity = context as AppCompatActivity
                 val model = userModel ?: currentLeader
-                NewsActions.showMemberDetails(activity, model, profileDbHandler)
+                listener?.onMemberSelected(model)
             }
             holder.rowNewsBinding.tvName.setOnClickListener {
-                val activity = context as AppCompatActivity
                 val model = userModel ?: currentLeader
-                NewsActions.showMemberDetails(activity, model, profileDbHandler)
+                listener?.onMemberSelected(model)
             }
         }
     }
@@ -545,6 +542,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         fun onNewsItemClick(news: RealmNews?)
         fun clearImages()
         fun onDataChanged()
+        fun onMemberSelected(userModel: RealmUserModel?)
     }
 
     private fun showShareButton(holder: RecyclerView.ViewHolder, news: RealmNews?) {

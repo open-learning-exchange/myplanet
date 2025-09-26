@@ -31,7 +31,9 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.news.AdapterNews.OnNewsItemClickListener
+import org.ole.planet.myplanet.ui.news.NewsActions
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getImagePath
@@ -121,6 +123,16 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     }
 
     override fun onNewsItemClick(news: RealmNews?) {}
+
+    override fun onMemberSelected(userModel: RealmUserModel?) {
+        val fragment = NewsActions.showMemberDetails(userModel, userProfileDbHandler) ?: return
+        NavigationHelper.replaceFragment(
+            supportFragmentManager,
+            R.id.fragment_container,
+            fragment,
+            addToBackStack = true
+        )
+    }
 
     override fun clearImages() {
         imageList.clear()
