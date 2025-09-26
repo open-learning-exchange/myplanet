@@ -39,6 +39,8 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
     lateinit var databaseService: DatabaseService
     @Inject
     lateinit var myPersonalRepository: MyPersonalRepository
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
     fun refreshFragment() {
         if (isAdded) {
             setAdapter()
@@ -70,7 +72,7 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
     }
 
     private fun setAdapter() {
-        val model = UserProfileDbHandler(requireContext()).userModel
+        val model = userProfileDbHandler.userModel
         personalAdapter = AdapterMyPersonal(requireActivity(), mutableListOf())
         personalAdapter?.setListener(this)
         personalAdapter?.setRealm(mRealm)
