@@ -116,6 +116,10 @@ class SubmissionRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getExamByName(name: String): RealmStepExam? {
+        return findByField(RealmStepExam::class.java, "name", name)
+    }
+
     override suspend fun createSurveySubmission(examId: String, userId: String?) {
         withRealmAsync { realm ->
             val courseId = realm.where(RealmStepExam::class.java).equalTo("id", examId).findFirst()?.courseId

@@ -27,9 +27,9 @@ import org.ole.planet.myplanet.databinding.FragmentNotificationsBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNotification
-import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.repository.NotificationRepository
+import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
@@ -45,6 +45,8 @@ class NotificationsFragment : Fragment() {
     lateinit var databaseService: DatabaseService
     @Inject
     lateinit var notificationRepository: NotificationRepository
+    @Inject
+    lateinit var submissionRepository: SubmissionRepository
     private lateinit var adapter: AdapterNotification
     private lateinit var userId: String
     private var notificationUpdateListener: NotificationListener? = null
@@ -110,18 +112,19 @@ class NotificationsFragment : Fragment() {
                 startActivity(intent)
             }
             "survey" -> {
-                databaseService.withRealm { realm ->
-                    val currentStepExam = realm.where(RealmStepExam::class.java)
-                        .equalTo("name", notification.relatedId)
-                        .findFirst()
-                    if (currentStepExam != null && activity is OnHomeItemClickListener) {
-                        AdapterMySubmission.openSurvey(
-                            activity as OnHomeItemClickListener,
-                            currentStepExam.id,
-                            false,
-                            false,
-                            "",
-                        )
+                val relatedName = notification.relatedId
+                if (relatedName != null) {
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        val currentStepExam = submissionRepository.getExamByName(relatedName)
+                        if (currentStepExam != null && activity is OnHomeItemClickListener) {
+                            AdapterMySubmission.openSurvey(
+                                activity as OnHomeItemClickListener,
+                                currentStepExam.id,
+                                false,
+                                false,
+                                "",
+                            )
+                        }
                     }
                 }
             }
