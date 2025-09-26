@@ -65,6 +65,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.NotificationData
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.chat.ChatHistoryListFragment
@@ -710,7 +711,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val newNotifications = mutableListOf<NotificationUtils.NotificationConfig>()
         createSurveyDatabaseNotifications(realm, userId)
         createTaskDatabaseNotifications(realm, userId)
-        createStorageDatabaseNotifications(realm, userId)
+        createStorageDatabaseNotifications(userId)
         createJoinRequestDatabaseNotifications(realm, userId)
 
         realm.refresh()
@@ -771,15 +772,24 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             .equalTo("type", "survey")
             .findAll()
 
-        pendingSurveys.mapNotNull { submission ->
+        val surveyNotifications = pendingSurveys.mapNotNull { submission ->
             val examId = submission.parentId?.split("@")?.firstOrNull() ?: ""
             realm.where(RealmStepExam::class.java)
                 .equalTo("id", examId)
                 .findFirst()
-                ?.name
-        }.forEach { title ->
-            dashboardViewModel.createNotificationIfNotExists("survey", title, title, userId)
+                ?.name?.let { title ->
+                    Triple("survey", title, title)
+                }
         }
+
+        batchCreateNotifications(surveyNotifications, userId)
+    }
+
+    private suspend fun batchCreateNotifications(notifications: List<Triple<String, String, String>>, userId: String?) {
+        val notificationData = notifications.map { (type, message, relatedId) ->
+            NotificationData(type, message, relatedId)
+        }
+        dashboardViewModel.batchCreateNotifications(notificationData, userId)
     }
 
     private suspend fun createTaskDatabaseNotifications(realm: Realm, userId: String?) {
@@ -789,56 +799,61 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             .equalTo("assignee", userId)
             .findAll()
 
-        tasks.forEach { task ->
-            dashboardViewModel.createNotificationIfNotExists(
-                "task",
-                "${task.title} ${formatDate(task.deadline)}",
-                task.id,
-                userId
-            )
+        val taskNotifications = tasks.map { task ->
+            Triple("task", "${task.title} ${formatDate(task.deadline)}", task.id ?: "")
         }
+
+        batchCreateNotifications(taskNotifications, userId)
     }
 
-    private suspend fun createStorageDatabaseNotifications(realm: Realm, userId: String?) {
+    private suspend fun createStorageDatabaseNotifications(userId: String?) {
+        val storageNotifications = mutableListOf<Triple<String, String, String>>()
         val storageRatio = FileUtils.totalAvailableMemoryRatio(this)
-        if (storageRatio > 85) {
-            dashboardViewModel.createNotificationIfNotExists("storage", "$storageRatio%", "storage", userId)
-        }
 
-        dashboardViewModel.createNotificationIfNotExists("storage", "90%", "storage_test", userId)
+        if (storageRatio > 85) {
+            storageNotifications.add(Triple("storage", "$storageRatio%", "storage"))
+        }
+        storageNotifications.add(Triple("storage", "90%", "storage_test"))
+
+        batchCreateNotifications(storageNotifications, userId)
     }
 
     private suspend fun createJoinRequestDatabaseNotifications(realm: Realm, userId: String?) {
-        val teamLeaderMemberships = realm.where(RealmMyTeam::class.java)
+        val teamIds = realm.where(RealmMyTeam::class.java)
             .equalTo("userId", userId)
             .equalTo("docType", "membership")
             .equalTo("isLeader", true)
             .findAll()
+            .map { it.teamId }
 
-        teamLeaderMemberships.forEach { leadership ->
-            val pendingJoinRequests = realm.where(RealmMyTeam::class.java)
-                .equalTo("teamId", leadership.teamId)
+        if (teamIds.isEmpty()) return
+
+        val joinRequestNotifications = mutableListOf<Triple<String, String, String>>()
+
+        teamIds.forEach { teamId ->
+            val joinRequestData = realm.where(RealmMyTeam::class.java)
+                .equalTo("teamId", teamId)
                 .equalTo("docType", "request")
                 .findAll()
 
-            pendingJoinRequests.forEach { joinRequest ->
-                val team = realm.where(RealmMyTeam::class.java)
-                    .equalTo("_id", leadership.teamId)
-                    .findFirst()
+            val team = realm.where(RealmMyTeam::class.java)
+                .equalTo("_id", teamId)
+                .findFirst()
+            val teamName = team?.name ?: "Unknown Team"
 
+            joinRequestData.forEach { joinRequest ->
                 val requester = realm.where(RealmUserModel::class.java)
                     .equalTo("id", joinRequest.userId)
                     .findFirst()
 
                 val requesterName = requester?.name ?: "Unknown User"
-                val teamName = team?.name ?: "Unknown Team"
                 val message = getString(R.string.user_requested_to_join_team, requesterName, teamName)
 
-                dashboardViewModel.createNotificationIfNotExists(
-                    "join_request", message, joinRequest._id, userId
-                )
+                joinRequestNotifications.add(Triple("join_request", message, joinRequest._id ?: ""))
             }
         }
+
+        batchCreateNotifications(joinRequestNotifications, userId)
     }
 
     private fun openNotificationsList(userId: String) {

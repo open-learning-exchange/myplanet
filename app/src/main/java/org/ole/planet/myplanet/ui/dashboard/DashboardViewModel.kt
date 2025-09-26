@@ -12,6 +12,7 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.repository.CourseRepository
 import org.ole.planet.myplanet.repository.LibraryRepository
 import org.ole.planet.myplanet.repository.NotificationRepository
+import org.ole.planet.myplanet.repository.NotificationData
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.UserRepository
 
@@ -66,6 +67,10 @@ class DashboardViewModel @Inject constructor(
 
     suspend fun createNotificationIfNotExists(type: String, message: String, relatedId: String?, userId: String?) {
         notificationRepository.ensureNotification(type, message, relatedId, userId)
+    }
+
+    suspend fun batchCreateNotifications(notifications: List<NotificationData>, userId: String?) {
+        notificationRepository.batchEnsureNotifications(notifications, userId)
     }
 
     suspend fun getPendingSurveys(userId: String?): List<RealmSubmission> {
