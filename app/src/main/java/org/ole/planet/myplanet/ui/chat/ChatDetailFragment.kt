@@ -39,7 +39,6 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentChatDetailBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatModel
@@ -48,9 +47,9 @@ import org.ole.planet.myplanet.model.ContentData
 import org.ole.planet.myplanet.model.ContinueChatModel
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.Data
-import org.ole.planet.myplanet.model.RealmChatHistory
-import org.ole.planet.myplanet.model.RealmChatHistory.Companion.addConversationToChatHistory
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.ChatRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
@@ -76,9 +75,11 @@ class ChatDetailFragment : Fragment() {
     lateinit var settings: SharedPreferences
     lateinit var customProgressDialog: DialogUtils.CustomProgressDialog
     @Inject
-    lateinit var databaseService: DatabaseService
-    @Inject
     lateinit var chatApiHelper: ChatApiHelper
+    @Inject
+    lateinit var chatRepository: ChatRepository
+    @Inject
+    lateinit var userRepository: UserRepository
     private val gson = Gson()
     private val serverUrlMapper = ServerUrlMapper()
     private val jsonMediaType = "application/json".toMediaTypeOrNull()
@@ -113,10 +114,13 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun initChatComponents() {
-        user = databaseService.withRealm { realm ->
-            realm.where(RealmUserModel::class.java)
-                .equalTo("id", settings.getString("userId", ""))
-                .findFirst()?.let { realm.copyFromRealm(it) }
+        viewLifecycleOwner.lifecycleScope.launch {
+            val userId = settings.getString("userId", "")
+            user = if (!userId.isNullOrEmpty()) {
+                userRepository.getUserById(userId)
+            } else {
+                null
+            }
         }
         mAdapter = ChatAdapter(requireContext(), binding.recyclerGchat)
         binding.recyclerGchat.apply {
@@ -142,19 +146,21 @@ class ChatDetailFragment : Fragment() {
             } else {
                 val message = "${binding.editGchatMessage.text}".replace("\n", " ")
                 mAdapter.addQuery(message)
-                when {
-                    _id.isNotEmpty() -> {
-                        val newRev = getLatestRev(_id) ?: _rev
-                        val requestBody = createContinueChatRequest(message, aiProvider, _id, newRev)
-                        launchRequest(requestBody, message, _id)
-                    }
-                    currentID.isNotEmpty() -> {
-                        val requestBody = createContinueChatRequest(message, aiProvider, currentID, _rev)
-                        launchRequest(requestBody, message, currentID)
-                    }
-                    else -> {
-                        val requestBody = createChatRequest(message, aiProvider)
-                        launchRequest(requestBody, message, null)
+                viewLifecycleOwner.lifecycleScope.launch {
+                    when {
+                        _id.isNotEmpty() -> {
+                            val latestRev = getLatestRev(_id) ?: _rev
+                            val requestBody = createContinueChatRequest(message, aiProvider, _id, latestRev)
+                            launchRequest(requestBody, message, _id)
+                        }
+                        currentID.isNotEmpty() -> {
+                            val requestBody = createContinueChatRequest(message, aiProvider, currentID, _rev)
+                            launchRequest(requestBody, message, currentID)
+                        }
+                        else -> {
+                            val requestBody = createChatRequest(message, aiProvider)
+                            launchRequest(requestBody, message, null)
+                        }
                     }
                 }
                 binding.editGchatMessage.text.clear()
@@ -419,16 +425,9 @@ class ChatDetailFragment : Fragment() {
         return jsonRequestBody(jsonContent)
     }
 
-    private fun getLatestRev(id: String): String? {
+    private suspend fun getLatestRev(id: String): String? {
         return try {
-            databaseService.withRealm { realm ->
-                realm.refresh()
-                realm.where(RealmChatHistory::class.java)
-                    .equalTo("_id", id)
-                    .findAll()
-                    .maxByOrNull { rev -> rev._rev?.split("-")?.get(0)?.toIntOrNull() ?: 0 }
-                    ?._rev
-            }
+            chatRepository.getLatestRevision(id)
         } catch (e: Exception) {
             e.printStackTrace()
             null
@@ -488,9 +487,7 @@ class ChatDetailFragment : Fragment() {
         val jsonObject = buildChatHistoryObject(query, chatResponse, responseBody)
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                databaseService.executeTransactionAsync { realm ->
-                    RealmChatHistory.insert(realm, jsonObject)
-                }
+                chatRepository.insertChatHistory(jsonObject)
                 if (isAdded && activity is DashboardActivity) {
                     (activity as DashboardActivity).refreshChatHistoryList()
                 }
@@ -530,15 +527,11 @@ class ChatDetailFragment : Fragment() {
         }
 
     private fun continueConversationRealm(id: String, query: String, chatResponse: String) {
-        databaseService.withRealm { realm ->
+        viewLifecycleOwner.lifecycleScope.launch {
             try {
-                addConversationToChatHistory(realm, id, query, chatResponse, _rev)
-                realm.commitTransaction()
+                chatRepository.appendConversationToHistory(id, query, chatResponse, _rev)
             } catch (e: Exception) {
                 e.printStackTrace()
-                if (realm.isInTransaction) {
-                    realm.cancelTransaction()
-                }
             }
         }
     }
