@@ -117,30 +117,28 @@ class SubmissionRepositoryImpl @Inject constructor(
     }
 
     override suspend fun createSurveySubmission(examId: String, userId: String?) {
-        withRealmAsync { realm ->
+        executeTransaction { realm ->
             val courseId = realm.where(RealmStepExam::class.java).equalTo("id", examId).findFirst()?.courseId
             val parentId = if (!TextUtils.isEmpty(courseId)) {
                 examId + "@" + courseId
             } else {
                 examId
             }
-            realm.executeTransaction { r ->
-                var sub = r.where(RealmSubmission::class.java)
-                    .equalTo("userId", userId)
-                    .equalTo(
-                        "parentId",
-                        parentId,
-                    )
-                    .sort("lastUpdateTime", Sort.DESCENDING)
-                    .equalTo("status", "pending")
-                    .findFirst()
-                sub = createSubmission(sub, r)
-                sub.parentId = parentId
-                sub.userId = userId
-                sub.type = "survey"
-                sub.status = "pending"
-                sub.startTime = Date().time
-            }
+            var sub = realm.where(RealmSubmission::class.java)
+                .equalTo("userId", userId)
+                .equalTo(
+                    "parentId",
+                    parentId,
+                )
+                .sort("lastUpdateTime", Sort.DESCENDING)
+                .equalTo("status", "pending")
+                .findFirst()
+            sub = createSubmission(sub, realm)
+            sub.parentId = parentId
+            sub.userId = userId
+            sub.type = "survey"
+            sub.status = "pending"
+            sub.startTime = Date().time
         }
     }
 
