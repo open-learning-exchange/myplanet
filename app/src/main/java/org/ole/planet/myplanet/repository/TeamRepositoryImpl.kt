@@ -5,6 +5,7 @@ import androidx.core.net.toUri
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import java.util.Date
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
@@ -139,6 +140,21 @@ class TeamRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun removeResourceLink(teamId: String, resourceId: String) {
+        if (teamId.isBlank() || resourceId.isBlank()) return
+        executeTransaction { realm ->
+            realm.where(RealmMyTeam::class.java)
+                .equalTo("teamId", teamId)
+                .equalTo("resourceId", resourceId)
+                .equalTo("docType", "resourceLink")
+                .findFirst()
+                ?.let { teamResource ->
+                    teamResource.resourceId = ""
+                    teamResource.updated = true
+                }
+        }
+    }
+
     override suspend fun deleteTask(taskId: String) {
         delete(RealmTeamTask::class.java, "id", taskId)
     }
@@ -163,6 +179,119 @@ class TeamRepositoryImpl @Inject constructor(
             task.assignee = assigneeId
             task.isUpdated = true
         }
+    }
+
+    override suspend fun createTeam(
+        category: String?,
+        name: String,
+        description: String,
+        services: String,
+        rules: String,
+        teamType: String?,
+        isPublic: Boolean,
+        user: RealmUserModel,
+    ): Result<String> {
+        return runCatching {
+            val teamId = AndroidDecrypter.generateIv()
+            executeTransaction { realm ->
+                val team = realm.createObject(RealmMyTeam::class.java, teamId)
+                team.status = "active"
+                team.createdDate = Date().time
+                if (category == "enterprise") {
+                    team.type = "enterprise"
+                    team.services = services
+                    team.rules = rules
+                } else {
+                    team.type = "team"
+                    team.teamType = teamType
+                }
+                team.name = name
+                team.description = description
+                team.createdBy = user._id
+                team.teamId = ""
+                team.isPublic = isPublic
+                team.userId = user.id
+                team.parentCode = user.parentCode
+                team.teamPlanetCode = user.planetCode
+                team.updated = true
+
+                val membershipId = AndroidDecrypter.generateIv()
+                val membership = realm.createObject(RealmMyTeam::class.java, membershipId)
+                membership.userId = user._id
+                membership.teamId = teamId
+                membership.teamPlanetCode = user.planetCode
+                membership.userPlanetCode = user.planetCode
+                membership.docType = "membership"
+                membership.isLeader = true
+                membership.teamType = teamType
+                membership.updated = true
+            }
+            teamId
+        }
+    }
+
+    override suspend fun updateTeam(
+        teamId: String,
+        name: String,
+        description: String,
+        services: String,
+        rules: String,
+        updatedBy: String?,
+    ): Result<Boolean> {
+        return runCatching {
+            var updated = false
+            executeTransaction { realm ->
+                val teamToUpdate = realm.where(RealmMyTeam::class.java)
+                    .equalTo("_id", teamId)
+                    .findFirst()
+                    ?: realm.where(RealmMyTeam::class.java)
+                        .equalTo("teamId", teamId)
+                        .findFirst()
+                teamToUpdate?.let { team ->
+                    team.name = name
+                    team.services = services
+                    team.rules = rules
+                    team.description = description
+                    updatedBy?.let { team.createdBy = it }
+                    team.limit = 12
+                    team.updated = true
+                    updated = true
+                }
+            }
+            updated
+        }
+    }
+
+    override suspend fun updateTeamDetails(
+        teamId: String,
+        name: String,
+        description: String,
+        services: String,
+        rules: String,
+        teamType: String,
+        isPublic: Boolean,
+        createdBy: String,
+    ): Boolean {
+        if (teamId.isBlank()) return false
+        val updated = AtomicBoolean(false)
+        val applyUpdates: (RealmMyTeam) -> Unit = { team ->
+            team.name = name
+            team.description = description
+            team.services = services
+            team.rules = rules
+            team.teamType = teamType
+            team.isPublic = isPublic
+            team.createdBy = createdBy.takeIf { it.isNotBlank() } ?: team.createdBy
+            team.updated = true
+            updated.set(true)
+        }
+
+        update(RealmMyTeam::class.java, "_id", teamId, applyUpdates)
+        if (!updated.get()) {
+            update(RealmMyTeam::class.java, "teamId", teamId, applyUpdates)
+        }
+
+        return updated.get()
     }
 
     override suspend fun syncTeamActivities(context: Context) {
@@ -194,7 +323,7 @@ class TeamRepositoryImpl @Inject constructor(
             }
             val apiInterface = client?.create(ApiInterface::class.java)
             withContext(Dispatchers.IO) {
-                withRealm { realm ->
+                withRealmAsync { realm ->
                     realm.executeTransaction { transactionRealm ->
                         uploadManager.uploadTeamActivities(transactionRealm, apiInterface)
                     }

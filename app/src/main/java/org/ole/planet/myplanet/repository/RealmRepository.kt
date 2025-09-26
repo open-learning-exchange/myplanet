@@ -9,7 +9,6 @@ import kotlinx.coroutines.channels.ProducerScope
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.runBlocking
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.applyEqualTo
 import org.ole.planet.myplanet.datamanager.findCopyByField
@@ -39,12 +38,12 @@ open class RealmRepository(private val databaseService: DatabaseService) {
         withRealmFlow { realm, scope ->
             val results = realm.where(clazz).apply(builder).findAllAsync()
             val listener =
-                RealmChangeListener<RealmResults<T>> {
-                    scope.trySend(realm.queryList(clazz, builder))
+                RealmChangeListener<RealmResults<T>> { updatedResults ->
+                    scope.trySend(updatedResults)
                 }
             results.addChangeListener(listener)
-            scope.trySend(realm.queryList(clazz, builder))
-            scope.awaitClose { results.removeChangeListener(listener) }
+            scope.trySend(results)
+            return@withRealmFlow { results.removeChangeListener(listener) }
         }
 
     protected suspend fun <T : RealmObject, V : Any> findByField(
@@ -54,13 +53,6 @@ open class RealmRepository(private val databaseService: DatabaseService) {
     ): T? =
         databaseService.withRealmAsync { realm ->
             realm.findCopyByField(clazz, fieldName, value)
-        }
-
-    protected suspend fun <T : RealmObject> findFirst(clazz: Class<T>): T? =
-        withRealm { realm ->
-            realm.where(clazz)
-                .findFirst()
-                ?.let { realm.copyFromRealm(it) }
         }
 
     protected suspend fun <T : RealmObject> save(item: T) {
@@ -94,14 +86,26 @@ open class RealmRepository(private val databaseService: DatabaseService) {
         }
     }
 
-    protected suspend fun <T> withRealm(operation: (Realm) -> T): T {
+    protected suspend fun <T> withRealmAsync(operation: (Realm) -> T): T {
         return databaseService.withRealmAsync(operation)
     }
 
-    protected fun <T> withRealmFlow(block: suspend (Realm, ProducerScope<T>) -> Unit): Flow<T> =
+    protected fun <T> withRealmFlow(
+        block: suspend (Realm, ProducerScope<T>) -> (() -> Unit),
+    ): Flow<T> =
         callbackFlow {
-            databaseService.withRealm { realm ->
-                runBlocking { block(realm, this@callbackFlow) }
+            val realm = Realm.getDefaultInstance()
+            val cleanup = try {
+                block(realm, this)
+            } catch (throwable: Throwable) {
+                realm.close()
+                throw throwable
+            }
+            awaitClose {
+                cleanup()
+                if (!realm.isClosed) {
+                    realm.close()
+                }
             }
         }
 

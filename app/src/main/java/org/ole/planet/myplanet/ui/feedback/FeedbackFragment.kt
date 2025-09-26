@@ -87,7 +87,7 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
         val feedback = feedbackRepository.createFeedback(user, urgent, type, message, item, state)
         viewLifecycleOwner.lifecycleScope.launch {
             feedbackRepository.saveFeedback(feedback)
-            Utilities.toast(activity, R.string.feedback_saved.toString())
+            Utilities.toast(activity, getString(R.string.feedback_saved))
         }
         Toast.makeText(activity, R.string.thank_you_your_feedback_has_been_submitted, Toast.LENGTH_SHORT).show()
         mListener?.onFeedbackSubmitted()
