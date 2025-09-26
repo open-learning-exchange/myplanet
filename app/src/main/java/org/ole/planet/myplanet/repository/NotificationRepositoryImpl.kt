@@ -27,17 +27,17 @@ class NotificationRepositoryImpl @Inject constructor(
         userId ?: return
 
         val resourceCount = withRealmAsync { realm ->
-            val resources = realm.where(RealmMyLibrary::class.java)
+            realm.where(RealmMyLibrary::class.java)
                 .equalTo("isPrivate", false)
-                .findAll()
-
-            var count = 0
-            resources.forEach { resource ->
-                if (resource.userId?.contains(userId) == true && resource.needToUpdate()) {
-                    count++
-                }
-            }
-            count
+                .contains("userId", userId)
+                .beginGroup()
+                    .equalTo("resourceOffline", false)
+                    .or()
+                    .isNotNull("resourceLocalAddress")
+                    .and()
+                    .notEqualTo("_rev", "downloadedRev")
+                .endGroup()
+                .count().toInt()
         }
 
         val existingNotification = queryList(RealmNotification::class.java) {
@@ -80,6 +80,8 @@ class NotificationRepositoryImpl @Inject constructor(
         val existingNotification = findByField(RealmNotification::class.java, "id", notificationId)
         val now = Date()
 
+        val (teamName, requesterName) = preComputeMetadata(type, relatedId, trimmedMessage)
+
         val notification = existingNotification?.apply {
             if (this.message != trimmedMessage) {
                 this.message = trimmedMessage
@@ -88,6 +90,8 @@ class NotificationRepositoryImpl @Inject constructor(
             this.type = type
             this.relatedId = relatedId
             this.userId = ownerId
+            this.teamName = teamName
+            this.requesterName = requesterName
         } ?: RealmNotification().apply {
             id = notificationId
             this.userId = ownerId
@@ -95,9 +99,50 @@ class NotificationRepositoryImpl @Inject constructor(
             this.message = trimmedMessage
             this.relatedId = relatedId
             this.createdAt = now
+            this.teamName = teamName
+            this.requesterName = requesterName
         }
 
         save(notification)
+    }
+
+    private suspend fun preComputeMetadata(type: String, relatedId: String?, message: String): Pair<String?, String?> {
+        return when (type.lowercase()) {
+            "task" -> {
+                val taskTitle = extractTaskTitle(message)
+                val task = findByField(RealmTeamTask::class.java, "title", taskTitle)
+                val teamName = task?.teamId?.let { teamId ->
+                    findByField(RealmMyTeam::class.java, "_id", teamId)?.name
+                }
+                teamName to null
+            }
+            "join_request" -> {
+                val sanitizedId = relatedId?.removePrefix("join_request_") ?: return null to null
+                val joinRequest = queryList(RealmMyTeam::class.java) {
+                    equalTo("_id", sanitizedId)
+                    equalTo("docType", "request")
+                }.firstOrNull()
+
+                val teamName = joinRequest?.teamId?.let { teamId ->
+                    findByField(RealmMyTeam::class.java, "_id", teamId)?.name
+                }
+                val requesterName = joinRequest?.userId?.let { userId ->
+                    findByField(RealmUserModel::class.java, "id", userId)?.name
+                }
+                teamName to requesterName
+            }
+            else -> null to null
+        }
+    }
+
+    private fun extractTaskTitle(message: String): String {
+        val datePattern = java.util.regex.Pattern.compile("\\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\\s\\d{1,2},\\s\\w+\\s\\d{4}\\b")
+        val matcher = datePattern.matcher(message)
+        return if (matcher.find()) {
+            message.substring(0, matcher.start()).trim()
+        } else {
+            message
+        }
     }
 
     override suspend fun getNotifications(userId: String, filter: String): List<RealmNotification> {
@@ -155,6 +200,68 @@ class NotificationRepositoryImpl @Inject constructor(
         }
 
         return TaskNotificationMetadata(teamName)
+    }
+
+    override suspend fun getNotificationsWithUnreadCount(userId: String, filter: String): Pair<List<RealmNotification>, Int> {
+        return withRealmAsync { realm ->
+            val notificationsQuery = realm.where(RealmNotification::class.java)
+                .equalTo("userId", userId)
+
+            when (filter) {
+                "read" -> notificationsQuery.equalTo("isRead", true)
+                "unread" -> notificationsQuery.equalTo("isRead", false)
+            }
+
+            val notifications = notificationsQuery
+                .sort("createdAt", Sort.DESCENDING)
+                .findAll()
+                .filter { it.message.isNotEmpty() && it.message != "INVALID" }
+                .map { realm.copyFromRealm(it) }
+
+            val unreadCount = realm.where(RealmNotification::class.java)
+                .equalTo("userId", userId)
+                .equalTo("isRead", false)
+                .count().toInt()
+
+            notifications to unreadCount
+        }
+    }
+
+    override suspend fun batchEnsureNotifications(notifications: List<NotificationData>, userId: String?) {
+        val ownerId = userId ?: ""
+        if (notifications.isEmpty()) return
+
+        executeTransaction { realm ->
+            notifications.forEach { notificationData ->
+                val trimmedMessage = notificationData.message.trim()
+                if (trimmedMessage.isEmpty()) return@forEach
+
+                val notificationId = buildNotificationId(notificationData.type, notificationData.relatedId, ownerId, trimmedMessage)
+
+                val existingNotification = realm.where(RealmNotification::class.java)
+                    .equalTo("id", notificationId)
+                    .findFirst()
+
+                val now = Date()
+
+                if (existingNotification != null) {
+                    if (existingNotification.message != trimmedMessage) {
+                        existingNotification.message = trimmedMessage
+                        existingNotification.createdAt = now
+                    }
+                    existingNotification.type = notificationData.type
+                    existingNotification.relatedId = notificationData.relatedId
+                    existingNotification.userId = ownerId
+                } else {
+                    val newNotification = realm.createObject(RealmNotification::class.java, notificationId)
+                    newNotification.userId = ownerId
+                    newNotification.type = notificationData.type
+                    newNotification.message = trimmedMessage
+                    newNotification.relatedId = notificationData.relatedId
+                    newNotification.createdAt = now
+                }
+            }
+        }
     }
 }
 

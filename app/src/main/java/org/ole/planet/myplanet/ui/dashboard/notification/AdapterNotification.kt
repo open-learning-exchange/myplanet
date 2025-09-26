@@ -60,9 +60,10 @@ class AdapterNotification(
             val context = rowNotificationsBinding.root.context
             when (notification.type?.lowercase()) {
                 "join_request" -> {
-                    val baseMessage = formatJoinRequestMessage(context, requesterName = "Unknown User", teamName = "Unknown Team")
-                    rowNotificationsBinding.title.text = Html.fromHtml(baseMessage, Html.FROM_HTML_MODE_LEGACY)
-                    loadJoinRequestMetadata(notification)
+                    val requesterName = notification.requesterName ?: "Unknown User"
+                    val teamName = notification.teamName ?: "Unknown Team"
+                    val message = formatJoinRequestMessage(context, requesterName, teamName)
+                    rowNotificationsBinding.title.text = Html.fromHtml(message, Html.FROM_HTML_MODE_LEGACY)
                 }
                 "task" -> bindTaskNotification(notification, context)
                 else -> {
@@ -120,15 +121,14 @@ class AdapterNotification(
                 val taskTitle = notification.message.substring(0, matcher.start()).trim()
                 val dateValue = notification.message.substring(matcher.start()).trim()
                 val baseMessage = context.getString(R.string.task_notification, taskTitle, dateValue)
-                rowNotificationsBinding.title.text = Html.fromHtml(baseMessage, Html.FROM_HTML_MODE_LEGACY)
-                metadataJob = coroutineScope.launch {
-                    val metadata = withContext(Dispatchers.IO) { notificationRepository.getTaskNotificationMetadata(taskTitle) }
-                    val teamName = metadata?.teamName
-                    if (!teamName.isNullOrEmpty() && isBoundTo(notification.id)) {
-                        val formatted = "<b>${teamName}</b>: $baseMessage"
-                        rowNotificationsBinding.title.text = Html.fromHtml(formatted, Html.FROM_HTML_MODE_LEGACY)
-                    }
+
+                val teamName = notification.teamName
+                val finalMessage = if (!teamName.isNullOrEmpty()) {
+                    "<b>${teamName}</b>: $baseMessage"
+                } else {
+                    baseMessage
                 }
+                rowNotificationsBinding.title.text = Html.fromHtml(finalMessage, Html.FROM_HTML_MODE_LEGACY)
             } else {
                 rowNotificationsBinding.title.text = Html.fromHtml(notification.message, Html.FROM_HTML_MODE_LEGACY)
             }
@@ -139,20 +139,6 @@ class AdapterNotification(
                 context.getString(R.string.user_requested_to_join_team, requesterName, teamName)
         }
 
-        private fun loadJoinRequestMetadata(notification: RealmNotification) {
-            metadataJob = coroutineScope.launch {
-                val metadata = withContext(Dispatchers.IO) {
-                    notificationRepository.getJoinRequestMetadata(notification.relatedId)
-                }
-                val requesterName = metadata?.requesterName ?: "Unknown User"
-                val teamName = metadata?.teamName ?: "Unknown Team"
-                if (isBoundTo(notification.id)) {
-                    val context = rowNotificationsBinding.root.context
-                    val formatted = formatJoinRequestMessage(context, requesterName, teamName)
-                    rowNotificationsBinding.title.text = Html.fromHtml(formatted, Html.FROM_HTML_MODE_LEGACY)
-                }
-            }
-        }
 
         private fun formatTaskMessage(notification: RealmNotification, context: Context): String {
             val datePattern = Pattern.compile("\\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\\s\\d{1,2},\\s\\w+\\s\\d{4}\\b")

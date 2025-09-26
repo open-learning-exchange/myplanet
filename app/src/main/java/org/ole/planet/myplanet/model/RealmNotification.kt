@@ -15,4 +15,6 @@ open class RealmNotification : RealmObject() {
     var type: String = ""
     var relatedId: String? = null
     var title: String? = null
+    var teamName: String? = null
+    var requesterName: String? = null
 }

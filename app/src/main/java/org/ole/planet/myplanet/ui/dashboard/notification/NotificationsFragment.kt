@@ -202,9 +202,7 @@ class NotificationsFragment : Fragment() {
 
     private suspend fun fetchNotificationsAndUnreadCount(filter: String): Pair<List<RealmNotification>, Int> =
         withContext(Dispatchers.IO) {
-            val notifications = notificationRepository.getNotifications(userId, filter)
-            val unreadCount = notificationRepository.getUnreadCount(userId)
-            notifications to unreadCount
+            notificationRepository.getNotificationsWithUnreadCount(userId, filter)
         }
 
     private fun markAsReadById(notificationId: String) {
@@ -331,6 +329,8 @@ class NotificationsFragment : Fragment() {
             copy.type = type
             copy.relatedId = relatedId
             copy.title = title
+            copy.teamName = teamName
+            copy.requesterName = requesterName
         }
     }
 
