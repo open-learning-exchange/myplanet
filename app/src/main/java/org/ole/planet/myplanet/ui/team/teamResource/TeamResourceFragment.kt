@@ -9,6 +9,7 @@ import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.ListView
 import android.widget.TextView
+import com.google.android.material.snackbar.Snackbar
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
@@ -55,9 +56,15 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdat
 
         viewLifecycleOwner.lifecycleScope.launch {
             val libraries = teamRepository.getTeamResources(teamId).toMutableList()
-            adapterLibrary = settings?.let {
-                AdapterTeamResource(safeActivity, libraries, mRealm, teamId, it, this@TeamResourceFragment)
-            }!!
+            val canRemoveResources = teamRepository.isTeamLeader(teamId, user?.id)
+            adapterLibrary = AdapterTeamResource(
+                safeActivity,
+                libraries,
+                canRemoveResources,
+                this@TeamResourceFragment,
+            ) { resource, position ->
+                handleResourceRemoval(resource, position)
+            }
             binding.rvResource.layoutManager = GridLayoutManager(safeActivity, 3)
             binding.rvResource.adapter = adapterLibrary
             checkAndShowNoData()
@@ -120,6 +127,29 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdat
 
     override fun onResourceListUpdated() {
         checkAndShowNoData()
+    }
+
+    override fun onResourceUpdateFailed(messageResId: Int) {
+        view?.let {
+            Snackbar.make(it, getString(messageResId), Snackbar.LENGTH_LONG).show()
+        }
+    }
+
+    private fun handleResourceRemoval(resource: RealmMyLibrary, position: Int) {
+        val resourceId = resource.id ?: resource.resourceId
+        if (resourceId.isNullOrBlank()) {
+            onResourceUpdateFailed(R.string.failed_to_remove_resource)
+            return
+        }
+        viewLifecycleOwner.lifecycleScope.launch {
+            runCatching {
+                teamRepository.removeResourceLink(teamId, resourceId)
+            }.onSuccess {
+                adapterLibrary.removeResourceAt(position)
+            }.onFailure {
+                onResourceUpdateFailed(R.string.failed_to_remove_resource)
+            }
+        }
     }
 
     override fun onAddDocument() {

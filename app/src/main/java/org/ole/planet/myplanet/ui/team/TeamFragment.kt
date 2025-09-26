@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.team
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
@@ -17,20 +18,20 @@ import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmQuery
 import io.realm.RealmResults
-import java.util.Date
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
 import org.ole.planet.myplanet.databinding.FragmentTeamBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getMyTeamsByUserId
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.Constants
+import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
@@ -43,15 +44,17 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     lateinit var databaseService: DatabaseService
     @Inject
     lateinit var teamRepository: TeamRepository
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
+    @Inject
+    @AppPreferences
+    lateinit var settings: SharedPreferences
     var type: String? = null
     private var fromDashboard: Boolean = false
     var user: RealmUserModel? = null
     private var teamList: RealmResults<RealmMyTeam>? = null
     private lateinit var adapterTeamList: AdapterTeamList
     private var conditionApplied: Boolean = false
-    private val settings by lazy {
-        requireActivity().getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -67,7 +70,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTeamBinding.inflate(inflater, container, false)
         mRealm = databaseService.realmInstance
-        user = UserProfileDbHandler(requireActivity()).userModel
+        user = userProfileDbHandler.userModel?.let { userProfileDbHandler.mRealm.copyFromRealm(it) }
 
         if (user?.isGuest() == true) {
             binding.addTeam.visibility = View.GONE
@@ -129,85 +132,80 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         dialog.setOnShowListener {
             val okButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
             okButton.setOnClickListener {
-                val map = HashMap<String, String>()
-                val userId = user?._id
                 val name = alertCreateTeamBinding.etName.text.toString().trim()
-                map["desc"] = alertCreateTeamBinding.etDescription.text.toString()
-                map["services"] = alertCreateTeamBinding.etServices.text.toString()
-                map["rules"] = alertCreateTeamBinding.etRules.text.toString()
+                val description = alertCreateTeamBinding.etDescription.text.toString()
+                val services = alertCreateTeamBinding.etServices.text.toString()
+                val rules = alertCreateTeamBinding.etRules.text.toString()
+                val selectedTeamType =
+                    if (alertCreateTeamBinding.spnTeamType.selectedItemPosition == 0) {
+                        "local"
+                    } else {
+                        "sync"
+                    }
+                val currentUser = user
                 when {
                     name.isEmpty() -> {
                         Utilities.toast(activity, getString(R.string.name_is_required))
                         alertCreateTeamBinding.etName.error = getString(R.string.please_enter_a_name)
                     } else -> {
-                        if (team == null) {
-                            createTeam(name,
-                                if (alertCreateTeamBinding.spnTeamType.selectedItemPosition == 0) "local" else "sync", map,
-                                alertCreateTeamBinding.switchPublic.isChecked
-                            )
-                        } else {
-                            if (!team.realm.isInTransaction) {
-                                team.realm.beginTransaction()
-                            }
-                            team.name = name
-                            team.services = "${alertCreateTeamBinding.etServices.text}"
-                            team.rules = "${alertCreateTeamBinding.etRules.text}"
-                            team.limit = 12
-                            team.description = "${alertCreateTeamBinding.etDescription.text}"
-                            team.createdBy = userId
-                            team.updated = true
-                            team.realm.commitTransaction()
+                        val failureMessage = getString(R.string.request_failed_please_retry)
+                        val userModel = currentUser ?: run {
+                            Utilities.toast(activity, failureMessage)
+                            return@setOnClickListener
                         }
-                        binding.etSearch.visibility = View.VISIBLE
-                        binding.tableTitle.visibility = View.VISIBLE
-                        Utilities.toast(activity, getString(R.string.team_created))
-                        setTeamList()
-                        // dialog won't close by default
-                        dialog.dismiss()
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            if (team == null) {
+                                teamRepository.createTeam(
+                                    category = type,
+                                    name = name,
+                                    description = description,
+                                    services = services,
+                                    rules = rules,
+                                    teamType = selectedTeamType,
+                                    isPublic = alertCreateTeamBinding.switchPublic.isChecked,
+                                    user = userModel,
+                                ).onSuccess {
+                                    binding.etSearch.visibility = View.VISIBLE
+                                    binding.tableTitle.visibility = View.VISIBLE
+                                    Utilities.toast(activity, getString(R.string.team_created))
+                                    refreshTeamList()
+                                    dialog.dismiss()
+                                }.onFailure {
+                                    Utilities.toast(activity, failureMessage)
+                                }
+                            } else {
+                                val targetTeamId = team._id ?: team.teamId
+                                if (targetTeamId.isNullOrBlank()) {
+                                    Utilities.toast(activity, failureMessage)
+                                    return@launch
+                                }
+                                teamRepository.updateTeam(
+                                    teamId = targetTeamId,
+                                    name = name,
+                                    description = description,
+                                    services = services,
+                                    rules = rules,
+                                    updatedBy = userModel._id,
+                                ).onSuccess { updated ->
+                                    if (updated) {
+                                        binding.etSearch.visibility = View.VISIBLE
+                                        binding.tableTitle.visibility = View.VISIBLE
+                                        Utilities.toast(activity, getString(R.string.team_created))
+                                        refreshTeamList()
+                                        dialog.dismiss()
+                                    } else {
+                                        Utilities.toast(activity, failureMessage)
+                                    }
+                                }.onFailure {
+                                    Utilities.toast(activity, failureMessage)
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
         dialog.show()
-    }
-
-    private fun createTeam(name: String?, type: String?, map: HashMap<String, String>, isPublic: Boolean) {
-        val user = UserProfileDbHandler(requireContext()).userModel ?: return
-        if (!mRealm.isInTransaction) mRealm.beginTransaction()
-        val teamId = AndroidDecrypter.generateIv()
-        val team = mRealm.createObject(RealmMyTeam::class.java, teamId)
-        team.status = "active"
-        team.createdDate = Date().time
-        if (TextUtils.equals(this.type, "enterprise")) {
-            team.type = "enterprise"
-            team.services = map["services"]
-            team.rules = map["rules"]
-        } else {
-            team.type = "team"
-            team.teamType = type
-        }
-        team.name = name
-        team.description = map["desc"]
-        team.createdBy = user._id
-        team.teamId = ""
-        team.isPublic = isPublic
-        team.userId = user.id
-        team.parentCode = user.parentCode
-        team.teamPlanetCode = user.planetCode
-        team.updated = true
-
-        //create member ship
-        val teamMemberObj = mRealm.createObject(RealmMyTeam::class.java, AndroidDecrypter.generateIv())
-        teamMemberObj.userId = user._id
-        teamMemberObj.teamId = teamId
-        teamMemberObj.teamPlanetCode = user.planetCode
-        teamMemberObj.userPlanetCode = user.planetCode
-        teamMemberObj.docType = "membership"
-        teamMemberObj.isLeader = true
-        teamMemberObj.teamType = type
-        teamMemberObj.updated = true
-
-        mRealm.commitTransaction()
     }
 
     override fun onResume() {
@@ -304,6 +302,31 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         } else {
             showNoResultsMessage(false)
         }
+    }
+
+    private fun refreshTeamList() {
+        mRealm.refresh()
+        teamList?.removeAllChangeListeners()
+
+        if (fromDashboard) {
+            teamList = getMyTeamsByUserId(mRealm, settings)
+        } else {
+            val query = mRealm.where(RealmMyTeam::class.java)
+                .isEmpty("teamId")
+                .notEqualTo("status", "archived")
+            teamList = if (TextUtils.isEmpty(type) || type == "team") {
+                conditionApplied = false
+                query.notEqualTo("type", "enterprise").findAllAsync()
+            } else {
+                conditionApplied = true
+                query.equalTo("type", "enterprise").findAllAsync()
+            }
+        }
+
+        teamList?.addChangeListener { _ ->
+            updatedTeamList()
+        }
+        setTeamList()
     }
 
     private fun sortTeams(list: List<RealmMyTeam>): List<RealmMyTeam> {

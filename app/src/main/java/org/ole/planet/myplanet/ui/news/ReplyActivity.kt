@@ -66,7 +66,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         title = "Reply"
         imageList = RealmList()
         id = intent.getStringExtra("id")
-        user = UserProfileDbHandler(this).userModel
+        user = userProfileDbHandler.userModel
         activityReplyBinding.rvReply.layoutManager = LinearLayoutManager(this)
         activityReplyBinding.rvReply.isNestedScrollingEnabled = false
         showData(id)
@@ -160,7 +160,11 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
             val ob = gson.fromJson(img, JsonObject::class.java)
             val inflater = LayoutInflater.from(this).inflate(R.layout.image_thumb, llImage, false)
             val imgView = inflater.findViewById<ImageView>(R.id.thumb)
-            Glide.with(this).load(File(getString("imageUrl", ob))).into(imgView)
+            Glide.with(this)
+                .load(File(getString("imageUrl", ob)))
+                .placeholder(R.drawable.ic_loading)
+                .error(R.drawable.ic_loading)
+                .into(imgView)
             llImage?.addView(inflater)
         }
         newsAdapter.setImageList(imageList)

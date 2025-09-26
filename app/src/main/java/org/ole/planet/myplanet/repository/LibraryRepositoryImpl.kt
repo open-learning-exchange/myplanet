@@ -73,7 +73,7 @@ class LibraryRepositoryImpl @Inject constructor(
                     }
                 }
         }
-        withRealm { realm ->
+        withRealmAsync { realm ->
             if (isAdd) {
                 onAdd(realm, "resources", userId, resourceId)
             } else {
@@ -87,6 +87,18 @@ class LibraryRepositoryImpl @Inject constructor(
 
     override suspend fun updateLibraryItem(id: String, updater: (RealmMyLibrary) -> Unit) {
         update(RealmMyLibrary::class.java, "id", id, updater)
+    }
+
+    override suspend fun markResourceOfflineByLocalAddress(localAddress: String) {
+        executeTransaction { realm ->
+            realm.where(RealmMyLibrary::class.java)
+                .equalTo("resourceLocalAddress", localAddress)
+                .findAll()
+                ?.forEach { library ->
+                    library.resourceOffline = true
+                    library.downloadedRev = library._rev
+                }
+        }
     }
 
     private fun filterLibrariesNeedingUpdate(results: Collection<RealmMyLibrary>): List<RealmMyLibrary> {

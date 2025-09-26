@@ -152,8 +152,6 @@
     <string name= "enter_username">Geli Magaca isticmaalaha</string>
     <string name="login">Giri</string>
     <string name="child_mode">Qaabka fudud</string>
-    <string name="joined_members">Xubno ku biiray</string>
-    <string name="requested_member">la codsaday </string>
     <string name="courses">Koorsooyin</string>
     <string name="enter_message_here">halkan ku gali fariinta</string>
     <string name="what_would">maxaad jeceshahay inaad wadaagto?</string>
@@ -175,7 +173,6 @@
     <string name="priority">mudnaanta</string>
     <string name="status">xaalad</string>
     <string name="title_not_compulsary">Cuqaal</string>
-    <string name="discussion">dood</string>
     <string name="add_message">Ku dar fariin</string>
     <string name="enter_message">halkan ku geli fariintaada..</string>
     <string name="added_by">Waxaa ku daray</string>
@@ -543,7 +540,6 @@
         <item>Zika</item>
     </string-array>
 
-    <string name="title_activity_news_detail">XogtaFareeysaActivity</string>
     <string name="add_story">Ku Dar Hees</string>
     <string name="txt_myprogress">Halistaaga</string>
     <string name="more_action">Gaaji</string>
@@ -614,8 +610,6 @@
     <string name="public_public">Ciidamo</string>
     <string name="type_asterisk">Nooc*</string>
     <string name="joined_members_colon">Xubinayaasha la kufsaday:</string>
-    <string name="requested_members_colon">Xubinayaasha Codsanaya:</string>
-    <string name="courses_colon">Koorsadayaasha:</string>
     <string name="title">Cinwaanka</string>
     <string name="source">Soo Saar</string>
     <string name="cloud_url">daruur</string>

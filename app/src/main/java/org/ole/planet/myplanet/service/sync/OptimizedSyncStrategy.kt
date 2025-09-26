@@ -68,35 +68,6 @@ class OptimizedSyncStrategy @Inject constructor(
         }
     }
     
-    override suspend fun syncTableWithProgress(
-        table: String,
-        realm: Realm,
-        config: SyncConfig
-    ): Flow<SyncProgress> = flow {
-        val totalItems = getTotalItemCount(table)
-        var processedItems = 0
-        val batchSize = config.batchSize
-        val totalBatches = (totalItems + batchSize - 1) / batchSize
-        
-        for (batch in 0 until totalBatches) {
-            val batchStart = batch * batchSize
-            val batchEnd = minOf(batchStart + batchSize, totalItems)
-            
-            // Process batch here
-            processedItems = batchEnd
-            
-            emit(
-                SyncProgress(
-                    table = table,
-                    processedItems = processedItems,
-                    totalItems = totalItems,
-                    currentBatch = batch + 1,
-                    totalBatches = totalBatches
-                )
-            )
-        }
-    }
-    
     private suspend fun syncResourcesOptimized(config: SyncConfig): Int {
         val newIds = ConcurrentHashMap.newKeySet<String>()
         var totalRows = 0
@@ -230,23 +201,8 @@ class OptimizedSyncStrategy @Inject constructor(
         return -1 // Unknown count
     }
     
-    private suspend fun getTotalItemCount(table: String): Int {
-        return try {
-            val response = ApiClient.executeWithRetry {
-                apiInterface.getJsonObject(
-                    UrlUtils.header,
-                    "${UrlUtils.getUrl()}/$table/_all_docs?limit=0"
-                ).execute()
-            }?.body()
-            
-            response?.get("total_rows")?.asInt ?: 0
-        } catch (e: Exception) {
-            0
-        }
-    }
-    
     override fun getStrategyName(): String = "optimized"
-    
+
     override fun isSupported(table: String): Boolean {
         return table in listOf("resources", "library", "shelf", "courses", "teams", "meetups")
     }

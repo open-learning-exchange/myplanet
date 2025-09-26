@@ -93,14 +93,14 @@ class ChatHistoryListAdapter(
 
     fun search(s: String, isFullSearch: Boolean, isQuestion: Boolean) {
         val results = if (isFullSearch) {
-            FullConvoSearch(s, isQuestion)
+            fullConvoSearch(s, isQuestion)
         } else {
             searchByTitle(s)
         }
         submitList(results)
     }
 
-    private fun FullConvoSearch(s: String, isQuestion: Boolean): List<RealmChatHistory> {
+    private fun fullConvoSearch(s: String, isQuestion: Boolean): List<RealmChatHistory> {
         var conversation: String?
         val queryParts = s.split(" ").filterNot { it.isEmpty() }
         val normalizedQuery = normalizeText(s)
@@ -139,10 +139,10 @@ class ChatHistoryListAdapter(
         val containsQuery = mutableListOf<RealmChatHistory>()
 
         for (chat in chatHistory) {
-            if (chat.conversations != null && chat.conversations?.isNotEmpty() == true) {
-                title = chat.conversations?.get(0)?.query?.let { normalizeText(it) }
+            title = if (chat.conversations != null && chat.conversations?.isNotEmpty() == true) {
+                chat.conversations?.get(0)?.query?.let { normalizeText(it) }
             } else {
-                title = chat.title?.let { normalizeText(it) }
+                chat.title?.let { normalizeText(it) }
             }
             if (title == null) continue
             if (title.startsWith(normalizedQuery, ignoreCase = true)) {
@@ -325,6 +325,19 @@ class ChatHistoryListAdapter(
 
             databaseService.withRealm { realm ->
                 createNews(map, realm, user, null)
+                newsList = user?.planetCode?.let { planetCode ->
+                    realm.copyFromRealm(
+                        realm.where(RealmNews::class.java)
+                            .equalTo("docType", "message", Case.INSENSITIVE)
+                            .equalTo("createdOn", planetCode, Case.INSENSITIVE)
+                            .findAll()
+                    )
+                } ?: emptyList()
+            }
+
+            val position = currentList.indexOfFirst { it._id == chatHistory._id }
+            if (position != -1) {
+                notifyItemChanged(position)
             }
 
             fragment.refreshChatHistoryList()

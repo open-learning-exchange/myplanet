@@ -12,7 +12,6 @@ import io.realm.annotations.PrimaryKey
 import java.util.Date
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utilities.DownloadUtils.openDownloadService
 import org.ole.planet.myplanet.utilities.JsonUtils
@@ -134,6 +133,11 @@ open class RealmMyTeam : RealmObject() {
 
         @JvmStatic
         fun insertMyTeams(doc: JsonObject, mRealm: Realm) {
+            val status = JsonUtils.getString("status", doc)
+            if (status == "archived") {
+                return
+            }
+
             val teamId = JsonUtils.getString("_id", doc)
             var myTeams = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
             if (myTeams == null) {
@@ -366,6 +370,7 @@ open class RealmMyTeam : RealmObject() {
             val teamIds = list.map { it.teamId }.toTypedArray()
             return mRealm.where(RealmMyTeam::class.java)
                 .`in`("_id", teamIds)
+                .notEqualTo("status", "archived")
                 .findAll()
         }
     }

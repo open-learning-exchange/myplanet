@@ -5,8 +5,8 @@ import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
-import org.ole.planet.myplanet.repository.CourseProgressRepository
-import org.ole.planet.myplanet.repository.CourseProgressRepositoryImpl
+import org.ole.planet.myplanet.repository.ChatRepository
+import org.ole.planet.myplanet.repository.ChatRepositoryImpl
 import org.ole.planet.myplanet.repository.CourseRepository
 import org.ole.planet.myplanet.repository.CourseRepositoryImpl
 import org.ole.planet.myplanet.repository.FeedbackRepository
@@ -21,8 +21,6 @@ import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.repository.NotificationRepositoryImpl
 import org.ole.planet.myplanet.repository.RatingRepository
 import org.ole.planet.myplanet.repository.RatingRepositoryImpl
-import org.ole.planet.myplanet.repository.SearchRepository
-import org.ole.planet.myplanet.repository.SearchRepositoryImpl
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.SubmissionRepositoryImpl
 import org.ole.planet.myplanet.repository.TagRepository
@@ -38,11 +36,11 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindCourseProgressRepository(impl: CourseProgressRepositoryImpl): CourseProgressRepository
+    abstract fun bindCourseRepository(impl: CourseRepositoryImpl): CourseRepository
 
     @Binds
     @Singleton
-    abstract fun bindCourseRepository(impl: CourseRepositoryImpl): CourseRepository
+    abstract fun bindChatRepository(impl: ChatRepositoryImpl): ChatRepository
 
     @Binds
     @Singleton
@@ -67,10 +65,6 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindRatingRepository(impl: RatingRepositoryImpl): RatingRepository
-
-    @Binds
-    @Singleton
-    abstract fun bindSearchRepository(impl: SearchRepositoryImpl): SearchRepository
 
     @Binds
     @Singleton

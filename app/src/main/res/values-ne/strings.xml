@@ -152,8 +152,6 @@
     <string name="enter_username">प्रयोगकर्तानाम प्रविष्ट गर्नुहोस्</string>
     <string name="login">लगइन</string>
     <string name="child_mode">सजिलो मोड</string>
-    <string name="joined_members">सामेल हुने सदस्यहरू</string>
-    <string name="requested_member">अनुरोधित सदस्य</string>
     <string name="courses">पाठ्यक्रमहरू</string>
     <string name="enter_message_here">यहाँ सन्देश प्रविष्ट गर्नुहोस्</string>
     <string name="what_would">तपाईंलाई के साझा गर्न चाहनुहुन्छ?</string>
@@ -175,7 +173,6 @@
     <string name="priority">प्राथमिकता</string>
     <string name="status">स्थिति</string>
     <string name="title_not_compulsary">शीर्षक</string>
-    <string name="discussion">छलफल</string>
     <string name="add_message">सन्देश थप्नुहोस्</string>
     <string name="enter_message">तपाईंको सन्देश यहाँ प्रविष्ट गर्नुहोस्…</string>
     <string name="added_by">थपिएको</string>
@@ -543,7 +540,6 @@
         <item>जिका</item>
     </string-array>
 
-    <string name="title_activity_news_detail">समाचार विवरण गतिविधि</string>
     <string name="add_story">गप्तप्रतिनिधि थप्नुहोस्</string>
     <string name="txt_myprogress">मेरो प्रगति</string>
     <string name="more_action">फिल्टर</string>
@@ -614,8 +610,6 @@
     <string name="public_public">सार्वजनिक</string>
     <string name="type_asterisk">टाइप गर्नुहोस्*</string>
     <string name="joined_members_colon">संलग्न गरिएका सदस्यहरू:</string>
-    <string name="requested_members_colon">अनुरोध गरिएका सदस्यहरू:</string>
-    <string name="courses_colon">कोर्सहरू:</string>
     <string name="title">शीर्षक</string>
     <string name="source">स्रोत</string>
     <string name="cloud_url">बादल</string>
