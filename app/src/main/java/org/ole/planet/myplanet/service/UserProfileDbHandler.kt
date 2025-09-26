@@ -53,6 +53,11 @@ class UserProfileDbHandler @Inject constructor(
             .findFirst()
     }
 
+    fun getDetachedUserModel(): RealmUserModel? {
+        val managedUser = userModel ?: return null
+        return mRealm.copyFromRealm(managedUser)
+    }
+
     fun onLogin() {
         onLoginAsync()
     }

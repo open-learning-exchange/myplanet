@@ -69,7 +69,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentFeedbackListBinding.inflate(inflater, container, false)
-        userModel = userProfileDbHandler.userModel
+        userModel = userProfileDbHandler.getDetachedUserModel()
 
         binding.fab.setOnClickListener {
             val feedbackFragment = FeedbackFragment()
