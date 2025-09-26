@@ -35,7 +35,7 @@ import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
-class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
+class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamList.OnUpdateCompleteListener {
     private var _binding: FragmentTeamBinding? = null
     private val binding get() = _binding!!
     private lateinit var alertCreateTeamBinding: AlertCreateTeamBinding
@@ -257,6 +257,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                         teamRepository,
                     )
                     adapterTeamList.setTeamListener(this@TeamFragment)
+                    adapterTeamList.setUpdateCompleteListener(this@TeamFragment)
                     binding.rvTeamList.adapter = adapterTeamList
                     listContentDescription(conditionApplied)
                 }
@@ -287,6 +288,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         } ?: return
         adapterTeamList.setType(type)
         adapterTeamList.setTeamListener(this@TeamFragment)
+        adapterTeamList.setUpdateCompleteListener(this@TeamFragment)
         requireView().findViewById<View>(R.id.type).visibility =
             if (type == null) {
                 View.GONE
@@ -295,13 +297,6 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
             }
         binding.rvTeamList.adapter = adapterTeamList
         listContentDescription(conditionApplied)
-        val itemCount = adapterTeamList.itemCount
-
-        if (itemCount == 0) {
-            showNoResultsMessage(true)
-        } else {
-            showNoResultsMessage(false)
-        }
     }
 
     private fun refreshTeamList() {
@@ -344,6 +339,14 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         team?.let { createTeamAlert(it) }
     }
 
+    override fun onUpdateComplete(itemCount: Int) {
+        if (itemCount == 0) {
+            showNoResultsMessage(true)
+        } else {
+            showNoResultsMessage(false)
+        }
+    }
+
     private fun updatedTeamList() {
         viewLifecycleOwner.lifecycleScope.launch {
             val list = teamList ?: return@launch
@@ -357,6 +360,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
             ).apply {
                 setType(type)
                 setTeamListener(this@TeamFragment)
+                setUpdateCompleteListener(this@TeamFragment)
             }
 
             binding.rvTeamList.adapter = adapterTeamList
@@ -399,6 +403,9 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
 
     override fun onDestroyView() {
         teamList?.removeAllChangeListeners()
+        if (this::adapterTeamList.isInitialized) {
+            adapterTeamList.cleanup()
+        }
         if (this::mRealm.isInitialized && !mRealm.isClosed) {
             mRealm.close()
         }
