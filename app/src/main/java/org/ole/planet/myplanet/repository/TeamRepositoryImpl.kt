@@ -14,6 +14,7 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamTask
@@ -40,6 +41,16 @@ class TeamRepositoryImpl @Inject constructor(
                 `in`("resourceId", resourceIds.toTypedArray())
             }
         }
+    }
+
+    override suspend fun getTeamCourses(teamId: String): List<RealmMyCourse> {
+        val team = getTeamById(teamId) ?: return emptyList()
+        val courses = queryList(RealmMyCourse::class.java) {
+            `in`("courseId", team.courses?.toTypedArray<String>()).findAll()
+        }
+        //val courses = mRealm.where(RealmMyCourse::class.java).`in`("id", team.courses?.toTypedArray<String>()).findAll()
+
+        return courses
     }
 
     override suspend fun getTeamByDocumentIdOrTeamId(id: String): RealmMyTeam? {

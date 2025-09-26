@@ -61,6 +61,7 @@ open class RealmMyTeam : RealmObject() {
         private val concatenatedLinks = ArrayList<String>()
 
         private fun populateTeamFields(doc: JsonObject, team: RealmMyTeam, includeCourses: Boolean = false) {
+            println(doc)
             team.userId = JsonUtils.getString("userId", doc)
             team.teamId = JsonUtils.getString("teamId", doc)
             team._rev = JsonUtils.getString("_rev", doc)
@@ -96,14 +97,12 @@ open class RealmMyTeam : RealmObject() {
             team.updatedDate = JsonUtils.getLong("updatedDate", doc)
             team.updated = JsonUtils.getBoolean("updated", doc)
 
-            if (includeCourses) {
-                val coursesArray = JsonUtils.getJsonArray("courses", doc)
-                team.courses = RealmList()
-                for (e in coursesArray) {
-                    val id = e.asJsonObject["_id"].asString
-                    if (!team.courses!!.contains(id)) {
-                        team.courses!!.add(id)
-                    }
+            val coursesArray = JsonUtils.getJsonArray("courses", doc)
+            team.courses = RealmList()
+            for (e in coursesArray) {
+                val id = e.asJsonObject["_id"].asString
+                if (!team.courses!!.contains(id)) {
+                    team.courses!!.add(id)
                 }
             }
         }

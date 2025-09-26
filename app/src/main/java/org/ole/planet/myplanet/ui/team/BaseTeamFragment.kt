@@ -9,6 +9,7 @@ import org.ole.planet.myplanet.base.BaseNewsFragment
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.CourseRepository
 import org.ole.planet.myplanet.repository.TeamRepository
 
 private val Realm.isOpen: Boolean
@@ -21,6 +22,8 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
     var team: RealmMyTeam? = null
     @Inject
     lateinit var teamRepository: TeamRepository
+    @Inject
+    lateinit var courseRepository: CourseRepository
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
