@@ -21,27 +21,13 @@ data class SyncResult(
     val strategy: String
 )
 
-data class SyncProgress(
-    val table: String,
-    val processedItems: Int,
-    val totalItems: Int,
-    val currentBatch: Int,
-    val totalBatches: Int
-)
-
 interface SyncStrategy {
     suspend fun syncTable(
-        table: String, 
-        realm: Realm, 
+        table: String,
+        realm: Realm,
         config: SyncConfig
     ): Flow<SyncResult>
-    
-    suspend fun syncTableWithProgress(
-        table: String, 
-        realm: Realm, 
-        config: SyncConfig
-    ): Flow<SyncProgress>
-    
+
     fun getStrategyName(): String
     fun isSupported(table: String): Boolean
 }

@@ -60,7 +60,6 @@ import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDow
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
-import org.ole.planet.myplanet.databinding.LayoutChildLoginBinding
 import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.Service
@@ -74,7 +73,6 @@ import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.TransactionSyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import org.ole.planet.myplanet.ui.team.AdapterTeam.OnUserSelectedListener
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.androidDecrypter
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
@@ -99,7 +97,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVersionCallback,
-    OnUserSelectedListener, ConfigurationIdListener {
+    ConfigurationIdListener {
     private lateinit var syncDate: TextView
     lateinit var lblLastSyncDate: TextView
     lateinit var btnSignIn: Button
@@ -824,21 +822,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
     }
 
-
-    override fun onSelectedUser(userModel: RealmUserModel) {
-        val layoutChildLoginBinding = LayoutChildLoginBinding.inflate(layoutInflater)
-        AlertDialog.Builder(this).setView(layoutChildLoginBinding.root)
-            .setTitle(R.string.please_enter_your_password)
-            .setPositiveButton(R.string.login) { _: DialogInterface?, _: Int ->
-                val password = "${layoutChildLoginBinding.etChildPassword.text}"
-                if (authenticateUser(settings, userModel.name, password, false)) {
-                    Toast.makeText(applicationContext, getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
-                    onLogin()
-                } else {
-                    alertDialogOkay(getString(R.string.err_msg_login))
-                }
-            }.setNegativeButton(R.string.cancel, null).show()
-    }
 
     inner class MyTextWatcher(var view: View?) : TextWatcher {
         override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}

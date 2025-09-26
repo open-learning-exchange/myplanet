@@ -181,6 +181,87 @@ class TeamRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun createTeam(
+        category: String?,
+        name: String,
+        description: String,
+        services: String,
+        rules: String,
+        teamType: String?,
+        isPublic: Boolean,
+        user: RealmUserModel,
+    ): Result<String> {
+        return runCatching {
+            val teamId = AndroidDecrypter.generateIv()
+            executeTransaction { realm ->
+                val team = realm.createObject(RealmMyTeam::class.java, teamId)
+                team.status = "active"
+                team.createdDate = Date().time
+                if (category == "enterprise") {
+                    team.type = "enterprise"
+                    team.services = services
+                    team.rules = rules
+                } else {
+                    team.type = "team"
+                    team.teamType = teamType
+                }
+                team.name = name
+                team.description = description
+                team.createdBy = user._id
+                team.teamId = ""
+                team.isPublic = isPublic
+                team.userId = user.id
+                team.parentCode = user.parentCode
+                team.teamPlanetCode = user.planetCode
+                team.updated = true
+
+                val membershipId = AndroidDecrypter.generateIv()
+                val membership = realm.createObject(RealmMyTeam::class.java, membershipId)
+                membership.userId = user._id
+                membership.teamId = teamId
+                membership.teamPlanetCode = user.planetCode
+                membership.userPlanetCode = user.planetCode
+                membership.docType = "membership"
+                membership.isLeader = true
+                membership.teamType = teamType
+                membership.updated = true
+            }
+            teamId
+        }
+    }
+
+    override suspend fun updateTeam(
+        teamId: String,
+        name: String,
+        description: String,
+        services: String,
+        rules: String,
+        updatedBy: String?,
+    ): Result<Boolean> {
+        return runCatching {
+            var updated = false
+            executeTransaction { realm ->
+                val teamToUpdate = realm.where(RealmMyTeam::class.java)
+                    .equalTo("_id", teamId)
+                    .findFirst()
+                    ?: realm.where(RealmMyTeam::class.java)
+                        .equalTo("teamId", teamId)
+                        .findFirst()
+                teamToUpdate?.let { team ->
+                    team.name = name
+                    team.services = services
+                    team.rules = rules
+                    team.description = description
+                    updatedBy?.let { team.createdBy = it }
+                    team.limit = 12
+                    team.updated = true
+                    updated = true
+                }
+            }
+            updated
+        }
+    }
+
     override suspend fun updateTeamDetails(
         teamId: String,
         name: String,
@@ -242,7 +323,7 @@ class TeamRepositoryImpl @Inject constructor(
             }
             val apiInterface = client?.create(ApiInterface::class.java)
             withContext(Dispatchers.IO) {
-                withRealm { realm ->
+                withRealmAsync { realm ->
                     realm.executeTransaction { transactionRealm ->
                         uploadManager.uploadTeamActivities(transactionRealm, apiInterface)
                     }

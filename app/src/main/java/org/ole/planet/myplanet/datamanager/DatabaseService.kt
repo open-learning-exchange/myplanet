@@ -9,11 +9,15 @@ import io.realm.log.LogLevel
 import io.realm.log.RealmLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.BuildConfig
 
 class DatabaseService(context: Context) {
     init {
         Realm.init(context)
-        RealmLog.setLevel(LogLevel.DEBUG)
+        val targetLogLevel = if (BuildConfig.DEBUG) LogLevel.DEBUG else LogLevel.ERROR
+        if (RealmLog.getLevel() != targetLogLevel) {
+            RealmLog.setLevel(targetLogLevel)
+        }
         val config = RealmConfiguration.Builder()
             .name(Realm.DEFAULT_REALM_NAME)
             .deleteRealmIfMigrationNeeded()

@@ -111,14 +111,6 @@ object TimeUtils {
         }
     }
 
-    fun currentDate(): String =
-        try {
-            dateOnlyFormatter.format(Instant.now())
-        } catch (e: Exception) {
-            e.printStackTrace()
-            "N/A"
-        }
-
     fun formatDate(date: Long): String =
         try {
             dateOnlyFormatter.format(Instant.ofEpochMilli(date))

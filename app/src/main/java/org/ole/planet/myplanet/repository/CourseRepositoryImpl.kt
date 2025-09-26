@@ -15,19 +15,6 @@ class CourseRepositoryImpl @Inject constructor(
         return queryList(RealmMyCourse::class.java)
     }
 
-    override suspend fun updateMyCourseFlag(courseId: String, isMyCourse: Boolean) {
-        update(RealmMyCourse::class.java, "courseId", courseId) { it.isMyCourse = isMyCourse }
-    }
-
-    override suspend fun updateMyCourseFlag(courseIds: List<String>, isMyCourse: Boolean) {
-        executeTransaction { realm ->
-            realm.where(RealmMyCourse::class.java)
-                .`in`("courseId", courseIds.toTypedArray())
-                .findAll()
-                .forEach { it.isMyCourse = isMyCourse }
-        }
-    }
-
     override suspend fun getCourseByCourseId(courseId: String?): RealmMyCourse? {
         return courseId?.let { findByField(RealmMyCourse::class.java, "courseId", it) }
     }
@@ -44,7 +31,7 @@ class CourseRepositoryImpl @Inject constructor(
         if (courseId.isNullOrEmpty()) {
             return 0
         }
-        return withRealm { realm ->
+        return withRealmAsync { realm ->
             getNoOfExam(realm, courseId)
         }
     }
@@ -53,7 +40,7 @@ class CourseRepositoryImpl @Inject constructor(
         if (courseId.isNullOrEmpty()) {
             return emptyList()
         }
-        return withRealm { realm ->
+        return withRealmAsync { realm ->
             val steps = RealmMyCourse.getCourseSteps(realm, courseId)
             if (steps.isEmpty()) {
                 emptyList()

@@ -55,13 +55,6 @@ open class RealmRepository(private val databaseService: DatabaseService) {
             realm.findCopyByField(clazz, fieldName, value)
         }
 
-    protected suspend fun <T : RealmObject> findFirst(clazz: Class<T>): T? =
-        withRealm { realm ->
-            realm.where(clazz)
-                .findFirst()
-                ?.let { realm.copyFromRealm(it) }
-        }
-
     protected suspend fun <T : RealmObject> save(item: T) {
         executeTransaction { realm ->
             realm.copyToRealmOrUpdate(item)
@@ -93,7 +86,7 @@ open class RealmRepository(private val databaseService: DatabaseService) {
         }
     }
 
-    protected suspend fun <T> withRealm(operation: (Realm) -> T): T {
+    protected suspend fun <T> withRealmAsync(operation: (Realm) -> T): T {
         return databaseService.withRealmAsync(operation)
     }
 

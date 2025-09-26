@@ -73,7 +73,7 @@ class LibraryRepositoryImpl @Inject constructor(
                     }
                 }
         }
-        withRealm { realm ->
+        withRealmAsync { realm ->
             if (isAdd) {
                 onAdd(realm, "resources", userId, resourceId)
             } else {
