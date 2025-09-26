@@ -438,7 +438,7 @@ object NotificationUtils {
 
         fun createStorageWarningNotification(storagePercentage: Int, customId: String): NotificationConfig {
             val priority = if (storagePercentage > 95) {
-                NotificationCompat.PRIORITY_HIGH
+               NotificationCompat.PRIORITY_HIGH
             } else {
                 NotificationCompat.PRIORITY_DEFAULT
             }

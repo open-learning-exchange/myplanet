@@ -11,6 +11,7 @@ import android.graphics.PorterDuff
 import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
@@ -49,6 +50,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import org.json.JSONObject
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication
@@ -130,6 +132,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        notificationsShownThisSession = false
         checkUser()
         initViews()
         updateAppTitle()
@@ -567,58 +570,123 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun checkIfShouldShowNotifications() {
         val fromLogin = intent.getBooleanExtra("from_login", false)
+        android.util.Log.d("DashboardActivity", "checkIfShouldShowNotifications: fromLogin=$fromLogin, notificationsShownThisSession=$notificationsShownThisSession")
         if (fromLogin || !notificationsShownThisSession) {
             notificationsShownThisSession = true
+            android.util.Log.d("DashboardActivity", "Starting immediate notification check")
             lifecycleScope.launch {
-                kotlinx.coroutines.delay(1000)
-                checkAndCreateNewNotifications()
+                try {
+                    // Do an immediate check first with overall timeout
+                    withTimeout(10000) { // 10 second max for entire notification process
+                        checkAndCreateNewNotifications()
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("DashboardActivity", "First notification check timed out or failed", e)
+                }
+
+                // Then do another check after a short delay to catch any late-loading data
+                try {
+                    kotlinx.coroutines.delay(500)
+                    android.util.Log.d("DashboardActivity", "500ms delay completed, doing second notification check")
+                    withTimeout(5000) { // 5 second max for second check
+                        checkAndCreateNewNotifications()
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("DashboardActivity", "Second notification check timed out or failed", e)
+                }
             }
+        } else {
+            android.util.Log.d("DashboardActivity", "Skipping notification check - already shown this session")
         }
     }
 
     private fun checkAndCreateNewNotifications() {
         val userId = user?.id
+        val startTime = System.currentTimeMillis()
+        android.util.Log.d("DashboardActivity", "checkAndCreateNewNotifications called for userId: $userId at $startTime")
 
         lifecycleScope.launch(Dispatchers.IO) {
             var unreadCount = 0
             val newNotifications = mutableListOf<NotificationUtils.NotificationConfig>()
 
             try {
+                val step1Time = System.currentTimeMillis()
+                android.util.Log.d("DashboardActivity", "Step 1: Starting updateResourceNotification at ${step1Time - startTime}ms")
                 dashboardViewModel.updateResourceNotification(userId)
+
+                val step2Time = System.currentTimeMillis()
+                android.util.Log.d("DashboardActivity", "Step 2: Getting realm instance at ${step2Time - startTime}ms")
                 val backgroundRealm = databaseService.realmInstance
+
                 try {
+                    val step3Time = System.currentTimeMillis()
+                    android.util.Log.d("DashboardActivity", "Step 3: Starting createNotifications at ${step3Time - startTime}ms")
                     val createdNotifications = createNotifications(backgroundRealm, userId)
+
+                    val step4Time = System.currentTimeMillis()
+                    android.util.Log.d("DashboardActivity", "Step 4: Created ${createdNotifications.size} notifications at ${step4Time - startTime}ms")
                     newNotifications.addAll(createdNotifications)
+
+                    val step5Time = System.currentTimeMillis()
+                    android.util.Log.d("DashboardActivity", "Step 5: Getting direct count at ${step5Time - startTime}ms")
+                    // Force refresh and get count from the same realm instance
+                    backgroundRealm.refresh()
+                    val directCount = backgroundRealm.where(RealmNotification::class.java)
+                        .equalTo("userId", userId)
+                        .equalTo("isRead", false)
+                        .count()
+
+                    val step6Time = System.currentTimeMillis()
+                    android.util.Log.d("DashboardActivity", "Step 6: Direct count from background realm: $directCount at ${step6Time - startTime}ms")
                 } finally {
+                    val step7Time = System.currentTimeMillis()
+                    android.util.Log.d("DashboardActivity", "Step 7: Closing realm at ${step7Time - startTime}ms")
                     backgroundRealm.close()
                 }
 
+                val step8Time = System.currentTimeMillis()
+                android.util.Log.d("DashboardActivity", "Step 8: Getting unread count from ViewModel at ${step8Time - startTime}ms")
                 unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
+
+                val step9Time = System.currentTimeMillis()
+                android.util.Log.d("DashboardActivity", "Step 9: Unread count: $unreadCount at ${step9Time - startTime}ms")
             } catch (e: Exception) {
+                android.util.Log.e("DashboardActivity", "Error creating notifications", e)
                 e.printStackTrace()
             }
 
             withContext(Dispatchers.Main) {
                 try {
+                    android.util.Log.d("DashboardActivity", "Updating UI with unread count: $unreadCount")
                     updateNotificationBadge(unreadCount) {
                         openNotificationsList(userId ?: "")
                     }
 
                     val groupedNotifications = newNotifications.groupBy { it.type }
-                    
+                    android.util.Log.d("DashboardActivity", "Grouped notifications: ${groupedNotifications.keys}")
+
                     groupedNotifications.forEach { (type, notifications) ->
+                        android.util.Log.d("DashboardActivity", "Showing ${notifications.size} notifications of type: $type")
                         when {
                             notifications.size == 1 -> {
-                                notificationManager.showNotification(notifications.first())
+                                val success = notificationManager.showNotification(notifications.first())
+                                android.util.Log.d("DashboardActivity", "Single notification shown successfully: $success")
                             }
                             notifications.size > 1 -> {
                                 val summaryConfig = createSummaryNotification(type, notifications.size)
-                                notificationManager.showNotification(summaryConfig)
+                                val success = notificationManager.showNotification(summaryConfig)
+                                android.util.Log.d("DashboardActivity", "Summary notification shown successfully: $success")
                             }
                         }
                     }
 
+                    // Force immediate UI refresh
+                    binding.appBarBell.bellToolbar.invalidate()
+                    val endTime = System.currentTimeMillis()
+                    android.util.Log.d("DashboardActivity", "UI update completed at $endTime (total time: ${endTime - startTime}ms)")
+
                 } catch (e: Exception) {
+                    android.util.Log.e("DashboardActivity", "Error updating notifications", e)
                     e.printStackTrace()
                 }
             }
@@ -707,25 +775,49 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private suspend fun createNotifications(realm: Realm, userId: String?): List<NotificationUtils.NotificationConfig> {
+        val methodStartTime = System.currentTimeMillis()
         val newNotifications = mutableListOf<NotificationUtils.NotificationConfig>()
+        android.util.Log.d("DashboardActivity", "createNotifications: Starting notification creation at $methodStartTime")
+
+        val surveyTime = System.currentTimeMillis()
         createSurveyDatabaseNotifications(realm, userId)
+        android.util.Log.d("DashboardActivity", "createNotifications: Survey notifications completed in ${System.currentTimeMillis() - surveyTime}ms")
+
+        val taskTime = System.currentTimeMillis()
         createTaskDatabaseNotifications(realm, userId)
+        android.util.Log.d("DashboardActivity", "createNotifications: Task notifications completed in ${System.currentTimeMillis() - taskTime}ms")
+
+        val storageTime = System.currentTimeMillis()
         createStorageDatabaseNotifications(realm, userId)
+        android.util.Log.d("DashboardActivity", "createNotifications: Storage notifications completed in ${System.currentTimeMillis() - storageTime}ms")
+
+        val joinTime = System.currentTimeMillis()
         createJoinRequestDatabaseNotifications(realm, userId)
+        android.util.Log.d("DashboardActivity", "createNotifications: Join request notifications completed in ${System.currentTimeMillis() - joinTime}ms")
 
+        val refreshTime = System.currentTimeMillis()
+        android.util.Log.d("DashboardActivity", "createNotifications: All notification types created, refreshing realm")
         realm.refresh()
+        android.util.Log.d("DashboardActivity", "createNotifications: Realm refresh completed in ${System.currentTimeMillis() - refreshTime}ms")
 
+        val queryTime = System.currentTimeMillis()
         val unreadNotifications = realm.where(RealmNotification::class.java)
             .equalTo("userId", userId)
             .equalTo("isRead", false)
             .findAll()
+        android.util.Log.d("DashboardActivity", "createNotifications: Query completed in ${System.currentTimeMillis() - queryTime}ms, found ${unreadNotifications.size} unread notifications")
 
+        val processTime = System.currentTimeMillis()
         unreadNotifications.forEach { dbNotification ->
             val config = createNotificationConfigFromDatabase(dbNotification)
             if (config != null) {
                 newNotifications.add(config)
             }
         }
+        android.util.Log.d("DashboardActivity", "createNotifications: Processing completed in ${System.currentTimeMillis() - processTime}ms")
+
+        val totalTime = System.currentTimeMillis() - methodStartTime
+        android.util.Log.d("DashboardActivity", "createNotifications: Total method time ${totalTime}ms, returning ${newNotifications.size} notification configs")
         return newNotifications
     }
 
@@ -765,21 +857,46 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private suspend fun createSurveyDatabaseNotifications(realm: Realm, userId: String?) {
+        val methodStart = System.currentTimeMillis()
+        android.util.Log.d("DashboardActivity", "createSurveyDatabaseNotifications: Starting for userId: $userId")
+
+        val queryStart = System.currentTimeMillis()
         val pendingSurveys = realm.where(RealmSubmission::class.java)
             .equalTo("userId", userId)
             .equalTo("status", "pending")
             .equalTo("type", "survey")
             .findAll()
+        android.util.Log.d("DashboardActivity", "createSurveyDatabaseNotifications: Query completed in ${System.currentTimeMillis() - queryStart}ms, found ${pendingSurveys.size} pending surveys")
 
-        pendingSurveys.mapNotNull { submission ->
+        val processingStart = System.currentTimeMillis()
+        var processedCount = 0
+        // Get unique survey titles first to avoid duplicate notifications
+        val uniqueSurveyTitles = pendingSurveys.mapNotNull { submission ->
             val examId = submission.parentId?.split("@")?.firstOrNull() ?: ""
             realm.where(RealmStepExam::class.java)
                 .equalTo("id", examId)
                 .findFirst()
                 ?.name
-        }.forEach { title ->
-            dashboardViewModel.createNotificationIfNotExists("survey", title, title, userId)
+        }.distinct() // Remove duplicates
+
+        android.util.Log.d("DashboardActivity", "Found ${uniqueSurveyTitles.size} unique survey titles from ${pendingSurveys.size} submissions")
+
+        // Create notifications for unique surveys only with timeout protection
+        uniqueSurveyTitles.forEach { title ->
+            val notificationStart = System.currentTimeMillis()
+            try {
+                // Use withTimeout to prevent individual notifications from taking too long
+                withTimeout(1000) { // 1 second timeout per notification - much more aggressive
+                    dashboardViewModel.createNotificationIfNotExists("survey", title, title, userId)
+                }
+                android.util.Log.d("DashboardActivity", "Survey notification created in ${System.currentTimeMillis() - notificationStart}ms")
+            } catch (e: Exception) {
+                android.util.Log.w("DashboardActivity", "Survey notification skipped (${System.currentTimeMillis() - notificationStart}ms): $title")
+            }
         }
+
+        val totalTime = System.currentTimeMillis() - methodStart
+        android.util.Log.d("DashboardActivity", "createSurveyDatabaseNotifications: Total time ${totalTime}ms for ${pendingSurveys.size} surveys")
     }
 
     private suspend fun createTaskDatabaseNotifications(realm: Realm, userId: String?) {
@@ -800,26 +917,39 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private suspend fun createStorageDatabaseNotifications(realm: Realm, userId: String?) {
+        android.util.Log.d("DashboardActivity", "createStorageDatabaseNotifications called for userId: $userId")
         val storageRatio = FileUtils.totalAvailableMemoryRatio(this)
+        android.util.Log.d("DashboardActivity", "Storage ratio: $storageRatio")
         if (storageRatio > 85) {
+            android.util.Log.d("DashboardActivity", "Creating storage notification for $storageRatio%")
             dashboardViewModel.createNotificationIfNotExists("storage", "$storageRatio%", "storage", userId)
         }
 
+        android.util.Log.d("DashboardActivity", "Creating test storage notification")
         dashboardViewModel.createNotificationIfNotExists("storage", "90%", "storage_test", userId)
     }
 
     private suspend fun createJoinRequestDatabaseNotifications(realm: Realm, userId: String?) {
+        val methodStart = System.currentTimeMillis()
+        android.util.Log.d("DashboardActivity", "createJoinRequestDatabaseNotifications: Starting for userId: $userId")
+
         val teamLeaderMemberships = realm.where(RealmMyTeam::class.java)
             .equalTo("userId", userId)
             .equalTo("docType", "membership")
             .equalTo("isLeader", true)
             .findAll()
 
+        android.util.Log.d("DashboardActivity", "createJoinRequestDatabaseNotifications: Found ${teamLeaderMemberships.size} team leaderships")
+
+        val notifications = mutableListOf<Triple<String, String, String>>() // type, message, relatedId
+
         teamLeaderMemberships.forEach { leadership ->
             val pendingJoinRequests = realm.where(RealmMyTeam::class.java)
                 .equalTo("teamId", leadership.teamId)
                 .equalTo("docType", "request")
                 .findAll()
+
+            android.util.Log.d("DashboardActivity", "Team ${leadership.teamId}: Found ${pendingJoinRequests.size} pending join requests")
 
             pendingJoinRequests.forEach { joinRequest ->
                 val team = realm.where(RealmMyTeam::class.java)
@@ -830,15 +960,32 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     .equalTo("id", joinRequest.userId)
                     .findFirst()
 
-                val requesterName = requester?.name ?: "Unknown User"
-                val teamName = team?.name ?: "Unknown Team"
+                val requesterName = requester?.name
+                val teamName = team?.name
+                Log.d("DashboardActivity", "Join request from $requesterName to join team $teamName")
                 val message = getString(R.string.user_requested_to_join_team, requesterName, teamName)
 
-                dashboardViewModel.createNotificationIfNotExists(
-                    "join_request", message, joinRequest._id, userId
-                )
+                notifications.add(Triple("join_request", message, joinRequest._id ?: ""))
             }
         }
+
+        android.util.Log.d("DashboardActivity", "createJoinRequestDatabaseNotifications: Creating ${notifications.size} notifications")
+
+        // Create notifications with timeout protection
+        notifications.forEach { (type, message, relatedId) ->
+            val notificationStart = System.currentTimeMillis()
+            try {
+                withTimeout(1000) { // 1 second timeout per notification - much more aggressive
+                    dashboardViewModel.createNotificationIfNotExists(type, message, relatedId, userId)
+                }
+                android.util.Log.d("DashboardActivity", "Join request notification created in ${System.currentTimeMillis() - notificationStart}ms")
+            } catch (e: Exception) {
+                android.util.Log.w("DashboardActivity", "Join request notification skipped (${System.currentTimeMillis() - notificationStart}ms)")
+            }
+        }
+
+        val totalTime = System.currentTimeMillis() - methodStart
+        android.util.Log.d("DashboardActivity", "createJoinRequestDatabaseNotifications: Total time ${totalTime}ms for ${notifications.size} notifications")
     }
 
     private fun openNotificationsList(userId: String) {
