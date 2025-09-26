@@ -7,8 +7,6 @@ import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.ChatRepositoryImpl
-import org.ole.planet.myplanet.repository.CourseProgressRepository
-import org.ole.planet.myplanet.repository.CourseProgressRepositoryImpl
 import org.ole.planet.myplanet.repository.CourseRepository
 import org.ole.planet.myplanet.repository.CourseRepositoryImpl
 import org.ole.planet.myplanet.repository.FeedbackRepository
@@ -39,10 +37,6 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindCourseRepository(impl: CourseRepositoryImpl): CourseRepository
-
-    @Binds
-    @Singleton
-    abstract fun bindCourseProgressRepository(impl: CourseProgressRepositoryImpl): CourseProgressRepository
 
     @Binds
     @Singleton

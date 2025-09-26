@@ -43,24 +43,7 @@ class StandardSyncStrategy : SyncStrategy {
         }
     }
     
-    override suspend fun syncTableWithProgress(
-        table: String,
-        realm: Realm,
-        config: SyncConfig
-    ): Flow<SyncProgress> = flow {
-        // Standard sync doesn't provide detailed progress
-        emit(
-            SyncProgress(
-                table = table,
-                processedItems = 0,
-                totalItems = -1,
-                currentBatch = 1,
-                totalBatches = 1
-            )
-        )
-    }
-    
     override fun getStrategyName(): String = "standard"
-    
+
     override fun isSupported(table: String): Boolean = true
 }
