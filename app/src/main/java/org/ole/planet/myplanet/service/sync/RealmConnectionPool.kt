@@ -208,30 +208,6 @@ data class PoolStats(
     val maxConnections: Int
 )
 
-// Helper function to handle the blocking executeTransaction in a suspend context
-private suspend fun <T> Realm.executeTransactionSuspend(operation: suspend (Realm) -> T): T {
-    return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-        var result: T? = null
-        var exception: Exception? = null
-        
-        executeTransaction { realm ->
-            try {
-                // This is still problematic as executeTransaction doesn't support suspend
-                // In a real implementation, you'd need to restructure this
-                kotlinx.coroutines.runBlocking {
-                    result = operation(realm)
-                }
-            } catch (e: Exception) {
-                exception = e
-                throw e
-            }
-        }
-        
-        exception?.let { throw it }
-        result!!
-    }
-}
-
 class RealmPoolManager private constructor() {
     companion object {
         @Volatile
