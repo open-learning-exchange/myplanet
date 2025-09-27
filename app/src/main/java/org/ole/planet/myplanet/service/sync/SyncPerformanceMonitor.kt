@@ -165,40 +165,9 @@ class SyncPerformanceMonitor(private val context: Context) {
         )
     }
     
-    fun getAllComparisons(): List<SyncComparison> {
-        val tables = historicalMetrics.map { it.tableName }.distinct()
-        return tables.map { compareStrategies(it) }
-    }
-    
     fun getRecommendedStrategy(tableName: String): String {
         val comparison = compareStrategies(tableName)
         return if (comparison.recommendation.contains("beta")) "beta" else "standard"
-    }
-    
-    fun exportMetrics(): String {
-        val allStats = historicalMetrics.map { it.tableName }.distinct()
-            .associateWith { getPerformanceStats(it) }
-        
-        return buildString {
-            appendLine("=== Sync Performance Report ===")
-            appendLine("Generated: ${System.currentTimeMillis()}")
-            appendLine()
-            
-            allStats.forEach { (table, stats) ->
-                appendLine("Table: $table")
-                appendLine("  Total Syncs: ${stats.totalSyncs}")
-                appendLine("  Success Rate: ${(stats.successRate * 100).roundToInt()}%")
-                appendLine("  Avg Duration: ${stats.averageDuration}ms")
-                appendLine("  Avg Throughput: ${stats.averageThroughput.roundToInt()} items/sec")
-                appendLine("  Best Strategy: ${stats.bestStrategy ?: "N/A"}")
-                appendLine()
-            }
-            
-            appendLine("=== Strategy Comparisons ===")
-            getAllComparisons().forEach { comparison ->
-                appendLine("${comparison.table}: ${comparison.recommendation}")
-            }
-        }
     }
     
     private fun saveMetricsToPrefs(metrics: SyncMetrics) {

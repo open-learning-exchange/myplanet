@@ -13,14 +13,6 @@ class RatingRepositoryImpl @Inject constructor(
     private val gson: Gson,
 ) : RealmRepository(databaseService), RatingRepository {
 
-    override suspend fun getRatings(type: String, userId: String?): Map<String, Int> {
-        val ratings = queryList(RealmRating::class.java) {
-            equalTo("type", type)
-            equalTo("userId", userId)
-        }
-        return ratings.associate { (it.item ?: "") to it.rate }
-    }
-
     override suspend fun getRatingSummary(
         type: String,
         itemId: String,

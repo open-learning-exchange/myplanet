@@ -120,26 +120,6 @@ class MyProgressFragment : Fragment() {
             return null
         }
 
-        fun countUsersWhoCompletedCourse(realm: Realm, courseId: String): Int {
-            var completedCount = 0
-            val allUsers = realm.where(RealmUserModel::class.java).findAll()
-
-            allUsers.forEach { user ->
-                val userId = user.id
-                val courses = RealmMyCourse.getMyCourseByUserId(userId, realm.where(RealmMyCourse::class.java).findAll())
-
-                val course = courses.find { it.courseId == courseId }
-                if (course != null) {
-                    val steps = RealmMyCourse.getCourseSteps(realm, courseId)
-                    val currentProgress = RealmCourseProgress.getCurrentProgress(steps, realm, userId, courseId)
-
-                    if (currentProgress == steps.size) {
-                        completedCount++
-                    }
-                }
-            }
-            return completedCount
-        }
     }
 
     override fun onDestroyView() {
