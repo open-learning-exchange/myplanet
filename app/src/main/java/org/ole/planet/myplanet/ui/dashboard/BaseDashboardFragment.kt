@@ -30,7 +30,6 @@ import org.ole.planet.myplanet.callback.NotificationCallback
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.ItemLibraryHomeBinding
-import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLife
@@ -309,9 +308,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             RealmMyCourse::class.java -> {
                 updateCountText(countText, v.findViewById(R.id.count_course))
             }
-            RealmMeetup::class.java -> {
-                updateCountText(countText, v.findViewById(R.id.count_meetup))
-            }
             RealmMyTeam::class.java -> {
                 updateCountText(countText, v.findViewById(R.id.count_team))
             }
@@ -338,7 +334,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         myLibraryDiv(view)
         initializeFlexBoxView(view, R.id.flexboxLayoutCourse, RealmMyCourse::class.java)
         initializeFlexBoxView(view, R.id.flexboxLayoutTeams, RealmMyTeam::class.java)
-        initializeFlexBoxView(view, R.id.flexboxLayoutMeetups, RealmMeetup::class.java)
         initializeFlexBoxView(view, R.id.flexboxLayoutMyLife, RealmMyLife::class.java)
 
         if (mRealm.isInTransaction) {
