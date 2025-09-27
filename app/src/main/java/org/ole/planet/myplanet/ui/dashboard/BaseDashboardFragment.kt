@@ -7,7 +7,6 @@ import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.AdapterView
-import android.widget.ArrayAdapter
 import android.widget.DatePicker
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -414,19 +413,4 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         di?.dismiss()
     }
 
-    override fun showTaskListDialog() {
-        val tasks = mRealm.where(RealmTeamTask::class.java).equalTo("assignee", model?.id)
-            .equalTo("completed", false)
-            .greaterThan("deadline", Calendar.getInstance().timeInMillis).findAll()
-        if (tasks.isEmpty()) {
-            Utilities.toast(requireContext(), getString(R.string.no_due_tasks))
-            return
-        }
-        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_expandable_list_item_1, tasks)
-        AlertDialog.Builder(requireContext()).setTitle(getString(R.string.due_tasks))
-            .setAdapter(adapter) { _, _ ->
-//                var task = adapter.getItem(p1);
-            }
-            .setNegativeButton(R.string.dismiss, null).show()
-    }
 }
