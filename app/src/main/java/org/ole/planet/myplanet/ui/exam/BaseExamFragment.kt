@@ -184,18 +184,6 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
             )
         }
     }
-
-    fun addAnswer(compoundButton: CompoundButton) {
-        val btnText = compoundButton.text.toString()
-        val btnId = compoundButton.tag?.toString() ?: ""
-
-        if (compoundButton is RadioButton) {
-            ans = btnId
-        } else if (compoundButton is CheckBox) {
-            listAns?.put(btnText, btnId)
-        }
-    }
-
     abstract fun startExam(question: RealmExamQuestion?)
     private fun insertIntoSubmitPhotos(submitId: String?) {
         mRealm.beginTransaction()
