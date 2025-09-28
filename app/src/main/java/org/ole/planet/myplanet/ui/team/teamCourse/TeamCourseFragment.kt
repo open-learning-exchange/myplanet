@@ -34,15 +34,6 @@ class TeamCourseFragment : BaseTeamFragment() {
             showNoData(binding.tvNodata, it.itemCount, "teamCourses")
         }
     }
-    
-    fun updateCoursesList() {
-        val courses = mRealm.where(RealmMyCourse::class.java).`in`("id", team?.courses?.toTypedArray<String>()).findAll()
-        adapterTeamCourse?.updateList(courses)
-        adapterTeamCourse?.let {
-            showNoData(binding.tvNodata, it.itemCount, "teamCourses")
-        }
-    }
-
     override fun onNewsItemClick(news: RealmNews?) {}
     override fun clearImages() {
         imageList.clear()

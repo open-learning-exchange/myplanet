@@ -60,16 +60,6 @@ import org.ole.planet.myplanet.utilities.SharedPrefManager
 @AndroidEntryPoint
 class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelected, TagClickListener, RealtimeSyncMixin {
 
-    companion object {
-        fun newInstance(isMyCourseLib: Boolean): CoursesFragment {
-            val fragment = CoursesFragment()
-            val args = Bundle()
-            args.putBoolean("isMyCourseLib", isMyCourseLib)
-            fragment.arguments = args
-            return fragment
-        }
-    }
-
     private lateinit var tvAddToLib: TextView
     private lateinit var tvSelected: TextView
     private lateinit var etSearch: EditText

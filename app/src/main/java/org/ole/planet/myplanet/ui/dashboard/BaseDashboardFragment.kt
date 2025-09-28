@@ -7,7 +7,6 @@ import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.AdapterView
-import android.widget.ArrayAdapter
 import android.widget.DatePicker
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -31,7 +30,6 @@ import org.ole.planet.myplanet.callback.NotificationCallback
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.ItemLibraryHomeBinding
-import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLife
@@ -310,9 +308,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             RealmMyCourse::class.java -> {
                 updateCountText(countText, v.findViewById(R.id.count_course))
             }
-            RealmMeetup::class.java -> {
-                updateCountText(countText, v.findViewById(R.id.count_meetup))
-            }
             RealmMyTeam::class.java -> {
                 updateCountText(countText, v.findViewById(R.id.count_team))
             }
@@ -339,7 +334,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         myLibraryDiv(view)
         initializeFlexBoxView(view, R.id.flexboxLayoutCourse, RealmMyCourse::class.java)
         initializeFlexBoxView(view, R.id.flexboxLayoutTeams, RealmMyTeam::class.java)
-        initializeFlexBoxView(view, R.id.flexboxLayoutMeetups, RealmMeetup::class.java)
         initializeFlexBoxView(view, R.id.flexboxLayoutMyLife, RealmMyLife::class.java)
 
         if (mRealm.isInTransaction) {
@@ -419,19 +413,4 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         di?.dismiss()
     }
 
-    override fun showTaskListDialog() {
-        val tasks = mRealm.where(RealmTeamTask::class.java).equalTo("assignee", model?.id)
-            .equalTo("completed", false)
-            .greaterThan("deadline", Calendar.getInstance().timeInMillis).findAll()
-        if (tasks.isEmpty()) {
-            Utilities.toast(requireContext(), getString(R.string.no_due_tasks))
-            return
-        }
-        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_expandable_list_item_1, tasks)
-        AlertDialog.Builder(requireContext()).setTitle(getString(R.string.due_tasks))
-            .setAdapter(adapter) { _, _ ->
-//                var task = adapter.getItem(p1);
-            }
-            .setNegativeButton(R.string.dismiss, null).show()
-    }
 }
