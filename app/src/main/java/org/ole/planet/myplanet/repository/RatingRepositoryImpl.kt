@@ -9,18 +9,9 @@ import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmUserModel
 
 class RatingRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService
+    databaseService: DatabaseService,
+    private val gson: Gson,
 ) : RealmRepository(databaseService), RatingRepository {
-
-    private val gson = Gson()
-
-    override suspend fun getRatings(type: String, userId: String?): Map<String, Int> {
-        val ratings = queryList(RealmRating::class.java) {
-            equalTo("type", type)
-            equalTo("userId", userId)
-        }
-        return ratings.associate { (it.item ?: "") to it.rate }
-    }
 
     override suspend fun getRatingSummary(
         type: String,

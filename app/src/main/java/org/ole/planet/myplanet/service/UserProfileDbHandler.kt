@@ -114,16 +114,6 @@ class UserProfileDbHandler @Inject constructor(
         }
     }
 
-    private fun createUser(realm: Realm = mRealm): RealmOfflineActivity {
-        val offlineActivities = realm.createObject(RealmOfflineActivity::class.java, UUID.randomUUID().toString())
-        val model = userModel
-        offlineActivities.userId = model?.id
-        offlineActivities.userName = model?.name
-        offlineActivities.parentCode = model?.parentCode
-        offlineActivities.createdOn = model?.planetCode
-        return offlineActivities
-    }
-
     val lastVisit: Long? get() = mRealm.where(RealmOfflineActivity::class.java).max("loginTime") as Long?
     val offlineVisits: Int get() = getOfflineVisits(userModel)
 
@@ -175,14 +165,6 @@ class UserProfileDbHandler @Inject constructor(
             offlineActivities.resourceId = itemResourceId
             offlineActivities.time = Date().time
         }
-    }
-
-    private fun createResourceUser(model: RealmUserModel?): RealmResourceActivity {
-        val offlineActivities = mRealm.createObject(RealmResourceActivity::class.java, "${UUID.randomUUID()}")
-        offlineActivities.user = model?.name
-        offlineActivities.parentCode = model?.parentCode
-        offlineActivities.createdOn = model?.planetCode
-        return offlineActivities
     }
 
     val numberOfResourceOpen: String get() {
