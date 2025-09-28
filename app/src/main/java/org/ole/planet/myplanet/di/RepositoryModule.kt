@@ -36,11 +36,11 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindCourseRepository(impl: CourseRepositoryImpl): CourseRepository
+    abstract fun bindChatRepository(impl: ChatRepositoryImpl): ChatRepository
 
     @Binds
     @Singleton
-    abstract fun bindChatRepository(impl: ChatRepositoryImpl): ChatRepository
+    abstract fun bindCourseRepository(impl: CourseRepositoryImpl): CourseRepository
 
     @Binds
     @Singleton
