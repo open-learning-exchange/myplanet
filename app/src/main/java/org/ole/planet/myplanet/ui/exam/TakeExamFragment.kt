@@ -222,9 +222,10 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     private fun createSubmission() {
-        mRealm.beginTransaction()
-        try {
-            sub = createSubmission(null, mRealm)
+        val teamSubmissionData = prepareTeamSubmissionData()
+
+        mRealm.executeTransaction { realm ->
+            sub = createSubmission(sub, realm)
             setParentId()
             sub?.userId = user?.id
             sub?.status = "pending"
@@ -236,13 +237,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             }
 
             currentIndex = 0
-            if (isTeam && teamId != null) {
-                addTeamInformation(mRealm)
-            }
-            mRealm.commitTransaction()
-        } catch (e: Exception) {
-            mRealm.cancelTransaction()
-            throw e
+            teamSubmissionData?.let { addTeamInformation(realm, it) }
         }
     }
 
@@ -262,27 +257,39 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         }
     }
 
-    private fun addTeamInformation(realm: Realm) {
-        sub?.team = teamId
-        val membershipDoc = realm.createObject(RealmMembershipDoc::class.java)
-        membershipDoc.teamId = teamId
-        sub?.membershipDoc = membershipDoc
+    private fun prepareTeamSubmissionData(): TeamSubmissionData? {
+        if (!isTeam) return null
+        val team = teamId ?: return null
 
         val userModel = UserProfileDbHandler(requireActivity()).userModel
-
-        try {
-            val userJson = JSONObject()
-            userJson.put("age", userModel?.dob ?: "")
-            userJson.put("gender", userModel?.gender ?: "")
-            val membershipJson = JSONObject()
-            membershipJson.put("teamId", teamId)
-            userJson.put("membershipDoc", membershipJson)
-
-            sub?.user = userJson.toString()
+        return try {
+            val userJson = JSONObject().apply {
+                put("age", userModel?.dob ?: "")
+                put("gender", userModel?.gender ?: "")
+                put("membershipDoc", JSONObject().apply {
+                    put("teamId", team)
+                })
+            }
+            TeamSubmissionData(team, userJson.toString())
         } catch (e: Exception) {
             e.printStackTrace()
+            TeamSubmissionData(team, null)
         }
     }
+
+    private fun addTeamInformation(realm: Realm, data: TeamSubmissionData) {
+        sub?.team = data.teamId
+        val membershipDoc = realm.createObject(RealmMembershipDoc::class.java)
+        membershipDoc.teamId = data.teamId
+        sub?.membershipDoc = membershipDoc
+
+        data.userJson?.let { sub?.user = it }
+    }
+
+    private data class TeamSubmissionData(
+        val teamId: String,
+        val userJson: String?,
+    )
 
     override fun startExam(question: RealmExamQuestion?) {
         binding.tvQuestionCount.text = getString(R.string.Q, currentIndex + 1, questions?.size)
