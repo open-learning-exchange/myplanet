@@ -51,3 +51,29 @@ jobs:
         run: |
           FLAVOR=${{ matrix.build }}
           ./gradlew assemble${FLAVOR^}Debug --warning-mode all --stacktrace
+
+      - name: upload apk artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-${{ matrix.build }}
+          path: app/build/outputs/apk/${{ matrix.build }}/debug/*.apk
+
+      - name: set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: myplanet-ci
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+          export_default_credentials: true
+
+      - name: run Firebase Test Lab Robo test
+        run: |
+          FLAVOR=${{ matrix.build }}
+          APK=$(ls app/build/outputs/apk/${FLAVOR}/debug/*.apk | head -n 1)
+          gcloud firebase test android run \
+            --type robo \
+            --app "$APK" \
+            --robo-script ci/robo/myplanet_robo.json \
+            --device model=Pixel2,version=29,locale=en,orientation=portrait \
+            --results-bucket myplanet-test-results \
+            --results-dir "ci-run/$GITHUB_RUN_ID/${FLAVOR}" \
+            --timeout 5m
