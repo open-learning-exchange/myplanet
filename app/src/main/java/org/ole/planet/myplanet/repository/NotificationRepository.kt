@@ -11,6 +11,12 @@ data class TaskNotificationMetadata(
     val teamName: String?,
 )
 
+data class NotificationData(
+    val type: String,
+    val message: String,
+    val relatedId: String?
+)
+
 interface NotificationRepository {
     suspend fun getUnreadCount(userId: String?): Int
     suspend fun updateResourceNotification(userId: String?)
@@ -20,4 +26,6 @@ interface NotificationRepository {
     suspend fun getJoinRequestMetadata(joinRequestId: String?): JoinRequestNotificationMetadata?
     suspend fun getTaskNotificationMetadata(taskTitle: String): TaskNotificationMetadata?
     suspend fun ensureNotification(type: String, message: String, relatedId: String?, userId: String?)
+    suspend fun getNotificationsWithUnreadCount(userId: String, filter: String): Pair<List<RealmNotification>, Int>
+    suspend fun batchEnsureNotifications(notifications: List<NotificationData>, userId: String?)
 }
