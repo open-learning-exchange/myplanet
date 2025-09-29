@@ -20,6 +20,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.lifecycle.whenStarted
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
@@ -117,7 +118,13 @@ class ChatDetailFragment : Fragment() {
 
     private fun initChatComponents() {
         viewLifecycleOwner.lifecycleScope.launch {
-            user = userRepository.getUserById(settings.getString("userId", "") ?: "")
+            viewLifecycleOwner.lifecycle.whenStarted {
+                val userId = settings.getString("userId", "") ?: ""
+                val userModel = withContext(Dispatchers.IO) {
+                    userRepository.getUserById(userId)
+                }
+                user = userModel
+            }
         }
         mAdapter = ChatAdapter(requireContext(), binding.recyclerGchat)
         binding.recyclerGchat.apply {
@@ -408,14 +415,25 @@ class ChatDetailFragment : Fragment() {
     private fun jsonRequestBody(json: String): RequestBody =
         json.toRequestBody(jsonMediaType)
 
+    private fun resolveUserName(): String {
+        user?.name?.let { name ->
+            if (name.isNotBlank()) {
+                return name
+            }
+        }
+        val storedName = settings.getString("name", null)
+        return storedName?.takeIf { it.isNotBlank() } ?: ""
+    }
+
     private fun createContinueChatRequest(message: String, aiProvider: AiProvider, id: String, rev: String): RequestBody {
-        val continueChatData = ContinueChatModel(data = Data("${user?.name}", message, aiProvider, id, rev), save = true)
+        val continueChatData =
+            ContinueChatModel(data = Data(resolveUserName(), message, aiProvider, id, rev), save = true)
         val jsonContent = gson.toJson(continueChatData)
         return jsonRequestBody(jsonContent)
     }
 
     private fun createChatRequest(message: String, aiProvider: AiProvider): RequestBody {
-        val chatData = ChatRequestModel(data = ContentData("${user?.name}", message, aiProvider), save = true)
+        val chatData = ChatRequestModel(data = ContentData(resolveUserName(), message, aiProvider), save = true)
         val jsonContent = gson.toJson(chatData)
         return jsonRequestBody(jsonContent)
     }
@@ -516,7 +534,7 @@ class ChatDetailFragment : Fragment() {
             addProperty("_rev", responseBody.couchDBResponse?.rev ?: "")
             addProperty("_id", responseBody.couchDBResponse?.id ?: "")
             addProperty("aiProvider", aiName)
-            addProperty("user", user?.name)
+            addProperty("user", resolveUserName())
             addProperty("title", query)
             addProperty("createdTime", Date().time)
             addProperty("updatedDate", "")
