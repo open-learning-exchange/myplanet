@@ -1381,5 +1381,7 @@
     <string name="delete_report">Tirtir warbixinta</string>
     <string name="checking_server_availability">la hubiyo helitaanka serverka…</string>
     <string name="loading_courses">Koorsada ayaa la rarayaa…</string>
+    <string name="loading_teams">Soo rarxarida kooxaha…</string>
+    <string name="loading_enterprises">Soo rarxarida ganacsiyada…</string>
 
 </resources>
