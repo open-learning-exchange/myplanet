@@ -3,10 +3,12 @@ package org.ole.planet.myplanet.repository
 import io.realm.Sort
 import java.util.Date
 import javax.inject.Inject
+import org.json.JSONObject
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNotification
+import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
 
@@ -126,6 +128,7 @@ class NotificationRepositoryImpl @Inject constructor(
             equalTo("docType", "request")
         }.firstOrNull() ?: return null
 
+        val teamId = joinRequest.teamId
         val teamName = joinRequest.teamId?.let { teamId ->
             findByField(RealmMyTeam::class.java, "_id", teamId)?.name
         }
@@ -134,19 +137,55 @@ class NotificationRepositoryImpl @Inject constructor(
             findByField(RealmUserModel::class.java, "id", userId)?.name
         }
 
-        return JoinRequestNotificationMetadata(requesterName, teamName)
+        return JoinRequestNotificationMetadata(requesterName, teamName, teamId)
     }
 
     override suspend fun getTaskNotificationMetadata(taskTitle: String): TaskNotificationMetadata? {
         if (taskTitle.isBlank()) return null
 
         val task = findByField(RealmTeamTask::class.java, "title", taskTitle) ?: return null
+        return buildTaskMetadata(task)
+    }
 
-        val teamName = task.teamId?.let { teamId ->
-            findByField(RealmMyTeam::class.java, "_id", teamId)?.name
+    override suspend fun getTaskNotificationMetadataById(taskId: String?): TaskNotificationMetadata? {
+        val sanitizedId = taskId?.takeUnless { it.isBlank() } ?: return null
+        val task = findByField(RealmTeamTask::class.java, "id", sanitizedId)
+            ?: findByField(RealmTeamTask::class.java, "_id", sanitizedId)
+            ?: return null
+
+        return buildTaskMetadata(task)
+    }
+
+    override suspend fun getSurveyMetadataByName(name: String?): SurveyNotificationMetadata? {
+        val surveyName = name?.takeUnless { it.isBlank() } ?: return null
+        val survey = findByField(RealmStepExam::class.java, "name", surveyName) ?: return null
+
+        return SurveyNotificationMetadata(id = survey.id, name = survey.name)
+    }
+
+    private suspend fun buildTaskMetadata(task: RealmTeamTask): TaskNotificationMetadata {
+        val teamId = extractTeamId(task)
+        val team = teamId?.let { findByField(RealmMyTeam::class.java, "_id", it) }
+
+        return TaskNotificationMetadata(
+            teamName = team?.name,
+            teamId = teamId,
+            teamType = team?.type,
+            taskTitle = task.title,
+        )
+    }
+
+    private fun extractTeamId(task: RealmTeamTask): String? {
+        val directTeamId = task.teamId?.takeUnless { it.isBlank() }
+        if (!directTeamId.isNullOrBlank()) {
+            return directTeamId
         }
 
-        return TaskNotificationMetadata(teamName)
+        val linkJson = task.link?.takeUnless { it.isBlank() } ?: return null
+        return runCatching {
+            val jsonObject = JSONObject(linkJson)
+            jsonObject.optString("teams").takeIf { it.isNotBlank() }
+        }.getOrNull()
     }
 }
 
