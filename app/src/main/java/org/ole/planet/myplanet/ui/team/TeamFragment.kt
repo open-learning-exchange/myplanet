@@ -18,6 +18,7 @@ import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmQuery
 import io.realm.RealmResults
+import kotlinx.coroutines.delay
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
@@ -30,12 +31,11 @@ import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getMyTeamsByUserId
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.utilities.Constants
-import org.ole.planet.myplanet.utilities.AndroidDecrypter
+import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
-class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
+class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamList.OnUpdateCompleteListener {
     private var _binding: FragmentTeamBinding? = null
     private val binding get() = _binding!!
     private lateinit var alertCreateTeamBinding: AlertCreateTeamBinding
@@ -55,6 +55,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     private var teamList: RealmResults<RealmMyTeam>? = null
     private lateinit var adapterTeamList: AdapterTeamList
     private var conditionApplied: Boolean = false
+    private var progressDialog: DialogUtils.CustomProgressDialog? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -84,6 +85,9 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         } else {
             getString(R.string.team)
         }
+
+        showLoadingDialog()
+
         if (fromDashboard) {
             teamList = getMyTeamsByUserId(mRealm, settings)
         } else {
@@ -210,12 +214,14 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
 
     override fun onResume() {
         super.onResume()
+        showLoadingDialog()
         setTeamList()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.rvTeamList.layoutManager = LinearLayoutManager(activity)
+        showLoadingDialog()
         setTeamList()
         binding.etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
@@ -258,6 +264,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                         user,
                     )
                     adapterTeamList.setTeamListener(this@TeamFragment)
+                    adapterTeamList.setUpdateCompleteListener(this@TeamFragment)
                     binding.rvTeamList.adapter = adapterTeamList
                     listContentDescription(conditionApplied)
                 }
@@ -282,12 +289,17 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     }
 
     private fun setTeamList() {
-        val list = teamList ?: return
+        val list = teamList
+        if (list == null) {
+            return
+        }
+
         adapterTeamList = activity?.let {
             AdapterTeamList(it, list, mRealm, childFragmentManager, teamRepository, user)
         } ?: return
         adapterTeamList.setType(type)
         adapterTeamList.setTeamListener(this@TeamFragment)
+        adapterTeamList.setUpdateCompleteListener(this@TeamFragment)
         requireView().findViewById<View>(R.id.type).visibility =
             if (type == null) {
                 View.GONE
@@ -296,16 +308,10 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
             }
         binding.rvTeamList.adapter = adapterTeamList
         listContentDescription(conditionApplied)
-        val itemCount = adapterTeamList.itemCount
-
-        if (itemCount == 0) {
-            showNoResultsMessage(true)
-        } else {
-            showNoResultsMessage(false)
-        }
     }
 
     private fun refreshTeamList() {
+        showLoadingDialog()
         mRealm.refresh()
         teamList?.removeAllChangeListeners()
 
@@ -332,7 +338,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
 
     private fun sortTeams(list: List<RealmMyTeam>): List<RealmMyTeam> {
         val user = user?.id
-        return list.sortedWith(compareByDescending<RealmMyTeam> { team ->
+        return list.sortedWith(compareByDescending { team ->
             when {
                 RealmMyTeam.isTeamLeader(team.teamId, user, mRealm) -> 3
                 team.isMyTeam(user, mRealm) -> 2
@@ -343,6 +349,15 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
 
     override fun onEditTeam(team: RealmMyTeam?) {
         team?.let { createTeamAlert(it) }
+    }
+
+    override fun onUpdateComplete(itemCount: Int) {
+        hideLoadingDialog()
+        if (itemCount == 0) {
+            showNoResultsMessage(true)
+        } else {
+            showNoResultsMessage(false)
+        }
     }
 
     private fun updatedTeamList() {
@@ -359,6 +374,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
             ).apply {
                 setType(type)
                 setTeamListener(this@TeamFragment)
+                setUpdateCompleteListener(this@TeamFragment)
             }
 
             binding.rvTeamList.adapter = adapterTeamList
@@ -399,11 +415,43 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         }
     }
 
+    private fun showLoadingDialog() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                if (progressDialog == null) {
+                    progressDialog = DialogUtils.CustomProgressDialog(requireContext())
+                }
+                progressDialog?.setText(
+                    if (TextUtils.equals(type, "enterprise")) {
+                        getString(R.string.loading_enterprises)
+                    } else {
+                        getString(R.string.loading_teams)
+                    }
+                )
+                delay(50)
+                if (isAdded && !requireActivity().isFinishing) {
+                    progressDialog?.show()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    private fun hideLoadingDialog() {
+        progressDialog?.dismiss()
+        progressDialog = null
+    }
+
     override fun onDestroyView() {
         teamList?.removeAllChangeListeners()
+        if (this::adapterTeamList.isInitialized) {
+            adapterTeamList.cleanup()
+        }
         if (this::mRealm.isInitialized && !mRealm.isClosed) {
             mRealm.close()
         }
+        hideLoadingDialog()
         _binding = null
         super.onDestroyView()
     }

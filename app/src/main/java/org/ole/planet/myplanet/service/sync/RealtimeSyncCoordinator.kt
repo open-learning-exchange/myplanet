@@ -117,12 +117,6 @@ class RealtimeSyncCoordinator {
         _syncProgressFlow.tryEmit(update)
     }
     
-    fun notifyBatchProcessed(table: String, batchNumber: Int, itemsInBatch: Int) {
-        synchronized(listeners) {
-            listeners.forEach { it.onBatchProcessed(table, batchNumber, itemsInBatch) }
-        }
-    }
-    
     fun getCurrentProgress(table: String): SyncProgressUpdate? {
         return tableProgress[table]
     }

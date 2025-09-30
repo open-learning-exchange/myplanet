@@ -159,11 +159,4 @@ class SyncErrorRecovery {
         return retryHandler.executeWithRetry(circuitBreaker, operation)
     }
     
-    fun getCircuitBreakerStatus(): Map<String, CircuitState> {
-        return circuitBreakers.mapValues { it.value.getState() }
-    }
-    
-    fun resetAllCircuitBreakers() {
-        circuitBreakers.clear()
-    }
 }
