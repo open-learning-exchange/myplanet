@@ -5,9 +5,6 @@ import android.content.SharedPreferences
 import androidx.core.content.edit
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.roundToInt
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 
 data class SyncMetrics(
@@ -84,9 +81,6 @@ class SyncPerformanceMonitor(private val context: Context) {
     private val currentMetrics = ConcurrentHashMap<String, SyncMetrics>()
     private val historicalMetrics = mutableListOf<SyncMetrics>()
     
-    private val _realTimeMetrics = MutableStateFlow<Map<String, SyncMetrics>>(emptyMap())
-    val realTimeMetrics: StateFlow<Map<String, SyncMetrics>> = _realTimeMetrics.asStateFlow()
-    
     private val maxHistoricalRecords = 100
     
     init {
@@ -106,7 +100,6 @@ class SyncPerformanceMonitor(private val context: Context) {
             historicalMetrics.removeAt(0)
         }
         
-        _realTimeMetrics.value = currentMetrics.toMap()
         saveMetricsToPrefs(metrics)
     }
     

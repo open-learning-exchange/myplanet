@@ -39,14 +39,6 @@ class LibraryRepositoryImpl @Inject constructor(
             .filter { it.userId?.contains(userId) == true }
     }
 
-    override suspend fun getCourseLibraryItems(courseIds: List<String>): List<RealmMyLibrary> {
-        return queryList(RealmMyLibrary::class.java) {
-            `in`("courseId", courseIds.toTypedArray())
-            equalTo("resourceOffline", false)
-            isNotNull("resourceLocalAddress")
-        }
-    }
-
     override suspend fun saveLibraryItem(item: RealmMyLibrary) {
         save(item)
     }
