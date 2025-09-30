@@ -21,7 +21,7 @@ buildscript {
         val kotlinVersion = extra["kotlin_version"] as String
         classpath("com.android.tools.build:gradle:8.13.0")
         classpath("io.realm:realm-gradle-plugin:10.19.0")
-        classpath("com.google.dagger:hilt-android-gradle-plugin:2.57.1")
+        classpath("com.google.dagger:hilt-android-gradle-plugin:2.57.2")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
         classpath("org.jetbrains.kotlin:kotlin-serialization:$kotlinVersion")
         // NOTE: Do not place your application dependencies here
