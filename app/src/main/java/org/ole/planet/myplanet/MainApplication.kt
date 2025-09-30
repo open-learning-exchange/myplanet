@@ -123,15 +123,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             }
         }
 
-        fun setThemeMode(themeMode: String) {
-            val sharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-            with(sharedPreferences.edit()) {
-                putString("theme_mode", themeMode)
-                apply()
-            }
-            applyThemeMode(themeMode)
-        }
-
         suspend fun isServerReachable(urlString: String): Boolean {
             val serverUrlMapper = ServerUrlMapper()
             val mapping = serverUrlMapper.processUrl(urlString)
