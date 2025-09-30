@@ -241,35 +241,56 @@ class AdapterTeamList(
                 teamRepository.getRecentVisitCounts(teamIds)
             }
 
-            val teamStatusJobs = validTeams.map { team ->
-                async(Dispatchers.IO) {
-                    val teamId = team._id.orEmpty()
-                    val cacheKey = "${teamId}_${userId}"
-                    if (!teamStatusCache.containsKey(cacheKey)) {
-                        val isMember = teamRepository.isMember(userId, teamId)
-                        val isLeader = teamRepository.isTeamLeader(teamId, userId)
-                        val hasPendingRequest = teamRepository.hasPendingRequest(teamId, userId)
-                        val status = TeamStatus(isMember, isLeader, hasPendingRequest)
-                        teamStatusCache[cacheKey] = status
-                    }
-                    team to teamStatusCache[cacheKey]!!
+            val statusResults = mutableMapOf<String, TeamStatus>()
+            val idsToFetch = linkedSetOf<String>()
+
+            validTeams.forEach { team ->
+                val teamId = team._id.orEmpty()
+                if (teamId.isBlank()) {
+                    return@forEach
+                }
+                val cacheKey = "${teamId}_${userId}"
+                val cachedStatus = teamStatusCache[cacheKey]
+                if (cachedStatus != null) {
+                    statusResults[teamId] = cachedStatus
+                } else {
+                    idsToFetch += teamId
                 }
             }
 
-            val teamWithStatuses = teamStatusJobs.awaitAll()
+            if (idsToFetch.isNotEmpty()) {
+                idsToFetch.map { teamId ->
+                    async(Dispatchers.IO) {
+                        val status = TeamStatus(
+                            isMember = teamRepository.isMember(userId, teamId),
+                            isLeader = teamRepository.isTeamLeader(teamId, userId),
+                            hasPendingRequest = teamRepository.hasPendingRequest(teamId, userId),
+                        )
+                        teamId to status
+                    }
+                }.awaitAll().forEach { (teamId, status) ->
+                    val cacheKey = "${teamId}_${userId}"
+                    teamStatusCache[cacheKey] = status
+                    statusResults[teamId] = status
+                }
+            }
+
             val visitCounts = visitCountsDeferred.await()
 
-            val sortedTeams = teamWithStatuses.sortedWith(
-                compareByDescending<Pair<RealmMyTeam, TeamStatus>> { (_, status) ->
+            val sortedTeams = validTeams.sortedWith(
+                compareByDescending<RealmMyTeam> { team ->
+                    val teamId = team._id.orEmpty()
+                    val status = statusResults[teamId]
+                        ?: TeamStatus(isMember = false, isLeader = false, hasPendingRequest = false)
                     when {
                         status.isLeader -> 3
                         status.isMember -> 2
                         else -> 1
                     }
-                }.thenByDescending { (team, _) ->
+                }.thenByDescending { team ->
                     visitCounts[team._id.orEmpty()] ?: 0L
                 }
-            ).map { it.first }
+            )
 
             withContext(Dispatchers.Main) {
                 this@AdapterTeamList.visitCounts = visitCounts
