@@ -266,8 +266,9 @@ class AdapterTeamList(
 
     private fun requestToJoin(team: RealmMyTeam, user: RealmUserModel?) {
         val teamId = team._id ?: return
+        val teamType = team.teamType
         scope.launch(Dispatchers.IO) {
-            teamRepository.requestToJoin(teamId, user, team.teamType)
+            teamRepository.requestToJoin(teamId, user, teamType)
             val cacheKey = "${teamId}_${user?.id}"
             teamStatusCache.remove(cacheKey)
         }
