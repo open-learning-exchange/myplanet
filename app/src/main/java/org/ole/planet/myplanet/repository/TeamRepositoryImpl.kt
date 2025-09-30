@@ -333,8 +333,15 @@ class TeamRepositoryImpl @Inject constructor(
     private suspend fun getResourceIds(teamId: String): List<String> {
         return queryList(RealmMyTeam::class.java) {
             equalTo("teamId", teamId)
-            equalTo("docType", "resourceLink")
-        }.mapNotNull { it.resourceId?.takeIf { id -> id.isNotBlank() } }
+            beginGroup()
+                .isNull("docType")
+                .or().equalTo("docType", "")
+                .or().equalTo("docType", "resourceLink")
+                .or().equalTo("docType", "link")
+            endGroup()
+            isNotNull("resourceId")
+            isNotEmpty("resourceId")
+        }.mapNotNull { it.resourceId }
     }
 }
 
