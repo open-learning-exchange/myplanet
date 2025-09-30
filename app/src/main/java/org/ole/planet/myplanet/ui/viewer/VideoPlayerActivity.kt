@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.media.AudioManager
 import android.os.Bundle
+import android.app.Activity
 import androidx.activity.OnBackPressedCallback
 import androidx.annotation.OptIn
 import androidx.appcompat.app.AppCompatActivity
@@ -23,8 +24,8 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
-import dagger.Binds
 import dagger.Module
+import dagger.Provides
 import dagger.hilt.android.AndroidEntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.components.ActivityComponent
@@ -262,7 +263,9 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
 
 @Module
 @InstallIn(ActivityComponent::class)
-abstract class VideoPlayerActivityModule {
-    @Binds
-    abstract fun bindAuthCallback(activity: VideoPlayerActivity): AuthSessionUpdater.AuthCallback
+object VideoPlayerActivityModule {
+    @Provides
+    fun provideAuthCallback(activity: Activity): AuthSessionUpdater.AuthCallback {
+        return activity as AuthSessionUpdater.AuthCallback
+    }
 }
