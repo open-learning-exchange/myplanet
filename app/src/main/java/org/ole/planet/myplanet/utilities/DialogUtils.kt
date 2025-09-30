@@ -138,15 +138,6 @@ object DialogUtils {
     }
 
     @JvmStatic
-    fun showCloseAlert(context: Context, title: String?, message: String) {
-        AlertDialog.Builder(context, R.style.CustomAlertDialog)
-            .setTitle(title)
-            .setMessage(message)
-            .setPositiveButton(R.string.close, null)
-            .show()
-    }
-
-    @JvmStatic
     fun getDialog(context: Context, title: String, v: View): AlertDialog {
         return AlertDialog.Builder(ContextThemeWrapper(context, R.style.CustomAlertDialog))
             .setTitle(title)
