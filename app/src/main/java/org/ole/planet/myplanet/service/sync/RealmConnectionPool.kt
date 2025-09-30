@@ -40,8 +40,6 @@ class RealmConnectionPool(
     private val poolMutex = Mutex()
     
     private var lastValidationTime = 0L
-    private var isShuttingDown = false
-    
     suspend fun <T> useRealm(operation: suspend (Realm) -> T): T {
         // Check if current thread already has a realm instance
         val existingRealm = threadLocalConnections.get()
@@ -77,10 +75,6 @@ class RealmConnectionPool(
     }
     
     private suspend fun acquireConnection(): PooledRealm = poolMutex.withLock {
-        if (isShuttingDown) {
-            throw IllegalStateException("Connection pool is shutting down")
-        }
-        
         validateConnectionsIfNeeded()
         
         // Try to get an available connection
@@ -113,7 +107,7 @@ class RealmConnectionPool(
     }
     
     private suspend fun releaseConnection(pooledRealm: PooledRealm) = poolMutex.withLock {
-        if (!isShuttingDown && isConnectionValid(pooledRealm)) {
+        if (isConnectionValid(pooledRealm)) {
             val updatedConnection = pooledRealm.copy(
                 lastUsedAt = System.currentTimeMillis(),
                 isInUse = false
@@ -180,17 +174,6 @@ class RealmConnectionPool(
             availableConnections.addAll(validConnections)
         }
     }
-    
-    suspend fun shutdown() = poolMutex.withLock {
-        isShuttingDown = true
-        
-        // Close all connections
-        allConnections.values.forEach { closeConnection(it) }
-        availableConnections.clear()
-        allConnections.clear()
-        activeConnections.set(0)
-    }
-    
 }
 
 class RealmPoolManager private constructor() {
@@ -226,10 +209,5 @@ class RealmPoolManager private constructor() {
     suspend fun <T> useRealmTransaction(operation: suspend (Realm) -> T): T {
         val pool = connectionPool ?: throw IllegalStateException("Pool not initialized")
         return pool.useRealmTransaction(operation)
-    }
-    
-    suspend fun shutdown() = mutex.withLock {
-        connectionPool?.shutdown()
-        connectionPool = null
     }
 }
