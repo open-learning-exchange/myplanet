@@ -1381,5 +1381,7 @@
     <string name="delete_report">Supprimer le rapport</string>
     <string name="checking_server_availability">vérification de la disponibilité du serveur…</string>
     <string name="loading_courses">Chargement des cours…</string>
+    <string name="loading_teams">Chargement des équipes…</string>
+    <string name="loading_enterprises">Chargement des entreprises…</string>
 
 </resources>
