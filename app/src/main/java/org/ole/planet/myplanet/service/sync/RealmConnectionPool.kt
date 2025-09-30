@@ -174,23 +174,7 @@ class RealmConnectionPool(
             availableConnections.addAll(validConnections)
         }
     }
-    
-    fun getPoolStats(): PoolStats {
-        return PoolStats(
-            totalConnections = allConnections.size,
-            activeConnections = allConnections.values.count { it.isInUse },
-            availableConnections = availableConnections.size,
-            maxConnections = config.maxConnections
-        )
-    }
 }
-
-data class PoolStats(
-    val totalConnections: Int,
-    val activeConnections: Int,
-    val availableConnections: Int,
-    val maxConnections: Int
-)
 
 class RealmPoolManager private constructor() {
     companion object {
@@ -225,9 +209,5 @@ class RealmPoolManager private constructor() {
     suspend fun <T> useRealmTransaction(operation: suspend (Realm) -> T): T {
         val pool = connectionPool ?: throw IllegalStateException("Pool not initialized")
         return pool.useRealmTransaction(operation)
-    }
-
-    fun getPoolStats(): PoolStats? {
-        return connectionPool?.getPoolStats()
     }
 }
