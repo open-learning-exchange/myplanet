@@ -23,7 +23,11 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
+import dagger.Binds
+import dagger.Module
 import dagger.hilt.android.AndroidEntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.android.components.ActivityComponent
 import javax.inject.Inject
 import javax.inject.Provider
 import org.ole.planet.myplanet.R
@@ -254,4 +258,11 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
         }
         super.onDestroy()
     }
+}
+
+@Module
+@InstallIn(ActivityComponent::class)
+abstract class VideoPlayerActivityModule {
+    @Binds
+    abstract fun bindAuthCallback(activity: VideoPlayerActivity): AuthSessionUpdater.AuthCallback
 }
