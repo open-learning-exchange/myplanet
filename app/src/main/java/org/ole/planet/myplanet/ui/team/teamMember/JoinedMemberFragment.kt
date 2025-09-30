@@ -106,30 +106,47 @@ class JoinedMemberFragment : BaseMemberFragment() {
 
     private fun handleRemoveMember(member: JoinedMemberData) {
         viewLifecycleOwner.lifecycleScope.launch {
-            val canRemove = databaseService.withRealmAsync { realm ->
-                val currentUserId = user?.id
-                if (currentUserId != member.user.id) {
-                    member.user.id?.let { removeMember(realm, it) }
-                    true
-                } else {
-                    val nextOfKin = getNextOfKin(realm)
-                    if (nextOfKin != null && nextOfKin.id != null) {
-                        makeLeader(realm, nextOfKin.id!!)
+            try {
+                val removalResult = databaseService.withRealmAsync { realm ->
+                    val currentUserId = user?.id
+                    if (currentUserId != member.user.id) {
                         member.user.id?.let { removeMember(realm, it) }
-                        true
+                        RemovalResult(canRemove = true, newLeaderId = null)
                     } else {
-                        false
+                        val nextOfKin = getNextOfKin(realm)
+                        if (nextOfKin != null && nextOfKin.id != null) {
+                            makeLeader(realm, nextOfKin.id!!)
+                            member.user.id?.let { removeMember(realm, it) }
+                            RemovalResult(canRemove = true, newLeaderId = nextOfKin.id)
+                        } else {
+                            RemovalResult(canRemove = false, newLeaderId = null)
+                        }
                     }
                 }
-            }
-            if (canRemove) {
-                memberChangeListener.onMemberChanged()
-                refreshMembers()
-            } else {
-                Toast.makeText(requireContext(), R.string.cannot_remove_user, Toast.LENGTH_SHORT).show()
+
+                if (removalResult.canRemove) {
+                    member.user.id?.let { memberId ->
+                        adapterJoined?.removeMember(memberId)
+                        removalResult.newLeaderId?.let { newLeaderId ->
+                            val currentUserId = user?.id
+                            adapterJoined?.updateLeadership(currentUserId, newLeaderId)
+                        }
+                    }
+
+                    memberChangeListener.onMemberChanged()
+
+                    val currentSize = adapterJoined?.itemCount ?: 0
+                    showNoData(binding.tvNodata, currentSize, "members")
+                } else {
+                    Toast.makeText(requireContext(), R.string.cannot_remove_user, Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(requireContext(), "Error removing member: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
     }
+
+    private data class RemovalResult(val canRemove: Boolean, val newLeaderId: String?)
 
     private fun handleMakeLeader(userId: String) {
         viewLifecycleOwner.lifecycleScope.launch {
@@ -176,7 +193,7 @@ class JoinedMemberFragment : BaseMemberFragment() {
     }
 
     private fun getNextOfKin(realm: Realm): RealmUserModel? {
-        val members: List<RealmMyTeam> = realm.where(RealmMyTeam::class.java)
+        val members = realm.where(RealmMyTeam::class.java)
             .equalTo("teamId", teamId)
             .equalTo("isLeader", false)
             .notEqualTo("status", "archived")
@@ -186,22 +203,29 @@ class JoinedMemberFragment : BaseMemberFragment() {
             return null
         }
 
-        var successorTeamMember: RealmMyTeam? = null
+        val userIds = members.mapNotNull { it.userId }
+        val users = realm.where(RealmUserModel::class.java)
+            .`in`("id", userIds.toTypedArray())
+            .findAll()
+
+        val userMap = users.associateBy { it.id }
+
+        var successorUserId: String? = null
         var maxVisitCount: Long = -1
 
         for (member in members) {
-            val user = realm.where(RealmUserModel::class.java).equalTo("id", member.userId).findFirst()
+            val user = userMap[member.userId]
             if (user != null) {
                 val visitCount = RealmTeamLog.getVisitCount(realm, user.name, teamId)
                 if (visitCount > maxVisitCount) {
                     maxVisitCount = visitCount
-                    successorTeamMember = member
+                    successorUserId = member.userId
                 }
             }
         }
 
-        return successorTeamMember?.userId?.let { id ->
-            realm.where(RealmUserModel::class.java).equalTo("id", id).findFirst()?.let { realm.copyFromRealm(it) }
+        return successorUserId?.let { id ->
+            userMap[id]?.let { realm.copyFromRealm(it) }
         }
     }
 

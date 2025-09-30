@@ -15,7 +15,6 @@ import android.view.View
 import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
 import android.webkit.URLUtil
-import android.widget.EditText
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -23,7 +22,6 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.core.net.toUri
-import com.google.android.material.textfield.TextInputLayout
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
@@ -88,17 +86,6 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
                 }
             }
         }
-    }
-
-    fun validateEditText(textField: EditText, textLayout: TextInputLayout, errMessage: String?): Boolean {
-        if (textField.text.toString().trim { it <= ' ' }.isEmpty()) {
-            textLayout.error = errMessage
-            requestFocus(textField)
-            return false
-        } else {
-            textLayout.isErrorEnabled = false
-        }
-        return true
     }
 
     fun checkDownloadResult(download: Download?) {

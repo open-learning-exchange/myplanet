@@ -1381,5 +1381,7 @@
     <string name="delete_report">प्रतिवेदन मेटाउनुहोस्</string>
     <string name="checking_server_availability">सर्भर उपलब्धता जाँच गर्दै…</string>
     <string name="loading_courses">पाठ्यक्रमहरू लोड हुँदैछन्…</string>
+    <string name="loading_teams">टीमहरू लोड गर्दै…</string>
+    <string name="loading_enterprises">उद्यमहरू लोड गर्दै…</string>
 
 </resources>

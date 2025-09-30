@@ -25,8 +25,6 @@ interface RealtimeSyncListener : SyncListener {
     fun onTableDataUpdated(update: TableDataUpdate)
     
     fun onTableSyncCompleted(table: String, itemsProcessed: Int, success: Boolean)
-    
-    fun onBatchProcessed(table: String, batchNumber: Int, itemsInBatch: Int)
 }
 
 abstract class BaseRealtimeSyncListener : RealtimeSyncListener {
@@ -56,10 +54,6 @@ abstract class BaseRealtimeSyncListener : RealtimeSyncListener {
     }
     
     override fun onTableSyncCompleted(table: String, itemsProcessed: Int, success: Boolean) {
-        // Default implementation - can be overridden
-    }
-    
-    override fun onBatchProcessed(table: String, batchNumber: Int, itemsInBatch: Int) {
         // Default implementation - can be overridden
     }
 }
