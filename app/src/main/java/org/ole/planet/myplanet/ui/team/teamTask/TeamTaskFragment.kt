@@ -192,8 +192,21 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
     }
 
     private fun allTasks() {
-       list = mRealm.where(RealmTeamTask::class.java).equalTo("teamId", teamId)
-            .notEqualTo("status", "archived").sort("completed", Sort.ASCENDING).findAll()
+        val uncompletedTasks = mRealm.where(RealmTeamTask::class.java)
+            .equalTo("teamId", teamId)
+            .notEqualTo("status", "archived")
+            .equalTo("completed", false)
+            .sort("deadline", Sort.DESCENDING)
+            .findAll()
+
+        val completedTasks = mRealm.where(RealmTeamTask::class.java)
+            .equalTo("teamId", teamId)
+            .notEqualTo("status", "archived")
+            .equalTo("completed", true)
+            .sort("completedTime", Sort.DESCENDING)
+            .findAll()
+
+        list = uncompletedTasks + completedTasks
     }
 
     private fun completedTasks() {
