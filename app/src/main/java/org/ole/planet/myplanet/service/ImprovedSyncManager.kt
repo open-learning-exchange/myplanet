@@ -12,7 +12,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
@@ -230,11 +229,6 @@ class ImprovedSyncManager @Inject constructor(
             org.ole.planet.myplanet.MainApplication.syncFailedCount++
             listener?.onSyncFailed(message)
         }
-    }
-    
-    suspend fun shutdown() {
-        syncScope.cancel()
-        poolManager.shutdown()
     }
     
     // Compatibility methods for existing code
