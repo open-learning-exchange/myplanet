@@ -213,6 +213,15 @@ class AdapterTeamList(
                     }.setNegativeButton(R.string.no, null).show()
             }
         } else {
+            teamStatusCache[cacheKey] = TeamStatus(
+                isMember = false,
+                isLeader = false,
+                hasPendingRequest = true,
+            )
+            val position = filteredList.indexOf(team)
+            if (position != -1) {
+                notifyItemChanged(position)
+            }
             requestToJoin(team, user)
             updateList()
         }
@@ -269,7 +278,17 @@ class AdapterTeamList(
         scope.launch(Dispatchers.IO) {
             teamRepository.requestToJoin(teamId, user, team.teamType)
             val cacheKey = "${teamId}_${user?.id}"
-            teamStatusCache.remove(cacheKey)
+            withContext(Dispatchers.Main) {
+                teamStatusCache[cacheKey] = TeamStatus(
+                    isMember = false,
+                    isLeader = false,
+                    hasPendingRequest = true,
+                )
+                val position = filteredList.indexOfFirst { it._id == teamId }
+                if (position != -1) {
+                    notifyItemChanged(position)
+                }
+            }
         }
     }
 
