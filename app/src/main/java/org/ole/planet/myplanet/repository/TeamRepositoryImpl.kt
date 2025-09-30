@@ -5,8 +5,8 @@ import androidx.core.net.toUri
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import java.util.Date
-import java.util.concurrent.atomic.AtomicBoolean
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -318,15 +318,11 @@ class TeamRepositoryImpl @Inject constructor(
 
     private suspend fun uploadTeamActivities() {
         try {
-            withContext(Dispatchers.IO) {
-                uploadManager.uploadTeams()
-            }
             val apiInterface = client?.create(ApiInterface::class.java)
             withContext(Dispatchers.IO) {
-                withRealmAsync { realm ->
-                    realm.executeTransaction { transactionRealm ->
-                        uploadManager.uploadTeamActivities(transactionRealm, apiInterface)
-                    }
+                uploadManager.uploadTeams()
+                executeTransaction { realm ->
+                    uploadManager.uploadTeamActivities(realm, apiInterface)
                 }
             }
         } catch (e: Exception) {

@@ -197,6 +197,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
                     1 -> adapter.sortByDate(true)
                     2 -> adapter.toggleTitleSortOrder()
                 }
+                recyclerView.scrollToPosition(0)
             }
 
             override fun onNothingSelected(adapterView: AdapterView<*>?) {}
@@ -205,6 +206,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         binding.spnSort.onSameItemSelected(object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(adapterView: AdapterView<*>?, view: View?, i: Int, l: Long) {
                 if (i == 2) adapter.toggleTitleSortOrder()
+                recyclerView.scrollToPosition(0)
             }
 
             override fun onNothingSelected(parent: AdapterView<*>?) {}
@@ -212,10 +214,12 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
 
         binding.rbAdoptSurvey.setOnClickListener {
             updateAdapterData(isTeamShareAllowed = true)
+            recyclerView.scrollToPosition(0)
         }
 
         binding.rbTeamSurvey.setOnClickListener {
             updateAdapterData(isTeamShareAllowed = false)
+            recyclerView.scrollToPosition(0)
         }
     }
 

@@ -1381,5 +1381,7 @@
     <string name="delete_report">حذف التقرير</string>
     <string name="checking_server_availability">فحص توفر الخادم…</string>
     <string name="loading_courses">جارٍ تحميل الدورات…</string>
+    <string name="loading_teams">تحميل الفرق…</string>
+    <string name="loading_enterprises">تحميل المؤسسات…</string>
 
 </resources>
