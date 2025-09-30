@@ -1381,5 +1381,7 @@
     <string name="failed_to_delete_report">Failed to delete report. Please retry</string>
     <string name="delete_report">Delete report</string>
     <string name="checking_server_availability">checking server availability…</string>
+    <string name="loading_teams">Loading teams…</string>
+    <string name="loading_enterprises">Loading enterprises…</string>
 
 </resources>
