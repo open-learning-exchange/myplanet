@@ -261,6 +261,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
                         mRealm,
                         childFragmentManager,
                         teamRepository,
+                        user,
                     )
                     adapterTeamList.setTeamListener(this@TeamFragment)
                     adapterTeamList.setUpdateCompleteListener(this@TeamFragment)
@@ -294,7 +295,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
         }
 
         adapterTeamList = activity?.let {
-            AdapterTeamList(it, list, mRealm, childFragmentManager, teamRepository)
+            AdapterTeamList(it, list, mRealm, childFragmentManager, teamRepository, user)
         } ?: return
         adapterTeamList.setType(type)
         adapterTeamList.setTeamListener(this@TeamFragment)
@@ -369,6 +370,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
                 mRealm,
                 childFragmentManager,
                 teamRepository,
+                user,
             ).apply {
                 setType(type)
                 setTeamListener(this@TeamFragment)

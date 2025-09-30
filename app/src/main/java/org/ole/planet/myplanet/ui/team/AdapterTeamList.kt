@@ -27,7 +27,6 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TeamRepository
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
@@ -39,6 +38,7 @@ class AdapterTeamList(
     private val mRealm: Realm,
     private val fragmentManager: FragmentManager,
     private val teamRepository: TeamRepository,
+    private val currentUser: RealmUserModel?,
 ) : RecyclerView.Adapter<AdapterTeamList.ViewHolderTeam>() {
     private lateinit var itemTeamListBinding: ItemTeamListBinding
     private var type: String? = ""
@@ -83,7 +83,7 @@ class AdapterTeamList(
 
     override fun onBindViewHolder(holder: ViewHolderTeam, position: Int) {
         val team = filteredList[position]
-        val user: RealmUserModel? = UserProfileDbHandler(context).userModel
+        val user: RealmUserModel? = currentUser
 
         with(holder.binding) {
             created.text = TimeUtils.getFormattedDate(team.createdDate)
@@ -220,7 +220,7 @@ class AdapterTeamList(
     }
 
     private fun updateList() {
-        val user: RealmUserModel? = UserProfileDbHandler(context).userModel
+        val user: RealmUserModel? = currentUser
         val userId = user?.id
 
         scope.launch {
