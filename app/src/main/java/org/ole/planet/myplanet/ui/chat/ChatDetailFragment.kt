@@ -51,6 +51,7 @@ import org.ole.planet.myplanet.model.Data
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.addConversationToChatHistory
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
@@ -70,6 +71,8 @@ class ChatDetailFragment : Fragment() {
     private var aiName: String = ""
     private var aiModel: String = ""
     var user: RealmUserModel? = null
+    private var isUserLoaded = false
+    private var isAiUnavailable = false
     private var newsId: String? = null
     @Inject
     @AppPreferences
@@ -79,6 +82,8 @@ class ChatDetailFragment : Fragment() {
     lateinit var databaseService: DatabaseService
     @Inject
     lateinit var chatApiHelper: ChatApiHelper
+    @Inject
+    lateinit var userRepository: UserRepository
     private val gson = Gson()
     private val serverUrlMapper = ServerUrlMapper()
     private val jsonMediaType = "application/json".toMediaTypeOrNull()
@@ -113,10 +118,14 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun initChatComponents() {
-        user = databaseService.withRealm { realm ->
-            realm.where(RealmUserModel::class.java)
-                .equalTo("id", settings.getString("userId", ""))
-                .findFirst()?.let { realm.copyFromRealm(it) }
+        isUserLoaded = false
+        isAiUnavailable = false
+        refreshInputState()
+        viewLifecycleOwner.lifecycleScope.launch {
+            val userId = settings.getString("userId", "") ?: ""
+            user = withContext(Dispatchers.IO) { userRepository.getUserById(userId) }
+            isUserLoaded = true
+            refreshInputState()
         }
         mAdapter = ChatAdapter(requireContext(), binding.recyclerGchat)
         binding.recyclerGchat.apply {
@@ -288,6 +297,8 @@ class ChatDetailFragment : Fragment() {
             }
         }
         aiTableRow.getChildAt(0)?.performClick()
+        isAiUnavailable = false
+        refreshInputState()
     }
 
     private fun createProviderButton(context: Context, providerName: String, modelName: String): Button =
@@ -355,10 +366,10 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun onFailError() {
+        isAiUnavailable = true
         binding.textGchatIndicator.visibility = View.VISIBLE
         binding.textGchatIndicator.text = context?.getString(R.string.virtual_assistant_currently_not_available)
-        binding.editGchatMessage.isEnabled = false
-        binding.buttonGchatSend.isEnabled = false
+        refreshInputState()
     }
 
     private fun launchRequest(content: RequestBody, query: String, id: String?) {
@@ -380,10 +391,17 @@ class ChatDetailFragment : Fragment() {
 
     private fun enableUI() {
         _binding?.let { binding ->
-            binding.buttonGchatSend.isEnabled = true
-            binding.editGchatMessage.isEnabled = true
             binding.imageGchatLoading.visibility = View.INVISIBLE
+            refreshInputState()
         } ?: return
+    }
+
+    private fun refreshInputState() {
+        _binding?.let { binding ->
+            val enableInput = isUserLoaded && !isAiUnavailable
+            binding.buttonGchatSend.isEnabled = enableInput
+            binding.editGchatMessage.isEnabled = enableInput
+        }
     }
 
     private fun processServerUrl(): ServerUrlMapper.UrlMapping =
