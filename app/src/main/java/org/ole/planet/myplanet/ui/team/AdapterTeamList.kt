@@ -13,18 +13,17 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.graphics.toColorInt
 import androidx.fragment.app.FragmentManager
 import androidx.recyclerview.widget.RecyclerView
-import io.realm.Realm
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemTeamListBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
@@ -35,7 +34,6 @@ import org.ole.planet.myplanet.utilities.TimeUtils
 class AdapterTeamList(
     private val context: Context,
     private val list: List<RealmMyTeam>,
-    private val mRealm: Realm,
     private val fragmentManager: FragmentManager,
     private val teamRepository: TeamRepository,
     private val currentUser: RealmUserModel?,
@@ -48,6 +46,7 @@ class AdapterTeamList(
     private lateinit var prefData: SharedPrefManager
     private val scope = MainScope()
     private val teamStatusCache = mutableMapOf<String, TeamStatus>()
+    private var visitCounts: Map<String, Long> = emptyMap()
 
     data class TeamStatus(
         val isMember: Boolean,
@@ -90,9 +89,10 @@ class AdapterTeamList(
             type.text = team.teamType
             type.visibility = if (team.teamType == null) View.GONE else View.VISIBLE
             name.text = team.name
-            noOfVisits.text = context.getString(R.string.number_placeholder, RealmTeamLog.getVisitByTeam(mRealm, team._id))
+            val visitCount = visitCounts[team._id.orEmpty()] ?: 0L
+            noOfVisits.text = context.getString(R.string.number_placeholder, visitCount)
 
-            val teamId = team._id
+            val teamId = team._id.orEmpty()
             val userId = user?.id
             val cacheKey = "${teamId}_${userId}"
             val teamStatus = teamStatusCache[cacheKey] ?: TeamStatus(
@@ -193,7 +193,7 @@ class AdapterTeamList(
     }
 
     private fun handleJoinLeaveClick(team: RealmMyTeam, user: RealmUserModel?) {
-        val teamId = team._id
+        val teamId = team._id.orEmpty()
         val userId = user?.id
         val cacheKey = "${teamId}_${userId}"
         val teamStatus = teamStatusCache[cacheKey] ?: TeamStatus(
@@ -225,12 +225,25 @@ class AdapterTeamList(
 
         scope.launch {
             val validTeams = list.filter { it.status?.isNotEmpty() == true }
-            val teamData = validTeams.map { team ->
-                Triple(team, team._id ?: "", RealmTeamLog.getVisitByTeam(mRealm, team._id))
+            if (validTeams.isEmpty()) {
+                withContext(Dispatchers.Main) {
+                    visitCounts = emptyMap()
+                    filteredList = emptyList()
+                    notifyDataSetChanged()
+                    updateCompleteListener?.onUpdateComplete(filteredList.size)
+                }
+                return@launch
             }
 
-            val teamStatusJobs = teamData.map { (team, teamId, visitCount) ->
+            val teamIds = validTeams.mapNotNull { it._id?.takeIf { id -> id.isNotBlank() } }
+
+            val visitCountsDeferred = async(Dispatchers.IO) {
+                teamRepository.getRecentVisitCounts(teamIds)
+            }
+
+            val teamStatusJobs = validTeams.map { team ->
                 async(Dispatchers.IO) {
+                    val teamId = team._id.orEmpty()
                     val cacheKey = "${teamId}_${userId}"
                     if (!teamStatusCache.containsKey(cacheKey)) {
                         val isMember = teamRepository.isMember(userId, teamId)
@@ -239,23 +252,27 @@ class AdapterTeamList(
                         val status = TeamStatus(isMember, isLeader, hasPendingRequest)
                         teamStatusCache[cacheKey] = status
                     }
-                    Triple(team, teamStatusCache[cacheKey]!!, visitCount)
+                    team to teamStatusCache[cacheKey]!!
                 }
             }
 
-            val teamWithStatuses = teamStatusJobs.map { it.await() }
+            val teamWithStatuses = teamStatusJobs.awaitAll()
+            val visitCounts = visitCountsDeferred.await()
 
-            val sortedTeams = teamWithStatuses.sortedWith(compareByDescending<Triple<RealmMyTeam, TeamStatus, Long>> { (_, status, _) ->
-                when {
-                    status.isLeader -> 3
-                    status.isMember -> 2
-                    else -> 1
+            val sortedTeams = teamWithStatuses.sortedWith(
+                compareByDescending<Pair<RealmMyTeam, TeamStatus>> { (_, status) ->
+                    when {
+                        status.isLeader -> 3
+                        status.isMember -> 2
+                        else -> 1
+                    }
+                }.thenByDescending { (team, _) ->
+                    visitCounts[team._id.orEmpty()] ?: 0L
                 }
-            }.thenByDescending { (_, _, visitCount) ->
-                visitCount
-            }).map { it.first }
+            ).map { it.first }
 
             withContext(Dispatchers.Main) {
+                this@AdapterTeamList.visitCounts = visitCounts
                 filteredList = sortedTeams
                 notifyDataSetChanged()
                 updateCompleteListener?.onUpdateComplete(filteredList.size)

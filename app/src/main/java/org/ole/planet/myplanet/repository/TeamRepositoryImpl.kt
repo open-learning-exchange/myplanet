@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.core.net.toUri
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import java.util.Calendar
 import java.util.Date
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
@@ -16,6 +17,7 @@ import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UploadManager
@@ -85,6 +87,29 @@ class TeamRepositoryImpl @Inject constructor(
             equalTo("teamId", teamId)
             equalTo("userId", userId)
         } > 0
+    }
+
+    override suspend fun getRecentVisitCounts(teamIds: Collection<String>): Map<String, Long> {
+        if (teamIds.isEmpty()) return emptyMap()
+
+        val validIds = teamIds.filter { it.isNotBlank() }.distinct()
+        if (validIds.isEmpty()) return emptyMap()
+
+        val cutoff = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -30) }.timeInMillis
+
+        return withRealmAsync { realm ->
+            val counts = mutableMapOf<String, Long>()
+            realm.where(RealmTeamLog::class.java)
+                .equalTo("type", "teamVisit")
+                .greaterThan("time", cutoff)
+                .`in`("teamId", validIds.toTypedArray())
+                .findAll()
+                .forEach { log ->
+                    val teamId = log.teamId ?: return@forEach
+                    counts[teamId] = (counts[teamId] ?: 0L) + 1L
+                }
+            counts
+        }
     }
 
     override suspend fun requestToJoin(teamId: String, user: RealmUserModel?, teamType: String?) {
