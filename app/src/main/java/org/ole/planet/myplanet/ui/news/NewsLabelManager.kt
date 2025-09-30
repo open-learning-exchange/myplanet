@@ -6,12 +6,12 @@ import android.view.View
 import fisk.chipcloud.ChipCloud
 import io.realm.Realm
 import io.realm.RealmList
+import java.util.concurrent.atomic.AtomicBoolean
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNewsBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Utilities
-import java.util.concurrent.atomic.AtomicBoolean
 
 class NewsLabelManager(private val context: Context, private val realm: Realm) {
     fun setupAddLabelMenu(binding: RowNewsBinding, news: RealmNews?, canManageLabels: Boolean) {
