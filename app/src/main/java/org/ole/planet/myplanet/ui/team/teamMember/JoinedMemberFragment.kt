@@ -251,7 +251,6 @@ class JoinedMemberFragment : BaseMemberFragment() {
         }
     }
 
-
     private fun makeLeaderSync(realm: Realm, userId: String) {
         Log.d(TAG, "makeLeaderSync: Starting for userId=$userId")
         val startTime = System.currentTimeMillis()
