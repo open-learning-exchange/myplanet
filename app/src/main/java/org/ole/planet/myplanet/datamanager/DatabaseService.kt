@@ -44,6 +44,19 @@ class DatabaseService(context: Context) {
         }
     }
 
+    suspend fun <T> withRealmSuspend(operation: suspend (Realm) -> T): T {
+        return withContext(Dispatchers.IO) {
+            val realm = realmInstance
+            try {
+                operation(realm)
+            } finally {
+                if (!realm.isClosed) {
+                    realm.close()
+                }
+            }
+        }
+    }
+
     suspend fun executeTransactionAsync(transaction: (Realm) -> Unit) {
         withContext(Dispatchers.IO) {
             withRealmInstance { realm ->
