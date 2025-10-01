@@ -173,14 +173,6 @@ open class RealmMyTeam : RealmObject() {
         }
 
         @JvmStatic
-        fun deleteReport(reportId: String, realm: Realm) {
-            realm.executeTransactionAsync { transactionRealm ->
-                val report = transactionRealm.where(RealmMyTeam::class.java).equalTo("_id", reportId).findFirst()
-                report?.deleteFromRealm()
-            }
-        }
-
-        @JvmStatic
         fun getResourceIds(teamId: String?, realm: Realm): MutableList<String> {
             val teams = realm.where(RealmMyTeam::class.java).equalTo("teamId", teamId).findAll()
             val ids = mutableListOf<String>()
