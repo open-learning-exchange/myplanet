@@ -10,6 +10,8 @@ import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
 
+internal const val RESOURCE_NOTIFICATION_RELATED_ID = "count"
+
 class NotificationRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
 ) : RealmRepository(databaseService), NotificationRepository {
@@ -32,32 +34,14 @@ class NotificationRepositoryImpl @Inject constructor(
             resource.userId?.contains(userId) == true && resource.needToUpdate()
         }
 
-        val notificationId = "$userId:resource:count"
-        val existingNotification = findByField(RealmNotification::class.java, "id", notificationId)
+        val message = resourceNotificationMessage(resourceCount)
 
-        if (resourceCount > 0) {
-            val previousCount = existingNotification?.message?.toIntOrNull() ?: 0
-            val countChanged = previousCount != resourceCount
-
-            val notification = existingNotification?.apply {
-                message = "$resourceCount"
-                relatedId = "$resourceCount"
-                if (countChanged) {
-                    this.isRead = false
-                    this.createdAt = Date()
-                }
-            } ?: RealmNotification().apply {
-                this.id = notificationId
-                this.userId = userId
-                this.type = "resource"
-                this.message = "$resourceCount"
-                this.relatedId = "$resourceCount"
-                this.createdAt = Date()
-            }
-            save(notification)
-        } else {
-            existingNotification?.let { delete(RealmNotification::class.java, "id", it.id) }
-        }
+        ensureNotification(
+            type = "resource",
+            message = message,
+            relatedId = RESOURCE_NOTIFICATION_RELATED_ID,
+            userId = userId,
+        )
     }
 
     override suspend fun ensureNotification(
@@ -79,10 +63,7 @@ class NotificationRepositoryImpl @Inject constructor(
         val now = Date()
 
         val notification = existingNotification?.apply {
-            if (this.message != trimmedMessage) {
-                this.message = trimmedMessage
-                this.createdAt = now
-            }
+            updateMessageIfChanged(trimmedMessage, now)
             this.type = type
             this.relatedId = relatedId
             this.userId = ownerId
@@ -164,5 +145,24 @@ private fun buildNotificationId(
 ): String {
     val relatedKey = relatedId?.takeUnless { it.isBlank() } ?: message
     return listOf(userId, type, relatedKey).joinToString(":")
+}
+
+internal fun resourceNotificationMessage(resourceCount: Int): String {
+    return if (resourceCount > 0) {
+        "$resourceCount"
+    } else {
+        ""
+    }
+}
+
+internal fun RealmNotification.updateMessageIfChanged(newMessage: String, now: Date): Boolean {
+    if (message == newMessage) {
+        return false
+    }
+
+    message = newMessage
+    createdAt = now
+    isRead = false
+    return true
 }
 
