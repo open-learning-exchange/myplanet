@@ -71,7 +71,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         if (shouldHideElements == true) {
             fragmentUserInformationBinding.btnAdditionalFields.visibility = View.VISIBLE
             fragmentUserInformationBinding.btnAdditionalFields.setOnClickListener(this)
-            fragmentUserInformationBinding.ltAge.visibility = View.VISIBLE
+            fragmentUserInformationBinding.ltYob.visibility = View.VISIBLE
             fragmentUserInformationBinding.llNames.visibility = View.GONE
             fragmentUserInformationBinding.llEmailLang.visibility = View.GONE
             fragmentUserInformationBinding.llPhoneDob.visibility = View.GONE
@@ -119,8 +119,8 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             fragmentUserInformationBinding.etEmail.setText("")
             fragmentUserInformationBinding.txtDob.text = getString(R.string.birth_date)
         } else {
-            fragmentUserInformationBinding.etAge.setText("")
-            fragmentUserInformationBinding.etAge.error = null
+            fragmentUserInformationBinding.etYob.setText("")
+            fragmentUserInformationBinding.etYob.error = null
         }
 
         fragmentUserInformationBinding.btnAdditionalFields.text = if (isAdditionalFieldsVisible) getString(R.string.show_additional_fields) else getString(R.string.hide_additional_fields)
@@ -128,38 +128,47 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         fragmentUserInformationBinding.llEmailLang.visibility = if (isAdditionalFieldsVisible) View.GONE else View.VISIBLE
         fragmentUserInformationBinding.llPhoneDob.visibility = if (isAdditionalFieldsVisible) View.GONE else View.VISIBLE
         fragmentUserInformationBinding.llLevel.visibility = if (isAdditionalFieldsVisible) View.GONE else View.VISIBLE
-        fragmentUserInformationBinding.ltAge.visibility = if (isAdditionalFieldsVisible) View.VISIBLE else View.GONE
+        fragmentUserInformationBinding.ltYob.visibility = if (isAdditionalFieldsVisible) View.VISIBLE else View.GONE
     }
 
     private fun submitForm() {
         var fname = ""
         var lname = ""
         var mName = ""
-        var age = ""
+        var yob = ""
 
         if (fragmentUserInformationBinding.llNames.isVisible) {
-            fname = fragmentUserInformationBinding.etFname.text.toString().trim()
-            lname = fragmentUserInformationBinding.etLname.text.toString().trim()
-            mName = fragmentUserInformationBinding.etMname.text.toString().trim()
+            fname = "${fragmentUserInformationBinding.etFname.text}".trim()
+            lname = "${fragmentUserInformationBinding.etLname.text}".trim()
+            mName = "${fragmentUserInformationBinding.etMname.text}".trim()
         }
 
         val user = JsonObject()
 
-        if (fragmentUserInformationBinding.ltAge.isVisible) {
-            age = fragmentUserInformationBinding.etAge.text.toString().trim()
+        if (fragmentUserInformationBinding.ltYob.isVisible) {
+            yob = "${fragmentUserInformationBinding.etYob.text}".trim()
 
-            if (age.isNotEmpty()) {
-                val ageInt = age.toIntOrNull()
-                if (ageInt == null) {
-                    fragmentUserInformationBinding.etAge.error = getString(R.string.please_enter_a_valid_age)
-                    return
-                } else if (ageInt > 100) {
-                    fragmentUserInformationBinding.etAge.error = getString(R.string.age_must_be_100_or_below)
-                    return
-                } else {
-                    user.addProperty("age", age)
-                }
+            if (yob.isEmpty()) {
+                fragmentUserInformationBinding.etYob.error =
+                    getString(R.string.year_of_birth_cannot_be_empty)
+                return
             }
+
+            val yobInt = yob.toIntOrNull()
+            if (yobInt == null) {
+                fragmentUserInformationBinding.etYob.error =
+                    getString(R.string.please_enter_a_valid_year_of_birth)
+                return
+            }
+
+            val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+            if (yobInt < 1900 || yobInt > currentYear) {
+                fragmentUserInformationBinding.etYob.error =
+                    getString(R.string.please_enter_a_valid_year_between_1900_and, currentYear)
+                return
+            }
+
+            user.addProperty("age", yob)
         }
 
         if (fname.isNotEmpty() || lname.isNotEmpty()) {
