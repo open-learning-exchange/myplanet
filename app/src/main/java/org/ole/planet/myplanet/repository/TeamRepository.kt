@@ -28,6 +28,7 @@ interface TeamRepository {
     suspend fun deleteTask(taskId: String)
     suspend fun upsertTask(task: RealmTeamTask)
     suspend fun assignTask(taskId: String, assigneeId: String?)
+    suspend fun setTaskCompletion(taskId: String, completed: Boolean)
     suspend fun createTeam(
         category: String?,
         name: String,

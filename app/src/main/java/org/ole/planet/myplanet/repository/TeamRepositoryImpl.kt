@@ -217,6 +217,14 @@ class TeamRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun setTaskCompletion(taskId: String, completed: Boolean) {
+        update(RealmTeamTask::class.java, "id", taskId) { task ->
+            task.completed = completed
+            task.completedTime = if (completed) Date().time else 0
+            task.isUpdated = true
+        }
+    }
+
     override suspend fun createTeam(
         category: String?,
         name: String,
