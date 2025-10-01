@@ -136,8 +136,18 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private fun updateStepDisplay(position: Int) {
-        val currentPosition = position
-        binding.tvStep.text = String.format(getString(R.string.step) + " %d/%d", currentPosition, steps.size)
+        val safePosition = position.coerceAtLeast(0)
+        val adapterItemCount = binding.viewPager2.adapter?.itemCount ?: steps.size
+        val safeItemCount = adapterItemCount.coerceAtLeast(0)
+        val displayIndex = if (safeItemCount == 0) 0 else safePosition.coerceAtMost(safeItemCount - 1) + 1
+
+        binding.tvStep.text = String.format(
+            Locale.getDefault(),
+            "%s %d/%d",
+            getString(R.string.step),
+            displayIndex,
+            safeItemCount
+        )
 
         val currentProgress = getCurrentProgress(steps, mRealm, userModel?.id, courseId)
         if (currentProgress < steps.size) {
@@ -204,15 +214,16 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {}
 
     override fun onPageSelected(position: Int) {
-        if (position > 0) {
-            if (position - 1 < steps.size) changeNextButtonState(position)
+        val safePosition = position.coerceAtLeast(0)
+        if (safePosition > 0) {
+            if (safePosition - 1 < steps.size) changeNextButtonState(safePosition)
         } else {
             binding.nextStep.visibility = View.VISIBLE
             binding.nextStep.isClickable = true
             binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
         }
 
-        updateStepDisplay(position)
+        updateStepDisplay(safePosition)
     }
 
     private fun changeNextButtonState(position: Int) {
@@ -228,8 +239,9 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     override fun onPageScrollStateChanged(state: Int) {}
 
     private fun onClickNext() {
-        binding.tvStep.text = String.format(Locale.getDefault(), "${getString(R.string.step)} %d/%d", binding.viewPager2.currentItem, currentCourse?.courseSteps?.size)
-        if (binding.viewPager2.currentItem == currentCourse?.courseSteps?.size) {
+        updateStepDisplay(binding.viewPager2.currentItem)
+        val itemCount = binding.viewPager2.adapter?.itemCount ?: currentCourse?.courseSteps?.size ?: 0
+        if (itemCount <= 0 || binding.viewPager2.currentItem >= itemCount - 1) {
             binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_grey_500))
             binding.nextStep.visibility = View.GONE
             binding.finishStep.visibility = View.VISIBLE
@@ -242,8 +254,8 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private fun onClickPrevious() {
-        binding.tvStep.text = String.format(Locale.getDefault(), "${getString(R.string.step)} %d/%d", binding.viewPager2.currentItem - 1, currentCourse?.courseSteps?.size)
-        if (binding.viewPager2.currentItem - 1 == 0) {
+        updateStepDisplay(binding.viewPager2.currentItem)
+        if (binding.viewPager2.currentItem == 0) {
             binding.previousStep.visibility = View.GONE
             binding.nextStep.visibility = View.VISIBLE
             binding.finishStep.visibility = View.GONE
@@ -265,10 +277,10 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             }
 
             R.id.previous_step -> {
-                onClickPrevious()
                 if (isValidClickLeft) {
                     binding.viewPager2.currentItem -= 1
                 }
+                onClickPrevious()
             }
 
             R.id.finish_step -> checkSurveyCompletion()
