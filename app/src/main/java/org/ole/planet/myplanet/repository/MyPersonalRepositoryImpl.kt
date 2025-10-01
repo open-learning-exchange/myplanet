@@ -1,9 +1,14 @@
 package org.ole.planet.myplanet.repository
 
+import io.realm.Realm
+import io.realm.RealmChangeListener
+import io.realm.RealmResults
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flowOf
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyPersonal
@@ -37,8 +42,22 @@ class MyPersonalRepositoryImpl @Inject constructor(
             return flowOf(emptyList())
         }
 
-        return queryListFlow(RealmMyPersonal::class.java) {
-            equalTo("userId", userId)
+        return callbackFlow {
+            val realm = Realm.getDefaultInstance()
+            val results =
+                realm.where(RealmMyPersonal::class.java)
+                    .equalTo("userId", userId)
+                    .findAllAsync()
+            val listener =
+                RealmChangeListener<RealmResults<RealmMyPersonal>> { updatedResults ->
+                    trySend(realm.copyFromRealm(updatedResults))
+                }
+            results.addChangeListener(listener)
+            trySend(realm.copyFromRealm(results))
+            awaitClose {
+                results.removeChangeListener(listener)
+                realm.close()
+            }
         }
     }
 }

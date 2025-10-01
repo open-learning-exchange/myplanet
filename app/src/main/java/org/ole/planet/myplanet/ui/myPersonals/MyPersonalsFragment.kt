@@ -10,6 +10,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
@@ -32,6 +33,7 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
     private lateinit var pg: DialogUtils.CustomProgressDialog
     private var addResourceFragment: AddResourceFragment? = null
     private var personalAdapter: AdapterMyPersonal? = null
+    private var personalResourcesJob: Job? = null
     
     @Inject
     lateinit var uploadManager: UploadManager
@@ -77,7 +79,8 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
         personalAdapter?.setListener(this)
         personalAdapter?.setRealm(mRealm)
         binding.rvMypersonal.adapter = personalAdapter
-        viewLifecycleOwner.lifecycleScope.launch {
+        personalResourcesJob?.cancel()
+        personalResourcesJob = viewLifecycleOwner.lifecycleScope.launch {
             myPersonalRepository.getPersonalResources(model?.id).collectLatest { realmMyPersonals ->
                 personalAdapter?.updateList(realmMyPersonals)
                 showNodata()
@@ -97,6 +100,8 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        personalResourcesJob?.cancel()
+        personalResourcesJob = null
         _binding = null
     }
 

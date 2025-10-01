@@ -5,7 +5,6 @@ import io.realm.RealmChangeListener
 import io.realm.RealmObject
 import io.realm.RealmQuery
 import io.realm.RealmResults
-import kotlinx.coroutines.channels.ProducerScope
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -35,15 +34,19 @@ open class RealmRepository(private val databaseService: DatabaseService) {
         clazz: Class<T>,
         builder: RealmQuery<T>.() -> Unit = {},
     ): Flow<List<T>> =
-        withRealmFlow { realm, scope ->
+        callbackFlow {
+            val realm = Realm.getDefaultInstance()
             val results = realm.where(clazz).apply(builder).findAllAsync()
             val listener =
                 RealmChangeListener<RealmResults<T>> { updatedResults ->
-                    scope.trySend(updatedResults)
+                    trySend(updatedResults)
                 }
             results.addChangeListener(listener)
-            scope.trySend(results)
-            return@withRealmFlow { results.removeChangeListener(listener) }
+            trySend(results)
+            awaitClose {
+                results.removeChangeListener(listener)
+                realm.close()
+            }
         }
 
     protected suspend fun <T : RealmObject, V : Any> findByField(
@@ -89,25 +92,6 @@ open class RealmRepository(private val databaseService: DatabaseService) {
     protected suspend fun <T> withRealmAsync(operation: (Realm) -> T): T {
         return databaseService.withRealmAsync(operation)
     }
-
-    protected fun <T> withRealmFlow(
-        block: suspend (Realm, ProducerScope<T>) -> (() -> Unit),
-    ): Flow<T> =
-        callbackFlow {
-            val realm = Realm.getDefaultInstance()
-            val cleanup = try {
-                block(realm, this)
-            } catch (throwable: Throwable) {
-                realm.close()
-                throw throwable
-            }
-            awaitClose {
-                cleanup()
-                if (!realm.isClosed) {
-                    realm.close()
-                }
-            }
-        }
 
     protected suspend fun executeTransaction(transaction: (Realm) -> Unit) {
         databaseService.executeTransactionAsync(transaction)
