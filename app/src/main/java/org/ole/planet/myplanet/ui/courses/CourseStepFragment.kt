@@ -7,7 +7,6 @@ import android.text.style.URLSpan
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import java.util.Date
 import java.util.UUID
@@ -15,6 +14,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import dagger.hilt.android.AndroidEntryPoint
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
@@ -37,6 +37,7 @@ import org.ole.planet.myplanet.utilities.CustomClickableSpan
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 
+@AndroidEntryPoint
 class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     private lateinit var fragmentCourseStepBinding: FragmentCourseStepBinding
     var stepId: String? = null
@@ -220,11 +221,12 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         setResourceButton(notDownloadedResources, fragmentCourseStepBinding.btnResources)
         fragmentCourseStepBinding.btnTakeTest.setOnClickListener {
             if (stepExams.isNotEmpty()) {
-                val takeExam: Fragment = TakeExamFragment()
-                val b = Bundle()
-                b.putString("stepId", stepId)
-                b.putInt("stepNum", stepNumber)
-                takeExam.arguments = b
+                val takeExam = TakeExamFragment().apply {
+                    arguments = Bundle().apply {
+                        putString("stepId", stepId)
+                        putInt("stepNum", stepNumber)
+                    }
+                }
                 homeItemClickListener?.openCallFragment(takeExam)
                 capturePhoto(this)
             }
