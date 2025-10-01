@@ -44,7 +44,7 @@ class LibraryRepositoryImpl @Inject constructor(
     }
 
     override suspend fun markResourceAdded(userId: String?, resourceId: String) {
-        executeTransaction { realm ->
+        withRealmAsync { realm ->
             RealmRemovedLog.onAdd(realm, "resources", userId, resourceId)
         }
     }
