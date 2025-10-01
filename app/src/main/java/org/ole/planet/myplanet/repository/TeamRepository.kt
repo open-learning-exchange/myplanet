@@ -6,6 +6,12 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
 
+data class TeamStatusResult(
+    val isMember: Boolean,
+    val isLeader: Boolean,
+    val hasPendingRequest: Boolean,
+)
+
 interface TeamRepository {
     suspend fun getTeamResources(teamId: String): List<RealmMyLibrary>
     suspend fun getTeamByDocumentIdOrTeamId(id: String): RealmMyTeam?
@@ -15,6 +21,7 @@ interface TeamRepository {
     suspend fun isTeamLeader(teamId: String, userId: String?): Boolean
     suspend fun hasPendingRequest(teamId: String, userId: String?): Boolean
     suspend fun getRecentVisitCounts(teamIds: Collection<String>): Map<String, Long>
+    suspend fun getTeamStatus(teamId: String, userId: String?): TeamStatusResult
     suspend fun requestToJoin(teamId: String, user: RealmUserModel?, teamType: String?)
     suspend fun leaveTeam(teamId: String, userId: String?)
     suspend fun addResourceLinks(teamId: String, resources: List<RealmMyLibrary>, user: RealmUserModel?)

@@ -48,6 +48,8 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     lateinit var databaseService: DatabaseService
     @Inject
     lateinit var submissionRepository: SubmissionRepository
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
     private var submission: RealmSubmission? = null
     var userModel: RealmUserModel? = null
     var shouldHideElements: Boolean? = null
@@ -56,7 +58,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentUserInformationBinding = FragmentUserInformationBinding.inflate(inflater, container, false)
-        userModel = UserProfileDbHandler(requireContext()).userModel
+        userModel = userProfileDbHandler.userModel
         if (!TextUtils.isEmpty(id)) {
             viewLifecycleOwner.lifecycleScope.launch {
                 submission = id?.let { submissionRepository.getSubmissionById(it) }
