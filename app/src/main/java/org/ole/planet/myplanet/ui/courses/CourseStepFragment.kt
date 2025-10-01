@@ -8,6 +8,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import java.util.Date
 import java.util.UUID
 import org.ole.planet.myplanet.MainApplication
@@ -192,15 +194,14 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     }
 
     private fun setListeners() {
-        val notDownloadedResources: List<RealmMyLibrary> = databaseService.withRealm { realm ->
-            realm.where(RealmMyLibrary::class.java)
-                .equalTo("stepId", stepId)
-                .equalTo("resourceOffline", false)
-                .isNotNull("resourceLocalAddress")
-                .findAll()
-                .let { realm.copyFromRealm(it) }
+        viewLifecycleOwner.lifecycleScope.launch {
+            val notDownloadedResources = libraryRepository.getStepResources(stepId, offline = false)
+            setResourceButton(notDownloadedResources, fragmentCourseStepBinding.btnResources)
+
+            val downloadedResources = libraryRepository.getStepResources(stepId, offline = true)
+            setOpenResourceButton(downloadedResources, fragmentCourseStepBinding.btnOpen)
+            fragmentCourseStepBinding.btnResources.visibility = View.GONE
         }
-        setResourceButton(notDownloadedResources, fragmentCourseStepBinding.btnResources)
         fragmentCourseStepBinding.btnTakeTest.setOnClickListener {
             if (stepExams.isNotEmpty()) {
                 val takeExam: Fragment = TakeExamFragment()
@@ -218,16 +219,6 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                 AdapterMySubmission.openSurvey(homeItemClickListener, stepSurvey[0].id, false, false, "")
             }
         }
-        val downloadedResources: List<RealmMyLibrary> = databaseService.withRealm { realm ->
-            realm.where(RealmMyLibrary::class.java)
-                .equalTo("stepId", stepId)
-                .equalTo("resourceOffline", true)
-                .isNotNull("resourceLocalAddress")
-                .findAll()
-                .let { realm.copyFromRealm(it) }
-        }
-        setOpenResourceButton(downloadedResources, fragmentCourseStepBinding.btnOpen)
-        fragmentCourseStepBinding.btnResources.visibility = View.GONE
     }
 
     override fun onDownloadComplete() {
