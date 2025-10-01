@@ -258,22 +258,6 @@ class AdapterTeamList(
                 }
             }
 
-            val teamStatusJobs = teamData.map { (team, teamId, visitCount) ->
-                async(Dispatchers.IO) {
-                    val cacheKey = "${teamId}_${userId}"
-                    if (!teamStatusCache.containsKey(cacheKey)) {
-                        val statusResult = teamRepository.getTeamStatus(teamId, userId)
-                        val status = TeamStatus(
-                            isMember = statusResult.isMember,
-                            isLeader = statusResult.isLeader,
-                            hasPendingRequest = statusResult.hasPendingRequest,
-                        )
-                        teamStatusCache[cacheKey] = status
-                    }
-                    Triple(team, teamStatusCache[cacheKey]!!, visitCount)
-                }
-            }
-
             if (idsToFetch.isNotEmpty()) {
                 idsToFetch.map { teamId ->
                     async(Dispatchers.IO) {
