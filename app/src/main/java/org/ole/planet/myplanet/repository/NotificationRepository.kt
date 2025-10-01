@@ -23,6 +23,7 @@ data class TaskNavigationTarget(
 
 data class JoinRequestNavigationTarget(
     val teamId: String,
+    val teamType: String?,
 )
 
 interface NotificationRepository {

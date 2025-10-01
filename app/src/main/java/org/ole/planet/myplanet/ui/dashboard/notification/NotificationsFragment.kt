@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
+import org.ole.planet.myplanet.ui.team.TeamPageConfig.ApplicantsPage
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.JoinRequestsPage
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.TasksPage
 import org.ole.planet.myplanet.utilities.NotificationUtils
@@ -140,11 +141,18 @@ class NotificationsFragment : Fragment() {
                     }
                     val onHomeListener = activity as? OnHomeItemClickListener
                     if (joinRequestNavigation != null && onHomeListener != null) {
+                        val targetPage = if (joinRequestNavigation.teamType?.equals("enterprise", ignoreCase = true) == true) {
+                            ApplicantsPage
+                        } else {
+                            JoinRequestsPage
+                        }
                         val fragment = TeamDetailFragment()
                         fragment.arguments = Bundle().apply {
                             putString("id", joinRequestNavigation.teamId)
+                            putString("teamId", joinRequestNavigation.teamId)
+                            joinRequestNavigation.teamType?.let { putString("teamType", it) }
                             putBoolean("isMyTeam", true)
-                            putString("navigateToPage", JoinRequestsPage.id)
+                            putString("navigateToPage", targetPage.id)
                         }
                         onHomeListener.openCallFragment(fragment)
                     }

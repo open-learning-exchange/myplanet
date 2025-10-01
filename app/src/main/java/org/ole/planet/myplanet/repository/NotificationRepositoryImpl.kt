@@ -189,7 +189,9 @@ class NotificationRepositoryImpl @Inject constructor(
         }.firstOrNull() ?: return null
 
         val teamId = joinRequest.teamId?.takeUnless { it.isBlank() } ?: return null
-        return JoinRequestNavigationTarget(teamId)
+        val team = findByField(RealmMyTeam::class.java, "_id", teamId)
+        val teamType = team?.type ?: joinRequest.teamType
+        return JoinRequestNavigationTarget(teamId, teamType)
     }
 }
 
