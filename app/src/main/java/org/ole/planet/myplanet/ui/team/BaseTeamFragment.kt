@@ -17,10 +17,17 @@ private val Realm.isOpen: Boolean
 @AndroidEntryPoint
 abstract class BaseTeamFragment : BaseNewsFragment() {
     var user: RealmUserModel? = null
-    lateinit var teamId: String
+    var teamId: String = ""
+        set(value) {
+            if (field != value) {
+                field = value
+                isMemberCache = null
+            }
+        }
     var team: RealmMyTeam? = null
     @Inject
     lateinit var teamRepository: TeamRepository
+    private var isMemberCache: Boolean? = null
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,8 +52,14 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
 
     override fun setData(list: List<RealmNews?>?) {}
 
-    fun isMember(): Boolean = runBlocking {
-        teamRepository.isMember(user?.id, teamId)
+    fun isMember(): Boolean {
+        isMemberCache?.let { return it }
+
+        val membership = runBlocking {
+            teamRepository.isMember(user?.id, teamId)
+        }
+        isMemberCache = membership
+        return membership
     }
 
     private fun shouldQueryTeamFromRealm(): Boolean {
@@ -69,6 +82,7 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
     }
 
     override fun onDestroy() {
+        isMemberCache = null
         if (isRealmInitialized() && mRealm.isOpen) {
             mRealm.close()
         }
