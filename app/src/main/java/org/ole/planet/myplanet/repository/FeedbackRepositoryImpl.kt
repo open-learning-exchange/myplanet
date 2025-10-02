@@ -36,7 +36,8 @@ class FeedbackRepositoryImpl @Inject constructor(
             feedback.title = "Question regarding /"
             feedback.url = "/"
         }
-        feedback.openTime = Date().time
+        val timestamp = Date().time
+        feedback.openTime = timestamp
         feedback.owner = user
         feedback.source = user
         feedback.status = "Open"
@@ -45,8 +46,8 @@ class FeedbackRepositoryImpl @Inject constructor(
         feedback.parentCode = "dev"
         val obj = JsonObject().apply {
             addProperty("message", message)
-            addProperty("time", Date().time.toString() + "")
-            addProperty("user", user + "")
+            addProperty("time", timestamp.toString())
+            addProperty("user", user.orEmpty())
         }
         val msgArray = JsonArray().apply { add(obj) }
         feedback.setMessages(msgArray)
