@@ -26,8 +26,10 @@ class NotificationRepositoryImpl @Inject constructor(
             equalTo("isPrivate", false)
         }.count { it.needToUpdate() && it.userId?.contains(userId) == true }
 
-        val existingNotification = findByField(RealmNotification::class.java, "userId", userId)
-            ?.takeIf { it.type == "resource" }
+        val existingNotification = queryList(RealmNotification::class.java) {
+            equalTo("userId", userId)
+            equalTo("type", "resource")
+        }.firstOrNull()
 
         if (resourceCount > 0) {
             val notification = existingNotification?.apply {
