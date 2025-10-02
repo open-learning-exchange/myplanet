@@ -288,21 +288,6 @@ open class RealmMyTeam : RealmObject() {
         }
 
         @JvmStatic
-        fun filterUsers(teamId: String?, user: String, mRealm: Realm): MutableList<RealmUserModel> {
-            val myTeam = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId).findAll()
-            val list = mutableListOf<RealmUserModel>()
-            for (team in myTeam) {
-                val model = mRealm.where(RealmUserModel::class.java)
-                    .equalTo("id", team.userId)
-                    .findFirst()
-                if (model != null && model.name?.contains(user) == true) {
-                    list.add(model)
-                }
-            }
-            return list
-        }
-
-        @JvmStatic
         fun serialize(team: RealmMyTeam): JsonObject {
             val gson = Gson()
             val `object` = JsonObject()
