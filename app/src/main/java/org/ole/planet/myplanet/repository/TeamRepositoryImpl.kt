@@ -112,42 +112,6 @@ class TeamRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getTeamStatus(teamId: String, userId: String?): TeamStatusResult {
-        if (teamId.isBlank() || userId.isNullOrBlank()) {
-            return TeamStatusResult(isMember = false, isLeader = false, hasPendingRequest = false)
-        }
-
-        return withRealmAsync { realm ->
-            val results = realm.where(RealmMyTeam::class.java)
-                .equalTo("teamId", teamId)
-                .equalTo("userId", userId)
-                .`in`("docType", arrayOf("membership", "request"))
-                .findAll()
-
-            var isMember = false
-            var isLeader = false
-            var hasPendingRequest = false
-
-            results.forEach { entry ->
-                when (entry?.docType) {
-                    "membership" -> {
-                        isMember = true
-                        if (entry.isLeader) {
-                            isLeader = true
-                        }
-                    }
-                    "request" -> hasPendingRequest = true
-                }
-            }
-
-            TeamStatusResult(
-                isMember = isMember,
-                isLeader = isLeader,
-                hasPendingRequest = hasPendingRequest,
-            )
-        }
-    }
-
     override suspend fun requestToJoin(teamId: String, user: RealmUserModel?, teamType: String?) {
         val userId = user?.id ?: return
         val userPlanetCode = user?.planetCode
