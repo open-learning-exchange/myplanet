@@ -32,22 +32,16 @@ class NotificationRepositoryImpl @Inject constructor(
             resource.userId?.contains(userId) == true && resource.needToUpdate()
         }
 
-        val notificationId = "$userId:resource:count"
-        val existingNotification = findByField(RealmNotification::class.java, "id", notificationId)
+        val existingNotification = queryList(RealmNotification::class.java) {
+            equalTo("userId", userId)
+            equalTo("type", "resource")
+        }.firstOrNull()
 
         if (resourceCount > 0) {
-            val previousCount = existingNotification?.message?.toIntOrNull() ?: 0
-            val countChanged = previousCount != resourceCount
-
             val notification = existingNotification?.apply {
                 message = "$resourceCount"
                 relatedId = "$resourceCount"
-                if (countChanged) {
-                    this.isRead = false
-                    this.createdAt = Date()
-                }
             } ?: RealmNotification().apply {
-                this.id = notificationId
                 this.userId = userId
                 this.type = "resource"
                 this.message = "$resourceCount"
