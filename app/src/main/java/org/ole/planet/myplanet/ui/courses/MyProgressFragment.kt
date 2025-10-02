@@ -29,6 +29,8 @@ class MyProgressFragment : Fragment() {
     private val binding get() = _binding!!
     @Inject
     lateinit var databaseService: DatabaseService
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentMyProgressBinding.inflate(inflater, container, false)
@@ -42,7 +44,7 @@ class MyProgressFragment : Fragment() {
 
     private fun initializeData() {
         databaseService.withRealm { realm ->
-            val user = UserProfileDbHandler(requireActivity()).userModel
+            val user = userProfileDbHandler.userModel
             val courseData = fetchCourseData(realm, user?.id)
             binding.rvMyprogress.layoutManager = LinearLayoutManager(requireActivity())
             binding.rvMyprogress.adapter = AdapterMyProgress(requireActivity(), courseData)
@@ -123,6 +125,9 @@ class MyProgressFragment : Fragment() {
 
     override fun onDestroyView() {
         _binding = null
+        if (this::userProfileDbHandler.isInitialized) {
+            userProfileDbHandler.onDestroy()
+        }
         super.onDestroyView()
     }
 }
