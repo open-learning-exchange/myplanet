@@ -63,11 +63,11 @@ class TeamRepositoryImpl @Inject constructor(
 
     override suspend fun isMember(userId: String?, teamId: String): Boolean {
         userId ?: return false
-        return queryList(RealmMyTeam::class.java) {
+        return count(RealmMyTeam::class.java) {
             equalTo("userId", userId)
             equalTo("teamId", teamId)
             equalTo("docType", "membership")
-        }.isNotEmpty()
+        } > 0
     }
 
     override suspend fun isTeamLeader(teamId: String, userId: String?): Boolean {
@@ -402,7 +402,15 @@ class TeamRepositoryImpl @Inject constructor(
     private suspend fun getResourceIds(teamId: String): List<String> {
         return queryList(RealmMyTeam::class.java) {
             equalTo("teamId", teamId)
-        }.mapNotNull { it.resourceId?.takeIf { id -> id.isNotBlank() } }
+            beginGroup()
+                .isNull("docType")
+                .or().equalTo("docType", "")
+                .or().equalTo("docType", "resourceLink")
+                .or().equalTo("docType", "link")
+            endGroup()
+            isNotNull("resourceId")
+            isNotEmpty("resourceId")
+        }.mapNotNull { it.resourceId }
     }
 }
 
