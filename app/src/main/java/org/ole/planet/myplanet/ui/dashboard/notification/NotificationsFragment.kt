@@ -281,9 +281,6 @@ class NotificationsFragment : Fragment() {
                     val notificationManager = NotificationUtils.getInstance(appContext)
                     idsToClear.forEach { notificationManager.clearNotification(it) }
                 }
-                if (_binding == null) {
-                    return@launch
-                }
             } catch (e: Exception) {
                 unreadCountCache = previousUnreadCount
                 if (notificationIdsForUi.isNotEmpty()) {
@@ -292,13 +289,8 @@ class NotificationsFragment : Fragment() {
                 }
                 updateMarkAllAsReadButtonVisibility()
                 updateUnreadCount()
-                _binding?.let { currentBinding ->
-                    Snackbar.make(
-                        currentBinding.root,
-                        getString(R.string.failed_to_mark_as_read),
-                        Snackbar.LENGTH_LONG,
-                    ).show()
-                }
+                val currentBinding = _binding ?: return@launch
+                Snackbar.make(currentBinding.root, getString(R.string.failed_to_mark_as_read), Snackbar.LENGTH_LONG).show()
             }
         }
     }

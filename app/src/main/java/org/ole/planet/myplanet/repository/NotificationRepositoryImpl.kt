@@ -117,32 +117,51 @@ class NotificationRepositoryImpl @Inject constructor(
         val rawId = joinRequestId?.takeUnless { it.isBlank() } ?: return null
         val sanitizedId = rawId.removePrefix("join_request_")
 
-        val joinRequest = queryList(RealmMyTeam::class.java) {
-            equalTo("_id", sanitizedId)
-            equalTo("docType", "request")
-        }.firstOrNull() ?: return null
+        return withRealm { realm ->
+            val joinRequest = realm.where(RealmMyTeam::class.java)
+                .equalTo("_id", sanitizedId)
+                .equalTo("docType", "request")
+                .findFirst()
 
-        val teamName = joinRequest.teamId?.let { teamId ->
-            findByField(RealmMyTeam::class.java, "_id", teamId)?.name
+            joinRequest?.let {
+                val teamName = it.teamId?.let { teamId ->
+                    realm.where(RealmMyTeam::class.java)
+                        .equalTo("_id", teamId)
+                        .findFirst()
+                        ?.name
+                }
+
+                val requesterName = it.userId?.let { userId ->
+                    realm.where(RealmUserModel::class.java)
+                        .equalTo("id", userId)
+                        .findFirst()
+                        ?.name
+                }
+
+                JoinRequestNotificationMetadata(requesterName, teamName)
+            }
         }
-
-        val requesterName = joinRequest.userId?.let { userId ->
-            findByField(RealmUserModel::class.java, "id", userId)?.name
-        }
-
-        return JoinRequestNotificationMetadata(requesterName, teamName)
     }
 
     override suspend fun getTaskNotificationMetadata(taskTitle: String): TaskNotificationMetadata? {
         if (taskTitle.isBlank()) return null
 
-        val task = findByField(RealmTeamTask::class.java, "title", taskTitle) ?: return null
+        return withRealm { realm ->
+            val task = realm.where(RealmTeamTask::class.java)
+                .equalTo("title", taskTitle)
+                .findFirst()
 
-        val teamName = task.teamId?.let { teamId ->
-            findByField(RealmMyTeam::class.java, "_id", teamId)?.name
+            task?.let {
+                val teamName = it.teamId?.let { teamId ->
+                    realm.where(RealmMyTeam::class.java)
+                        .equalTo("_id", teamId)
+                        .findFirst()
+                        ?.name
+                }
+
+                TaskNotificationMetadata(teamName)
+            }
         }
-
-        return TaskNotificationMetadata(teamName)
     }
 }
 
