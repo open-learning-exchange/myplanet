@@ -1044,6 +1044,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         when (selectedMenuId) {
             R.string.menu_myplanet -> openCallFragment(BellDashboardFragment())
             R.string.menu_library -> openCallFragment(ResourcesFragment())
+            R.string.menu_meetups -> {}
             R.string.menu_surveys -> openCallFragment(SurveyFragment())
             R.string.menu_courses -> openCallFragment(CoursesFragment())
             R.string.menu_community -> openCallFragment(CommunityTabFragment())

@@ -37,6 +37,7 @@
     <string name="menu_home">الرئيسية</string>
     <string name="menu_library">المكتبة</string>
     <string name="menu_courses">الدورات</string>
+    <string name="menu_meetups">التجمعات</string>
     <string name="menu_surveys">الاستبيانات</string>
     <string name="menu_logout">تسجيل الخروج</string>
     <string name="menu_feedback">ملاحظات</string>

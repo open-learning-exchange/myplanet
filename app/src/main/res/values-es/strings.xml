@@ -37,6 +37,7 @@
     <string name="menu_home">Inicio</string>
     <string name="menu_library">Nuestra biblioteca</string>
     <string name="menu_courses">Nuestros cursos</string>
+    <string name="menu_meetups">Reuniones</string>
     <string name="menu_surveys">Encuestas</string>
     <string name="menu_logout">Cerrar sesión</string>
     <string name="menu_feedback">Comentario</string>
