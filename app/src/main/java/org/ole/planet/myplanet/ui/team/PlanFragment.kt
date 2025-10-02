@@ -16,7 +16,6 @@ import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
 import org.ole.planet.myplanet.databinding.FragmentPlanBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -120,8 +119,8 @@ class PlanFragment : BaseTeamFragment() {
             return
         }
 
-        val userId = UserProfileDbHandler(activity).userModel?._id
-        val createdBy = userId.orEmpty()
+        val userId = user?.id ?: return
+        val createdBy = userId
         val teamIdentifier = team._id?.takeIf { it.isNotBlank() }
             ?: team.teamId?.takeIf { it.isNotBlank() }
         if (teamIdentifier == null) {
