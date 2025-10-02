@@ -1,13 +1,11 @@
 package org.ole.planet.myplanet.ui.dashboard
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.repository.CourseRepository
 import org.ole.planet.myplanet.repository.LibraryRepository
@@ -40,24 +38,6 @@ class DashboardViewModel @Inject constructor(
         val earnedDollarsSurvey = if (!hasUnfinishedSurvey) 1 else 0
         val total = earnedDollarsVoice + earnedDollarsSurvey
         return total.coerceAtMost(11)
-    }
-
-    fun loadDashboardData(userId: String?) {
-        loadSurveyWarning(userId)
-        loadUnreadNotifications(userId)
-    }
-
-    private fun loadSurveyWarning(userId: String?) {
-        viewModelScope.launch {
-            val count = submissionRepository.getSubmissionCountByUser(userId)
-            _surveyWarning.value = count == 0
-        }
-    }
-
-    private fun loadUnreadNotifications(userId: String?) {
-        viewModelScope.launch {
-            _unreadNotifications.value = notificationRepository.getUnreadCount(userId)
-        }
     }
 
     suspend fun updateResourceNotification(userId: String?) {
