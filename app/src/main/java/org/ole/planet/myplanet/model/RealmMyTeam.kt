@@ -216,15 +216,6 @@ open class RealmMyTeam : RealmObject() {
         }
 
         @JvmStatic
-        fun getTeamLeader(teamId: String?, realm: Realm): String {
-            val team = realm.where(RealmMyTeam::class.java)
-                .equalTo("teamId", teamId)
-                .equalTo("isLeader", true)
-                .findFirst()
-            return team?.userId ?: ""
-        }
-
-        @JvmStatic
         fun insert(mRealm: Realm, doc: JsonObject) {
             insertMyTeams(doc, mRealm)
         }
