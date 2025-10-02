@@ -14,10 +14,10 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
+import io.realm.Sort
 import java.util.ArrayList
 import javax.inject.Inject
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.R.array.status_options
@@ -28,7 +28,6 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmTeamTask
-import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
@@ -42,8 +41,6 @@ class NotificationsFragment : Fragment() {
     private val binding get() = _binding!!
     @Inject
     lateinit var databaseService: DatabaseService
-    @Inject
-    lateinit var notificationRepository: NotificationRepository
     private lateinit var adapter: AdapterNotification
     private lateinit var userId: String
     private var notificationUpdateListener: NotificationListener? = null
@@ -191,12 +188,32 @@ class NotificationsFragment : Fragment() {
         }
     }
 
-    private fun loadNotifications(userId: String, filter: String): List<RealmNotification> =
-        runBlocking { notificationRepository.getNotifications(userId, filter) }
+    private fun loadNotifications(userId: String, filter: String): List<RealmNotification> {
+        return databaseService.withRealm { realm ->
+            val query = realm.where(RealmNotification::class.java)
+                .equalTo("userId", userId)
+
+            when (filter) {
+                "read" -> query.equalTo("isRead", true)
+                "unread" -> query.equalTo("isRead", false)
+                "all" -> {}
+            }
+
+            val results = query.sort("createdAt", Sort.DESCENDING).findAll()
+            realm.copyFromRealm(results).filter {
+                it.message.isNotEmpty() && it.message != "INVALID"
+            }
+        }
+    }
 
     private fun markAsReadById(notificationId: String) {
         viewLifecycleOwner.lifecycleScope.launch {
-            notificationRepository.markAsRead(notificationId)
+            databaseService.executeTransactionAsync { realm ->
+                val realmNotification = realm.where(RealmNotification::class.java)
+                    .equalTo("id", notificationId)
+                    .findFirst()
+                realmNotification?.isRead = true
+            }
             val currentList = adapter.currentList.toMutableList()
             val index = currentList.indexOfFirst { it.id == notificationId }
             if (index != -1) {
@@ -222,7 +239,13 @@ class NotificationsFragment : Fragment() {
     private fun markAllAsRead() {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                notificationRepository.markAllAsRead(userId)
+                databaseService.executeTransactionAsync { realm ->
+                    realm.where(RealmNotification::class.java)
+                        .equalTo("userId", userId)
+                        .equalTo("isRead", false)
+                        .findAll()
+                        .forEach { it.isRead = true }
+                }
                 adapter.updateNotifications(
                     loadNotifications(
                         userId,
@@ -243,7 +266,13 @@ class NotificationsFragment : Fragment() {
     }
 
     private fun getUnreadNotificationsSize(): Int {
-        return runBlocking { notificationRepository.getUnreadCount(userId) }
+        return databaseService.withRealm { realm ->
+            realm.where(RealmNotification::class.java)
+                .equalTo("userId", userId)
+                .equalTo("isRead", false)
+                .count()
+                .toInt()
+        }
     }
 
     private fun updateUnreadCount() {
