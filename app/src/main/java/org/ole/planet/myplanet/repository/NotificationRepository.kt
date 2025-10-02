@@ -19,5 +19,4 @@ interface NotificationRepository {
     suspend fun markAllAsRead(userId: String)
     suspend fun getJoinRequestMetadata(joinRequestId: String?): JoinRequestNotificationMetadata?
     suspend fun getTaskNotificationMetadata(taskTitle: String): TaskNotificationMetadata?
-    suspend fun ensureNotification(type: String, message: String, relatedId: String?, userId: String?)
 }
