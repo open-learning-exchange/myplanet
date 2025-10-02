@@ -26,19 +26,9 @@ class NotificationRepositoryImpl @Inject constructor(
     override suspend fun updateResourceNotification(userId: String?) {
         userId ?: return
 
-        val resourceCount = withRealmAsync { realm ->
-            val resources = realm.where(RealmMyLibrary::class.java)
-                .equalTo("isPrivate", false)
-                .findAll()
-
-            var count = 0
-            resources.forEach { resource ->
-                if (resource.userId?.contains(userId) == true && resource.needToUpdate()) {
-                    count++
-                }
-            }
-            count
-        }
+        val resourceCount = queryList(RealmMyLibrary::class.java) {
+            equalTo("isPrivate", false)
+        }.count { it.needToUpdate() && it.userId?.contains(userId) == true }
 
         val existingNotification = findByField(RealmNotification::class.java, "userId", userId)
             ?.takeIf { it.type == "resource" }
