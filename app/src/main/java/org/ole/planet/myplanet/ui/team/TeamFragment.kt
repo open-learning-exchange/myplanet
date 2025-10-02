@@ -258,7 +258,6 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
                     val adapterTeamList = AdapterTeamList(
                         activity as Context,
                         sortedList,
-                        mRealm,
                         childFragmentManager,
                         teamRepository,
                         user,
@@ -295,7 +294,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
         }
 
         adapterTeamList = activity?.let {
-            AdapterTeamList(it, list, mRealm, childFragmentManager, teamRepository, user)
+            AdapterTeamList(it, list, childFragmentManager, teamRepository, user)
         } ?: return
         adapterTeamList.setType(type)
         adapterTeamList.setTeamListener(this@TeamFragment)
@@ -367,7 +366,6 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
             val adapterTeamList = AdapterTeamList(
                 activity as Context,
                 sortedList,
-                mRealm,
                 childFragmentManager,
                 teamRepository,
                 user,
