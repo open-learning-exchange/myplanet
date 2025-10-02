@@ -14,6 +14,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
+import io.realm.Sort
 import java.util.ArrayList
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
@@ -202,24 +203,86 @@ class NotificationsFragment : Fragment() {
 
     private suspend fun fetchNotificationsAndUnreadCount(filter: String): Pair<List<RealmNotification>, Int> =
         withContext(Dispatchers.IO) {
-            val notifications = notificationRepository.getNotifications(userId, filter)
-            val unreadCount = notificationRepository.getUnreadCount(userId)
+            val notifications = loadNotifications(userId, filter)
+            val unreadCount = getUnreadNotificationsSize()
             notifications to unreadCount
         }
 
     private fun markAsReadById(notificationId: String) {
         markNotificationsAsRead(setOf(notificationId), isMarkAll = false) {
-            notificationRepository.markAsRead(notificationId)
-            setOf(notificationId)
+            markNotificationsAsReadInDatabase(setOf(notificationId))
         }
     }
 
     private fun markAllAsRead() {
         val notificationIds = adapter.currentList.map { it.id }.toSet()
         markNotificationsAsRead(notificationIds, isMarkAll = true) {
-            notificationRepository.markAllAsRead(userId)
-            notificationRepository.getNotifications(userId, "all").map { it.id }.toSet()
+            markAllNotificationsAsReadInDatabase()
         }
+    }
+
+    private fun loadNotifications(userId: String, filter: String): List<RealmNotification> {
+        return databaseService.withRealm { realm ->
+            val query = realm.where(RealmNotification::class.java)
+                .equalTo("userId", userId)
+
+            when (filter) {
+                "read" -> query.equalTo("isRead", true)
+                "unread" -> query.equalTo("isRead", false)
+                else -> Unit
+            }
+
+            val results = query.sort("createdAt", Sort.DESCENDING).findAll()
+            realm.copyFromRealm(results).filter { notification ->
+                notification.message.isNotEmpty() && notification.message != "INVALID"
+            }
+        }
+    }
+
+    private fun getUnreadNotificationsSize(): Int {
+        return databaseService.withRealm { realm ->
+            realm.where(RealmNotification::class.java)
+                .equalTo("userId", userId)
+                .equalTo("isRead", false)
+                .count()
+                .toInt()
+        }
+    }
+
+    private suspend fun markNotificationsAsReadInDatabase(notificationIds: Set<String>): Set<String> {
+        if (notificationIds.isEmpty()) {
+            return emptySet()
+        }
+
+        val updatedIds = mutableSetOf<String>()
+        databaseService.executeTransactionAsync { realm ->
+            realm.where(RealmNotification::class.java)
+                .equalTo("userId", userId)
+                .`in`("id", notificationIds.toTypedArray())
+                .findAll()
+                .forEach { notification ->
+                    if (!notification.isRead) {
+                        notification.isRead = true
+                        updatedIds.add(notification.id)
+                    }
+                }
+        }
+        return updatedIds
+    }
+
+    private suspend fun markAllNotificationsAsReadInDatabase(): Set<String> {
+        val updatedIds = mutableSetOf<String>()
+        databaseService.executeTransactionAsync { realm ->
+            realm.where(RealmNotification::class.java)
+                .equalTo("userId", userId)
+                .equalTo("isRead", false)
+                .findAll()
+                .forEach { notification ->
+                    notification.isRead = true
+                    updatedIds.add(notification.id)
+                }
+        }
+        return updatedIds
     }
 
     private fun updateMarkAllAsReadButtonVisibility() {
