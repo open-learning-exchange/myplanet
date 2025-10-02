@@ -22,7 +22,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.repository.NotificationRepository
+import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 
 object NotificationUtils {
@@ -487,7 +488,8 @@ object NotificationUtils {
 @AndroidEntryPoint
 class NotificationActionReceiver : BroadcastReceiver() {
     @Inject
-    lateinit var notificationRepository: NotificationRepository
+    lateinit var databaseService: DatabaseService
+
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action
         val notificationId = intent.getStringExtra(NotificationUtils.EXTRA_NOTIFICATION_ID)
@@ -539,7 +541,12 @@ class NotificationActionReceiver : BroadcastReceiver() {
 
         MainApplication.applicationScope.launch(Dispatchers.IO) {
             try {
-                notificationRepository.markAsRead(notificationId)
+                databaseService.executeTransactionAsync { realm ->
+                    realm.where(RealmNotification::class.java)
+                        .equalTo("id", notificationId)
+                        .findFirst()
+                        ?.isRead = true
+                }
 
                 withContext(Dispatchers.Main) {
                     delay(200)
