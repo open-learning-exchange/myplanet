@@ -2,9 +2,11 @@ package org.ole.planet.myplanet.repository
 
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.datamanager.queryList
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.getNoOfExam
 
 class CourseRepositoryImpl @Inject constructor(
@@ -47,6 +49,24 @@ class CourseRepositoryImpl @Inject constructor(
             } else {
                 realm.copyFromRealm(steps)
             }
+        }
+    }
+
+    override suspend fun getCourseStepData(stepId: String): CourseStepData? {
+        if (stepId.isBlank()) {
+            return null
+        }
+        val step = findByField(RealmCourseStep::class.java, "id", stepId) ?: return null
+        return withRealmAsync { realm ->
+            val courseExams = realm.queryList(RealmStepExam::class.java) {
+                equalTo("stepId", stepId)
+                equalTo("type", "courses")
+            }
+            val surveyExams = realm.queryList(RealmStepExam::class.java) {
+                equalTo("stepId", stepId)
+                equalTo("type", "surveys")
+            }
+            CourseStepData(step, courseExams, surveyExams)
         }
     }
 

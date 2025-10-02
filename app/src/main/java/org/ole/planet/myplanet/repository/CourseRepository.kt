@@ -3,6 +3,13 @@ package org.ole.planet.myplanet.repository
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmStepExam
+
+data class CourseStepData(
+    val step: RealmCourseStep,
+    val courseExams: List<RealmStepExam>,
+    val surveyExams: List<RealmStepExam>,
+)
 
 interface CourseRepository {
     suspend fun getAllCourses(): List<RealmMyCourse>
@@ -11,4 +18,5 @@ interface CourseRepository {
     suspend fun getCourseOfflineResources(courseId: String?): List<RealmMyLibrary>
     suspend fun getCourseExamCount(courseId: String?): Int
     suspend fun getCourseSteps(courseId: String?): List<RealmCourseStep>
+    suspend fun getCourseStepData(stepId: String): CourseStepData?
 }
