@@ -9,6 +9,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import java.util.Date
 import java.util.UUID
@@ -37,7 +38,6 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     private lateinit var fragmentCourseStepBinding: FragmentCourseStepBinding
     var stepId: String? = null
     private lateinit var step: RealmCourseStep
-    private lateinit var resources: List<RealmMyLibrary>
     private lateinit var stepExams: List<RealmStepExam>
     private lateinit var stepSurvey: List<RealmStepExam>
     var user: RealmUserModel? = null
@@ -89,10 +89,6 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                 .equalTo("id", stepId)
                 .findFirst()
                 ?.let { realm.copyFromRealm(it) }!!
-            resources = realm.where(RealmMyLibrary::class.java)
-                .equalTo("stepId", stepId)
-                .findAll()
-                .let { realm.copyFromRealm(it) }
             stepExams = realm.where(RealmStepExam::class.java)
                 .equalTo("stepId", stepId)
                 .equalTo("type", "courses")
@@ -104,7 +100,6 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                 .findAll()
                 .let { realm.copyFromRealm(it) }
         }
-        fragmentCourseStepBinding.btnResources.text = getString(R.string.resources_size, resources.size)
         hideTestIfNoQuestion()
         fragmentCourseStepBinding.tvTitle.text = step.stepTitle
         val markdownContentWithLocalPaths = prependBaseUrlToImages(
@@ -195,10 +190,13 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
 
     private fun setListeners() {
         viewLifecycleOwner.lifecycleScope.launch {
-            val notDownloadedResources = libraryRepository.getStepResources(stepId, offline = false)
+            val notDownloadedResourcesDeferred = async { libraryRepository.getStepResources(stepId, offline = false) }
+            val downloadedResourcesDeferred = async { libraryRepository.getStepResources(stepId, offline = true) }
+
+            val notDownloadedResources = notDownloadedResourcesDeferred.await()
             setResourceButton(notDownloadedResources, fragmentCourseStepBinding.btnResources)
 
-            val downloadedResources = libraryRepository.getStepResources(stepId, offline = true)
+            val downloadedResources = downloadedResourcesDeferred.await()
             setOpenResourceButton(downloadedResources, fragmentCourseStepBinding.btnOpen)
             fragmentCourseStepBinding.btnResources.visibility = View.GONE
         }
