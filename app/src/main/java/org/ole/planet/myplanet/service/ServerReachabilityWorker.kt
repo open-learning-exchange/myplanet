@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.NetworkUtils
@@ -27,6 +28,7 @@ import org.ole.planet.myplanet.utilities.ServerUrlMapper
 
 class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters) : CoroutineWorker(context, workerParams) {
     private val databaseService = DatabaseService(context)
+    private val uploadManager by lazy { UploadManager(applicationContext) }
     companion object {
         private const val NOTIFICATION_ID = 1001
         private const val CHANNEL_ID = "server_reachability_channel"
@@ -210,7 +212,6 @@ class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters)
         try {
             if (hasPendingSubmissions()) {
                 withContext(Dispatchers.IO) {
-                    val uploadManager = UploadManager(applicationContext)
                     uploadManager.uploadSubmissions()
                 }
             }
@@ -221,20 +222,22 @@ class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters)
     }
 
     private suspend fun uploadExamResultWrapper() {
-        if (hasPendingExamResults()) {
-            try {
-                withContext(Dispatchers.Main) {
-                    val successListener = object : SuccessListener {
-                        override fun onSuccess(success: String?) {
-                        }
-                    }
+        if (!hasPendingExamResults()) {
+            return
+        }
 
-                    val uploadManager = UploadManager(applicationContext)
-                    uploadManager.uploadExamResult(successListener)
+        try {
+            val successListener = object : SuccessListener {
+                override fun onSuccess(success: String?) {
+                    // No UI updates required for background sync completion.
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
             }
+
+            withContext(Dispatchers.IO) {
+                uploadManager.uploadExamResult(successListener)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
     
