@@ -3,16 +3,6 @@ import org.gradle.api.tasks.Delete
 buildscript {
     val extra = project.extra
     extra["kotlin_version"] = "2.2.10"
-    extra["setup"] = mapOf(
-        "compileSdk" to 36,
-        "buildTools" to "36.0.0",
-        "minSdk" to 21,
-        "targetSdk" to 36
-    )
-    extra["versions"] = mapOf(
-        "supportLib" to "28.0.0"
-    )
-
     repositories {
         google()
         mavenCentral()
