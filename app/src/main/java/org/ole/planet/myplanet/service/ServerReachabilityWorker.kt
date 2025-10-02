@@ -12,6 +12,7 @@ import androidx.core.content.edit
 import androidx.core.net.toUri
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import io.realm.Case
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -191,14 +192,13 @@ class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters)
         }
     }
 
-    private fun hasPendingExamResults(): Boolean {
+    private suspend fun hasPendingExamResults(): Boolean {
         return try {
-            databaseService.withRealm { realm ->
-                val submissions = realm.where(RealmSubmission::class.java).findAll()
-                val examResultCount = submissions.count { submission ->
-                    (submission.answers?.size ?: 0) > 0
-                }
-                examResultCount > 0
+            databaseService.withRealmAsync { realm ->
+                realm.where(RealmSubmission::class.java)
+                    .equalTo("status", "pending", Case.INSENSITIVE)
+                    .isNotEmpty("answers")
+                    .findFirst() != null
             }
         } catch (e: Exception) {
             e.printStackTrace()
