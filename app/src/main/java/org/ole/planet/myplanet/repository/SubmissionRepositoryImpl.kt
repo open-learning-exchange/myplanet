@@ -5,6 +5,7 @@ import io.realm.Sort
 import java.util.Date
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
@@ -113,6 +114,38 @@ class SubmissionRepositoryImpl @Inject constructor(
     override suspend fun getSubmissionsByUserId(userId: String): List<RealmSubmission> {
         return queryList(RealmSubmission::class.java) {
             equalTo("userId", userId)
+        }
+    }
+
+    override suspend fun hasSubmission(
+        stepExamId: String?,
+        courseId: String?,
+        userId: String?,
+        type: String,
+    ): Boolean {
+        if (stepExamId.isNullOrBlank() || courseId.isNullOrBlank() || userId.isNullOrBlank()) {
+            return false
+        }
+
+        return withRealmAsync { realm ->
+            val questions = realm.where(RealmExamQuestion::class.java)
+                .equalTo("examId", stepExamId)
+                .findAll()
+            if (questions.isEmpty()) {
+                false
+            } else {
+                val examId = questions.first()?.examId
+                if (examId.isNullOrBlank()) {
+                    false
+                } else {
+                    val parentId = "$examId@$courseId"
+                    realm.where(RealmSubmission::class.java)
+                        .equalTo("userId", userId)
+                        .equalTo("parentId", parentId)
+                        .equalTo("type", type)
+                        .findFirst() != null
+                }
+            }
         }
     }
 

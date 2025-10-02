@@ -105,19 +105,20 @@ class JoinedMemberFragment : BaseMemberFragment() {
         }
 
     private fun handleRemoveMember(member: JoinedMemberData) {
+        val memberId = member.user.id ?: return
+        val currentUserId = user?.id
+
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val removalResult = databaseService.withRealmAsync { realm ->
-                    val currentUserId = user?.id
-                    if (currentUserId != member.user.id) {
-                        member.user.id?.let { removeMember(realm, it) }
+                val removalResult = databaseService.withRealm { realm ->
+                    if (currentUserId != memberId) {
                         RemovalResult(canRemove = true, newLeaderId = null)
                     } else {
-                        val nextOfKin = getNextOfKin(realm)
-                        if (nextOfKin != null && nextOfKin.id != null) {
-                            makeLeader(realm, nextOfKin.id!!)
-                            member.user.id?.let { removeMember(realm, it) }
-                            RemovalResult(canRemove = true, newLeaderId = nextOfKin.id)
+                        val nextOfKin = getNextOfKinSync(realm)
+
+                        val nextOfKinId = nextOfKin?.id
+                        if (nextOfKinId != null) {
+                            RemovalResult(canRemove = true, newLeaderId = nextOfKinId)
                         } else {
                             RemovalResult(canRemove = false, newLeaderId = null)
                         }
@@ -125,18 +126,24 @@ class JoinedMemberFragment : BaseMemberFragment() {
                 }
 
                 if (removalResult.canRemove) {
-                    member.user.id?.let { memberId ->
-                        adapterJoined?.removeMember(memberId)
-                        removalResult.newLeaderId?.let { newLeaderId ->
-                            val currentUserId = user?.id
-                            adapterJoined?.updateLeadership(currentUserId, newLeaderId)
+                    if (removalResult.newLeaderId != null && currentUserId == memberId) {
+                        databaseService.executeTransactionAsync { realm ->
+                            makeLeaderSync(realm, removalResult.newLeaderId)
                         }
                     }
 
-                    memberChangeListener.onMemberChanged()
+                    databaseService.executeTransactionAsync { realm ->
+                        removeMemberSync(realm, memberId)
+                    }
 
-                    val currentSize = adapterJoined?.itemCount ?: 0
-                    showNoData(binding.tvNodata, currentSize, "members")
+                    adapterJoined?.removeMember(memberId)
+
+                    removalResult.newLeaderId?.let { newLeaderId ->
+                        adapterJoined?.updateLeadership(currentUserId, newLeaderId)
+                    }
+
+                    memberChangeListener.onMemberChanged()
+                    showNoData(binding.tvNodata, adapterJoined?.itemCount ?: 0, "members")
                 } else {
                     Toast.makeText(requireContext(), R.string.cannot_remove_user, Toast.LENGTH_SHORT).show()
                 }
@@ -150,49 +157,48 @@ class JoinedMemberFragment : BaseMemberFragment() {
 
     private fun handleMakeLeader(userId: String) {
         viewLifecycleOwner.lifecycleScope.launch {
-            databaseService.withRealmAsync { realm ->
-                makeLeader(realm, userId)
+            try {
+                databaseService.executeTransactionAsync { realm ->
+                    makeLeaderSync(realm, userId)
+                }
+
+                val currentUserId = user?.id
+                adapterJoined?.updateLeadership(currentUserId, userId)
+                Toast.makeText(requireContext(), getString(R.string.leader_selected), Toast.LENGTH_SHORT).show()
+                memberChangeListener.onMemberChanged()
+            } catch (e: Exception) {
+                Toast.makeText(requireContext(), "Error making leader: ${e.message}", Toast.LENGTH_SHORT).show()
             }
-            Toast.makeText(requireContext(), getString(R.string.leader_selected), Toast.LENGTH_SHORT).show()
-            memberChangeListener.onMemberChanged()
-            refreshMembers()
         }
     }
 
-    private fun refreshMembers() {
-        val members = joinedMembers
-        val currentUserId = user?.id
-        val isLeader = members.any { it.user.id == currentUserId && it.isLeader }
-        adapterJoined?.updateData(members.toMutableList(), isLeader)
-        showNoData(binding.tvNodata, members.size, "members")
-    }
+    private fun makeLeaderSync(realm: Realm, userId: String) {
+        val currentLeaders = realm.where(RealmMyTeam::class.java)
+            .equalTo("teamId", teamId)
+            .equalTo("isLeader", true)
+            .findAll()
+        currentLeaders.forEach { it.isLeader = false }
 
-    private fun makeLeader(realm: Realm, userId: String) {
-        realm.executeTransaction { r ->
-            val currentLeader = r.where(RealmMyTeam::class.java)
-                .equalTo("teamId", teamId)
-                .equalTo("isLeader", true)
-                .findFirst()
-            val newLeader = r.where(RealmMyTeam::class.java)
-                .equalTo("teamId", teamId)
-                .equalTo("userId", userId)
-                .findFirst()
-            currentLeader?.isLeader = false
-            newLeader?.isLeader = true
+        val newLeader = realm.where(RealmMyTeam::class.java)
+            .equalTo("teamId", teamId)
+            .equalTo("userId", userId)
+            .findFirst()
+
+        if (newLeader != null) {
+            newLeader.isLeader = true
         }
     }
 
-    private fun removeMember(realm: Realm, userId: String) {
-        realm.executeTransaction { r ->
-            val team = r.where(RealmMyTeam::class.java)
-                .equalTo("teamId", teamId)
-                .equalTo("userId", userId)
-                .findFirst()
-            team?.deleteFromRealm()
-        }
+    private fun removeMemberSync(realm: Realm, userId: String) {
+        val team = realm.where(RealmMyTeam::class.java)
+            .equalTo("teamId", teamId)
+            .equalTo("userId", userId)
+            .findFirst()
+
+        team?.deleteFromRealm()
     }
 
-    private fun getNextOfKin(realm: Realm): RealmUserModel? {
+    private fun getNextOfKinSync(realm: Realm): RealmUserModel? {
         val members = realm.where(RealmMyTeam::class.java)
             .equalTo("teamId", teamId)
             .equalTo("isLeader", false)
@@ -203,30 +209,30 @@ class JoinedMemberFragment : BaseMemberFragment() {
             return null
         }
 
-        val userIds = members.mapNotNull { it.userId }
+        val userIds = members.mapNotNull { it.userId }.toTypedArray()
+        if (userIds.isEmpty()) {
+            return null
+        }
+
         val users = realm.where(RealmUserModel::class.java)
-            .`in`("id", userIds.toTypedArray())
+            .`in`("id", userIds)
             .findAll()
 
         val userMap = users.associateBy { it.id }
-
-        var successorUserId: String? = null
-        var maxVisitCount: Long = -1
-
-        for (member in members) {
-            val user = userMap[member.userId]
-            if (user != null) {
+        val successorMember = members.maxByOrNull { member ->
+            userMap[member.userId]?.let { user ->
                 val visitCount = RealmTeamLog.getVisitCount(realm, user.name, teamId)
-                if (visitCount > maxVisitCount) {
-                    maxVisitCount = visitCount
-                    successorUserId = member.userId
-                }
+                visitCount
+            } ?: 0L
+        }
+
+        val result = successorMember?.userId?.let { id ->
+            userMap[id]?.let {
+                val copy = realm.copyFromRealm(it)
+                copy
             }
         }
-
-        return successorUserId?.let { id ->
-            userMap[id]?.let { realm.copyFromRealm(it) }
-        }
+        return result
     }
 
     override fun onNewsItemClick(news: RealmNews?) {}

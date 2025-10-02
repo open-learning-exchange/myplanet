@@ -157,22 +157,22 @@ class AdapterJoinedMember(
         }
     }
 
-    fun updateLeadership(oldLeaderId: String?, newLeaderId: String) {
+    fun updateLeadership(loggedInUserId: String?, newLeaderId: String) {
         var oldLeaderPos = -1
         var newLeaderPos = -1
 
         list.forEachIndexed { index, memberData ->
-            when (memberData.user.id) {
-                oldLeaderId -> {
-                    memberData.isLeader = false
-                    oldLeaderPos = index
-                }
-                newLeaderId -> {
-                    memberData.isLeader = true
-                    newLeaderPos = index
-                }
+            if (memberData.isLeader) {
+                memberData.isLeader = false
+                oldLeaderPos = index
+            }
+            if (memberData.user.id == newLeaderId) {
+                memberData.isLeader = true
+                newLeaderPos = index
             }
         }
+
+        isLoggedInUserTeamLeader = (loggedInUserId == newLeaderId)
 
         if (newLeaderPos > 0) {
             val newLeader = list.removeAt(newLeaderPos)
@@ -182,6 +182,10 @@ class AdapterJoinedMember(
 
         if (oldLeaderPos != -1) notifyItemChanged(if (oldLeaderPos == 0) 1 else oldLeaderPos)
         notifyItemChanged(0)
+
+        if (list.size > 2) {
+            notifyItemRangeChanged(1, list.size - 1)
+        }
     }
 
     class ViewHolderUser(val binding: RowJoinedUserBinding) :
