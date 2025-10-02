@@ -97,19 +97,17 @@ class TeamRepositoryImpl @Inject constructor(
 
         val cutoff = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -30) }.timeInMillis
 
-        return withRealmAsync { realm ->
-            val counts = mutableMapOf<String, Long>()
-            realm.where(RealmTeamLog::class.java)
-                .equalTo("type", "teamVisit")
-                .greaterThan("time", cutoff)
-                .`in`("teamId", validIds.toTypedArray())
-                .findAll()
-                .forEach { log ->
-                    val teamId = log.teamId ?: return@forEach
-                    counts[teamId] = (counts[teamId] ?: 0L) + 1L
-                }
-            counts
+        val recentLogs = queryList(RealmTeamLog::class.java) {
+            equalTo("type", "teamVisit")
+            greaterThan("time", cutoff)
+            `in`("teamId", validIds.toTypedArray())
         }
+
+        return recentLogs
+            .mapNotNull { it.teamId }
+            .groupingBy { it }
+            .eachCount()
+            .mapValues { it.value.toLong() }
     }
 
     override suspend fun getTeamStatus(teamId: String, userId: String?): TeamStatusResult {
