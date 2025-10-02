@@ -271,7 +271,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         list.forEach { course ->
             checkAndAddToList(course, courses, tags)
         }
-        return applyCourseFilter(list)
+        return applyCourseFilter(courses)
     }
 
     private fun filterRealmMyCourseList(items: List<Any?>): List<RealmMyCourse> {
