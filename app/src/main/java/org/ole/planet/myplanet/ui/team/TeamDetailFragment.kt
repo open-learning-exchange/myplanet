@@ -15,8 +15,8 @@ import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
@@ -78,6 +78,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
     private var pageConfigs: List<TeamPageConfig> = emptyList()
+    private var loadTeamJob: Job? = null
 
     private fun getCurrentUser(): RealmUserModel? {
         return userProfileDbHandler.userModel
@@ -140,30 +141,50 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         val user = detachCurrentUser()
         mRealm = databaseService.realmInstance
 
-        val resolvedTeam = when {
-            shouldQueryRealm(teamId) && teamId.isNotEmpty() -> {
-                runBlocking { teamRepository.getTeamByDocumentIdOrTeamId(teamId) }
-            }
+        renderPlaceholder()
 
-            else -> {
-                val effectiveTeamId = (directTeamId ?: "").ifEmpty { teamId }
-                if (effectiveTeamId.isNotEmpty()) {
-                    runBlocking { teamRepository.getTeamById(effectiveTeamId) }
-                } else {
-                    null
+        loadTeamJob?.cancel()
+        loadTeamJob = viewLifecycleOwner.lifecycleScope.launch {
+            val resolvedTeam = withContext(Dispatchers.IO) {
+                when {
+                    shouldQueryRealm(teamId) && teamId.isNotEmpty() -> {
+                        teamRepository.getTeamByDocumentIdOrTeamId(teamId)
+                    }
+
+                    else -> {
+                        val effectiveTeamId = (directTeamId ?: "").ifEmpty { teamId }
+                        if (effectiveTeamId.isNotEmpty()) {
+                            teamRepository.getTeamById(effectiveTeamId)
+                        } else {
+                            null
+                        }
+                    }
                 }
             }
+
+            if (!isAdded) {
+                return@launch
+            }
+
+            if (shouldQueryRealm(teamId) && resolvedTeam == null) {
+                throw IllegalArgumentException("Team not found for ID: $teamId")
+            }
+
+            resolvedTeam?.let { team = it }
+
+            setupTeamDetails(isMyTeam, user)
+            loadTeamJob = null
         }
-
-        if (shouldQueryRealm(teamId) && resolvedTeam == null) {
-            throw IllegalArgumentException("Team not found for ID: $teamId")
-        }
-
-        resolvedTeam?.let { team = it }
-
-        setupTeamDetails(isMyTeam, user)
 
         return binding.root
+    }
+
+    private fun renderPlaceholder() {
+        binding.title.text = directTeamName ?: getString(R.string.loading_teams)
+        binding.subtitle.text = directTeamType ?: ""
+        binding.btnAddDoc.isEnabled = false
+        binding.btnLeave.isEnabled = false
+        binding.viewPager2.adapter = null
     }
 
     private fun startTeamSync() {
@@ -462,6 +483,8 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     }
 
     override fun onDestroyView() {
+        loadTeamJob?.cancel()
+        loadTeamJob = null
         if (::realtimeSyncListener.isInitialized) {
             syncCoordinator.removeListener(realtimeSyncListener)
         }
