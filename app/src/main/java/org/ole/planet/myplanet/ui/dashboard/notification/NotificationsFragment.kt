@@ -18,6 +18,7 @@ import java.util.ArrayList
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
@@ -67,6 +68,8 @@ class NotificationsFragment : Fragment() {
         val binding = _binding!!
         userId = arguments?.getString("userId") ?: ""
 
+        val notifications = loadNotifications(userId, "all")
+
         val options = resources.getStringArray(status_options)
         val optionsList: MutableList<String?> = ArrayList(listOf(*options))
         val spinnerAdapter = ArrayAdapter(requireContext(), R.layout.spinner_item, optionsList)
@@ -75,15 +78,24 @@ class NotificationsFragment : Fragment() {
         binding.status.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
                 val selectedOption = parent.getItemAtPosition(position).toString().lowercase()
-                loadNotificationsForFilter(selectedOption)
+                val filteredNotifications = loadNotifications(userId, selectedOption)
+                adapter.updateNotifications(filteredNotifications)
+
+                binding.emptyData.visibility = if (filteredNotifications.isEmpty()) View.VISIBLE else View.GONE
             }
 
             override fun onNothingSelected(parent: AdapterView<*>) {}
         }
 
+        if (notifications.isEmpty()) {
+            binding.emptyData.visibility = View.VISIBLE
+        }
+
+        refreshUnreadCountCache()
+
         adapter = AdapterNotification(
             notificationRepository,
-            viewLifecycleOwner.lifecycleScope,
+            notifications,
             onMarkAsReadClick = { notificationId ->
                 markAsReadById(notificationId)
             },
@@ -99,7 +111,6 @@ class NotificationsFragment : Fragment() {
         }
         updateMarkAllAsReadButtonVisibility()
         updateUnreadCount()
-        loadNotificationsForFilter("all")
         return binding.root
     }
 
@@ -187,25 +198,8 @@ class NotificationsFragment : Fragment() {
         }
     }
 
-    private fun loadNotificationsForFilter(filter: String) {
-        viewLifecycleOwner.lifecycleScope.launch {
-            if (_binding == null) return@launch
-            val (notifications, unreadCount) = fetchNotificationsAndUnreadCount(filter)
-            val binding = _binding ?: return@launch
-            adapter.submitList(notifications)
-            binding.emptyData.visibility = if (notifications.isEmpty()) View.VISIBLE else View.GONE
-            unreadCountCache = unreadCount
-            updateMarkAllAsReadButtonVisibility()
-            updateUnreadCount()
-        }
-    }
-
-    private suspend fun fetchNotificationsAndUnreadCount(filter: String): Pair<List<RealmNotification>, Int> =
-        withContext(Dispatchers.IO) {
-            val notifications = notificationRepository.getNotifications(userId, filter)
-            val unreadCount = notificationRepository.getUnreadCount(userId)
-            notifications to unreadCount
-        }
+    private fun loadNotifications(userId: String, filter: String): List<RealmNotification> =
+        runBlocking { notificationRepository.getNotifications(userId, filter) }
 
     private fun markAsReadById(notificationId: String) {
         markNotificationsAsRead(setOf(notificationId), isMarkAll = false) {
@@ -226,6 +220,10 @@ class NotificationsFragment : Fragment() {
         _binding?.btnMarkAllAsRead?.visibility = if (unreadCountCache > 0) View.VISIBLE else View.GONE
     }
 
+    private fun getUnreadNotificationsSize(): Int {
+        return runBlocking { notificationRepository.getUnreadCount(userId) }
+    }
+
     private fun updateUnreadCount() {
         notificationUpdateListener?.onNotificationCountUpdated(unreadCountCache)
     }
@@ -234,8 +232,18 @@ class NotificationsFragment : Fragment() {
         if (::adapter.isInitialized) {
             val binding = _binding ?: return
             val selectedFilter = binding.status.selectedItem.toString().lowercase()
-            loadNotificationsForFilter(selectedFilter)
+            val notifications = loadNotifications(userId, selectedFilter)
+            adapter.updateNotifications(notifications)
+            refreshUnreadCountCache()
+            updateMarkAllAsReadButtonVisibility()
+            updateUnreadCount()
+
+            binding.emptyData.visibility = if (notifications.isEmpty()) View.VISIBLE else View.GONE
         }
+    }
+
+    private fun refreshUnreadCountCache() {
+        unreadCountCache = getUnreadNotificationsSize()
     }
 
     private fun markNotificationsAsRead(
