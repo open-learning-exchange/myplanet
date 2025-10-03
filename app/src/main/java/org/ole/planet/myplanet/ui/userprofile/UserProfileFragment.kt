@@ -69,10 +69,11 @@ class UserProfileFragment : Fragment() {
     private var _binding: FragmentUserProfileBinding? = null
     private val binding get() = _binding!!
     private lateinit var rowStatBinding: RowStatBinding
-    private lateinit var handler: UserProfileDbHandler
     private lateinit var settings: SharedPreferences
     @Inject
     lateinit var databaseService: DatabaseService
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
     private lateinit var mRealm: Realm
     private var model: RealmUserModel? = null
     private var imageUrl = ""
@@ -143,7 +144,7 @@ class UserProfileFragment : Fragment() {
         _binding = FragmentUserProfileBinding.inflate(inflater, container, false)
         initializeDependencies()
         binding.btProfilePic.setOnClickListener { searchForPhoto() }
-        model = handler.userModel
+        model = userProfileDbHandler.userModel
 
         setupProfile()
         loadProfileImage()
@@ -157,7 +158,6 @@ class UserProfileFragment : Fragment() {
 
     private fun initializeDependencies() {
         settings = requireContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        handler = UserProfileDbHandler(requireContext())
         mRealm = databaseService.realmInstance
         binding.rvStat.layoutManager = LinearLayoutManager(activity)
         binding.rvStat.isNestedScrollingEnabled = false
@@ -404,10 +404,10 @@ class UserProfileFragment : Fragment() {
     private fun createStatsMap(): LinkedHashMap<String, String?> {
         return linkedMapOf(
             getString(R.string.community_name) to Utilities.checkNA(model?.planetCode),
-            getString(R.string.last_login) to handler.lastVisit?.let { TimeUtils.getRelativeTime(it) },
-            getString(R.string.total_visits_overall) to handler.offlineVisits.toString(),
-            getString(R.string.most_opened_resource) to Utilities.checkNA(handler.maxOpenedResource),
-            getString(R.string.number_of_resources_opened) to Utilities.checkNA(handler.numberOfResourceOpen)
+            getString(R.string.last_login) to userProfileDbHandler.lastVisit?.let { TimeUtils.getRelativeTime(it) },
+            getString(R.string.total_visits_overall) to userProfileDbHandler.offlineVisits.toString(),
+            getString(R.string.most_opened_resource) to Utilities.checkNA(userProfileDbHandler.maxOpenedResource),
+            getString(R.string.number_of_resources_opened) to Utilities.checkNA(userProfileDbHandler.numberOfResourceOpen)
         )
     }
 
