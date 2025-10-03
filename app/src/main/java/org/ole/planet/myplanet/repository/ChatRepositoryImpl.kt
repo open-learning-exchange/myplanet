@@ -17,7 +17,7 @@ class ChatRepositoryImpl @Inject constructor(
         }
         return queryList(RealmChatHistory::class.java) {
             equalTo("user", userName)
-            sort("id", Sort.DESCENDING)
+            sort("lastUsed", Sort.DESCENDING)
         }
     }
 
