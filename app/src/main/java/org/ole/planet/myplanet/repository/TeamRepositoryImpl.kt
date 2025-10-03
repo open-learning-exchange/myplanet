@@ -4,12 +4,16 @@ import android.content.Context
 import androidx.core.net.toUri
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import io.realm.RealmChangeListener
+import io.realm.RealmResults
+import io.realm.Sort
 import java.util.Calendar
 import java.util.Date
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.datamanager.ApiClient.client
@@ -59,6 +63,63 @@ class TeamRepositoryImpl @Inject constructor(
     override suspend fun getTeamById(teamId: String): RealmMyTeam? {
         if (teamId.isBlank()) return null
         return findByField(RealmMyTeam::class.java, "_id", teamId)
+    }
+
+    override fun getTeamTransactions(
+        teamId: String,
+        startDate: Long?,
+        endDate: Long?,
+        sortAscending: Boolean,
+    ): Flow<RealmResults<RealmMyTeam>> {
+        val sortOrder = if (sortAscending) Sort.ASCENDING else Sort.DESCENDING
+        return withRealmFlow { realm, scope ->
+            val query = realm.where(RealmMyTeam::class.java)
+                .equalTo("teamId", teamId)
+                .equalTo("docType", "transaction")
+                .notEqualTo("status", "archived")
+
+            startDate?.let { query.greaterThanOrEqualTo("date", it) }
+            endDate?.let { query.lessThanOrEqualTo("date", it) }
+
+            val results = query.findAllAsync().sort("date", sortOrder)
+            val listener = RealmChangeListener<RealmResults<RealmMyTeam>> { updatedResults ->
+                scope.trySend(updatedResults)
+            }
+            results.addChangeListener(listener)
+            scope.trySend(results)
+
+            return@withRealmFlow { results.removeChangeListener(listener) }
+        }
+    }
+
+    override suspend fun createTransaction(
+        teamId: String,
+        type: String,
+        note: String,
+        amount: Int,
+        date: Long,
+        parentCode: String?,
+        planetCode: String?,
+    ): Result<Unit> {
+        if (teamId.isBlank()) {
+            return Result.failure(IllegalArgumentException("teamId cannot be blank"))
+        }
+        return runCatching {
+            executeTransaction { realm ->
+                val transaction = realm.createObject(RealmMyTeam::class.java, UUID.randomUUID().toString())
+                transaction.status = "active"
+                transaction.date = date
+                transaction.type = type
+                transaction.description = note
+                transaction.teamId = teamId
+                transaction.amount = amount
+                transaction.parentCode = parentCode
+                transaction.teamPlanetCode = planetCode
+                transaction.teamType = "sync"
+                transaction.docType = "transaction"
+                transaction.updated = true
+            }
+        }
     }
 
     override suspend fun isMember(userId: String?, teamId: String): Boolean {
