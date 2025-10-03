@@ -276,18 +276,4 @@ class DiscussionListFragment : BaseTeamFragment() {
                 requireArguments().containsKey("teamId")
         return !hasDirectData
     }
-
-    companion object {
-        fun newInstance(teamId: String, teamName: String, teamType: String): DiscussionListFragment {
-            val fragment = DiscussionListFragment()
-            val args = Bundle().apply {
-                putString("teamId", teamId)
-                putString("teamName", teamName)
-                putString("teamType", teamType)
-                putString("id", teamId)
-            }
-            fragment.arguments = args
-            return fragment
-        }
-    }
 }

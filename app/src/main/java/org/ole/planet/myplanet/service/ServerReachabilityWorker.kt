@@ -12,21 +12,27 @@ import androidx.core.content.edit
 import androidx.core.net.toUri
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SuccessListener
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.di.WorkerDependenciesEntryPoint
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 
 class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters) : CoroutineWorker(context, workerParams) {
-    private val databaseService = DatabaseService(context)
+    private val workerEntryPoint = EntryPointAccessors.fromApplication(
+        context.applicationContext,
+        WorkerDependenciesEntryPoint::class.java
+    )
+    private val databaseService = workerEntryPoint.databaseService()
+    private val uploadManager = workerEntryPoint.uploadManager()
     companion object {
         private const val NOTIFICATION_ID = 1001
         private const val CHANNEL_ID = "server_reachability_channel"
@@ -210,7 +216,6 @@ class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters)
         try {
             if (hasPendingSubmissions()) {
                 withContext(Dispatchers.IO) {
-                    val uploadManager = UploadManager(applicationContext)
                     uploadManager.uploadSubmissions()
                 }
             }
@@ -229,7 +234,6 @@ class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters)
                         }
                     }
 
-                    val uploadManager = UploadManager(applicationContext)
                     uploadManager.uploadExamResult(successListener)
                 }
             } catch (e: Exception) {

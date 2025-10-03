@@ -4,6 +4,7 @@ import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyPersonal
 
@@ -31,8 +32,13 @@ class MyPersonalRepositoryImpl @Inject constructor(
         save(personal)
     }
 
-    override fun getPersonalResources(userId: String?): Flow<List<RealmMyPersonal>> =
-        queryListFlow(RealmMyPersonal::class.java) {
+    override fun getPersonalResources(userId: String?): Flow<List<RealmMyPersonal>> {
+        if (userId.isNullOrBlank()) {
+            return flowOf(emptyList())
+        }
+
+        return queryListFlow(RealmMyPersonal::class.java) {
             equalTo("userId", userId)
         }
+    }
 }

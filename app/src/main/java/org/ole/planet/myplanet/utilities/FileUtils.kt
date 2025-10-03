@@ -16,7 +16,6 @@ import androidx.core.net.toUri
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
-import java.io.InputStream
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import java.util.UUID
@@ -187,12 +186,6 @@ object FileUtils {
             }
         }
         return filePath
-    }
-
-    @JvmStatic
-    @Throws(Exception::class)
-    fun convertStreamToString(`is`: InputStream?): String {
-        return `is`?.bufferedReader()?.use { it.readText() } ?: ""
     }
 
     @JvmStatic
