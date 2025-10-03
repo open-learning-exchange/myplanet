@@ -226,19 +226,22 @@ class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters)
     }
 
     private suspend fun uploadExamResultWrapper() {
-        if (hasPendingExamResults()) {
-            try {
-                withContext(Dispatchers.Main) {
-                    val successListener = object : SuccessListener {
-                        override fun onSuccess(success: String?) {
-                        }
-                    }
+        if (!hasPendingExamResults()) {
+            return
+        }
 
-                    uploadManager.uploadExamResult(successListener)
+        try {
+            val successListener = object : SuccessListener {
+                override fun onSuccess(success: String?) {
+                    // No UI updates required for background sync completion.
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
             }
+
+            withContext(Dispatchers.IO) {
+                uploadManager.uploadExamResult(successListener)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
     
