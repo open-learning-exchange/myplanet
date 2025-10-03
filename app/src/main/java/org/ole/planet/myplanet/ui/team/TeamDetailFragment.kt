@@ -16,7 +16,6 @@ import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
@@ -140,28 +139,41 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         val user = detachCurrentUser()
         mRealm = databaseService.realmInstance
 
-        val resolvedTeam = when {
-            shouldQueryRealm(teamId) && teamId.isNotEmpty() -> {
-                runBlocking { teamRepository.getTeamByDocumentIdOrTeamId(teamId) }
-            }
+        binding.root.post {
+            if (!isAdded) return@post
 
-            else -> {
-                val effectiveTeamId = (directTeamId ?: "").ifEmpty { teamId }
-                if (effectiveTeamId.isNotEmpty()) {
-                    runBlocking { teamRepository.getTeamById(effectiveTeamId) }
-                } else {
-                    null
+            viewLifecycleOwner.lifecycleScope.launch {
+                val resolvedTeam = withContext(Dispatchers.IO) {
+                    when {
+                        shouldQueryRealm(teamId) && teamId.isNotEmpty() -> {
+                            teamRepository.getTeamByDocumentIdOrTeamId(teamId)
+                        }
+
+                        else -> {
+                            val effectiveTeamId = (directTeamId ?: "").ifEmpty { teamId }
+                            if (effectiveTeamId.isNotEmpty()) {
+                                teamRepository.getTeamById(effectiveTeamId)
+                            } else {
+                                null
+                            }
+                        }
+                    }
                 }
+
+                if (shouldQueryRealm(teamId) && resolvedTeam == null) {
+                    Snackbar.make(
+                        binding.root,
+                        getString(R.string.no_team_available),
+                        Snackbar.LENGTH_LONG
+                    ).show()
+                    return@launch
+                }
+
+                resolvedTeam?.let { team = it }
+
+                setupTeamDetails(isMyTeam, user)
             }
         }
-
-        if (shouldQueryRealm(teamId) && resolvedTeam == null) {
-            throw IllegalArgumentException("Team not found for ID: $teamId")
-        }
-
-        resolvedTeam?.let { team = it }
-
-        setupTeamDetails(isMyTeam, user)
 
         return binding.root
     }
