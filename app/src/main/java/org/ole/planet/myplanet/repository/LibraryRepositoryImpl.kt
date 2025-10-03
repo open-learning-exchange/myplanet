@@ -72,17 +72,18 @@ class LibraryRepositoryImpl @Inject constructor(
                 onRemove(realm, "resources", userId, resourceId)
             }
         }
-        val matches = queryList(RealmMyLibrary::class.java) {
-            beginGroup()
-                .equalTo("resourceId", resourceId)
-                .or().equalTo("id", resourceId)
-                .or().equalTo("_id", resourceId)
-            endGroup()
-        }
+        return withRealmAsync { realm ->
+            fun findCopyBy(field: String): RealmMyLibrary? {
+                return realm.where(RealmMyLibrary::class.java)
+                    .equalTo(field, resourceId)
+                    .findFirst()
+                    ?.let { realm.copyFromRealm(it) }
+            }
 
-        return matches.firstOrNull { it.resourceId == resourceId }
-            ?: matches.firstOrNull { it.id == resourceId }
-            ?: matches.firstOrNull { it._id == resourceId }
+            findCopyBy("resourceId")
+                ?: findCopyBy("id")
+                ?: findCopyBy("_id")
+        }
     }
 
     override suspend fun updateLibraryItem(id: String, updater: (RealmMyLibrary) -> Unit) {
