@@ -32,9 +32,17 @@ class TagRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getTagsForResource(resourceId: String): List<RealmTag> {
+        return getLinkedTags("resources", resourceId)
+    }
+
+    override suspend fun getTagsForCourse(courseId: String): List<RealmTag> {
+        return getLinkedTags("courses", courseId)
+    }
+
+    private suspend fun getLinkedTags(db: String, linkId: String): List<RealmTag> {
         val links = queryList(RealmTag::class.java) {
-            equalTo("db", "resources")
-            equalTo("linkId", resourceId)
+            equalTo("db", db)
+            equalTo("linkId", linkId)
         }
         if (links.isEmpty()) {
             return emptyList()
