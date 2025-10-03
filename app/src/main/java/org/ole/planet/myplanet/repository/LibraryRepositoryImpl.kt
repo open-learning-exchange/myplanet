@@ -72,9 +72,17 @@ class LibraryRepositoryImpl @Inject constructor(
                 onRemove(realm, "resources", userId, resourceId)
             }
         }
-        return findByField(RealmMyLibrary::class.java, "resourceId", resourceId)
-            ?: getLibraryItemById(resourceId)
-            ?: getLibraryItemByResourceId(resourceId)
+        val matches = queryList(RealmMyLibrary::class.java) {
+            beginGroup()
+                .equalTo("resourceId", resourceId)
+                .or().equalTo("id", resourceId)
+                .or().equalTo("_id", resourceId)
+            endGroup()
+        }
+
+        return matches.firstOrNull { it.resourceId == resourceId }
+            ?: matches.firstOrNull { it.id == resourceId }
+            ?: matches.firstOrNull { it._id == resourceId }
     }
 
     override suspend fun updateLibraryItem(id: String, updater: (RealmMyLibrary) -> Unit) {
