@@ -14,18 +14,6 @@ open class RealmUserChallengeActions : RealmObject() {
     var time: Long = 0
 
     companion object {
-        fun createAction(realm: Realm, userId: String, resourceId: String?, actionType: String) {
-            realm.executeTransaction { transactionRealm ->
-                val action = transactionRealm.createObject(
-                    RealmUserChallengeActions::class.java, UUID.randomUUID().toString()
-                )
-                action.userId = userId
-                action.actionType = actionType
-                action.resourceId = resourceId
-                action.time = System.currentTimeMillis()
-            }
-        }
-
         fun createActionAsync(
             realm: Realm,
             userId: String,

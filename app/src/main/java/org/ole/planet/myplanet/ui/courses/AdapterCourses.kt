@@ -91,10 +91,6 @@ class AdapterCourses(
         diffResult.dispatchUpdatesTo(this)
     }
 
-    fun setOriginalCourseList(courseList: List<RealmMyCourse?>){
-        dispatchDiff(courseList)
-    }
-
     fun setCourseList(courseList: List<RealmMyCourse?>) {
         dispatchDiff(courseList)
     }
