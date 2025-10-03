@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import io.realm.Sort
 import java.util.Date
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -11,8 +10,8 @@ import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
 
 class NotificationRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService,
-) : RealmRepository(databaseService), NotificationRepository {
+        databaseService: DatabaseService,
+    ) : RealmRepository(databaseService), NotificationRepository {
 
     override suspend fun getUnreadCount(userId: String?): Int {
         if (userId == null) return 0
@@ -59,7 +58,6 @@ class NotificationRepositoryImpl @Inject constructor(
             existingNotification?.let { delete(RealmNotification::class.java, "id", it.id) }
         }
     }
-
     override suspend fun ensureNotification(
         type: String,
         message: String,
@@ -97,32 +95,6 @@ class NotificationRepositoryImpl @Inject constructor(
 
         save(notification)
     }
-
-    override suspend fun getNotifications(userId: String, filter: String): List<RealmNotification> {
-        return queryList(RealmNotification::class.java) {
-            equalTo("userId", userId)
-            when (filter) {
-                "read" -> equalTo("isRead", true)
-                "unread" -> equalTo("isRead", false)
-            }
-            sort("createdAt", Sort.DESCENDING)
-        }.filter { it.message.isNotEmpty() && it.message != "INVALID" }
-    }
-
-    override suspend fun markAsRead(notificationId: String) {
-        update(RealmNotification::class.java, "id", notificationId) { it.isRead = true }
-    }
-
-    override suspend fun markAllAsRead(userId: String) {
-        executeTransaction { realm ->
-            realm.where(RealmNotification::class.java)
-                .equalTo("userId", userId)
-                .equalTo("isRead", false)
-                .findAll()
-                .forEach { it.isRead = true }
-        }
-    }
-
     override suspend fun getJoinRequestMetadata(joinRequestId: String?): JoinRequestNotificationMetadata? {
         val rawId = joinRequestId?.takeUnless { it.isBlank() } ?: return null
         val sanitizedId = rawId.removePrefix("join_request_")
