@@ -653,17 +653,21 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     private fun clearAllExistingAnswers() {
+        val examCourseId = exam?.courseId
+        val examId = exam?.id
+        val userId = user?.id
+
         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             try {
                 databaseService.executeTransactionAsync { realm ->
-                    val parentIdToSearch = if (!TextUtils.isEmpty(exam?.courseId)) {
-                        "${exam?.id ?: id}@${exam?.courseId}"
+                    val parentIdToSearch = if (!TextUtils.isEmpty(examCourseId)) {
+                        "${examId ?: id}@${examCourseId}"
                     } else {
-                        exam?.id ?: id
+                        examId ?: id
                     }
 
                     val allSubmissions = realm.where(RealmSubmission::class.java)
-                        .equalTo("userId", user?.id)
+                        .equalTo("userId", userId)
                         .equalTo("parentId", parentIdToSearch)
                         .findAll()
 
