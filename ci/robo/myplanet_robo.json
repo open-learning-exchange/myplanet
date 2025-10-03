@@ -5,7 +5,7 @@
 
   { "eventType": "VIEW_CLICKED", "elementDescriptors": [{ "resourceId": "org.ole.planet.myplanet:id/btn_server_address" }] },
 
-  { "eventType": "VIEW_TEXT_CHANGED", "replacementText": "jessew", "elementDescriptors": [{ "resourceId": "org.ole.planet.myplanet:id/inputName" }] },
+  { "eventType": "VIEW_TEXT_CHANGED", "replacementText": "robouser", "elementDescriptors": [{ "resourceId": "org.ole.planet.myplanet:id/inputName" }] },
   { "eventType": "VIEW_TEXT_CHANGED", "replacementText": "planet", "elementDescriptors": [{ "resourceId": "org.ole.planet.myplanet:id/input_password" }] },
 
   { "eventType": "VIEW_CLICKED",
