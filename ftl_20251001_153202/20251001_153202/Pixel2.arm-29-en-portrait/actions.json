@@ -1,0 +1,4674 @@
+{
+  "events": [{
+    "sourceScreenId": "0",
+    "destinationScreenId": "1",
+    "startTimeSeconds": 5.581836,
+    "endTimeSeconds": 7.209667,
+    "executionResult": "SUCCESS",
+    "launch": {
+      "action": "android.intent.action.MAIN"
+    }
+  }, {
+    "sequence": 1,
+    "sourceScreenId": "1",
+    "destinationScreenId": "2",
+    "startTimeSeconds": 10.845452,
+    "endTimeSeconds": 11.705986,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.3",
+      "targetDetails": {
+        "componentType": "BUTTON",
+        "resourceName": "org.ole.planet.myplanet:id/next",
+        "className": "androidx.appcompat.widget.AppCompatButton",
+        "androidClassName": "android.widget.Button",
+        "textLabel": "next"
+      }
+    }
+  }, {
+    "sequence": 2,
+    "sourceScreenId": "2",
+    "destinationScreenId": "2",
+    "startTimeSeconds": 12.272855,
+    "endTimeSeconds": 13.11457,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.3",
+      "targetDetails": {
+        "componentType": "BUTTON",
+        "resourceName": "org.ole.planet.myplanet:id/next",
+        "className": "androidx.appcompat.widget.AppCompatButton",
+        "androidClassName": "android.widget.Button",
+        "textLabel": "next"
+      }
+    }
+  }, {
+    "sequence": 3,
+    "sourceScreenId": "2",
+    "destinationScreenId": "3",
+    "startTimeSeconds": 13.440794,
+    "endTimeSeconds": 14.255156,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.3",
+      "targetDetails": {
+        "componentType": "BUTTON",
+        "resourceName": "org.ole.planet.myplanet:id/next",
+        "className": "androidx.appcompat.widget.AppCompatButton",
+        "androidClassName": "android.widget.Button",
+        "textLabel": "next"
+      }
+    }
+  }, {
+    "sequence": 4,
+    "sourceScreenId": "3",
+    "destinationScreenId": "3",
+    "startTimeSeconds": 14.759754000000001,
+    "endTimeSeconds": 16.79792,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "wait": {
+      "durationSeconds": 2.0
+    }
+  }, {
+    "startTimeSeconds": 16.79792,
+    "endTimeSeconds": 16.79792,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 5,
+    "sourceScreenId": "3",
+    "destinationScreenId": "4",
+    "startTimeSeconds": 17.205056,
+    "endTimeSeconds": 18.446758,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.3",
+      "targetDetails": {
+        "componentType": "BUTTON",
+        "resourceName": "org.ole.planet.myplanet:id/next",
+        "className": "androidx.appcompat.widget.AppCompatButton",
+        "androidClassName": "android.widget.Button",
+        "textLabel": "GET STARTED"
+      }
+    }
+  }, {
+    "sequence": 6,
+    "sourceScreenId": "4",
+    "destinationScreenId": "5",
+    "startTimeSeconds": 18.981609,
+    "endTimeSeconds": 20.031516,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.2.0",
+      "targetDetails": {
+        "componentType": "BUTTON",
+        "resourceName": "org.ole.planet.myplanet:id/btn_server_address",
+        "className": "com.google.android.material.button.MaterialButton",
+        "androidClassName": "android.widget.Button",
+        "textLabel": "🌎 planet learning",
+        "contentDescription": "server address: 🌎 planet learning"
+      }
+    }
+  }, {
+    "sequence": 7,
+    "sourceScreenId": "5",
+    "destinationScreenId": "5",
+    "startTimeSeconds": 20.525934,
+    "endTimeSeconds": 84.150836,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "wait": {
+      "durationSeconds": 35.0
+    }
+  }, {
+    "startTimeSeconds": 84.150836,
+    "endTimeSeconds": 84.150836,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 41,
+    "sourceScreenId": "5",
+    "destinationScreenId": "5",
+    "startTimeSeconds": 84.691418,
+    "endTimeSeconds": 84.932766,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "system": {
+      "type": "BACK"
+    }
+  }, {
+    "sequence": 42,
+    "sourceScreenId": "5",
+    "destinationScreenId": "6",
+    "startTimeSeconds": 85.226336,
+    "endTimeSeconds": 92.367554,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "wait": {
+      "durationSeconds": 5.0
+    }
+  }, {
+    "sequence": 47,
+    "sourceScreenId": "6",
+    "destinationScreenId": "6",
+    "startTimeSeconds": 92.857704,
+    "endTimeSeconds": 93.377026,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TYPE_TEXT",
+      "childSequence": "0.0.1.0.1.0.0.0.0.0.0.1.1.0.0",
+      "enterTextString": "jessew",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/inputName",
+        "className": "androidx.appcompat.widget.AppCompatEditText",
+        "androidClassName": "android.widget.EditText"
+      }
+    }
+  }, {
+    "sequence": 48,
+    "sourceScreenId": "6",
+    "destinationScreenId": "7",
+    "startTimeSeconds": 93.821718,
+    "endTimeSeconds": 95.235017,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TYPE_TEXT",
+      "childSequence": "0.0.1.0.1.0.0.0.0.0.0.1.2.0.0",
+      "enterTextString": "planet",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/input_password",
+        "className": "androidx.appcompat.widget.AppCompatEditText",
+        "androidClassName": "android.widget.EditText"
+      }
+    }
+  }, {
+    "sequence": 49,
+    "sourceScreenId": "7",
+    "destinationScreenId": "8",
+    "startTimeSeconds": 95.785217,
+    "endTimeSeconds": 97.26247,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.0.0.0.1.3",
+      "targetDetails": {
+        "componentType": "BUTTON",
+        "resourceName": "org.ole.planet.myplanet:id/btn_signin",
+        "className": "androidx.appcompat.widget.AppCompatButton",
+        "androidClassName": "android.widget.Button",
+        "textLabel": "Sign In",
+        "contentDescription": "Sign In"
+      }
+    }
+  }, {
+    "sequence": 50,
+    "sourceScreenId": "8",
+    "destinationScreenId": "9",
+    "startTimeSeconds": 97.869411,
+    "endTimeSeconds": 99.1406,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.1.1.5.1",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/material_drawer_name",
+        "className": "androidx.appcompat.widget.AppCompatTextView",
+        "androidClassName": "android.widget.TextView",
+        "textLabel": "Courses"
+      }
+    }
+  }, {
+    "sequence": 51,
+    "sourceScreenId": "9",
+    "destinationScreenId": "9",
+    "startTimeSeconds": 99.6825,
+    "endTimeSeconds": 101.711116,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "wait": {
+      "durationSeconds": 2.0
+    }
+  }, {
+    "startTimeSeconds": 101.711116,
+    "endTimeSeconds": 101.711116,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 52,
+    "sourceScreenId": "9",
+    "destinationScreenId": "10",
+    "startTimeSeconds": 102.561156,
+    "endTimeSeconds": 103.454194,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.2.0.0",
+      "targetDetails": {
+        "className": "androidx.cardview.widget.CardView",
+        "androidClassName": "android.widget.FrameLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 103.454194,
+    "endTimeSeconds": 103.454194,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 53,
+    "sourceScreenId": "10",
+    "destinationScreenId": "11",
+    "startTimeSeconds": 103.897839,
+    "endTimeSeconds": 111.737622,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.0.0.3.0.3",
+      "targetDetails": {
+        "componentType": "BUTTON",
+        "resourceName": "android:id/button1",
+        "className": "androidx.appcompat.widget.AppCompatButton",
+        "androidClassName": "android.widget.Button",
+        "textLabel": "Join this course"
+      }
+    }
+  }, {
+    "startTimeSeconds": 111.737622,
+    "endTimeSeconds": 111.737622,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 54,
+    "sourceScreenId": "11",
+    "destinationScreenId": "11",
+    "startTimeSeconds": 112.271772,
+    "endTimeSeconds": 113.530961,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "LONG_PRESS",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.1.0.1.0.0.0.0.0.1.0.6.1",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/description",
+        "className": "androidx.appcompat.widget.AppCompatTextView",
+        "androidClassName": "android.widget.TextView",
+        "textLabel": "This course covers some features we use and customs we have when working on GitHub."
+      }
+    }
+  }, {
+    "startTimeSeconds": 113.530961,
+    "endTimeSeconds": 113.530961,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 55,
+    "sourceScreenId": "11",
+    "destinationScreenId": "11",
+    "startTimeSeconds": 113.935142,
+    "endTimeSeconds": 114.546934,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.1.0.1.0.0.0.0.0.1.0.6.1",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/description",
+        "className": "androidx.appcompat.widget.AppCompatTextView",
+        "androidClassName": "android.widget.TextView",
+        "textLabel": "This course covers some features we use and customs we have when working on GitHub."
+      }
+    }
+  }, {
+    "startTimeSeconds": 114.546934,
+    "endTimeSeconds": 114.546934,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 56,
+    "sourceScreenId": "11",
+    "destinationScreenId": "11",
+    "startTimeSeconds": 114.887216,
+    "endTimeSeconds": 115.215218,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "SWIPE",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.1.0.1.0",
+      "targetDetails": {
+        "className": "androidx.viewpager2.widget.ViewPager2$RecyclerViewImpl",
+        "androidClassName": "android.view.ViewGroup"
+      }
+    }
+  }, {
+    "startTimeSeconds": 115.215218,
+    "endTimeSeconds": 115.215218,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 57,
+    "sourceScreenId": "11",
+    "destinationScreenId": "11",
+    "startTimeSeconds": 115.634301,
+    "endTimeSeconds": 116.002241,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "SWIPE",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.1.0.1",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/viewPager2",
+        "className": "androidx.viewpager2.widget.ViewPager2",
+        "androidClassName": "android.view.ViewGroup"
+      }
+    }
+  }, {
+    "startTimeSeconds": 116.002241,
+    "endTimeSeconds": 116.002241,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 58,
+    "sourceScreenId": "11",
+    "destinationScreenId": "12",
+    "startTimeSeconds": 116.328887,
+    "endTimeSeconds": 117.224326,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.0.0",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/backButton",
+        "className": "androidx.appcompat.widget.AppCompatImageView",
+        "androidClassName": "android.widget.ImageView"
+      }
+    }
+  }, {
+    "startTimeSeconds": 117.224326,
+    "endTimeSeconds": 117.224326,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 59,
+    "sourceScreenId": "12",
+    "destinationScreenId": "13",
+    "startTimeSeconds": 117.761572,
+    "endTimeSeconds": 119.436807,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "SWIPE",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.2.0",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/recycler",
+        "className": "androidx.recyclerview.widget.RecyclerView",
+        "androidClassName": "android.view.ViewGroup"
+      }
+    }
+  }, {
+    "startTimeSeconds": 119.436807,
+    "endTimeSeconds": 119.436807,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 60,
+    "sourceScreenId": "13",
+    "destinationScreenId": "14",
+    "startTimeSeconds": 119.985886,
+    "endTimeSeconds": 121.681326,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "SWIPE",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.2.0",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/recycler",
+        "className": "androidx.recyclerview.widget.RecyclerView",
+        "androidClassName": "android.view.ViewGroup"
+      }
+    }
+  }, {
+    "startTimeSeconds": 121.681326,
+    "endTimeSeconds": 121.681326,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 61,
+    "sourceScreenId": "14",
+    "destinationScreenId": "10",
+    "startTimeSeconds": 122.254473,
+    "endTimeSeconds": 123.108151,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.2.0.0.0.1.0",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/description",
+        "className": "androidx.appcompat.widget.AppCompatTextView",
+        "androidClassName": "android.widget.TextView",
+        "textLabel": "The theory of random processes represents a large field of mathematics with many different branches, and the task of choosing topics for a brief introduction to this theory is far from being simple. This introduction to the theory of random processes uses mathematical models that are simple, but have some importance for applications. We consider different processes, whose development in time depends on some random factors. The fundamental problem can be briefly circumscribed in the following way: given some relatively simple characteristics of a process, compute the probability of another event which may be very complicated; or estimate a random variable which is related to the behaviour of the process. The models that we consider are chosen in such a way that it is possible to discuss the different methods of the theory of random processes by referring to these models."
+      }
+    }
+  }, {
+    "startTimeSeconds": 123.108151,
+    "endTimeSeconds": 123.108151,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 62,
+    "sourceScreenId": "10",
+    "destinationScreenId": "15",
+    "startTimeSeconds": 123.443081,
+    "endTimeSeconds": 124.218361,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "SWIPE",
+      "childSequence": "0.0.1.0.0.0.3.0.3",
+      "targetDetails": {
+        "componentType": "BUTTON",
+        "resourceName": "android:id/button1",
+        "className": "androidx.appcompat.widget.AppCompatButton",
+        "androidClassName": "android.widget.Button",
+        "textLabel": "Join this course"
+      }
+    }
+  }, {
+    "startTimeSeconds": 124.218361,
+    "endTimeSeconds": 124.218361,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 63,
+    "sourceScreenId": "15",
+    "destinationScreenId": "15",
+    "startTimeSeconds": 124.764298,
+    "endTimeSeconds": 125.101359,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "SWIPE",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.1.0.1.0",
+      "targetDetails": {
+        "className": "androidx.viewpager2.widget.ViewPager2$RecyclerViewImpl",
+        "androidClassName": "android.view.ViewGroup"
+      }
+    }
+  }, {
+    "startTimeSeconds": 125.101359,
+    "endTimeSeconds": 125.101359,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 64,
+    "sourceScreenId": "15",
+    "destinationScreenId": "15",
+    "startTimeSeconds": 125.457064,
+    "endTimeSeconds": 125.795855,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "SWIPE",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.1.0.1",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/viewPager2",
+        "className": "androidx.viewpager2.widget.ViewPager2",
+        "androidClassName": "android.view.ViewGroup"
+      }
+    }
+  }, {
+    "startTimeSeconds": 125.795855,
+    "endTimeSeconds": 125.795855,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 65,
+    "sourceScreenId": "15",
+    "destinationScreenId": "16",
+    "startTimeSeconds": 126.202824,
+    "endTimeSeconds": 127.078029,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "SWIPE",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.1.0.1.0.0.0.0",
+      "targetDetails": {
+        "className": "androidx.core.widget.NestedScrollView",
+        "androidClassName": "android.widget.FrameLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 127.078029,
+    "endTimeSeconds": 127.078029,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 66,
+    "sourceScreenId": "16",
+    "destinationScreenId": "16",
+    "startTimeSeconds": 127.736052,
+    "endTimeSeconds": 128.146915,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "SWIPE",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.1.0.1.0",
+      "targetDetails": {
+        "className": "androidx.viewpager2.widget.ViewPager2$RecyclerViewImpl",
+        "androidClassName": "android.view.ViewGroup"
+      }
+    }
+  }, {
+    "startTimeSeconds": 128.146915,
+    "endTimeSeconds": 128.146915,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 67,
+    "sourceScreenId": "16",
+    "destinationScreenId": "16",
+    "startTimeSeconds": 128.515025,
+    "endTimeSeconds": 128.897046,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "SWIPE",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.1.0.1",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/viewPager2",
+        "className": "androidx.viewpager2.widget.ViewPager2",
+        "androidClassName": "android.view.ViewGroup"
+      }
+    }
+  }, {
+    "startTimeSeconds": 128.897046,
+    "endTimeSeconds": 128.897046,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 68,
+    "sourceScreenId": "16",
+    "destinationScreenId": "17",
+    "startTimeSeconds": 129.200567,
+    "endTimeSeconds": 130.056078,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.1.1.2",
+      "targetDetails": {
+        "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "More options"
+      }
+    }
+  }, {
+    "startTimeSeconds": 130.056078,
+    "endTimeSeconds": 130.056078,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 69,
+    "sourceScreenId": "17",
+    "destinationScreenId": "18",
+    "startTimeSeconds": 130.541494,
+    "endTimeSeconds": 131.346412,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.0.3",
+      "targetDetails": {
+        "className": "androidx.appcompat.view.menu.ListMenuItemView",
+        "androidClassName": "android.widget.LinearLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 131.346412,
+    "endTimeSeconds": 131.346412,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 70,
+    "sourceScreenId": "18",
+    "destinationScreenId": "19",
+    "startTimeSeconds": 131.892412,
+    "endTimeSeconds": 132.554963,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "SWIPE",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0",
+      "targetDetails": {
+        "className": "androidx.core.widget.NestedScrollView",
+        "androidClassName": "android.widget.FrameLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 132.554963,
+    "endTimeSeconds": 132.554963,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 71,
+    "sourceScreenId": "19",
+    "destinationScreenId": "20",
+    "startTimeSeconds": 133.171502,
+    "endTimeSeconds": 133.929467,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.1.1.1",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/action_notifications",
+        "className": "android.widget.FrameLayout",
+        "androidClassName": "android.widget.FrameLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 133.929467,
+    "endTimeSeconds": 133.929467,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 72,
+    "sourceScreenId": "20",
+    "destinationScreenId": "20",
+    "startTimeSeconds": 134.4369,
+    "endTimeSeconds": 135.018862,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.1.1.1",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/action_notifications",
+        "className": "android.widget.FrameLayout",
+        "androidClassName": "android.widget.FrameLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 135.018862,
+    "endTimeSeconds": 135.018862,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 73,
+    "sourceScreenId": "20",
+    "destinationScreenId": "21",
+    "startTimeSeconds": 135.361919,
+    "endTimeSeconds": 136.070303,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.0",
+      "targetDetails": {
+        "componentType": "BUTTON",
+        "resourceName": "org.ole.planet.myplanet:id/btnMarkAllAsRead",
+        "className": "androidx.appcompat.widget.AppCompatButton",
+        "androidClassName": "android.widget.Button",
+        "textLabel": "Mark all as read"
+      }
+    }
+  }, {
+    "startTimeSeconds": 136.070303,
+    "endTimeSeconds": 136.070303,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 74,
+    "sourceScreenId": "21",
+    "destinationScreenId": "22",
+    "startTimeSeconds": 136.593483,
+    "endTimeSeconds": 137.640746,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.1.0.0",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/img_logo",
+        "className": "androidx.appcompat.widget.AppCompatImageView",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "side menu"
+      }
+    }
+  }, {
+    "sequence": 75,
+    "sourceScreenId": "22",
+    "destinationScreenId": "23",
+    "startTimeSeconds": 138.186792,
+    "endTimeSeconds": 139.424766,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.1.1.8.1",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/material_drawer_name",
+        "className": "androidx.appcompat.widget.AppCompatTextView",
+        "androidClassName": "android.widget.TextView",
+        "textLabel": "Community"
+      }
+    }
+  }, {
+    "sequence": 76,
+    "sourceScreenId": "23",
+    "destinationScreenId": "23",
+    "startTimeSeconds": 139.951797,
+    "endTimeSeconds": 142.027709,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "wait": {
+      "durationSeconds": 2.0
+    }
+  }, {
+    "startTimeSeconds": 142.027709,
+    "endTimeSeconds": 142.027709,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 77,
+    "sourceScreenId": "23",
+    "destinationScreenId": "24",
+    "startTimeSeconds": 142.446591,
+    "endTimeSeconds": 143.336651,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.1.1.0.0.0.0.4.0.0.0.0.0",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/img_user",
+        "className": "de.hdodenhof.circleimageview.CircleImageView",
+        "androidClassName": "android.widget.ImageView"
+      }
+    }
+  }, {
+    "startTimeSeconds": 143.336651,
+    "endTimeSeconds": 143.336651,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 78,
+    "sourceScreenId": "24",
+    "destinationScreenId": "25",
+    "startTimeSeconds": 144.128026,
+    "endTimeSeconds": 145.102067,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.1.1.0",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/action_chat",
+        "className": "androidx.appcompat.view.menu.ActionMenuItemView",
+        "androidClassName": "android.widget.TextView",
+        "contentDescription": "AI Chat"
+      }
+    }
+  }, {
+    "startTimeSeconds": 145.102067,
+    "endTimeSeconds": 145.102067,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 79,
+    "sourceScreenId": "25",
+    "destinationScreenId": "26",
+    "startTimeSeconds": 146.017211,
+    "endTimeSeconds": 147.382631,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.2.2",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/chatCardView",
+        "className": "androidx.cardview.widget.CardView",
+        "androidClassName": "android.widget.FrameLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 147.382631,
+    "endTimeSeconds": 147.382631,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 80,
+    "sourceScreenId": "26",
+    "destinationScreenId": "27",
+    "startTimeSeconds": 148.283295,
+    "endTimeSeconds": 149.24658,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.1.0.0.5.2",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/button_gchat_send",
+        "className": "androidx.appcompat.widget.AppCompatImageView",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "Submit"
+      }
+    }
+  }, {
+    "startTimeSeconds": 149.24658,
+    "endTimeSeconds": 149.24658,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 81,
+    "sourceScreenId": "27",
+    "destinationScreenId": "27",
+    "startTimeSeconds": 150.164973,
+    "endTimeSeconds": 151.185495,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.1.0.0.5.2",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/button_gchat_send",
+        "className": "androidx.appcompat.widget.AppCompatImageView",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "Submit"
+      }
+    }
+  }, {
+    "startTimeSeconds": 151.185495,
+    "endTimeSeconds": 151.185495,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 82,
+    "sourceScreenId": "27",
+    "destinationScreenId": "21",
+    "startTimeSeconds": 151.714098,
+    "endTimeSeconds": 152.744377,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.1.1.1",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/action_notifications",
+        "className": "android.widget.FrameLayout",
+        "androidClassName": "android.widget.FrameLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 152.744377,
+    "endTimeSeconds": 152.744377,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 83,
+    "sourceScreenId": "21",
+    "destinationScreenId": "25",
+    "startTimeSeconds": 153.207939,
+    "endTimeSeconds": 154.193808,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.1.1.0",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/action_chat",
+        "className": "androidx.appcompat.view.menu.ActionMenuItemView",
+        "androidClassName": "android.widget.TextView",
+        "contentDescription": "AI Chat"
+      }
+    }
+  }, {
+    "startTimeSeconds": 154.193808,
+    "endTimeSeconds": 154.193808,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 84,
+    "sourceScreenId": "25",
+    "destinationScreenId": "25",
+    "startTimeSeconds": 154.705204,
+    "endTimeSeconds": 155.695292,
+    "executionResult": "FAILED",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.2.1",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/chatCardView",
+        "className": "androidx.cardview.widget.CardView",
+        "androidClassName": "android.widget.FrameLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 155.695292,
+    "endTimeSeconds": 155.695292,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 85,
+    "sourceScreenId": "25",
+    "destinationScreenId": "28",
+    "startTimeSeconds": 156.258454,
+    "endTimeSeconds": 157.618293,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.2.0",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/chatCardView",
+        "className": "androidx.cardview.widget.CardView",
+        "androidClassName": "android.widget.FrameLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 157.618293,
+    "endTimeSeconds": 157.618293,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 86,
+    "sourceScreenId": "28",
+    "destinationScreenId": "29",
+    "startTimeSeconds": 158.583231,
+    "endTimeSeconds": 159.503951,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.1.0.0.5.2",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/button_gchat_send",
+        "className": "androidx.appcompat.widget.AppCompatImageView",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "Submit"
+      }
+    }
+  }, {
+    "startTimeSeconds": 159.503951,
+    "endTimeSeconds": 159.503951,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 87,
+    "sourceScreenId": "29",
+    "destinationScreenId": "29",
+    "startTimeSeconds": 160.568953,
+    "endTimeSeconds": 161.576644,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.1.0.0.5.2",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/button_gchat_send",
+        "className": "androidx.appcompat.widget.AppCompatImageView",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "Submit"
+      }
+    }
+  }, {
+    "startTimeSeconds": 161.576644,
+    "endTimeSeconds": 161.576644,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 88,
+    "sourceScreenId": "29",
+    "destinationScreenId": "29",
+    "startTimeSeconds": 162.690898,
+    "endTimeSeconds": 163.555819,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.1.1.0",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/action_chat",
+        "className": "androidx.appcompat.view.menu.ActionMenuItemView",
+        "androidClassName": "android.widget.TextView",
+        "contentDescription": "AI Chat"
+      }
+    }
+  }, {
+    "startTimeSeconds": 163.555819,
+    "endTimeSeconds": 163.555819,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 89,
+    "sourceScreenId": "29",
+    "destinationScreenId": "30",
+    "startTimeSeconds": 164.239102,
+    "endTimeSeconds": 165.302459,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.0",
+      "targetDetails": {
+        "componentType": "BUTTON",
+        "resourceName": "org.ole.planet.myplanet:id/newChat",
+        "className": "androidx.appcompat.widget.AppCompatButton",
+        "androidClassName": "android.widget.Button",
+        "textLabel": "new chat",
+        "contentDescription": "new chat"
+      }
+    }
+  }, {
+    "startTimeSeconds": 165.302459,
+    "endTimeSeconds": 165.302459,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 90,
+    "sourceScreenId": "30",
+    "destinationScreenId": "31",
+    "startTimeSeconds": 166.510173,
+    "endTimeSeconds": 167.599278,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.1.0.0.5.2",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/button_gchat_send",
+        "className": "androidx.appcompat.widget.AppCompatImageView",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "Submit"
+      }
+    }
+  }, {
+    "startTimeSeconds": 167.599278,
+    "endTimeSeconds": 167.599278,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 91,
+    "sourceScreenId": "31",
+    "destinationScreenId": "31",
+    "startTimeSeconds": 168.784636,
+    "endTimeSeconds": 169.732976,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.1.0.0.5.2",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/button_gchat_send",
+        "className": "androidx.appcompat.widget.AppCompatImageView",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "Submit"
+      }
+    }
+  }, {
+    "startTimeSeconds": 169.732976,
+    "endTimeSeconds": 169.732976,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 92,
+    "sourceScreenId": "31",
+    "destinationScreenId": "31",
+    "startTimeSeconds": 170.392858,
+    "endTimeSeconds": 171.07659,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.2.4",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/chatCardView",
+        "className": "androidx.cardview.widget.CardView",
+        "androidClassName": "android.widget.FrameLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 171.07659,
+    "endTimeSeconds": 171.07659,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 93,
+    "sourceScreenId": "31",
+    "destinationScreenId": "31",
+    "startTimeSeconds": 171.706786,
+    "endTimeSeconds": 173.054298,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "LONG_PRESS",
+      "childSequence": "0.0.1.0.1.0.0.0.1.1.2",
+      "targetDetails": {
+        "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "More options"
+      }
+    }
+  }, {
+    "startTimeSeconds": 173.054298,
+    "endTimeSeconds": 173.054298,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 94,
+    "sourceScreenId": "31",
+    "destinationScreenId": "31",
+    "startTimeSeconds": 173.712616,
+    "endTimeSeconds": 174.545481,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.1.0.0",
+      "targetDetails": {
+        "componentType": "BUTTON",
+        "resourceName": "org.ole.planet.myplanet:id/full_search",
+        "className": "androidx.appcompat.widget.AppCompatCheckBox",
+        "androidClassName": "android.widget.CheckBox",
+        "textLabel": "Full conversation response"
+      }
+    }
+  }, {
+    "startTimeSeconds": 174.545481,
+    "endTimeSeconds": 174.545481,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 95,
+    "sourceScreenId": "31",
+    "destinationScreenId": "32",
+    "startTimeSeconds": 175.261714,
+    "endTimeSeconds": 176.393466,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.1.1.1",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/action_notifications",
+        "className": "android.widget.FrameLayout",
+        "androidClassName": "android.widget.FrameLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 176.393466,
+    "endTimeSeconds": 176.393466,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 96,
+    "sourceScreenId": "32",
+    "destinationScreenId": "32",
+    "startTimeSeconds": 177.60044,
+    "endTimeSeconds": 178.940256,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "LONG_PRESS",
+      "childSequence": "0.0.1.0.1.0.0.0.1.1.2",
+      "targetDetails": {
+        "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "More options"
+      }
+    }
+  }, {
+    "startTimeSeconds": 178.940256,
+    "endTimeSeconds": 178.940256,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 97,
+    "sourceScreenId": "32",
+    "destinationScreenId": "17",
+    "startTimeSeconds": 179.588976,
+    "endTimeSeconds": 181.696289,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.1.1.2",
+      "targetDetails": {
+        "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "More options"
+      }
+    }
+  }, {
+    "startTimeSeconds": 181.696289,
+    "endTimeSeconds": 181.696289,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 98,
+    "sourceScreenId": "17",
+    "destinationScreenId": "33",
+    "startTimeSeconds": 182.253084,
+    "endTimeSeconds": 183.788635,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.0.2",
+      "targetDetails": {
+        "className": "androidx.appcompat.view.menu.ListMenuItemView",
+        "androidClassName": "android.widget.LinearLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 183.788635,
+    "endTimeSeconds": 183.788635,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 99,
+    "sourceScreenId": "33",
+    "destinationScreenId": "34",
+    "startTimeSeconds": 184.898925,
+    "endTimeSeconds": 186.417704,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.0.0.1.0.2",
+      "targetDetails": {
+        "className": "androidx.appcompat.widget.AppCompatCheckedTextView",
+        "androidClassName": "android.widget.CheckedTextView",
+        "textLabel": "somali"
+      }
+    }
+  }, {
+    "startTimeSeconds": 186.417704,
+    "endTimeSeconds": 186.417704,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 100,
+    "sourceScreenId": "34",
+    "destinationScreenId": "35",
+    "startTimeSeconds": 188.397286,
+    "endTimeSeconds": 190.161644,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.3.0.0",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/ll_home_team",
+        "className": "android.widget.FrameLayout",
+        "androidClassName": "android.widget.FrameLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 190.161644,
+    "endTimeSeconds": 190.161644,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 101,
+    "sourceScreenId": "35",
+    "destinationScreenId": "36",
+    "startTimeSeconds": 191.47507,
+    "endTimeSeconds": 192.854776,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.3.1",
+      "targetDetails": {
+        "className": "androidx.constraintlayout.widget.ConstraintLayout",
+        "androidClassName": "android.view.ViewGroup"
+      }
+    }
+  }, {
+    "startTimeSeconds": 192.854776,
+    "endTimeSeconds": 192.854776,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 102,
+    "sourceScreenId": "36",
+    "destinationScreenId": "37",
+    "startTimeSeconds": 195.445829,
+    "endTimeSeconds": 197.122456,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "SWIPE",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.1.1",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/viewPager2",
+        "className": "androidx.viewpager2.widget.ViewPager2",
+        "androidClassName": "android.view.ViewGroup"
+      }
+    }
+  }, {
+    "startTimeSeconds": 197.122456,
+    "endTimeSeconds": 197.122456,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 103,
+    "sourceScreenId": "37",
+    "destinationScreenId": "38",
+    "startTimeSeconds": 202.375551,
+    "endTimeSeconds": 203.660608,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "SWIPE",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.1.1.0.1.0.0",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/rv_member",
+        "className": "androidx.recyclerview.widget.RecyclerView",
+        "androidClassName": "android.view.ViewGroup"
+      }
+    }
+  }, {
+    "startTimeSeconds": 203.660608,
+    "endTimeSeconds": 203.660608,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 104,
+    "sourceScreenId": "38",
+    "destinationScreenId": "39",
+    "startTimeSeconds": 205.418413,
+    "endTimeSeconds": 206.470322,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.1.1.0.1.0.0.3",
+      "targetDetails": {
+        "className": "androidx.cardview.widget.CardView",
+        "androidClassName": "android.widget.FrameLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 206.470322,
+    "endTimeSeconds": 206.470322,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 105,
+    "sourceScreenId": "39",
+    "destinationScreenId": "39",
+    "startTimeSeconds": 207.598612,
+    "endTimeSeconds": 208.920785,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "LONG_PRESS",
+      "childSequence": "0.0.1.0.1.0.0.0.1.1.2",
+      "targetDetails": {
+        "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "More options"
+      }
+    }
+  }, {
+    "startTimeSeconds": 208.920785,
+    "endTimeSeconds": 208.920785,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 106,
+    "sourceScreenId": "39",
+    "destinationScreenId": "40",
+    "startTimeSeconds": 209.595594,
+    "endTimeSeconds": 210.819856,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.1.1.1",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/action_notifications",
+        "className": "android.widget.FrameLayout",
+        "androidClassName": "android.widget.FrameLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 210.819856,
+    "endTimeSeconds": 210.819856,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 107,
+    "sourceScreenId": "40",
+    "destinationScreenId": "37",
+    "startTimeSeconds": 211.998467,
+    "endTimeSeconds": 213.101822,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.2.3",
+      "targetDetails": {
+        "className": "android.widget.LinearLayout",
+        "androidClassName": "android.widget.LinearLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 213.101822,
+    "endTimeSeconds": 213.101822,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 108,
+    "sourceScreenId": "37",
+    "destinationScreenId": "39",
+    "startTimeSeconds": 213.788938,
+    "endTimeSeconds": 215.091672,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.1.1.0.1.0.0.3",
+      "targetDetails": {
+        "className": "androidx.cardview.widget.CardView",
+        "androidClassName": "android.widget.FrameLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 215.091672,
+    "endTimeSeconds": 215.091672,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 109,
+    "sourceScreenId": "39",
+    "destinationScreenId": "41",
+    "startTimeSeconds": 215.681281,
+    "endTimeSeconds": 216.879859,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.1.1.0",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/action_chat",
+        "className": "androidx.appcompat.view.menu.ActionMenuItemView",
+        "androidClassName": "android.widget.TextView",
+        "contentDescription": "AI Chat"
+      }
+    }
+  }, {
+    "startTimeSeconds": 216.879859,
+    "endTimeSeconds": 216.879859,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 110,
+    "sourceScreenId": "41",
+    "destinationScreenId": "42",
+    "startTimeSeconds": 217.817664,
+    "endTimeSeconds": 220.145402,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TYPE_TEXT",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.1.1",
+      "enterTextString": "caokah",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/searchBar",
+        "className": "androidx.appcompat.widget.AppCompatEditText",
+        "androidClassName": "android.widget.EditText"
+      }
+    }
+  }, {
+    "startTimeSeconds": 220.145402,
+    "endTimeSeconds": 220.145402,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 111,
+    "sourceScreenId": "42",
+    "destinationScreenId": "42",
+    "startTimeSeconds": 221.096394,
+    "endTimeSeconds": 223.585736,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TYPE_TEXT",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.1.1",
+      "enterTextString": "xnkdzn",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/searchBar",
+        "className": "androidx.appcompat.widget.AppCompatEditText",
+        "androidClassName": "android.widget.EditText",
+        "textLabel": "caokah"
+      }
+    }
+  }, {
+    "startTimeSeconds": 223.585736,
+    "endTimeSeconds": 223.585736,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 112,
+    "sourceScreenId": "42",
+    "destinationScreenId": "43",
+    "startTimeSeconds": 224.226306,
+    "endTimeSeconds": 225.558302,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.1.0.0",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/img_logo",
+        "className": "androidx.appcompat.widget.AppCompatImageView",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "liiska dhinaca"
+      }
+    }
+  }, {
+    "startTimeSeconds": 225.558302,
+    "endTimeSeconds": 225.558302,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 113,
+    "sourceScreenId": "43",
+    "destinationScreenId": "44",
+    "startTimeSeconds": 226.766777,
+    "endTimeSeconds": 228.849683,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "LONG_PRESS",
+      "childSequence": "0.0.1.0.1.0.1.1.4",
+      "targetDetails": {
+        "className": "androidx.constraintlayout.widget.ConstraintLayout",
+        "androidClassName": "android.view.ViewGroup"
+      }
+    }
+  }, {
+    "startTimeSeconds": 228.849683,
+    "endTimeSeconds": 228.849683,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 114,
+    "sourceScreenId": "44",
+    "destinationScreenId": "45",
+    "startTimeSeconds": 229.876085,
+    "endTimeSeconds": 231.84754,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "SWIPE",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.2.0",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/recycler",
+        "className": "androidx.recyclerview.widget.RecyclerView",
+        "androidClassName": "android.view.ViewGroup"
+      }
+    }
+  }, {
+    "startTimeSeconds": 231.84754,
+    "endTimeSeconds": 231.84754,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 115,
+    "sourceScreenId": "45",
+    "destinationScreenId": "46",
+    "startTimeSeconds": 232.988659,
+    "endTimeSeconds": 235.491043,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TYPE_TEXT",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.1.1.1.0.0.0",
+      "enterTextString": "xkslhn",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/et_search",
+        "className": "androidx.appcompat.widget.AppCompatEditText",
+        "androidClassName": "android.widget.EditText"
+      }
+    }
+  }, {
+    "startTimeSeconds": 235.491043,
+    "endTimeSeconds": 235.491043,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 116,
+    "sourceScreenId": "46",
+    "destinationScreenId": "46",
+    "startTimeSeconds": 236.386791,
+    "endTimeSeconds": 237.583913,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "LONG_PRESS",
+      "childSequence": "0.0.1.0.1.0.0.0.1.1.2",
+      "targetDetails": {
+        "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "More options"
+      }
+    }
+  }, {
+    "startTimeSeconds": 237.583913,
+    "endTimeSeconds": 237.583913,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 117,
+    "sourceScreenId": "46",
+    "destinationScreenId": "47",
+    "startTimeSeconds": 238.156896,
+    "endTimeSeconds": 239.484016,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.1.0.0",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/img_logo",
+        "className": "androidx.appcompat.widget.AppCompatImageView",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "liiska dhinaca"
+      }
+    }
+  }, {
+    "startTimeSeconds": 239.484016,
+    "endTimeSeconds": 239.484016,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 118,
+    "sourceScreenId": "47",
+    "destinationScreenId": "48",
+    "startTimeSeconds": 240.672439,
+    "endTimeSeconds": 242.085441,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.1.0",
+      "targetDetails": {
+        "componentType": "BUTTON",
+        "resourceName": "org.ole.planet.myplanet:id/selectAll",
+        "className": "androidx.appcompat.widget.AppCompatCheckBox",
+        "androidClassName": "android.widget.CheckBox",
+        "textLabel": "Dhammaad Dhammaadee"
+      }
+    }
+  }, {
+    "startTimeSeconds": 242.085441,
+    "endTimeSeconds": 242.085441,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 119,
+    "sourceScreenId": "48",
+    "destinationScreenId": "48",
+    "startTimeSeconds": 243.262799,
+    "endTimeSeconds": 244.090723,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.4.0.1.0.1",
+      "targetDetails": {
+        "className": "android.widget.FrameLayout",
+        "androidClassName": "android.widget.FrameLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 244.090723,
+    "endTimeSeconds": 244.090723,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 120,
+    "sourceScreenId": "48",
+    "destinationScreenId": "49",
+    "startTimeSeconds": 244.664098,
+    "endTimeSeconds": 246.391168,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "SWIPE",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.1.0.1",
+      "targetDetails": {
+        "className": "android.widget.HorizontalScrollView",
+        "androidClassName": "android.widget.HorizontalScrollView",
+        "contentDescription": "maktabadayda"
+      }
+    }
+  }, {
+    "startTimeSeconds": 246.391168,
+    "endTimeSeconds": 246.391168,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 121,
+    "sourceScreenId": "49",
+    "destinationScreenId": "50",
+    "startTimeSeconds": 247.359179,
+    "endTimeSeconds": 248.30411,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.3.0.1.0.1.1.0",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/tv_name",
+        "className": "androidx.appcompat.widget.AppCompatTextView",
+        "androidClassName": "android.widget.TextView",
+        "textLabel": "ajvnol"
+      }
+    }
+  }, {
+    "startTimeSeconds": 248.30411,
+    "endTimeSeconds": 248.30411,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 122,
+    "sourceScreenId": "50",
+    "destinationScreenId": "51",
+    "startTimeSeconds": 249.095544,
+    "endTimeSeconds": 250.648231,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "SWIPE",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.1.1",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/viewPager2",
+        "className": "androidx.viewpager2.widget.ViewPager2",
+        "androidClassName": "android.view.ViewGroup"
+      }
+    }
+  }, {
+    "startTimeSeconds": 250.648231,
+    "endTimeSeconds": 250.648231,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 123,
+    "sourceScreenId": "51",
+    "destinationScreenId": "52",
+    "startTimeSeconds": 251.827234,
+    "endTimeSeconds": 253.273254,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "SWIPE",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.1.1.0",
+      "targetDetails": {
+        "className": "androidx.viewpager2.widget.ViewPager2$RecyclerViewImpl",
+        "androidClassName": "android.view.ViewGroup"
+      }
+    }
+  }, {
+    "startTimeSeconds": 253.273254,
+    "endTimeSeconds": 253.273254,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 124,
+    "sourceScreenId": "52",
+    "destinationScreenId": "53",
+    "startTimeSeconds": 254.40928,
+    "endTimeSeconds": 255.794616,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "SWIPE",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.1.1.0",
+      "targetDetails": {
+        "className": "androidx.viewpager2.widget.ViewPager2$RecyclerViewImpl",
+        "androidClassName": "android.view.ViewGroup"
+      }
+    }
+  }, {
+    "startTimeSeconds": 255.794616,
+    "endTimeSeconds": 255.794616,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 125,
+    "sourceScreenId": "53",
+    "destinationScreenId": "54",
+    "startTimeSeconds": 256.908886,
+    "endTimeSeconds": 258.421265,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "SWIPE",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.1.1",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/viewPager2",
+        "className": "androidx.viewpager2.widget.ViewPager2",
+        "androidClassName": "android.view.ViewGroup"
+      }
+    }
+  }, {
+    "startTimeSeconds": 258.421265,
+    "endTimeSeconds": 258.421265,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 126,
+    "sourceScreenId": "54",
+    "destinationScreenId": "55",
+    "startTimeSeconds": 259.399534,
+    "endTimeSeconds": 260.731372,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "SWIPE",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.1.1.0",
+      "targetDetails": {
+        "className": "androidx.viewpager2.widget.ViewPager2$RecyclerViewImpl",
+        "androidClassName": "android.view.ViewGroup"
+      }
+    }
+  }, {
+    "startTimeSeconds": 260.731372,
+    "endTimeSeconds": 260.731372,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 127,
+    "sourceScreenId": "55",
+    "destinationScreenId": "56",
+    "startTimeSeconds": 261.806329,
+    "endTimeSeconds": 263.111023,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "SWIPE",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.1.1.0",
+      "targetDetails": {
+        "className": "androidx.viewpager2.widget.ViewPager2$RecyclerViewImpl",
+        "androidClassName": "android.view.ViewGroup"
+      }
+    }
+  }, {
+    "startTimeSeconds": 263.111023,
+    "endTimeSeconds": 263.111023,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 128,
+    "sourceScreenId": "56",
+    "destinationScreenId": "57",
+    "startTimeSeconds": 264.282866,
+    "endTimeSeconds": 265.740295,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "SWIPE",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.1.1",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/viewPager2",
+        "className": "androidx.viewpager2.widget.ViewPager2",
+        "androidClassName": "android.view.ViewGroup"
+      }
+    }
+  }, {
+    "startTimeSeconds": 265.740295,
+    "endTimeSeconds": 265.740295,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 129,
+    "sourceScreenId": "57",
+    "destinationScreenId": "41",
+    "startTimeSeconds": 266.757014,
+    "endTimeSeconds": 267.97764,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.1.1.0",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/action_chat",
+        "className": "androidx.appcompat.view.menu.ActionMenuItemView",
+        "androidClassName": "android.widget.TextView",
+        "contentDescription": "AI Chat"
+      }
+    }
+  }, {
+    "startTimeSeconds": 267.97764,
+    "endTimeSeconds": 267.97764,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 130,
+    "sourceScreenId": "41",
+    "destinationScreenId": "41",
+    "startTimeSeconds": 268.596211,
+    "endTimeSeconds": 269.531039,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.1.1.0",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/action_chat",
+        "className": "androidx.appcompat.view.menu.ActionMenuItemView",
+        "androidClassName": "android.widget.TextView",
+        "contentDescription": "AI Chat"
+      }
+    }
+  }, {
+    "startTimeSeconds": 269.531039,
+    "endTimeSeconds": 269.531039,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 131,
+    "sourceScreenId": "41",
+    "destinationScreenId": "58",
+    "startTimeSeconds": 270.085003,
+    "endTimeSeconds": 271.132373,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.2.1.0.0.1",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/shareChat",
+        "className": "androidx.appcompat.widget.AppCompatImageView",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "la wadaag sheekaysiga"
+      }
+    }
+  }, {
+    "startTimeSeconds": 271.132373,
+    "endTimeSeconds": 271.132373,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 132,
+    "sourceScreenId": "58",
+    "destinationScreenId": "41",
+    "startTimeSeconds": 272.226779,
+    "endTimeSeconds": 273.062421,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.0.0.3.0.3",
+      "targetDetails": {
+        "componentType": "BUTTON",
+        "resourceName": "android:id/button1",
+        "className": "androidx.appcompat.widget.AppCompatButton",
+        "androidClassName": "android.widget.Button",
+        "textLabel": "Xir"
+      }
+    }
+  }, {
+    "startTimeSeconds": 273.062421,
+    "endTimeSeconds": 273.062421,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 133,
+    "sourceScreenId": "41",
+    "destinationScreenId": "41",
+    "startTimeSeconds": 273.624828,
+    "endTimeSeconds": 274.917443,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "LONG_PRESS",
+      "childSequence": "0.0.1.0.1.0.0.0.1.1.2",
+      "targetDetails": {
+        "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "More options"
+      }
+    }
+  }, {
+    "startTimeSeconds": 274.917443,
+    "endTimeSeconds": 274.917443,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 134,
+    "sourceScreenId": "41",
+    "destinationScreenId": "59",
+    "startTimeSeconds": 275.455593,
+    "endTimeSeconds": 276.591324,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.0",
+      "targetDetails": {
+        "componentType": "BUTTON",
+        "resourceName": "org.ole.planet.myplanet:id/newChat",
+        "className": "androidx.appcompat.widget.AppCompatButton",
+        "androidClassName": "android.widget.Button",
+        "textLabel": "Wadahadal cusub",
+        "contentDescription": "new chat"
+      }
+    }
+  }, {
+    "startTimeSeconds": 276.591324,
+    "endTimeSeconds": 276.591324,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 135,
+    "sourceScreenId": "59",
+    "destinationScreenId": "59",
+    "startTimeSeconds": 277.370847,
+    "endTimeSeconds": 278.06552,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.1.0.0",
+      "targetDetails": {
+        "componentType": "BUTTON",
+        "className": "android.widget.Button",
+        "androidClassName": "android.widget.Button",
+        "textLabel": "openai"
+      }
+    }
+  }, {
+    "startTimeSeconds": 278.06552,
+    "endTimeSeconds": 278.06552,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 136,
+    "sourceScreenId": "59",
+    "destinationScreenId": "41",
+    "startTimeSeconds": 278.486932,
+    "endTimeSeconds": 279.370337,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.1.1.0",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/action_chat",
+        "className": "androidx.appcompat.view.menu.ActionMenuItemView",
+        "androidClassName": "android.widget.TextView",
+        "contentDescription": "AI Chat"
+      }
+    }
+  }, {
+    "startTimeSeconds": 279.370337,
+    "endTimeSeconds": 279.370337,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 137,
+    "sourceScreenId": "41",
+    "destinationScreenId": "58",
+    "startTimeSeconds": 279.807312,
+    "endTimeSeconds": 280.664298,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.2.0.0.0.1",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/shareChat",
+        "className": "androidx.appcompat.widget.AppCompatImageView",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "la wadaag sheekaysiga"
+      }
+    }
+  }, {
+    "startTimeSeconds": 280.664298,
+    "endTimeSeconds": 280.664298,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 138,
+    "sourceScreenId": "58",
+    "destinationScreenId": "60",
+    "startTimeSeconds": 281.064536,
+    "endTimeSeconds": 282.373831,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.0.0.2.0.0.1.0",
+      "targetDetails": {
+        "className": "android.widget.LinearLayout",
+        "androidClassName": "android.widget.LinearLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 282.373831,
+    "endTimeSeconds": 282.373831,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 139,
+    "sourceScreenId": "60",
+    "destinationScreenId": "61",
+    "startTimeSeconds": 283.632133,
+    "endTimeSeconds": 284.597752,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.0.0.2.0.0.1.2",
+      "targetDetails": {
+        "className": "android.widget.LinearLayout",
+        "androidClassName": "android.widget.LinearLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 284.597752,
+    "endTimeSeconds": 284.597752,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 140,
+    "sourceScreenId": "61",
+    "destinationScreenId": "41",
+    "startTimeSeconds": 285.524578,
+    "endTimeSeconds": 286.482624,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.0.0.3.0.3",
+      "targetDetails": {
+        "componentType": "BUTTON",
+        "resourceName": "android:id/button1",
+        "className": "androidx.appcompat.widget.AppCompatButton",
+        "androidClassName": "android.widget.Button",
+        "textLabel": "Xir"
+      }
+    }
+  }, {
+    "startTimeSeconds": 286.482624,
+    "endTimeSeconds": 286.482624,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 141,
+    "sourceScreenId": "41",
+    "destinationScreenId": "62",
+    "startTimeSeconds": 286.9691,
+    "endTimeSeconds": 288.133108,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.2.0",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/chatCardView",
+        "className": "androidx.cardview.widget.CardView",
+        "androidClassName": "android.widget.FrameLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 288.133108,
+    "endTimeSeconds": 288.133108,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 142,
+    "sourceScreenId": "62",
+    "destinationScreenId": "63",
+    "startTimeSeconds": 288.82217,
+    "endTimeSeconds": 289.650249,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.1.0.0.1.0.6",
+      "targetDetails": {
+        "componentType": "BUTTON",
+        "className": "android.widget.Button",
+        "androidClassName": "android.widget.Button",
+        "textLabel": "gemini"
+      }
+    }
+  }, {
+    "startTimeSeconds": 289.650249,
+    "endTimeSeconds": 289.650249,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 143,
+    "sourceScreenId": "63",
+    "destinationScreenId": "63",
+    "startTimeSeconds": 290.238425,
+    "endTimeSeconds": 291.377399,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "LONG_PRESS",
+      "childSequence": "0.0.1.0.1.0.0.0.1.1.2",
+      "targetDetails": {
+        "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "More options"
+      }
+    }
+  }, {
+    "startTimeSeconds": 291.377399,
+    "endTimeSeconds": 291.377399,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 144,
+    "sourceScreenId": "63",
+    "destinationScreenId": "63",
+    "startTimeSeconds": 291.800729,
+    "endTimeSeconds": 292.466316,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.2.4.0.0.1",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/shareChat",
+        "className": "androidx.appcompat.widget.AppCompatImageView",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "la wadaag sheekaysiga"
+      }
+    }
+  }, {
+    "startTimeSeconds": 292.466316,
+    "endTimeSeconds": 292.466316,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 145,
+    "sourceScreenId": "63",
+    "destinationScreenId": "63",
+    "startTimeSeconds": 292.894229,
+    "endTimeSeconds": 293.348843,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.2.3.0.0.1",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/shareChat",
+        "className": "androidx.appcompat.widget.AppCompatImageView",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "la wadaag sheekaysiga"
+      }
+    }
+  }, {
+    "startTimeSeconds": 293.348843,
+    "endTimeSeconds": 293.348843,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 146,
+    "sourceScreenId": "63",
+    "destinationScreenId": "59",
+    "startTimeSeconds": 293.698576,
+    "endTimeSeconds": 295.832076,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TYPE_TEXT",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.1.1",
+      "enterTextString": "twxvnb",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/searchBar",
+        "className": "androidx.appcompat.widget.AppCompatEditText",
+        "androidClassName": "android.widget.EditText"
+      }
+    }
+  }, {
+    "startTimeSeconds": 295.832076,
+    "endTimeSeconds": 295.832076,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 147,
+    "sourceScreenId": "59",
+    "destinationScreenId": "64",
+    "startTimeSeconds": 296.215038,
+    "endTimeSeconds": 297.088917,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.5.2",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/button_gchat_send",
+        "className": "androidx.appcompat.widget.AppCompatImageView",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "Ku Dir"
+      }
+    }
+  }, {
+    "startTimeSeconds": 297.088917,
+    "endTimeSeconds": 297.088917,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 148,
+    "sourceScreenId": "64",
+    "destinationScreenId": "65",
+    "startTimeSeconds": 297.760685,
+    "endTimeSeconds": 298.881797,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.1.0.0",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/img_logo",
+        "className": "androidx.appcompat.widget.AppCompatImageView",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "liiska dhinaca"
+      }
+    }
+  }, {
+    "startTimeSeconds": 298.881797,
+    "endTimeSeconds": 298.881797,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 149,
+    "sourceScreenId": "65",
+    "destinationScreenId": "64",
+    "startTimeSeconds": 299.5491,
+    "endTimeSeconds": 301.542553,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "LONG_PRESS",
+      "childSequence": "0.0.1.0.1.0.0.0.1.1.2",
+      "targetDetails": {
+        "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "More options"
+      }
+    }
+  }, {
+    "startTimeSeconds": 301.542553,
+    "endTimeSeconds": 301.542553,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 150,
+    "sourceScreenId": "64",
+    "destinationScreenId": "17",
+    "startTimeSeconds": 301.910111,
+    "endTimeSeconds": 302.771631,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.1.1.2",
+      "targetDetails": {
+        "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "More options"
+      }
+    }
+  }, {
+    "startTimeSeconds": 302.771631,
+    "endTimeSeconds": 302.771631,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 151,
+    "sourceScreenId": "17",
+    "destinationScreenId": "66",
+    "startTimeSeconds": 303.140494,
+    "endTimeSeconds": 304.021823,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.0.4",
+      "targetDetails": {
+        "className": "androidx.appcompat.view.menu.ListMenuItemView",
+        "androidClassName": "android.widget.LinearLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 304.021823,
+    "endTimeSeconds": 304.021823,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 152,
+    "sourceScreenId": "66",
+    "destinationScreenId": "66",
+    "startTimeSeconds": 304.726526,
+    "endTimeSeconds": 306.774293,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "SWIPE",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0",
+      "targetDetails": {
+        "className": "androidx.core.widget.NestedScrollView",
+        "androidClassName": "android.widget.FrameLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 306.774293,
+    "endTimeSeconds": 306.774293,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 153,
+    "sourceScreenId": "66",
+    "destinationScreenId": "66",
+    "startTimeSeconds": 307.30087,
+    "endTimeSeconds": 308.534372,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "LONG_PRESS",
+      "childSequence": "0.0.1.0.1.0.0.0.1.1.2",
+      "targetDetails": {
+        "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "More options"
+      }
+    }
+  }, {
+    "startTimeSeconds": 308.534372,
+    "endTimeSeconds": 308.534372,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 154,
+    "sourceScreenId": "66",
+    "destinationScreenId": "17",
+    "startTimeSeconds": 309.126361,
+    "endTimeSeconds": 310.202771,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.1.1.2",
+      "targetDetails": {
+        "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "More options"
+      }
+    }
+  }, {
+    "startTimeSeconds": 310.202771,
+    "endTimeSeconds": 310.202771,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 155,
+    "sourceScreenId": "17",
+    "destinationScreenId": "67",
+    "startTimeSeconds": 310.695632,
+    "endTimeSeconds": 312.54686,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.0.0",
+      "targetDetails": {
+        "className": "androidx.appcompat.view.menu.ListMenuItemView",
+        "androidClassName": "android.widget.LinearLayout"
+      }
+    }
+  }, {
+    "sequence": 156,
+    "sourceScreenId": "67",
+    "destinationScreenId": "66",
+    "startTimeSeconds": 313.472415,
+    "endTimeSeconds": 344.551097,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "wait": {
+      "durationSeconds": 13.0
+    }
+  }, {
+    "startTimeSeconds": 344.551097,
+    "endTimeSeconds": 344.551097,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 169,
+    "sourceScreenId": "66",
+    "destinationScreenId": "63",
+    "startTimeSeconds": 346.347999,
+    "endTimeSeconds": 347.759066,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.1.1.0",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/action_chat",
+        "className": "androidx.appcompat.view.menu.ActionMenuItemView",
+        "androidClassName": "android.widget.TextView",
+        "contentDescription": "AI Chat"
+      }
+    }
+  }, {
+    "startTimeSeconds": 347.759066,
+    "endTimeSeconds": 347.759066,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 170,
+    "sourceScreenId": "63",
+    "destinationScreenId": "63",
+    "startTimeSeconds": 348.448888,
+    "endTimeSeconds": 349.056898,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.2.2.0.0.1",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/shareChat",
+        "className": "androidx.appcompat.widget.AppCompatImageView",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "la wadaag sheekaysiga"
+      }
+    }
+  }, {
+    "startTimeSeconds": 349.056898,
+    "endTimeSeconds": 349.056898,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 171,
+    "sourceScreenId": "63",
+    "destinationScreenId": "17",
+    "startTimeSeconds": 350.796047,
+    "endTimeSeconds": 351.824064,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.1.1.2",
+      "targetDetails": {
+        "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "More options"
+      }
+    }
+  }, {
+    "startTimeSeconds": 351.824064,
+    "endTimeSeconds": 351.824064,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 172,
+    "sourceScreenId": "17",
+    "destinationScreenId": "68",
+    "startTimeSeconds": 352.453058,
+    "endTimeSeconds": 354.245797,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.0.6",
+      "targetDetails": {
+        "className": "androidx.appcompat.view.menu.ListMenuItemView",
+        "androidClassName": "android.widget.LinearLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 354.245797,
+    "endTimeSeconds": 354.245797,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 173,
+    "sourceScreenId": "68",
+    "destinationScreenId": "68",
+    "startTimeSeconds": 355.294134,
+    "endTimeSeconds": 356.180845,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.0.0.0.1.0.0.0.0.0.0",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/title",
+        "className": "androidx.appcompat.widget.AppCompatTextView",
+        "androidClassName": "android.widget.TextView",
+        "textLabel": "learning"
+      }
+    }
+  }, {
+    "startTimeSeconds": 356.180845,
+    "endTimeSeconds": 356.180845,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 174,
+    "sourceScreenId": "68",
+    "destinationScreenId": "69",
+    "startTimeSeconds": 356.784847,
+    "endTimeSeconds": 357.73383,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.0.0.0.0",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/touch_outside",
+        "className": "android.view.View",
+        "androidClassName": "android.view.View"
+      }
+    }
+  }, {
+    "startTimeSeconds": 357.73383,
+    "endTimeSeconds": 357.73383,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 175,
+    "sourceScreenId": "69",
+    "destinationScreenId": "69",
+    "startTimeSeconds": 358.805155,
+    "endTimeSeconds": 359.629063,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.0.0.0.1.3",
+      "targetDetails": {
+        "componentType": "BUTTON",
+        "resourceName": "org.ole.planet.myplanet:id/btn_signin",
+        "className": "androidx.appcompat.widget.AppCompatButton",
+        "androidClassName": "android.widget.Button",
+        "textLabel": "Soo gal",
+        "contentDescription": "Soo gal"
+      }
+    }
+  }, {
+    "startTimeSeconds": 359.629063,
+    "endTimeSeconds": 359.629063,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 176,
+    "sourceScreenId": "69",
+    "destinationScreenId": "70",
+    "startTimeSeconds": 360.134534,
+    "endTimeSeconds": 361.13359,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.0.0.0.1.4.0",
+      "targetDetails": {
+        "componentType": "BUTTON",
+        "resourceName": "org.ole.planet.myplanet:id/btn_guest_login",
+        "className": "androidx.appcompat.widget.AppCompatButton",
+        "androidClassName": "android.widget.Button",
+        "textLabel": "Marti ahaan u soo gal",
+        "contentDescription": "Marti ahaan u soo gal"
+      }
+    }
+  }, {
+    "startTimeSeconds": 361.13359,
+    "endTimeSeconds": 361.13359,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 177,
+    "sourceScreenId": "70",
+    "destinationScreenId": "70",
+    "startTimeSeconds": 362.025824,
+    "endTimeSeconds": 364.580206,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TYPE_TEXT",
+      "childSequence": "0.0.1.0.0.0.2.0.0.0.0.0",
+      "enterTextString": "esydnn",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/et_user_name",
+        "className": "com.google.android.material.textfield.TextInputEditText",
+        "androidClassName": "android.widget.EditText"
+      }
+    }
+  }, {
+    "startTimeSeconds": 364.580206,
+    "endTimeSeconds": 364.580206,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 178,
+    "sourceScreenId": "70",
+    "destinationScreenId": "69",
+    "startTimeSeconds": 364.974315,
+    "endTimeSeconds": 365.857644,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "SWIPE",
+      "childSequence": "0.0.1.0.0.0.3.0.2",
+      "targetDetails": {
+        "componentType": "BUTTON",
+        "resourceName": "android:id/button2",
+        "className": "androidx.appcompat.widget.AppCompatButton",
+        "androidClassName": "android.widget.Button",
+        "textLabel": "burin"
+      }
+    }
+  }, {
+    "startTimeSeconds": 365.857644,
+    "endTimeSeconds": 365.857644,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 179,
+    "sourceScreenId": "69",
+    "destinationScreenId": "5",
+    "startTimeSeconds": 366.303837,
+    "endTimeSeconds": 367.558592,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.0.0.0.0.0",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/syncIcon",
+        "className": "androidx.appcompat.widget.AppCompatImageView",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "Dib u hagrees"
+      }
+    }
+  }, {
+    "sequence": 180,
+    "sourceScreenId": "5",
+    "destinationScreenId": "5",
+    "startTimeSeconds": 367.95977800000003,
+    "endTimeSeconds": 399.055992,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "wait": {
+      "durationSeconds": 16.0
+    }
+  }, {
+    "startTimeSeconds": 399.055992,
+    "endTimeSeconds": 399.055992,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 196,
+    "sourceScreenId": "5",
+    "destinationScreenId": "0",
+    "startTimeSeconds": 399.826405,
+    "endTimeSeconds": 401.199487,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "system": {
+      "type": "HOME"
+    }
+  }, {
+    "sequence": 197,
+    "sourceScreenId": "0",
+    "destinationScreenId": "69",
+    "startTimeSeconds": 401.40405,
+    "endTimeSeconds": 405.622311,
+    "executionResult": "SUCCESS",
+    "launch": {
+      "action": "android.intent.action.MAIN"
+    }
+  }, {
+    "startTimeSeconds": 405.622311,
+    "endTimeSeconds": 405.622311,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 198,
+    "sourceScreenId": "69",
+    "destinationScreenId": "71",
+    "startTimeSeconds": 405.989461,
+    "endTimeSeconds": 407.729911,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.1.0.8.0",
+      "targetDetails": {
+        "className": "android.widget.LinearLayout",
+        "androidClassName": "android.widget.LinearLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 407.729911,
+    "endTimeSeconds": 407.729911,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 199,
+    "sourceScreenId": "71",
+    "destinationScreenId": "71",
+    "startTimeSeconds": 408.560192,
+    "endTimeSeconds": 409.337825,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.1.1.0.0",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/material_drawer_account_header",
+        "className": "androidx.constraintlayout.widget.ConstraintLayout",
+        "androidClassName": "android.view.ViewGroup"
+      }
+    }
+  }, {
+    "startTimeSeconds": 409.337825,
+    "endTimeSeconds": 409.337825,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 200,
+    "sourceScreenId": "71",
+    "destinationScreenId": "72",
+    "startTimeSeconds": 409.772455,
+    "endTimeSeconds": 411.547998,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "LONG_PRESS",
+      "childSequence": "0.0.1.0.1.0.1.1.1",
+      "targetDetails": {
+        "className": "androidx.constraintlayout.widget.ConstraintLayout",
+        "androidClassName": "android.view.ViewGroup"
+      }
+    }
+  }, {
+    "startTimeSeconds": 411.547998,
+    "endTimeSeconds": 411.547998,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 201,
+    "sourceScreenId": "72",
+    "destinationScreenId": "73",
+    "startTimeSeconds": 412.228451,
+    "endTimeSeconds": 413.019122,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.4.0.0",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/myLifeImageButton",
+        "className": "android.widget.FrameLayout",
+        "androidClassName": "android.widget.FrameLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 413.019122,
+    "endTimeSeconds": 413.019122,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 202,
+    "sourceScreenId": "73",
+    "destinationScreenId": "74",
+    "startTimeSeconds": 413.716714,
+    "endTimeSeconds": 414.534317,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "SWIPE",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.0",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/recycler",
+        "className": "androidx.recyclerview.widget.RecyclerView",
+        "androidClassName": "android.view.ViewGroup"
+      }
+    }
+  }, {
+    "startTimeSeconds": 414.534317,
+    "endTimeSeconds": 414.534317,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 203,
+    "sourceScreenId": "74",
+    "destinationScreenId": "75",
+    "startTimeSeconds": 415.416787,
+    "endTimeSeconds": 416.089052,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.0.7.0.2",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/visibility_image_button",
+        "className": "androidx.appcompat.widget.AppCompatImageButton",
+        "androidClassName": "android.widget.ImageButton"
+      }
+    }
+  }, {
+    "startTimeSeconds": 416.089052,
+    "endTimeSeconds": 416.089052,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 204,
+    "sourceScreenId": "75",
+    "destinationScreenId": "76",
+    "startTimeSeconds": 416.724387,
+    "endTimeSeconds": 417.429635,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.0.4.0.4",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/drag_image_button",
+        "className": "androidx.appcompat.widget.AppCompatImageButton",
+        "androidClassName": "android.widget.ImageButton"
+      }
+    }
+  }, {
+    "startTimeSeconds": 417.429635,
+    "endTimeSeconds": 417.429635,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 205,
+    "sourceScreenId": "76",
+    "destinationScreenId": "76",
+    "startTimeSeconds": 418.06224,
+    "endTimeSeconds": 418.722779,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.0.4.0.4",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/drag_image_button",
+        "className": "androidx.appcompat.widget.AppCompatImageButton",
+        "androidClassName": "android.widget.ImageButton",
+        "contentDescription": "jiid Help Wanted"
+      }
+    }
+  }, {
+    "startTimeSeconds": 418.722779,
+    "endTimeSeconds": 418.722779,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 206,
+    "sourceScreenId": "76",
+    "destinationScreenId": "77",
+    "startTimeSeconds": 419.282784,
+    "endTimeSeconds": 420.103642,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.0.4.0.0",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/itemImageView",
+        "className": "androidx.appcompat.widget.AppCompatImageView",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "astan Help Wanted"
+      }
+    }
+  }, {
+    "startTimeSeconds": 420.103642,
+    "endTimeSeconds": 420.103642,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 207,
+    "sourceScreenId": "77",
+    "destinationScreenId": "17",
+    "startTimeSeconds": 420.778349,
+    "endTimeSeconds": 421.615037,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.1.1.2",
+      "targetDetails": {
+        "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "More options"
+      }
+    }
+  }, {
+    "startTimeSeconds": 421.615037,
+    "endTimeSeconds": 421.615037,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 208,
+    "sourceScreenId": "17",
+    "destinationScreenId": "78",
+    "startTimeSeconds": 421.928559,
+    "endTimeSeconds": 422.805078,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.0.1",
+      "targetDetails": {
+        "className": "androidx.appcompat.view.menu.ListMenuItemView",
+        "androidClassName": "android.widget.LinearLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 422.805078,
+    "endTimeSeconds": 422.805078,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 209,
+    "sourceScreenId": "78",
+    "destinationScreenId": "79",
+    "startTimeSeconds": 423.442296,
+    "endTimeSeconds": 424.505817,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.1.0.0",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/img_logo",
+        "className": "androidx.appcompat.widget.AppCompatImageView",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "liiska dhinaca"
+      }
+    }
+  }, {
+    "startTimeSeconds": 424.505817,
+    "endTimeSeconds": 424.505817,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 210,
+    "sourceScreenId": "79",
+    "destinationScreenId": "80",
+    "startTimeSeconds": 425.038343,
+    "endTimeSeconds": 426.161611,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.1.1.2",
+      "targetDetails": {
+        "className": "androidx.constraintlayout.widget.ConstraintLayout",
+        "androidClassName": "android.view.ViewGroup"
+      }
+    }
+  }, {
+    "startTimeSeconds": 426.161611,
+    "endTimeSeconds": 426.161611,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 211,
+    "sourceScreenId": "80",
+    "destinationScreenId": "41",
+    "startTimeSeconds": 426.645342,
+    "endTimeSeconds": 427.663735,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.1.1.0",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/action_chat",
+        "className": "androidx.appcompat.view.menu.ActionMenuItemView",
+        "androidClassName": "android.widget.TextView",
+        "contentDescription": "AI Chat"
+      }
+    }
+  }, {
+    "startTimeSeconds": 427.663735,
+    "endTimeSeconds": 427.663735,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 212,
+    "sourceScreenId": "41",
+    "destinationScreenId": "81",
+    "startTimeSeconds": 428.02286,
+    "endTimeSeconds": 429.11032,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.2.2",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/chatCardView",
+        "className": "androidx.cardview.widget.CardView",
+        "androidClassName": "android.widget.FrameLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 429.11032,
+    "endTimeSeconds": 429.11032,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 213,
+    "sourceScreenId": "81",
+    "destinationScreenId": "81",
+    "startTimeSeconds": 429.602717,
+    "endTimeSeconds": 429.951769,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.2.2.0.0.1",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/shareChat",
+        "className": "androidx.appcompat.widget.AppCompatImageView",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "la wadaag sheekaysiga"
+      }
+    }
+  }, {
+    "startTimeSeconds": 429.951769,
+    "endTimeSeconds": 429.951769,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 214,
+    "sourceScreenId": "81",
+    "destinationScreenId": "17",
+    "startTimeSeconds": 430.302612,
+    "endTimeSeconds": 431.064137,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.1.1.2",
+      "targetDetails": {
+        "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "More options"
+      }
+    }
+  }, {
+    "startTimeSeconds": 431.064137,
+    "endTimeSeconds": 431.064137,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 215,
+    "sourceScreenId": "17",
+    "destinationScreenId": "82",
+    "startTimeSeconds": 431.381965,
+    "endTimeSeconds": 432.300639,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.0.5",
+      "targetDetails": {
+        "className": "androidx.appcompat.view.menu.ListMenuItemView",
+        "androidClassName": "android.widget.LinearLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 432.300639,
+    "endTimeSeconds": 432.300639,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 216,
+    "sourceScreenId": "82",
+    "destinationScreenId": "82",
+    "startTimeSeconds": 432.801281,
+    "endTimeSeconds": 433.476505,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.9",
+      "targetDetails": {
+        "className": "android.widget.LinearLayout",
+        "androidClassName": "android.widget.LinearLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 433.476505,
+    "endTimeSeconds": 433.476505,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 217,
+    "sourceScreenId": "82",
+    "destinationScreenId": "83",
+    "startTimeSeconds": 433.875732,
+    "endTimeSeconds": 434.573832,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "SWIPE",
+      "childSequence": "0.0.1.0.1.0.0.0",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/recycler_view",
+        "className": "androidx.recyclerview.widget.RecyclerView",
+        "androidClassName": "android.view.ViewGroup"
+      }
+    }
+  }, {
+    "startTimeSeconds": 434.573832,
+    "endTimeSeconds": 434.573832,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 218,
+    "sourceScreenId": "83",
+    "destinationScreenId": "83",
+    "startTimeSeconds": 435.377867,
+    "endTimeSeconds": 436.05731,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.8",
+      "targetDetails": {
+        "className": "android.widget.LinearLayout",
+        "androidClassName": "android.widget.LinearLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 436.05731,
+    "endTimeSeconds": 436.05731,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 219,
+    "sourceScreenId": "83",
+    "destinationScreenId": "83",
+    "startTimeSeconds": 436.400182,
+    "endTimeSeconds": 437.127646,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.11",
+      "targetDetails": {
+        "className": "android.widget.LinearLayout",
+        "androidClassName": "android.widget.LinearLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 437.127646,
+    "endTimeSeconds": 437.127646,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 220,
+    "sourceScreenId": "83",
+    "destinationScreenId": "83",
+    "startTimeSeconds": 437.491522,
+    "endTimeSeconds": 437.813388,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.1",
+      "targetDetails": {
+        "className": "android.widget.LinearLayout",
+        "androidClassName": "android.widget.LinearLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 437.813388,
+    "endTimeSeconds": 437.813388,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 221,
+    "sourceScreenId": "83",
+    "destinationScreenId": "84",
+    "startTimeSeconds": 438.166734,
+    "endTimeSeconds": 439.480819,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.2.0.1",
+      "targetDetails": {
+        "className": "androidx.appcompat.widget.AppCompatImageButton",
+        "androidClassName": "android.widget.ImageButton",
+        "contentDescription": "Navigate up"
+      }
+    }
+  }, {
+    "startTimeSeconds": 439.480819,
+    "endTimeSeconds": 439.480819,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 222,
+    "sourceScreenId": "84",
+    "destinationScreenId": "85",
+    "startTimeSeconds": 440.893041,
+    "endTimeSeconds": 442.589352,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "LONG_PRESS",
+      "childSequence": "0.0.1.0.1.0.1.1.1",
+      "targetDetails": {
+        "className": "androidx.constraintlayout.widget.ConstraintLayout",
+        "androidClassName": "android.view.ViewGroup"
+      }
+    }
+  }, {
+    "startTimeSeconds": 442.589352,
+    "endTimeSeconds": 442.589352,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 223,
+    "sourceScreenId": "85",
+    "destinationScreenId": "86",
+    "startTimeSeconds": 443.170853,
+    "endTimeSeconds": 443.945178,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.2.0.1.0.1",
+      "targetDetails": {
+        "className": "android.widget.TextView",
+        "androidClassName": "android.widget.TextView",
+        "textLabel": " GitHub Issues and Pull Requests"
+      }
+    }
+  }, {
+    "startTimeSeconds": 443.945178,
+    "endTimeSeconds": 443.945178,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 224,
+    "sourceScreenId": "86",
+    "destinationScreenId": "86",
+    "startTimeSeconds": 444.466183,
+    "endTimeSeconds": 445.676214,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "LONG_PRESS",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.1.0.1.0.0.0.0.0.1.0.6.1",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/description",
+        "className": "androidx.appcompat.widget.AppCompatTextView",
+        "androidClassName": "android.widget.TextView",
+        "textLabel": "This course covers some features we use and customs we have when working on GitHub."
+      }
+    }
+  }, {
+    "startTimeSeconds": 445.676214,
+    "endTimeSeconds": 445.676214,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 225,
+    "sourceScreenId": "86",
+    "destinationScreenId": "86",
+    "startTimeSeconds": 446.025155,
+    "endTimeSeconds": 446.367539,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "SWIPE",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.1.0.1.0",
+      "targetDetails": {
+        "className": "androidx.viewpager2.widget.ViewPager2$RecyclerViewImpl",
+        "androidClassName": "android.view.ViewGroup"
+      }
+    }
+  }, {
+    "startTimeSeconds": 446.367539,
+    "endTimeSeconds": 446.367539,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 226,
+    "sourceScreenId": "86",
+    "destinationScreenId": "86",
+    "startTimeSeconds": 446.78474,
+    "endTimeSeconds": 447.136541,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "SWIPE",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.1.0.1",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/viewPager2",
+        "className": "androidx.viewpager2.widget.ViewPager2",
+        "androidClassName": "android.view.ViewGroup"
+      }
+    }
+  }, {
+    "startTimeSeconds": 447.136541,
+    "endTimeSeconds": 447.136541,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 227,
+    "sourceScreenId": "86",
+    "destinationScreenId": "86",
+    "startTimeSeconds": 447.513013,
+    "endTimeSeconds": 448.099828,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.1.0.1.0.0.0.0.0.1.0.6.1",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/description",
+        "className": "androidx.appcompat.widget.AppCompatTextView",
+        "androidClassName": "android.widget.TextView",
+        "textLabel": "This course covers some features we use and customs we have when working on GitHub."
+      }
+    }
+  }, {
+    "startTimeSeconds": 448.099828,
+    "endTimeSeconds": 448.099828,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 228,
+    "sourceScreenId": "86",
+    "destinationScreenId": "87",
+    "startTimeSeconds": 448.496744,
+    "endTimeSeconds": 449.526693,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.1.0.0",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/img_logo",
+        "className": "androidx.appcompat.widget.AppCompatImageView",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "liiska dhinaca"
+      }
+    }
+  }, {
+    "startTimeSeconds": 449.526693,
+    "endTimeSeconds": 449.526693,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 229,
+    "sourceScreenId": "87",
+    "destinationScreenId": "88",
+    "startTimeSeconds": 450.120089,
+    "endTimeSeconds": 451.552151,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.1.0.1.0.0.0.0.0.1.0.6.1",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/description",
+        "className": "androidx.appcompat.widget.AppCompatTextView",
+        "androidClassName": "android.widget.TextView",
+        "textLabel": "This course covers some features we use and customs we have when working on GitHub."
+      }
+    }
+  }, {
+    "startTimeSeconds": 451.552151,
+    "endTimeSeconds": 451.552151,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 230,
+    "sourceScreenId": "88",
+    "destinationScreenId": "89",
+    "startTimeSeconds": 452.079222,
+    "endTimeSeconds": 453.05407,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.2.0.0.0.1.2",
+      "targetDetails": {
+        "componentType": "BUTTON",
+        "resourceName": "org.ole.planet.myplanet:id/start_survey",
+        "className": "androidx.appcompat.widget.AppCompatButton",
+        "androidClassName": "android.widget.Button",
+        "textLabel": "Gali suuragal"
+      }
+    }
+  }, {
+    "startTimeSeconds": 453.05407,
+    "endTimeSeconds": 453.05407,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 231,
+    "sourceScreenId": "89",
+    "destinationScreenId": "89",
+    "startTimeSeconds": 453.562092,
+    "endTimeSeconds": 454.291273,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.0.0.2.1",
+      "targetDetails": {
+        "componentType": "BUTTON",
+        "resourceName": "org.ole.planet.myplanet:id/btn_submit",
+        "className": "androidx.appcompat.widget.AppCompatButton",
+        "androidClassName": "android.widget.Button",
+        "textLabel": "Ku Dir"
+      }
+    }
+  }, {
+    "startTimeSeconds": 454.291273,
+    "endTimeSeconds": 454.291273,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 232,
+    "sourceScreenId": "89",
+    "destinationScreenId": "90",
+    "startTimeSeconds": 454.676805,
+    "endTimeSeconds": 455.404839,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.0.0.1.0.1.2",
+      "targetDetails": {
+        "componentType": "BUTTON",
+        "className": "androidx.appcompat.widget.AppCompatRadioButton",
+        "androidClassName": "android.widget.RadioButton",
+        "textLabel": "Other"
+      }
+    }
+  }, {
+    "startTimeSeconds": 455.404839,
+    "endTimeSeconds": 455.404839,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 233,
+    "sourceScreenId": "90",
+    "destinationScreenId": "90",
+    "startTimeSeconds": 455.904296,
+    "endTimeSeconds": 456.566742,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.0.0.2.1",
+      "targetDetails": {
+        "componentType": "BUTTON",
+        "resourceName": "org.ole.planet.myplanet:id/btn_submit",
+        "className": "androidx.appcompat.widget.AppCompatButton",
+        "androidClassName": "android.widget.Button",
+        "textLabel": "Ku Dir"
+      }
+    }
+  }, {
+    "startTimeSeconds": 456.566742,
+    "endTimeSeconds": 456.566742,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 234,
+    "sourceScreenId": "90",
+    "destinationScreenId": "90",
+    "startTimeSeconds": 456.924639,
+    "endTimeSeconds": 457.495546,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.0.0.1.0.0.1",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/tv_body",
+        "className": "androidx.appcompat.widget.AppCompatTextView",
+        "androidClassName": "android.widget.TextView",
+        "textLabel": "Gender"
+      }
+    }
+  }, {
+    "startTimeSeconds": 457.495546,
+    "endTimeSeconds": 457.495546,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 235,
+    "sourceScreenId": "90",
+    "destinationScreenId": "90",
+    "startTimeSeconds": 457.838516,
+    "endTimeSeconds": 459.88522,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "LONG_PRESS",
+      "childSequence": "0.0.1.0.1.0.0.0.1.1.2",
+      "targetDetails": {
+        "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "More options"
+      }
+    }
+  }, {
+    "startTimeSeconds": 459.88522,
+    "endTimeSeconds": 459.88522,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 236,
+    "sourceScreenId": "90",
+    "destinationScreenId": "91",
+    "startTimeSeconds": 460.25333,
+    "endTimeSeconds": 462.298877,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TYPE_TEXT",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.0.0.2.0.0.0",
+      "enterTextString": "hafjpq",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/et_answer",
+        "className": "androidx.appcompat.widget.AppCompatEditText",
+        "androidClassName": "android.widget.EditText"
+      }
+    }
+  }, {
+    "startTimeSeconds": 462.298877,
+    "endTimeSeconds": 462.298877,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 237,
+    "sourceScreenId": "91",
+    "destinationScreenId": "92",
+    "startTimeSeconds": 462.753053,
+    "endTimeSeconds": 463.47672,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.0.0.2.1",
+      "targetDetails": {
+        "componentType": "BUTTON",
+        "resourceName": "org.ole.planet.myplanet:id/btn_submit",
+        "className": "androidx.appcompat.widget.AppCompatButton",
+        "androidClassName": "android.widget.Button",
+        "textLabel": "Ku Dir"
+      }
+    }
+  }, {
+    "startTimeSeconds": 463.47672,
+    "endTimeSeconds": 463.47672,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 238,
+    "sourceScreenId": "92",
+    "destinationScreenId": "92",
+    "startTimeSeconds": 463.964984,
+    "endTimeSeconds": 464.621882,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.0.0.2.1",
+      "targetDetails": {
+        "componentType": "BUTTON",
+        "resourceName": "org.ole.planet.myplanet:id/btn_submit",
+        "className": "androidx.appcompat.widget.AppCompatButton",
+        "androidClassName": "android.widget.Button",
+        "textLabel": "Ku Dir"
+      }
+    }
+  }, {
+    "startTimeSeconds": 464.621882,
+    "endTimeSeconds": 464.621882,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 239,
+    "sourceScreenId": "92",
+    "destinationScreenId": "93",
+    "startTimeSeconds": 464.980007,
+    "endTimeSeconds": 466.002654,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.1.0.0",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/img_logo",
+        "className": "androidx.appcompat.widget.AppCompatImageView",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "liiska dhinaca"
+      }
+    }
+  }, {
+    "startTimeSeconds": 466.002654,
+    "endTimeSeconds": 466.002654,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 240,
+    "sourceScreenId": "93",
+    "destinationScreenId": "92",
+    "startTimeSeconds": 466.507319,
+    "endTimeSeconds": 467.599257,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.0.0.2.1",
+      "targetDetails": {
+        "componentType": "BUTTON",
+        "resourceName": "org.ole.planet.myplanet:id/btn_submit",
+        "className": "androidx.appcompat.widget.AppCompatButton",
+        "androidClassName": "android.widget.Button",
+        "textLabel": "Ku Dir"
+      }
+    }
+  }, {
+    "startTimeSeconds": 467.599257,
+    "endTimeSeconds": 467.599257,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 241,
+    "sourceScreenId": "92",
+    "destinationScreenId": "92",
+    "startTimeSeconds": 467.966047,
+    "endTimeSeconds": 469.077743,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "LONG_PRESS",
+      "childSequence": "0.0.1.0.1.0.0.0.1.1.2",
+      "targetDetails": {
+        "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "More options"
+      }
+    }
+  }, {
+    "startTimeSeconds": 469.077743,
+    "endTimeSeconds": 469.077743,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 242,
+    "sourceScreenId": "92",
+    "destinationScreenId": "17",
+    "startTimeSeconds": 469.428673,
+    "endTimeSeconds": 470.209829,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.1.1.2",
+      "targetDetails": {
+        "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "More options"
+      }
+    }
+  }, {
+    "startTimeSeconds": 470.209829,
+    "endTimeSeconds": 470.209829,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 243,
+    "sourceScreenId": "17",
+    "destinationScreenId": "92",
+    "startTimeSeconds": 470.579807,
+    "endTimeSeconds": 471.17974,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "system": {
+      "type": "BACK"
+    }
+  }, {
+    "startTimeSeconds": 471.17974,
+    "endTimeSeconds": 471.17974,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 244,
+    "sourceScreenId": "92",
+    "destinationScreenId": "94",
+    "startTimeSeconds": 471.49179,
+    "endTimeSeconds": 472.158489,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.0.0.1.0.2.2",
+      "targetDetails": {
+        "componentType": "BUTTON",
+        "className": "androidx.appcompat.widget.AppCompatCheckBox",
+        "androidClassName": "android.widget.CheckBox",
+        "textLabel": "Other"
+      }
+    }
+  }, {
+    "startTimeSeconds": 472.158489,
+    "endTimeSeconds": 472.158489,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 245,
+    "sourceScreenId": "94",
+    "destinationScreenId": "94",
+    "startTimeSeconds": 472.640205,
+    "endTimeSeconds": 473.290712,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.0.0.2.1",
+      "targetDetails": {
+        "componentType": "BUTTON",
+        "resourceName": "org.ole.planet.myplanet:id/btn_submit",
+        "className": "androidx.appcompat.widget.AppCompatButton",
+        "androidClassName": "android.widget.Button",
+        "textLabel": "Ku Dir"
+      }
+    }
+  }, {
+    "startTimeSeconds": 473.290712,
+    "endTimeSeconds": 473.290712,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 246,
+    "sourceScreenId": "94",
+    "destinationScreenId": "94",
+    "startTimeSeconds": 473.641039,
+    "endTimeSeconds": 474.226513,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.0.0.1.0.2.1",
+      "targetDetails": {
+        "componentType": "BUTTON",
+        "className": "androidx.appcompat.widget.AppCompatCheckBox",
+        "androidClassName": "android.widget.CheckBox",
+        "textLabel": "orange"
+      }
+    }
+  }, {
+    "startTimeSeconds": 474.226513,
+    "endTimeSeconds": 474.226513,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 247,
+    "sourceScreenId": "94",
+    "destinationScreenId": "40",
+    "startTimeSeconds": 474.536895,
+    "endTimeSeconds": 475.492726,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.1.1.1",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/action_notifications",
+        "className": "android.widget.FrameLayout",
+        "androidClassName": "android.widget.FrameLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 475.492726,
+    "endTimeSeconds": 475.492726,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 248,
+    "sourceScreenId": "40",
+    "destinationScreenId": "95",
+    "startTimeSeconds": 475.868773,
+    "endTimeSeconds": 476.580497,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.2.0.1",
+      "targetDetails": {
+        "componentType": "BUTTON",
+        "resourceName": "org.ole.planet.myplanet:id/btn_mark_as_read",
+        "className": "androidx.appcompat.widget.AppCompatButton",
+        "androidClassName": "android.widget.Button",
+        "textLabel": "Calaamadee sidii la aqriyay"
+      }
+    }
+  }, {
+    "startTimeSeconds": 476.580497,
+    "endTimeSeconds": 476.580497,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 249,
+    "sourceScreenId": "95",
+    "destinationScreenId": "95",
+    "startTimeSeconds": 477.16968,
+    "endTimeSeconds": 478.224846,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "LONG_PRESS",
+      "childSequence": "0.0.1.0.1.0.0.0.1.1.2",
+      "targetDetails": {
+        "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "More options"
+      }
+    }
+  }, {
+    "startTimeSeconds": 478.224846,
+    "endTimeSeconds": 478.224846,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 250,
+    "sourceScreenId": "95",
+    "destinationScreenId": "17",
+    "startTimeSeconds": 478.550926,
+    "endTimeSeconds": 479.332872,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.1.1.2",
+      "targetDetails": {
+        "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "More options"
+      }
+    }
+  }, {
+    "startTimeSeconds": 479.332872,
+    "endTimeSeconds": 479.332872,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 251,
+    "sourceScreenId": "17",
+    "destinationScreenId": "96",
+    "startTimeSeconds": 479.749913,
+    "endTimeSeconds": 480.437011,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.0.3",
+      "targetDetails": {
+        "className": "androidx.appcompat.view.menu.ListMenuItemView",
+        "androidClassName": "android.widget.LinearLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 480.437011,
+    "endTimeSeconds": 480.437011,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 252,
+    "sourceScreenId": "96",
+    "destinationScreenId": "97",
+    "startTimeSeconds": 480.992851,
+    "endTimeSeconds": 481.758025,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "SWIPE",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0",
+      "targetDetails": {
+        "className": "androidx.core.widget.NestedScrollView",
+        "androidClassName": "android.widget.FrameLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 481.758025,
+    "endTimeSeconds": 481.758025,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 253,
+    "sourceScreenId": "97",
+    "destinationScreenId": "98",
+    "startTimeSeconds": 482.285284,
+    "endTimeSeconds": 483.011222,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.1.1.0",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/action_chat",
+        "className": "androidx.appcompat.view.menu.ActionMenuItemView",
+        "androidClassName": "android.widget.TextView",
+        "contentDescription": "AI Chat"
+      }
+    }
+  }, {
+    "startTimeSeconds": 483.011222,
+    "endTimeSeconds": 483.011222,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 254,
+    "sourceScreenId": "98",
+    "destinationScreenId": "58",
+    "startTimeSeconds": 483.528289,
+    "endTimeSeconds": 484.764634,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.0.2.1.0.0.1",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/shareChat",
+        "className": "androidx.appcompat.widget.AppCompatImageView",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "la wadaag sheekaysiga"
+      }
+    }
+  }, {
+    "startTimeSeconds": 484.764634,
+    "endTimeSeconds": 484.764634,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 255,
+    "sourceScreenId": "58",
+    "destinationScreenId": "99",
+    "startTimeSeconds": 485.104807,
+    "endTimeSeconds": 485.871444,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.0.0.2.0.0.1.1",
+      "targetDetails": {
+        "className": "android.widget.LinearLayout",
+        "androidClassName": "android.widget.LinearLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 485.871444,
+    "endTimeSeconds": 485.871444,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 256,
+    "sourceScreenId": "99",
+    "destinationScreenId": "100",
+    "startTimeSeconds": 486.362287,
+    "endTimeSeconds": 487.414704,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.0.0.2.0.0.1.3",
+      "targetDetails": {
+        "className": "android.widget.LinearLayout",
+        "androidClassName": "android.widget.LinearLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 487.414704,
+    "endTimeSeconds": 487.414704,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 257,
+    "sourceScreenId": "100",
+    "destinationScreenId": "101",
+    "startTimeSeconds": 487.95795,
+    "endTimeSeconds": 488.818675,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.2.0.0.1.1",
+      "targetDetails": {
+        "className": "com.google.android.material.card.MaterialCardView",
+        "androidClassName": "android.widget.FrameLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 488.818675,
+    "endTimeSeconds": 488.818675,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 258,
+    "sourceScreenId": "101",
+    "destinationScreenId": "98",
+    "startTimeSeconds": 489.354546,
+    "endTimeSeconds": 490.005673,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.3.0.2",
+      "targetDetails": {
+        "componentType": "BUTTON",
+        "resourceName": "android:id/button2",
+        "className": "androidx.appcompat.widget.AppCompatButton",
+        "androidClassName": "android.widget.Button",
+        "textLabel": "burin"
+      }
+    }
+  }, {
+    "startTimeSeconds": 490.005673,
+    "endTimeSeconds": 490.005673,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 259,
+    "sourceScreenId": "98",
+    "destinationScreenId": "17",
+    "startTimeSeconds": 490.361469,
+    "endTimeSeconds": 491.125744,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.1.1.2",
+      "targetDetails": {
+        "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "More options"
+      }
+    }
+  }, {
+    "startTimeSeconds": 491.125744,
+    "endTimeSeconds": 491.125744,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 260,
+    "sourceScreenId": "17",
+    "destinationScreenId": "102",
+    "startTimeSeconds": 491.45855,
+    "endTimeSeconds": 492.254544,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.0.1",
+      "targetDetails": {
+        "className": "androidx.appcompat.view.menu.ListMenuItemView",
+        "androidClassName": "android.widget.LinearLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 492.254544,
+    "endTimeSeconds": 492.254544,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 261,
+    "sourceScreenId": "102",
+    "destinationScreenId": "103",
+    "startTimeSeconds": 492.741331,
+    "endTimeSeconds": 493.719811,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.1.1.1",
+      "targetDetails": {
+        "resourceName": "org.ole.planet.myplanet:id/action_notifications",
+        "className": "android.widget.FrameLayout",
+        "androidClassName": "android.widget.FrameLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 493.719811,
+    "endTimeSeconds": 493.719811,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 262,
+    "sourceScreenId": "103",
+    "destinationScreenId": "104",
+    "startTimeSeconds": 494.262636,
+    "endTimeSeconds": 495.220301,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.3.0.2.1",
+      "targetDetails": {
+        "className": "android.widget.LinearLayout",
+        "androidClassName": "android.widget.LinearLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 495.220301,
+    "endTimeSeconds": 495.220301,
+    "roboscriptFinished": {
+      "reason": "END_OF_SCRIPT"
+    }
+  }, {
+    "sequence": 263,
+    "sourceScreenId": "104",
+    "destinationScreenId": "103",
+    "startTimeSeconds": 495.782901,
+    "endTimeSeconds": 496.971297,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "system": {
+      "type": "BACK"
+    }
+  }, {
+    "startTimeSeconds": 496.971297,
+    "endTimeSeconds": 496.971297,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 264,
+    "sourceScreenId": "103",
+    "destinationScreenId": "17",
+    "startTimeSeconds": 497.300248,
+    "endTimeSeconds": 498.092613,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.1.1.2",
+      "targetDetails": {
+        "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+        "androidClassName": "android.widget.ImageView",
+        "contentDescription": "More options"
+      }
+    }
+  }, {
+    "startTimeSeconds": 498.092613,
+    "endTimeSeconds": 498.092613,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 265,
+    "sourceScreenId": "17",
+    "destinationScreenId": "82",
+    "startTimeSeconds": 498.438785,
+    "endTimeSeconds": 499.318893,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.0.5",
+      "targetDetails": {
+        "className": "androidx.appcompat.view.menu.ListMenuItemView",
+        "androidClassName": "android.widget.LinearLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 499.318893,
+    "endTimeSeconds": 499.318893,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 266,
+    "sourceScreenId": "82",
+    "destinationScreenId": "105",
+    "startTimeSeconds": 499.684417,
+    "endTimeSeconds": 500.429968,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.2",
+      "targetDetails": {
+        "className": "android.widget.LinearLayout",
+        "androidClassName": "android.widget.LinearLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 500.429968,
+    "endTimeSeconds": 500.429968,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 267,
+    "sourceScreenId": "105",
+    "destinationScreenId": "82",
+    "startTimeSeconds": 501.115254,
+    "endTimeSeconds": 501.778498,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.0.0.3.0.2",
+      "targetDetails": {
+        "componentType": "BUTTON",
+        "resourceName": "android:id/button2",
+        "className": "androidx.appcompat.widget.AppCompatButton",
+        "androidClassName": "android.widget.Button",
+        "textLabel": "No"
+      }
+    }
+  }, {
+    "startTimeSeconds": 501.778498,
+    "endTimeSeconds": 501.778498,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 268,
+    "sourceScreenId": "82",
+    "destinationScreenId": "82",
+    "startTimeSeconds": 502.115455,
+    "endTimeSeconds": 502.477474,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.0",
+      "targetDetails": {
+        "className": "android.widget.LinearLayout",
+        "androidClassName": "android.widget.LinearLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 502.477474,
+    "endTimeSeconds": 502.477474,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 269,
+    "sourceScreenId": "82",
+    "destinationScreenId": "82",
+    "startTimeSeconds": 502.810565,
+    "endTimeSeconds": 503.50511,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.4",
+      "targetDetails": {
+        "className": "android.widget.LinearLayout",
+        "androidClassName": "android.widget.LinearLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 503.50511,
+    "endTimeSeconds": 503.50511,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 270,
+    "sourceScreenId": "82",
+    "destinationScreenId": "106",
+    "startTimeSeconds": 503.89343,
+    "endTimeSeconds": 504.649621,
+    "executionResult": "SUCCESS",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.1.0.0.0.1",
+      "targetDetails": {
+        "className": "android.widget.LinearLayout",
+        "androidClassName": "android.widget.LinearLayout"
+      }
+    }
+  }, {
+    "startTimeSeconds": 504.649621,
+    "endTimeSeconds": 504.649621,
+    "roboscriptFinished": {
+      "reason": "ELEMENT_NOT_FOUND"
+    }
+  }, {
+    "sequence": 271,
+    "sourceScreenId": "106",
+    "destinationScreenId": "106",
+    "startTimeSeconds": 505.302513,
+    "endTimeSeconds": 506.563782,
+    "executionResult": "TERMINATED",
+    "isRoboscriptActive": true,
+    "target": {
+      "type": "TAP",
+      "childSequence": "0.0.1.0.0.0.3.0.3",
+      "targetDetails": {
+        "componentType": "BUTTON",
+        "resourceName": "android:id/button1",
+        "className": "androidx.appcompat.widget.AppCompatButton",
+        "androidClassName": "android.widget.Button",
+        "textLabel": "Haa"
+      }
+    }
+  }]
+}

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "960211453384",
+    "project_id": "myplanet-ci",
+    "storage_bucket": "myplanet-ci.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:960211453384:android:34c5f6ffd614e9e7f96cfd",
+        "android_client_info": {
+          "package_name": "org.ole.planet.myplanet"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA1KEjhcrM17NZqJtGZgZMa3akSuVrwqBI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

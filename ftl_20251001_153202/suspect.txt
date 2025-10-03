@@ -1,0 +1,552 @@
+Pixel2.arm-29-en-portrait/logcat:67:10-01 12:35:09.199   379   379 W MessageQueue: java.lang.IllegalStateException: Handler (com.android.server.backup.internal.BackupHandler) {2a3d41d} sending message to a Handler on a dead thread
+Pixel2.arm-29-en-portrait/logcat:90:10-01 12:35:09.203   379   379 W MessageQueue: java.lang.IllegalStateException: Handler (com.android.server.backup.internal.BackupHandler) {2a3d41d} sending message to a Handler on a dead thread
+Pixel2.arm-29-en-portrait/logcat:113:10-01 12:35:09.204  4265  4360 W Nearby  : java.lang.IllegalStateException: BluetoothAdapter not ready yet!
+Pixel2.arm-29-en-portrait/logcat:120:10-01 12:35:09.204  4265  4360 W Nearby  : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:125:10-01 12:35:09.204  4265  4360 W Nearby  : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:155:10-01 12:35:09.422  6755  6755 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 0 <<<<<<
+Pixel2.arm-29-en-portrait/logcat:156:10-01 12:35:09.423  6755  6755 I AndroidRuntime: Using default boot image
+Pixel2.arm-29-en-portrait/logcat:157:10-01 12:35:09.423  6755  6755 I AndroidRuntime: Leaving lock profiling enabled
+Pixel2.arm-29-en-portrait/logcat:162:10-01 12:35:09.454  6755  6755 D AndroidRuntime: Calling main entry com.android.commands.am.Am
+Pixel2.arm-29-en-portrait/logcat:196:10-01 12:35:09.692   379  2855 W system_server: Long monitor contention with owner ActivityManager (417) at void com.android.server.am.BroadcastQueue.processNextBroadcast(boolean)(BroadcastQueue.java:948) waiters=0 in java.lang.String com.android.server.am.ActivityManagerService.checkContentProviderAccess(java.lang.String, int) for 153ms
+Pixel2.arm-29-en-portrait/logcat:207:10-01 12:35:09.708  6602  6688 E GoogleApiManager: java.lang.SecurityException: Unknown calling package name 'com.google.android.gms'.
+Pixel2.arm-29-en-portrait/logcat:224:10-01 12:35:09.717   379  6805 W Binder  : java.lang.Throwable
+Pixel2.arm-29-en-portrait/logcat:229:10-01 12:35:09.719  6755  6755 D AndroidRuntime: Shutting down VM
+Pixel2.arm-29-en-portrait/logcat:370:10-01 12:35:10.219  6957  6957 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 0 <<<<<<
+Pixel2.arm-29-en-portrait/logcat:371:10-01 12:35:10.224  6957  6957 I AndroidRuntime: Using default boot image
+Pixel2.arm-29-en-portrait/logcat:372:10-01 12:35:10.224  6957  6957 I AndroidRuntime: Leaving lock profiling enabled
+Pixel2.arm-29-en-portrait/logcat:384:10-01 12:35:10.284  6957  6957 D AndroidRuntime: Calling main entry com.android.commands.input.Input
+Pixel2.arm-29-en-portrait/logcat:427:10-01 12:35:10.522  6957  6957 D AndroidRuntime: Shutting down VM
+Pixel2.arm-29-en-portrait/logcat:437:10-01 12:35:10.569  6864  6950 W putmethod.lati: Long monitor contention with owner main (6864) at void iqd.a(iqe, java.lang.Class, java.util.concurrent.Executor)(PG:12) waiters=0 in void iqd.a(iqe, java.lang.Class, java.util.concurrent.Executor) for 391ms
+Pixel2.arm-29-en-portrait/logcat:444:10-01 12:35:10.607  6864  6992 W putmethod.lati: Long monitor contention with owner main (6864) at void iqd.a(iqe, java.lang.Class, java.util.concurrent.Executor)(PG:12) waiters=1 in void ipz.b(java.lang.Object[]) for 404ms
+Pixel2.arm-29-en-portrait/logcat:484:10-01 12:35:10.766  6974  6974 W GrowthKit: java.lang.NullPointerException: Unable to get GrowthKit Component from host app.
+Pixel2.arm-29-en-portrait/logcat:622:10-01 12:35:10.991   379   379 W MessageQueue: java.lang.IllegalStateException: Handler (com.android.server.backup.internal.BackupHandler) {2a3d41d} sending message to a Handler on a dead thread
+Pixel2.arm-29-en-portrait/logcat:646:10-01 12:35:11.008   379   379 W MessageQueue: java.lang.IllegalStateException: Handler (com.android.server.backup.internal.BackupHandler) {2a3d41d} sending message to a Handler on a dead thread
+Pixel2.arm-29-en-portrait/logcat:917:10-01 12:35:11.789  7214  7251 E GoogleApiManager: java.lang.SecurityException: Unknown calling package name 'com.google.android.gms'.
+Pixel2.arm-29-en-portrait/logcat:978:10-01 12:35:11.812  7214  7245 W AdvertisingIdClient: java.lang.SecurityException: MODE_WORLD_READABLE no longer supported
+Pixel2.arm-29-en-portrait/logcat:1081:10-01 12:35:12.363  7282  7346 E GoogleApiManager: java.lang.SecurityException: Unknown calling package name 'com.google.android.gms'.
+Pixel2.arm-29-en-portrait/logcat:1171:10-01 12:35:12.615   379   379 W MessageQueue: java.lang.IllegalStateException: Handler (com.android.server.backup.internal.BackupHandler) {2a3d41d} sending message to a Handler on a dead thread
+Pixel2.arm-29-en-portrait/logcat:1205:10-01 12:35:13.591  7282  7446 W YouTube : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:1290:10-01 12:35:15.117   379   379 W MessageQueue: java.lang.IllegalStateException: Handler (com.android.server.backup.internal.BackupHandler) {2a3d41d} sending message to a Handler on a dead thread
+Pixel2.arm-29-en-portrait/logcat:1313:10-01 12:35:15.118   379   379 W MessageQueue: java.lang.IllegalStateException: Handler (com.android.server.backup.internal.BackupHandler) {2a3d41d} sending message to a Handler on a dead thread
+Pixel2.arm-29-en-portrait/logcat:1340:10-01 12:35:15.178  7465  7465 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 0 <<<<<<
+Pixel2.arm-29-en-portrait/logcat:1341:10-01 12:35:15.180  7465  7465 I AndroidRuntime: Using default boot image
+Pixel2.arm-29-en-portrait/logcat:1342:10-01 12:35:15.180  7465  7465 I AndroidRuntime: Leaving lock profiling enabled
+Pixel2.arm-29-en-portrait/logcat:1347:10-01 12:35:15.236  7465  7465 D AndroidRuntime: Calling main entry com.android.commands.am.Am
+Pixel2.arm-29-en-portrait/logcat:1357:10-01 12:35:15.312   379  6805 W Binder  : java.lang.Throwable
+Pixel2.arm-29-en-portrait/logcat:1362:10-01 12:35:15.313  7465  7465 D AndroidRuntime: Shutting down VM
+Pixel2.arm-29-en-portrait/logcat:1364:10-01 12:35:15.315  7465  7503 I AndroidRuntime: NOTE: attach of thread 'Binder:7465_3' failed
+Pixel2.arm-29-en-portrait/logcat:1375:10-01 12:35:15.400  7282  7446 W YouTube : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:1390:10-01 12:35:15.519  7513  7513 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 0 <<<<<<
+Pixel2.arm-29-en-portrait/logcat:1391:10-01 12:35:15.521  7513  7513 I AndroidRuntime: Using default boot image
+Pixel2.arm-29-en-portrait/logcat:1392:10-01 12:35:15.521  7513  7513 I AndroidRuntime: Leaving lock profiling enabled
+Pixel2.arm-29-en-portrait/logcat:1397:10-01 12:35:15.550  7513  7513 D AndroidRuntime: Calling main entry com.android.commands.am.Am
+Pixel2.arm-29-en-portrait/logcat:1588:10-01 12:35:16.474   379  6805 W Binder  : java.lang.Throwable
+Pixel2.arm-29-en-portrait/logcat:1592:10-01 12:35:16.474  7513  7513 D AndroidRuntime: Shutting down VM
+Pixel2.arm-29-en-portrait/logcat:1610:10-01 12:35:16.598  4265  7689 E gslm    : java.lang.RuntimeException: ManagedChannel allocation site
+Pixel2.arm-29-en-portrait/logcat:1626:10-01 12:35:16.598  4265  7689 E gslm    : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:1664:10-01 12:35:16.635  4265  7689 E AuthPII : Caused by: java.lang.InterruptedException
+Pixel2.arm-29-en-portrait/logcat:1693:10-01 12:35:16.635  4265  7689 E AuthPII : Caused by: java.lang.InterruptedException
+Pixel2.arm-29-en-portrait/logcat:1756:10-01 12:35:16.776  6974  7715 E GoogleApiManager: java.lang.SecurityException: Unknown calling package name 'com.google.android.gms'.
+Pixel2.arm-29-en-portrait/logcat:1886:10-01 12:35:17.090   379   379 W MessageQueue: java.lang.IllegalStateException: Handler (com.android.server.backup.internal.BackupHandler) {2a3d41d} sending message to a Handler on a dead thread
+Pixel2.arm-29-en-portrait/logcat:1912:10-01 12:35:17.128   379   379 W MessageQueue: java.lang.IllegalStateException: Handler (com.android.server.backup.internal.BackupHandler) {2a3d41d} sending message to a Handler on a dead thread
+Pixel2.arm-29-en-portrait/logcat:1994:10-01 12:35:17.209  7116  7762 E GoogleApiManager: java.lang.SecurityException: Unknown calling package name 'com.google.android.gms'.
+Pixel2.arm-29-en-portrait/logcat:2084:10-01 12:35:17.510  7282  7389 W ConnectionTracker: java.lang.IllegalArgumentException: Service not registered: tel@8891922
+Pixel2.arm-29-en-portrait/logcat:2142:10-01 12:35:17.570  4265  4360 W Auth    : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:2180:10-01 12:35:17.571  4265  4299 E AuthPII : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:2218:10-01 12:35:17.571  4265  4299 E AuthPII : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:2245:10-01 12:35:17.572  7116  7754 W unm     : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:2278:10-01 12:35:17.573  7116  7730 W aaki    : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:2301:10-01 12:35:17.573  7116  7730 W aaki    : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:2340:10-01 12:35:17.574  7116  7730 E yrn     : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:2380:10-01 12:35:17.574  7116  7731 E aafy    : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:2419:10-01 12:35:17.575  7116  7731 E aafy    : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:2446:10-01 12:35:17.576  7116  7116 W Gmail   : java.lang.RuntimeException: Failed to fetch SAPI.
+Pixel2.arm-29-en-portrait/logcat:2469:10-01 12:35:17.576  7116  7116 W Gmail   : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:2587:10-01 12:35:17.598  7116  7698 E Gmail   : Caused by: java.lang.RuntimeException: Failed to fetch SAPI.
+Pixel2.arm-29-en-portrait/logcat:2602:10-01 12:35:17.598  7116  7698 E Gmail   : 	at java.lang.Thread.run(Thread.java
+Pixel2.arm-29-en-portrait/logcat:2622:10-01 12:35:17.610  7116  7731 E yrn     : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:2715:10-01 12:35:17.788  6974  7766 W CalendarRequestExecutor: java.lang.InterruptedException
+Pixel2.arm-29-en-portrait/logcat:2796:10-01 12:35:18.093   379   379 W MessageQueue: java.lang.IllegalStateException: Handler (com.android.server.backup.internal.BackupHandler) {2a3d41d} sending message to a Handler on a dead thread
+Pixel2.arm-29-en-portrait/logcat:2824:10-01 12:35:18.099   379   379 W MessageQueue: java.lang.IllegalStateException: Handler (com.android.server.backup.internal.BackupHandler) {2a3d41d} sending message to a Handler on a dead thread
+Pixel2.arm-29-en-portrait/logcat:2974:10-01 12:35:18.481   379   379 W MessageQueue: java.lang.IllegalStateException: Handler (com.android.server.backup.internal.BackupHandler) {2a3d41d} sending message to a Handler on a dead thread
+Pixel2.arm-29-en-portrait/logcat:2997:10-01 12:35:18.482   379   379 W MessageQueue: java.lang.IllegalStateException: Handler (com.android.server.backup.internal.BackupHandler) {2a3d41d} sending message to a Handler on a dead thread
+Pixel2.arm-29-en-portrait/logcat:3091:10-01 12:35:18.573  4265  4372 W PhBaseOp: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:3104:10-01 12:35:18.573  4265  4372 W AsyncOperation: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:3115:10-01 12:35:18.622  7931  7931 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 0 <<<<<<
+Pixel2.arm-29-en-portrait/logcat:3116:10-01 12:35:18.624  7931  7931 I AndroidRuntime: Using default boot image
+Pixel2.arm-29-en-portrait/logcat:3117:10-01 12:35:18.624  7931  7931 I AndroidRuntime: Leaving lock profiling enabled
+Pixel2.arm-29-en-portrait/logcat:3152:10-01 12:35:18.708  4320  7864 W AsyncOperation: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:3165:10-01 12:35:18.734  7931  7931 D AndroidRuntime: Calling main entry com.android.commands.am.Am
+Pixel2.arm-29-en-portrait/logcat:3206:10-01 12:35:18.866   379  6805 W Binder  : java.lang.Throwable
+Pixel2.arm-29-en-portrait/logcat:3211:10-01 12:35:18.866  7931  7931 D AndroidRuntime: Shutting down VM
+Pixel2.arm-29-en-portrait/logcat:3214:10-01 12:35:18.871  7931  7990 I AndroidRuntime: NOTE: attach of thread 'Binder:7931_3' failed
+Pixel2.arm-29-en-portrait/logcat:3228:10-01 12:35:18.943  7282  7446 W YouTube : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:3242:10-01 12:35:18.949  4265  4271 I .gms.persisten: Compiler allocated 5309KB to compile com.google.android.gms.auth.aang.GetTokenResponse abmf.b(android.accounts.Account, java.lang.String, android.os.Bundle, fmjv, java.lang.String, java.lang.String, java.lang.String, boolean, com.google.android.gms.auth.firstparty.shared.AppDescription)
+Pixel2.arm-29-en-portrait/logcat:3244:10-01 12:35:18.976  7991  7991 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 0 <<<<<<
+Pixel2.arm-29-en-portrait/logcat:3245:10-01 12:35:18.978  7991  7991 I AndroidRuntime: Using default boot image
+Pixel2.arm-29-en-portrait/logcat:3246:10-01 12:35:18.978  7991  7991 I AndroidRuntime: Leaving lock profiling enabled
+Pixel2.arm-29-en-portrait/logcat:3254:10-01 12:35:19.020  7991  7991 D AndroidRuntime: Calling main entry com.android.commands.am.Am
+Pixel2.arm-29-en-portrait/logcat:3270:10-01 12:35:19.091   379  6805 W Binder  : java.lang.Throwable
+Pixel2.arm-29-en-portrait/logcat:3275:10-01 12:35:19.091  7991  7991 D AndroidRuntime: Shutting down VM
+Pixel2.arm-29-en-portrait/logcat:3308:10-01 12:35:19.124  4265  4403 W PhBaseOp: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:3324:10-01 12:35:19.124  4265  4403 W AsyncOperation: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:3354:10-01 12:35:19.148  4265  7961 W PhBaseOp: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:3368:10-01 12:35:19.148  4265  7961 W AsyncOperation: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:3434:10-01 12:35:19.602  4320  6741 E gslm    : java.lang.RuntimeException: ManagedChannel allocation site
+Pixel2.arm-29-en-portrait/logcat:3450:10-01 12:35:19.602  4320  6741 E gslm    : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:3453:10-01 12:35:19.602  4320  6741 E gslm    : java.lang.RuntimeException: ManagedChannel allocation site
+Pixel2.arm-29-en-portrait/logcat:3469:10-01 12:35:19.602  4320  6741 E gslm    : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:3472:10-01 12:35:19.602  4320  6741 E gslm    : java.lang.RuntimeException: ManagedChannel allocation site
+Pixel2.arm-29-en-portrait/logcat:3483:10-01 12:35:19.602  4320  6741 E gslm    : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:3532:10-01 12:35:19.799  8054  8054 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 0 <<<<<<
+Pixel2.arm-29-en-portrait/logcat:3533:10-01 12:35:19.801  8054  8054 I AndroidRuntime: Using default boot image
+Pixel2.arm-29-en-portrait/logcat:3534:10-01 12:35:19.801  8054  8054 I AndroidRuntime: Leaving lock profiling enabled
+Pixel2.arm-29-en-portrait/logcat:3548:10-01 12:35:19.845  8054  8054 D AndroidRuntime: Calling main entry com.android.commands.am.Am
+Pixel2.arm-29-en-portrait/logcat:3597:10-01 12:35:19.952  4320  8063 W gsar    : java.lang.NoSuchMethodException: ezvl.getScopes []
+Pixel2.arm-29-en-portrait/logcat:3598:10-01 12:35:19.952  4320  8063 W gsar    : 	at java.lang.Class.getMethod(Class.java:2072)
+Pixel2.arm-29-en-portrait/logcat:3599:10-01 12:35:19.952  4320  8063 W gsar    : 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:3629:10-01 12:35:19.952  4320  8063 W gsar    : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:3645:10-01 12:35:20.061  4320  7856 W CryptauthV2: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:3687:10-01 12:35:20.166   379   379 W MessageQueue: java.lang.IllegalStateException: Handler (com.android.server.backup.internal.BackupHandler) {2a3d41d} sending message to a Handler on a dead thread
+Pixel2.arm-29-en-portrait/logcat:3723:10-01 12:35:20.272  4265  4271 I .gms.persisten: Compiler allocated 7047KB to compile djdh djdi.t(fccu, fjol, java.lang.String, boolean, fcbt, fccu, boolean, fzez)
+Pixel2.arm-29-en-portrait/logcat:3743:10-01 12:35:20.330  4320  6741 E constellation: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:3756:10-01 12:35:20.330  4320  8076 E constellation: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:3777:10-01 12:35:20.374  4320  7856 W CryptauthV2: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:3799:10-01 12:35:20.384  4265  6731 W Fido    : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:3850:10-01 12:35:20.584  4320  7856 W CryptauthV2: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:3872:10-01 12:35:20.590  4320  7856 W CryptauthV2: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:3887:10-01 12:35:20.592  4265  6725 W ProximityAuth: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:3911:10-01 12:35:20.715  4265  4271 I .gms.persisten: Compiler allocated 6986KB to compile djdh djdi.t(fccu, fjol, java.lang.String, boolean, fcbt, fccu, boolean, fzez)
+Pixel2.arm-29-en-portrait/logcat:3968:10-01 12:35:21.267  4320  7864 W SyncManager: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:3999:10-01 12:35:21.267  4320  7864 W EntityManager: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:4023:10-01 12:35:21.431  7214  7251 E GoogleApiManager: java.lang.SecurityException: Unknown calling package name 'com.google.android.gms'.
+Pixel2.arm-29-en-portrait/logcat:4048:10-01 12:35:21.461  8079  8131 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:4049:10-01 12:35:21.461  8079  8131 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:4050:10-01 12:35:21.461  8079  8131 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:4051:10-01 12:35:21.461  8079  8131 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:4102:10-01 12:35:21.462  8079  8131 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:4103:10-01 12:35:21.462  8079  8131 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:4104:10-01 12:35:21.462  8079  8131 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:4105:10-01 12:35:21.462  8079  8131 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:4156:10-01 12:35:21.462  8079  8131 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:4157:10-01 12:35:21.462  8079  8131 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:4158:10-01 12:35:21.462  8079  8131 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:4159:10-01 12:35:21.462  8079  8131 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:4210:10-01 12:35:21.462  8079  8131 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:4211:10-01 12:35:21.462  8079  8131 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:4212:10-01 12:35:21.462  8079  8131 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:4213:10-01 12:35:21.462  8079  8131 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:4264:10-01 12:35:21.462  8079  8131 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:4265:10-01 12:35:21.462  8079  8131 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:4266:10-01 12:35:21.462  8079  8131 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:4267:10-01 12:35:21.462  8079  8131 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:4318:10-01 12:35:21.463  8079  8131 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:4319:10-01 12:35:21.463  8079  8131 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:4320:10-01 12:35:21.463  8079  8131 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:4321:10-01 12:35:21.463  8079  8131 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:4372:10-01 12:35:21.463  8079  8131 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:4373:10-01 12:35:21.463  8079  8131 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:4374:10-01 12:35:21.463  8079  8131 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:4375:10-01 12:35:21.463  8079  8131 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:4426:10-01 12:35:21.463  8079  8131 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:4427:10-01 12:35:21.463  8079  8131 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:4428:10-01 12:35:21.463  8079  8131 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:4429:10-01 12:35:21.463  8079  8131 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:4480:10-01 12:35:21.463  8079  8131 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:4481:10-01 12:35:21.463  8079  8131 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:4482:10-01 12:35:21.463  8079  8131 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:4483:10-01 12:35:21.463  8079  8131 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:4534:10-01 12:35:21.464  8079  8131 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:4535:10-01 12:35:21.464  8079  8131 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:4536:10-01 12:35:21.464  8079  8131 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:4537:10-01 12:35:21.464  8079  8131 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:4588:10-01 12:35:21.464  8079  8131 D StrictMode: 	at java.lang.Class.getDeclaredField(Native Method)
+Pixel2.arm-29-en-portrait/logcat:4642:10-01 12:35:21.464  8079  8131 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:4643:10-01 12:35:21.464  8079  8131 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:4644:10-01 12:35:21.464  8079  8131 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:4645:10-01 12:35:21.464  8079  8131 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:4696:10-01 12:35:21.465  8079  8131 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:4697:10-01 12:35:21.465  8079  8131 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:4698:10-01 12:35:21.465  8079  8131 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:4699:10-01 12:35:21.465  8079  8131 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:4750:10-01 12:35:21.465  8079  8131 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:4751:10-01 12:35:21.465  8079  8131 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:4752:10-01 12:35:21.465  8079  8131 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:4753:10-01 12:35:21.465  8079  8131 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:4804:10-01 12:35:21.465  8079  8131 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:4805:10-01 12:35:21.465  8079  8131 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:4806:10-01 12:35:21.465  8079  8131 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:4807:10-01 12:35:21.465  8079  8131 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:4858:10-01 12:35:21.467  8079  8131 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:4859:10-01 12:35:21.467  8079  8131 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:4860:10-01 12:35:21.467  8079  8131 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:4861:10-01 12:35:21.467  8079  8131 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:4912:10-01 12:35:21.468  8079  8131 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:4913:10-01 12:35:21.468  8079  8131 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:4914:10-01 12:35:21.468  8079  8131 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:4915:10-01 12:35:21.468  8079  8131 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:4966:10-01 12:35:21.468  8079  8131 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:4967:10-01 12:35:21.468  8079  8131 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:4968:10-01 12:35:21.468  8079  8131 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:4969:10-01 12:35:21.468  8079  8131 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:5020:10-01 12:35:21.469  8079  8131 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:5021:10-01 12:35:21.469  8079  8131 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:5022:10-01 12:35:21.469  8079  8131 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:5023:10-01 12:35:21.469  8079  8131 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:5074:10-01 12:35:21.469  8079  8131 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:5075:10-01 12:35:21.469  8079  8131 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:5076:10-01 12:35:21.469  8079  8131 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:5077:10-01 12:35:21.469  8079  8131 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:5128:10-01 12:35:21.469  8079  8131 D StrictMode: 	at java.lang.Class.getDeclaredField(Native Method)
+Pixel2.arm-29-en-portrait/logcat:5229:10-01 12:35:21.997  7282  7346 E GoogleApiManager: java.lang.SecurityException: Unknown calling package name 'com.google.android.gms'.
+Pixel2.arm-29-en-portrait/logcat:5277:10-01 12:35:22.420   379   379 W MessageQueue: java.lang.IllegalStateException: Handler (com.android.server.backup.internal.BackupHandler) {2a3d41d} sending message to a Handler on a dead thread
+Pixel2.arm-29-en-portrait/logcat:5298:10-01 12:35:22.463  4265  4271 I .gms.persisten: Compiler allocated 4194KB to compile void djdi.M(java.util.Set, fccu, fjol, java.lang.String, boolean, fzez, djdb, fcbt, fccu, boolean, gecj)
+Pixel2.arm-29-en-portrait/logcat:5314:10-01 12:35:22.522  4265  4271 I .gms.persisten: Compiler allocated 4319KB to compile void djdi.M(java.util.Set, fccu, fjol, java.lang.String, boolean, fzez, djdb, fcbt, fccu, boolean, gecj)
+Pixel2.arm-29-en-portrait/logcat:5319:10-01 12:35:22.538  4265  4271 I .gms.persisten: Compiler allocated 4384KB to compile void djdi.q(fjol, java.lang.String, fccu, java.lang.String[], java.lang.String[], boolean, gecj)
+Pixel2.arm-29-en-portrait/logcat:6057:10-01 12:35:23.392  7282  7446 W YouTube : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:6192:10-01 12:35:23.597  7593  7599 I id.gms.unstabl: Compiler allocated 4306KB to compile int fzha.c(java.lang.Object, byte[], int, int, int, fzcz)
+Pixel2.arm-29-en-portrait/logcat:6263:10-01 12:35:23.706  4265  4360 W PhBaseOp: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:6276:10-01 12:35:23.706  4265  4360 W AsyncOperation: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:6292:10-01 12:35:23.718  4265  7961 W PhBaseOp: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:6305:10-01 12:35:23.719  4265  7961 W AsyncOperation: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:6322:10-01 12:35:23.719  4265  5913 W PhenotypeFlagCommitter: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:6354:10-01 12:35:23.786  6974  6974 W GrowthKit: java.lang.NullPointerException: Unable to get GrowthKit Component from host app.
+Pixel2.arm-29-en-portrait/logcat:6381:10-01 12:35:23.788  4265  4360 W PhBaseOp: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:6394:10-01 12:35:23.788  4265  4360 W AsyncOperation: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:6398:10-01 12:35:23.805  6974  6974 W GrowthKit: java.lang.NullPointerException: Unable to get GrowthKit Component from host app.
+Pixel2.arm-29-en-portrait/logcat:6449:10-01 12:35:23.822  4265  7961 W PhBaseOp: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:6462:10-01 12:35:23.823  4265  7961 W AsyncOperation: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:6480:10-01 12:35:23.834  4265  4360 W PhBaseOp: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:6493:10-01 12:35:23.835  4265  4360 W AsyncOperation: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:6561:10-01 12:35:23.904  4320  6728 E CpgSchemaBuilder: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:6614:10-01 12:35:24.003  8079  8154 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:6615:10-01 12:35:24.003  8079  8154 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:6616:10-01 12:35:24.003  8079  8154 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:6617:10-01 12:35:24.003  8079  8154 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:6646:10-01 12:35:24.003  8079  8154 D StrictMode: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:6762:10-01 12:35:24.678  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:6763:10-01 12:35:24.678  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:6764:10-01 12:35:24.678  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:6765:10-01 12:35:24.678  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:6838:10-01 12:35:24.709  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:6839:10-01 12:35:24.709  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:6840:10-01 12:35:24.709  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:6841:10-01 12:35:24.709  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:6886:10-01 12:35:24.709  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:6887:10-01 12:35:24.709  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:6888:10-01 12:35:24.709  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:6889:10-01 12:35:24.709  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:6934:10-01 12:35:24.709  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:6935:10-01 12:35:24.709  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:6936:10-01 12:35:24.709  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:6937:10-01 12:35:24.709  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:6982:10-01 12:35:24.709  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:6983:10-01 12:35:24.709  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:6984:10-01 12:35:24.709  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:6985:10-01 12:35:24.709  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:7030:10-01 12:35:24.710  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:7031:10-01 12:35:24.710  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:7032:10-01 12:35:24.710  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:7033:10-01 12:35:24.710  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:7078:10-01 12:35:24.710  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:7079:10-01 12:35:24.710  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:7080:10-01 12:35:24.710  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:7081:10-01 12:35:24.710  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:7126:10-01 12:35:24.710  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:7127:10-01 12:35:24.710  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:7128:10-01 12:35:24.710  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:7129:10-01 12:35:24.710  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:7174:10-01 12:35:24.710  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:7175:10-01 12:35:24.710  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:7176:10-01 12:35:24.710  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:7177:10-01 12:35:24.710  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:7224:10-01 12:35:24.710  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:7225:10-01 12:35:24.710  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:7226:10-01 12:35:24.710  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:7227:10-01 12:35:24.710  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:7273:10-01 12:35:24.710  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:7274:10-01 12:35:24.710  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:7275:10-01 12:35:24.710  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:7276:10-01 12:35:24.710  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:7322:10-01 12:35:24.710  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:7323:10-01 12:35:24.710  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:7324:10-01 12:35:24.710  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:7325:10-01 12:35:24.710  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:7371:10-01 12:35:24.711  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:7372:10-01 12:35:24.711  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:7373:10-01 12:35:24.711  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:7374:10-01 12:35:24.711  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:7420:10-01 12:35:24.711  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:7421:10-01 12:35:24.711  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:7422:10-01 12:35:24.711  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:7423:10-01 12:35:24.711  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:7469:10-01 12:35:24.711  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:7470:10-01 12:35:24.711  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:7471:10-01 12:35:24.711  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:7472:10-01 12:35:24.711  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:7518:10-01 12:35:24.711  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:7519:10-01 12:35:24.711  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:7520:10-01 12:35:24.711  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:7521:10-01 12:35:24.711  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:7567:10-01 12:35:24.711  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:7568:10-01 12:35:24.711  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:7569:10-01 12:35:24.711  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:7570:10-01 12:35:24.711  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:7616:10-01 12:35:24.711  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:7617:10-01 12:35:24.711  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:7618:10-01 12:35:24.711  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:7619:10-01 12:35:24.711  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:7665:10-01 12:35:24.712  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredField(Native Method)
+Pixel2.arm-29-en-portrait/logcat:7744:10-01 12:35:24.847  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:7745:10-01 12:35:24.847  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2067)
+Pixel2.arm-29-en-portrait/logcat:7746:10-01 12:35:24.847  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethod(Class.java:2050)
+Pixel2.arm-29-en-portrait/logcat:7782:10-01 12:35:24.848  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredField(Native Method)
+Pixel2.arm-29-en-portrait/logcat:7818:10-01 12:35:24.848  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredField(Native Method)
+Pixel2.arm-29-en-portrait/logcat:8020:10-01 12:35:25.607  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:8021:10-01 12:35:25.607  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2067)
+Pixel2.arm-29-en-portrait/logcat:8022:10-01 12:35:25.607  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethod(Class.java:2050)
+Pixel2.arm-29-en-portrait/logcat:8043:10-01 12:35:25.607  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredField(Native Method)
+Pixel2.arm-29-en-portrait/logcat:8064:10-01 12:35:25.607  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:8065:10-01 12:35:25.607  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2067)
+Pixel2.arm-29-en-portrait/logcat:8066:10-01 12:35:25.607  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethod(Class.java:2050)
+Pixel2.arm-29-en-portrait/logcat:8087:10-01 12:35:25.615  8079  8154 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:8088:10-01 12:35:25.615  8079  8154 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2067)
+Pixel2.arm-29-en-portrait/logcat:8089:10-01 12:35:25.615  8079  8154 D StrictMode: 	at java.lang.Class.getDeclaredMethod(Class.java:2050)
+Pixel2.arm-29-en-portrait/logcat:8105:10-01 12:35:25.615  8079  8154 D StrictMode: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:8191:10-01 12:35:26.054  4265  4372 W PhBaseOp: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:8204:10-01 12:35:26.054  4265  4372 W AsyncOperation: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:8220:10-01 12:35:26.056  4265  4372 W PhBaseOp: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:8233:10-01 12:35:26.056  4265  4372 W AsyncOperation: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:8373:10-01 12:35:26.775  6974  7715 E GoogleApiManager: java.lang.SecurityException: Unknown calling package name 'com.google.android.gms'.
+Pixel2.arm-29-en-portrait/logcat:8436:10-01 12:35:26.830  4265  7961 W PhBaseOp: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:8449:10-01 12:35:26.831  4265  7961 W AsyncOperation: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:8485:10-01 12:35:26.865  4265  7961 W PhBaseOp: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:8498:10-01 12:35:26.865  4265  7961 W AsyncOperation: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:8520:10-01 12:35:26.951  4265  4372 I Nearby  : java.lang.IllegalStateException: BluetoothAdapter not ready yet!
+Pixel2.arm-29-en-portrait/logcat:8527:10-01 12:35:26.951  4265  4372 I Nearby  : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:8532:10-01 12:35:26.951  4265  4372 I Nearby  : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:8592:10-01 12:35:27.067  4320  7864 E gslm    : java.lang.RuntimeException: ManagedChannel allocation site
+Pixel2.arm-29-en-portrait/logcat:8608:10-01 12:35:27.067  4320  7864 E gslm    : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:8625:10-01 12:35:27.076  4265  4360 W PhBaseOp: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:8638:10-01 12:35:27.083  4265  4360 W AsyncOperation: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:8672:10-01 12:35:27.202  7116  7762 E GoogleApiManager: java.lang.SecurityException: Unknown calling package name 'com.google.android.gms'.
+Pixel2.arm-29-en-portrait/logcat:8727:10-01 12:35:27.222  4265  4299 W GLSUser : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:8774:10-01 12:35:27.280  4265  7961 W PhBaseOp: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:8787:10-01 12:35:27.280  4265  7961 W AsyncOperation: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:8811:10-01 12:35:27.365  4320  7864 W CryptauthV2: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:8838:10-01 12:35:27.376  4265  4360 W PhBaseOp: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:8851:10-01 12:35:27.377  4265  4360 W AsyncOperation: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:8884:10-01 12:35:27.457  4265  7961 W PhBaseOp: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:8897:10-01 12:35:27.457  4265  7961 W AsyncOperation: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:8937:10-01 12:35:27.501  4265  7961 W PhBaseOp: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:8953:10-01 12:35:27.504  4265  7961 W AsyncOperation: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:9027:10-01 12:35:27.684  7116  7732 W aaki    : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:9066:10-01 12:35:27.686  7116  7116 W xpa     : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:9129:10-01 12:35:27.686  7116  7116 E yql     : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:9155:10-01 12:35:27.715  4265  4360 W PhBaseOp: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:9168:10-01 12:35:27.716  4265  4360 W AsyncOperation: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:9243:10-01 12:35:27.960  4265  8040 W PhBaseOp: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:9256:10-01 12:35:27.960  4265  8040 W AsyncOperation: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:9294:10-01 12:35:28.042  4265  8040 W PhBaseOp: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:9307:10-01 12:35:28.042  4265  8040 W AsyncOperation: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:9347:10-01 12:35:28.163  4320  7864 W CryptauthV2: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:9361:10-01 12:35:28.165  4265  8358 W ProximityAuth: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:9521:10-01 12:35:28.906  4320  7864 W CryptauthV2: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:9543:10-01 12:35:28.914  4265  7890 W Fido    : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:9620:10-01 12:35:29.090  4265  7961 W PhBaseOp: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:9633:10-01 12:35:29.090  4265  7961 W AsyncOperation: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:9675:10-01 12:35:29.182  4265  7961 W PhBaseOp: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:9688:10-01 12:35:29.182  4265  7961 W AsyncOperation: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:9791:10-01 12:35:29.288  8079  8365 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:9792:10-01 12:35:29.288  8079  8365 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2067)
+Pixel2.arm-29-en-portrait/logcat:9793:10-01 12:35:29.288  8079  8365 D StrictMode: 	at java.lang.Class.getDeclaredMethod(Class.java:2050)
+Pixel2.arm-29-en-portrait/logcat:9806:10-01 12:35:29.288  8079  8365 D StrictMode: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:9841:10-01 12:35:29.333  4265  7961 W PhBaseOp: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:9854:10-01 12:35:29.334  4265  7961 W AsyncOperation: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:9996:10-01 12:35:29.770  4265  8040 W PhBaseOp: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:10011:10-01 12:35:29.770  4265  8040 W AsyncOperation: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:10523:10-01 12:35:34.976  7282  7446 W YouTube : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:10705:10-01 12:35:35.708  8079  8079 W ResourcesCompat: java.lang.UnsupportedOperationException: Failed to resolve attribute at index 0: TypedValue{t=0x2/d=0x7f04012a a=-1}
+Pixel2.arm-29-en-portrait/logcat:10777:10-01 12:35:35.725  8079  8079 W ResourcesCompat: java.lang.UnsupportedOperationException: Failed to resolve attribute at index 0: TypedValue{t=0x2/d=0x7f04012a a=-1}
+Pixel2.arm-29-en-portrait/logcat:10852:10-01 12:35:35.748  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:10853:10-01 12:35:35.748  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:10854:10-01 12:35:35.748  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:10855:10-01 12:35:35.748  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:10940:10-01 12:35:36.342  4320  7861 W CryptauthV2: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:10954:10-01 12:35:36.347  4265  8346 W ProximityAuth: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:11032:10-01 12:35:36.960  4265  4372 I Nearby  : java.lang.IllegalStateException: BluetoothAdapter not ready yet!
+Pixel2.arm-29-en-portrait/logcat:11039:10-01 12:35:36.960  4265  4372 I Nearby  : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:11044:10-01 12:35:36.960  4265  4372 I Nearby  : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:11176:10-01 12:35:37.854  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:11177:10-01 12:35:37.854  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:11178:10-01 12:35:37.854  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:11179:10-01 12:35:37.854  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:11478:10-01 12:35:40.975  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:11479:10-01 12:35:40.975  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:11480:10-01 12:35:40.975  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:11481:10-01 12:35:40.975  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:11836:10-01 12:35:46.997  4265  4372 W Nearby  : java.lang.IllegalStateException: BluetoothAdapter not ready yet!
+Pixel2.arm-29-en-portrait/logcat:11843:10-01 12:35:46.997  4265  4372 W Nearby  : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:11848:10-01 12:35:46.997  4265  4372 W Nearby  : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:11857:10-01 12:35:47.657  7116  7735 W abiv    : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:12727:10-01 12:36:05.044  7282  7446 W YouTube : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:13252:10-01 12:36:16.011  4265  7961 W PhBaseOp: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:13265:10-01 12:36:16.011  4265  7961 W AsyncOperation: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:13663:10-01 12:36:22.662  4265  8613 E DomainFilterImpl: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:15154:10-01 12:36:50.370  4265  4360 W PhBaseOp: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:15167:10-01 12:36:50.370  4265  4360 W AsyncOperation: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:15695:10-01 12:36:54.589  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:15696:10-01 12:36:54.589  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:15697:10-01 12:36:54.589  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:15698:10-01 12:36:54.589  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:16258:10-01 12:37:01.081  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:16259:10-01 12:37:01.081  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:16260:10-01 12:37:01.081  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:16261:10-01 12:37:01.081  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:16607:10-01 12:37:09.818  2032  2032 W BugleDataModel: java.lang.IllegalStateException: Not allowed to start service Intent { cmp=com.google.android.apps.messaging/.shared.datamodel.action.execution.ActionExecutorImpl$EmptyService (has extras) }: app is in background uid UidRecord{c3a1d5b u0a142 CEM  bg:+4m52s976ms idle change:cached procs:2 seq(0,0,0)}
+Pixel2.arm-29-en-portrait/logcat:17978:10-01 12:37:20.779  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:17979:10-01 12:37:20.779  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:17980:10-01 12:37:20.779  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:17981:10-01 12:37:20.779  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:21362:10-01 12:37:43.878  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:21363:10-01 12:37:43.878  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:21364:10-01 12:37:43.878  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:21365:10-01 12:37:43.878  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:22422:10-01 12:37:53.042  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:22423:10-01 12:37:53.042  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:22424:10-01 12:37:53.042  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:22425:10-01 12:37:53.042  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:23583:10-01 12:38:02.288  4265  4741 W GLSUser : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:23601:10-01 12:38:02.291  4320  9080 E gslm    : java.lang.RuntimeException: ManagedChannel allocation site
+Pixel2.arm-29-en-portrait/logcat:23617:10-01 12:38:02.291  4320  9080 E gslm    : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:23620:10-01 12:38:02.291  4320  9080 E gslm    : java.lang.RuntimeException: ManagedChannel allocation site
+Pixel2.arm-29-en-portrait/logcat:23636:10-01 12:38:02.291  4320  9080 E gslm    : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:23844:10-01 12:38:02.992  4265  4360 W PhBaseOp: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:23857:10-01 12:38:02.992  4265  4360 W AsyncOperation: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:23874:10-01 12:38:02.992  4265  9063 W PlatformConfigurator: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:24031:10-01 12:38:03.786  4265  9064 E DomainFilterImpl: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:25728:10-01 12:38:21.328  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:25729:10-01 12:38:21.328  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:25730:10-01 12:38:21.328  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:25731:10-01 12:38:21.328  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:26011:10-01 12:38:23.701  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:26012:10-01 12:38:23.701  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:26013:10-01 12:38:23.701  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:26014:10-01 12:38:23.701  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:28264:10-01 12:38:54.483  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:28265:10-01 12:38:54.483  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:28266:10-01 12:38:54.483  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:28267:10-01 12:38:54.483  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:32569:10-01 12:39:45.494  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:32570:10-01 12:39:45.494  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:32571:10-01 12:39:45.494  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:32572:10-01 12:39:45.494  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:33657:10-01 12:39:54.145  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:33658:10-01 12:39:54.145  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:33659:10-01 12:39:54.145  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:33660:10-01 12:39:54.145  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:34093:10-01 12:39:57.096  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:34094:10-01 12:39:57.096  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:34095:10-01 12:39:57.096  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:34096:10-01 12:39:57.096  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:36061:10-01 12:40:13.532  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:36062:10-01 12:40:13.532  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:36063:10-01 12:40:13.532  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:36064:10-01 12:40:13.532  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:37796:10-01 12:40:29.349  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:37797:10-01 12:40:29.349  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:37798:10-01 12:40:29.349  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:37799:10-01 12:40:29.349  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:37927:10-01 12:40:29.785  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:37928:10-01 12:40:29.785  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:37929:10-01 12:40:29.785  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:37930:10-01 12:40:29.785  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:38477:10-01 12:40:42.437  4265  4623 W GLSUser : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:38493:10-01 12:40:42.442  4320  7775 E gslm    : java.lang.RuntimeException: ManagedChannel allocation site
+Pixel2.arm-29-en-portrait/logcat:38509:10-01 12:40:42.442  4320  7775 E gslm    : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:38512:10-01 12:40:42.442  4320  7775 E gslm    : java.lang.RuntimeException: ManagedChannel allocation site
+Pixel2.arm-29-en-portrait/logcat:38528:10-01 12:40:42.442  4320  7775 E gslm    : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:38556:10-01 12:40:42.549  4265  9716 E DomainFilterImpl: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:39497:10-01 12:41:05.286  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:39498:10-01 12:41:05.286  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:39499:10-01 12:41:05.286  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:39500:10-01 12:41:05.286  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:40050:10-01 12:41:11.310  8079  8079 W ResourcesCompat: java.lang.UnsupportedOperationException: Failed to resolve attribute at index 0: TypedValue{t=0x2/d=0x7f04012a a=-1}
+Pixel2.arm-29-en-portrait/logcat:40122:10-01 12:41:11.318  8079  8079 W ResourcesCompat: java.lang.UnsupportedOperationException: Failed to resolve attribute at index 0: TypedValue{t=0x2/d=0x7f04012a a=-1}
+Pixel2.arm-29-en-portrait/logcat:40197:10-01 12:41:11.355  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:40198:10-01 12:41:11.355  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:40199:10-01 12:41:11.355  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:40200:10-01 12:41:11.355  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:40248:10-01 12:41:11.384  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:40249:10-01 12:41:11.384  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:40250:10-01 12:41:11.384  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:40251:10-01 12:41:11.384  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:40998:10-01 12:41:18.756  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:40999:10-01 12:41:18.756  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:41000:10-01 12:41:18.756  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:41001:10-01 12:41:18.756  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:41648:10-01 12:41:24.895  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:41649:10-01 12:41:24.895  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:41650:10-01 12:41:24.895  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:41651:10-01 12:41:24.895  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:41709:10-01 12:41:25.204  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:41710:10-01 12:41:25.204  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:41711:10-01 12:41:25.204  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:41712:10-01 12:41:25.204  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:43693:10-01 12:42:04.959  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:43694:10-01 12:42:04.959  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:43695:10-01 12:42:04.959  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:43696:10-01 12:42:04.959  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:46042:10-01 12:42:25.322  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:46043:10-01 12:42:25.322  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:46044:10-01 12:42:25.322  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:46045:10-01 12:42:25.322  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:46785:10-01 12:42:29.970  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:46786:10-01 12:42:29.970  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:46787:10-01 12:42:29.970  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:46788:10-01 12:42:29.970  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:47814:10-01 12:42:36.945  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:47815:10-01 12:42:36.945  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:47816:10-01 12:42:36.945  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:47817:10-01 12:42:36.945  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:49606:10-01 12:42:50.624  8079  9682 W System.err: java.lang.IllegalStateException: Realm access from incorrect thread. Realm objects can only be accessed on the thread they were created.
+Pixel2.arm-29-en-portrait/logcat:54202:10-01 12:43:22.038  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:54203:10-01 12:43:22.038  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:54204:10-01 12:43:22.038  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:54205:10-01 12:43:22.038  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:54293:10-01 12:43:22.420  4265  8040 W GLSUser : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:54348:10-01 12:43:22.621  4265 10255 E DomainFilterImpl: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:55885:10-01 12:43:32.747   379   411 W WindowManager: Caused by: java.lang.ClassNotFoundException: Didn't find class "com.android.settingslib.widget.AdaptiveIconShapeDrawable" on path: DexPathList[[directory "."],nativeLibraryDirectories=[/system/lib64, /system/product/lib64, /system/lib64, /system/product/lib64]]
+Pixel2.arm-29-en-portrait/logcat:55887:10-01 12:43:32.747   379   411 W WindowManager: 	at java.lang.ClassLoader.loadClass(ClassLoader.java:379)
+Pixel2.arm-29-en-portrait/logcat:55888:10-01 12:43:32.747   379   411 W WindowManager: 	at java.lang.ClassLoader.loadClass(ClassLoader.java:312)
+Pixel2.arm-29-en-portrait/logcat:56121:10-01 12:43:33.922   379   379 W MessageQueue: java.lang.IllegalStateException: Handler (com.android.server.backup.internal.BackupHandler) {2a3d41d} sending message to a Handler on a dead thread
+Pixel2.arm-29-en-portrait/logcat:56568:10-01 12:43:37.030  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:56569:10-01 12:43:37.030  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:56570:10-01 12:43:37.030  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:56571:10-01 12:43:37.030  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:56791:10-01 12:43:38.150  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:56792:10-01 12:43:38.150  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:56793:10-01 12:43:38.150  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:56794:10-01 12:43:38.150  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:57505:10-01 12:43:42.375  8079  8079 D StrictMode: 	at java.lang.Class.getDeclaredMethodInternal(Native Method)
+Pixel2.arm-29-en-portrait/logcat:57506:10-01 12:43:42.375  8079  8079 D StrictMode: 	at java.lang.Class.getPublicMethodRecursive(Class.java:2079)
+Pixel2.arm-29-en-portrait/logcat:57507:10-01 12:43:42.375  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:2066)
+Pixel2.arm-29-en-portrait/logcat:57508:10-01 12:43:42.375  8079  8079 D StrictMode: 	at java.lang.Class.getMethod(Class.java:1693)
+Pixel2.arm-29-en-portrait/logcat:57751:10-01 12:43:43.844  8079  8079 I AndroidRuntime: VM exiting with result code 0, cleanup skipped.
+Pixel2.arm-29-en-portrait/logcat:57792:10-01 12:43:43.916   379  1261 I ActivityManager: Process org.ole.planet.myplanet (pid 8079) has died: fore TOP 
+Pixel2.arm-29-en-portrait/logcat:57806:10-01 12:43:43.923  8054  9728 W Binder  : java.lang.SecurityException: Calling from not trusted UID!
+Pixel2.arm-29-en-portrait/logcat:57817:10-01 12:43:43.924   379 10489 W Binder  : java.lang.Throwable
+Pixel2.arm-29-en-portrait/logcat:57821:10-01 12:43:43.924  8054  8054 D AndroidRuntime: Shutting down VM
+Pixel2.arm-29-en-portrait/logcat:57898:10-01 12:43:44.949  8167  8214 W Robo    : 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:58053:10-01 12:43:52.581   379   379 W MessageQueue: java.lang.IllegalStateException: Handler (com.android.server.backup.internal.BackupHandler) {2a3d41d} sending message to a Handler on a dead thread
+Pixel2.arm-29-en-portrait/logcat:58086:10-01 12:43:52.582  4265  7961 W PhBaseOp: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:58099:10-01 12:43:52.582  4265  7961 W AsyncOperation: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:58163:10-01 12:43:52.800   379   379 W MessageQueue: java.lang.IllegalStateException: Handler (com.android.server.backup.internal.BackupHandler) {2a3d41d} sending message to a Handler on a dead thread
+Pixel2.arm-29-en-portrait/logcat:58228:10-01 12:43:52.919 10623 10623 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 0 <<<<<<
+Pixel2.arm-29-en-portrait/logcat:58230:10-01 12:43:52.921 10623 10623 I AndroidRuntime: Using default boot image
+Pixel2.arm-29-en-portrait/logcat:58231:10-01 12:43:52.921 10623 10623 I AndroidRuntime: Leaving lock profiling enabled
+Pixel2.arm-29-en-portrait/logcat:58264:10-01 12:43:52.989  4265  8040 W PhBaseOp: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:58277:10-01 12:43:52.989  4265  8040 W AsyncOperation: 	at java.lang.Thread.run(Thread.java:919)
+Pixel2.arm-29-en-portrait/logcat:58282:10-01 12:43:53.003 10623 10623 D AndroidRuntime: Calling main entry com.android.commands.am.Am
+Pixel2.arm-29-en-portrait/logcat:58343:10-01 12:43:53.172   379 10489 W Binder  : java.lang.Throwable
+Pixel2.arm-29-en-portrait/logcat:58347:10-01 12:43:53.173 10623 10623 D AndroidRuntime: Shutting down VM

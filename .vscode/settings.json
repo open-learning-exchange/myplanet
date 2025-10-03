@@ -1,0 +1,16 @@
+{
+  "java.jdt.ls.java.home": "C:/Program Files/Java/jdk-17",
+  "java.configuration.runtimes": [
+    {
+      "name": "JavaSE-17",
+      "path": "C:/Program Files/Java/jdk-17",
+      "default": true
+    },
+    {
+      "name": "JavaSE-11",
+      "path": "C:/Program Files/Microsoft/jdk-11.0.16.101-hotspot"
+    }
+  ],
+  "gradle.java.home": "C:/Program Files/Java/jdk-17",
+  "java.configuration.updateBuildConfiguration": "interactive"
+}

@@ -1,0 +1,3987 @@
+[
+  {
+    "id": 800,
+    "description": "ReproScript",
+    "crawlStage": "crawl",
+    "maxNumberOfRuns": 1,
+    "contextDescriptor": {
+      "condition": "app_under_test_shown"
+    },
+    "actions": [
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatButton",
+            "groupViewChildPosition": 3,
+            "resourceId": "org.ole.planet.myplanet:id/next",
+            "text": "next"
+          },
+          {
+            "className": "android.widget.RelativeLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "androidx.appcompat.widget.ContentFrameLayout",
+            "groupViewChildPosition": 1,
+            "resourceId": "android:id/content"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatButton",
+            "groupViewChildPosition": 3,
+            "resourceId": "org.ole.planet.myplanet:id/next",
+            "text": "next"
+          },
+          {
+            "className": "android.widget.RelativeLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "androidx.appcompat.widget.ContentFrameLayout",
+            "groupViewChildPosition": 1,
+            "resourceId": "android:id/content"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatButton",
+            "groupViewChildPosition": 3,
+            "resourceId": "org.ole.planet.myplanet:id/next",
+            "text": "next"
+          },
+          {
+            "className": "android.widget.RelativeLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "androidx.appcompat.widget.ContentFrameLayout",
+            "groupViewChildPosition": 1,
+            "resourceId": "android:id/content"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "WAIT",
+        "delayTime": 2000
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatButton",
+            "groupViewChildPosition": 3,
+            "resourceId": "org.ole.planet.myplanet:id/next",
+            "text": "GET STARTED"
+          },
+          {
+            "className": "android.widget.RelativeLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "androidx.appcompat.widget.ContentFrameLayout",
+            "groupViewChildPosition": 1,
+            "resourceId": "android:id/content"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "com.google.android.material.button.MaterialButton",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/btn_server_address",
+            "contentDescription": "server address: 🌎 planet learning",
+            "text": "🌎 planet learning"
+          },
+          {
+            "className": "androidx.recyclerview.widget.RecyclerView",
+            "groupViewChildPosition": 2,
+            "resourceId": "org.ole.planet.myplanet:id/serverUrls"
+          },
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "WAIT",
+        "delayTime": 35000
+      },
+      {
+        "eventType": "PRESSED_BACK"
+      },
+      {
+        "eventType": "WAIT",
+        "delayTime": 5000
+      },
+      {
+        "eventType": "VIEW_TEXT_CHANGED",
+        "replacementText": "jessew",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatEditText",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/inputName"
+          },
+          {
+            "className": "android.widget.FrameLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "com.google.android.material.textfield.TextInputLayout",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/ltInputName"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_TEXT_CHANGED",
+        "replacementText": "planet",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatEditText",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/input_password"
+          },
+          {
+            "className": "android.widget.FrameLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "com.google.android.material.textfield.TextInputLayout",
+            "groupViewChildPosition": 2,
+            "resourceId": "org.ole.planet.myplanet:id/edtPassword"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatButton",
+            "groupViewChildPosition": 3,
+            "resourceId": "org.ole.planet.myplanet:id/btn_signin",
+            "contentDescription": "Sign In",
+            "text": "Sign In"
+          },
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatTextView",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/material_drawer_name",
+            "text": "Courses"
+          },
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 5
+          },
+          {
+            "className": "androidx.recyclerview.widget.RecyclerView",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/material_drawer_recycler_view"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "WAIT",
+        "delayTime": 2000
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.cardview.widget.CardView",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "androidx.recyclerview.widget.RecyclerView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/recycler"
+          },
+          {
+            "className": "android.widget.FrameLayout",
+            "groupViewChildPosition": 2
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatButton",
+            "groupViewChildPosition": 3,
+            "resourceId": "android:id/button1",
+            "text": "Join this course"
+          },
+          {
+            "className": "androidx.appcompat.widget.ButtonBarLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "android.widget.ScrollView",
+            "groupViewChildPosition": 3,
+            "resourceId": "org.ole.planet.myplanet:id/buttonPanel"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_LONG_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatTextView",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/description",
+            "text": "This course covers some features we use and customs we have when working on GitHub."
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 6,
+            "resourceId": "org.ole.planet.myplanet:id/ltDescription"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatTextView",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/description",
+            "text": "This course covers some features we use and customs we have when working on GitHub."
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 6,
+            "resourceId": "org.ole.planet.myplanet:id/ltDescription"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_SWIPED",
+        "swipeDirection": "Left",
+        "elementDescriptors": [
+          {
+            "className": "androidx.viewpager2.widget.ViewPager2$RecyclerViewImpl",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "androidx.viewpager2.widget.ViewPager2",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/viewPager2"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_SWIPED",
+        "swipeDirection": "Left",
+        "elementDescriptors": [
+          {
+            "className": "androidx.viewpager2.widget.ViewPager2",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/viewPager2"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "androidx.cardview.widget.CardView",
+            "groupViewChildPosition": 1
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatImageView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/backButton"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_SWIPED",
+        "swipeDirection": "Up",
+        "elementDescriptors": [
+          {
+            "className": "androidx.recyclerview.widget.RecyclerView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/recycler"
+          },
+          {
+            "className": "android.widget.FrameLayout",
+            "groupViewChildPosition": 2
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_SWIPED",
+        "swipeDirection": "Up",
+        "elementDescriptors": [
+          {
+            "className": "androidx.recyclerview.widget.RecyclerView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/recycler"
+          },
+          {
+            "className": "android.widget.FrameLayout",
+            "groupViewChildPosition": 2
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatTextView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/description",
+            "text": "The theory of random processes represents a large field of mathematics with many different branches, and the task of choosing topics for a brief introduction to this theory is far from being simple. This introduction to the theory of random processes uses mathematical models that are simple, but have some importance for applications. We consider different processes, whose development in time depends on some random factors. The fundamental problem can be briefly circumscribed in the following way: given some relatively simple characteristics of a process, compute the probability of another event which may be very complicated; or estimate a random variable which is related to the behaviour of the process. The models that we consider are chosen in such a way that it is possible to discuss the different methods of the theory of random processes by referring to these models."
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_SWIPED",
+        "swipeDirection": "Left",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatButton",
+            "groupViewChildPosition": 3,
+            "resourceId": "android:id/button1",
+            "text": "Join this course"
+          },
+          {
+            "className": "androidx.appcompat.widget.ButtonBarLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "android.widget.ScrollView",
+            "groupViewChildPosition": 3,
+            "resourceId": "org.ole.planet.myplanet:id/buttonPanel"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_SWIPED",
+        "swipeDirection": "Left",
+        "elementDescriptors": [
+          {
+            "className": "androidx.viewpager2.widget.ViewPager2$RecyclerViewImpl",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "androidx.viewpager2.widget.ViewPager2",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/viewPager2"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_SWIPED",
+        "swipeDirection": "Left",
+        "elementDescriptors": [
+          {
+            "className": "androidx.viewpager2.widget.ViewPager2",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/viewPager2"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "androidx.cardview.widget.CardView",
+            "groupViewChildPosition": 1
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_SWIPED",
+        "swipeDirection": "Up",
+        "elementDescriptors": [
+          {
+            "className": "androidx.core.widget.NestedScrollView",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "android.widget.FrameLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_SWIPED",
+        "swipeDirection": "Left",
+        "elementDescriptors": [
+          {
+            "className": "androidx.viewpager2.widget.ViewPager2$RecyclerViewImpl",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "androidx.viewpager2.widget.ViewPager2",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/viewPager2"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_SWIPED",
+        "swipeDirection": "Left",
+        "elementDescriptors": [
+          {
+            "className": "androidx.viewpager2.widget.ViewPager2",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/viewPager2"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "androidx.cardview.widget.CardView",
+            "groupViewChildPosition": 1
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+            "groupViewChildPosition": 2,
+            "contentDescription": "More options"
+          },
+          {
+            "className": "androidx.appcompat.widget.ActionMenuView",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.view.menu.ListMenuItemView",
+            "adapterViewChildPosition": 3
+          },
+          {
+            "className": "androidx.appcompat.widget.MenuPopupWindow$MenuDropDownListView",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "android.widget.PopupWindow$PopupBackgroundView",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_SWIPED",
+        "swipeDirection": "Up",
+        "elementDescriptors": [
+          {
+            "className": "androidx.core.widget.NestedScrollView",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "android.widget.FrameLayout",
+            "groupViewChildPosition": 3,
+            "resourceId": "org.ole.planet.myplanet:id/fragment_container"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "android.widget.FrameLayout",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/action_notifications"
+          },
+          {
+            "className": "androidx.appcompat.widget.ActionMenuView",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "android.widget.FrameLayout",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/action_notifications"
+          },
+          {
+            "className": "androidx.appcompat.widget.ActionMenuView",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatButton",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/btnMarkAllAsRead",
+            "text": "Mark all as read"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/ltTopBar"
+          },
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatImageView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/img_logo",
+            "contentDescription": "side menu"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatTextView",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/material_drawer_name",
+            "text": "Community"
+          },
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 8
+          },
+          {
+            "className": "androidx.recyclerview.widget.RecyclerView",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/material_drawer_recycler_view"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "WAIT",
+        "delayTime": 2000
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "de.hdodenhof.circleimageview.CircleImageView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/img_user"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/linearLayout4"
+          },
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.view.menu.ActionMenuItemView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/action_chat",
+            "contentDescription": "AI Chat"
+          },
+          {
+            "className": "androidx.appcompat.widget.ActionMenuView",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.cardview.widget.CardView",
+            "groupViewChildPosition": 2,
+            "resourceId": "org.ole.planet.myplanet:id/chatCardView"
+          },
+          {
+            "className": "androidx.recyclerview.widget.RecyclerView",
+            "groupViewChildPosition": 2,
+            "resourceId": "org.ole.planet.myplanet:id/recyclerView",
+            "contentDescription": "chat history list"
+          },
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatImageView",
+            "groupViewChildPosition": 2,
+            "resourceId": "org.ole.planet.myplanet:id/button_gchat_send",
+            "contentDescription": "Submit"
+          },
+          {
+            "className": "android.widget.RelativeLayout",
+            "groupViewChildPosition": 5,
+            "resourceId": "org.ole.planet.myplanet:id/layout_gchat_chatbox"
+          },
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatImageView",
+            "groupViewChildPosition": 2,
+            "resourceId": "org.ole.planet.myplanet:id/button_gchat_send",
+            "contentDescription": "Submit"
+          },
+          {
+            "className": "android.widget.RelativeLayout",
+            "groupViewChildPosition": 5,
+            "resourceId": "org.ole.planet.myplanet:id/layout_gchat_chatbox"
+          },
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "android.widget.FrameLayout",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/action_notifications"
+          },
+          {
+            "className": "androidx.appcompat.widget.ActionMenuView",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.view.menu.ActionMenuItemView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/action_chat",
+            "contentDescription": "AI Chat"
+          },
+          {
+            "className": "androidx.appcompat.widget.ActionMenuView",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.cardview.widget.CardView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/chatCardView"
+          },
+          {
+            "className": "androidx.recyclerview.widget.RecyclerView",
+            "groupViewChildPosition": 2,
+            "resourceId": "org.ole.planet.myplanet:id/recyclerView",
+            "contentDescription": "chat history list"
+          },
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatImageView",
+            "groupViewChildPosition": 2,
+            "resourceId": "org.ole.planet.myplanet:id/button_gchat_send",
+            "contentDescription": "Submit"
+          },
+          {
+            "className": "android.widget.RelativeLayout",
+            "groupViewChildPosition": 5,
+            "resourceId": "org.ole.planet.myplanet:id/layout_gchat_chatbox"
+          },
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatImageView",
+            "groupViewChildPosition": 2,
+            "resourceId": "org.ole.planet.myplanet:id/button_gchat_send",
+            "contentDescription": "Submit"
+          },
+          {
+            "className": "android.widget.RelativeLayout",
+            "groupViewChildPosition": 5,
+            "resourceId": "org.ole.planet.myplanet:id/layout_gchat_chatbox"
+          },
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.view.menu.ActionMenuItemView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/action_chat",
+            "contentDescription": "AI Chat"
+          },
+          {
+            "className": "androidx.appcompat.widget.ActionMenuView",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatButton",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/newChat",
+            "contentDescription": "new chat",
+            "text": "new chat"
+          },
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "androidx.slidingpanelayout.widget.SlidingPaneLayout",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/sliding_pane_layout"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatImageView",
+            "groupViewChildPosition": 2,
+            "resourceId": "org.ole.planet.myplanet:id/button_gchat_send",
+            "contentDescription": "Submit"
+          },
+          {
+            "className": "android.widget.RelativeLayout",
+            "groupViewChildPosition": 5,
+            "resourceId": "org.ole.planet.myplanet:id/layout_gchat_chatbox"
+          },
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatImageView",
+            "groupViewChildPosition": 2,
+            "resourceId": "org.ole.planet.myplanet:id/button_gchat_send",
+            "contentDescription": "Submit"
+          },
+          {
+            "className": "android.widget.RelativeLayout",
+            "groupViewChildPosition": 5,
+            "resourceId": "org.ole.planet.myplanet:id/layout_gchat_chatbox"
+          },
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.cardview.widget.CardView",
+            "groupViewChildPosition": 4,
+            "resourceId": "org.ole.planet.myplanet:id/chatCardView"
+          },
+          {
+            "className": "androidx.recyclerview.widget.RecyclerView",
+            "groupViewChildPosition": 2,
+            "resourceId": "org.ole.planet.myplanet:id/recyclerView",
+            "contentDescription": "chat history list"
+          },
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_LONG_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+            "groupViewChildPosition": 2,
+            "contentDescription": "More options"
+          },
+          {
+            "className": "androidx.appcompat.widget.ActionMenuView",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatCheckBox",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/full_search",
+            "text": "Full conversation response"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/search_layout"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "android.widget.FrameLayout",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/action_notifications"
+          },
+          {
+            "className": "androidx.appcompat.widget.ActionMenuView",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_LONG_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+            "groupViewChildPosition": 2,
+            "contentDescription": "More options"
+          },
+          {
+            "className": "androidx.appcompat.widget.ActionMenuView",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+            "groupViewChildPosition": 2,
+            "contentDescription": "More options"
+          },
+          {
+            "className": "androidx.appcompat.widget.ActionMenuView",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.view.menu.ListMenuItemView",
+            "adapterViewChildPosition": 2
+          },
+          {
+            "className": "androidx.appcompat.widget.MenuPopupWindow$MenuDropDownListView",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "android.widget.PopupWindow$PopupBackgroundView",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatCheckedTextView",
+            "adapterViewChildPosition": 2,
+            "text": "somali"
+          },
+          {
+            "className": "androidx.appcompat.app.AlertController$RecycleListView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/select_dialog_listview"
+          },
+          {
+            "className": "android.widget.FrameLayout",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/contentPanel"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "android.widget.FrameLayout",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/ll_home_team"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "androidx.cardview.widget.CardView",
+            "groupViewChildPosition": 3,
+            "resourceId": "org.ole.planet.myplanet:id/homeCardTeams"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.recyclerview.widget.RecyclerView",
+            "groupViewChildPosition": 3,
+            "resourceId": "org.ole.planet.myplanet:id/rv_team_list",
+            "contentDescription": "liiska ganacsiyada"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_SWIPED",
+        "swipeDirection": "Left",
+        "elementDescriptors": [
+          {
+            "className": "androidx.viewpager2.widget.ViewPager2",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/viewPager2"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_SWIPED",
+        "swipeDirection": "Up",
+        "elementDescriptors": [
+          {
+            "className": "androidx.recyclerview.widget.RecyclerView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/rv_member"
+          },
+          {
+            "className": "android.widget.FrameLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "android.widget.FrameLayout",
+            "groupViewChildPosition": 1
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.cardview.widget.CardView",
+            "groupViewChildPosition": 3
+          },
+          {
+            "className": "androidx.recyclerview.widget.RecyclerView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/rv_member"
+          },
+          {
+            "className": "android.widget.FrameLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_LONG_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+            "groupViewChildPosition": 2,
+            "contentDescription": "More options"
+          },
+          {
+            "className": "androidx.appcompat.widget.ActionMenuView",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "android.widget.FrameLayout",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/action_notifications"
+          },
+          {
+            "className": "androidx.appcompat.widget.ActionMenuView",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 3
+          },
+          {
+            "className": "androidx.recyclerview.widget.RecyclerView",
+            "groupViewChildPosition": 2,
+            "resourceId": "org.ole.planet.myplanet:id/rv_notifications"
+          },
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.cardview.widget.CardView",
+            "groupViewChildPosition": 3
+          },
+          {
+            "className": "androidx.recyclerview.widget.RecyclerView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/rv_member"
+          },
+          {
+            "className": "android.widget.FrameLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.view.menu.ActionMenuItemView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/action_chat",
+            "contentDescription": "AI Chat"
+          },
+          {
+            "className": "androidx.appcompat.widget.ActionMenuView",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "ENTER_TEXT",
+        "replacementText": "caokah",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatEditText",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/searchBar"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/search_layout"
+          },
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "ENTER_TEXT",
+        "replacementText": "xnkdzn",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatEditText",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/searchBar",
+            "text": "caokah"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/search_layout"
+          },
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatImageView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/img_logo",
+            "contentDescription": "liiska dhinaca"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_LONG_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 4
+          },
+          {
+            "className": "androidx.recyclerview.widget.RecyclerView",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/material_drawer_recycler_view"
+          },
+          {
+            "className": "com.mikepenz.materialize.view.ScrimInsetsRelativeLayout",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/material_drawer_slider_layout"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_SWIPED",
+        "swipeDirection": "Up",
+        "elementDescriptors": [
+          {
+            "className": "androidx.recyclerview.widget.RecyclerView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/recycler"
+          },
+          {
+            "className": "android.widget.FrameLayout",
+            "groupViewChildPosition": 2
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "ENTER_TEXT",
+        "replacementText": "xkslhn",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatEditText",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/et_search"
+          },
+          {
+            "className": "android.widget.FrameLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "com.google.android.material.textfield.TextInputLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_LONG_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+            "groupViewChildPosition": 2,
+            "contentDescription": "More options"
+          },
+          {
+            "className": "androidx.appcompat.widget.ActionMenuView",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatImageView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/img_logo",
+            "contentDescription": "liiska dhinaca"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatCheckBox",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/selectAll",
+            "text": "Dhammaad Dhammaadee"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "android.widget.FrameLayout",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "com.google.android.flexbox.FlexboxLayout",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/flexboxLayoutMyLife"
+          },
+          {
+            "className": "android.widget.HorizontalScrollView",
+            "groupViewChildPosition": 1,
+            "contentDescription": "Nolosheyda"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_SWIPED",
+        "swipeDirection": "Left",
+        "elementDescriptors": [
+          {
+            "className": "android.widget.HorizontalScrollView",
+            "groupViewChildPosition": 1,
+            "contentDescription": "maktabadayda"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "androidx.cardview.widget.CardView",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/homeCardLibrary"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatTextView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/tv_name",
+            "text": "ajvnol"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "android.widget.FrameLayout",
+            "groupViewChildPosition": 1
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_SWIPED",
+        "swipeDirection": "Left",
+        "elementDescriptors": [
+          {
+            "className": "androidx.viewpager2.widget.ViewPager2",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/viewPager2"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_SWIPED",
+        "swipeDirection": "Left",
+        "elementDescriptors": [
+          {
+            "className": "androidx.viewpager2.widget.ViewPager2$RecyclerViewImpl",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "androidx.viewpager2.widget.ViewPager2",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/viewPager2"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 1
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_SWIPED",
+        "swipeDirection": "Left",
+        "elementDescriptors": [
+          {
+            "className": "androidx.viewpager2.widget.ViewPager2$RecyclerViewImpl",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "androidx.viewpager2.widget.ViewPager2",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/viewPager2"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 1
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_SWIPED",
+        "swipeDirection": "Left",
+        "elementDescriptors": [
+          {
+            "className": "androidx.viewpager2.widget.ViewPager2",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/viewPager2"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_SWIPED",
+        "swipeDirection": "Left",
+        "elementDescriptors": [
+          {
+            "className": "androidx.viewpager2.widget.ViewPager2$RecyclerViewImpl",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "androidx.viewpager2.widget.ViewPager2",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/viewPager2"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 1
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_SWIPED",
+        "swipeDirection": "Left",
+        "elementDescriptors": [
+          {
+            "className": "androidx.viewpager2.widget.ViewPager2$RecyclerViewImpl",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "androidx.viewpager2.widget.ViewPager2",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/viewPager2"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 1
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_SWIPED",
+        "swipeDirection": "Left",
+        "elementDescriptors": [
+          {
+            "className": "androidx.viewpager2.widget.ViewPager2",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/viewPager2"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.view.menu.ActionMenuItemView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/action_chat",
+            "contentDescription": "AI Chat"
+          },
+          {
+            "className": "androidx.appcompat.widget.ActionMenuView",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.view.menu.ActionMenuItemView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/action_chat",
+            "contentDescription": "AI Chat"
+          },
+          {
+            "className": "androidx.appcompat.widget.ActionMenuView",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatImageView",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/shareChat",
+            "contentDescription": "la wadaag sheekaysiga"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatButton",
+            "groupViewChildPosition": 3,
+            "resourceId": "android:id/button1",
+            "text": "Xir"
+          },
+          {
+            "className": "com.android.internal.widget.ButtonBarLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "android.widget.ScrollView",
+            "groupViewChildPosition": 3,
+            "resourceId": "android:id/buttonPanel"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_LONG_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+            "groupViewChildPosition": 2,
+            "contentDescription": "More options"
+          },
+          {
+            "className": "androidx.appcompat.widget.ActionMenuView",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatButton",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/newChat",
+            "contentDescription": "new chat",
+            "text": "Wadahadal cusub"
+          },
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "androidx.slidingpanelayout.widget.SlidingPaneLayout",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/sliding_pane_layout"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "android.widget.Button",
+            "groupViewChildPosition": 0,
+            "text": "openai"
+          },
+          {
+            "className": "android.widget.TableRow",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/aiTableRow"
+          },
+          {
+            "className": "android.widget.TableLayout",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/aiTbLayout"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.view.menu.ActionMenuItemView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/action_chat",
+            "contentDescription": "AI Chat"
+          },
+          {
+            "className": "androidx.appcompat.widget.ActionMenuView",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatImageView",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/shareChat",
+            "contentDescription": "la wadaag sheekaysiga"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "android.widget.LinearLayout",
+            "adapterViewChildPosition": 0
+          },
+          {
+            "className": "android.widget.ExpandableListView",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/listView"
+          },
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "android.widget.LinearLayout",
+            "adapterViewChildPosition": 2
+          },
+          {
+            "className": "android.widget.ExpandableListView",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/listView"
+          },
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatButton",
+            "groupViewChildPosition": 3,
+            "resourceId": "android:id/button1",
+            "text": "Xir"
+          },
+          {
+            "className": "com.android.internal.widget.ButtonBarLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "android.widget.ScrollView",
+            "groupViewChildPosition": 3,
+            "resourceId": "android:id/buttonPanel"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.cardview.widget.CardView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/chatCardView"
+          },
+          {
+            "className": "androidx.recyclerview.widget.RecyclerView",
+            "groupViewChildPosition": 2,
+            "resourceId": "org.ole.planet.myplanet:id/recyclerView",
+            "contentDescription": "liiska taariikhda sheekadeeye"
+          },
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "android.widget.Button",
+            "groupViewChildPosition": 6,
+            "text": "gemini"
+          },
+          {
+            "className": "android.widget.TableRow",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/aiTableRow"
+          },
+          {
+            "className": "android.widget.TableLayout",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/aiTbLayout"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_LONG_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+            "groupViewChildPosition": 2,
+            "contentDescription": "More options"
+          },
+          {
+            "className": "androidx.appcompat.widget.ActionMenuView",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatImageView",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/shareChat",
+            "contentDescription": "la wadaag sheekaysiga"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatImageView",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/shareChat",
+            "contentDescription": "la wadaag sheekaysiga"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "ENTER_TEXT",
+        "replacementText": "twxvnb",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatEditText",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/searchBar"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/search_layout"
+          },
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatImageView",
+            "groupViewChildPosition": 2,
+            "resourceId": "org.ole.planet.myplanet:id/button_gchat_send",
+            "contentDescription": "Ku Dir"
+          },
+          {
+            "className": "android.widget.RelativeLayout",
+            "groupViewChildPosition": 5,
+            "resourceId": "org.ole.planet.myplanet:id/layout_gchat_chatbox"
+          },
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatImageView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/img_logo",
+            "contentDescription": "liiska dhinaca"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_LONG_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+            "groupViewChildPosition": 2,
+            "contentDescription": "More options"
+          },
+          {
+            "className": "androidx.appcompat.widget.ActionMenuView",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+            "groupViewChildPosition": 2,
+            "contentDescription": "More options"
+          },
+          {
+            "className": "androidx.appcompat.widget.ActionMenuView",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.view.menu.ListMenuItemView",
+            "adapterViewChildPosition": 4
+          },
+          {
+            "className": "androidx.appcompat.widget.MenuPopupWindow$MenuDropDownListView",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "android.widget.PopupWindow$PopupBackgroundView",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_SWIPED",
+        "swipeDirection": "Up",
+        "elementDescriptors": [
+          {
+            "className": "androidx.core.widget.NestedScrollView",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "android.widget.FrameLayout",
+            "groupViewChildPosition": 3,
+            "resourceId": "org.ole.planet.myplanet:id/fragment_container"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_LONG_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+            "groupViewChildPosition": 2,
+            "contentDescription": "More options"
+          },
+          {
+            "className": "androidx.appcompat.widget.ActionMenuView",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+            "groupViewChildPosition": 2,
+            "contentDescription": "More options"
+          },
+          {
+            "className": "androidx.appcompat.widget.ActionMenuView",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.view.menu.ListMenuItemView",
+            "adapterViewChildPosition": 0
+          },
+          {
+            "className": "androidx.appcompat.widget.MenuPopupWindow$MenuDropDownListView",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "android.widget.PopupWindow$PopupBackgroundView",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "WAIT",
+        "delayTime": 13000
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.view.menu.ActionMenuItemView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/action_chat",
+            "contentDescription": "AI Chat"
+          },
+          {
+            "className": "androidx.appcompat.widget.ActionMenuView",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatImageView",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/shareChat",
+            "contentDescription": "la wadaag sheekaysiga"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+            "groupViewChildPosition": 2,
+            "contentDescription": "More options"
+          },
+          {
+            "className": "androidx.appcompat.widget.ActionMenuView",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.view.menu.ListMenuItemView",
+            "adapterViewChildPosition": 6
+          },
+          {
+            "className": "androidx.appcompat.widget.MenuPopupWindow$MenuDropDownListView",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "android.widget.PopupWindow$PopupBackgroundView",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatTextView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/title",
+            "text": "learning"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "android.view.View",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/touch_outside"
+          },
+          {
+            "className": "androidx.coordinatorlayout.widget.CoordinatorLayout",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/coordinator"
+          },
+          {
+            "className": "android.widget.FrameLayout",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/container"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatButton",
+            "groupViewChildPosition": 3,
+            "resourceId": "org.ole.planet.myplanet:id/btn_signin",
+            "contentDescription": "Soo gal",
+            "text": "Soo gal"
+          },
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatButton",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/btn_guest_login",
+            "contentDescription": "Marti ahaan u soo gal",
+            "text": "Marti ahaan u soo gal"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 4,
+            "resourceId": "org.ole.planet.myplanet:id/linearLayout3"
+          },
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 1
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "ENTER_TEXT",
+        "replacementText": "esydnn",
+        "elementDescriptors": [
+          {
+            "className": "com.google.android.material.textfield.TextInputEditText",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/et_user_name"
+          },
+          {
+            "className": "android.widget.FrameLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "com.google.android.material.textfield.TextInputLayout",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/tl_username"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_SWIPED",
+        "swipeDirection": "Left",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatButton",
+            "groupViewChildPosition": 2,
+            "resourceId": "android:id/button2",
+            "text": "burin"
+          },
+          {
+            "className": "androidx.appcompat.widget.ButtonBarLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "android.widget.ScrollView",
+            "groupViewChildPosition": 3,
+            "resourceId": "org.ole.planet.myplanet:id/buttonPanel"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatImageView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/syncIcon",
+            "contentDescription": "Dib u hagrees"
+          },
+          {
+            "className": "android.widget.RelativeLayout",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/sync"
+          },
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "WAIT",
+        "delayTime": 16000
+      },
+      {
+        "eventType": "GO_HOME"
+      },
+      {
+        "eventType": "LAUNCH_APP",
+        "appPackageName": "org.ole.planet.myplanet"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "androidx.recyclerview.widget.RecyclerView",
+            "groupViewChildPosition": 8,
+            "resourceId": "org.ole.planet.myplanet:id/recyclerView"
+          },
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/material_drawer_account_header"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "androidx.recyclerview.widget.RecyclerView",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/material_drawer_recycler_view"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_LONG_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.recyclerview.widget.RecyclerView",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/material_drawer_recycler_view"
+          },
+          {
+            "className": "com.mikepenz.materialize.view.ScrimInsetsRelativeLayout",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/material_drawer_slider_layout"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "android.widget.FrameLayout",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/myLifeImageButton"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "androidx.cardview.widget.CardView",
+            "groupViewChildPosition": 4,
+            "resourceId": "org.ole.planet.myplanet:id/homeCardMyLife"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_SWIPED",
+        "swipeDirection": "Up",
+        "elementDescriptors": [
+          {
+            "className": "androidx.recyclerview.widget.RecyclerView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/recycler"
+          },
+          {
+            "className": "android.widget.FrameLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/my_life_parent_layout"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatImageButton",
+            "groupViewChildPosition": 2,
+            "resourceId": "org.ole.planet.myplanet:id/visibility_image_button"
+          },
+          {
+            "className": "android.widget.RelativeLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 7,
+            "resourceId": "org.ole.planet.myplanet:id/rv_item_parent_layout"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatImageButton",
+            "groupViewChildPosition": 4,
+            "resourceId": "org.ole.planet.myplanet:id/drag_image_button"
+          },
+          {
+            "className": "android.widget.RelativeLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 4,
+            "resourceId": "org.ole.planet.myplanet:id/rv_item_parent_layout"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatImageButton",
+            "groupViewChildPosition": 4,
+            "resourceId": "org.ole.planet.myplanet:id/drag_image_button",
+            "contentDescription": "jiid Help Wanted"
+          },
+          {
+            "className": "android.widget.RelativeLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 4,
+            "resourceId": "org.ole.planet.myplanet:id/rv_item_parent_layout"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatImageView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/itemImageView",
+            "contentDescription": "astan Help Wanted"
+          },
+          {
+            "className": "android.widget.RelativeLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 4,
+            "resourceId": "org.ole.planet.myplanet:id/rv_item_parent_layout"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+            "groupViewChildPosition": 2,
+            "contentDescription": "More options"
+          },
+          {
+            "className": "androidx.appcompat.widget.ActionMenuView",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.view.menu.ListMenuItemView",
+            "adapterViewChildPosition": 1
+          },
+          {
+            "className": "androidx.appcompat.widget.MenuPopupWindow$MenuDropDownListView",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "android.widget.PopupWindow$PopupBackgroundView",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatImageView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/img_logo",
+            "contentDescription": "liiska dhinaca"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 2
+          },
+          {
+            "className": "androidx.recyclerview.widget.RecyclerView",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/material_drawer_recycler_view"
+          },
+          {
+            "className": "com.mikepenz.materialize.view.ScrimInsetsRelativeLayout",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/material_drawer_slider_layout"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.view.menu.ActionMenuItemView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/action_chat",
+            "contentDescription": "AI Chat"
+          },
+          {
+            "className": "androidx.appcompat.widget.ActionMenuView",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.cardview.widget.CardView",
+            "groupViewChildPosition": 2,
+            "resourceId": "org.ole.planet.myplanet:id/chatCardView"
+          },
+          {
+            "className": "androidx.recyclerview.widget.RecyclerView",
+            "groupViewChildPosition": 2,
+            "resourceId": "org.ole.planet.myplanet:id/recyclerView",
+            "contentDescription": "liiska taariikhda sheekadeeye"
+          },
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatImageView",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/shareChat",
+            "contentDescription": "la wadaag sheekaysiga"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+            "groupViewChildPosition": 2,
+            "contentDescription": "More options"
+          },
+          {
+            "className": "androidx.appcompat.widget.ActionMenuView",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.view.menu.ListMenuItemView",
+            "adapterViewChildPosition": 5
+          },
+          {
+            "className": "androidx.appcompat.widget.MenuPopupWindow$MenuDropDownListView",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "android.widget.PopupWindow$PopupBackgroundView",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 9
+          },
+          {
+            "className": "androidx.recyclerview.widget.RecyclerView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/recycler_view"
+          },
+          {
+            "className": "android.widget.FrameLayout",
+            "groupViewChildPosition": 0,
+            "resourceId": "android:id/list_container"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_SWIPED",
+        "swipeDirection": "Up",
+        "elementDescriptors": [
+          {
+            "className": "androidx.recyclerview.widget.RecyclerView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/recycler_view"
+          },
+          {
+            "className": "android.widget.FrameLayout",
+            "groupViewChildPosition": 0,
+            "resourceId": "android:id/list_container"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 8
+          },
+          {
+            "className": "androidx.recyclerview.widget.RecyclerView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/recycler_view"
+          },
+          {
+            "className": "android.widget.FrameLayout",
+            "groupViewChildPosition": 0,
+            "resourceId": "android:id/list_container"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 11
+          },
+          {
+            "className": "androidx.recyclerview.widget.RecyclerView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/recycler_view"
+          },
+          {
+            "className": "android.widget.FrameLayout",
+            "groupViewChildPosition": 0,
+            "resourceId": "android:id/list_container"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.recyclerview.widget.RecyclerView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/recycler_view"
+          },
+          {
+            "className": "android.widget.FrameLayout",
+            "groupViewChildPosition": 0,
+            "resourceId": "android:id/list_container"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatImageButton",
+            "groupViewChildPosition": 1,
+            "contentDescription": "Navigate up"
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/action_bar"
+          },
+          {
+            "className": "androidx.appcompat.widget.ActionBarContainer",
+            "groupViewChildPosition": 2,
+            "resourceId": "org.ole.planet.myplanet:id/action_bar_container"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_LONG_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.recyclerview.widget.RecyclerView",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/material_drawer_recycler_view"
+          },
+          {
+            "className": "com.mikepenz.materialize.view.ScrimInsetsRelativeLayout",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/material_drawer_slider_layout"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "android.widget.TextView",
+            "groupViewChildPosition": 1,
+            "text": " GitHub Issues and Pull Requests"
+          },
+          {
+            "className": "com.google.android.flexbox.FlexboxLayout",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/flexboxLayoutCourse"
+          },
+          {
+            "className": "android.widget.HorizontalScrollView",
+            "groupViewChildPosition": 1,
+            "contentDescription": "Korasyadayda"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_LONG_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatTextView",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/description",
+            "text": "This course covers some features we use and customs we have when working on GitHub."
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 6,
+            "resourceId": "org.ole.planet.myplanet:id/ltDescription"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_SWIPED",
+        "swipeDirection": "Left",
+        "elementDescriptors": [
+          {
+            "className": "androidx.viewpager2.widget.ViewPager2$RecyclerViewImpl",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "androidx.viewpager2.widget.ViewPager2",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/viewPager2"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_SWIPED",
+        "swipeDirection": "Left",
+        "elementDescriptors": [
+          {
+            "className": "androidx.viewpager2.widget.ViewPager2",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/viewPager2"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "androidx.cardview.widget.CardView",
+            "groupViewChildPosition": 1
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatTextView",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/description",
+            "text": "This course covers some features we use and customs we have when working on GitHub."
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 6,
+            "resourceId": "org.ole.planet.myplanet:id/ltDescription"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatImageView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/img_logo",
+            "contentDescription": "liiska dhinaca"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatTextView",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/description",
+            "text": "This course covers some features we use and customs we have when working on GitHub."
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 6,
+            "resourceId": "org.ole.planet.myplanet:id/ltDescription"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatButton",
+            "groupViewChildPosition": 2,
+            "resourceId": "org.ole.planet.myplanet:id/start_survey",
+            "text": "Gali suuragal"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatButton",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/btn_submit",
+            "text": "Ku Dir"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 2
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatRadioButton",
+            "groupViewChildPosition": 2,
+            "text": "Other"
+          },
+          {
+            "className": "android.widget.RadioGroup",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/group_choices"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatButton",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/btn_submit",
+            "text": "Ku Dir"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 2
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatTextView",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/tv_body",
+            "text": "Gender"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_LONG_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+            "groupViewChildPosition": 2,
+            "contentDescription": "More options"
+          },
+          {
+            "className": "androidx.appcompat.widget.ActionMenuView",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "ENTER_TEXT",
+        "replacementText": "hafjpq",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatEditText",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/et_answer"
+          },
+          {
+            "className": "android.widget.FrameLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "com.google.android.material.textfield.TextInputLayout",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/tl_answer"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatButton",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/btn_submit",
+            "text": "Ku Dir"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 2
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatButton",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/btn_submit",
+            "text": "Ku Dir"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 2
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatImageView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/img_logo",
+            "contentDescription": "liiska dhinaca"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatButton",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/btn_submit",
+            "text": "Ku Dir"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 2
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_LONG_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+            "groupViewChildPosition": 2,
+            "contentDescription": "More options"
+          },
+          {
+            "className": "androidx.appcompat.widget.ActionMenuView",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+            "groupViewChildPosition": 2,
+            "contentDescription": "More options"
+          },
+          {
+            "className": "androidx.appcompat.widget.ActionMenuView",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "PRESSED_BACK"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatCheckBox",
+            "groupViewChildPosition": 2,
+            "text": "Other"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 2,
+            "resourceId": "org.ole.planet.myplanet:id/ll_checkbox"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatButton",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/btn_submit",
+            "text": "Ku Dir"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 2
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatCheckBox",
+            "groupViewChildPosition": 1,
+            "text": "orange"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 2,
+            "resourceId": "org.ole.planet.myplanet:id/ll_checkbox"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "android.widget.FrameLayout",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/action_notifications"
+          },
+          {
+            "className": "androidx.appcompat.widget.ActionMenuView",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatButton",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/btn_mark_as_read",
+            "text": "Calaamadee sidii la aqriyay"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "androidx.recyclerview.widget.RecyclerView",
+            "groupViewChildPosition": 2,
+            "resourceId": "org.ole.planet.myplanet:id/rv_notifications"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_LONG_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+            "groupViewChildPosition": 2,
+            "contentDescription": "More options"
+          },
+          {
+            "className": "androidx.appcompat.widget.ActionMenuView",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+            "groupViewChildPosition": 2,
+            "contentDescription": "More options"
+          },
+          {
+            "className": "androidx.appcompat.widget.ActionMenuView",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.view.menu.ListMenuItemView",
+            "adapterViewChildPosition": 3
+          },
+          {
+            "className": "androidx.appcompat.widget.MenuPopupWindow$MenuDropDownListView",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "android.widget.PopupWindow$PopupBackgroundView",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_SWIPED",
+        "swipeDirection": "Up",
+        "elementDescriptors": [
+          {
+            "className": "androidx.core.widget.NestedScrollView",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "android.widget.FrameLayout",
+            "groupViewChildPosition": 3,
+            "resourceId": "org.ole.planet.myplanet:id/fragment_container"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.view.menu.ActionMenuItemView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/action_chat",
+            "contentDescription": "AI Chat"
+          },
+          {
+            "className": "androidx.appcompat.widget.ActionMenuView",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatImageView",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/shareChat",
+            "contentDescription": "la wadaag sheekaysiga"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "android.widget.LinearLayout",
+            "adapterViewChildPosition": 1
+          },
+          {
+            "className": "android.widget.ExpandableListView",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/listView"
+          },
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "android.widget.LinearLayout",
+            "adapterViewChildPosition": 3
+          },
+          {
+            "className": "android.widget.ExpandableListView",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/listView"
+          },
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "com.google.android.material.card.MaterialCardView",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.recyclerview.widget.RecyclerView",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/recyclerView"
+          },
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatButton",
+            "groupViewChildPosition": 2,
+            "resourceId": "android:id/button2",
+            "text": "burin"
+          },
+          {
+            "className": "com.android.internal.widget.ButtonBarLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "android.widget.ScrollView",
+            "groupViewChildPosition": 3,
+            "resourceId": "android:id/buttonPanel"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+            "groupViewChildPosition": 2,
+            "contentDescription": "More options"
+          },
+          {
+            "className": "androidx.appcompat.widget.ActionMenuView",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.view.menu.ListMenuItemView",
+            "adapterViewChildPosition": 1
+          },
+          {
+            "className": "androidx.appcompat.widget.MenuPopupWindow$MenuDropDownListView",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "android.widget.PopupWindow$PopupBackgroundView",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "android.widget.FrameLayout",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/action_notifications"
+          },
+          {
+            "className": "androidx.appcompat.widget.ActionMenuView",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.recyclerview.widget.RecyclerView",
+            "groupViewChildPosition": 2,
+            "resourceId": "org.ole.planet.myplanet:id/rv_notifications"
+          },
+          {
+            "className": "androidx.constraintlayout.widget.ConstraintLayout",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "PRESSED_BACK"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.ActionMenuPresenter$OverflowMenuButton",
+            "groupViewChildPosition": 2,
+            "contentDescription": "More options"
+          },
+          {
+            "className": "androidx.appcompat.widget.ActionMenuView",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.appcompat.widget.Toolbar",
+            "groupViewChildPosition": 1,
+            "resourceId": "org.ole.planet.myplanet:id/appBarBell"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.view.menu.ListMenuItemView",
+            "adapterViewChildPosition": 5
+          },
+          {
+            "className": "androidx.appcompat.widget.MenuPopupWindow$MenuDropDownListView",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "android.widget.PopupWindow$PopupBackgroundView",
+            "groupViewChildPosition": 0
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 2
+          },
+          {
+            "className": "androidx.recyclerview.widget.RecyclerView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/recycler_view"
+          },
+          {
+            "className": "android.widget.FrameLayout",
+            "groupViewChildPosition": 0,
+            "resourceId": "android:id/list_container"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatButton",
+            "groupViewChildPosition": 2,
+            "resourceId": "android:id/button2",
+            "text": "No"
+          },
+          {
+            "className": "androidx.appcompat.widget.ButtonBarLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "android.widget.ScrollView",
+            "groupViewChildPosition": 3,
+            "resourceId": "org.ole.planet.myplanet:id/buttonPanel"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "androidx.recyclerview.widget.RecyclerView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/recycler_view"
+          },
+          {
+            "className": "android.widget.FrameLayout",
+            "groupViewChildPosition": 0,
+            "resourceId": "android:id/list_container"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 4
+          },
+          {
+            "className": "androidx.recyclerview.widget.RecyclerView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/recycler_view"
+          },
+          {
+            "className": "android.widget.FrameLayout",
+            "groupViewChildPosition": 0,
+            "resourceId": "android:id/list_container"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "android.widget.LinearLayout",
+            "groupViewChildPosition": 1
+          },
+          {
+            "className": "androidx.recyclerview.widget.RecyclerView",
+            "groupViewChildPosition": 0,
+            "resourceId": "org.ole.planet.myplanet:id/recycler_view"
+          },
+          {
+            "className": "android.widget.FrameLayout",
+            "groupViewChildPosition": 0,
+            "resourceId": "android:id/list_container"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      },
+      {
+        "eventType": "VIEW_CLICKED",
+        "elementDescriptors": [
+          {
+            "className": "androidx.appcompat.widget.AppCompatButton",
+            "groupViewChildPosition": 3,
+            "resourceId": "android:id/button1",
+            "text": "Haa"
+          },
+          {
+            "className": "androidx.appcompat.widget.ButtonBarLayout",
+            "groupViewChildPosition": 0
+          },
+          {
+            "className": "android.widget.ScrollView",
+            "groupViewChildPosition": 3,
+            "resourceId": "org.ole.planet.myplanet:id/buttonPanel"
+          }
+        ],
+        "extractionMode": "ESPRESSO"
+      }
+    ]
+  }
+]
