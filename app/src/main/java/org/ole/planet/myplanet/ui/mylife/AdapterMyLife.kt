@@ -24,7 +24,6 @@ import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyLife.Companion.updateVisibility
 import org.ole.planet.myplanet.model.RealmMyLife.Companion.updateWeight
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment
-import org.ole.planet.myplanet.ui.helpwanted.HelpWantedFragment
 import org.ole.planet.myplanet.ui.myPersonals.MyPersonalsFragment
 import org.ole.planet.myplanet.ui.myhealth.MyHealthFragment
 import org.ole.planet.myplanet.ui.mylife.helper.ItemTouchHelperAdapter
@@ -146,7 +145,6 @@ class AdapterMyLife(private val context: Context, private val myLifeList: List<R
                 "ic_my_survey" -> return newInstance("survey")
                 "ic_myhealth" -> return MyHealthFragment()
                 "ic_calendar" -> return CalendarFragment()
-                "ic_help_wanted" -> return HelpWantedFragment()
                 "ic_references" -> return ReferenceFragment()
                 "my_achievement" -> return AchievementFragment()
             }
