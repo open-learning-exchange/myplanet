@@ -40,13 +40,8 @@ class CourseRepositoryImpl @Inject constructor(
         if (courseId.isNullOrEmpty()) {
             return emptyList()
         }
-        return withRealmAsync { realm ->
-            val steps = RealmMyCourse.getCourseSteps(realm, courseId)
-            if (steps.isEmpty()) {
-                emptyList()
-            } else {
-                realm.copyFromRealm(steps)
-            }
+        return queryList(RealmCourseStep::class.java) {
+            equalTo("courseId", courseId)
         }
     }
 
