@@ -32,11 +32,12 @@ MODEL=$(echo "$DEVICE" | sed -n 's/.*model=\([^,]*\).*/\1/p')
 VERSION=$(echo "$DEVICE" | sed -n 's/.*version=\([^,]*\).*/\1/p')
 LOCALE=$(echo "$DEVICE" | sed -n 's/.*locale=\([^,]*\).*/\1/p')
 ORIENTATION=$(echo "$DEVICE" | sed -n 's/.*orientation=\([^,]*\).*/\1/p')
-AXIS_DIR="${MODEL:-device}.${VERSION:-ver}-${LOCALE:-loc}-${ORIENTATION:-ori}"
+AXIS_DIR="${MODEL:-device}-${VERSION:-ver}-${LOCALE:-loc}-${ORIENTATION:-ori}"
 
 echo "Starting Firebase Test Lab Robo run..."
 
-# ---- Run test ----
+# ---- Run test (don't exit on non-zero so we can still print links) ----
+set +e
 gcloud firebase test android run \
   --type robo \
   --app "$APK" \
@@ -46,6 +47,8 @@ gcloud firebase test android run \
   --results-dir "$RUN_DIR" \
   --timeout "$TIMEOUT" \
   $RECORD_VIDEO
+EXIT_CODE=$?
+set -e
 
 # ---- Print handy links ----
 echo
@@ -61,3 +64,10 @@ echo "  APK:     https://storage.googleapis.com/${BUCKET}/${RUN_DIR}/app-default
 echo
 echo "Firebase Test UI (also printed by gcloud above):"
 echo "  https://console.firebase.google.com/project/${PROJECT}/testlab/histories"
+echo
+
+# ---- Exit with original gcloud status (so CI can detect failures) ----
+if [ "$EXIT_CODE" -ne 0 ]; then
+  echo "Note: gcloud exited with code ${EXIT_CODE} (tests may have failed or app crashed)."
+fi
+exit "$EXIT_CODE"
