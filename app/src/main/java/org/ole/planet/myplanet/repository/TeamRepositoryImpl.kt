@@ -97,55 +97,17 @@ class TeamRepositoryImpl @Inject constructor(
 
         val cutoff = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -30) }.timeInMillis
 
-        return withRealmAsync { realm ->
-            val counts = mutableMapOf<String, Long>()
-            realm.where(RealmTeamLog::class.java)
-                .equalTo("type", "teamVisit")
-                .greaterThan("time", cutoff)
-                .`in`("teamId", validIds.toTypedArray())
-                .findAll()
-                .forEach { log ->
-                    val teamId = log.teamId ?: return@forEach
-                    counts[teamId] = (counts[teamId] ?: 0L) + 1L
-                }
-            counts
-        }
-    }
-
-    override suspend fun getTeamStatus(teamId: String, userId: String?): TeamStatusResult {
-        if (teamId.isBlank() || userId.isNullOrBlank()) {
-            return TeamStatusResult(isMember = false, isLeader = false, hasPendingRequest = false)
+        val recentLogs = queryList(RealmTeamLog::class.java) {
+            equalTo("type", "teamVisit")
+            greaterThan("time", cutoff)
+            `in`("teamId", validIds.toTypedArray())
         }
 
-        return withRealmAsync { realm ->
-            val results = realm.where(RealmMyTeam::class.java)
-                .equalTo("teamId", teamId)
-                .equalTo("userId", userId)
-                .`in`("docType", arrayOf("membership", "request"))
-                .findAll()
-
-            var isMember = false
-            var isLeader = false
-            var hasPendingRequest = false
-
-            results.forEach { entry ->
-                when (entry?.docType) {
-                    "membership" -> {
-                        isMember = true
-                        if (entry.isLeader) {
-                            isLeader = true
-                        }
-                    }
-                    "request" -> hasPendingRequest = true
-                }
-            }
-
-            TeamStatusResult(
-                isMember = isMember,
-                isLeader = isLeader,
-                hasPendingRequest = hasPendingRequest,
-            )
-        }
+        return recentLogs
+            .mapNotNull { it.teamId }
+            .groupingBy { it }
+            .eachCount()
+            .mapValues { it.value.toLong() }
     }
 
     override suspend fun requestToJoin(teamId: String, user: RealmUserModel?, teamType: String?) {
