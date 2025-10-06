@@ -4,6 +4,7 @@ import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 
 @EntryPoint
@@ -11,4 +12,5 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 interface WorkerDependenciesEntryPoint {
     fun databaseService(): DatabaseService
     fun userProfileDbHandler(): UserProfileDbHandler
+    fun uploadManager(): UploadManager
 }

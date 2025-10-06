@@ -44,7 +44,6 @@ import org.ole.planet.myplanet.model.RealmSubmitPhotos
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.NetworkUtils
@@ -70,13 +69,6 @@ class UploadManager @Inject constructor(
     private val databaseService: DatabaseService,
     @AppPreferences private val pref: SharedPreferences
 ) : FileUploadService() {
-
-    // Backward compatibility constructor for code that still uses singleton pattern
-    constructor(context: Context) : this(
-        context,
-        DatabaseService(context),
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    )
 
     private val gson = Gson()
 
