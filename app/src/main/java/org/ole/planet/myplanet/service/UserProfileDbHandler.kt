@@ -9,7 +9,6 @@ import java.util.Date
 import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
-import javax.inject.Singleton
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -19,7 +18,6 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Utilities
 
-@Singleton
 class UserProfileDbHandler @Inject constructor(
     @ApplicationContext private val context: Context,
     private val realmService: DatabaseService,

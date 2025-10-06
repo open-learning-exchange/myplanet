@@ -14,6 +14,7 @@ interface TeamRepository {
     suspend fun isMember(userId: String?, teamId: String): Boolean
     suspend fun isTeamLeader(teamId: String, userId: String?): Boolean
     suspend fun hasPendingRequest(teamId: String, userId: String?): Boolean
+    suspend fun getRecentVisitCounts(teamIds: Collection<String>): Map<String, Long>
     suspend fun requestToJoin(teamId: String, userId: String?, userPlanetCode: String?, teamType: String?)
     suspend fun leaveTeam(teamId: String, userId: String?)
     suspend fun addResourceLinks(teamId: String, resources: List<RealmMyLibrary>, user: RealmUserModel?)
@@ -21,6 +22,7 @@ interface TeamRepository {
     suspend fun deleteTask(taskId: String)
     suspend fun upsertTask(task: RealmTeamTask)
     suspend fun assignTask(taskId: String, assigneeId: String?)
+    suspend fun setTaskCompletion(taskId: String, completed: Boolean)
     suspend fun createTeam(
         category: String?,
         name: String,

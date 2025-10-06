@@ -91,7 +91,7 @@ class AdapterNotification(
         }
 
         private fun formatNotificationMessage(notification: RealmNotification, context: Context): String {
-            return when (notification.type?.lowercase()) {
+            return when (notification.type.lowercase()) {
                 "survey" -> context.getString(R.string.pending_survey_notification) + " ${notification.message}"
                 "task" -> formatTaskMessage(notification, context)
                 "resource" -> {

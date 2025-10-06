@@ -390,6 +390,10 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         submitListSafely(newList)
     }
 
+    fun refreshCurrentItems() {
+        submitListSafely(currentList.toList())
+    }
+
     private fun submitListSafely(list: List<RealmNews?>, commitCallback: Runnable? = null) {
         userCache.clear()
         val detachedList = list.map { news ->
