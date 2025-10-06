@@ -168,7 +168,7 @@ class NewsFragment : BaseNewsFragment() {
     private fun loadCommunityNews() {
         viewLifecycleOwner.lifecycleScope.launch {
             val news = newsRepository.getCommunityVisibleNews(getUserIdentifier())
-            filteredNewsList = news.map<RealmNews?> { it }
+            filteredNewsList = news.map { it as RealmNews? }
             setupLabelFilter()
             labelFilteredList = applyLabelFilter(filteredNewsList)
             searchFilteredList = applySearchFilter(labelFilteredList)
