@@ -116,7 +116,10 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         setBackgroundColor(v, itemCnt)
 
         val title = (obj as RealmMyLife).title
-        val user = UserProfileDbHandler(requireContext()).userModel
+        val handler = profileDbHandler ?: UserProfileDbHandler(requireContext()).also {
+            profileDbHandler = it
+        }
+        val user = handler.userModel
         itemMyLifeBinding.img.setImageResource(resources.getIdentifier(obj.imageId, "drawable", requireActivity().packageName))
         itemMyLifeBinding.tvName.text = title
 
