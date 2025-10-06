@@ -22,8 +22,7 @@ import androidx.core.content.ContextCompat
 import java.io.File
 import java.io.FileOutputStream
 import java.util.Date
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
+import java.util.concurrent.Executor
 import org.ole.planet.myplanet.MainApplication.Companion.context
 
 object CameraUtils {
@@ -32,7 +31,7 @@ object CameraUtils {
     private var imageReader: ImageReader? = null
     private var backgroundHandler: Handler
     private var backgroundThread: HandlerThread = HandlerThread("CameraBackground")
-    private var sessionExecutor: ExecutorService? = null
+    private val sessionExecutor: Executor by lazy { ContextCompat.getMainExecutor(context) }
 
     @JvmStatic
     fun capturePhoto(callback: ImageCaptureCallback) {
@@ -81,8 +80,6 @@ object CameraUtils {
         cameraDevice = null
         imageReader?.close()
         imageReader = null
-        sessionExecutor?.shutdown()
-        sessionExecutor = null
     }
 
     @JvmStatic
@@ -139,7 +136,6 @@ object CameraUtils {
             captureRequestBuilder.addTarget(surface)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 val outputConfigurations = listOf(OutputConfiguration(surface))
-                val executor = sessionExecutor ?: Executors.newSingleThreadExecutor().also { sessionExecutor = it }
                 val stateCallback = object : CameraCaptureSession.StateCallback() {
                     override fun onConfigured(session: CameraCaptureSession) {
                         if (cameraDevice == null) return
@@ -155,7 +151,7 @@ object CameraUtils {
                     override fun onConfigureFailed(session: CameraCaptureSession) {}
                 }
 
-                val sessionConfiguration = SessionConfiguration(SessionConfiguration.SESSION_REGULAR, outputConfigurations, executor, stateCallback)
+                val sessionConfiguration = SessionConfiguration(SessionConfiguration.SESSION_REGULAR, outputConfigurations, sessionExecutor, stateCallback)
 
                 cameraDevice?.createCaptureSession(sessionConfiguration)
             } else {

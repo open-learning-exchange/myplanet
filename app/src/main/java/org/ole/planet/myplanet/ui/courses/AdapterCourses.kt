@@ -99,10 +99,6 @@ class AdapterCourses(
         diffResult.dispatchUpdatesTo(this)
     }
 
-    fun setOriginalCourseList(courseList: List<RealmMyCourse?>){
-        dispatchDiff(courseList)
-    }
-
     fun setCourseList(courseList: List<RealmMyCourse?>) {
         dispatchDiff(courseList)
     }
@@ -185,8 +181,9 @@ class AdapterCourses(
         showProgressAndRating(position, holder)
 
         holder.rowCourseBinding.root.setOnClickListener {
-            if (position != RecyclerView.NO_POSITION) {
-                openCourse(courseList[position], 0)
+            val newPosition = holder.bindingAdapterPosition
+            if (newPosition != RecyclerView.NO_POSITION) {
+                openCourse(courseList[newPosition], 0)
             }
         }
     }

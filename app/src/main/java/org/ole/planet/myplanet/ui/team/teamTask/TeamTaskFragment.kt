@@ -257,13 +257,17 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
         }
     }
 
-    override fun onCheckChange(realmTeamTask: RealmTeamTask?, b: Boolean) {
-        if (!mRealm.isInTransaction) mRealm.beginTransaction()
-        realmTeamTask?.completed = b
-        realmTeamTask?.isUpdated = true
-        realmTeamTask?.completedTime = Date().time
-        mRealm.commitTransaction()
-        setAdapter()
+    override fun onCheckChange(realmTeamTask: RealmTeamTask?, completed: Boolean) {
+        val taskId = realmTeamTask?.id ?: return
+        viewLifecycleOwner.lifecycleScope.launch {
+            teamRepository.setTaskCompletion(taskId, completed)
+
+            if (!mRealm.isClosed) {
+                mRealm.refresh()
+            }
+
+            setAdapter()
+        }
     }
 
     override fun onEdit(task: RealmTeamTask?) {
