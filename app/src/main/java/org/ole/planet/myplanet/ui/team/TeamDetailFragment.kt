@@ -167,7 +167,12 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
             }
 
             if (shouldQueryRealm(teamId) && resolvedTeam == null) {
-                throw IllegalArgumentException("Team not found for ID: $teamId")
+                Snackbar.make(
+                    binding.root,
+                    getString(R.string.no_team_available),
+                    Snackbar.LENGTH_LONG
+                ).show()
+                return@launch
             }
 
             resolvedTeam?.let { team = it }
