@@ -87,10 +87,8 @@ class TeamRepositoryImpl @Inject constructor(
         } > 0
     }
 
-    override suspend fun requestToJoin(teamId: String, user: RealmUserModel?, teamType: String?) {
-        val userId = user?.id ?: return
-        val userPlanetCode = user?.planetCode
-        if (teamId.isBlank()) return
+    override suspend fun requestToJoin(teamId: String, userId: String?, userPlanetCode: String?, teamType: String?) {
+        if (teamId.isBlank() || userId.isNullOrBlank()) return
         executeTransaction { realm ->
             val request = realm.createObject(RealmMyTeam::class.java, AndroidDecrypter.generateIv())
             request.docType = "request"

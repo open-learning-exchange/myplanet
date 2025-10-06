@@ -267,20 +267,25 @@ class AdapterTeamList(
     private fun requestToJoin(team: RealmMyTeam, user: RealmUserModel?) {
         val teamId = team._id ?: return
         val teamType = team.teamType
+        val userId = user?.id
+        val userPlanetCode = user?.planetCode
+        val cacheKey = "${teamId}_${userId}"
+
+        teamStatusCache.remove(cacheKey)
+
         scope.launch(Dispatchers.IO) {
-            teamRepository.requestToJoin(teamId, user, teamType)
-            val cacheKey = "${teamId}_${user?.id}"
-            teamStatusCache.remove(cacheKey)
+            teamRepository.requestToJoin(teamId, userId, userPlanetCode, teamType)
         }
     }
 
     private fun leaveTeam(team: RealmMyTeam, userId: String?) {
         val teamId = team._id ?: return
+        val cacheKey = "${teamId}_${userId}"
+
+        teamStatusCache.remove(cacheKey)
+
         scope.launch(Dispatchers.IO) {
             teamRepository.leaveTeam(teamId, userId)
-
-            val cacheKey = "${teamId}_${userId}"
-            teamStatusCache.remove(cacheKey)
         }
     }
 

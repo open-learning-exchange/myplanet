@@ -325,7 +325,10 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         } else {
             binding.btnLeave.text = getString(R.string.join)
             binding.btnLeave.setOnClickListener {
-                RealmMyTeam.requestToJoin(teamId, user, mRealm, team?.teamType)
+                val userId = user?.id
+                val userPlanetCode = user?.planetCode
+                val teamType = team?.teamType
+                RealmMyTeam.requestToJoin(teamId, userId, userPlanetCode, mRealm, teamType)
                 binding.btnLeave.text = getString(R.string.requested)
                 binding.btnLeave.isEnabled = false
                 viewLifecycleOwner.lifecycleScope.launch {
