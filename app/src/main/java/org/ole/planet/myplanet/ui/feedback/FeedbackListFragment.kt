@@ -47,6 +47,8 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     lateinit var settings: SharedPreferences
     @Inject
     lateinit var feedbackRepository: FeedbackRepository
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
     private val serverUrlMapper = ServerUrlMapper()
     
     @Inject
@@ -67,7 +69,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentFeedbackListBinding.inflate(inflater, container, false)
-        userModel = UserProfileDbHandler(requireContext()).userModel
+        userModel = userProfileDbHandler.userModel
 
         binding.fab.setOnClickListener {
             val feedbackFragment = FeedbackFragment()
