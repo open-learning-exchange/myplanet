@@ -173,8 +173,9 @@ class AdapterCourses(
         showProgressAndRating(position, holder)
 
         holder.rowCourseBinding.root.setOnClickListener {
-            if (position != RecyclerView.NO_POSITION) {
-                openCourse(courseList[position], 0)
+            val newPosition = holder.bindingAdapterPosition
+            if (newPosition != RecyclerView.NO_POSITION) {
+                openCourse(courseList[newPosition], 0)
             }
         }
     }
