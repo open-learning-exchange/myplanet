@@ -31,6 +31,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
@@ -45,6 +46,9 @@ class NotificationsFragment : Fragment() {
     private val binding get() = _binding!!
     @Inject
     lateinit var databaseService: DatabaseService
+    // Repository dependency for ongoing migration away from direct Realm access in this fragment.
+    @Inject
+    lateinit var notificationRepository: NotificationRepository
     private lateinit var adapter: AdapterNotification
     private lateinit var userId: String
     private var notificationUpdateListener: NotificationListener? = null
@@ -107,8 +111,6 @@ class NotificationsFragment : Fragment() {
         binding.btnMarkAllAsRead.setOnClickListener {
             markAllAsRead()
         }
-        updateMarkAllAsReadButtonVisibility()
-        updateUnreadCount()
         return binding.root
     }
 
@@ -253,16 +255,6 @@ class NotificationsFragment : Fragment() {
         binding.btnMarkAllAsRead.visibility = if (unreadCountCache > 0) View.VISIBLE else View.GONE
     }
 
-    private fun getUnreadNotificationsSize(): Int {
-        return databaseService.withRealm { realm ->
-            realm.where(RealmNotification::class.java)
-                .equalTo("userId", userId)
-                .equalTo("isRead", false)
-                .count()
-                .toInt()
-        }
-    }
-
     private fun updateUnreadCount() {
         notificationUpdateListener?.onNotificationCountUpdated(unreadCountCache)
     }
@@ -273,15 +265,17 @@ class NotificationsFragment : Fragment() {
             val notifications = loadNotifications(userId, selectedFilter)
             adapter.updateNotifications(notifications)
             refreshUnreadCountCache()
-            updateMarkAllAsReadButtonVisibility()
-            updateUnreadCount()
 
             binding.emptyData.visibility = if (notifications.isEmpty()) View.VISIBLE else View.GONE
         }
     }
 
     private fun refreshUnreadCountCache() {
-        unreadCountCache = getUnreadNotificationsSize()
+        viewLifecycleOwner.lifecycleScope.launch {
+            unreadCountCache = notificationRepository.getUnreadCount(userId)
+            updateMarkAllAsReadButtonVisibility()
+            updateUnreadCount()
+        }
     }
 
     private fun markNotificationsAsRead(
