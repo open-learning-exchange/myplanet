@@ -150,4 +150,8 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
         val openFolderIntent = FileUtils.openOleFolder(requireContext())
         openFolderLauncher.launch(openFolderIntent)
     }
+
+    override fun getCurrentImageList(): RealmList<String>? {
+        return if (::imageList.isInitialized) imageList else null
+    }
 }
