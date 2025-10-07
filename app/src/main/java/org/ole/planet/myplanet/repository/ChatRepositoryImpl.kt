@@ -27,7 +27,7 @@ class ChatRepositoryImpl @Inject constructor(
         }
         return queryList(RealmNews::class.java) {
             equalTo("docType", "message", Case.INSENSITIVE)
-            equalTo("createdOn", planetCode, Case.INSENSITIVE)
+            equalTo("messagePlanetCode", planetCode, Case.INSENSITIVE)
         }
     }
 }
