@@ -41,14 +41,19 @@ class CourseProgressActivity : BaseActivity() {
             val courseProgress = RealmCourseProgress.getCourseProgress(realm, user?.id)
             val progress = courseProgress[courseId]
             val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
-            if (progress != null) {
+            binding.progressView.max = 100
+            val progressPercentage = if (progress != null) {
                 val maxProgress = progress["max"].asInt
                 if (maxProgress != 0) {
-                    binding.progressView.setProgress((progress["current"].asInt.toDouble() / maxProgress.toDouble() * 100).toInt(), true)
+                    (progress["current"].asInt.toDouble() / maxProgress.toDouble() * 100).toInt()
                 } else {
-                    binding.progressView.setProgress(0, true)
+                    0
                 }
+            } else {
+                0
             }
+            binding.progressView.setProgressCompat(progressPercentage, true)
+            binding.tvProgressPercentage.text = getString(R.string.percentage, progressPercentage.toString())
             binding.tvCourse.text = course?.courseTitle
             binding.tvProgress.text = getString(
                 R.string.course_progress,
