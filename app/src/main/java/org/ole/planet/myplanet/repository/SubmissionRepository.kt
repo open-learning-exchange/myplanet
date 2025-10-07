@@ -6,7 +6,6 @@ import org.ole.planet.myplanet.model.RealmSubmission
 interface SubmissionRepository {
     suspend fun getPendingSurveys(userId: String?): List<RealmSubmission>
     suspend fun getUniquePendingSurveys(userId: String?): List<RealmSubmission>
-    suspend fun getSubmissionCountByUser(userId: String?): Int
     suspend fun getSurveyTitlesFromSubmissions(submissions: List<RealmSubmission>): List<String>
     suspend fun getSubmissionById(id: String): RealmSubmission?
     suspend fun getSubmissionsByUserId(userId: String): List<RealmSubmission>
