@@ -17,13 +17,6 @@ class CalendarFragment : Fragment() {
     private val binding get() = _binding!!
     var listener: OnHomeItemClickListener? = null
     
-    fun addEvents() {
-        val events: MutableList<CalendarDay> = ArrayList()
-        val calendar = Calendar.getInstance()
-        events.add(CalendarDay(calendar))
-        binding.calendarView.setCalendarDays(events)
-    }
-
     override fun onAttach(context: Context) {
         super.onAttach(context)
         if (context is OnHomeItemClickListener) listener = context

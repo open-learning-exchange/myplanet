@@ -21,7 +21,6 @@ import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 
 @AndroidEntryPoint
@@ -30,6 +29,8 @@ class MyProgressFragment : Fragment() {
     private val binding get() = _binding!!
     @Inject
     lateinit var databaseService: DatabaseService
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentMyProgressBinding.inflate(inflater, container, false)
@@ -43,7 +44,7 @@ class MyProgressFragment : Fragment() {
 
     private fun initializeData() {
         databaseService.withRealm { realm ->
-            val user = UserProfileDbHandler(requireActivity()).userModel
+            val user = userProfileDbHandler.userModel
             val courseData = fetchCourseData(realm, user?.id)
             binding.rvMyprogress.layoutManager = LinearLayoutManager(requireActivity())
             binding.rvMyprogress.adapter = AdapterMyProgress(requireActivity(), courseData)
@@ -120,30 +121,13 @@ class MyProgressFragment : Fragment() {
             return null
         }
 
-        fun countUsersWhoCompletedCourse(realm: Realm, courseId: String): Int {
-            var completedCount = 0
-            val allUsers = realm.where(RealmUserModel::class.java).findAll()
-
-            allUsers.forEach { user ->
-                val userId = user.id
-                val courses = RealmMyCourse.getMyCourseByUserId(userId, realm.where(RealmMyCourse::class.java).findAll())
-
-                val course = courses.find { it.courseId == courseId }
-                if (course != null) {
-                    val steps = RealmMyCourse.getCourseSteps(realm, courseId)
-                    val currentProgress = RealmCourseProgress.getCurrentProgress(steps, realm, userId, courseId)
-
-                    if (currentProgress == steps.size) {
-                        completedCount++
-                    }
-                }
-            }
-            return completedCount
-        }
     }
 
     override fun onDestroyView() {
         _binding = null
+        if (this::userProfileDbHandler.isInitialized) {
+            userProfileDbHandler.onDestroy()
+        }
         super.onDestroyView()
     }
 }

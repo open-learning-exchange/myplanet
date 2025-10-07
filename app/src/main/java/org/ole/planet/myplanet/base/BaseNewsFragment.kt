@@ -23,12 +23,16 @@ import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.realm.RealmList
 import java.io.File
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ImageThumbBinding
 import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.news.AdapterNews
 import org.ole.planet.myplanet.ui.news.AdapterNews.OnNewsItemClickListener
+import org.ole.planet.myplanet.ui.news.NewsActions
 import org.ole.planet.myplanet.ui.news.ReplyActivity
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
@@ -84,13 +88,13 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
             if (result.resultCode == Activity.RESULT_OK) {
                 val newsId = result.data?.getStringExtra("newsId")
                 newsId.let { adapterNews?.updateReplyBadge(it) }
-                adapterNews?.notifyDataSetChanged()
+                adapterNews?.refreshCurrentItems()
             }
         }
     }
 
     override fun onDataChanged() {
-        adapterNews?.notifyDataSetChanged()
+        adapterNews?.refreshCurrentItems()
     }
 
     override fun onAttach(context: Context) {
@@ -111,6 +115,18 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
                 .putExtra("nonTeamMember", nonTeamMember)
             replyActivityLauncher.launch(intent)
         }
+    }
+
+    override fun onMemberSelected(userModel: RealmUserModel?) {
+        if (!isAdded) return
+        val handler = profileDbHandler ?: return
+        val fragment = NewsActions.showMemberDetails(userModel, handler) ?: return
+        NavigationHelper.replaceFragment(
+            requireActivity().supportFragmentManager,
+            R.id.fragment_container,
+            fragment,
+            addToBackStack = true
+        )
     }
 
     abstract fun setData(list: List<RealmNews?>?)

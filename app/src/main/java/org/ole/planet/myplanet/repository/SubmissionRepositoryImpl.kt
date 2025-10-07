@@ -5,6 +5,7 @@ import io.realm.Sort
 import java.util.Date
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
@@ -12,6 +13,10 @@ import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
 class SubmissionRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
 ) : RealmRepository(databaseService), SubmissionRepository {
+
+    private fun RealmSubmission.examIdFromParentId(): String? {
+        return parentId?.substringBefore("@")
+    }
 
     override suspend fun getPendingSurveys(userId: String?): List<RealmSubmission> {
         if (userId == null) return emptyList()
@@ -29,9 +34,7 @@ class SubmissionRepositoryImpl @Inject constructor(
         val pendingSurveys = getPendingSurveys(userId)
         if (pendingSurveys.isEmpty()) return emptyList()
 
-        val examIds = pendingSurveys.mapNotNull { submission ->
-            submission.parentId?.split("@")?.firstOrNull()
-        }.distinct()
+        val examIds = pendingSurveys.mapNotNull { it.examIdFromParentId() }.distinct()
 
         if (examIds.isEmpty()) return emptyList()
 
@@ -42,7 +45,7 @@ class SubmissionRepositoryImpl @Inject constructor(
 
         val uniqueSurveys = linkedMapOf<String, RealmSubmission>()
         pendingSurveys.forEach { submission ->
-            val examId = submission.parentId?.split("@")?.firstOrNull()
+            val examId = submission.examIdFromParentId()
             if (examId != null && validExamIds.contains(examId) && !uniqueSurveys.containsKey(examId)) {
                 uniqueSurveys[examId] = submission
             }
@@ -51,20 +54,10 @@ class SubmissionRepositoryImpl @Inject constructor(
         return uniqueSurveys.values.toList()
     }
 
-    override suspend fun getSubmissionCountByUser(userId: String?): Int {
-        if (userId == null) return 0
-
-        return count(RealmSubmission::class.java) {
-            equalTo("userId", userId)
-            equalTo("type", "survey")
-            equalTo("status", "pending")
-        }.toInt()
-    }
-
     override suspend fun getSurveyTitlesFromSubmissions(
         submissions: List<RealmSubmission>
     ): List<String> {
-        val examIds = submissions.mapNotNull { it.parentId?.split("@")?.firstOrNull() }
+        val examIds = submissions.mapNotNull { it.examIdFromParentId() }
         if (examIds.isEmpty()) {
             return emptyList()
         }
@@ -75,7 +68,7 @@ class SubmissionRepositoryImpl @Inject constructor(
         val examMap = exams.associate { it.id to (it.name ?: "") }
 
         return submissions.map { submission ->
-            val examId = submission.parentId?.split("@")?.firstOrNull()
+            val examId = submission.examIdFromParentId()
             examMap[examId] ?: ""
         }
     }
@@ -83,9 +76,7 @@ class SubmissionRepositoryImpl @Inject constructor(
     override suspend fun getExamMapForSubmissions(
         submissions: List<RealmSubmission>
     ): Map<String?, RealmStepExam> {
-        val examIds = submissions.mapNotNull { sub ->
-            sub.parentId?.split("@")?.firstOrNull()
-        }.distinct()
+        val examIds = submissions.mapNotNull { it.examIdFromParentId() }.distinct()
 
         if (examIds.isEmpty()) {
             return emptyMap()
@@ -97,7 +88,7 @@ class SubmissionRepositoryImpl @Inject constructor(
 
         return submissions.mapNotNull { sub ->
             val parentId = sub.parentId
-            val examId = parentId?.split("@")?.firstOrNull()
+            val examId = sub.examIdFromParentId()
             examMap[examId]?.let { parentId to it }
         }.toMap()
     }
@@ -116,31 +107,59 @@ class SubmissionRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun hasSubmission(
+        stepExamId: String?,
+        courseId: String?,
+        userId: String?,
+        type: String,
+    ): Boolean {
+        if (stepExamId.isNullOrBlank() || courseId.isNullOrBlank() || userId.isNullOrBlank()) {
+            return false
+        }
+
+        val questions = queryList(RealmExamQuestion::class.java) {
+            equalTo("examId", stepExamId)
+        }
+        if (questions.isEmpty()) {
+            return false
+        }
+
+        val examId = questions.firstOrNull()?.examId
+        if (examId.isNullOrBlank()) {
+            return false
+        }
+
+        val parentId = "$examId@$courseId"
+        return count(RealmSubmission::class.java) {
+            equalTo("userId", userId)
+            equalTo("parentId", parentId)
+            equalTo("type", type)
+        } > 0
+    }
+
     override suspend fun createSurveySubmission(examId: String, userId: String?) {
-        withRealmAsync { realm ->
+        executeTransaction { realm ->
             val courseId = realm.where(RealmStepExam::class.java).equalTo("id", examId).findFirst()?.courseId
             val parentId = if (!TextUtils.isEmpty(courseId)) {
                 examId + "@" + courseId
             } else {
                 examId
             }
-            realm.executeTransaction { r ->
-                var sub = r.where(RealmSubmission::class.java)
-                    .equalTo("userId", userId)
-                    .equalTo(
-                        "parentId",
-                        parentId,
-                    )
-                    .sort("lastUpdateTime", Sort.DESCENDING)
-                    .equalTo("status", "pending")
-                    .findFirst()
-                sub = createSubmission(sub, r)
-                sub.parentId = parentId
-                sub.userId = userId
-                sub.type = "survey"
-                sub.status = "pending"
-                sub.startTime = Date().time
-            }
+            var sub = realm.where(RealmSubmission::class.java)
+                .equalTo("userId", userId)
+                .equalTo(
+                    "parentId",
+                    parentId,
+                )
+                .sort("lastUpdateTime", Sort.DESCENDING)
+                .equalTo("status", "pending")
+                .findFirst()
+            sub = createSubmission(sub, realm)
+            sub.parentId = parentId
+            sub.userId = userId
+            sub.type = "survey"
+            sub.status = "pending"
+            sub.startTime = Date().time
         }
     }
 

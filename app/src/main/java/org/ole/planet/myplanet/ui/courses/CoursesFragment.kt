@@ -46,6 +46,7 @@ import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmTag.Companion.getTagsArray
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.TagRepository
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
@@ -59,16 +60,6 @@ import org.ole.planet.myplanet.utilities.SharedPrefManager
 
 @AndroidEntryPoint
 class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelected, TagClickListener, RealtimeSyncMixin {
-
-    companion object {
-        fun newInstance(isMyCourseLib: Boolean): CoursesFragment {
-            val fragment = CoursesFragment()
-            val args = Bundle()
-            args.putBoolean("isMyCourseLib", isMyCourseLib)
-            fragment.arguments = args
-            return fragment
-        }
-    }
 
     private lateinit var tvAddToLib: TextView
     private lateinit var tvSelected: TextView
@@ -94,6 +85,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
+
+    @Inject
+    lateinit var tagRepository: TagRepository
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
 
@@ -204,9 +198,15 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
 
             recyclerView.adapter = null
-            adapterCourses = AdapterCourses(requireActivity(), sortedCourseList, map, userProfileDbHandler)
+            adapterCourses = AdapterCourses(
+                requireActivity(),
+                sortedCourseList,
+                map,
+                userProfileDbHandler,
+                tagRepository,
+                this@CoursesFragment
+            )
             adapterCourses.setProgressMap(progressMap)
-            adapterCourses.setmRealm(mRealm)
             adapterCourses.setListener(this)
             adapterCourses.setRatingChangeListener(this)
             recyclerView.adapter = adapterCourses
@@ -233,9 +233,15 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         val progressMap = getCourseProgress(mRealm, model?.id)
         val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>().filter { !it?.courseTitle.isNullOrBlank() }
         val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
-        adapterCourses = AdapterCourses(requireActivity(), sortedCourseList, map, userProfileDbHandler)
+        adapterCourses = AdapterCourses(
+            requireActivity(),
+            sortedCourseList,
+            map,
+            userProfileDbHandler,
+            tagRepository,
+            this@CoursesFragment
+        )
         adapterCourses.setProgressMap(progressMap)
-        adapterCourses.setmRealm(mRealm)
         adapterCourses.setListener(this)
         adapterCourses.setRatingChangeListener(this)
 
@@ -253,7 +259,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        userModel = UserProfileDbHandler(requireContext()).userModel
+        userModel = userProfileDbHandler.userModel
         searchTags = ArrayList()
         initializeView()
         updateCheckBoxState(false)

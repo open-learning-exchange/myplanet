@@ -5,7 +5,7 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmStepExam.Companion.getNoOfExam
+import org.ole.planet.myplanet.model.RealmStepExam
 
 class CourseRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
@@ -31,22 +31,17 @@ class CourseRepositoryImpl @Inject constructor(
         if (courseId.isNullOrEmpty()) {
             return 0
         }
-        return withRealmAsync { realm ->
-            getNoOfExam(realm, courseId)
-        }
+        return count(RealmStepExam::class.java) {
+            equalTo("courseId", courseId)
+        }.toInt()
     }
 
     override suspend fun getCourseSteps(courseId: String?): List<RealmCourseStep> {
         if (courseId.isNullOrEmpty()) {
             return emptyList()
         }
-        return withRealmAsync { realm ->
-            val steps = RealmMyCourse.getCourseSteps(realm, courseId)
-            if (steps.isEmpty()) {
-                emptyList()
-            } else {
-                realm.copyFromRealm(steps)
-            }
+        return queryList(RealmCourseStep::class.java) {
+            equalTo("courseId", courseId)
         }
     }
 

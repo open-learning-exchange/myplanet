@@ -153,6 +153,11 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
         realmTeamTask.isUpdated = true
         lifecycleScope.launch {
             teamRepository.upsertTask(realmTeamTask)
+
+            if (!mRealm.isClosed) {
+                mRealm.refresh()
+            }
+
             if (binding.rvTask.adapter != null) {
                 binding.rvTask.adapter?.notifyDataSetChanged()
                 showNoData(binding.tvNodata, binding.rvTask.adapter?.itemCount, "tasks")
@@ -192,8 +197,21 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
     }
 
     private fun allTasks() {
-       list = mRealm.where(RealmTeamTask::class.java).equalTo("teamId", teamId)
-            .notEqualTo("status", "archived").sort("completed", Sort.ASCENDING).findAll()
+        val uncompletedTasks = mRealm.where(RealmTeamTask::class.java)
+            .equalTo("teamId", teamId)
+            .notEqualTo("status", "archived")
+            .equalTo("completed", false)
+            .sort("deadline", Sort.DESCENDING)
+            .findAll()
+
+        val completedTasks = mRealm.where(RealmTeamTask::class.java)
+            .equalTo("teamId", teamId)
+            .notEqualTo("status", "archived")
+            .equalTo("completed", true)
+            .sort("completedTime", Sort.DESCENDING)
+            .findAll()
+
+        list = uncompletedTasks + completedTasks
     }
 
     private fun completedTasks() {
@@ -239,13 +257,17 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
         }
     }
 
-    override fun onCheckChange(realmTeamTask: RealmTeamTask?, b: Boolean) {
-        if (!mRealm.isInTransaction) mRealm.beginTransaction()
-        realmTeamTask?.completed = b
-        realmTeamTask?.isUpdated = true
-        realmTeamTask?.completedTime = Date().time
-        mRealm.commitTransaction()
-        setAdapter()
+    override fun onCheckChange(realmTeamTask: RealmTeamTask?, completed: Boolean) {
+        val taskId = realmTeamTask?.id ?: return
+        viewLifecycleOwner.lifecycleScope.launch {
+            teamRepository.setTaskCompletion(taskId, completed)
+
+            if (!mRealm.isClosed) {
+                mRealm.refresh()
+            }
+
+            setAdapter()
+        }
     }
 
     override fun onEdit(task: RealmTeamTask?) {
@@ -256,6 +278,11 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
         val taskId = task?.id ?: return
         viewLifecycleOwner.lifecycleScope.launch {
             teamRepository.deleteTask(taskId)
+
+            if (!mRealm.isClosed) {
+                mRealm.refresh()
+            }
+
             Utilities.toast(activity, getString(R.string.task_deleted_successfully))
             setAdapter()
             showNoData(binding.tvNodata, binding.rvTask.adapter?.itemCount, "tasks")

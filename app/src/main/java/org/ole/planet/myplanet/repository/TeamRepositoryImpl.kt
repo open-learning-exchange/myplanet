@@ -4,11 +4,16 @@ import android.content.Context
 import androidx.core.net.toUri
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import io.realm.RealmChangeListener
+import io.realm.RealmResults
+import io.realm.Sort
+import java.util.Calendar
 import java.util.Date
-import java.util.concurrent.atomic.AtomicBoolean
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.datamanager.ApiClient.client
@@ -16,6 +21,7 @@ import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UploadManager
@@ -59,13 +65,70 @@ class TeamRepositoryImpl @Inject constructor(
         return findByField(RealmMyTeam::class.java, "_id", teamId)
     }
 
+    override fun getTeamTransactions(
+        teamId: String,
+        startDate: Long?,
+        endDate: Long?,
+        sortAscending: Boolean,
+    ): Flow<RealmResults<RealmMyTeam>> {
+        val sortOrder = if (sortAscending) Sort.ASCENDING else Sort.DESCENDING
+        return withRealmFlow { realm, scope ->
+            val query = realm.where(RealmMyTeam::class.java)
+                .equalTo("teamId", teamId)
+                .equalTo("docType", "transaction")
+                .notEqualTo("status", "archived")
+
+            startDate?.let { query.greaterThanOrEqualTo("date", it) }
+            endDate?.let { query.lessThanOrEqualTo("date", it) }
+
+            val results = query.findAllAsync().sort("date", sortOrder)
+            val listener = RealmChangeListener<RealmResults<RealmMyTeam>> { updatedResults ->
+                scope.trySend(updatedResults)
+            }
+            results.addChangeListener(listener)
+            scope.trySend(results)
+
+            return@withRealmFlow { results.removeChangeListener(listener) }
+        }
+    }
+
+    override suspend fun createTransaction(
+        teamId: String,
+        type: String,
+        note: String,
+        amount: Int,
+        date: Long,
+        parentCode: String?,
+        planetCode: String?,
+    ): Result<Unit> {
+        if (teamId.isBlank()) {
+            return Result.failure(IllegalArgumentException("teamId cannot be blank"))
+        }
+        return runCatching {
+            executeTransaction { realm ->
+                val transaction = realm.createObject(RealmMyTeam::class.java, UUID.randomUUID().toString())
+                transaction.status = "active"
+                transaction.date = date
+                transaction.type = type
+                transaction.description = note
+                transaction.teamId = teamId
+                transaction.amount = amount
+                transaction.parentCode = parentCode
+                transaction.teamPlanetCode = planetCode
+                transaction.teamType = "sync"
+                transaction.docType = "transaction"
+                transaction.updated = true
+            }
+        }
+    }
+
     override suspend fun isMember(userId: String?, teamId: String): Boolean {
         userId ?: return false
-        return queryList(RealmMyTeam::class.java) {
+        return count(RealmMyTeam::class.java) {
             equalTo("userId", userId)
             equalTo("teamId", teamId)
             equalTo("docType", "membership")
-        }.isNotEmpty()
+        } > 0
     }
 
     override suspend fun isTeamLeader(teamId: String, userId: String?): Boolean {
@@ -85,6 +148,27 @@ class TeamRepositoryImpl @Inject constructor(
             equalTo("teamId", teamId)
             equalTo("userId", userId)
         } > 0
+    }
+
+    override suspend fun getRecentVisitCounts(teamIds: Collection<String>): Map<String, Long> {
+        if (teamIds.isEmpty()) return emptyMap()
+
+        val validIds = teamIds.filter { it.isNotBlank() }.distinct()
+        if (validIds.isEmpty()) return emptyMap()
+
+        val cutoff = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -30) }.timeInMillis
+
+        val recentLogs = queryList(RealmTeamLog::class.java) {
+            equalTo("type", "teamVisit")
+            greaterThan("time", cutoff)
+            `in`("teamId", validIds.toTypedArray())
+        }
+
+        return recentLogs
+            .mapNotNull { it.teamId }
+            .groupingBy { it }
+            .eachCount()
+            .mapValues { it.value.toLong() }
     }
 
     override suspend fun requestToJoin(teamId: String, user: RealmUserModel?, teamType: String?) {
@@ -177,6 +261,14 @@ class TeamRepositoryImpl @Inject constructor(
     override suspend fun assignTask(taskId: String, assigneeId: String?) {
         update(RealmTeamTask::class.java, "id", taskId) { task ->
             task.assignee = assigneeId
+            task.isUpdated = true
+        }
+    }
+
+    override suspend fun setTaskCompletion(taskId: String, completed: Boolean) {
+        update(RealmTeamTask::class.java, "id", taskId) { task ->
+            task.completed = completed
+            task.completedTime = if (completed) Date().time else 0
             task.isUpdated = true
         }
     }
@@ -318,15 +410,11 @@ class TeamRepositoryImpl @Inject constructor(
 
     private suspend fun uploadTeamActivities() {
         try {
-            withContext(Dispatchers.IO) {
-                uploadManager.uploadTeams()
-            }
             val apiInterface = client?.create(ApiInterface::class.java)
             withContext(Dispatchers.IO) {
-                withRealmAsync { realm ->
-                    realm.executeTransaction { transactionRealm ->
-                        uploadManager.uploadTeamActivities(transactionRealm, apiInterface)
-                    }
+                uploadManager.uploadTeams()
+                executeTransaction { realm ->
+                    uploadManager.uploadTeamActivities(realm, apiInterface)
                 }
             }
         } catch (e: Exception) {
@@ -337,7 +425,15 @@ class TeamRepositoryImpl @Inject constructor(
     private suspend fun getResourceIds(teamId: String): List<String> {
         return queryList(RealmMyTeam::class.java) {
             equalTo("teamId", teamId)
-        }.mapNotNull { it.resourceId?.takeIf { id -> id.isNotBlank() } }
+            beginGroup()
+                .isNull("docType")
+                .or().equalTo("docType", "")
+                .or().equalTo("docType", "resourceLink")
+                .or().equalTo("docType", "link")
+            endGroup()
+            isNotNull("resourceId")
+            isNotEmpty("resourceId")
+        }.mapNotNull { it.resourceId }
     }
 }
 

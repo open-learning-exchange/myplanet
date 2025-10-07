@@ -8,19 +8,19 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import java.util.Date
 import java.util.UUID
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.databinding.FragmentCourseStepBinding
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
-import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.isMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.exam.TakeExamFragment
@@ -140,37 +140,26 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     private fun hideTestIfNoQuestion() {
         fragmentCourseStepBinding.btnTakeTest.visibility = View.GONE
         fragmentCourseStepBinding.btnTakeSurvey.visibility = View.GONE
-        if (stepExams.isNotEmpty()) {
-            val firstStepId = stepExams[0].id
-            val isTestPersent = existsSubmission(firstStepId, "exam")
-            fragmentCourseStepBinding.btnTakeTest.text = if (isTestPersent) { getString(R.string.retake_test, stepExams.size) } else { getString(R.string.take_test, stepExams.size) }
-            fragmentCourseStepBinding.btnTakeTest.visibility = View.VISIBLE
-        }
-        if (stepSurvey.isNotEmpty()) {
-            val firstStepId = stepSurvey[0].id
-            val isSurveyPresent = existsSubmission(firstStepId, "survey")
-            fragmentCourseStepBinding.btnTakeSurvey.text = if (isSurveyPresent) { "redo survey" } else { "record survey" }
-            fragmentCourseStepBinding.btnTakeSurvey.visibility = View.VISIBLE
-        }
-    }
-
-    private fun existsSubmission(firstStepId: String?, submissionType: String): Boolean {
-        return databaseService.withRealm { realm ->
-            val questions = realm.where(RealmExamQuestion::class.java)
-                .equalTo("examId", firstStepId)
-                .findAll()
-            if (questions.isNotEmpty()) {
-                val examId = questions[0]?.examId
-                step.courseId?.let { courseId ->
-                    val parentId = "$examId@$courseId"
-                    realm.where(RealmSubmission::class.java)
-                        .equalTo("userId", user?.id)
-                        .equalTo("parentId", parentId)
-                        .equalTo("type", submissionType)
-                        .findFirst() != null
-                } ?: false
-            } else {
-                false
+        viewLifecycleOwner.lifecycleScope.launch {
+            if (stepExams.isNotEmpty()) {
+                val firstStepId = stepExams[0].id
+                val isTestPresent = submissionRepository.hasSubmission(firstStepId, step.courseId, user?.id, "exam")
+                fragmentCourseStepBinding.btnTakeTest.text = if (isTestPresent) {
+                    getString(R.string.retake_test, stepExams.size)
+                } else {
+                    getString(R.string.take_test, stepExams.size)
+                }
+                fragmentCourseStepBinding.btnTakeTest.visibility = View.VISIBLE
+            }
+            if (stepSurvey.isNotEmpty()) {
+                val firstStepId = stepSurvey[0].id
+                val isSurveyPresent = submissionRepository.hasSubmission(firstStepId, step.courseId, user?.id, "survey")
+                fragmentCourseStepBinding.btnTakeSurvey.text = if (isSurveyPresent) {
+                    "redo survey"
+                } else {
+                    "record survey"
+                }
+                fragmentCourseStepBinding.btnTakeSurvey.visibility = View.VISIBLE
             }
         }
     }

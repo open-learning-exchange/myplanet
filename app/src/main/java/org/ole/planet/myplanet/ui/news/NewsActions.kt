@@ -6,7 +6,6 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
 import com.google.gson.JsonArray
@@ -17,7 +16,6 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.team.teamMember.MemberDetailFragment
 
 object NewsActions {
@@ -125,11 +123,10 @@ object NewsActions {
     }
 
     fun showMemberDetails(
-        activity: AppCompatActivity,
         userModel: RealmUserModel?,
         profileDbHandler: UserProfileDbHandler
-    ) {
-        if (userModel == null) return
+    ): MemberDetailFragment? {
+        if (userModel == null) return null
         val userName = "${userModel.firstName} ${userModel.lastName}".trim().ifBlank { userModel.name }
         val fragment = MemberDetailFragment.newInstance(
             userName.toString(),
@@ -143,12 +140,7 @@ object NewsActions {
             userModel.level.toString(),
             userModel.userImage
         )
-        NavigationHelper.replaceFragment(
-            activity.supportFragmentManager,
-            R.id.fragment_container,
-            fragment,
-            addToBackStack = true
-        )
+        return fragment
     }
 
     fun deletePost(

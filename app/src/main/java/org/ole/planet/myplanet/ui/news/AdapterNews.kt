@@ -15,7 +15,6 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toDrawable
@@ -137,7 +136,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     fun setmRealm(mRealm: Realm?) {
         if (mRealm != null) {
             this.mRealm = mRealm
-            labelManager = NewsLabelManager(context, this.mRealm, currentUser)
+            labelManager = NewsLabelManager(context, this.mRealm)
         }
     }
 
@@ -147,7 +146,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         user = userProfileDbHandler.userModel
         settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         if (::mRealm.isInitialized) {
-            if (labelManager == null) labelManager = NewsLabelManager(context, mRealm, currentUser)
+            if (labelManager == null) labelManager = NewsLabelManager(context, mRealm)
         }
         return ViewHolderNews(rowNewsBinding)
     }
@@ -176,8 +175,9 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
 
                 loadImage(viewHolder.rowNewsBinding, news)
                 showReplyButton(viewHolder, news, position)
-                labelManager?.setupAddLabelMenu(viewHolder.rowNewsBinding, news)
-                news.let { labelManager?.showChips(viewHolder.rowNewsBinding, it) }
+                val canManageLabels = canAddLabel(news)
+                labelManager?.setupAddLabelMenu(viewHolder.rowNewsBinding, news, canManageLabels)
+                news.let { labelManager?.showChips(viewHolder.rowNewsBinding, it, canManageLabels) }
 
                 handleChat(viewHolder, news)
 
@@ -335,10 +335,8 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
                     notifyItemChanged(position)
                 }
             }
-            holder.rowNewsBinding.btnAddLabel.visibility = if (fromLogin || nonTeamMember) View.GONE else View.VISIBLE
         } else {
             holder.rowNewsBinding.imgEdit.visibility = View.GONE
-            holder.rowNewsBinding.btnAddLabel.visibility = View.GONE
         }
     }
 
@@ -392,6 +390,10 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         submitListSafely(newList)
     }
 
+    fun refreshCurrentItems() {
+        submitListSafely(currentList.toList())
+    }
+
     private fun submitListSafely(list: List<RealmNews?>, commitCallback: Runnable? = null) {
         userCache.clear()
         val detachedList = list.map { news ->
@@ -411,14 +413,12 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     private fun setMemberClickListeners(holder: ViewHolderNews, userModel: RealmUserModel?, currentLeader: RealmUserModel?) {
         if (!fromLogin) {
             holder.rowNewsBinding.imgUser.setOnClickListener {
-                val activity = context as AppCompatActivity
                 val model = userModel ?: currentLeader
-                NewsActions.showMemberDetails(activity, model, profileDbHandler)
+                listener?.onMemberSelected(model)
             }
             holder.rowNewsBinding.tvName.setOnClickListener {
-                val activity = context as AppCompatActivity
                 val model = userModel ?: currentLeader
-                NewsActions.showMemberDetails(activity, model, profileDbHandler)
+                listener?.onMemberSelected(model)
             }
         }
     }
@@ -447,7 +447,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         isLoggedInAndMember() && !isGuestUser()
 
     private fun canAddLabel(news: RealmNews?): Boolean =
-        isLoggedInAndMember() && (isOwner(news) || isTeamLeader() || isAdmin())
+        isLoggedInAndMember() && (isOwner(news) || isTeamLeader())
 
     private fun canShare(news: RealmNews?): Boolean =
         isLoggedInAndMember() && !news?.isCommunityNews!! && !isGuestUser()
@@ -546,6 +546,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         fun onNewsItemClick(news: RealmNews?)
         fun clearImages()
         fun onDataChanged()
+        fun onMemberSelected(userModel: RealmUserModel?)
     }
 
     private fun showShareButton(holder: RecyclerView.ViewHolder, news: RealmNews?) {

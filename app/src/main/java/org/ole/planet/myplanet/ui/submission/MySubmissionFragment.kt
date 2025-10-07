@@ -21,6 +21,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.SubmissionRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 
 @AndroidEntryPoint
@@ -29,6 +30,10 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
     private val binding get() = _binding!!
     @Inject
     lateinit var submissionRepository: SubmissionRepository
+    @Inject
+    lateinit var userRepository: UserRepository
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
     var type: String? = ""
     var exams: HashMap<String?, RealmStepExam>? = null
     private var submissions: List<RealmSubmission>? = null
@@ -44,8 +49,7 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentMySubmissionBinding.inflate(inflater, container, false)
         exams = HashMap()
-        user = UserProfileDbHandler(requireContext()).userModel
-        mRealm = Realm.getDefaultInstance()
+        user = userProfileDbHandler.userModel
         return binding.root
     }
 
@@ -65,7 +69,9 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
             override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {
                 val cleanString = charSequence.toString()
-                setData(cleanString)
+                viewLifecycleOwner.lifecycleScope.launch {
+                    setData(cleanString)
+                }
             }
             override fun afterTextChanged(editable: Editable) {}
         })
@@ -90,10 +96,12 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
         } else {
             "exam"
         }
-        setData("")
+        viewLifecycleOwner.lifecycleScope.launch {
+            setData("")
+        }
     }
 
-    private fun setData(s: String) {
+    private suspend fun setData(s: String) {
         var filtered = allSubmissions
 
         filtered = when (type) {
@@ -120,8 +128,23 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
 
         submissions = uniqueSubmissions
 
-        val adapter = AdapterMySubmission(requireActivity(), submissions, exams)
-        adapter.setmRealm(mRealm)
+        val submitterIds = uniqueSubmissions.mapNotNull { it.userId }.toSet()
+        val userNameMap = submitterIds.mapNotNull { id ->
+            val userModel = userRepository.getUserById(id)
+            val displayName = userModel?.name
+            if (displayName.isNullOrBlank()) {
+                null
+            } else {
+                id to displayName
+            }
+        }.toMap()
+
+        val adapter = AdapterMySubmission(
+            requireActivity(),
+            submissions,
+            exams,
+            nameResolver = { userId -> userId?.let { userNameMap[it] } }
+        )
         val itemCount = adapter.itemCount
 
         if (s.isEmpty()) {

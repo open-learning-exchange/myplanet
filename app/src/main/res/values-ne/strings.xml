@@ -147,7 +147,6 @@
     <string name="news">समाचार</string>
     <string name="references">सन्दर्भहरू</string>
     <string name="maps">नक्सा</string>
-    <string name="help_wanted">सहयोग चाहियो</string>
     <string name="btn_guest_login">मेहमानको रूपमा लगइन गर्नुहोस्</string>
     <string name="enter_username">प्रयोगकर्तानाम प्रविष्ट गर्नुहोस्</string>
     <string name="login">लगइन</string>
@@ -1293,8 +1292,6 @@
     <string name="age">उमेर</string>
     <string name="preparing_download">डाउनलोडको तयारी गर्दै…</string>
     <string name="downloading_files">फाइलहरू डाउनलोड हुँदैछन्</string>
-    <string name="age_must_be_100_or_below">उमेर १०० वा कम हुनुपर्छ</string>
-    <string name="please_enter_a_valid_age">कृपया एक वैध उमेर प्रविष्ट गर्नुहोस्</string>
     <string name="member_of_planet">planet को सदस्य</string>
     <string name="edit_mission_and_services">मिशन र सेवाहरू सम्पादन गर्नुहोस्</string>
     <string name="this_team_has_no_description_defined">यस टिमको कुनै विवरण परिभाषित गरिएको छैन</string>
@@ -1381,5 +1378,11 @@
     <string name="delete_report">प्रतिवेदन मेटाउनुहोस्</string>
     <string name="checking_server_availability">सर्भर उपलब्धता जाँच गर्दै…</string>
     <string name="loading_courses">पाठ्यक्रमहरू लोड हुँदैछन्…</string>
+    <string name="loading_teams">टीमहरू लोड गर्दै…</string>
+    <string name="loading_enterprises">उद्यमहरू लोड गर्दै…</string>
+    <string name="year_of_birth">जन्म वर्ष</string>
+    <string name="year_of_birth_cannot_be_empty">जन्म वर्ष खाली हुन सक्दैन</string>
+    <string name="please_enter_a_valid_year_of_birth">कृपया मान्य जन्म वर्ष प्रविष्ट गर्नुहोस्</string>
+    <string name="please_enter_a_valid_year_between_1900_and">कृपया 1900 र %1$d बीचको मान्य वर्ष प्रविष्ट गर्नुहोस्</string>
 
 </resources>

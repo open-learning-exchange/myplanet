@@ -147,7 +147,6 @@
     <string name="news">Wararka</string>
     <string name="references">Tixraacyo</string>
     <string name="maps">Maps</string>
-    <string name="help_wanted">caawin la rabo </string>
     <string name="btn_guest_login">Marti ahaan u soo gal</string>
     <string name= "enter_username">Geli Magaca isticmaalaha</string>
     <string name="login">Giri</string>
@@ -1293,8 +1292,6 @@
     <string name="age">da\'da</string>
     <string name="preparing_download">Diyaarinaya soo dejinta…</string>
     <string name="downloading_files">Faylasha ayaa la soo dejinayaa</string>
-    <string name="age_must_be_100_or_below">Da\'du waa inay noqoto 100 ama ka yar</string>
-    <string name="please_enter_a_valid_age">Fadlan geli da\'da saxda ah</string>
     <string name="member_of_planet">xubin ka mid ah planet</string>
     <string name="edit_mission_and_services">wax ka beddel himilada iyo adeegyada</string>
     <string name="this_team_has_no_description_defined">kooxdani ma laha sharaxaad la cayimay</string>
@@ -1381,5 +1378,11 @@
     <string name="delete_report">Tirtir warbixinta</string>
     <string name="checking_server_availability">la hubiyo helitaanka serverka…</string>
     <string name="loading_courses">Koorsada ayaa la rarayaa…</string>
+    <string name="loading_teams">Soo rarxarida kooxaha…</string>
+    <string name="loading_enterprises">Soo rarxarida ganacsiyada…</string>
+    <string name="year_of_birth">Sannadka dhalashada</string>
+    <string name="year_of_birth_cannot_be_empty">sannadka dhalashada ma noqon karo mid madhan</string>
+    <string name="please_enter_a_valid_year_of_birth">fadlan geli sannad dhalasho oo sax ah</string>
+    <string name="please_enter_a_valid_year_between_1900_and">fadlan geli sannad sax ah oo u dhexeeya 1900 iyo %1$d</string>
 
 </resources>
