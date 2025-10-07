@@ -9,7 +9,9 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.JsonObject
@@ -59,15 +61,28 @@ class FeedbackDetailActivity : AppCompatActivity() {
         setUpReplies()
 
         lifecycleScope.launch {
-            viewModel.feedback.collectLatest { fb ->
-                fb?.let {
-                    feedback = it
-                    activityFeedbackDetailBinding.tvDate.text = getFormattedDateWithTime(it.openTime)
-                    activityFeedbackDetailBinding.tvMessage.text =
-                        if (TextUtils.isEmpty(it.message)) "N/A" else it.message
-                    mAdapter = RvFeedbackAdapter(it.messageList, applicationContext)
-                    activityFeedbackDetailBinding.rvFeedbackReply.adapter = mAdapter
-                    updateForClosed()
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.feedback.collectLatest { fb ->
+                    fb?.let {
+                        feedback = it
+                        activityFeedbackDetailBinding.tvDate.text = getFormattedDateWithTime(it.openTime)
+                        activityFeedbackDetailBinding.tvMessage.text =
+                            if (TextUtils.isEmpty(it.message)) "N/A" else it.message
+                        mAdapter = RvFeedbackAdapter(it.messageList, applicationContext)
+                        activityFeedbackDetailBinding.rvFeedbackReply.adapter = mAdapter
+                        updateForClosed()
+                    }
+                }
+            }
+        }
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.events.collectLatest { event ->
+                    when (event) {
+                        is FeedbackDetailViewModel.FeedbackDetailEvent.CloseFeedbackSuccess ->
+                            navigateToFeedbackListFragment()
+                    }
                 }
             }
         }
@@ -106,7 +121,6 @@ class FeedbackDetailActivity : AppCompatActivity() {
             activityFeedbackDetailBinding.closeFeedback.isEnabled = false
             activityFeedbackDetailBinding.replyFeedback.isEnabled = false
             activityFeedbackDetailBinding.feedbackReplyEditText.visibility = View.INVISIBLE
-            navigateToFeedbackListFragment()
         }
     }
 
