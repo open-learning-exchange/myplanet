@@ -44,7 +44,6 @@ import org.ole.planet.myplanet.repository.MyPersonalRepository
 import org.ole.planet.myplanet.service.AudioRecorderService
 import org.ole.planet.myplanet.service.AudioRecorderService.AudioRecordListener
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.ui.myPersonals.MyPersonalsFragment
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -55,7 +54,6 @@ class AddResourceFragment : BottomSheetDialogFragment() {
     var tvTime: TextView? = null
     var floatingActionButton: FloatingActionButton? = null
     private var audioRecorderService: AudioRecorderService? = null
-    private var myPersonalsFragment: MyPersonalsFragment? = null
     private var photoURI: Uri? = null
     private var videoUri: Uri? = null
     private lateinit var captureImageLauncher: ActivityResultLauncher<Uri>
@@ -265,16 +263,11 @@ class AddResourceFragment : BottomSheetDialogFragment() {
         }
     }
 
-    fun setMyPersonalsFragment(myPersonalsFragment: MyPersonalsFragment) {
-        this.myPersonalsFragment = myPersonalsFragment
-    }
-
     companion object {
         const val REQUEST_VIDEO_CAPTURE = 1
         const val REQUEST_CAPTURE_PICTURE = 2
         const val REQUEST_FILE_SELECTION = 3
         var type = 0
-        private val myPersonalsFragment: MyPersonalsFragment? = null
         fun showAlert(context: Context, path: String?, repository: MyPersonalRepository) {
             val v = LayoutInflater.from(context).inflate(R.layout.alert_my_personal, null)
             val etTitle = v.findViewById<EditText>(R.id.et_title)
@@ -300,9 +293,6 @@ class AddResourceFragment : BottomSheetDialogFragment() {
                                 context.getString(R.string.resource_saved_to_my_personal)
                             )
                         }
-                    }
-                    if (type == 1) {
-                        myPersonalsFragment?.refreshFragment()
                     }
                 }.setNegativeButton(R.string.dismiss, null).show()
         }
