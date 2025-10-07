@@ -54,16 +54,6 @@ class SubmissionRepositoryImpl @Inject constructor(
         return uniqueSurveys.values.toList()
     }
 
-    override suspend fun getSubmissionCountByUser(userId: String?): Int {
-        if (userId == null) return 0
-
-        return count(RealmSubmission::class.java) {
-            equalTo("userId", userId)
-            equalTo("type", "survey")
-            equalTo("status", "pending")
-        }.toInt()
-    }
-
     override suspend fun getSurveyTitlesFromSubmissions(
         submissions: List<RealmSubmission>
     ): List<String> {
