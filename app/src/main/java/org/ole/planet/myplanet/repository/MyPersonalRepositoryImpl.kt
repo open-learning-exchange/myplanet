@@ -41,4 +41,23 @@ class MyPersonalRepositoryImpl @Inject constructor(
             equalTo("userId", userId)
         }
     }
+
+    override suspend fun updatePersonalResource(
+        personalId: String,
+        title: String,
+        description: String?,
+    ) {
+        update(
+            RealmMyPersonal::class.java,
+            "_id",
+            personalId
+        ) { personal ->
+            personal.title = title
+            personal.description = description
+        }
+    }
+
+    override suspend fun deletePersonalResource(personalId: String) {
+        delete(RealmMyPersonal::class.java, "_id", personalId)
+    }
 }
