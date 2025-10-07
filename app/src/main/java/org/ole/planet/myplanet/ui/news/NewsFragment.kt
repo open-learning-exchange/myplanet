@@ -20,6 +20,7 @@ import io.realm.Case
 import io.realm.RealmResults
 import io.realm.Sort
 import javax.inject.Inject
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseNewsFragment
 import org.ole.planet.myplanet.databinding.FragmentNewsBinding
@@ -35,7 +36,6 @@ import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
-import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class NewsFragment : BaseNewsFragment() {
