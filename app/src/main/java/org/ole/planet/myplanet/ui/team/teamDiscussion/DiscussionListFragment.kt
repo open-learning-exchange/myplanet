@@ -8,7 +8,6 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.lifecycleScope
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import dagger.hilt.android.AndroidEntryPoint
@@ -17,9 +16,6 @@ import io.realm.RealmResults
 import io.realm.Sort
 import java.util.UUID
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertInputBinding
 import org.ole.planet.myplanet.databinding.FragmentDiscussionListBinding
@@ -231,18 +227,14 @@ class DiscussionListFragment : BaseTeamFragment() {
                 map["messagePlanetCode"] = team?.teamPlanetCode ?: ""
                 map["name"] = getEffectiveTeamName()
 
-                lifecycleScope.launch(Dispatchers.IO) {
-                    user?.let { userModel ->
-                        databaseService.withRealmAsync { realm ->
-                            createNews(map, realm, userModel, imageList)
+                user?.let { userModel ->
+                    try {
+                        createNews(map, mRealm, userModel, imageList)
+                        binding.rvDiscussion.post {
+                            binding.rvDiscussion.smoothScrollToPosition(0)
                         }
-                        withContext(Dispatchers.Main) {
-                            this@DiscussionListFragment.binding.rvDiscussion.adapter?.notifyDataSetChanged()
-                            setData(news)
-                            this@DiscussionListFragment.binding.rvDiscussion.post {
-                                this@DiscussionListFragment.binding.rvDiscussion.smoothScrollToPosition(0)
-                            }
-                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
                     }
                 }
 

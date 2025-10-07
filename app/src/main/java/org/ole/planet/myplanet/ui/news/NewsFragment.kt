@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.ui.news
 import android.content.res.Configuration
 import android.os.Bundle
 import android.text.Editable
-import android.text.TextUtils
 import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
@@ -12,6 +11,7 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.EditText
 import androidx.core.view.isVisible
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView.AdapterDataObserver
 import com.google.gson.Gson
 import com.google.gson.JsonArray
@@ -27,6 +27,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.NewsRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
@@ -34,6 +35,7 @@ import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class NewsFragment : BaseNewsFragment() {
@@ -43,6 +45,8 @@ class NewsFragment : BaseNewsFragment() {
     
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
+    @Inject
+    lateinit var newsRepository: NewsRepository
     private var updatedNewsList: RealmResults<RealmNews>? = null
     private var filteredNewsList: List<RealmNews?> = listOf()
     private var searchFilteredList: List<RealmNews?> = listOf()
@@ -128,11 +132,7 @@ class NewsFragment : BaseNewsFragment() {
     
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        filteredNewsList = newsList
-        setupLabelFilter()
-        labelFilteredList = applyLabelFilter(filteredNewsList)
-        searchFilteredList = applySearchFilter(labelFilteredList)
-        setData(searchFilteredList)
+        loadCommunityNews()
         binding.btnSubmit.setOnClickListener {
             val message = binding.etMessage.text.toString().trim { it <= ' ' }
             if (message.isEmpty()) {
@@ -165,32 +165,26 @@ class NewsFragment : BaseNewsFragment() {
         }
     }
 
-    private val newsList: List<RealmNews?>
-        get() = databaseService.withRealm { realm ->
-            val allNews = realm.where(RealmNews::class.java).isEmpty("replyTo")
-                .equalTo("docType", "message", Case.INSENSITIVE).findAll()
-            val list: MutableList<RealmNews?> = ArrayList()
-            for (news in allNews) {
-                if (!TextUtils.isEmpty(news.viewableBy) && news.viewableBy.equals("community", ignoreCase = true)) {
-                    list.add(realm.copyFromRealm(news))
-                    continue
-                }
-                if (!TextUtils.isEmpty(news.viewIn)) {
-                    val ar = gson.fromJson(news.viewIn, JsonArray::class.java)
-                    for (e in ar) {
-                        val ob = e.asJsonObject
-                        var userId = "${user?.planetCode}@${user?.parentCode}"
-                        if (userId.isEmpty() || userId == "@") {
-                            userId = settings?.getString("planetCode", "") + "@" + settings?.getString("parentCode", "")
-                        }
-                        if (ob != null && ob.has("_id") && ob["_id"].asString.equals(userId, ignoreCase = true)) {
-                            list.add(realm.copyFromRealm(news))
-                        }
-                    }
-                }
-            }
-            list
+    private fun loadCommunityNews() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val news = newsRepository.getCommunityVisibleNews(getUserIdentifier())
+            filteredNewsList = news.map { it as RealmNews? }
+            setupLabelFilter()
+            labelFilteredList = applyLabelFilter(filteredNewsList)
+            searchFilteredList = applySearchFilter(labelFilteredList)
+            setData(searchFilteredList)
         }
+    }
+
+    private fun getUserIdentifier(): String {
+        val defaultUserIdentifier = "${user?.planetCode ?: ""}@${user?.parentCode ?: ""}"
+        if (defaultUserIdentifier.isNotEmpty() && defaultUserIdentifier != "@") {
+            return defaultUserIdentifier
+        }
+        val planetCode = settings?.getString("planetCode", "") ?: ""
+        val parentCode = settings?.getString("parentCode", "") ?: ""
+        return "$planetCode@$parentCode"
+    }
 
     override fun setData(list: List<RealmNews?>?) {
         if (!isAdded || list == null) return
