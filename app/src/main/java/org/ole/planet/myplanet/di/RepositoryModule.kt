@@ -74,15 +74,15 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
+    abstract fun bindSurveyRepository(impl: SurveyRepositoryImpl): SurveyRepository
+
+    @Binds
+    @Singleton
     abstract fun bindTagRepository(impl: TagRepositoryImpl): TagRepository
 
     @Binds
     @Singleton
     abstract fun bindTeamRepository(impl: TeamRepositoryImpl): TeamRepository
-
-    @Binds
-    @Singleton
-    abstract fun bindSurveyRepository(impl: SurveyRepositoryImpl): SurveyRepository
 
     @Binds
     @Singleton
