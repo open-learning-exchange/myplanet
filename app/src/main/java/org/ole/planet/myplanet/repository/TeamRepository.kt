@@ -1,16 +1,12 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
+import io.realm.RealmResults
+import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
-
-data class TeamStatusResult(
-    val isMember: Boolean,
-    val isLeader: Boolean,
-    val hasPendingRequest: Boolean,
-)
 
 interface TeamRepository {
     suspend fun getTeamResources(teamId: String): List<RealmMyLibrary>
@@ -21,7 +17,6 @@ interface TeamRepository {
     suspend fun isTeamLeader(teamId: String, userId: String?): Boolean
     suspend fun hasPendingRequest(teamId: String, userId: String?): Boolean
     suspend fun getRecentVisitCounts(teamIds: Collection<String>): Map<String, Long>
-    suspend fun getTeamStatus(teamId: String, userId: String?): TeamStatusResult
     suspend fun requestToJoin(teamId: String, user: RealmUserModel?, teamType: String?)
     suspend fun leaveTeam(teamId: String, userId: String?)
     suspend fun addResourceLinks(teamId: String, resources: List<RealmMyLibrary>, user: RealmUserModel?)
@@ -59,4 +54,19 @@ interface TeamRepository {
         createdBy: String,
     ): Boolean
     suspend fun syncTeamActivities(context: Context)
+    fun getTeamTransactions(
+        teamId: String,
+        startDate: Long? = null,
+        endDate: Long? = null,
+        sortAscending: Boolean = false,
+    ): Flow<RealmResults<RealmMyTeam>>
+    suspend fun createTransaction(
+        teamId: String,
+        type: String,
+        note: String,
+        amount: Int,
+        date: Long,
+        parentCode: String?,
+        planetCode: String?,
+    ): Result<Unit>
 }

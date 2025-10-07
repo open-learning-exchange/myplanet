@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.dashboard
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.realm.Realm
 import java.util.Date
@@ -44,24 +43,6 @@ class DashboardViewModel @Inject constructor(
         val earnedDollarsSurvey = if (!hasUnfinishedSurvey) 1 else 0
         val total = earnedDollarsVoice + earnedDollarsSurvey
         return total.coerceAtMost(11)
-    }
-
-    fun loadDashboardData(userId: String?) {
-        loadSurveyWarning(userId)
-        loadUnreadNotifications(userId)
-    }
-
-    private fun loadSurveyWarning(userId: String?) {
-        viewModelScope.launch {
-            val count = submissionRepository.getSubmissionCountByUser(userId)
-            _surveyWarning.value = count == 0
-        }
-    }
-
-    private fun loadUnreadNotifications(userId: String?) {
-        viewModelScope.launch {
-            _unreadNotifications.value = notificationRepository.getUnreadCount(userId)
-        }
     }
 
     suspend fun updateResourceNotification(userId: String?) {

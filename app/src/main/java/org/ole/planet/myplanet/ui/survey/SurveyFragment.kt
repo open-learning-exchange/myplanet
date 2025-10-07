@@ -14,9 +14,9 @@ import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.json.JSONObject
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
@@ -25,7 +25,7 @@ import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.callback.TableDataUpdate
 import org.ole.planet.myplanet.databinding.FragmentSurveyBinding
 import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.repository.SurveyRepository
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
@@ -44,9 +44,13 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
     private var currentIsTeamShareAllowed: Boolean = false
     lateinit var prefManager: SharedPrefManager
     private val serverUrlMapper = ServerUrlMapper()
-    
+    private var loadSurveysJob: Job? = null
+    private var currentSurveys: List<RealmStepExam> = emptyList()
+
     @Inject
     lateinit var syncManager: SyncManager
+    @Inject
+    lateinit var surveyRepository: SurveyRepository
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
@@ -150,8 +154,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         binding.layoutSearch.etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-                updateAdapterData()
-                recyclerView.scrollToPosition(0)
+                applySearchFilter()
             }
 
             override fun afterTextChanged(s: Editable) {}
@@ -244,54 +247,23 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         val useTeamShareAllowed = isTeamShareAllowed ?: currentIsTeamShareAllowed
         currentIsTeamShareAllowed = useTeamShareAllowed
 
-        val submissionQuery = mRealm.where(RealmSubmission::class.java)
-            .isNotNull("membershipDoc")
-            .findAll()
-        val query = mRealm.where(RealmStepExam::class.java).equalTo("type", "surveys")
-
-        if (isTeam) {
-            val teamSpecificExams = submissionQuery
-                .filter { it.membershipDoc?.teamId == teamId }
-                .mapNotNull { JSONObject(it.parent ?: "{}").optString("_id") }
-                .filter { it.isNotEmpty() }
-                .toSet()
-
-            if (useTeamShareAllowed) {
-                val teamSubmissions = submissionQuery
-                    .filter { it.membershipDoc?.teamId == teamId }
-                    .mapNotNull { JSONObject(it.parent ?: "{}").optString("_id") }
-                    .filter { it.isNotEmpty() }
-                    .toSet()
-
-                query.beginGroup()
-                    .equalTo("isTeamShareAllowed", true)
-                    .and()
-                    .not().`in`("id", teamSubmissions.toTypedArray())
-                query.endGroup()
-            } else {
-                query.beginGroup()
-                    .equalTo("teamId", teamId)
-                    .or()
-                    .`in`("id", teamSpecificExams.toTypedArray())
-                query.endGroup()
+        loadSurveysJob?.cancel()
+        loadSurveysJob = viewLifecycleOwner.lifecycleScope.launch {
+            currentSurveys = when {
+                isTeam && useTeamShareAllowed -> surveyRepository.getAdoptableTeamSurveys(teamId)
+                isTeam -> surveyRepository.getTeamOwnedSurveys(teamId)
+                else -> surveyRepository.getIndividualSurveys()
             }
-        } else {
-            query.equalTo("isTeamShareAllowed", false)
+            applySearchFilter()
         }
+    }
 
-        val surveys = query.findAll()
-
-        if ("${binding.layoutSearch.etSearch.text}".isNotEmpty()) {
-            adapter.updateData(
-                safeCastList(
-                    search("${binding.layoutSearch.etSearch.text}", surveys),
-                    RealmStepExam::class.java
-                )
-            )
+    private fun applySearchFilter() {
+        val searchText = binding.layoutSearch.etSearch.text?.toString().orEmpty()
+        if (searchText.isNotEmpty()) {
+            adapter.updateData(search(searchText, currentSurveys))
         } else {
-            adapter.updateDataAfterSearch(
-                safeCastList(surveys, RealmStepExam::class.java)
-            )
+            adapter.updateDataAfterSearch(currentSurveys)
         }
 
         updateUIState()
@@ -302,10 +274,6 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         val itemCount = adapter.itemCount
         binding.spnSort.visibility = if (itemCount == 0) View.GONE else View.VISIBLE
         showNoData(tvMessage, itemCount, "survey")
-    }
-
-    private fun <T> safeCastList(items: List<Any?>, clazz: Class<T>): List<T> {
-        return items.mapNotNull { it?.takeIf(clazz::isInstance)?.let(clazz::cast) }
     }
 
     override fun getWatchedTables(): List<String> {
@@ -326,6 +294,9 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         if (::realtimeSyncHelper.isInitialized) {
             realtimeSyncHelper.cleanup()
         }
+        loadSurveysJob?.cancel()
+        loadSurveysJob = null
+        currentSurveys = emptyList()
         super.onDestroyView()
         _binding = null
     }

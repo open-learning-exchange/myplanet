@@ -12,11 +12,11 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.callback.TeamUpdateListener
 import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
 import org.ole.planet.myplanet.databinding.FragmentPlanBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -24,6 +24,11 @@ class PlanFragment : BaseTeamFragment() {
     private var _binding: FragmentPlanBinding? = null
     private val binding get() = _binding!!
     private var isEnterprise: Boolean = false
+    private var teamUpdateListener: TeamUpdateListener? = null
+
+    fun setTeamUpdateListener(listener: TeamUpdateListener) {
+        teamUpdateListener = listener
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentPlanBinding.inflate(inflater, container, false)
@@ -120,8 +125,8 @@ class PlanFragment : BaseTeamFragment() {
             return
         }
 
-        val userId = UserProfileDbHandler(activity).userModel?._id
-        val createdBy = userId.orEmpty()
+        val userId = user?.id ?: return
+        val createdBy = userId
         val teamIdentifier = team._id?.takeIf { it.isNotBlank() }
             ?: team.teamId?.takeIf { it.isNotBlank() }
         if (teamIdentifier == null) {
@@ -168,6 +173,7 @@ class PlanFragment : BaseTeamFragment() {
 
                     this@PlanFragment.team = refreshedTeam
                     updateUIWithTeamData(refreshedTeam)
+                    teamUpdateListener?.onTeamDetailsUpdated()
                     Utilities.toast(requireContext(), context.getString(R.string.added_successfully))
                     dialog.dismiss()
                 } else {
