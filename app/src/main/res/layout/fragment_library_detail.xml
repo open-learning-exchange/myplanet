@@ -63,7 +63,7 @@
                         android:contentDescription="@string/download"
                         android:text="@string/download"
                         app:srcCompat="@drawable/ic_download"
-                        app:tint="@color/md_black_1000" />
+                        app:tint="@color/daynight_textColor" />
                     <ImageButton
                         android:id="@+id/btn_remove"
                         style="@style/YellowButtons"

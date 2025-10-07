@@ -4,15 +4,12 @@ import android.content.res.Configuration
 import android.os.Bundle
 import android.view.MenuItem
 import android.view.View
-import android.widget.FrameLayout
 import android.widget.ImageButton
-import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
-import com.bumptech.glide.Glide
 import java.io.File
 import java.util.regex.Pattern
 import org.ole.planet.myplanet.R
@@ -52,31 +49,14 @@ class AudioPlayerActivity : AppCompatActivity() {
         playButton = binding.playerView.findViewById(R.id.exo_play)
         pauseButton = binding.playerView.findViewById(R.id.exo_pause)
 
-        val overlay = binding.playerView.findViewById<FrameLayout>(R.id.exo_overlay)
-
-
-        val blurredImageView = ImageView(this).apply {
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-            )
-            scaleType = ImageView.ScaleType.CENTER_CROP
-        }
-
-        Glide.with(this)
-            .load(getThemeBackground()) // or from URL or filePath
-            .into(blurredImageView)
-
-        overlay.addView(blurredImageView, 0)
+        binding.backgroundImage.setImageResource(getThemeBackground())
         val controller = binding.playerView.findViewById<View>(R.id.exo_controller)
         controller?.setBackgroundColor(android.graphics.Color.TRANSPARENT)
 
-
         initializeExoPlayer()
-
         setupPlayPauseButtons()
 
-        binding.playerView.setOnTouchListener { _,_ -> true}
+        binding.playerView.setOnTouchListener { _, _ -> true }
     }
 
     private fun initializeExoPlayer() {
@@ -126,7 +106,11 @@ class AudioPlayerActivity : AppCompatActivity() {
     private fun getThemeBackground(): Int {
         val isDarkMode = resources.configuration.uiMode and
                 Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
-        return if (isDarkMode) R.drawable.bg_player_dark else R.drawable.bg_player_white
+        return if (isDarkMode) {
+            R.drawable.audio_player_background_dark
+        } else {
+            R.drawable.audio_player_background_light
+        }
     }
 
     private fun setupPlayPauseButtons() {
