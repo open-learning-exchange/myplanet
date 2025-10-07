@@ -32,8 +32,11 @@ import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.RecyclerView
-import com.afollestad.materialdialogs.DialogAction
 import com.afollestad.materialdialogs.MaterialDialog
+import com.afollestad.materialdialogs.WhichButton
+import com.afollestad.materialdialogs.actions.getActionButton
+import com.afollestad.materialdialogs.customview.customView
+import com.afollestad.materialdialogs.customview.getCustomView
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import java.io.File
@@ -128,7 +131,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     lateinit var syncToServerText: TextView
     var selectedTeamId: String? = null
     lateinit var positiveAction: View
-    lateinit var neutralAction: View
     lateinit var processedUrl: String
     var isSync = false
     var forceSync = false
@@ -421,7 +423,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         val password = if (settings.getString("serverPin", "") != "") {
             settings.getString("serverPin", "")!!
         } else {
-            (dialog.customView?.findViewById<View>(R.id.input_server_Password) as EditText).text.toString()
+            dialog.getCustomView()
+                ?.findViewById<EditText>(R.id.input_server_Password)
+                ?.text
+                .toString()
         }
 
         val couchdbURL = ServerConfigUtils.saveAlternativeUrl(url, password, settings, editor)
@@ -431,12 +436,13 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     private fun handleRegularUrlSave(dialog: MaterialDialog): String {
         val protocol = settings.getString("serverProtocol", "")
-        var url = (dialog.customView?.findViewById<View>(R.id.input_server_url) as EditText).text.toString()
-        val pin = (dialog.customView?.findViewById<View>(R.id.input_server_Password) as EditText).text.toString()
+        val customView = dialog.getCustomView() ?: return ""
+        var url = customView.findViewById<EditText>(R.id.input_server_url).text.toString()
+        val pin = customView.findViewById<EditText>(R.id.input_server_Password).text.toString()
 
         editor.putString(
             "customDeviceName",
-            (dialog.customView?.findViewById<View>(R.id.deviceName) as EditText).text.toString()
+            customView.findViewById<EditText>(R.id.deviceName).text.toString()
         ).apply()
 
         url = protocol + url
@@ -697,16 +703,16 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         initServerDialog(binding)
 
         val contextWrapper = ContextThemeWrapper(this, R.style.AlertDialogTheme)
-        val dialog = MaterialDialog.Builder(contextWrapper)
-            .customView(binding.root, true)
-            .positiveText(R.string.btn_sync)
-            .negativeText(R.string.btn_sync_cancel)
-            .neutralText(R.string.btn_sync_save)
-            .onPositive { d: MaterialDialog, _: DialogAction? -> performSync(d) }
-            .build()
+        val dialog = MaterialDialog(contextWrapper).apply {
+            customView(view = binding.root, scrollable = true)
+            positiveButton(res = R.string.btn_sync) { dialog -> performSync(dialog) }
+            negativeButton(res = R.string.btn_sync_cancel)
+            neutralButton(res = R.string.btn_sync_save) { dialog -> onNeutralButtonClick(dialog) }
+        }
 
-        positiveAction = dialog.getActionButton(DialogAction.POSITIVE)
-        neutralAction = dialog.getActionButton(DialogAction.NEUTRAL)
+        dialog.show()
+
+        positiveAction = dialog.getActionButton(WhichButton.POSITIVE)
 
         handleManualConfiguration(binding, settings.getString("configurationId", null), dialog)
         setRadioProtocolListener(binding)
@@ -720,12 +726,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             refreshServerList()
         }
 
-        neutralAction.setOnClickListener { onNeutralButtonClick(dialog) }
-
-        dialog.show()
         sync(dialog)
         if (!prefData.getManualConfig()) {
-            dialog.getActionButton(DialogAction.NEUTRAL).text = getString(R.string.show_more)
+            dialog.getActionButton(WhichButton.NEUTRAL).text = getString(R.string.show_more)
         }
     }
     fun continueSync(dialog: MaterialDialog, url: String, isAlternativeUrl: Boolean, defaultUrl: String) {

@@ -7,8 +7,9 @@ import android.widget.ArrayAdapter
 import android.widget.CompoundButton
 import android.widget.RadioGroup
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.afollestad.materialdialogs.DialogAction
 import com.afollestad.materialdialogs.MaterialDialog
+import com.afollestad.materialdialogs.WhichButton
+import com.afollestad.materialdialogs.actions.getActionButton
 import io.realm.Sort
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
@@ -24,7 +25,7 @@ fun SyncActivity.showConfigurationUIElements(
     serverAddresses.visibility = if (manualSelected) View.GONE else View.VISIBLE
     syncToServerText.visibility = if (manualSelected) View.GONE else View.VISIBLE
     positiveAction.visibility = if (manualSelected) View.VISIBLE else View.GONE
-    dialog.getActionButton(DialogAction.NEUTRAL).text =
+    dialog.getActionButton(WhichButton.NEUTRAL).text =
         if (manualSelected) {
             getString(R.string.btn_sync_save)
         } else {
@@ -208,7 +209,7 @@ fun SyncActivity.onNeutralButtonClick(dialog: MaterialDialog) {
     if (!prefData.getManualConfig()) {
         showAdditionalServers = !showAdditionalServers
         refreshServerList()
-        dialog.getActionButton(DialogAction.NEUTRAL).text =
+        dialog.getActionButton(WhichButton.NEUTRAL).text =
             if (showAdditionalServers) getString(R.string.show_less) else getString(R.string.show_more)
     } else {
         serverConfigAction = "save"

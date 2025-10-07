@@ -21,6 +21,7 @@ import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.afollestad.materialdialogs.MaterialDialog
+import com.afollestad.materialdialogs.customview.customView
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -171,10 +172,9 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         val dialogServerUrlBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this))
         val contextWrapper = ContextThemeWrapper(this, R.style.AlertDialogTheme)
 
-        val builder = MaterialDialog.Builder(contextWrapper)
-            .customView(dialogServerUrlBinding.root, true)
-
-        val dialog = builder.build()
+        val dialog = MaterialDialog(contextWrapper).apply {
+            customView(view = dialogServerUrlBinding.root, scrollable = true)
+        }
         currentDialog = dialog
         service.getMinApk(this, url, serverPin, this, "DashboardActivity")
         createActionAsync(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")

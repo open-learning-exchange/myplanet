@@ -26,6 +26,7 @@ import androidx.core.content.edit
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.afollestad.materialdialogs.MaterialDialog
+import com.afollestad.materialdialogs.customview.customView
 import com.bumptech.glide.Glide
 import java.util.Locale
 import kotlinx.coroutines.delay
@@ -244,8 +245,9 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
 
                     val dialogServerUrlBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this))
                     val contextWrapper = ContextThemeWrapper(this, R.style.AlertDialogTheme)
-                    val builder = MaterialDialog.Builder(contextWrapper).customView(dialogServerUrlBinding.root, true)
-                    val dialog = builder.build()
+                    val dialog = MaterialDialog(contextWrapper).apply {
+                        customView(view = dialogServerUrlBinding.root, scrollable = true)
+                    }
                     currentDialog = dialog
                     service.getMinApk(this, url, serverPin, this, "LoginActivity")
                 } else {
