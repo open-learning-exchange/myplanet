@@ -1,8 +1,5 @@
 package org.ole.planet.myplanet.service.sync
 
-import kotlin.math.min
-import kotlin.math.pow
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -102,61 +99,3 @@ class CircuitBreaker(
 }
 
 class CircuitBreakerOpenException(message: String) : Exception(message)
-
-class RetryHandler(private val config: CircuitBreakerConfig = CircuitBreakerConfig()) {
-    
-    suspend fun <T> executeWithRetry(
-        circuitBreaker: CircuitBreaker,
-        operation: suspend () -> T
-    ): Result<T> {
-        var lastException: Exception? = null
-        
-        for (attempt in 1..config.maxRetryAttempts) {
-            val result = circuitBreaker.execute(operation)
-            
-            if (result.isSuccess) {
-                return result
-            }
-            
-            lastException = result.exceptionOrNull() as? Exception
-            
-            if (lastException is CircuitBreakerOpenException) {
-                break // Don't retry if circuit breaker is open
-            }
-            
-            if (attempt < config.maxRetryAttempts) {
-                val delayMs = calculateBackoffDelay(attempt)
-                delay(delayMs)
-            }
-        }
-        
-        return Result.failure(lastException ?: Exception("All retry attempts failed"))
-    }
-    
-    private fun calculateBackoffDelay(attempt: Int): Long {
-        val exponentialDelay = config.baseDelayMs * 2.0.pow(attempt - 1).toLong()
-        val jitter = (Math.random() * config.baseDelayMs * 0.1).toLong()
-        return min(exponentialDelay + jitter, 30000) // Max 30 seconds
-    }
-}
-
-class SyncErrorRecovery {
-    
-    private val circuitBreakers = mutableMapOf<String, CircuitBreaker>()
-    private val retryHandler = RetryHandler()
-    
-    fun getCircuitBreaker(tableName: String): CircuitBreaker {
-        return circuitBreakers.getOrPut(tableName) {
-            CircuitBreaker("sync_$tableName")
-        }
-    }
-    
-    suspend fun <T> executeSyncOperation(
-        tableName: String,
-        operation: suspend () -> T
-    ): Result<T> {
-        val circuitBreaker = getCircuitBreaker(tableName)
-        return retryHandler.executeWithRetry(circuitBreaker, operation)
-    }
-    
-}
