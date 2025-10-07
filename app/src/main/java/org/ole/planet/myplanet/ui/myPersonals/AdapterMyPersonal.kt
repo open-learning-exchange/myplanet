@@ -111,14 +111,14 @@ class AdapterMyPersonal(private val context: Context) : RecyclerView.Adapter<Vie
             .setIcon(R.drawable.ic_edit)
             .setView(alertMyPersonalBinding.root)
             .setPositiveButton(R.string.button_submit) { _, _ ->
-                val title = alertMyPersonalBinding.etDescription.text.toString().trim { it <= ' ' }
-                val desc = alertMyPersonalBinding.etTitle.text.toString().trim { it <= ' ' }
+                val title = alertMyPersonalBinding.etTitle.text.toString().trim { it <= ' ' }
+                val desc = alertMyPersonalBinding.etDescription.text.toString().trim { it <= ' ' }
                 if (title.isEmpty()) {
                     Utilities.toast(context, context.getString(R.string.please_enter_title))
                     return@setPositiveButton
                 }
-                personal.description = desc
                 personal.title = title
+                personal.description = desc
                 val index = list.indexOfFirst { it._id == personal._id }
                 if (index != -1) {
                     notifyItemChanged(index)
