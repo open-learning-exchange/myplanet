@@ -93,8 +93,6 @@ class NotificationsFragment : Fragment() {
             binding.emptyData.visibility = View.VISIBLE
         }
 
-        refreshUnreadCountCache()
-
         adapter = AdapterNotification(
             databaseService,
             notifications,
@@ -112,6 +110,11 @@ class NotificationsFragment : Fragment() {
             markAllAsRead()
         }
         return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        refreshUnreadCountCache()
     }
 
     private fun handleNotificationClick(notification: RealmNotification) {
