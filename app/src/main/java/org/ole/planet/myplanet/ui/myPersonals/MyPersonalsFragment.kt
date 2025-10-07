@@ -60,7 +60,6 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
             val b = Bundle()
             b.putInt("type", 1)
             addResourceFragment?.arguments = b
-            addResourceFragment?.setMyPersonalsFragment(this)
             addResourceFragment?.show(childFragmentManager, getString(R.string.add_resource))
         }
         return binding.root

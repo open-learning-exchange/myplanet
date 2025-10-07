@@ -15,6 +15,7 @@ import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
@@ -77,6 +78,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
     private var pageConfigs: List<TeamPageConfig> = emptyList()
+    private var loadTeamJob: Job? = null
 
     private fun getCurrentUser(): RealmUserModel? {
         return userProfileDbHandler.userModel
@@ -139,43 +141,55 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         val user = detachCurrentUser()
         mRealm = databaseService.realmInstance
 
-        binding.root.post {
-            if (!isAdded) return@post
+        renderPlaceholder()
 
-            viewLifecycleOwner.lifecycleScope.launch {
-                val resolvedTeam = withContext(Dispatchers.IO) {
-                    when {
-                        shouldQueryRealm(teamId) && teamId.isNotEmpty() -> {
-                            teamRepository.getTeamByDocumentIdOrTeamId(teamId)
-                        }
+        loadTeamJob?.cancel()
+        loadTeamJob = viewLifecycleOwner.lifecycleScope.launch {
+            val resolvedTeam = withContext(Dispatchers.IO) {
+                when {
+                    shouldQueryRealm(teamId) && teamId.isNotEmpty() -> {
+                        teamRepository.getTeamByDocumentIdOrTeamId(teamId)
+                    }
 
-                        else -> {
-                            val effectiveTeamId = (directTeamId ?: "").ifEmpty { teamId }
-                            if (effectiveTeamId.isNotEmpty()) {
-                                teamRepository.getTeamById(effectiveTeamId)
-                            } else {
-                                null
-                            }
+                    else -> {
+                        val effectiveTeamId = (directTeamId ?: "").ifEmpty { teamId }
+                        if (effectiveTeamId.isNotEmpty()) {
+                            teamRepository.getTeamById(effectiveTeamId)
+                        } else {
+                            null
                         }
                     }
                 }
-
-                if (shouldQueryRealm(teamId) && resolvedTeam == null) {
-                    Snackbar.make(
-                        binding.root,
-                        getString(R.string.no_team_available),
-                        Snackbar.LENGTH_LONG
-                    ).show()
-                    return@launch
-                }
-
-                resolvedTeam?.let { team = it }
-
-                setupTeamDetails(isMyTeam, user)
             }
+
+            if (!isAdded) {
+                return@launch
+            }
+
+            if (shouldQueryRealm(teamId) && resolvedTeam == null) {
+                Snackbar.make(
+                    binding.root,
+                    getString(R.string.no_team_available),
+                    Snackbar.LENGTH_LONG
+                ).show()
+                return@launch
+            }
+
+            resolvedTeam?.let { team = it }
+
+            setupTeamDetails(isMyTeam, user)
+            loadTeamJob = null
         }
 
         return binding.root
+    }
+
+    private fun renderPlaceholder() {
+        binding.title.text = directTeamName ?: getString(R.string.loading_teams)
+        binding.subtitle.text = directTeamType ?: ""
+        binding.btnAddDoc.isEnabled = false
+        binding.btnLeave.isEnabled = false
+        binding.viewPager2.adapter = null
     }
 
     private fun startTeamSync() {
@@ -474,6 +488,8 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     }
 
     override fun onDestroyView() {
+        loadTeamJob?.cancel()
+        loadTeamJob = null
         if (::realtimeSyncListener.isInitialized) {
             syncCoordinator.removeListener(realtimeSyncListener)
         }
