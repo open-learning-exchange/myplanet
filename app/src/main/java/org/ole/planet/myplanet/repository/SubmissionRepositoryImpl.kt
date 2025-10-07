@@ -54,16 +54,6 @@ class SubmissionRepositoryImpl @Inject constructor(
         return uniqueSurveys.values.toList()
     }
 
-    override suspend fun getSubmissionCountByUser(userId: String?): Int {
-        if (userId == null) return 0
-
-        return count(RealmSubmission::class.java) {
-            equalTo("userId", userId)
-            equalTo("type", "survey")
-            equalTo("status", "pending")
-        }.toInt()
-    }
-
     override suspend fun getSurveyTitlesFromSubmissions(
         submissions: List<RealmSubmission>
     ): List<String> {
@@ -127,26 +117,24 @@ class SubmissionRepositoryImpl @Inject constructor(
             return false
         }
 
-        return withRealmAsync { realm ->
-            val questions = realm.where(RealmExamQuestion::class.java)
-                .equalTo("examId", stepExamId)
-                .findAll()
-            if (questions.isEmpty()) {
-                false
-            } else {
-                val examId = questions.first()?.examId
-                if (examId.isNullOrBlank()) {
-                    false
-                } else {
-                    val parentId = "$examId@$courseId"
-                    realm.where(RealmSubmission::class.java)
-                        .equalTo("userId", userId)
-                        .equalTo("parentId", parentId)
-                        .equalTo("type", type)
-                        .findFirst() != null
-                }
-            }
+        val questions = queryList(RealmExamQuestion::class.java) {
+            equalTo("examId", stepExamId)
         }
+        if (questions.isEmpty()) {
+            return false
+        }
+
+        val examId = questions.firstOrNull()?.examId
+        if (examId.isNullOrBlank()) {
+            return false
+        }
+
+        val parentId = "$examId@$courseId"
+        return count(RealmSubmission::class.java) {
+            equalTo("userId", userId)
+            equalTo("parentId", parentId)
+            equalTo("type", type)
+        } > 0
     }
 
     override suspend fun createSurveySubmission(examId: String, userId: String?) {
