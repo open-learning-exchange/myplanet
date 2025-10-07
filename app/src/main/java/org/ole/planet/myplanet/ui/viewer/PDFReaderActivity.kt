@@ -21,6 +21,7 @@ import org.ole.planet.myplanet.repository.LibraryRepository
 import org.ole.planet.myplanet.repository.MyPersonalRepository
 import org.ole.planet.myplanet.service.AudioRecorderService
 import org.ole.planet.myplanet.service.AudioRecorderService.AudioRecordListener
+import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.resources.AddResourceFragment
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils
@@ -115,7 +116,16 @@ class PDFReaderActivity : AppCompatActivity(), AudioRecordListener {
         Utilities.toast(this, getString(R.string.recording_stopped))
         cancelAll(this)
         updateTranslation(outputFile)
-        AddResourceFragment.showAlert(this, outputFile, myPersonalRepository)
+        val userModel = UserProfileDbHandler(this).userModel
+        if (userModel != null) {
+            AddResourceFragment.showAlert(
+                this,
+                outputFile,
+                myPersonalRepository,
+                userModel.id,
+                userModel.name
+            )
+        }
         binding.fabRecord.setImageResource(R.drawable.ic_mic)
     }
 
