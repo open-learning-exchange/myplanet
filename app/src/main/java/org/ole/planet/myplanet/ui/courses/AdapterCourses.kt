@@ -11,12 +11,13 @@ import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.flexbox.FlexboxLayout
 import com.google.gson.JsonObject
 import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
-import io.realm.Realm
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnCourseItemSelected
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
@@ -25,6 +26,7 @@ import org.ole.planet.myplanet.databinding.RowCourseBinding
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.TagRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.CourseRatingUtils
 import org.ole.planet.myplanet.utilities.DiffUtils
@@ -34,34 +36,40 @@ import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.SelectionUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class AdapterCourses(
     private val context: Context,
     private var courseList: List<RealmMyCourse?>,
     private val map: HashMap<String?, JsonObject>,
-    private val userProfileDbHandler: UserProfileDbHandler
+    private val userProfileDbHandler: UserProfileDbHandler,
+    private val tagRepository: TagRepository,
+    private val lifecycleOwner: LifecycleOwner
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private val selectedItems: MutableList<RealmMyCourse?> = ArrayList()
     private var listener: OnCourseItemSelected? = null
     private var homeItemClickListener: OnHomeItemClickListener? = null
     private var progressMap: HashMap<String?, JsonObject>? = null
     private var ratingChangeListener: OnRatingChangeListener? = null
-    private var mRealm: Realm? = null
     private val config: ChipCloudConfig
     private var isAscending = true
     private var isTitleAscending = false
     private var areAllSelected = false
     var userModel: RealmUserModel?= null
+    private val tagCache: MutableMap<String, List<RealmTag>> = mutableMapOf()
+    private val tagRequestsInProgress: MutableSet<String> = mutableSetOf()
+
+    companion object {
+        private const val TAG_PAYLOAD = "payload_tags"
+    }
 
     init {
         if (context is OnHomeItemClickListener) {
             homeItemClickListener = context
         }
         config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single)
-    }
-
-    fun setmRealm(mRealm: Realm?) {
-        this.mRealm = mRealm
     }
 
     fun setRatingChangeListener(ratingChangeListener: OnRatingChangeListener?) {
@@ -163,7 +171,7 @@ class AdapterCourses(
             context.getString(R.string.subject_level_colon)
         )
         holder.rowCourseBinding.courseProgress.max = course.getNumberOfSteps()
-        displayTagCloud(holder.rowCourseBinding.flexboxDrawable, position)
+        displayTagCloud(holder, position)
 
         userModel = userProfileDbHandler.userModel
         val isGuest = userModel?.isGuest() ?: true
@@ -302,27 +310,70 @@ class AdapterCourses(
         listener?.onSelectedListChange(selectedItems)
     }
 
-    private fun displayTagCloud(flexboxDrawable: FlexboxLayout, position: Int) {
-        flexboxDrawable.removeAllViews()
-        val chipCloud = ChipCloud(context, flexboxDrawable, config)
-        val tags: List<RealmTag>? = mRealm?.where(RealmTag::class.java)?.equalTo("db", "courses")?.equalTo("linkId", courseList[position]!!.id)?.findAll()
-        showTags(tags, chipCloud)
+    override fun onBindViewHolder(
+        holder: RecyclerView.ViewHolder,
+        position: Int,
+        payloads: MutableList<Any>
+    ) {
+        if (holder is ViewHoldercourse && payloads.any { it == TAG_PAYLOAD }) {
+            val courseId = courseList.getOrNull(position)?.id ?: return
+            val tags = tagCache[courseId].orEmpty()
+            renderTagCloud(holder.rowCourseBinding.flexboxDrawable, tags)
+        } else {
+            super.onBindViewHolder(holder, position, payloads)
+        }
     }
 
-    private fun showTags(tags: List<RealmTag>?, chipCloud: ChipCloud) {
-        if (tags != null) {
-            for (tag in tags) {
-                val parent = mRealm?.where(RealmTag::class.java)?.equalTo("id", tag.tagId)?.findFirst()
-                parent?.let { showChip(chipCloud, it) }
+    private fun displayTagCloud(holder: ViewHoldercourse, position: Int) {
+        val flexboxDrawable = holder.rowCourseBinding.flexboxDrawable
+        val courseId = courseList.getOrNull(position)?.id
+        if (courseId == null) {
+            flexboxDrawable.removeAllViews()
+            return
+        }
+
+        val cachedTags = tagCache[courseId]
+        if (cachedTags != null) {
+            renderTagCloud(flexboxDrawable, cachedTags)
+            return
+        }
+
+        flexboxDrawable.removeAllViews()
+
+        if (!tagRequestsInProgress.add(courseId)) {
+            return
+        }
+
+        lifecycleOwner.lifecycleScope.launch {
+            try {
+                val tags = withContext(Dispatchers.IO) {
+                    tagRepository.getTagsForCourse(courseId)
+                }
+                tagCache[courseId] = tags
+                val adapterPosition = holder.bindingAdapterPosition
+                if (adapterPosition != RecyclerView.NO_POSITION) {
+                    notifyItemChanged(adapterPosition, TAG_PAYLOAD)
+                }
+            } finally {
+                tagRequestsInProgress.remove(courseId)
             }
         }
     }
 
-    private fun showChip(chipCloud: ChipCloud, parent: RealmTag?) {
-        chipCloud.addChip(if (parent != null) parent.name else "")
-        chipCloud.setListener { _: Int, _: Boolean, b1: Boolean ->
-            if (b1 && listener != null) {
-                listener!!.onTagClicked(parent)
+    private fun renderTagCloud(flexboxDrawable: FlexboxLayout, tags: List<RealmTag>) {
+        flexboxDrawable.removeAllViews()
+        if (tags.isEmpty()) {
+            return
+        }
+        val chipCloud = ChipCloud(context, flexboxDrawable, config)
+        tags.forEach { tag ->
+            chipCloud.addChip(tag.name ?: "")
+        }
+        chipCloud.setListener { index: Int, _: Boolean, isSelected: Boolean ->
+            if (isSelected) {
+                tags.getOrNull(index)?.let { selectedTag ->
+                    listener?.onTagClicked(selectedTag)
+                }
             }
         }
     }

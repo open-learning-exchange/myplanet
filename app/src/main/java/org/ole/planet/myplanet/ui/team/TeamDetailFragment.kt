@@ -25,6 +25,7 @@ import org.ole.planet.myplanet.callback.BaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.MemberChangeListener
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.callback.TableDataUpdate
+import org.ole.planet.myplanet.callback.TeamUpdateListener
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMemberCount
@@ -55,7 +56,7 @@ import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
-class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
+class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateListener {
     
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
@@ -299,6 +300,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
             requireActivity(),
             pageConfigs,
             team?._id,
+            this,
             this
         )
         binding.tabLayout.tabMode = com.google.android.material.tabs.TabLayout.MODE_SCROLLABLE
@@ -404,11 +406,20 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
 
             if (updatedTeam != null) {
                 team = updatedTeam
+
+                // Update arguments and direct variables with new team data
+                directTeamName = updatedTeam.name
+                directTeamType = updatedTeam.type
+                requireArguments().apply {
+                    putString("teamName", updatedTeam.name)
+                    putString("teamType", updatedTeam.type)
+                }
+
                 val lastPageId = team?._id?.let { teamLastPage[it] } ?: arguments?.getString("navigateToPage")
                 setupViewPager(isMyTeam, lastPageId)
 
-                binding.title.text = getEffectiveTeamName()
-                binding.subtitle.text = getEffectiveTeamType()
+                binding.title.text = updatedTeam.name
+                binding.subtitle.text = updatedTeam.type
 
                 team?._id?.let { id ->
                     if (getJoinedMemberCount(id, mRealm) <= 1 && isMyTeam) {
@@ -433,6 +444,12 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
             } else {
                 View.VISIBLE
             }
+        }
+    }
+
+    override fun onTeamDetailsUpdated() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            refreshTeamData()
         }
     }
 
