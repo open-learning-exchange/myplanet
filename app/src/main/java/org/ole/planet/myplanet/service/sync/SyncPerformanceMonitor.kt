@@ -3,8 +3,6 @@ package org.ole.planet.myplanet.service.sync
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
-import java.util.concurrent.ConcurrentHashMap
-import kotlin.math.roundToInt
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 
 data class SyncMetrics(
@@ -59,110 +57,18 @@ data class SyncMetrics(
     }
 }
 
-data class PerformanceStats(
-    val averageDuration: Long,
-    val averageThroughput: Double,
-    val successRate: Double,
-    val totalSyncs: Int,
-    val bestStrategy: String?,
-    val worstStrategy: String?
-)
-
-data class SyncComparison(
-    val table: String,
-    val standardMetrics: PerformanceStats?,
-    val betaMetrics: PerformanceStats?,
-    val recommendation: String
-)
-
 class SyncPerformanceMonitor(private val context: Context) {
-    
+
     private val preferences: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    private val currentMetrics = ConcurrentHashMap<String, SyncMetrics>()
-    private val historicalMetrics = mutableListOf<SyncMetrics>()
-    
-    private val maxHistoricalRecords = 100
-    
-    init {
-        loadHistoricalMetrics()
-    }
-    
+
     fun startSyncTracking(tableName: String, strategy: String, config: SyncConfig): SyncTracker {
         return SyncTracker(tableName, strategy, config, this)
     }
-    
+
     internal fun recordMetrics(metrics: SyncMetrics) {
-        currentMetrics[metrics.tableName] = metrics
-        historicalMetrics.add(metrics)
-        
-        // Keep only recent records
-        if (historicalMetrics.size > maxHistoricalRecords) {
-            historicalMetrics.removeAt(0)
-        }
-        
         saveMetricsToPrefs(metrics)
     }
-    
-    fun getPerformanceStats(tableName: String, strategy: String? = null): PerformanceStats {
-        val relevantMetrics = historicalMetrics.filter { 
-            it.tableName == tableName && (strategy == null || it.strategy == strategy)
-        }
-        
-        if (relevantMetrics.isEmpty()) {
-            return PerformanceStats(0, 0.0, 0.0, 0, null, null)
-        }
-        
-        val successfulSyncs = relevantMetrics.filter { it.success }
-        val successRate = successfulSyncs.size.toDouble() / relevantMetrics.size.toDouble()
-        
-        val avgDuration = successfulSyncs.map { it.duration }.average().toLong()
-        val avgThroughput = successfulSyncs.map { it.throughputItemsPerSecond }.average()
-        
-        val strategiesPerformance = relevantMetrics.groupBy { it.strategy }
-            .mapValues { (_, metrics) ->
-                metrics.filter { it.success }.map { it.throughputItemsPerSecond }.average()
-            }
-        
-        val bestStrategy = strategiesPerformance.maxByOrNull { it.value }?.key
-        val worstStrategy = strategiesPerformance.minByOrNull { it.value }?.key
-        
-        return PerformanceStats(
-            averageDuration = avgDuration,
-            averageThroughput = avgThroughput,
-            successRate = successRate,
-            totalSyncs = relevantMetrics.size,
-            bestStrategy = bestStrategy,
-            worstStrategy = worstStrategy
-        )
-    }
-    
-    fun compareStrategies(tableName: String): SyncComparison {
-        val standardStats = getPerformanceStats(tableName, "standard")
-        val betaStats = getPerformanceStats(tableName, "beta")
-        
-        val recommendation = when {
-            betaStats.totalSyncs == 0 -> "Use standard sync (no beta data)"
-            standardStats.totalSyncs == 0 -> "Use beta sync (no standard data)"
-            betaStats.averageThroughput > standardStats.averageThroughput * 1.2 -> 
-                "Use beta sync (${((betaStats.averageThroughput / standardStats.averageThroughput - 1) * 100).roundToInt()}% faster)"
-            betaStats.successRate < standardStats.successRate * 0.9 -> 
-                "Use standard sync (beta less reliable)"
-            else -> "Use standard sync (marginal difference)"
-        }
-        
-        return SyncComparison(
-            table = tableName,
-            standardMetrics = if (standardStats.totalSyncs > 0) standardStats else null,
-            betaMetrics = if (betaStats.totalSyncs > 0) betaStats else null,
-            recommendation = recommendation
-        )
-    }
-    
-    fun getRecommendedStrategy(tableName: String): String {
-        val comparison = compareStrategies(tableName)
-        return if (comparison.recommendation.contains("beta")) "beta" else "standard"
-    }
-    
+
     private fun saveMetricsToPrefs(metrics: SyncMetrics) {
         val key = "sync_metrics_${metrics.tableName}_${metrics.strategy}"
         preferences.edit {
@@ -171,13 +77,6 @@ class SyncPerformanceMonitor(private val context: Context) {
             putBoolean("${key}_success", metrics.success)
             putLong("${key}_timestamp", metrics.endTime)
         }
-    }
-    
-    private fun loadHistoricalMetrics() {
-        // Load recent metrics from preferences
-        // This is a simplified version - in production you might use a database
-        val savedMetrics = preferences.all.filterKeys { it.startsWith("sync_metrics_") }
-        // Parse and add to historicalMetrics if needed
     }
     
 }
