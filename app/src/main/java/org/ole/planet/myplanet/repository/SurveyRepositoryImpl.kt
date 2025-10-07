@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import io.realm.Realm
 import javax.inject.Inject
 import org.json.JSONException
 import org.json.JSONObject
@@ -15,43 +14,38 @@ class SurveyRepositoryImpl @Inject constructor(
     override suspend fun getTeamOwnedSurveys(teamId: String?): List<RealmStepExam> {
         if (teamId.isNullOrEmpty()) return emptyList()
 
-        return withRealmAsync { realm ->
-            val teamSubmissionIds = getTeamSubmissionExamIds(realm, teamId)
-            val query = realm.where(RealmStepExam::class.java)
-                .equalTo("type", "surveys")
+        val teamSubmissionIds = getTeamSubmissionExamIds(teamId)
+        return queryList(RealmStepExam::class.java) {
+            equalTo("type", "surveys")
 
-            query.beginGroup()
-                .equalTo("teamId", teamId)
+            beginGroup()
+            equalTo("teamId", teamId)
             if (teamSubmissionIds.isNotEmpty()) {
-                query.or().`in`("id", teamSubmissionIds.toTypedArray())
+                or()
+                `in`("id", teamSubmissionIds.toTypedArray())
             }
-            query.endGroup()
-
-            val results = query.findAll()
-            realm.copyFromRealm(results)
+            endGroup()
         }
     }
 
     override suspend fun getAdoptableTeamSurveys(teamId: String?): List<RealmStepExam> {
         if (teamId.isNullOrEmpty()) return emptyList()
 
-        return withRealmAsync { realm ->
-            val teamSubmissionIds = getTeamSubmissionExamIds(realm, teamId)
-            val query = realm.where(RealmStepExam::class.java)
-                .equalTo("type", "surveys")
+        val teamSubmissionIds = getTeamSubmissionExamIds(teamId)
+
+        return queryList(RealmStepExam::class.java) {
+            equalTo("type", "surveys")
 
             if (teamSubmissionIds.isNotEmpty()) {
-                query.beginGroup()
-                    .equalTo("isTeamShareAllowed", true)
-                    .and()
-                    .not().`in`("id", teamSubmissionIds.toTypedArray())
-                query.endGroup()
+                beginGroup()
+                equalTo("isTeamShareAllowed", true)
+                and()
+                not()
+                `in`("id", teamSubmissionIds.toTypedArray())
+                endGroup()
             } else {
-                query.equalTo("isTeamShareAllowed", true)
+                equalTo("isTeamShareAllowed", true)
             }
-
-            val results = query.findAll()
-            realm.copyFromRealm(results)
         }
     }
 
@@ -62,13 +56,13 @@ class SurveyRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun getTeamSubmissionExamIds(realm: Realm, teamId: String): Set<String> {
-        val submissions = realm.where(RealmSubmission::class.java)
-            .isNotNull("membershipDoc")
-            .findAll()
+    private suspend fun getTeamSubmissionExamIds(teamId: String): Set<String> {
+        val submissions = queryList(RealmSubmission::class.java) {
+            isNotNull("membershipDoc")
+            equalTo("membershipDoc.teamId", teamId)
+        }
 
         return submissions
-            .filter { it.membershipDoc?.teamId == teamId }
             .mapNotNull { parseParentExamId(it.parent) }
             .toSet()
     }

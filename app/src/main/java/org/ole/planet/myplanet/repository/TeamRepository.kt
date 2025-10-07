@@ -1,6 +1,8 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
+import io.realm.RealmResults
+import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamTask
@@ -52,4 +54,19 @@ interface TeamRepository {
         createdBy: String,
     ): Boolean
     suspend fun syncTeamActivities(context: Context)
+    fun getTeamTransactions(
+        teamId: String,
+        startDate: Long? = null,
+        endDate: Long? = null,
+        sortAscending: Boolean = false,
+    ): Flow<RealmResults<RealmMyTeam>>
+    suspend fun createTransaction(
+        teamId: String,
+        type: String,
+        note: String,
+        amount: Int,
+        date: Long,
+        parentCode: String?,
+        planetCode: String?,
+    ): Result<Unit>
 }
