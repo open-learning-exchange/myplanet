@@ -20,7 +20,6 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
-import org.ole.planet.myplanet.ui.helpwanted.HelpWantedFragment
 import org.ole.planet.myplanet.ui.myPersonals.MyPersonalsFragment
 import org.ole.planet.myplanet.ui.myhealth.MyHealthFragment
 import org.ole.planet.myplanet.ui.mymeetup.MyMeetupDetailFragment
@@ -69,7 +68,6 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
                     "mySurveys" -> openIfLoggedIn { listener.openCallFragment(MySubmissionFragment.newInstance("survey")) }
                     "myAchievements" -> openIfLoggedIn { listener.openCallFragment(AchievementFragment()) }
                     "myPersonals" -> openIfLoggedIn { listener.openCallFragment(MyPersonalsFragment()) }
-                    "Help Wanted" -> listener.openCallFragment(HelpWantedFragment())
                     "myHealth" -> openIfLoggedIn { listener.openCallFragment(MyHealthFragment()) }
                     else -> Utilities.toast(activity, getString(R.string.feature_not_available))
                 }
@@ -118,7 +116,10 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         setBackgroundColor(v, itemCnt)
 
         val title = (obj as RealmMyLife).title
-        val user = UserProfileDbHandler(requireContext()).userModel
+        val handler = profileDbHandler ?: UserProfileDbHandler(requireContext()).also {
+            profileDbHandler = it
+        }
+        val user = handler.userModel
         itemMyLifeBinding.img.setImageResource(resources.getIdentifier(obj.imageId, "drawable", requireActivity().packageName))
         itemMyLifeBinding.tvName.text = title
 
@@ -144,7 +145,6 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         myLifeList.add(RealmMyLife("ic_submissions", userId, getString(R.string.submission)))
         myLifeList.add(RealmMyLife("ic_my_survey", userId, getString(R.string.my_survey)))
         myLifeList.add(RealmMyLife("ic_references", userId, getString(R.string.references)))
-        myLifeList.add(RealmMyLife("ic_help_wanted", userId, getString(R.string.help_wanted)))
         myLifeList.add(RealmMyLife("ic_calendar", userId, getString(R.string.calendar)))
         myLifeList.add(RealmMyLife("ic_contacts", userId, getString(R.string.contacts)))
         myLifeList.add(RealmMyLife("ic_mypersonals", userId, getString(R.string.mypersonals)))

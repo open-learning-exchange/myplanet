@@ -31,6 +31,8 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
     lateinit var submissionRepository: SubmissionRepository
     @Inject
     lateinit var userRepository: UserRepository
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
     var type: String? = ""
     var exams: HashMap<String?, RealmStepExam>? = null
     private var submissions: List<RealmSubmission>? = null
@@ -45,7 +47,7 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentMySubmissionBinding.inflate(inflater, container, false)
         exams = HashMap()
-        user = UserProfileDbHandler(requireContext()).userModel
+        user = userProfileDbHandler.userModel
         return binding.root
     }
 
