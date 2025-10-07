@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.team
 
 import android.content.Context
 import android.content.DialogInterface
-import android.graphics.PorterDuff
 import android.graphics.Typeface
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -140,56 +139,22 @@ class AdapterTeamList(
         team: RealmMyTeam,
         user: RealmUserModel?,
     ) {
-        if (isMyTeam) {
-            name.setTypeface(null, Typeface.BOLD)
-        } else {
-            name.setTypeface(null, Typeface.NORMAL)
+        val viewContext = root.context
+        name.setTypeface(null, if (isMyTeam) Typeface.BOLD else Typeface.NORMAL)
+
+        val state = when {
+            user?.isGuest() == true -> TeamActionButtonState.Hidden
+            isTeamLeader -> TeamActionButtonState.Edit("${viewContext.getString(R.string.edit)} ${team.name}")
+            isMyTeam && !isTeamLeader -> TeamActionButtonState.Leave("${viewContext.getString(R.string.leave)} ${team.name}")
+            !isMyTeam && hasPendingRequest -> TeamActionButtonState.Requested(
+                "${viewContext.getString(R.string.requested)} ${team.name}",
+                "#9fa0a4".toColorInt(),
+            )
+            !isMyTeam -> TeamActionButtonState.Join("${viewContext.getString(R.string.request_to_join)} ${team.name}")
+            else -> TeamActionButtonState.Hidden
         }
-        when {
-            user?.isGuest() == true -> joinLeave.visibility = View.GONE
 
-            isTeamLeader -> {
-                joinLeave.apply {
-                    isEnabled = true
-                    contentDescription = "${context.getString(R.string.edit)} ${team.name}"
-                    visibility = View.VISIBLE
-                    setImageResource(R.drawable.ic_edit)
-                    clearColorFilter()
-                }
-            }
-
-            isMyTeam && !isTeamLeader -> {
-                joinLeave.apply {
-                    isEnabled = true
-                    contentDescription = "${context.getString(R.string.leave)} ${team.name}"
-                    visibility = View.VISIBLE
-                    setImageResource(R.drawable.logout)
-                    clearColorFilter()
-                }
-            }
-
-            !isMyTeam && hasPendingRequest -> {
-                joinLeave.apply {
-                    isEnabled = false
-                    contentDescription = "${context.getString(R.string.requested)} ${team.name}"
-                    visibility = View.VISIBLE
-                    setImageResource(R.drawable.baseline_hourglass_top_24)
-                    setColorFilter("#9fa0a4".toColorInt(), PorterDuff.Mode.SRC_IN)
-                }
-            }
-
-            !isMyTeam -> {
-                joinLeave.apply {
-                    isEnabled = true
-                    contentDescription = "${context.getString(R.string.request_to_join)} ${team.name}"
-                    visibility = View.VISIBLE
-                    setImageResource(R.drawable.ic_join_request)
-                    clearColorFilter()
-                }
-            }
-
-            else -> joinLeave.visibility = View.GONE
-        }
+        applyActionButtonState(state)
     }
 
     private fun handleJoinLeaveClick(team: RealmMyTeam, user: RealmUserModel?) {
