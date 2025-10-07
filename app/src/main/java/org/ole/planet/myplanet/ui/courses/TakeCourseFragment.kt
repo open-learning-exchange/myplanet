@@ -209,7 +209,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         } else {
             binding.nextStep.visibility = View.VISIBLE
             binding.nextStep.isClickable = true
-            binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
+            binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), com.mikepenz.materialize.R.color.md_white_1000))
         }
 
         updateStepDisplay(position)
@@ -218,9 +218,9 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     private fun changeNextButtonState(position: Int) {
         if (isStepCompleted(mRealm, steps[position - 1]?.id, userModel?.id)) {
             binding.nextStep.isClickable = true
-            binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
+            binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), com.mikepenz.materialize.R.color.md_white_1000))
         } else {
-            binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_grey_500))
+            binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), com.mikepenz.materialize.R.color.md_grey_500))
             binding.nextStep.isClickable = false
         }
     }
@@ -230,11 +230,11 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     private fun onClickNext() {
         binding.tvStep.text = String.format(Locale.getDefault(), "${getString(R.string.step)} %d/%d", binding.viewPager2.currentItem, currentCourse?.courseSteps?.size)
         if (binding.viewPager2.currentItem == currentCourse?.courseSteps?.size) {
-            binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_grey_500))
+            binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), com.mikepenz.materialize.R.color.md_grey_500))
             binding.nextStep.visibility = View.GONE
             binding.finishStep.visibility = View.VISIBLE
         }else{
-            binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
+            binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), com.mikepenz.materialize.R.color.md_white_1000))
             binding.nextStep.visibility = View.VISIBLE
             binding.finishStep.visibility = View.GONE
 
@@ -248,7 +248,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             binding.nextStep.visibility = View.VISIBLE
             binding.finishStep.visibility = View.GONE
         }else{
-            binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
+            binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), com.mikepenz.materialize.R.color.md_white_1000))
             binding.nextStep.visibility = View.VISIBLE
             binding.finishStep.visibility = View.GONE
         }
@@ -315,7 +315,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                 Toast.makeText(context, getString(R.string.please_complete_survey), Toast.LENGTH_SHORT).show() }
         } else {
             binding.finishStep.isEnabled = true
-            binding.finishStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
+            binding.finishStep.setTextColor(ContextCompat.getColor(requireContext(), com.mikepenz.materialize.R.color.md_white_1000))
             binding.finishStep.setOnClickListener {
                 NavigationHelper.popBackStack(requireActivity().supportFragmentManager)
             }

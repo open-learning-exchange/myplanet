@@ -100,15 +100,15 @@ class WebViewActivity : AppCompatActivity() {
                 when (nightModeFlags) {
                     android.content.res.Configuration.UI_MODE_NIGHT_YES -> {
                         forceDark = WebSettings.FORCE_DARK_ON
-                        activityWebViewBinding.contentWebView.webTitle.setTextColor(ContextCompat.getColor(this@WebViewActivity, R.color.md_white_1000))
-                        activityWebViewBinding.contentWebView.webSource.setTextColor(ContextCompat.getColor(this@WebViewActivity, R.color.md_white_1000))
-                        activityWebViewBinding.contentWebView.contentWebView.setBackgroundColor(ContextCompat.getColor(this@WebViewActivity, R.color.md_black_1000))
+                        activityWebViewBinding.contentWebView.webTitle.setTextColor(ContextCompat.getColor(this@WebViewActivity, com.mikepenz.materialize.R.color.md_white_1000))
+                        activityWebViewBinding.contentWebView.webSource.setTextColor(ContextCompat.getColor(this@WebViewActivity, com.mikepenz.materialize.R.color.md_white_1000))
+                        activityWebViewBinding.contentWebView.contentWebView.setBackgroundColor(ContextCompat.getColor(this@WebViewActivity, com.mikepenz.materialize.R.color.md_black_1000))
                     }
 
                     android.content.res.Configuration.UI_MODE_NIGHT_NO -> {
                         forceDark = WebSettings.FORCE_DARK_OFF
-                        activityWebViewBinding.contentWebView.webTitle.setTextColor(ContextCompat.getColor(this@WebViewActivity, R.color.md_black_1000))
-                        activityWebViewBinding.contentWebView.webSource.setTextColor(ContextCompat.getColor(this@WebViewActivity, R.color.md_black_1000))
+                        activityWebViewBinding.contentWebView.webTitle.setTextColor(ContextCompat.getColor(this@WebViewActivity, com.mikepenz.materialize.R.color.md_black_1000))
+                        activityWebViewBinding.contentWebView.webSource.setTextColor(ContextCompat.getColor(this@WebViewActivity, com.mikepenz.materialize.R.color.md_black_1000))
                     }
                 }
             }

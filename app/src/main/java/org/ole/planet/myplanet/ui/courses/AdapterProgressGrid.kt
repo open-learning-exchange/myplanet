@@ -23,9 +23,9 @@ class AdapterProgressGrid(private val context: Context, private val list: JsonAr
             if (list[position].asJsonObject.has("percentage")) {
                 holder.tvProgress.text = context.getString(R.string.percentage, list[position].asJsonObject["percentage"].asString)
                 if (list[position].asJsonObject["completed"].asBoolean) {
-                    holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.md_green_500))
+                    holder.itemView.setBackgroundColor(ContextCompat.getColor(context, com.mikepenz.materialize.R.color.md_green_500))
                 } else {
-                    holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.md_yellow_500))
+                    holder.itemView.setBackgroundColor(ContextCompat.getColor(context, com.mikepenz.materialize.R.color.md_yellow_500))
                 }
             } else {
                 holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.mainColor))

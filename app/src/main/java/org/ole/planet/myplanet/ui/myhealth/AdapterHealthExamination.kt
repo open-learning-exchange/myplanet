@@ -53,10 +53,10 @@ class AdapterHealthExamination(private val context: Context, private val list: L
             val model = mRealm.where(RealmUserModel::class.java).equalTo("id", createdBy).findFirst()
             val name: String = model?.getFullName() ?: createdBy.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[1]
             rowExaminationBinding.txtDate.text = context.getString(R.string.two_strings, rowExaminationBinding.txtDate.text, name).trimIndent()
-            holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.md_grey_50))
+            holder.itemView.setBackgroundColor(ContextCompat.getColor(context, com.mikepenz.materialize.R.color.md_grey_50))
         } else {
             rowExaminationBinding.txtDate.text = context.getString(R.string.self_examination, rowExaminationBinding.txtDate.text)
-            holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.md_green_50))
+            holder.itemView.setBackgroundColor(ContextCompat.getColor(context, com.mikepenz.materialize.R.color.md_green_50))
         }
 
         rowExaminationBinding.txtPulse.text = list?.get(position)?.let { checkEmptyInt(it.pulse) }
