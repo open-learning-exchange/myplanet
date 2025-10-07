@@ -124,7 +124,7 @@ class ImprovedSyncManager @Inject constructor(
         
         // Post-sync operations
         logger.startProcess("admin_sync")
-        ManagerSync.instance?.syncAdmin()
+        ManagerSync.instance.syncAdmin()
         logger.endProcess("admin_sync")
         
         poolManager.useRealm { realm ->

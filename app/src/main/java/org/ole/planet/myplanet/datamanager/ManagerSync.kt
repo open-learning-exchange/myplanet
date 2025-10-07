@@ -199,11 +199,18 @@ class ManagerSync private constructor(private val context: Context) {
 
     companion object {
         private var ourInstance: ManagerSync? = null
+
         @JvmStatic
-        val instance: ManagerSync?
+        val instance: ManagerSync
             get() {
-                ourInstance = ManagerSync(MainApplication.context)
-                return ourInstance
+                val existingInstance = ourInstance
+                if (existingInstance != null) {
+                    return existingInstance
+                }
+
+                return ManagerSync(MainApplication.context).also { createdInstance ->
+                    ourInstance = createdInstance
+                }
             }
     }
 }
