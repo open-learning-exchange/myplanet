@@ -53,5 +53,40 @@ class NotificationRepositoryImpl @Inject constructor(
             existingNotification?.let { delete(RealmNotification::class.java, "id", it.id) }
         }
     }
+
+    override suspend fun markNotificationsAsRead(notificationIds: Set<String>): Set<String> {
+        if (notificationIds.isEmpty()) return emptySet()
+
+        val updatedIds = mutableSetOf<String>()
+        executeTransaction { realm ->
+            realm.where(RealmNotification::class.java)
+                .`in`("id", notificationIds.toTypedArray())
+                .findAll()
+                ?.forEach { notification ->
+                    notification.isRead = true
+                    notification.createdAt = Date()
+                    updatedIds.add(notification.id)
+                }
+        }
+        return updatedIds
+    }
+
+    override suspend fun markAllUnreadAsRead(userId: String?): Set<String> {
+        val actualUserId = userId ?: return emptySet()
+        val updatedIds = mutableSetOf<String>()
+        val now = Date()
+        executeTransaction { realm ->
+            realm.where(RealmNotification::class.java)
+                .equalTo("userId", actualUserId)
+                .equalTo("isRead", false)
+                .findAll()
+                ?.forEach { notification ->
+                    notification.isRead = true
+                    notification.createdAt = now
+                    updatedIds.add(notification.id)
+                }
+        }
+        return updatedIds
+    }
 }
 
