@@ -36,7 +36,6 @@ class SyncManagerTest {
         every { editor.remove(any()) } returns editor
         every { editor.putBoolean(any(), any()) } returns editor
         every { editor.putLong(any(), any()) } returns editor
-        every { settings.getBoolean(eq(SharedPrefManager.USE_IMPROVED_SYNC), any()) } returns true
     }
 
     @After
@@ -46,6 +45,7 @@ class SyncManagerTest {
 
     @Test
     fun `start uses improved sync manager when feature flag enabled`() {
+        every { settings.getBoolean(eq(SharedPrefManager.USE_IMPROVED_SYNC), any()) } returns true
         val syncManager = spyk(SyncManager(context, databaseService, settings, apiInterface), recordPrivateCalls = true)
         val improvedSyncManager = mockk<ImprovedSyncManager>(relaxed = true)
 
@@ -56,5 +56,17 @@ class SyncManagerTest {
         syncManager.start(listener = null, type = "download", syncTables = null)
 
         verify(exactly = 1) { improvedSyncManager.start(null, "download", null) }
+    }
+
+    @Test
+    fun `start falls back to legacy sync when feature flag disabled`() {
+        every { settings.getBoolean(eq(SharedPrefManager.USE_IMPROVED_SYNC), any()) } returns false
+        val syncManager = spyk(SyncManager(context, databaseService, settings, apiInterface), recordPrivateCalls = true)
+
+        every { syncManager["authenticateAndSync"](any<String>(), any()) } returns Unit
+
+        syncManager.start(listener = null, type = "download", syncTables = emptyList())
+
+        verify(exactly = 1) { syncManager["authenticateAndSync"]("download", any()) }
     }
 }
