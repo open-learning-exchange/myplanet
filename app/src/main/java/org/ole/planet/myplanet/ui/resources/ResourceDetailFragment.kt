@@ -175,7 +175,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                 getString(R.string.download)
             }
         if (getFileExtension(library.resourceLocalAddress) == "mp4") {
-            binding.btnDownload.setImageResource(com.example.jean.jcplayer.R.drawable.ic_play)
+            binding.btnDownload.setImageResource(R.drawable.ic_play)
         }
     }
 
