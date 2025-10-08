@@ -1167,9 +1167,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         return PrimaryDrawerItem().withName(iconText)
             .withIcon(drawable)
             .withTextColor(ContextCompat.getColor(this, R.color.textColorPrimary))
-            .withSelectedTextColor(ContextCompat.getColor(this, R.color.colorPrimaryDark))
+            .withSelectedTextColor(ContextCompat.getColor(this, R.color.primary_dark))
             .withIconColor(ContextCompat.getColor(this, R.color.textColorPrimary))
-            .withSelectedIconColor(ContextCompat.getColor(this, R.color.colorPrimaryDark))
+            .withSelectedIconColor(ContextCompat.getColor(this, R.color.primary_dark))
             .withSelectedColor(ContextCompat.getColor(this, R.color.textColorPrimary))
             .withIconTintingEnabled(true)
     }
