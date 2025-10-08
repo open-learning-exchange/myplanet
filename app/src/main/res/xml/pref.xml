@@ -22,6 +22,11 @@
             android:defaultValue="false"
             android:key="force_monthly_sync"
             android:title="@string/force_monthly_sync" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="useImprovedSync"
+            android:summary="@string/use_improved_sync_summary"
+            android:title="@string/use_improved_sync" />
         <Preference
             android:enabled="true"
             android:key="lastSyncDate"

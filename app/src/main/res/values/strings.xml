@@ -1016,6 +1016,8 @@
     <string name="auto_sync">auto sync</string>
     <string name="force_weekly_sync">force weekly sync</string>
     <string name="force_monthly_sync">force monthly sync</string>
+    <string name="use_improved_sync">Use improved sync</string>
+    <string name="use_improved_sync_summary">Enable the new sync experience (experimental)</string>
     <string name="beta_function_for_wifi_switch">beta function for wifi switch</string>
     <string name="upgrade_application">upgrade application</string>
     <string name="auto_upgrade">auto upgrade</string>

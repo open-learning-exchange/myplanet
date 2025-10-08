@@ -22,6 +22,14 @@ class SharedPrefManager @Inject constructor(@ApplicationContext context: Context
         private const val SELECTED_TEAM_ID = "selectedTeamId"
         const val FIRST_LAUNCH = "firstLaunch"
         private const val TEAM_NAME = "teamName"
+        const val USE_IMPROVED_SYNC = "useImprovedSync"
+    }
+
+    init {
+        if (!pref.contains(USE_IMPROVED_SYNC)) {
+            editor.putBoolean(USE_IMPROVED_SYNC, false)
+            editor.apply()
+        }
     }
 
     enum class SyncKey(val key: String) {
