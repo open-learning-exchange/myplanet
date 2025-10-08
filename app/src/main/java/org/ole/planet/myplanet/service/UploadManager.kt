@@ -78,23 +78,24 @@ class UploadManager @Inject constructor(
 
     private fun uploadNewsActivities() {
         val apiInterface = client?.create(ApiInterface::class.java)
-        val realm = getRealm()
-        realm.executeTransactionAsync { realm: Realm ->
-            val newsLog: List<RealmNewsLog> = realm.where(RealmNewsLog::class.java)
-                .isNull("_id").or().isEmpty("_id")
-                .findAll()
+        databaseService.withRealm { realm ->
+            realm.executeTransactionAsync { realm: Realm ->
+                val newsLog: List<RealmNewsLog> = realm.where(RealmNewsLog::class.java)
+                    .isNull("_id").or().isEmpty("_id")
+                    .findAll()
 
-            newsLog.processInBatches { news ->
-                    try {
-                        val `object` = apiInterface?.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/myplanet_activities", RealmNewsLog.serialize(news))?.execute()?.body()
+                newsLog.processInBatches { news ->
+                        try {
+                            val `object` = apiInterface?.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/myplanet_activities", RealmNewsLog.serialize(news))?.execute()?.body()
 
-                        if (`object` != null) {
-                            news._id = getString("id", `object`)
-                            news._rev = getString("rev", `object`)
+                            if (`object` != null) {
+                                news._id = getString("id", `object`)
+                                news._rev = getString("rev", `object`)
+                            }
+                        } catch (e: IOException) {
+                            e.printStackTrace()
                         }
-                    } catch (e: IOException) {
-                        e.printStackTrace()
-                    }
+                }
             }
         }
 
