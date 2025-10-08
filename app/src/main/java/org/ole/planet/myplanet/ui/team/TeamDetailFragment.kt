@@ -139,7 +139,6 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         val teamId = requireArguments().getString("id" ) ?: ""
         val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
         val user = detachCurrentUser()
-        mRealm = databaseService.realmInstance
 
         renderPlaceholder()
 
