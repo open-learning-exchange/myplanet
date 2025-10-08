@@ -177,7 +177,6 @@ class ConfigurationManager(
     private fun buildCouchdbUrl(currentUrl: String, pin: String): String {
         val uri = currentUrl.toUri()
         return if (currentUrl.contains("@")) {
-            getUserInfo(uri)
             currentUrl
         } else {
             val urlUser = "satellite"
@@ -236,15 +235,5 @@ class ConfigurationManager(
 
     private fun getUrl(couchdbURL: String): String {
         return UrlUtils.dbUrl(couchdbURL)
-    }
-
-    private fun getUserInfo(uri: android.net.Uri): Array<String> {
-        val ar = arrayOf("", "")
-        val info = uri.userInfo?.split(":".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()
-        if ((info?.size ?: 0) > 1) {
-            ar[0] = "${info?.get(0)}"
-            ar[1] = "${info?.get(1)}"
-        }
-        return ar
     }
 }

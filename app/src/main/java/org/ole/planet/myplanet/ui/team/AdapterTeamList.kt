@@ -14,6 +14,7 @@ import androidx.core.graphics.toColorInt
 import androidx.fragment.app.FragmentManager
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -47,6 +48,7 @@ class AdapterTeamList(
     private val scope = MainScope()
     private val teamStatusCache = mutableMapOf<String, TeamStatus>()
     private var visitCounts: Map<String, Long> = emptyMap()
+    private var updateListJob: Job? = null
 
     data class TeamStatus(
         val isMember: Boolean,
@@ -209,12 +211,10 @@ class AdapterTeamList(
                 AlertDialog.Builder(context, R.style.CustomAlertDialog).setMessage(R.string.confirm_exit)
                     .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
                         leaveTeam(team, userId)
-                        updateList()
                     }.setNegativeButton(R.string.no, null).show()
             }
         } else {
             requestToJoin(team, user)
-            updateList()
         }
         syncTeamActivities()
     }
@@ -223,7 +223,8 @@ class AdapterTeamList(
         val user: RealmUserModel? = currentUser
         val userId = user?.id
 
-        scope.launch {
+        updateListJob?.cancel()
+        updateListJob = scope.launch {
             val validTeams = list.filter { it.status?.isNotEmpty() == true }
             if (validTeams.isEmpty()) {
                 withContext(Dispatchers.Main) {
@@ -304,20 +305,32 @@ class AdapterTeamList(
 
     private fun requestToJoin(team: RealmMyTeam, user: RealmUserModel?) {
         val teamId = team._id ?: return
+        val teamType = team.teamType
+        val userId = user?.id
+        val userPlanetCode = user?.planetCode
+        val cacheKey = "${teamId}_${userId}"
+
+        teamStatusCache.remove(cacheKey)
+
         scope.launch(Dispatchers.IO) {
-            teamRepository.requestToJoin(teamId, user, team.teamType)
-            val cacheKey = "${teamId}_${user?.id}"
-            teamStatusCache.remove(cacheKey)
+            teamRepository.requestToJoin(teamId, userId, userPlanetCode, teamType)
+            withContext(Dispatchers.Main) {
+                updateList()
+            }
         }
     }
 
     private fun leaveTeam(team: RealmMyTeam, userId: String?) {
         val teamId = team._id ?: return
+        val cacheKey = "${teamId}_${userId}"
+
+        teamStatusCache.remove(cacheKey)
+
         scope.launch(Dispatchers.IO) {
             teamRepository.leaveTeam(teamId, userId)
-
-            val cacheKey = "${teamId}_${userId}"
-            teamStatusCache.remove(cacheKey)
+            withContext(Dispatchers.Main) {
+                updateList()
+            }
         }
     }
 
