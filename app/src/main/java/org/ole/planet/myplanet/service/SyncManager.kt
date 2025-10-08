@@ -234,7 +234,7 @@ class SyncManager @Inject constructor(
             }
 
             logger.startProcess("admin_sync")
-            ManagerSync.instance?.syncAdmin()
+            ManagerSync.instance.syncAdmin()
             logger.endProcess("admin_sync")
 
             logger.startProcess("resource_sync")
@@ -434,7 +434,7 @@ class SyncManager @Inject constructor(
             }
 
             logger.startProcess("admin_sync")
-            ManagerSync.instance?.syncAdmin()
+            ManagerSync.instance.syncAdmin()
             logger.endProcess("admin_sync")
 
             logger.startProcess("on_synced")
@@ -530,7 +530,7 @@ class SyncManager @Inject constructor(
             }
 
             logger.startProcess("admin_sync")
-            ManagerSync.instance?.syncAdmin()
+            ManagerSync.instance.syncAdmin()
             logger.endProcess("admin_sync")
 
             logger.startProcess("on_synced")
