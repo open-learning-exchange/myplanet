@@ -126,7 +126,7 @@ class AudioPlayerActivity : AppCompatActivity() {
     private fun getThemeBackground(): Int {
         val isDarkMode = resources.configuration.uiMode and
                 Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
-        return if (isDarkMode) com.example.jean.jcplayer.R.drawable.bg_player_dark else com.example.jean.jcplayer.R.drawable.bg_player_white
+        return if (isDarkMode) R.drawable.bg_player_dark else R.drawable.bg_player_white
     }
 
     private fun setupPlayPauseButtons() {
