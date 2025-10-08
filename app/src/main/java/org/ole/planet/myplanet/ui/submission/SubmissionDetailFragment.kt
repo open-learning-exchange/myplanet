@@ -51,7 +51,9 @@ class SubmissionDetailFragment : Fragment() {
             }
 
             override fun onMeasure(recycler: RecyclerView.Recycler, state: RecyclerView.State, widthSpec: Int, heightSpec: Int) {
-                if (itemCount == 0) {
+                // Use state.itemCount for more reliable count
+                val count = state.itemCount
+                if (count == 0 || adapter.itemCount == 0) {
                     // No items, use default measurement
                     super.onMeasure(recycler, state, widthSpec, heightSpec)
                     return
@@ -60,7 +62,14 @@ class SubmissionDetailFragment : Fragment() {
                 // Calculate total height for all items
                 var totalHeight = 0
                 try {
-                    for (i in 0 until itemCount) {
+                    for (i in 0 until count) {
+                        // Double-check position is still valid to handle race conditions
+                        if (i >= adapter.itemCount) {
+                            Log.w("RecyclerViewDebug", "Adapter changed during measurement, falling back to default")
+                            super.onMeasure(recycler, state, widthSpec, heightSpec)
+                            return
+                        }
+
                         val view = recycler.getViewForPosition(i)
                         addView(view)
                         measureChild(view, 0, 0)
@@ -70,7 +79,7 @@ class SubmissionDetailFragment : Fragment() {
 
                     val width = View.MeasureSpec.getSize(widthSpec)
                     setMeasuredDimension(width, totalHeight)
-                    Log.d("RecyclerViewDebug", "Calculated total height: $totalHeight for $itemCount items")
+                    Log.d("RecyclerViewDebug", "Calculated total height: $totalHeight for $count items")
                 } catch (e: Exception) {
                     Log.e("RecyclerViewDebug", "Error calculating height, falling back to default", e)
                     super.onMeasure(recycler, state, widthSpec, heightSpec)
@@ -141,11 +150,21 @@ class SubmissionDetailFragment : Fragment() {
     private fun loadQuestionsAndAnswers(submission: RealmSubmission) {
         val examId = getExamId(submission.parentId)
 
+        Log.d("RecyclerViewDebug", "Loading Q&A: parentId=${submission.parentId}, examId=$examId, answersCount=${submission.answers?.size ?: 0}")
+
+        submission.answers?.forEachIndexed { index, answer ->
+            Log.d("RecyclerViewDebug", "  Answer $index: questionId=${answer.questionId}, value=${answer.value}, valueChoices=${answer.valueChoices?.size}")
+        }
+
         val questions = mRealm.where(RealmExamQuestion::class.java)
             .equalTo("examId", examId)
             .findAll()
 
-        Log.d("RecyclerViewDebug", "Found ${questions.size} questions, updating adapter")
+        Log.d("RecyclerViewDebug", "Found ${questions.size} questions for examId=$examId")
+
+        questions.forEachIndexed { index, question ->
+            Log.d("RecyclerViewDebug", "  Question $index: id=${question.id}, body=${question.body?.take(50)}")
+        }
 
         val questionAnswerPairs = questions.map { question ->
             val answer = submission.answers?.find { it.questionId == question.id }

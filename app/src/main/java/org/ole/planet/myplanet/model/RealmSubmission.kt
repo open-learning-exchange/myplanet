@@ -150,8 +150,13 @@ open class RealmSubmission : RealmObject() {
                         realmAnswer.submissionId = sub?._id
                         realmAnswer.examId = sub?.parentId
 
-                        // For surveys, generate questionId based on index
-                        realmAnswer.questionId = "${sub?.parentId?.split("@")?.get(0) ?: sub?.parentId}-$i"
+                        // Use questionId from JSON if available, otherwise generate based on index
+                        val examIdPart = sub?.parentId?.split("@")?.get(0) ?: sub?.parentId
+                        realmAnswer.questionId = if (answerJson.has("questionId")) {
+                            JsonUtils.getString("questionId", answerJson)
+                        } else {
+                            "$examIdPart-$i"
+                        }
 
                         sub?.answers?.add(realmAnswer)
                         Log.d("RealmSubmissionSync", "Added answer $i: value=${realmAnswer.value}, questionId=${realmAnswer.questionId}")

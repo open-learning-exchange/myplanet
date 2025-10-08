@@ -24,6 +24,12 @@ import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 
+data class SubmissionWithCount(
+    val submission: RealmSubmission,
+    val count: Int,
+    val allSubmissions: List<RealmSubmission>
+)
+
 @AndroidEntryPoint
 class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
     private var _binding: FragmentMySubmissionBinding? = null
@@ -119,17 +125,22 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
             filtered = filtered.filter { examIds.contains(it.parentId) }
         }
 
-        val uniqueSubmissions = filtered
-            .groupBy { it.parentId }
-            .mapValues { entry -> entry.value.maxByOrNull { it.lastUpdateTime ?: 0 } }
-            .values
-            .filterNotNull()
-            .toList()
+        // Group submissions by parentId and keep track of counts
+        val groupedSubmissions = filtered.groupBy { it.parentId }
 
-        submissions = uniqueSubmissions
+        val submissionsWithCount = groupedSubmissions.map { (parentId, submissions) ->
+            val latestSubmission = submissions.maxByOrNull { it.lastUpdateTime ?: 0 }
+            SubmissionWithCount(
+                submission = latestSubmission!!,
+                count = submissions.size,
+                allSubmissions = submissions
+            )
+        }
 
-        val submitterIds = uniqueSubmissions.mapNotNull { it.userId }.toSet()
-        val userNameMap = submitterIds.mapNotNull { id ->
+        submissions = submissionsWithCount.map { it.submission }
+
+        val submitterIds = submissions?.mapNotNull { it.userId }?.toSet()
+        val userNameMap = submitterIds?.mapNotNull { id ->
             val userModel = userRepository.getUserById(id)
             val displayName = userModel?.name
             if (displayName.isNullOrBlank()) {
@@ -137,13 +148,18 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
             } else {
                 id to displayName
             }
-        }.toMap()
+        }?.toMap()
+
+        val submissionCountMap = submissionsWithCount.associate { it.submission.id to it.count }
+        val allSubmissionsMap = submissionsWithCount.associate { it.submission.id to it.allSubmissions }
 
         val adapter = AdapterMySubmission(
             requireActivity(),
             submissions,
             exams,
-            nameResolver = { userId -> userId?.let { userNameMap[it] } }
+            submissionCountMap,
+            allSubmissionsMap,
+            nameResolver = { userId -> userId?.let { userNameMap?.get(it) } }
         )
         val itemCount = adapter.itemCount
 
