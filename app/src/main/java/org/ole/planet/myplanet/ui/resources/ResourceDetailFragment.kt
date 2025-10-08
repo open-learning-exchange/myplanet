@@ -203,7 +203,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                 if (isAdd) {
                     R.drawable.ic_add_library
                 } else {
-                    eu.fiskur.chipcloud.R.drawable.close_x
+                    R.drawable.close_x
                 }
             )
             binding.btnRemove.contentDescription =
