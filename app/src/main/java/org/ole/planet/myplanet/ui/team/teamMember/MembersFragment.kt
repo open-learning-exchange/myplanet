@@ -62,16 +62,4 @@ class MembersFragment : BaseMemberFragment() {
             return GridLayoutManager(activity, columns)
         }
 
-    private fun isTeamLeader(): Boolean {
-        val currentUserId = getCurrentUserId()
-        val team = mRealm.where(RealmMyTeam::class.java)
-            .equalTo("teamId", teamId)
-            .equalTo("userId", currentUserId)
-            .findFirst()
-        return team?.isLeader == true
-    }
-
-    private fun getCurrentUserId(): String? {
-        return currentUser.id
-    }
 }
