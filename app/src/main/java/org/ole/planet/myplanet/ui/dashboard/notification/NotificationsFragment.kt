@@ -31,6 +31,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
@@ -45,6 +46,8 @@ class NotificationsFragment : Fragment() {
     private val binding get() = _binding!!
     @Inject
     lateinit var databaseService: DatabaseService
+    @Inject
+    lateinit var notificationRepository: NotificationRepository
     private lateinit var adapter: AdapterNotification
     private lateinit var userId: String
     private var notificationUpdateListener: NotificationListener? = null
@@ -218,34 +221,14 @@ class NotificationsFragment : Fragment() {
 
     private fun markAsReadById(notificationId: String) {
         markNotificationsAsRead(setOf(notificationId), isMarkAll = false) {
-            databaseService.executeTransactionAsync { realm ->
-                val realmNotification = realm.where(RealmNotification::class.java)
-                    .equalTo("id", notificationId)
-                    .findFirst()
-                realmNotification?.apply {
-                    isRead = true
-                    createdAt = Date()
-                }
-            }
-            setOf(notificationId)
+            notificationRepository.markNotificationsAsRead(setOf(notificationId))
         }
     }
 
     private fun markAllAsRead() {
         val notificationIds = adapter.currentList.map { it.id }.toSet()
         markNotificationsAsRead(notificationIds, isMarkAll = true) {
-            databaseService.executeTransactionAsync { realm ->
-                val now = Date()
-                realm.where(RealmNotification::class.java)
-                    .equalTo("userId", userId)
-                    .equalTo("isRead", false)
-                    .findAll()
-                    .forEach {
-                        it.isRead = true
-                        it.createdAt = now
-                    }
-            }
-            loadNotifications(userId, "all").map { it.id }.toSet()
+            notificationRepository.markAllUnreadAsRead(userId)
         }
     }
 
