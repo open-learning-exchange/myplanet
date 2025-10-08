@@ -221,17 +221,17 @@ open class RealmMyTeam : RealmObject() {
         }
 
         @JvmStatic
-        fun requestToJoin(teamId: String?, userModel: RealmUserModel?, mRealm: Realm, teamType: String?) {
+        fun requestToJoin(teamId: String?, userId: String?, userPlanetCode: String?, mRealm: Realm, teamType: String?) {
             if (!mRealm.isInTransaction) mRealm.beginTransaction()
             val team = mRealm.createObject(RealmMyTeam::class.java, AndroidDecrypter.generateIv())
             team.docType = "request"
             team.createdDate = Date().time
             team.teamType = teamType
-            team.userId = userModel?.id
+            team.userId = userId
             team.teamId = teamId
             team.updated = true
-            team.teamPlanetCode = userModel?.planetCode
-            team.userPlanetCode = userModel?.planetCode
+            team.teamPlanetCode = userPlanetCode
+            team.userPlanetCode = userPlanetCode
             mRealm.commitTransaction()
         }
 
