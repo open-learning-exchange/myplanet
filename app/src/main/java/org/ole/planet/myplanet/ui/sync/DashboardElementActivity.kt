@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.sync
 
 import android.annotation.SuppressLint
-import android.app.AlertDialog
 import android.content.Intent
 import android.graphics.PorterDuff
 import android.net.ConnectivityManager
@@ -70,14 +69,6 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
                 openCallFragment(CommunityTabFragment(), "community")
             }
         }
-    }
-
-    private fun showGuestUserDialog() {
-        AlertDialog.Builder(this)
-            .setTitle("Access Restricted")
-            .setMessage("You need to be logged in with a full account to access the community features.")
-            .setPositiveButton(android.R.string.ok) { dialog, _ -> dialog.dismiss() }
-            .show()
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
