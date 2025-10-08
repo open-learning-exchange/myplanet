@@ -89,7 +89,7 @@ class AudioPlayerActivity : AppCompatActivity() {
                 player.prepare()
                 player.playWhenReady = true
 
-                val controller = binding.playerView.findViewById<View>(androidx.media3.ui.R.id.exo_controller)
+                val controller = binding.playerView.findViewById<View>(R.id.exo_controller)
                 controller?.setBackgroundColor(android.graphics.Color.TRANSPARENT)
 
                 player.addListener(object : Player.Listener {
