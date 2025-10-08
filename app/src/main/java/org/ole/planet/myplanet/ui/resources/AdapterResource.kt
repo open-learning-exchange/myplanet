@@ -202,9 +202,11 @@ class AdapterResource(
                     tagRepository.getTagsForResource(resourceId)
                 }
                 tagCache[resourceId] = tags
-                val adapterPosition = holder.bindingAdapterPosition
-                if (adapterPosition != RecyclerView.NO_POSITION) {
-                    notifyItemChanged(adapterPosition, TAGS_PAYLOAD)
+                holder.itemView.post {
+                    val adapterPosition = holder.bindingAdapterPosition
+                    if (adapterPosition != RecyclerView.NO_POSITION) {
+                        notifyItemChanged(adapterPosition, TAGS_PAYLOAD)
+                    }
                 }
             } finally {
                 tagRequestsInProgress.remove(resourceId)
