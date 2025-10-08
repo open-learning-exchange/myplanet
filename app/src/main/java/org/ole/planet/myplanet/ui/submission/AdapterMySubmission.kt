@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.submission
 
 import android.content.Context
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -14,6 +15,7 @@ import org.json.JSONObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.RowMysurveyBinding
+import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.ui.exam.TakeExamFragment
@@ -25,6 +27,8 @@ class AdapterMySubmission(
     private val context: Context,
     list: List<RealmSubmission>?,
     private val examHashMap: HashMap<String?, RealmStepExam>?,
+    private val submissionCountMap: Map<String?, Int> = emptyMap(),
+    private val allSubmissionsMap: Map<String?, List<RealmSubmission>> = emptyMap(),
     private val nameResolver: (String?) -> String?,
 ) : ListAdapter<RealmSubmission, ViewHolderMySurvey>(
     DiffUtils.itemCallback(
@@ -69,11 +73,28 @@ class AdapterMySubmission(
         if (examHashMap?.containsKey(submission.parentId) == true) {
             rowMySurveyBinding.title.text = examHashMap[submission.parentId]?.name
         }
+
+        // Show submission count if there are multiple submissions
+        val count = submissionCountMap[submission.id] ?: 1
+        if (count > 1) {
+            rowMySurveyBinding.submissionCount.visibility = View.VISIBLE
+            rowMySurveyBinding.submissionCount.text = "($count)"
+        } else {
+            rowMySurveyBinding.submissionCount.visibility = View.GONE
+        }
+
         holder.itemView.setOnClickListener {
-            if (type == "survey") {
-                openSurvey(listener, submission.id, true, false, "")
+            logSubmissionQuestionsAndAnswers(submission)
+            if (count > 1) {
+                // Show all submissions for this exam/survey
+                showAllSubmissions(submission)
             } else {
-                openSubmissionDetail(listener, submission.id)
+                // Single submission - open directly
+                if (type == "survey") {
+                    openSurvey(listener, submission.id, true, false, "")
+                } else {
+                    openSubmissionDetail(listener, submission.id)
+                }
             }
         }
     }
@@ -110,6 +131,32 @@ class AdapterMySubmission(
         if (type != null) {
             this.type = type
         }
+    }
+
+    private fun logSubmissionQuestionsAndAnswers(submission: RealmSubmission) {
+        // Only log basic info for debugging
+        val submissionTitle = examHashMap?.get(submission.parentId)?.name ?: "Unknown Submission"
+        val answerCount = submission.answers?.size ?: 0
+        Log.d("SubmissionClick", "Clicked: $submissionTitle - $answerCount answers")
+
+        // Log answer details
+        submission.answers?.forEachIndexed { index, answer ->
+            Log.d("SubmissionClick", "  Answer $index: questionId=${answer.questionId}, value=${answer.value}, valueChoices=${answer.valueChoices}")
+        }
+    }
+
+    private fun showAllSubmissions(submission: RealmSubmission) {
+        val examTitle = examHashMap?.get(submission.parentId)?.name ?: "Submissions"
+
+        val b = Bundle()
+        b.putString("parentId", submission.parentId)
+        b.putString("examTitle", examTitle)
+        b.putString("userId", submission.userId)
+
+        val fragment = SubmissionListFragment()
+        fragment.arguments = b
+
+        listener?.openCallFragment(fragment)
     }
 
     class ViewHolderMySurvey(rowMySurveyBinding: RowMysurveyBinding) : RecyclerView.ViewHolder(rowMySurveyBinding.root)
