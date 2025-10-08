@@ -19,8 +19,13 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.ui.enterprises.AdapterFinance.ViewHolderFinance
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
-class AdapterFinance(private val context: Context, private val list: RealmResults<RealmMyTeam>) : RecyclerView.Adapter<ViewHolderFinance>() {
+class AdapterFinance(private val context: Context, private var list: RealmResults<RealmMyTeam>) : RecyclerView.Adapter<ViewHolderFinance>() {
     private lateinit var rowFinanceBinding: RowFinanceBinding
+    private val balances = mutableListOf<Int>()
+
+    init {
+        recomputeBalances()
+    }
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderFinance {
         rowFinanceBinding = RowFinanceBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ViewHolderFinance(rowFinanceBinding)
@@ -45,23 +50,29 @@ class AdapterFinance(private val context: Context, private val list: RealmResult
     }
 
     private fun getBalance(position: Int): String {
-        var i = 0
-        var balance = 0
-        for (team in list) {
-            if ("debit".equals(team.type?.lowercase(Locale.getDefault()), ignoreCase = true)) {
-                balance -= team.amount
-            }
-            else {
-                balance += team.amount
-            }
-            if (i == position) break
-            i++
-        }
-        return balance.toString() + ""
+        return balances.getOrNull(position)?.toString() ?: ""
+    }
+
+    fun updateData(results: RealmResults<RealmMyTeam>) {
+        list = results
+        recomputeBalances()
     }
 
     override fun getItemCount(): Int {
         return list.size
+    }
+
+    private fun recomputeBalances() {
+        balances.clear()
+        var balance = 0
+        for (team in list) {
+            balance += if ("debit".equals(team.type, ignoreCase = true)) {
+                -team.amount
+            } else {
+                team.amount
+            }
+            balances.add(balance)
+        }
     }
 
     private fun updateBackgroundColor(layout: LinearLayout, position: Int) {
