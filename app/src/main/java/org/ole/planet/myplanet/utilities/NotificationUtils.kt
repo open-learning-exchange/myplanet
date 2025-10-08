@@ -19,10 +19,10 @@ import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.repository.NotificationRepository
+import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 
 object NotificationUtils {
@@ -487,7 +487,7 @@ object NotificationUtils {
 @AndroidEntryPoint
 class NotificationActionReceiver : BroadcastReceiver() {
     @Inject
-    lateinit var notificationRepository: NotificationRepository
+    lateinit var databaseService: DatabaseService
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action
         val notificationId = intent.getStringExtra(NotificationUtils.EXTRA_NOTIFICATION_ID)
@@ -537,39 +537,48 @@ class NotificationActionReceiver : BroadcastReceiver() {
         }
 
 
-        MainApplication.applicationScope.launch(Dispatchers.IO) {
-            try {
-                notificationRepository.markAsRead(notificationId)
+        try {
+            databaseService.withRealm { realm ->
+                realm.executeTransaction { r ->
+                    val notification = r.where(RealmNotification::class.java)
+                        .equalTo("id", notificationId)
+                        .findFirst()
 
-                withContext(Dispatchers.Main) {
-                    delay(200)
-                    val broadcastIntent = Intent("org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM")
-                    broadcastIntent.setPackage(context.packageName)
-                    broadcastIntent.putExtra("notification_id", notificationId)
-                    context.sendBroadcast(broadcastIntent)
-
-                    try {
-                        val localBroadcastIntent = Intent("org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM_LOCAL")
-                        localBroadcastIntent.putExtra("notification_id", notificationId)
-                        androidx.localbroadcastmanager.content.LocalBroadcastManager.getInstance(context)
-                            .sendBroadcast(localBroadcastIntent)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-
-                    try {
-                        val dashboardIntent = Intent(context, DashboardActivity::class.java)
-                        dashboardIntent.action = "REFRESH_NOTIFICATION_BADGE"
-                        dashboardIntent.putExtra("notification_id", notificationId)
-                        dashboardIntent.flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
-                        context.startActivity(dashboardIntent)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
+                    if (notification != null) {
+                        notification.isRead = true
                     }
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
             }
+
+            MainApplication.applicationScope.launch(Dispatchers.Main) {
+                delay(200)
+                val broadcastIntent = Intent("org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM")
+                broadcastIntent.setPackage(context.packageName)
+                broadcastIntent.putExtra("notification_id", notificationId)
+                context.sendBroadcast(broadcastIntent)
+
+                try {
+                    val localBroadcastIntent = Intent("org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM_LOCAL")
+                    localBroadcastIntent.putExtra("notification_id", notificationId)
+                    androidx.localbroadcastmanager.content.LocalBroadcastManager.getInstance(context)
+                        .sendBroadcast(localBroadcastIntent)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+
+                try {
+                    val dashboardIntent = Intent(context, DashboardActivity::class.java)
+                    dashboardIntent.action = "REFRESH_NOTIFICATION_BADGE"
+                    dashboardIntent.putExtra("notification_id", notificationId)
+                    dashboardIntent.flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+                    context.startActivity(dashboardIntent)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+            
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 }
