@@ -312,13 +312,24 @@ class NotificationsFragment : Fragment() {
                 }
             } catch (e: Exception) {
                 unreadCountCache = previousUnreadCount
+                val bindingOrNull = _binding
+
                 if (notificationIdsForUi.isNotEmpty()) {
                     adapter.submitList(previousList)
-                    binding.emptyData.visibility = if (previousList.isEmpty()) View.VISIBLE else View.GONE
+                    bindingOrNull?.emptyData?.visibility =
+                        if (previousList.isEmpty()) View.VISIBLE else View.GONE
                 }
+
                 updateMarkAllAsReadButtonVisibility()
                 updateUnreadCount()
-                Snackbar.make(binding.root, getString(R.string.failed_to_mark_as_read), Snackbar.LENGTH_LONG).show()
+
+                if (bindingOrNull != null) {
+                    Snackbar.make(
+                        bindingOrNull.root,
+                        getString(R.string.failed_to_mark_as_read),
+                        Snackbar.LENGTH_LONG,
+                    ).show()
+                }
             }
         }
     }
