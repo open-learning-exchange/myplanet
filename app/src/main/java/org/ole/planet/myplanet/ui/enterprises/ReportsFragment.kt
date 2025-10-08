@@ -45,7 +45,6 @@ class ReportsFragment : BaseTeamFragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentReportsBinding.inflate(inflater, container, false)
-        mRealm = databaseService.realmInstance
         prefData = SharedPrefManager(requireContext())
         if (!isMember()) {
             binding.addReports.visibility = View.GONE
