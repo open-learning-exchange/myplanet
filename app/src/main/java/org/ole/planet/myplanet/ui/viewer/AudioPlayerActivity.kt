@@ -78,8 +78,6 @@ class AudioPlayerActivity : AppCompatActivity() {
         initializeExoPlayer()
 
         setupPlayPauseButtons()
-
-        //binding.playerView.setOnTouchListener { _,_ -> true}
     }
 
     @androidx.annotation.OptIn(UnstableApi::class)
