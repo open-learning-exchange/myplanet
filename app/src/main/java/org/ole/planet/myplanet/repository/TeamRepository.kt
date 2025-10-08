@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
+import com.google.gson.JsonObject
 import io.realm.RealmResults
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -25,6 +26,7 @@ interface TeamRepository {
     suspend fun upsertTask(task: RealmTeamTask)
     suspend fun assignTask(taskId: String, assigneeId: String?)
     suspend fun setTaskCompletion(taskId: String, completed: Boolean)
+    suspend fun addReport(report: JsonObject)
     suspend fun createTeam(
         category: String?,
         name: String,
