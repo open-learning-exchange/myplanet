@@ -1384,5 +1384,6 @@
     <string name="year_of_birth_cannot_be_empty">sannadka dhalashada ma noqon karo mid madhan</string>
     <string name="please_enter_a_valid_year_of_birth">fadlan geli sannad dhalasho oo sax ah</string>
     <string name="please_enter_a_valid_year_between_1900_and">fadlan geli sannad sax ah oo u dhexeeya 1900 iyo %1$d</string>
+    <string name="redo_survey">Dib u samee sahanka</string>
 
 </resources>
