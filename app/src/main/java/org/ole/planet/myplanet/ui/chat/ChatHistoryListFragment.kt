@@ -89,6 +89,7 @@ class ChatHistoryListFragment : Fragment() {
         setupRealtimeSync()
         binding.toggleGroup.visibility = View.GONE
         binding.newChat.setOnClickListener {
+            sharedViewModel.clearChatState()
             if (resources.getBoolean(R.bool.isLargeScreen)) {
                 val chatHistoryListFragment = ChatHistoryListFragment()
                 NavigationHelper.replaceFragment(
