@@ -245,7 +245,10 @@ open class RealmNews : RealmObject() {
             news.userId = user?.id
             news.replyTo = map["replyTo"] ?: ""
             news.user = Gson().toJson(user?.serialize())
-            news.imageUrls = imageUrls
+            if (news.imageUrls == null) {
+                news.imageUrls = RealmList()
+            }
+            imageUrls?.forEach { news.imageUrls?.add(it) }
 
             if (map.containsKey("news")) {
                 val newsObj = map["news"]
