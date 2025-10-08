@@ -36,7 +36,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertSoundRecorderBinding
 import org.ole.planet.myplanet.databinding.FragmentAddResourceBinding
@@ -62,6 +61,8 @@ class AddResourceFragment : BottomSheetDialogFragment() {
     private lateinit var requestCameraLauncher: ActivityResultLauncher<String>
     @Inject
     lateinit var myPersonalRepository: MyPersonalRepository
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) {
@@ -259,7 +260,8 @@ class AddResourceFragment : BottomSheetDialogFragment() {
         if (type == 0) {
             startActivity(Intent(activity, AddResourceActivity::class.java).putExtra("resource_local_url", path))
         } else {
-            showAlert(requireContext(), path, myPersonalRepository)
+            val userModel = userProfileDbHandler.userModel ?: return
+            showAlert(requireContext(), path, myPersonalRepository, userModel.id, userModel.name)
         }
     }
 
@@ -268,13 +270,16 @@ class AddResourceFragment : BottomSheetDialogFragment() {
         const val REQUEST_CAPTURE_PICTURE = 2
         const val REQUEST_FILE_SELECTION = 3
         var type = 0
-        fun showAlert(context: Context, path: String?, repository: MyPersonalRepository) {
+        fun showAlert(
+            context: Context,
+            path: String?,
+            repository: MyPersonalRepository,
+            userId: String?,
+            userName: String?
+        ) {
             val v = LayoutInflater.from(context).inflate(R.layout.alert_my_personal, null)
             val etTitle = v.findViewById<EditText>(R.id.et_title)
             val etDesc = v.findViewById<EditText>(R.id.et_description)
-            val realmUserModel = UserProfileDbHandler(MainApplication.context).userModel!!
-            val userId = realmUserModel.id
-            val userName = realmUserModel.name
             AlertDialog.Builder(context, R.style.AlertDialogTheme)
                 .setTitle(R.string.enter_resource_detail)
                 .setView(v)
@@ -288,10 +293,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
                     CoroutineScope(Dispatchers.IO).launch {
                         repository.savePersonalResource(title, userId, userName, path, desc)
                         withContext(Dispatchers.Main) {
-                            Utilities.toast(
-                                MainApplication.context,
-                                context.getString(R.string.resource_saved_to_my_personal)
-                            )
+                            Utilities.toast(context, context.getString(R.string.resource_saved_to_my_personal))
                         }
                     }
                 }.setNegativeButton(R.string.dismiss, null).show()
