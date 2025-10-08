@@ -6,7 +6,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isGone
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
@@ -18,15 +20,15 @@ import io.realm.Realm
 import io.realm.RealmList
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
-import org.ole.planet.myplanet.callback.BaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.SyncListener
-import org.ole.planet.myplanet.callback.TableDataUpdate
 import org.ole.planet.myplanet.databinding.FragmentAchievementBinding
 import org.ole.planet.myplanet.databinding.LayoutButtonPrimaryBinding
 import org.ole.planet.myplanet.databinding.RowAchievementBinding
@@ -57,7 +59,6 @@ class AchievementFragment : BaseContainerFragment() {
     @Inject
     lateinit var syncManager: SyncManager
     private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
-    private lateinit var realtimeSyncListener: BaseRealtimeSyncListener
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
 
@@ -83,9 +84,6 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     override fun onDestroyView() {
-        if (::realtimeSyncListener.isInitialized) {
-            syncCoordinator.removeListener(realtimeSyncListener)
-        }
         _binding = null
         super.onDestroyView()
     }
@@ -203,16 +201,13 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     private fun setupRealtimeSync() {
-        realtimeSyncListener = object : BaseRealtimeSyncListener() {
-            override fun onTableDataUpdated(update: TableDataUpdate) {
-                if (update.table == "achievements" && update.shouldRefreshUI) {
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        refreshAchievementData()
-                    }
-                }
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                syncCoordinator.dataUpdateFlow
+                    .filter { update -> update.table == "achievements" && update.shouldRefreshUI }
+                    .collectLatest { refreshAchievementData() }
             }
         }
-        syncCoordinator.addListener(realtimeSyncListener)
     }
 
     private fun setupAchievementHeader(a: RealmAchievement) {

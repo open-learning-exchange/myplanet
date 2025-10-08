@@ -8,7 +8,6 @@ import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.callback.BaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.TableDataUpdate
 import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
 
@@ -26,24 +25,7 @@ class RealtimeSyncHelper(
     
     private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
     
-    private val realtimeSyncListener = object : BaseRealtimeSyncListener() {
-        override fun onTableDataUpdated(update: TableDataUpdate) {
-            if (mixin.getWatchedTables().contains(update.table)) {
-                mixin.onDataUpdated(update.table, update)
-                if (mixin.shouldAutoRefresh(update.table)) {
-                    refreshRecyclerView()
-                }
-            }
-        }
-        
-        override fun onSyncStarted() {}
-        override fun onSyncComplete() {}
-        override fun onSyncFailed(msg: String?) {}
-    }
-    
     fun setupRealtimeSync() {
-        syncCoordinator.addListener(realtimeSyncListener)
-        
         // Listen to data update flow
         fragment.lifecycleScope.launch {
             fragment.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -63,14 +45,12 @@ class RealtimeSyncHelper(
             }
         }
     }
-    
+
     private fun refreshRecyclerView() {
         fragment.viewLifecycleOwner.lifecycleScope.launch {
             mixin.getSyncRecyclerView()?.adapter?.notifyDataSetChanged()
         }
     }
-    
-    fun cleanup() {
-        syncCoordinator.removeListener(realtimeSyncListener)
-    }
+
+    fun cleanup() {}
 }

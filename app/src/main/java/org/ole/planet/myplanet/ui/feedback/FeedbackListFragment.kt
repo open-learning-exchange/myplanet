@@ -6,21 +6,22 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
-import org.ole.planet.myplanet.callback.BaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.SyncListener
-import org.ole.planet.myplanet.callback.TableDataUpdate
 import org.ole.planet.myplanet.databinding.FragmentFeedbackListBinding
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmFeedback
@@ -57,7 +58,6 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
         get() = settings.getString("serverURL", "") ?: ""
     
     private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
-    private lateinit var realtimeSyncListener: BaseRealtimeSyncListener
     private lateinit var adapterFeedback: AdapterFeedback
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -79,26 +79,17 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
             }
         }
 
-        setupRealtimeSync()
-
         return binding.root
     }
-    
+
     private fun setupRealtimeSync() {
-        realtimeSyncListener = object : BaseRealtimeSyncListener() {
-            override fun onTableDataUpdated(update: TableDataUpdate) {
-                if (update.table == "feedback" && update.shouldRefreshUI) {
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        refreshFeedbackListData()
-                    }
-                }
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                syncCoordinator.dataUpdateFlow
+                    .filter { update -> update.table == "feedback" && update.shouldRefreshUI }
+                    .collectLatest { refreshFeedbackListData() }
             }
-            
-            override fun onSyncStarted() {}
-            override fun onSyncComplete() {}
-            override fun onSyncFailed(msg: String?) {}
         }
-        syncCoordinator.addListener(realtimeSyncListener)
     }
     
     private fun refreshFeedbackListData() {
@@ -168,6 +159,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        setupRealtimeSync()
         adapterFeedback = AdapterFeedback()
         binding.rvFeedback.layoutManager = LinearLayoutManager(activity)
         binding.rvFeedback.adapter = adapterFeedback
@@ -175,9 +167,6 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     }
 
     override fun onDestroyView() {
-        if (::realtimeSyncListener.isInitialized) {
-            syncCoordinator.removeListener(realtimeSyncListener)
-        }
         _binding = null
         super.onDestroyView()
     }
