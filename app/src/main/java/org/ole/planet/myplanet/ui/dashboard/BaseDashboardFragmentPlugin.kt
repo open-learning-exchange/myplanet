@@ -17,7 +17,6 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.ui.myPersonals.MyPersonalsFragment
@@ -116,10 +115,7 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         setBackgroundColor(v, itemCnt)
 
         val title = (obj as RealmMyLife).title
-        val handler = profileDbHandler ?: UserProfileDbHandler(requireContext()).also {
-            profileDbHandler = it
-        }
-        val user = handler.userModel
+        val user = profileDbHandler.userModel
         itemMyLifeBinding.img.setImageResource(resources.getIdentifier(obj.imageId, "drawable", requireActivity().packageName))
         itemMyLifeBinding.tvName.text = title
 
