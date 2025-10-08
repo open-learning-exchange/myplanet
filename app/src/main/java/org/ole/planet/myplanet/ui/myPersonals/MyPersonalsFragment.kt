@@ -41,15 +41,6 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
     lateinit var myPersonalRepository: MyPersonalRepository
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
-    fun refreshFragment() {
-        if (isAdded) {
-            setAdapter()
-            if (addResourceFragment != null && addResourceFragment?.isAdded == true) {
-                addResourceFragment?.dismiss()
-            }
-        }
-    }
-
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentMyPersonalsBinding.inflate(inflater, container, false)
         pg = DialogUtils.getCustomProgressDialog(requireContext())
