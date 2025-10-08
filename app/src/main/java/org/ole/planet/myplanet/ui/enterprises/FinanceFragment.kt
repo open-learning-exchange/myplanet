@@ -285,9 +285,12 @@ class FinanceFragment : BaseTeamFragment() {
         if (view == null) return
         viewLifecycleOwner.lifecycleScope.launch {
             if (!results.isEmpty()) {
-                adapterFinance = AdapterFinance(requireActivity(), results)
-                binding.rvFinance.layoutManager = LinearLayoutManager(activity)
-                binding.rvFinance.adapter = adapterFinance
+                if (adapterFinance == null) {
+                    adapterFinance = AdapterFinance(requireActivity(), results)
+                    binding.rvFinance.layoutManager = LinearLayoutManager(activity)
+                    binding.rvFinance.adapter = adapterFinance
+                }
+                adapterFinance?.updateData(results)
                 adapterFinance?.notifyDataSetChanged()
                 calculateTotal(results)
             } else if (binding.tvFromDateCalendar.text.isNullOrEmpty()
