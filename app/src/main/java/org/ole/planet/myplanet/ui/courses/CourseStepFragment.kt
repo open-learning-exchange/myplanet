@@ -9,9 +9,9 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.launch
 import java.util.Date
 import java.util.UUID
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
@@ -155,9 +155,9 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                 val firstStepId = stepSurvey[0].id
                 val isSurveyPresent = submissionRepository.hasSubmission(firstStepId, step.courseId, user?.id, "survey")
                 fragmentCourseStepBinding.btnTakeSurvey.text = if (isSurveyPresent) {
-                    "redo survey"
+                    getString(R.string.redo_survey)
                 } else {
-                    "record survey"
+                    getString(R.string.record_survey)
                 }
                 fragmentCourseStepBinding.btnTakeSurvey.visibility = View.VISIBLE
             }

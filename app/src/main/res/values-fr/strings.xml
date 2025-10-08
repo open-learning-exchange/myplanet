@@ -147,7 +147,6 @@
     <string name="news">Nouvelles</string>
     <string name="references">Références</string>
     <string name="maps">Cartes</string>
-    <string name="help_wanted">Aide recherchée</string>
     <string name="btn_guest_login">Connexion en tant qu\'invité</string>
     <string name="enter_username">Entrer le nom d\'utilisateur</string>
     <string name="login">Connexion</string>
@@ -1385,5 +1384,6 @@
     <string name="year_of_birth_cannot_be_empty">l\'année de naissance ne peut pas être vide</string>
     <string name="please_enter_a_valid_year_of_birth">veuillez entrer une année de naissance valide</string>
     <string name="please_enter_a_valid_year_between_1900_and">veuillez entrer une année valide entre 1900 et %1$d</string>
+    <string name="redo_survey">refaire le sondage</string>
 
 </resources>

@@ -23,6 +23,8 @@ import org.ole.planet.myplanet.repository.RatingRepository
 import org.ole.planet.myplanet.repository.RatingRepositoryImpl
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.SubmissionRepositoryImpl
+import org.ole.planet.myplanet.repository.SurveyRepository
+import org.ole.planet.myplanet.repository.SurveyRepositoryImpl
 import org.ole.planet.myplanet.repository.TagRepository
 import org.ole.planet.myplanet.repository.TagRepositoryImpl
 import org.ole.planet.myplanet.repository.TeamRepository
@@ -69,6 +71,10 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindSubmissionRepository(impl: SubmissionRepositoryImpl): SubmissionRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindSurveyRepository(impl: SurveyRepositoryImpl): SurveyRepository
 
     @Binds
     @Singleton

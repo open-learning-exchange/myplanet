@@ -88,7 +88,7 @@ class SyncManager @Inject constructor(
             // Use improved sync manager if beta sync is enabled
             if (settings.getBoolean("useImprovedSync", false)) {
                 if (!::improvedSyncManager.isInitialized) {
-                    improvedSyncManager = ImprovedSyncManager(context, databaseService, settings, apiInterface)
+                    improvedSyncManager = ImprovedSyncManager(context, databaseService, settings)
                     runBlocking { improvedSyncManager.initialize() }
                 }
                 improvedSyncManager.start(listener, type, syncTables)
@@ -234,7 +234,7 @@ class SyncManager @Inject constructor(
             }
 
             logger.startProcess("admin_sync")
-            ManagerSync.instance?.syncAdmin()
+            ManagerSync.instance.syncAdmin()
             logger.endProcess("admin_sync")
 
             logger.startProcess("resource_sync")
@@ -434,7 +434,7 @@ class SyncManager @Inject constructor(
             }
 
             logger.startProcess("admin_sync")
-            ManagerSync.instance?.syncAdmin()
+            ManagerSync.instance.syncAdmin()
             logger.endProcess("admin_sync")
 
             logger.startProcess("on_synced")
@@ -530,7 +530,7 @@ class SyncManager @Inject constructor(
             }
 
             logger.startProcess("admin_sync")
-            ManagerSync.instance?.syncAdmin()
+            ManagerSync.instance.syncAdmin()
             logger.endProcess("admin_sync")
 
             logger.startProcess("on_synced")

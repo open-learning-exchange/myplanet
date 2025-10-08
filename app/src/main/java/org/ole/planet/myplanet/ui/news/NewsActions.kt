@@ -157,7 +157,6 @@ object NewsActions {
         id: String?,
         isEdit: Boolean,
         currentUser: RealmUserModel?,
-        imageList: RealmList<String>?,
         listener: AdapterNews.OnNewsItemClickListener?,
         viewHolder: RecyclerView.ViewHolder,
         updateReplyButton: (RecyclerView.ViewHolder, RealmNews?, Int) -> Unit = { _, _, _ -> }
@@ -180,7 +179,8 @@ object NewsActions {
             .create()
         dialog.show()
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-            handlePositiveButton(dialog, isEdit, components, news, realm, currentUser, imageList, listener)
+            val currentImageList = listener?.getCurrentImageList()
+            handlePositiveButton(dialog, isEdit, components, news, realm, currentUser, currentImageList, listener)
             updateReplyButton(viewHolder,news,viewHolder.bindingAdapterPosition)
         }
     }
@@ -192,7 +192,8 @@ object NewsActions {
         currentUser: RealmUserModel?,
         imageList: RealmList<String>?
     ) {
-        if (!realm.isInTransaction) realm.beginTransaction()
+        val shouldCommit = !realm.isInTransaction
+        if (shouldCommit) realm.beginTransaction()
         val map = HashMap<String?, String>()
         map["message"] = s ?: ""
         map["viewableBy"] = news?.viewableBy ?: ""
@@ -202,6 +203,7 @@ object NewsActions {
         map["messagePlanetCode"] = news?.messagePlanetCode ?: ""
         map["viewIn"] = news?.viewIn ?: ""
         currentUser?.let { createNews(map, realm, it, imageList, true) }
+        if (shouldCommit) realm.commitTransaction()
     }
 
     private fun editPost(realm: Realm, s: String, news: RealmNews?) {

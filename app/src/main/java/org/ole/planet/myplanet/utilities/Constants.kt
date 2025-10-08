@@ -46,7 +46,6 @@ object Constants {
             ShelfData("myTeamIds", "teams", "teamId")
         )
         LABELS = mutableMapOf(
-            "Help Wanted" to "help",
             "Offer" to "offer",
             "Request for advice" to "advice"
         )

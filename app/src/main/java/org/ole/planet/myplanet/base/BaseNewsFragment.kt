@@ -29,11 +29,11 @@ import org.ole.planet.myplanet.databinding.ImageThumbBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.news.AdapterNews
 import org.ole.planet.myplanet.ui.news.AdapterNews.OnNewsItemClickListener
 import org.ole.planet.myplanet.ui.news.NewsActions
 import org.ole.planet.myplanet.ui.news.ReplyActivity
-import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getRealPathFromURI
@@ -149,5 +149,9 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
         this.llImage = llImage
         val openFolderIntent = FileUtils.openOleFolder(requireContext())
         openFolderLauncher.launch(openFolderIntent)
+    }
+
+    override fun getCurrentImageList(): RealmList<String>? {
+        return if (::imageList.isInitialized) imageList else null
     }
 }

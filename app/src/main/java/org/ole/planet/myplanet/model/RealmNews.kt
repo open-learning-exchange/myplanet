@@ -213,7 +213,8 @@ open class RealmNews : RealmObject() {
 
         @JvmStatic
         fun createNews(map: HashMap<String?, String>, mRealm: Realm, user: RealmUserModel?, imageUrls: RealmList<String>?, isReply: Boolean = false): RealmNews {
-            if (!mRealm.isInTransaction) {
+            val shouldManageTransaction = !mRealm.isInTransaction
+            if (shouldManageTransaction) {
                 mRealm.beginTransaction()
             }
 
@@ -244,7 +245,10 @@ open class RealmNews : RealmObject() {
             news.userId = user?.id
             news.replyTo = map["replyTo"] ?: ""
             news.user = Gson().toJson(user?.serialize())
-            news.imageUrls = imageUrls
+            if (news.imageUrls == null) {
+                news.imageUrls = RealmList()
+            }
+            imageUrls?.forEach { news.imageUrls?.add(it) }
 
             if (map.containsKey("news")) {
                 val newsObj = map["news"]
@@ -286,7 +290,9 @@ open class RealmNews : RealmObject() {
                 }
             }
 
-            mRealm.commitTransaction()
+            if (shouldManageTransaction) {
+                mRealm.commitTransaction()
+            }
             return news
         }
 
