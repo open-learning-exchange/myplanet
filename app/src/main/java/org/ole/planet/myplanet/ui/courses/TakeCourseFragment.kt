@@ -13,6 +13,7 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.viewpager.widget.ViewPager
+import androidx.viewpager2.widget.ViewPager2
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import java.util.Locale
@@ -99,6 +100,13 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         binding.viewPager2.isUserInputEnabled = false
         binding.viewPager2.setCurrentItem(position, false)
 
+        binding.viewPager2.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+            override fun onPageSelected(position: Int) {
+                super.onPageSelected(position)
+                this@TakeCourseFragment.onPageSelected(position)
+            }
+        })
+
         updateStepDisplay(position)
 
         if (position == 0) {
@@ -146,8 +154,12 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private fun updateStepDisplay(position: Int) {
-        val currentPosition = position
-        binding.tvStep.text = String.format(getString(R.string.step) + " %d/%d", currentPosition, steps.size)
+        if (position == 0) {
+            binding.tvStep.text = "Course Details"
+        } else {
+            val stepNumber = position
+            binding.tvStep.text = String.format(getString(R.string.step) + " %d/%d", stepNumber, steps.size)
+        }
 
         val currentProgress = getCurrentProgress(steps, mRealm, userModel?.id, courseId)
         if (currentProgress < steps.size) {
@@ -160,7 +172,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         val isGuest = userModel?.isGuest() == true
         val containsUserId = currentCourse?.userId?.contains(userModel?.id) == true
         val stepsSize = steps.size
-        val currentItem = binding.viewPager2.currentItem
 
         lifecycleScope.launch {
             withContext(Dispatchers.Main) {
@@ -226,12 +237,17 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private fun changeNextButtonState(position: Int) {
-        if (isStepCompleted(mRealm, steps[position - 1]?.id, userModel?.id)) {
+        if (courseId == "4e6b78800b6ad18b4e8b0e1e38a98cac") {
+            if (isStepCompleted(mRealm, steps[position - 1]?.id, userModel?.id)) {
+                binding.nextStep.isClickable = true
+                binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
+            } else {
+                binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_grey_500))
+                binding.nextStep.isClickable = false
+            }
+        } else {
             binding.nextStep.isClickable = true
             binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
-        } else {
-            binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_grey_500))
-            binding.nextStep.isClickable = false
         }
     }
 
@@ -243,11 +259,10 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_grey_500))
             binding.nextStep.visibility = View.GONE
             binding.finishStep.visibility = View.VISIBLE
-        }else{
+        } else {
             binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
             binding.nextStep.visibility = View.VISIBLE
             binding.finishStep.visibility = View.GONE
-
         }
     }
 

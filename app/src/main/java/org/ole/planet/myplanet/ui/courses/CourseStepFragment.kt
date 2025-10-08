@@ -155,9 +155,9 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                 val firstStepId = stepSurvey[0].id
                 val isSurveyPresent = submissionRepository.hasSubmission(firstStepId, step.courseId, user?.id, "survey")
                 fragmentCourseStepBinding.btnTakeSurvey.text = if (isSurveyPresent) {
-                    "redo survey"
+                    getString(R.string.redo_survey)
                 } else {
-                    "record survey"
+                    getString(R.string.record_survey)
                 }
                 fragmentCourseStepBinding.btnTakeSurvey.visibility = View.VISIBLE
             }
