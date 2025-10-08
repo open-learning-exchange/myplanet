@@ -114,7 +114,17 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
     override fun onResume() {
         super.onResume()
-        updateStepDisplay(binding.viewPager2.currentItem)
+        val currentPosition = binding.viewPager2.currentItem
+        updateStepDisplay(currentPosition)
+
+        // Update Next/Finish button visibility when returning from exam
+        if (currentPosition >= steps.size - 1) {
+            binding.nextStep.visibility = View.GONE
+            binding.finishStep.visibility = View.VISIBLE
+        } else {
+            binding.nextStep.visibility = View.VISIBLE
+            binding.finishStep.visibility = View.GONE
+        }
     }
 
     private fun setListeners() {
@@ -188,7 +198,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                 binding.courseProgress.max = stepsSize
 
                 if (containsUserId) {
-                    if(position != currentCourse?.courseSteps?.size){
+                    if(position < steps.size - 1){
                         binding.nextStep.visibility = View.VISIBLE
                     }
                     binding.courseProgress.visibility = View.VISIBLE
@@ -228,8 +238,8 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     override fun onPageScrollStateChanged(state: Int) {}
 
     private fun onClickNext() {
-        binding.tvStep.text = String.format(Locale.getDefault(), "${getString(R.string.step)} %d/%d", binding.viewPager2.currentItem, currentCourse?.courseSteps?.size)
-        if (binding.viewPager2.currentItem == currentCourse?.courseSteps?.size) {
+        binding.tvStep.text = String.format(Locale.getDefault(), "${getString(R.string.step)} %d/%d", binding.viewPager2.currentItem, steps.size)
+        if (binding.viewPager2.currentItem >= steps.size - 1) {
             binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_grey_500))
             binding.nextStep.visibility = View.GONE
             binding.finishStep.visibility = View.VISIBLE
@@ -242,7 +252,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private fun onClickPrevious() {
-        binding.tvStep.text = String.format(Locale.getDefault(), "${getString(R.string.step)} %d/%d", binding.viewPager2.currentItem - 1, currentCourse?.courseSteps?.size)
+        binding.tvStep.text = String.format(Locale.getDefault(), "${getString(R.string.step)} %d/%d", binding.viewPager2.currentItem - 1, steps.size)
         if (binding.viewPager2.currentItem - 1 == 0) {
             binding.previousStep.visibility = View.GONE
             binding.nextStep.visibility = View.VISIBLE
@@ -323,7 +333,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private fun setNavigationButtons(){
-        if(position == currentCourse?.courseSteps?.size){
+        if(position >= steps.size - 1){
             binding.nextStep.visibility = View.GONE
             binding.finishStep.visibility = View.VISIBLE
         } else {
