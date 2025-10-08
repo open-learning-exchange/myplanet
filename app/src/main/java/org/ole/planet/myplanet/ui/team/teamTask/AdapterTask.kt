@@ -76,11 +76,20 @@ class AdapterTask(
 
     private fun showAssignee(realmTeamTask: RealmTeamTask) {
         val assigneeId = realmTeamTask.assignee
-        val assigneeName = assigneeId?.let(assigneeNames::get)
-        if (!assigneeName.isNullOrBlank()) {
-            rowTaskBinding.assignee.text = context.getString(R.string.assigned_to_colon, assigneeName)
-        } else {
-            rowTaskBinding.assignee.setText(R.string.no_assignee)
+        val assigneeName = assigneeId?.let(assigneeNames::get)?.takeIf { it.isNotBlank() }
+
+        when {
+            assigneeName != null -> {
+                rowTaskBinding.assignee.text = context.getString(R.string.assigned_to_colon, assigneeName)
+            }
+
+            !assigneeId.isNullOrBlank() -> {
+                rowTaskBinding.assignee.text = context.getString(R.string.assigned_to_colon, assigneeId)
+            }
+
+            else -> {
+                rowTaskBinding.assignee.setText(R.string.no_assignee)
+            }
         }
     }
 

@@ -278,22 +278,36 @@ class TeamRepositoryImpl @Inject constructor(
         if (validIds.isEmpty()) return emptyMap()
 
         return withRealmAsync { realm ->
-            realm.where(RealmUserModel::class.java)
+            val results = realm.where(RealmUserModel::class.java)
+                .beginGroup()
                 .`in`("id", validIds.toTypedArray())
+                .or()
+                .`in`("_id", validIds.toTypedArray())
+                .endGroup()
                 .findAll()
-                .mapNotNull { user ->
-                    val id = user.id ?: return@mapNotNull null
-                    val fallbackName = listOfNotNull(user.firstName, user.middleName, user.lastName)
+
+            val resolvedNames = mutableMapOf<String, String>()
+
+            results.forEach { user ->
+                val rawName = when {
+                    !user.name.isNullOrBlank() -> user.name!!
+                    else -> listOfNotNull(user.firstName, user.middleName, user.lastName)
                         .joinToString(" ")
                         .trim()
-                    val displayName = when {
-                        !user.name.isNullOrBlank() -> user.name!!
-                        fallbackName.isNotBlank() -> fallbackName
-                        else -> ""
-                    }
-                    id to displayName
                 }
-                .toMap()
+                val displayName = rawName.ifBlank { user.id ?: user._id ?: "" }
+                if (displayName.isBlank()) {
+                    return@forEach
+                }
+
+                listOfNotNull(user.id, user._id)
+                    .filter { it in validIds }
+                    .forEach { identifier ->
+                        resolvedNames[identifier] = displayName
+                    }
+            }
+
+            resolvedNames
         }
     }
 
