@@ -7,28 +7,31 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import io.realm.Realm
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.RowTeamResourceBinding
 import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getTeamCreator
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.ui.team.teamCourse.AdapterTeamCourse.ViewHolderTeamCourse
 import org.ole.planet.myplanet.utilities.DiffUtils
 
-class AdapterTeamCourse(private val context: Context, private var list: MutableList<RealmMyCourse>, mRealm: Realm?, teamId: String?, settings: SharedPreferences) : RecyclerView.Adapter<ViewHolderTeamCourse>() {
+class AdapterTeamCourse(
+    private val context: Context,
+    private var list: MutableList<RealmMyCourse>,
+    private val teamCreator: String,
+    settings: SharedPreferences,
+) : RecyclerView.Adapter<ViewHolderTeamCourse>() {
     private lateinit var rowTeamResourceBinding: RowTeamResourceBinding
     private var listener: OnHomeItemClickListener? = null
     private val settings: SharedPreferences
-    private val teamCreator: String
+    private val teamCreatorId: String
 
     init {
         if (context is OnHomeItemClickListener) {
             listener = context
         }
         this.settings = settings
-        teamCreator = getTeamCreator(teamId, mRealm)
+        teamCreatorId = teamCreator
     }
     
     fun updateList(newList: List<RealmMyCourse>) {
@@ -64,7 +67,7 @@ class AdapterTeamCourse(private val context: Context, private var list: MutableL
                 listener?.openCallFragment(TakeCourseFragment.newInstance(b))
             }
         }
-        if (!settings.getString("userId", "--").equals(teamCreator, ignoreCase = true)) {
+        if (!settings.getString("userId", "--").equals(teamCreatorId, ignoreCase = true)) {
             holder.itemView.findViewById<View>(R.id.iv_remove).visibility = View.GONE
         }
     }

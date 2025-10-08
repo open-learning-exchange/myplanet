@@ -7,6 +7,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 interface CourseRepository {
     suspend fun getAllCourses(): List<RealmMyCourse>
     suspend fun getCourseByCourseId(courseId: String?): RealmMyCourse?
+    suspend fun getCoursesByIds(ids: Collection<String>): List<RealmMyCourse>
     suspend fun getCourseOnlineResources(courseId: String?): List<RealmMyLibrary>
     suspend fun getCourseOfflineResources(courseId: String?): List<RealmMyLibrary>
     suspend fun getCourseExamCount(courseId: String?): Int
