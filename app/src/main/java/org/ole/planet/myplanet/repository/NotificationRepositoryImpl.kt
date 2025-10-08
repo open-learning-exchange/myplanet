@@ -86,9 +86,11 @@ class NotificationRepositoryImpl @Inject constructor(
                 .`in`("id", notificationIds.toTypedArray())
                 .findAll()
                 ?.forEach { notification ->
-                    notification.isRead = true
-                    notification.createdAt = Date()
-                    updatedIds.add(notification.id)
+                    if (!notification.isRead) {
+                        notification.isRead = true
+                        notification.createdAt = Date()
+                        updatedIds.add(notification.id)
+                    }
                 }
         }
         return updatedIds
@@ -104,9 +106,11 @@ class NotificationRepositoryImpl @Inject constructor(
                 .equalTo("isRead", false)
                 .findAll()
                 ?.forEach { notification ->
-                    notification.isRead = true
-                    notification.createdAt = now
-                    updatedIds.add(notification.id)
+                    if (!notification.isRead) {
+                        notification.isRead = true
+                        notification.createdAt = now
+                        updatedIds.add(notification.id)
+                    }
                 }
         }
         return updatedIds

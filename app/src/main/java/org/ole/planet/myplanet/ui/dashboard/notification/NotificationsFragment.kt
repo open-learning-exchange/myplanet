@@ -46,7 +46,7 @@ class NotificationsFragment : Fragment() {
     @Inject
     lateinit var notificationRepository: NotificationRepository
     private lateinit var adapter: AdapterNotification
-    private var userId: String? = null
+    private lateinit var userId: String
     private var notificationUpdateListener: NotificationListener? = null
     private lateinit var dashboardActivity: DashboardActivity
     private var unreadCountCache: Int = 0
@@ -64,7 +64,7 @@ class NotificationsFragment : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentNotificationsBinding.inflate(inflater, container, false)
-        userId = arguments?.getString("userId")
+        userId = arguments?.getString("userId") ?: ""
 
         val options = resources.getStringArray(status_options)
         val optionsList: MutableList<String?> = ArrayList(listOf(*options))
@@ -190,11 +190,18 @@ class NotificationsFragment : Fragment() {
     private fun fetchNotifications(filter: NotificationFilter) {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val notifications = notificationRepository.getNotifications(userId, filter)
-                adapter.updateNotifications(notifications)
-                binding.emptyData.visibility = if (notifications.isEmpty()) View.VISIBLE else View.GONE
+                val activeUserId = currentUserId()
+                if (activeUserId == null) {
+                    adapter.updateNotifications(emptyList())
+                    unreadCountCache = 0
+                    binding.emptyData.visibility = View.VISIBLE
+                } else {
+                    val notifications = notificationRepository.getNotifications(activeUserId, filter)
+                    adapter.updateNotifications(notifications)
+                    binding.emptyData.visibility = if (notifications.isEmpty()) View.VISIBLE else View.GONE
 
-                refreshUnreadCountCache()
+                    refreshUnreadCountCache(activeUserId)
+                }
             } catch (error: Exception) {
                 error.printStackTrace()
             }
@@ -212,7 +219,12 @@ class NotificationsFragment : Fragment() {
     private fun markAllAsRead() {
         val notificationIds = adapter.currentList.map { it.id }.toSet()
         markNotificationsAsRead(notificationIds, isMarkAll = true) {
-            notificationRepository.markAllUnreadAsRead(userId)
+            val activeUserId = currentUserId()
+            if (activeUserId != null) {
+                notificationRepository.markAllUnreadAsRead(activeUserId)
+            } else {
+                emptySet()
+            }
         }
     }
 
@@ -230,12 +242,20 @@ class NotificationsFragment : Fragment() {
         }
     }
 
-    private suspend fun refreshUnreadCountCache() {
-        unreadCountCache = notificationRepository.getUnreadNotifications(userId)
+    private suspend fun refreshUnreadCountCache(activeUserId: String) {
+        unreadCountCache = notificationRepository.getUnreadNotifications(activeUserId)
     }
 
     private fun currentFilter(): NotificationFilter {
         return NotificationFilter.fromValue(binding.status.selectedItem?.toString())
+    }
+
+    private fun currentUserId(): String? {
+        return if (::userId.isInitialized && userId.isNotBlank()) {
+            userId
+        } else {
+            null
+        }
     }
 
     private fun markNotificationsAsRead(
