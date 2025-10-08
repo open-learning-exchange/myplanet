@@ -49,6 +49,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
     var list: List<RealmTeamTask>? = null
     private var teamTaskList: RealmResults<RealmTeamTask>? = null
     private var currentTab = R.id.btn_all
+    private var assigneeDisplayNameCache: Map<String, String> = emptyMap()
 
     private lateinit var adapterTask: AdapterTask
     var listener = DatePickerDialog.OnDateSetListener { _: DatePicker?, year: Int, monthOfYear: Int, dayOfMonth: Int ->
@@ -233,7 +234,9 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
     }
 
     private fun setAdapter() {
-        if (isAdded) {
+        if (!isAdded) return
+
+        viewLifecycleOwner.lifecycleScope.launch {
             when (currentTab) {
                 R.id.btn_my -> {
                     myTasks()
@@ -245,14 +248,18 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
                     allTasks()
                 }
             }
-            if (list!!.isEmpty()){
-                showNoData(binding.tvNodata, list?.size, "tasks")
+
+            val currentList = list ?: emptyList()
+            if (currentList.isEmpty()) {
+                showNoData(binding.tvNodata, currentList.size, "tasks")
+            } else {
+                showNoData(binding.tvNodata, currentList.size, "")
             }
-            else {
-                showNoData(binding.tvNodata, list?.size, "")
-            }
-            adapterTask = AdapterTask(requireContext(), mRealm, list, !isMember())
-            adapterTask.setListener(this)
+
+            assigneeDisplayNameCache = buildAssigneeNameMap(currentList)
+
+            adapterTask = AdapterTask(requireContext(), currentList, !isMember(), assigneeDisplayNameCache)
+            adapterTask.setListener(this@TeamTaskFragment)
             binding.rvTask.adapter = adapterTask
         }
     }
@@ -325,7 +332,9 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
 
     private fun updatedTeamTaskList(updatedList: RealmResults<RealmTeamTask>) {
         viewLifecycleOwner.lifecycleScope.launch {
-            adapterTask = AdapterTask(requireContext(), mRealm, updatedList, !isMember())
+            assigneeDisplayNameCache = buildAssigneeNameMap(updatedList)
+
+            adapterTask = AdapterTask(requireContext(), updatedList, !isMember(), assigneeDisplayNameCache)
             adapterTask.setListener(this@TeamTaskFragment)
             binding.rvTask.adapter = adapterTask
             adapterTask.notifyDataSetChanged()
@@ -336,11 +345,26 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
         teamTaskList?.removeAllChangeListeners()
         teamTaskList = null
         list = null
+        assigneeDisplayNameCache = emptyMap()
         binding.rvTask.adapter = null
         if (isRealmInitialized()) {
             mRealm.close()
         }
         _binding = null
         super.onDestroyView()
+    }
+
+    private suspend fun buildAssigneeNameMap(tasks: List<RealmTeamTask>?): Map<String, String> {
+        val assigneeIds = tasks
+            ?.mapNotNull { it.assignee }
+            ?.filter { it.isNotBlank() }
+            ?.distinct()
+            .orEmpty()
+
+        if (assigneeIds.isEmpty()) {
+            return emptyMap()
+        }
+
+        return teamRepository.getUserDisplayNames(assigneeIds)
     }
 }

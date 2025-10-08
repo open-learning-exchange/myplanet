@@ -271,6 +271,32 @@ class TeamRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getUserDisplayNames(userIds: Collection<String>): Map<String, String> {
+        if (userIds.isEmpty()) return emptyMap()
+
+        val validIds = userIds.filter { it.isNotBlank() }.distinct()
+        if (validIds.isEmpty()) return emptyMap()
+
+        return withRealmAsync { realm ->
+            realm.where(RealmUserModel::class.java)
+                .`in`("id", validIds.toTypedArray())
+                .findAll()
+                .mapNotNull { user ->
+                    val id = user.id ?: return@mapNotNull null
+                    val fallbackName = listOfNotNull(user.firstName, user.middleName, user.lastName)
+                        .joinToString(" ")
+                        .trim()
+                    val displayName = when {
+                        !user.name.isNullOrBlank() -> user.name!!
+                        fallbackName.isNotBlank() -> fallbackName
+                        else -> ""
+                    }
+                    id to displayName
+                }
+                .toMap()
+        }
+    }
+
     override suspend fun createTeam(
         category: String?,
         name: String,
