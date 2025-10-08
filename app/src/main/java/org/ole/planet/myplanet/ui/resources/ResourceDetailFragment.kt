@@ -71,11 +71,11 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                 }
             }
             withContext(Dispatchers.Main) {
-                binding.btnDownload.setImageResource(com.example.jean.jcplayer.R.drawable.ic_play)
+                binding.btnDownload.setImageResource(R.drawable.ic_play)
                 val currentUserId = profileDbHandler?.userModel?.id
                 if (currentUserId != null && library.userId?.contains(currentUserId) != true) {
                     Utilities.toast(activity, getString(R.string.added_to_my_library))
-                    binding.btnRemove.setImageResource(eu.fiskur.chipcloud.R.drawable.close_x)
+                    binding.btnRemove.setImageResource(R.drawable.close_x)
                 }
             }
         }
