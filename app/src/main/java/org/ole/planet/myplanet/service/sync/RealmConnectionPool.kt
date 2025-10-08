@@ -4,7 +4,6 @@ import android.content.Context
 import io.realm.Realm
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicInteger
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
@@ -56,21 +55,6 @@ class RealmConnectionPool(
                 threadLocalConnections.remove()
                 releaseConnection(pooledRealm)
             }
-        }
-    }
-    
-    suspend fun <T> useRealmTransaction(operation: suspend (Realm) -> T): T {
-        return useRealm { realm ->
-            var result: T? = null
-            realm.executeTransaction { transactionRealm ->
-                // Note: This is a simplified approach. In practice, you'd need to handle
-                // the fact that executeTransaction is blocking and doesn't support suspend functions
-                // You might need to use executeTransactionAsync with callbacks
-                runBlocking {
-                    result = operation(transactionRealm)
-                }
-            }
-            result!!
         }
     }
     
@@ -206,8 +190,4 @@ class RealmPoolManager private constructor() {
         return pool.useRealm(operation)
     }
     
-    suspend fun <T> useRealmTransaction(operation: suspend (Realm) -> T): T {
-        val pool = connectionPool ?: throw IllegalStateException("Pool not initialized")
-        return pool.useRealmTransaction(operation)
-    }
 }
