@@ -142,7 +142,7 @@ object NewsActions {
             return
         }
         if (isEdit) {
-            editPost(realm, s, news)
+            editPost(realm, s, news, imageList)
         } else {
             postReply(realm, s, news, currentUser, imageList)
         }
@@ -206,7 +206,7 @@ object NewsActions {
         if (shouldCommit) realm.commitTransaction()
     }
 
-    private fun editPost(realm: Realm, s: String, news: RealmNews?) {
+    private fun editPost(realm: Realm, s: String, news: RealmNews?, imageList: RealmList<String>?) {
         if (s.isEmpty()) return
         if (!realm.isInTransaction) realm.beginTransaction()
 
@@ -227,6 +227,7 @@ object NewsActions {
             imagesToRemove.clear()
         }
 
+        imageList?.forEach { news?.imageUrls?.add(it) }
         news?.updateMessage(s)
         realm.commitTransaction()
     }
