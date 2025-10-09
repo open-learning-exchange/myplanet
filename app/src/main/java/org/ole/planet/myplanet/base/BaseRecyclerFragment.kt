@@ -34,7 +34,6 @@ import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onAdd
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTag
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
 abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), OnRatingChangeListener {
@@ -86,8 +85,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         selectedItems = mutableListOf()
         list = mutableListOf()
         mRealm = databaseService.realmInstance
-        profileDbHandler = UserProfileDbHandler(requireActivity())
-        model = profileDbHandler?.userModel
+        model = profileDbHandler.userModel
         val adapter = getAdapter()
         recyclerView.adapter = adapter
         if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {
@@ -125,13 +123,13 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                     val myObject = mRealm.where(RealmMyLibrary::class.java)
                         .equalTo("resourceId", `object`.resourceId).findFirst()
                     createFromResource(myObject, mRealm, model?.id)
-                    val userId = profileDbHandler?.userModel?.id
+                    val userId = profileDbHandler.userModel?.id
                     onAdd(mRealm, "resources", userId, myObject?.resourceId)
                     toast(activity, getString(R.string.added_to_my_library))
                 } else {
                     val myObject = getMyCourse(mRealm, (`object` as RealmMyCourse).courseId)
                     createMyCourse(myObject, mRealm, model?.id)
-                    val userId = profileDbHandler?.userModel?.id
+                    val userId = profileDbHandler.userModel?.id
                     onAdd(mRealm, "courses", userId, myObject?.courseId)
                     toast(activity, getString(R.string.added_to_my_courses))
                 }
