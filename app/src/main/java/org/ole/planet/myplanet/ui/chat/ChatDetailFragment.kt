@@ -562,7 +562,7 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun clearChatDetail() {
-        if (newsId == null) {
+        if (newsId == null && sharedViewModel.selectedChatHistory.value.isNullOrEmpty()) {
             if (::mAdapter.isInitialized) {
                 mAdapter.clearData()
                 _id = ""
