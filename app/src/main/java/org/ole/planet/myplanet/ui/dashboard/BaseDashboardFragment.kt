@@ -40,7 +40,6 @@ import org.ole.planet.myplanet.model.RealmTeamNotification
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.TransactionSyncManager
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_LOGIN
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
 import org.ole.planet.myplanet.ui.myhealth.UserListArrayAdapter
@@ -68,11 +67,10 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
     private lateinit var offlineActivitiesResults: RealmResults<RealmOfflineActivity>
     fun onLoaded(v: View) {
-        profileDbHandler = UserProfileDbHandler(requireContext())
-        model = profileDbHandler?.userModel
-        fullName = profileDbHandler?.userModel?.getFullName()
+        model = profileDbHandler.userModel
+        fullName = profileDbHandler.userModel?.getFullName()
         if (fullName?.trim().isNullOrBlank()) {
-            fullName = profileDbHandler?.userModel?.name
+            fullName = profileDbHandler.userModel?.name
             v.findViewById<LinearLayout>(R.id.ll_prompt).visibility = View.VISIBLE
             v.findViewById<LinearLayout>(R.id.ll_prompt).setOnClickListener {
                 if (!childFragmentManager.isStateSaved) {
@@ -101,12 +99,12 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         }
 
         offlineActivitiesResults = mRealm.where(RealmOfflineActivity::class.java)
-            .equalTo("userName", profileDbHandler?.userModel?.name)
+            .equalTo("userName", profileDbHandler.userModel?.name)
             .equalTo("type", KEY_LOGIN)
             .findAllAsync()
         v.findViewById<TextView>(R.id.txtRole).text = getString(R.string.user_role, model?.getRoleAsString())
-        val offlineVisits = profileDbHandler?.offlineVisits ?: 0
-        v.findViewById<TextView>(R.id.txtFullName).text =getString(R.string.user_name, fullName, offlineVisits)
+        val offlineVisits = profileDbHandler.offlineVisits
+        v.findViewById<TextView>(R.id.txtFullName).text = getString(R.string.user_name, fullName, offlineVisits)
     }
 
     override fun forceDownloadNewsImages() {
@@ -209,7 +207,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
     private fun myTeamInit(flexboxLayout: FlexboxLayout): Int {
         val dbMyTeam = RealmMyTeam.getMyTeamsByUserId(mRealm, settings)
-        val userId = UserProfileDbHandler(requireContext()).userModel?.id
+        val userId = profileDbHandler.userModel?.id
         for ((count, ob) in dbMyTeam.withIndex()) {
             val v = LayoutInflater.from(activity).inflate(R.layout.item_home_my_team, flexboxLayout, false)
             val name = v.findViewById<TextView>(R.id.tv_name)
@@ -253,25 +251,27 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     private fun setUpMyLife(userId: String?) {
-        val realm = databaseService.realmInstance
-        val realmObjects = RealmMyLife.getMyLifeByUserId(mRealm, settings)
-        if (realmObjects.isEmpty()) {
-            if (!realm.isInTransaction) {
-                realm.beginTransaction()
+        databaseService.withRealm { realm ->
+            val realmObjects = RealmMyLife.getMyLifeByUserId(realm, settings)
+            if (realmObjects.isEmpty()) {
+                val myLifeListBase = getMyLifeListBase(userId)
+                realm.executeTransaction { transactionRealm ->
+                    var weight = 1
+                    for (item in myLifeListBase) {
+                        val ml =
+                            transactionRealm.createObject(
+                                RealmMyLife::class.java,
+                                UUID.randomUUID().toString()
+                            )
+                        ml.title = item.title
+                        ml.imageId = item.imageId
+                        ml.weight = weight
+                        ml.userId = item.userId
+                        ml.isVisible = true
+                        weight++
+                    }
+                }
             }
-            val myLifeListBase = getMyLifeListBase(userId)
-            var ml: RealmMyLife
-            var weight = 1
-            for (item in myLifeListBase) {
-                ml = realm.createObject(RealmMyLife::class.java, UUID.randomUUID().toString())
-                ml.title = item.title
-                ml.imageId = item.imageId
-                ml.weight = weight
-                ml.userId = item.userId
-                ml.isVisible = true
-                weight++
-            }
-            realm.commitTransaction()
         }
     }
 
@@ -284,8 +284,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     override fun onDestroy() {
-        profileDbHandler?.onDestroy()
-        profileDbHandler = null
         if (::myCoursesResults.isInitialized) {
             myCoursesResults.removeChangeListener(myCoursesChangeListener)
         }
