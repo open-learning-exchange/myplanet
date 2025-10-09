@@ -58,6 +58,7 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getJsonObject
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.NotificationUtils.cancel
 import org.ole.planet.myplanet.utilities.NotificationUtils.create
+import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.SyncTimeLogger
 import org.ole.planet.myplanet.utilities.UrlUtils
 
@@ -86,7 +87,7 @@ class SyncManager @Inject constructor(
             listener?.onSyncStarted()
             
             // Use improved sync manager if beta sync is enabled
-            if (settings.getBoolean("useImprovedSync", false)) {
+            if (settings.getBoolean(SharedPrefManager.USE_IMPROVED_SYNC, false)) {
                 if (!::improvedSyncManager.isInitialized) {
                     improvedSyncManager = ImprovedSyncManager(context, databaseService, settings)
                     runBlocking { improvedSyncManager.initialize() }

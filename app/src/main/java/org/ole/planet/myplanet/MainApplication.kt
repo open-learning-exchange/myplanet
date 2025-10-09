@@ -11,6 +11,7 @@ import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.content.edit
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
@@ -50,6 +51,7 @@ import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utilities.NetworkUtils.startListenNetworkState
 import org.ole.planet.myplanet.utilities.NetworkUtils.stopListenNetworkState
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
+import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.ThemeMode
 import org.ole.planet.myplanet.utilities.VersionUtils.getVersionName
 
@@ -203,6 +205,9 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         preferences = appPreferences
         service = databaseService
         defaultPref = defaultPreferences
+        if (!appPreferences.contains(SharedPrefManager.USE_IMPROVED_SYNC)) {
+            appPreferences.edit { putBoolean(SharedPrefManager.USE_IMPROVED_SYNC, false) }
+        }
     }
     
     private suspend fun initializeDatabaseConnection() {

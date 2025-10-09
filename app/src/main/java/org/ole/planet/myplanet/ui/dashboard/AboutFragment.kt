@@ -9,7 +9,6 @@ import androidx.core.text.HtmlCompat
 import androidx.fragment.app.Fragment
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentAboutBinding
-import org.ole.planet.myplanet.utilities.Constants
 
 class AboutFragment : Fragment() {
     private var _binding: FragmentAboutBinding? = null
@@ -17,7 +16,7 @@ class AboutFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentAboutBinding.inflate(inflater, container, false)
         val versionString = getString(R.string.version, resources.getText(R.string.app_version))
-        val aboutText = getString(Constants.ABOUT)
+        val aboutText = getString(R.string.about)
 
         val newAboutText: String = aboutText.replace("<h3>MyPlanet</h3>", "<h3>MyPlanet</h3>\n<h4>$versionString</h4>")
         binding.tvDisclaimer.text = Html.fromHtml(newAboutText, HtmlCompat.FROM_HTML_MODE_LEGACY)

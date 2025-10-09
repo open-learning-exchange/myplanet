@@ -46,6 +46,7 @@ import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.LocaleHelper
+import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.ThemeManager
 import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
@@ -158,6 +159,14 @@ class SettingActivity : AppCompatActivity() {
             fastSync?.onPreferenceChangeListener = OnPreferenceChangeListener { _, newValue ->
                 val isChecked = newValue as Boolean
                 settings.edit { putBoolean("fastSync", isChecked) }
+                true
+            }
+
+            val improvedSync = findPreference<SwitchPreference>(SharedPrefManager.USE_IMPROVED_SYNC)
+            improvedSync?.isChecked = settings.getBoolean(SharedPrefManager.USE_IMPROVED_SYNC, false)
+            improvedSync?.onPreferenceChangeListener = OnPreferenceChangeListener { _, newValue ->
+                val isChecked = newValue as Boolean
+                settings.edit { putBoolean(SharedPrefManager.USE_IMPROVED_SYNC, isChecked) }
                 true
             }
 
