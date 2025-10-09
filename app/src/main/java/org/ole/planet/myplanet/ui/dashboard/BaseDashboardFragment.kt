@@ -175,7 +175,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     private fun setUpMyList(c: Class<out RealmObject>, flexboxLayout: FlexboxLayout, view: View) {
         val dbMycourses: List<RealmObject>
         val userId = settings?.getString("userId", "--")
-        setUpMyLife(userId)
+
         dbMycourses = when (c) {
             RealmMyCourse::class.java -> {
                 RealmMyCourse.getMyByUserId(mRealm, settings).filter { !it.courseTitle.isNullOrBlank() }
@@ -186,6 +186,13 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
                 return
             }
             RealmMyLife::class.java -> {
+                setUpMyLife(userId) {
+                    // Refresh myLife UI after data is written
+                    requireActivity().runOnUiThread {
+                        flexboxLayout.removeAllViews()
+                        myLifeListInit(flexboxLayout)
+                    }
+                }
                 myLifeListInit(flexboxLayout)
                 return
             }
@@ -250,12 +257,16 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         }
     }
 
-    private fun setUpMyLife(userId: String?) {
-        databaseService.withRealm { realm ->
-            val realmObjects = RealmMyLife.getMyLifeByUserId(realm, settings)
-            if (realmObjects.isEmpty()) {
+    private fun setUpMyLife(userId: String?, onComplete: (() -> Unit)? = null) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val isEmpty = databaseService.withRealmAsync { realm ->
+                val realmObjects = RealmMyLife.getMyLifeByUserId(realm, settings)
+                realmObjects.isEmpty()
+            }
+
+            if (isEmpty) {
                 val myLifeListBase = getMyLifeListBase(userId)
-                realm.executeTransaction { transactionRealm ->
+                databaseService.executeTransactionAsync { transactionRealm ->
                     var weight = 1
                     for (item in myLifeListBase) {
                         val ml =
@@ -271,6 +282,8 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
                         weight++
                     }
                 }
+                // Refresh UI after data is written
+                onComplete?.invoke()
             }
         }
     }
