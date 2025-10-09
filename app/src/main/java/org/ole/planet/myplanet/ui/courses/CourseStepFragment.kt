@@ -9,14 +9,12 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import java.util.Date
-import java.util.UUID
+import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.databinding.FragmentCourseStepBinding
-import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.isMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -24,6 +22,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.exam.TakeExamFragment
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
+import org.ole.planet.myplanet.repository.CourseRepository
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
 import org.ole.planet.myplanet.utilities.CustomClickableSpan
@@ -39,6 +38,8 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     private lateinit var stepSurvey: List<RealmStepExam>
     var user: RealmUserModel? = null
     private var stepNumber = 0
+    @Inject
+    lateinit var courseRepository: CourseRepository
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) {
@@ -55,30 +56,6 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         return fragmentCourseStepBinding.root
     }
 
-    private fun saveCourseProgress() {
-        databaseService.withRealm { realm ->
-            if (!realm.isInTransaction) realm.beginTransaction()
-            var courseProgress = realm.where(RealmCourseProgress::class.java)
-                .equalTo("courseId", step.courseId)
-                .equalTo("userId", user?.id)
-                .equalTo("stepNum", stepNumber)
-                .findFirst()
-            if (courseProgress == null) {
-                courseProgress = realm.createObject(RealmCourseProgress::class.java, UUID.randomUUID().toString())
-                courseProgress.createdDate = Date().time
-            }
-            courseProgress?.courseId = step.courseId
-            courseProgress?.stepNum = stepNumber
-            if (stepExams.isEmpty()) {
-                courseProgress?.passed = true
-            }
-            courseProgress?.createdOn = user?.planetCode
-            courseProgress?.updatedDate = Date().time
-            courseProgress?.parentCode = user?.parentCode
-            courseProgress?.userId = user?.id
-            realm.commitTransaction()
-        }
-    }
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         databaseService.withRealm { realm ->
@@ -132,7 +109,10 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
             }
         }
         if (isVisible && userHasCourse) {
-            saveCourseProgress()
+            viewLifecycleOwner.lifecycleScope.launch {
+                val currentStepId = stepId ?: return@launch
+                courseRepository.saveCourseProgress(currentStepId, stepNumber, user, stepExams.isNotEmpty())
+            }
         }
     }
 
@@ -171,7 +151,11 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                     isMyCourse(user?.id, step.courseId, realm)
                 }
                 if (userHasCourse) {
-                    saveCourseProgress()
+                    lifecycleScope.launch {
+                        val currentStepId = stepId ?: return@launch
+                        val hasExams = if (::stepExams.isInitialized) stepExams.isNotEmpty() else false
+                        courseRepository.saveCourseProgress(currentStepId, stepNumber, user, hasExams)
+                    }
                 }
             }
         } catch (e: Exception) {
