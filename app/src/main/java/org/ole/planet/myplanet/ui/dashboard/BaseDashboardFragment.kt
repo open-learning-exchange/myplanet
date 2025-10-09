@@ -251,27 +251,28 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     private fun setUpMyLife(userId: String?) {
-        databaseService.withRealm { realm ->
-            val realmObjects = RealmMyLife.getMyLifeByUserId(realm, settings)
-            if (realmObjects.isEmpty()) {
-                val myLifeListBase = getMyLifeListBase(userId)
-                realm.executeTransaction { transactionRealm ->
-                    var weight = 1
-                    for (item in myLifeListBase) {
-                        val ml =
-                            transactionRealm.createObject(
-                                RealmMyLife::class.java,
-                                UUID.randomUUID().toString()
-                            )
-                        ml.title = item.title
-                        ml.imageId = item.imageId
-                        ml.weight = weight
-                        ml.userId = item.userId
-                        ml.isVisible = true
-                        weight++
-                    }
-                }
+        val realm = databaseService.realmInstance
+        val realmObjects = RealmMyLife.getMyLifeByUserId(mRealm, settings)
+        if (realmObjects.isEmpty()) {
+            if (!realm.isInTransaction) {
+                realm.beginTransaction()
             }
+            val myLifeListBase = getMyLifeListBase(userId)
+            var ml: RealmMyLife
+            var weight = 1
+            for (item in myLifeListBase) {
+                ml = realm.createObject(RealmMyLife::class.java, UUID.randomUUID().toString())
+                ml.title = item.title
+                ml.imageId = item.imageId
+                ml.weight = weight
+                ml.userId = item.userId
+                ml.isVisible = true
+                weight++
+
+
+
+            }
+            realm.commitTransaction()
         }
     }
 
