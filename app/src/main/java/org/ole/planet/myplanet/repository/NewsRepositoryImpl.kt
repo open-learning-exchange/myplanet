@@ -10,9 +10,8 @@ import org.ole.planet.myplanet.model.RealmNews
 
 class NewsRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
+    private val gson: Gson,
 ) : RealmRepository(databaseService), NewsRepository {
-
-    private val gson = Gson()
 
     override suspend fun getNewsWithReplies(newsId: String): Pair<RealmNews?, List<RealmNews>> {
         val news = findByField(RealmNews::class.java, "id", newsId)

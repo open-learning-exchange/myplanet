@@ -92,6 +92,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
                 newsAdapter.setmRealm(realm)
                 newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
                 newsAdapter.setNonTeamMember(intent.getBooleanExtra("nonTeamMember", false))
+                newsAdapter.setImageList(imageList)
                 newsAdapter.updateList(list)
                 activityReplyBinding.rvReply.adapter = newsAdapter
             }
@@ -137,6 +138,10 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     override fun clearImages() {
         imageList.clear()
         llImage?.removeAllViews()
+    }
+
+    override fun getCurrentImageList(): RealmList<String> {
+        return imageList
     }
 
     private fun handleImageSelection(url: Uri?) {

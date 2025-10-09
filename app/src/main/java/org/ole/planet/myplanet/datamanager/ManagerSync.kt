@@ -19,6 +19,7 @@ import org.ole.planet.myplanet.utilities.UrlUtils
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import kotlin.LazyThreadSafetyMode
 
 class ManagerSync private constructor(private val context: Context) {
     private val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -198,12 +199,9 @@ class ManagerSync private constructor(private val context: Context) {
     }
 
     companion object {
-        private var ourInstance: ManagerSync? = null
         @JvmStatic
-        val instance: ManagerSync?
-            get() {
-                ourInstance = ManagerSync(MainApplication.context)
-                return ourInstance
-            }
+        val instance: ManagerSync by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+            ManagerSync(MainApplication.context)
+        }
     }
 }

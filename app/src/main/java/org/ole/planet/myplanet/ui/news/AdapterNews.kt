@@ -327,7 +327,6 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
                     news.id,
                     true,
                     currentUser,
-                    imageList,
                     listener,
                     holder,
                 ) { holder, updatedNews, position ->
@@ -518,7 +517,6 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
                     finalNews?.id,
                     false,
                     currentUser,
-                    imageList,
                     listener,
                      viewHolder,
                 ) { holder, news, i -> showReplyButton(holder, news, i) }
@@ -547,6 +545,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         fun clearImages()
         fun onDataChanged()
         fun onMemberSelected(userModel: RealmUserModel?)
+        fun getCurrentImageList(): RealmList<String>?
     }
 
     private fun showShareButton(holder: RecyclerView.ViewHolder, news: RealmNews?) {

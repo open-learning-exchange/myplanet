@@ -60,7 +60,7 @@ object AuthHelper {
             return
         }
 
-        ManagerSync.instance?.login(name, password, object : SyncListener {
+        ManagerSync.instance.login(name, password, object : SyncListener {
             override fun onSyncStarted() {
                 activity.customProgressDialog.setText(activity.getString(R.string.please_wait))
                 activity.customProgressDialog.show()

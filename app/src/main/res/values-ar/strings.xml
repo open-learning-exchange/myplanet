@@ -142,8 +142,6 @@
     <string name="languages">اللغات</string>
     <string name="txt_myLife">حياتي</string>
     <string name="achievements">إنجازاتي</string>
-    <string name="messeges">رسائلي</string>
-    <string name="contacts">جهات الاتصال</string>
     <string name="news">أخبار</string>
     <string name="references">المراجع</string>
     <string name="maps">الخرائط</string>
@@ -1384,5 +1382,6 @@
     <string name="year_of_birth_cannot_be_empty">لا يمكن أن تكون سنة الميلاد فارغة</string>
     <string name="please_enter_a_valid_year_of_birth">يرجى إدخال سنة ميلاد صالحة</string>
     <string name="please_enter_a_valid_year_between_1900_and">يرجى إدخال سنة صالحة بين 1900 و %1$d</string>
+    <string name="redo_survey">أعد إجراء الاستبيان</string>
 
 </resources>

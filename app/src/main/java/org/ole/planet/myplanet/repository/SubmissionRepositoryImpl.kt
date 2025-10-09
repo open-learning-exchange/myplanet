@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.text.TextUtils
 import io.realm.Sort
 import java.util.Date
 import javax.inject.Inject
@@ -140,7 +139,7 @@ class SubmissionRepositoryImpl @Inject constructor(
     override suspend fun createSurveySubmission(examId: String, userId: String?) {
         executeTransaction { realm ->
             val courseId = realm.where(RealmStepExam::class.java).equalTo("id", examId).findFirst()?.courseId
-            val parentId = if (!TextUtils.isEmpty(courseId)) {
+            val parentId = if (!courseId.isNullOrEmpty()) {
                 examId + "@" + courseId
             } else {
                 examId

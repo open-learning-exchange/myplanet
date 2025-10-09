@@ -142,8 +142,6 @@
     <string name="languages">Idiomas</string>
     <string name="txt_myLife">miVida</string>
     <string name="achievements">misLogros</string>
-    <string name="messeges">misMensajes</string>
-    <string name="contacts">Contactos</string>
     <string name="news">Noticias</string>
     <string name="references">Referencias</string>
     <string name="maps">Mapas</string>
@@ -1384,5 +1382,6 @@
     <string name="year_of_birth_cannot_be_empty">el año de nacimiento no puede estar vacío</string>
     <string name="please_enter_a_valid_year_of_birth">por favor ingrese un año de nacimiento válido</string>
     <string name="please_enter_a_valid_year_between_1900_and">por favor ingrese un año válido entre 1900 y %1$d</string>
+    <string name="redo_survey">volver a hacer la encuesta</string>
 
 </resources>

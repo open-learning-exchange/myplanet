@@ -142,8 +142,6 @@
     <string name="languages">Languages</string>
     <string name="txt_myLife">myLife</string>
     <string name="achievements">myAchievements</string>
-    <string name="messeges">myMessages</string>
-    <string name="contacts">Contacts</string>
     <string name="news">News</string>
     <string name="references">References</string>
     <string name="maps">Maps</string>
@@ -1384,5 +1382,6 @@
     <string name="year_of_birth_cannot_be_empty">year of birth cannot be empty</string>
     <string name="please_enter_a_valid_year_of_birth">please enter a valid year of birth</string>
     <string name="please_enter_a_valid_year_between_1900_and">please enter a valid year between 1900 and %1$d</string>
+    <string name="redo_survey">redo survey</string>
 
 </resources>

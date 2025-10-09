@@ -13,6 +13,7 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.viewpager.widget.ViewPager
+import androidx.viewpager2.widget.ViewPager2
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import java.util.Locale
@@ -99,6 +100,13 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         binding.viewPager2.isUserInputEnabled = false
         binding.viewPager2.setCurrentItem(position, false)
 
+        binding.viewPager2.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+            override fun onPageSelected(position: Int) {
+                super.onPageSelected(position)
+                this@TakeCourseFragment.onPageSelected(position)
+            }
+        })
+
         updateStepDisplay(position)
 
         if (position == 0) {
@@ -114,7 +122,17 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
     override fun onResume() {
         super.onResume()
-        updateStepDisplay(binding.viewPager2.currentItem)
+        val currentPosition = binding.viewPager2.currentItem
+        updateStepDisplay(currentPosition)
+
+        // Update Next/Finish button visibility when returning from exam
+        if (currentPosition >= steps.size - 1) {
+            binding.nextStep.visibility = View.GONE
+            binding.finishStep.visibility = View.VISIBLE
+        } else {
+            binding.nextStep.visibility = View.VISIBLE
+            binding.finishStep.visibility = View.GONE
+        }
     }
 
     private fun setListeners() {
@@ -136,8 +154,12 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private fun updateStepDisplay(position: Int) {
-        val currentPosition = position
-        binding.tvStep.text = String.format(getString(R.string.step) + " %d/%d", currentPosition, steps.size)
+        if (position == 0) {
+            binding.tvStep.text = "Course Details"
+        } else {
+            val stepNumber = position
+            binding.tvStep.text = String.format(getString(R.string.step) + " %d/%d", stepNumber, steps.size)
+        }
 
         val currentProgress = getCurrentProgress(steps, mRealm, userModel?.id, courseId)
         if (currentProgress < steps.size) {
@@ -150,7 +172,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         val isGuest = userModel?.isGuest() == true
         val containsUserId = currentCourse?.userId?.contains(userModel?.id) == true
         val stepsSize = steps.size
-        val currentItem = binding.viewPager2.currentItem
 
         lifecycleScope.launch {
             withContext(Dispatchers.Main) {
@@ -188,7 +209,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                 binding.courseProgress.max = stepsSize
 
                 if (containsUserId) {
-                    if(position != currentCourse?.courseSteps?.size){
+                    if(position < steps.size - 1){
                         binding.nextStep.visibility = View.VISIBLE
                     }
                     binding.courseProgress.visibility = View.VISIBLE
@@ -216,33 +237,37 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private fun changeNextButtonState(position: Int) {
-        if (isStepCompleted(mRealm, steps[position - 1]?.id, userModel?.id)) {
+        if (courseId == "4e6b78800b6ad18b4e8b0e1e38a98cac") {
+            if (isStepCompleted(mRealm, steps[position - 1]?.id, userModel?.id)) {
+                binding.nextStep.isClickable = true
+                binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
+            } else {
+                binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_grey_500))
+                binding.nextStep.isClickable = false
+            }
+        } else {
             binding.nextStep.isClickable = true
             binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
-        } else {
-            binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_grey_500))
-            binding.nextStep.isClickable = false
         }
     }
 
     override fun onPageScrollStateChanged(state: Int) {}
 
     private fun onClickNext() {
-        binding.tvStep.text = String.format(Locale.getDefault(), "${getString(R.string.step)} %d/%d", binding.viewPager2.currentItem, currentCourse?.courseSteps?.size)
-        if (binding.viewPager2.currentItem == currentCourse?.courseSteps?.size) {
+        binding.tvStep.text = String.format(Locale.getDefault(), "${getString(R.string.step)} %d/%d", binding.viewPager2.currentItem, steps.size)
+        if (binding.viewPager2.currentItem >= steps.size - 1) {
             binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_grey_500))
             binding.nextStep.visibility = View.GONE
             binding.finishStep.visibility = View.VISIBLE
-        }else{
+        } else {
             binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
             binding.nextStep.visibility = View.VISIBLE
             binding.finishStep.visibility = View.GONE
-
         }
     }
 
     private fun onClickPrevious() {
-        binding.tvStep.text = String.format(Locale.getDefault(), "${getString(R.string.step)} %d/%d", binding.viewPager2.currentItem - 1, currentCourse?.courseSteps?.size)
+        binding.tvStep.text = String.format(Locale.getDefault(), "${getString(R.string.step)} %d/%d", binding.viewPager2.currentItem - 1, steps.size)
         if (binding.viewPager2.currentItem - 1 == 0) {
             binding.previousStep.visibility = View.GONE
             binding.nextStep.visibility = View.VISIBLE
@@ -323,7 +348,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private fun setNavigationButtons(){
-        if(position == currentCourse?.courseSteps?.size){
+        if(position >= steps.size - 1){
             binding.nextStep.visibility = View.GONE
             binding.finishStep.visibility = View.VISIBLE
         } else {
