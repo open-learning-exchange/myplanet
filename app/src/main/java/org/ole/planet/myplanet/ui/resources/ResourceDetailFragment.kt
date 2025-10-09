@@ -23,7 +23,6 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.listToString
 import org.ole.planet.myplanet.model.RealmRating.Companion.getRatingsById
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.FileUtils.getFileExtension
 import org.ole.planet.myplanet.utilities.Utilities
@@ -56,7 +55,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         }
         fragmentScope.launch {
             val userId = withContext(Dispatchers.Main) {
-                profileDbHandler?.userModel?.id
+                profileDbHandler.userModel?.id
             }
             withContext(Dispatchers.IO) {
                 try {
@@ -72,7 +71,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             }
             withContext(Dispatchers.Main) {
                 binding.btnDownload.setImageResource(R.drawable.ic_play)
-                val currentUserId = profileDbHandler?.userModel?.id
+                val currentUserId = profileDbHandler.userModel?.id
                 if (currentUserId != null && library.userId?.contains(currentUserId) != true) {
                     Utilities.toast(activity, getString(R.string.added_to_my_library))
                     binding.btnRemove.setImageResource(R.drawable.close_x)
@@ -84,7 +83,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         super.onCreateView(inflater, container, savedInstanceState)
         _binding = FragmentLibraryDetailBinding.inflate(inflater, container, false)
-        userModel = UserProfileDbHandler(requireContext()).userModel!!
+        userModel = profileDbHandler.userModel
         setLoadingState(true)
         return binding.root
     }
@@ -143,7 +142,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         fragmentScope.launch {
             withContext(Dispatchers.Main) {
                 try {
-                    profileDbHandler?.setResourceOpenCount(library)
+                    profileDbHandler.setResourceOpenCount(library)
                 } catch (ex: Exception) {
                     ex.printStackTrace()
                 }
@@ -196,7 +195,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             }
             openResource(library)
         }
-        val userId = profileDbHandler?.userModel?.id
+        val userId = profileDbHandler.userModel?.id
         val isAdd = userId?.let { library.userId?.contains(it) } != true
         if (userModel?.isGuest() != true) {
             binding.btnRemove.setImageResource(
@@ -216,7 +215,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             binding.btnRemove.visibility = View.GONE
         }
         binding.btnRemove.setOnClickListener {
-            val userId = profileDbHandler?.userModel?.id
+            val userId = profileDbHandler.userModel?.id
             fragmentScope.launch {
                 withContext(Dispatchers.IO) {
                     try {
