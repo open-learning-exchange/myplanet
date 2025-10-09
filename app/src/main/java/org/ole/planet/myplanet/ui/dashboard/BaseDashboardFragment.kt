@@ -268,9 +268,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
                 ml.userId = item.userId
                 ml.isVisible = true
                 weight++
-
-
-
             }
             realm.commitTransaction()
         }
