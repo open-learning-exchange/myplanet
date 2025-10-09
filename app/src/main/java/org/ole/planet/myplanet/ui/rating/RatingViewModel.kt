@@ -86,7 +86,7 @@ class RatingViewModel @Inject constructor(
                     type = type,
                     itemId = itemId,
                     title = title,
-                    user = user,
+                    userId = user.resolveSubmissionId(userId),
                     rating = rating,
                     comment = comment
                 )
@@ -108,4 +108,8 @@ class RatingViewModel @Inject constructor(
             totalRatings = totalRatings,
             userRating = userRating
         )
+}
+
+private fun RealmUserModel.resolveSubmissionId(fallbackId: String): String {
+    return listOf(id, _id, fallbackId).firstOrNull { !it.isNullOrBlank() } ?: fallbackId
 }
