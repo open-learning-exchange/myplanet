@@ -34,5 +34,12 @@ class ChatViewModel : ViewModel() {
     fun setSelectedAiProvider(aiProvider: String?) {
         _selectedAiProvider.value = aiProvider
     }
+
+    fun clearChatState() {
+        _selectedChatHistory.value = null
+        _selectedId.value = ""
+        _selectedRev.value = ""
+        _selectedAiProvider.value = null
+    }
 }
 
