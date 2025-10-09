@@ -17,7 +17,6 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.ui.myPersonals.MyPersonalsFragment
@@ -116,10 +115,7 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         setBackgroundColor(v, itemCnt)
 
         val title = (obj as RealmMyLife).title
-        val handler = profileDbHandler ?: UserProfileDbHandler(requireContext()).also {
-            profileDbHandler = it
-        }
-        val user = handler.userModel
+        val user = profileDbHandler.userModel
         itemMyLifeBinding.img.setImageResource(resources.getIdentifier(obj.imageId, "drawable", requireActivity().packageName))
         itemMyLifeBinding.tvName.text = title
 
@@ -140,13 +136,11 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
     fun getMyLifeListBase(userId: String?): List<RealmMyLife> {
         val myLifeList: MutableList<RealmMyLife> = ArrayList()
         myLifeList.add(RealmMyLife("ic_myhealth", userId, getString(R.string.myhealth)))
-        myLifeList.add(RealmMyLife("ic_messages", userId, getString(R.string.messeges)))
         myLifeList.add(RealmMyLife("my_achievement", userId, getString(R.string.achievements)))
         myLifeList.add(RealmMyLife("ic_submissions", userId, getString(R.string.submission)))
         myLifeList.add(RealmMyLife("ic_my_survey", userId, getString(R.string.my_survey)))
         myLifeList.add(RealmMyLife("ic_references", userId, getString(R.string.references)))
         myLifeList.add(RealmMyLife("ic_calendar", userId, getString(R.string.calendar)))
-        myLifeList.add(RealmMyLife("ic_contacts", userId, getString(R.string.contacts)))
         myLifeList.add(RealmMyLife("ic_mypersonals", userId, getString(R.string.mypersonals)))
         return myLifeList
     }
