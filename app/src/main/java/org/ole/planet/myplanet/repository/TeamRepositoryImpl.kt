@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
+import org.ole.planet.myplanet.utilities.JsonUtils
 
 class TeamRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
@@ -119,6 +120,17 @@ class TeamRepositoryImpl @Inject constructor(
                 transaction.docType = "transaction"
                 transaction.updated = true
             }
+        }
+    }
+
+    override suspend fun addReport(report: JsonObject) {
+        executeTransaction { realm ->
+            val reportId = JsonUtils.getString("_id", report)
+            val reportEntry = realm.where(RealmMyTeam::class.java)
+                .equalTo("_id", reportId)
+                .findFirst()
+                ?: realm.createObject(RealmMyTeam::class.java, reportId)
+            RealmMyTeam.populateTeamFields(report, reportEntry)
         }
     }
 
@@ -268,6 +280,26 @@ class TeamRepositoryImpl @Inject constructor(
             task.completed = completed
             task.completedTime = if (completed) Date().time else 0
             task.isUpdated = true
+        }
+    }
+
+    override suspend fun logTeamVisit(
+        teamId: String,
+        userName: String?,
+        userPlanetCode: String?,
+        userParentCode: String?,
+        teamType: String?,
+    ) {
+        if (teamId.isBlank() || userName.isNullOrBlank()) return
+        executeTransaction { realm ->
+            val log = realm.createObject(RealmTeamLog::class.java, UUID.randomUUID().toString())
+            log.teamId = teamId
+            log.user = userName
+            log.createdOn = userPlanetCode
+            log.type = "teamVisit"
+            log.teamType = teamType
+            log.parentCode = userParentCode
+            log.time = Date().time
         }
     }
 
