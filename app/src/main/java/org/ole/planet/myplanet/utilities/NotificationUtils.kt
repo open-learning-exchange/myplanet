@@ -19,10 +19,10 @@ import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.model.RealmNotification
+import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 
 object NotificationUtils {
@@ -487,7 +487,7 @@ object NotificationUtils {
 @AndroidEntryPoint
 class NotificationActionReceiver : BroadcastReceiver() {
     @Inject
-    lateinit var databaseService: DatabaseService
+    lateinit var notificationRepository: NotificationRepository
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action
         val notificationId = intent.getStringExtra(NotificationUtils.EXTRA_NOTIFICATION_ID)
@@ -536,21 +536,16 @@ class NotificationActionReceiver : BroadcastReceiver() {
             return
         }
 
-
-        try {
-            databaseService.withRealm { realm ->
-                realm.executeTransaction { r ->
-                    val notification = r.where(RealmNotification::class.java)
-                        .equalTo("id", notificationId)
-                        .findFirst()
-
-                    if (notification != null) {
-                        notification.isRead = true
-                    }
+        MainApplication.applicationScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    notificationRepository.markNotificationsAsRead(setOf(notificationId))
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
 
-            MainApplication.applicationScope.launch(Dispatchers.Main) {
+            withContext(Dispatchers.Main) {
                 delay(200)
                 val broadcastIntent = Intent("org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM")
                 broadcastIntent.setPackage(context.packageName)
@@ -576,9 +571,6 @@ class NotificationActionReceiver : BroadcastReceiver() {
                     e.printStackTrace()
                 }
             }
-            
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
     }
 }
