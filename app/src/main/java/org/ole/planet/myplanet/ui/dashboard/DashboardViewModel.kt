@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.dashboard
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.realm.Realm
 import java.util.Date
@@ -49,6 +50,30 @@ class DashboardViewModel @Inject constructor(
         notificationRepository.updateResourceNotification(userId)
     }
 
+    fun refreshSurveyWarning(userId: String?) {
+        viewModelScope.launch {
+            runCatching {
+                submissionRepository.getPendingSurveys(userId)
+            }.onSuccess { submissions ->
+                _surveyWarning.value = submissions.isNotEmpty()
+            }.onFailure {
+                _surveyWarning.value = false
+            }
+        }
+    }
+
+    fun refreshUnreadNotifications(userId: String?) {
+        viewModelScope.launch {
+            runCatching {
+                notificationRepository.getUnreadCount(userId)
+            }.onSuccess { count ->
+                _unreadNotifications.value = count
+            }.onFailure {
+                _unreadNotifications.value = 0
+            }
+        }
+    }
+
     fun createNotificationIfNotExists(realm: Realm, type: String, message: String, relatedId: String?, userId: String?) {
         val existingNotification = realm.where(RealmNotification::class.java)
             .equalTo("userId", userId)
@@ -75,7 +100,4 @@ class DashboardViewModel @Inject constructor(
         return submissionRepository.getSurveyTitlesFromSubmissions(submissions)
     }
 
-    suspend fun getUnreadNotificationsSize(userId: String?): Int {
-        return notificationRepository.getUnreadCount(userId)
-    }
 }

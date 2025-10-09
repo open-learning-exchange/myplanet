@@ -25,7 +25,9 @@ import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.MenuItemCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.navigation.NavigationBarView
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayout
@@ -49,6 +51,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.collect
 import org.json.JSONObject
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication
@@ -135,6 +138,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         updateAppTitle()
         notificationManager = NotificationUtils.getInstance(this)
         if (handleGuestAccess()) return
+        observeUnreadNotifications()
+        dashboardViewModel.refreshUnreadNotifications(user?.id)
         setupNavigation()
         handleInitialFragment()
         setupToolbarActions()
@@ -534,15 +539,13 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                                 delay(300)
                                 try {
                                     mRealm.refresh()
-                                    val unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
-                                    onNotificationCountUpdated(unreadCount)
+                                    dashboardViewModel.refreshUnreadNotifications(userId)
                                 } catch (e: Exception) {
                                     e.printStackTrace()
                                     delay(300)
                                     try {
                                         mRealm.refresh()
-                                        val unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
-                                        onNotificationCountUpdated(unreadCount)
+                                        dashboardViewModel.refreshUnreadNotifications(userId)
                                     } catch (e2: Exception) {
                                         e2.printStackTrace()
                                     }
@@ -565,6 +568,18 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
+    private fun observeUnreadNotifications() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                dashboardViewModel.unreadNotifications.collect { count ->
+                    updateNotificationBadge(count) {
+                        openNotificationsList(user?.id ?: "")
+                    }
+                }
+            }
+        }
+    }
+
     private fun checkIfShouldShowNotifications() {
         val fromLogin = intent.getBooleanExtra("from_login", false)
         if (fromLogin || !notificationsShownThisSession) {
@@ -580,7 +595,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val userId = user?.id
 
         lifecycleScope.launch(Dispatchers.IO) {
-            var unreadCount = 0
             val newNotifications = mutableListOf<NotificationUtils.NotificationConfig>()
 
             try {
@@ -590,21 +604,16 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         val createdNotifications = createNotifications(realm, userId)
                         newNotifications.addAll(createdNotifications)
                     }
-
-                    unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
                 }
+                dashboardViewModel.refreshUnreadNotifications(userId)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
 
             withContext(Dispatchers.Main) {
                 try {
-                    updateNotificationBadge(unreadCount) {
-                        openNotificationsList(userId ?: "")
-                    }
-
                     val groupedNotifications = newNotifications.groupBy { it.type }
-                    
+
                     groupedNotifications.forEach { (type, notifications) ->
                         when {
                             notifications.size == 1 -> {
@@ -849,10 +858,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         openCallFragment(fragment)
     }
 
+    @Suppress("UNUSED_PARAMETER")
     override fun onNotificationCountUpdated(unreadCount: Int) {
-        updateNotificationBadge(unreadCount) {
-            openNotificationsList(user?.id ?: "")
-        }
+        dashboardViewModel.refreshUnreadNotifications(user?.id)
     }
 
     private fun updateNotificationBadge(count: Int, onClickListener: View.OnClickListener) {
@@ -1223,14 +1231,12 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         handleNotificationIntent(intent)
 
         if (intent?.action == "REFRESH_NOTIFICATION_BADGE") {
-            val userId = user?.id
-            if (userId != null) {
+            user?.id?.let { userId ->
                 lifecycleScope.launch {
                     delay(100)
                     try {
                         mRealm.refresh()
-                        val unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
-                        onNotificationCountUpdated(unreadCount)
+                        dashboardViewModel.refreshUnreadNotifications(userId)
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }
