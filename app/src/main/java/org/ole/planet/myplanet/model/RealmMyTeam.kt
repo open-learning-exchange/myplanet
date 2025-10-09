@@ -60,7 +60,8 @@ open class RealmMyTeam : RealmObject() {
     companion object {
         private val concatenatedLinks = ArrayList<String>()
 
-        private fun populateTeamFields(doc: JsonObject, team: RealmMyTeam, includeCourses: Boolean = false) {
+        @JvmStatic
+        fun populateTeamFields(doc: JsonObject, team: RealmMyTeam, includeCourses: Boolean = false) {
             team.userId = JsonUtils.getString("userId", doc)
             team.teamId = JsonUtils.getString("teamId", doc)
             team._rev = JsonUtils.getString("_rev", doc)
@@ -118,7 +119,8 @@ open class RealmMyTeam : RealmObject() {
             openDownloadService(context, concatenatedLinks, true)
         }
 
-        private fun populateReportFields(doc: JsonObject, team: RealmMyTeam) {
+        @JvmStatic
+        fun populateReportFields(doc: JsonObject, team: RealmMyTeam) {
             team.description = JsonUtils.getString("description", doc)
             team.beginningBalance = JsonUtils.getInt("beginningBalance", doc)
             team.sales = JsonUtils.getInt("sales", doc)
@@ -147,20 +149,6 @@ open class RealmMyTeam : RealmObject() {
                 populateTeamFields(doc, it, true)
                 processDescription(it.description)
             }
-        }
-
-        @JvmStatic
-        fun insertReports(doc: JsonObject, mRealm: Realm) {
-            if (!mRealm.isInTransaction) {
-                mRealm.beginTransaction()
-            }
-            val teamId = JsonUtils.getString("_id", doc)
-            var myTeams = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
-            if (myTeams == null) {
-                myTeams = mRealm.createObject(RealmMyTeam::class.java, teamId)
-            }
-            myTeams?.let { populateTeamFields(doc, it) }
-            mRealm.commitTransaction()
         }
 
         @JvmStatic

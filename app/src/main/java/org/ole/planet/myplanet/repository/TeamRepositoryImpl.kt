@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
+import org.ole.planet.myplanet.utilities.JsonUtils
 
 class TeamRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
@@ -119,6 +120,17 @@ class TeamRepositoryImpl @Inject constructor(
                 transaction.docType = "transaction"
                 transaction.updated = true
             }
+        }
+    }
+
+    override suspend fun addReport(report: JsonObject) {
+        executeTransaction { realm ->
+            val reportId = JsonUtils.getString("_id", report)
+            val reportEntry = realm.where(RealmMyTeam::class.java)
+                .equalTo("_id", reportId)
+                .findFirst()
+                ?: realm.createObject(RealmMyTeam::class.java, reportId)
+            RealmMyTeam.populateTeamFields(report, reportEntry)
         }
     }
 
