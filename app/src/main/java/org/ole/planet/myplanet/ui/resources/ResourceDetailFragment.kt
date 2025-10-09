@@ -74,7 +74,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                 val currentUserId = profileDbHandler.userModel?.id
                 if (currentUserId != null && library.userId?.contains(currentUserId) != true) {
                     Utilities.toast(activity, getString(R.string.added_to_my_library))
-                    binding.btnRemove.setImageResource(R.drawable.close_x)
+                    binding.btnRemove.setImageResource(eu.fiskur.chipcloud.R.drawable.close_x)
                 }
             }
         }
@@ -202,7 +202,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                 if (isAdd) {
                     R.drawable.ic_add_library
                 } else {
-                    R.drawable.close_x
+                    eu.fiskur.chipcloud.R.drawable.close_x
                 }
             )
             binding.btnRemove.contentDescription =

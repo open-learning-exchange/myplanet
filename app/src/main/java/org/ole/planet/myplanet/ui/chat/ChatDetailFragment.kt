@@ -304,7 +304,7 @@ class ChatDetailFragment : Fragment() {
     private fun createProviderButton(context: Context, providerName: String, modelName: String): Button =
         Button(context).apply {
             text = providerName.lowercase(Locale.getDefault())
-            setTextColor(ContextCompat.getColor(context, R.color.md_black_1000))
+            setTextColor(ContextCompat.getColor(context, com.mikepenz.materialize.R.color.md_black_1000))
             textSize = 18f
             setTypeface(null, Typeface.BOLD)
             setPadding(16, 8, 16, 8)
@@ -350,7 +350,7 @@ class ChatDetailFragment : Fragment() {
                     view.setTextColor(ContextCompat.getColor(context, R.color.textColorPrimary))
                 } else {
                     view.setBackgroundColor(ContextCompat.getColor(context, R.color.disable_color))
-                    view.setTextColor(ContextCompat.getColor(context, R.color.md_black_1000))
+                    view.setTextColor(ContextCompat.getColor(context, com.mikepenz.materialize.R.color.md_black_1000))
                 }
             }
         }

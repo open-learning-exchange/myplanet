@@ -20,6 +20,9 @@ import org.ole.planet.myplanet.databinding.ActivityAudioPlayerBinding
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
+import androidx.media3.ui.DefaultTimeBar
+import androidx.core.content.ContextCompat
+import androidx.media3.common.util.UnstableApi
 
 class AudioPlayerActivity : AppCompatActivity() {
 
@@ -49,10 +52,10 @@ class AudioPlayerActivity : AppCompatActivity() {
 
         binding.trackTitle.text = extractedFileName
         binding.artistName.text = resourceTitle
-        playButton = binding.playerView.findViewById(R.id.exo_play)
-        pauseButton = binding.playerView.findViewById(R.id.exo_pause)
+        playButton = binding.playerView.findViewById(androidx.media3.ui.R.id.exo_play)
+        pauseButton = binding.playerView.findViewById(androidx.media3.ui.R.id.exo_pause)
 
-        val overlay = binding.playerView.findViewById<FrameLayout>(R.id.exo_overlay)
+        val overlay = binding.playerView.findViewById<FrameLayout>(androidx.media3.ui.R.id.exo_overlay)
 
 
         val blurredImageView = ImageView(this).apply {
@@ -68,17 +71,16 @@ class AudioPlayerActivity : AppCompatActivity() {
             .into(blurredImageView)
 
         overlay.addView(blurredImageView, 0)
-        val controller = binding.playerView.findViewById<View>(R.id.exo_controller)
+        val controller = binding.playerView.findViewById<View>(androidx.media3.ui.R.id.exo_controller)
         controller?.setBackgroundColor(android.graphics.Color.TRANSPARENT)
 
 
         initializeExoPlayer()
 
         setupPlayPauseButtons()
-
-        binding.playerView.setOnTouchListener { _,_ -> true}
     }
 
+    @androidx.annotation.OptIn(UnstableApi::class)
     private fun initializeExoPlayer() {
         val fullPath = resolveFullPath(filePath)
 
@@ -89,8 +91,18 @@ class AudioPlayerActivity : AppCompatActivity() {
                 player.prepare()
                 player.playWhenReady = true
 
-                val controller = binding.playerView.findViewById<View>(R.id.exo_controller)
+                val controller = binding.playerView.findViewById<View>(androidx.media3.ui.R.id.exo_controller)
                 controller?.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+
+                val timeBar = binding.playerView.findViewById<DefaultTimeBar>(
+                    androidx.media3.ui.R.id.exo_progress
+                )
+                timeBar?.apply {
+                    setPlayedColor(ContextCompat.getColor(this@AudioPlayerActivity, R.color.daynight_textColor))
+                    setScrubberColor(ContextCompat.getColor(this@AudioPlayerActivity, R.color.daynight_textColor))
+                    setBufferedColor(ContextCompat.getColor(this@AudioPlayerActivity, R.color.hint_color))
+                    setUnplayedColor(ContextCompat.getColor(this@AudioPlayerActivity, R.color.disable_color))
+                }
 
                 player.addListener(object : Player.Listener {
                     override fun onPlayerError(error: PlaybackException) {

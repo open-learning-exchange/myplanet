@@ -246,21 +246,6 @@
         <item name="android:textColor">@color/daynight_textColor</item>
     </style>
 
-    <style name="jcplayerstyle">
-        <item name="text_audio_current_duration_color">@color/daynight_textColor</item>
-        <item name="next_icon_color">@color/daynight_textColor</item>
-        <item name="pause_icon_color">@color/daynight_textColor</item>
-        <item name="play_icon_color">@color/daynight_textColor</item>
-        <item name="previous_icon_color">@color/daynight_textColor</item>
-        <item name="progress_color">@color/daynight_textColor</item>
-        <item name="random_icon_color">@color/daynight_textColor</item>
-        <item name="repeat_one_icon_color">@color/daynight_textColor</item>
-        <item name="text_audio_duration_color">@color/daynight_textColor</item>
-        <item name="repeat_one_icon">@color/daynight_textColor</item>
-        <item name="seek_bar_color">@color/daynight_textColor</item>
-        <item name="text_audio_title_color">@color/daynight_textColor</item>
-    </style>
-
     <style name="NumberPickerTheme" parent="Theme.AppCompat.Light">
         <item name="colorControlNormal">@color/accent</item>
         <item name="android:textColorPrimary">@color/daynight_textColor</item>

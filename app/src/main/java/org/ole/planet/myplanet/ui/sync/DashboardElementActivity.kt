@@ -196,7 +196,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
             }
             if (resIcon != null) {
                 DrawableCompat.setTintMode(resIcon.mutate(), PorterDuff.Mode.SRC_ATOP)
-                DrawableCompat.setTint(resIcon, ContextCompat.getColor(this, R.color.accent))
+                DrawableCompat.setTint(resIcon, ContextCompat.getColor(this, com.mikepenz.materialize.R.color.accent))
             }
             goOnline.icon = resIcon
         }

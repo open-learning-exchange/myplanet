@@ -1002,7 +1002,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             if (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_NO ||
                 (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM && currentNightMode == Configuration.UI_MODE_NIGHT_NO)) {
                 headerBackground.setColorFilter(
-                    ContextCompat.getColor(this, R.color.md_white_1000),
+                    ContextCompat.getColor(this, com.mikepenz.materialize.R.color.md_white_1000),
                     PorterDuff.Mode.SRC_IN
                 )
             }
@@ -1165,9 +1165,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         return PrimaryDrawerItem().withName(iconText)
             .withIcon(drawable)
             .withTextColor(ContextCompat.getColor(this, R.color.textColorPrimary))
-            .withSelectedTextColor(ContextCompat.getColor(this, R.color.primary_dark))
+            .withSelectedTextColor(ContextCompat.getColor(this, com.mikepenz.materialize.R.color.primary_dark))
             .withIconColor(ContextCompat.getColor(this, R.color.textColorPrimary))
-            .withSelectedIconColor(ContextCompat.getColor(this, R.color.primary_dark))
+            .withSelectedIconColor(ContextCompat.getColor(this, com.mikepenz.materialize.R.color.primary_dark))
             .withSelectedColor(ContextCompat.getColor(this, R.color.textColorPrimary))
             .withIconTintingEnabled(true)
     }
