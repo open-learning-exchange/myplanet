@@ -27,6 +27,13 @@ interface TeamRepository {
     suspend fun assignTask(taskId: String, assigneeId: String?)
     suspend fun setTaskCompletion(taskId: String, completed: Boolean)
     suspend fun addReport(report: JsonObject)
+    suspend fun logTeamVisit(
+        teamId: String,
+        userName: String?,
+        userPlanetCode: String?,
+        userParentCode: String?,
+        teamType: String?,
+    )
     suspend fun createTeam(
         category: String?,
         name: String,

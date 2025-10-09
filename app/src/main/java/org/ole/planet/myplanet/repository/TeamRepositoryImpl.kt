@@ -283,6 +283,26 @@ class TeamRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun logTeamVisit(
+        teamId: String,
+        userName: String?,
+        userPlanetCode: String?,
+        userParentCode: String?,
+        teamType: String?,
+    ) {
+        if (teamId.isBlank() || userName.isNullOrBlank()) return
+        executeTransaction { realm ->
+            val log = realm.createObject(RealmTeamLog::class.java, UUID.randomUUID().toString())
+            log.teamId = teamId
+            log.user = userName
+            log.createdOn = userPlanetCode
+            log.type = "teamVisit"
+            log.teamType = teamType
+            log.parentCode = userParentCode
+            log.time = Date().time
+        }
+    }
+
     override suspend fun createTeam(
         category: String?,
         name: String,
