@@ -103,17 +103,19 @@ class UploadManager @Inject constructor(
 
     fun uploadActivities(listener: SuccessListener?) {
         val apiInterface = client?.create(ApiInterface::class.java)
-        val model = UserProfileDbHandler(MainApplication.context).userModel ?: run {
+        val handler = UserProfileDbHandler(MainApplication.context)
+        val model = handler.userModel ?: run {
+            handler.onDestroy()
             listener?.onSuccess("Cannot upload activities: user model is null")
             return
         }
 
-        if (model.isManager()) {
-            listener?.onSuccess("Skipping activities upload for manager")
-            return
-        }
-
         try {
+            if (model.isManager()) {
+                listener?.onSuccess("Skipping activities upload for manager")
+                return
+            }
+
             apiInterface?.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/myplanet_activities", MyPlanet.getNormalMyPlanetActivities(MainApplication.context, pref, model))?.enqueue(object : Callback<JsonObject?> {
                 override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {}
 
@@ -159,6 +161,8 @@ class UploadManager @Inject constructor(
         } catch (e: Exception) {
             e.printStackTrace()
             listener?.onSuccess("Failed to upload activities: ${e.message}")
+        } finally {
+            handler.onDestroy()
         }
     }
 
@@ -486,40 +490,46 @@ class UploadManager @Inject constructor(
 
     fun uploadUserActivities(listener: SuccessListener) {
         val apiInterface = client?.create(ApiInterface::class.java)
-        val model = UserProfileDbHandler(MainApplication.context).userModel ?: run {
+        val handler = UserProfileDbHandler(MainApplication.context)
+        val model = handler.userModel ?: run {
+            handler.onDestroy()
             listener.onSuccess("Cannot upload user activities: user model is null")
             return
         }
 
-        if (model.isManager()) {
-            listener.onSuccess("Skipping user activities upload for manager")
-            return
-        }
-
-        val realm = getRealm()
-        realm.executeTransactionAsync({ transactionRealm: Realm ->
-            val activities = transactionRealm.where(RealmOfflineActivity::class.java).isNull("_rev").equalTo("type", "login").findAll()
-
-            activities.processInBatches { act ->
-                try {
-                    if (act.userId?.startsWith("guest") == true) {
-                        return@processInBatches
-                    }
-
-                    val `object` = apiInterface?.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/login_activities", RealmOfflineActivity.serializeLoginActivities(act, context))?.execute()?.body()
-                    act.changeRev(`object`)
-                } catch (e: IOException) {
-                    e.printStackTrace()
-                }
+        try {
+            if (model.isManager()) {
+                listener.onSuccess("Skipping user activities upload for manager")
+                return
             }
-            uploadTeamActivities(transactionRealm, apiInterface)
-        }, {
-            realm.close()
-            listener.onSuccess("User activities sync completed successfully")
-        }) { e: Throwable ->
-            realm.close()
-            e.printStackTrace()
-            listener.onSuccess(e.message)
+
+            val realm = getRealm()
+            realm.executeTransactionAsync({ transactionRealm: Realm ->
+                val activities = transactionRealm.where(RealmOfflineActivity::class.java).isNull("_rev").equalTo("type", "login").findAll()
+
+                activities.processInBatches { act ->
+                    try {
+                        if (act.userId?.startsWith("guest") == true) {
+                            return@processInBatches
+                        }
+
+                        val `object` = apiInterface?.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/login_activities", RealmOfflineActivity.serializeLoginActivities(act, context))?.execute()?.body()
+                        act.changeRev(`object`)
+                    } catch (e: IOException) {
+                        e.printStackTrace()
+                    }
+                }
+                uploadTeamActivities(transactionRealm, apiInterface)
+            }, {
+                realm.close()
+                listener.onSuccess("User activities sync completed successfully")
+            }) { e: Throwable ->
+                realm.close()
+                e.printStackTrace()
+                listener.onSuccess(e.message)
+            }
+        } finally {
+            handler.onDestroy()
         }
     }
 
