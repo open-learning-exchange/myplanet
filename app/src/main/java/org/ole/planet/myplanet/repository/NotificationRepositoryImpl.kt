@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import io.realm.Sort
 import java.util.Date
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -10,13 +11,29 @@ class NotificationRepositoryImpl @Inject constructor(
         databaseService: DatabaseService,
     ) : RealmRepository(databaseService), NotificationRepository {
 
-    override suspend fun getUnreadCount(userId: String?): Int {
-        if (userId == null) return 0
+    override suspend fun getNotifications(userId: String?, filter: NotificationFilter): List<RealmNotification> {
+        if (userId.isNullOrEmpty()) return emptyList()
 
-        return count(RealmNotification::class.java) {
+        return queryList(RealmNotification::class.java) {
             equalTo("userId", userId)
-            equalTo("isRead", false)
-        }.toInt()
+            when (filter) {
+                NotificationFilter.READ -> equalTo("isRead", true)
+                NotificationFilter.UNREAD -> equalTo("isRead", false)
+                NotificationFilter.ALL -> {
+                }
+            }
+            sort("isRead", Sort.ASCENDING, "createdAt", Sort.DESCENDING)
+        }.filter { notification ->
+            notification.message.isNotEmpty() && notification.message != "INVALID"
+        }
+    }
+
+    override suspend fun getUnreadNotifications(userId: String?): List<RealmNotification> {
+        return getNotifications(userId, NotificationFilter.UNREAD)
+    }
+
+    override suspend fun getUnreadCount(userId: String?): Int {
+        return getUnreadNotifications(userId).size
     }
 
     override suspend fun updateResourceNotification(userId: String?) {
