@@ -145,7 +145,6 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         myLifeList.add(RealmMyLife("ic_my_survey", userId, getString(R.string.my_survey)))
         myLifeList.add(RealmMyLife("ic_references", userId, getString(R.string.references)))
         myLifeList.add(RealmMyLife("ic_calendar", userId, getString(R.string.calendar)))
-        myLifeList.add(RealmMyLife("ic_contacts", userId, getString(R.string.contacts)))
         myLifeList.add(RealmMyLife("ic_mypersonals", userId, getString(R.string.mypersonals)))
         return myLifeList
     }
