@@ -11,8 +11,6 @@ import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayoutMediator
 import dagger.hilt.android.AndroidEntryPoint
-import java.util.Date
-import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -29,7 +27,6 @@ import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMemberCount
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -459,16 +456,13 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         val teamType = getEffectiveTeamType()
 
         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-            databaseService.executeTransactionAsync { r ->
-                val log = r.createObject(RealmTeamLog::class.java, "${UUID.randomUUID()}")
-                log.teamId = getEffectiveTeamId()
-                log.user = userName
-                log.createdOn = userPlanetCode
-                log.type = "teamVisit"
-                log.teamType = teamType
-                log.parentCode = userParentCode
-                log.time = Date().time
-            }
+            teamRepository.logTeamVisit(
+                teamId = getEffectiveTeamId(),
+                userName = userName,
+                userPlanetCode = userPlanetCode,
+                userParentCode = userParentCode,
+                teamType = teamType,
+            )
         }
     }
 
