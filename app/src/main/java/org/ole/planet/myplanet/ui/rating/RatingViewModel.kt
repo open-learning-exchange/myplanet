@@ -26,6 +26,7 @@ class RatingViewModel @Inject constructor(
 
     private val _userState = MutableStateFlow<RealmUserModel?>(null)
     val userState: StateFlow<RealmUserModel?> = _userState.asStateFlow()
+    private val _userIdentifier = MutableStateFlow<String?>(null)
 
     sealed class RatingUiState {
         object Loading : RatingUiState()
@@ -50,12 +51,16 @@ class RatingViewModel @Inject constructor(
             try {
                 _ratingState.value = RatingUiState.Loading
 
-                _userState.value = userRepository.getUserById(userId)
+                val user = userRepository.getUserById(userId)
+                _userState.value = user
+                val resolvedUserId = user?.primaryIdentifier() ?: userId
+                _userIdentifier.value = resolvedUserId
 
-                val summary = ratingRepository.getRatingSummary(type, itemId, userId)
+                val summary = ratingRepository.getRatingSummary(type, itemId, resolvedUserId)
                 _ratingState.value = summary.toUiState()
             } catch (e: Exception) {
                 _userState.value = null
+                _userIdentifier.value = null
                 _ratingState.value = RatingUiState.Error(e.message ?: "Failed to load rating data")
             }
         }
@@ -81,12 +86,14 @@ class RatingViewModel @Inject constructor(
                 }
 
                 _userState.value = user
+                val resolvedUserId = _userIdentifier.value ?: user.primaryIdentifier() ?: userId
+                _userIdentifier.value = resolvedUserId
 
                 val summary = ratingRepository.submitRating(
                     type = type,
                     itemId = itemId,
                     title = title,
-                    user = user,
+                    userId = resolvedUserId,
                     rating = rating,
                     comment = comment
                 )
@@ -95,6 +102,7 @@ class RatingViewModel @Inject constructor(
                 _submitState.value = SubmitState.Success
             } catch (e: Exception) {
                 _submitState.value = SubmitState.Error(e.message ?: "Failed to submit rating")
+                _userIdentifier.value = null
             } finally {
                 _submitState.value = SubmitState.Idle
             }
@@ -108,4 +116,7 @@ class RatingViewModel @Inject constructor(
             totalRatings = totalRatings,
             userRating = userRating
         )
+
+    private fun RealmUserModel.primaryIdentifier(): String? =
+        id?.takeIf { it.isNotBlank() } ?: _id?.takeIf { it.isNotBlank() }
 }
