@@ -312,7 +312,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
                             currentList.removeAt(adjustedPos)
                             submitListSafely(currentList)
                         }
-                        NewsActions.deletePost(context, mRealm, news, currentList.toMutableList(), teamName, listener)
+                        NewsActions.deletePost(mRealm, news, currentList.toMutableList(), teamName, listener)
                     }
                     .setNegativeButton(R.string.cancel, null)
                     .show()

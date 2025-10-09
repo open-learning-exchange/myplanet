@@ -31,20 +31,6 @@ open class RealmAnswer : RealmObject() {
             return array
         }
 
-    fun setValueChoices(map: HashMap<String, String>?, isLastAnsValid: Boolean) {
-        if (!isLastAnsValid) {
-            valueChoices?.clear()
-        }
-        if (map != null) {
-            for (key in map.keys) {
-                val ob = JsonObject()
-                ob.addProperty("id", map[key])
-                ob.addProperty("text", key)
-                valueChoices?.add(Gson().toJson(ob))
-            }
-        }
-    }
-
     companion object {
         @JvmStatic
         fun serializeRealmAnswer(answers: RealmList<RealmAnswer>): JsonArray {
