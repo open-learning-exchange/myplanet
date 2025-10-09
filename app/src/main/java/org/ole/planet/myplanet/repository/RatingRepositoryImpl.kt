@@ -43,16 +43,18 @@ class RatingRepositoryImpl @Inject constructor(
         type: String,
         itemId: String,
         title: String,
-        user: RealmUserModel,
+        userId: String,
+        userMetadata: RatingUserMetadata?,
         rating: Float,
         comment: String,
     ): RatingSummary {
-        val userId = user.id ?: user._id
-        require(!userId.isNullOrBlank()) { "User ID is required to submit a rating" }
+        val resolvedUser = resolveUserMetadata(userId, userMetadata)
+        val resolvedUserId = resolvedUser.resolvedUserId()
+        require(!resolvedUserId.isNullOrBlank()) { "Resolved user is missing an identifier" }
 
         val existingRating = queryList(RealmRating::class.java) {
             equalTo("type", type)
-            equalTo("userId", userId)
+            equalTo("userId", resolvedUserId)
             equalTo("item", itemId)
         }.firstOrNull()
 
@@ -60,15 +62,15 @@ class RatingRepositoryImpl @Inject constructor(
             val newRating = RealmRating().apply {
                 id = UUID.randomUUID().toString()
             }
-            setRatingData(newRating, user, type, itemId, title, rating, comment)
+            setRatingData(newRating, resolvedUser, type, itemId, title, rating, comment)
             save(newRating)
         } else {
             update(RealmRating::class.java, "id", existingRating.id!!) { ratingObject ->
-                setRatingData(ratingObject, user, type, itemId, title, rating, comment)
+                setRatingData(ratingObject, resolvedUser, type, itemId, title, rating, comment)
             }
         }
 
-        return getRatingSummary(type, itemId, userId)
+        return getRatingSummary(type, itemId, resolvedUserId)
     }
 
     private fun RealmRating.toRatingEntry(): RatingEntry =
@@ -78,28 +80,59 @@ class RatingRepositoryImpl @Inject constructor(
             rate = rate,
         )
 
+    private suspend fun resolveUserMetadata(
+        userId: String,
+        providedMetadata: RatingUserMetadata?,
+    ): RatingUserMetadata {
+        if (providedMetadata != null) {
+            val resolvedId = providedMetadata.resolvedUserId()
+            require(!resolvedId.isNullOrBlank()) { "Provided user metadata is missing a valid identifier" }
+            return providedMetadata
+        }
+
+        require(userId.isNotBlank()) { "User ID is required to submit a rating" }
+
+        val user = findByField(RealmUserModel::class.java, "id", userId)
+            ?: findByField(RealmUserModel::class.java, "_id", userId)
+
+        val resolvedUser = requireNotNull(user) { "Unable to locate user with ID '$userId'" }
+        return resolvedUser.toRatingUserMetadata()
+    }
+
     private fun setRatingData(
         ratingObject: RealmRating,
-        userModel: RealmUserModel,
+        userMetadata: RatingUserMetadata,
         type: String,
         itemId: String,
         title: String,
         rating: Float,
         comment: String,
     ) {
+        val resolvedUserId = userMetadata.resolvedUserId()
+        require(!resolvedUserId.isNullOrBlank()) { "User data is missing a valid identifier" }
+
         ratingObject.apply {
             isUpdated = true
             this.comment = comment
             rate = rating.toInt()
             time = Date().time
-            userId = userModel.id ?: userModel._id
-            createdOn = userModel.parentCode
-            parentCode = userModel.parentCode
-            planetCode = userModel.planetCode
-            user = gson.toJson(userModel.serialize())
+            userId = resolvedUserId
+            createdOn = userMetadata.parentCode
+            parentCode = userMetadata.parentCode
+            planetCode = userMetadata.planetCode
+            user = gson.toJson(userMetadata.serialized)
             this.type = type
             item = itemId
             this.title = title
         }
     }
+
+    private fun RealmUserModel.toRatingUserMetadata(): RatingUserMetadata =
+        RatingUserMetadata(
+            primaryId = id,
+            legacyId = _id,
+            parentCode = parentCode,
+            planetCode = planetCode,
+            serialized = serialize(),
+        )
 }

@@ -1,6 +1,6 @@
 package org.ole.planet.myplanet.repository
 
-import org.ole.planet.myplanet.model.RealmUserModel
+import com.google.gson.JsonObject
 
 interface RatingRepository {
     suspend fun getRatingSummary(type: String, itemId: String, userId: String): RatingSummary
@@ -9,7 +9,8 @@ interface RatingRepository {
         type: String,
         itemId: String,
         title: String,
-        user: RealmUserModel,
+        userId: String,
+        userMetadata: RatingUserMetadata? = null,
         rating: Float,
         comment: String,
     ): RatingSummary
@@ -27,3 +28,15 @@ data class RatingSummary(
     val totalRatings: Int,
     val userRating: Int?,
 )
+
+data class RatingUserMetadata(
+    val primaryId: String?,
+    val legacyId: String?,
+    val parentCode: String?,
+    val planetCode: String?,
+    val serialized: JsonObject,
+) {
+    fun resolvedUserId(): String? =
+        primaryId?.takeIf { it.isNotBlank() }
+            ?: legacyId?.takeIf { it.isNotBlank() }
+}

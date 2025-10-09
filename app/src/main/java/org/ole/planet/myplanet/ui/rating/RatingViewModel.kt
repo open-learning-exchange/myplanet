@@ -11,6 +11,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.RatingEntry
 import org.ole.planet.myplanet.repository.RatingRepository
 import org.ole.planet.myplanet.repository.RatingSummary
+import org.ole.planet.myplanet.repository.RatingUserMetadata
 import org.ole.planet.myplanet.repository.UserRepository
 
 class RatingViewModel @Inject constructor(
@@ -82,11 +83,15 @@ class RatingViewModel @Inject constructor(
 
                 _userState.value = user
 
+                val userMetadata = user.toRatingUserMetadata()
+                val resolvedUserId = userMetadata.resolvedUserId() ?: userId
+
                 val summary = ratingRepository.submitRating(
                     type = type,
                     itemId = itemId,
                     title = title,
-                    user = user,
+                    userId = resolvedUserId,
+                    userMetadata = userMetadata,
                     rating = rating,
                     comment = comment
                 )
@@ -109,3 +114,12 @@ class RatingViewModel @Inject constructor(
             userRating = userRating
         )
 }
+
+private fun RealmUserModel.toRatingUserMetadata(): RatingUserMetadata =
+    RatingUserMetadata(
+        primaryId = id,
+        legacyId = _id,
+        parentCode = parentCode,
+        planetCode = planetCode,
+        serialized = serialize(),
+    )
