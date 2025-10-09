@@ -140,13 +140,11 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
     fun getMyLifeListBase(userId: String?): List<RealmMyLife> {
         val myLifeList: MutableList<RealmMyLife> = ArrayList()
         myLifeList.add(RealmMyLife("ic_myhealth", userId, getString(R.string.myhealth)))
-        myLifeList.add(RealmMyLife("ic_messages", userId, getString(R.string.messeges)))
         myLifeList.add(RealmMyLife("my_achievement", userId, getString(R.string.achievements)))
         myLifeList.add(RealmMyLife("ic_submissions", userId, getString(R.string.submission)))
         myLifeList.add(RealmMyLife("ic_my_survey", userId, getString(R.string.my_survey)))
         myLifeList.add(RealmMyLife("ic_references", userId, getString(R.string.references)))
         myLifeList.add(RealmMyLife("ic_calendar", userId, getString(R.string.calendar)))
-        myLifeList.add(RealmMyLife("ic_contacts", userId, getString(R.string.contacts)))
         myLifeList.add(RealmMyLife("ic_mypersonals", userId, getString(R.string.mypersonals)))
         return myLifeList
     }

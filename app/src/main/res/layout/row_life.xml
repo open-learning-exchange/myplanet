@@ -17,7 +17,6 @@
             android:layout_width="100dp"
             android:layout_height="match_parent"
             android:layout_alignParentStart="true"
-            app:srcCompat="@drawable/ic_messages"
             app:tint="@color/daynight_textColor" />
         <TextView
             android:id="@+id/titleTextView"
@@ -26,7 +25,6 @@
             android:layout_marginLeft="15dp"
             android:layout_marginTop="@dimen/_20dp"
             android:layout_toRightOf="@id/itemImageView"
-            android:hint="@string/messeges"
             android:textStyle="bold"
             android:textColor="@color/daynight_textColor" />
         <ImageButton
