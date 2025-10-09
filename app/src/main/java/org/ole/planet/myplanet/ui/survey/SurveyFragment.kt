@@ -27,7 +27,6 @@ import org.ole.planet.myplanet.databinding.FragmentSurveyBinding
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.repository.SurveyRepository
 import org.ole.planet.myplanet.service.SyncManager
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utilities.DialogUtils
@@ -72,8 +71,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         super.onCreate(savedInstanceState)
         isTeam = arguments?.getBoolean("isTeam", false) == true
         teamId = arguments?.getString("teamId", null)
-        profileDbHandler = UserProfileDbHandler(requireContext())
-        val userProfileModel = profileDbHandler?.userModel
+        val userProfileModel = profileDbHandler.userModel
         adapter = AdapterSurvey(requireActivity(), mRealm, userProfileModel?.id, isTeam, teamId, this, settings)
         prefManager = SharedPrefManager(requireContext())
         

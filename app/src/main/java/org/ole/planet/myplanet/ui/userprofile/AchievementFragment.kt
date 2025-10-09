@@ -34,7 +34,6 @@ import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
@@ -75,7 +74,7 @@ class AchievementFragment : BaseContainerFragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentAchievementBinding.inflate(inflater, container, false)
         aRealm = databaseService.realmInstance
-        user = UserProfileDbHandler(requireContext()).userModel
+        user = profileDbHandler.userModel
         binding.btnEdit.setOnClickListener {
             if (listener != null) listener?.openCallFragment(EditAchievementFragment())
         }

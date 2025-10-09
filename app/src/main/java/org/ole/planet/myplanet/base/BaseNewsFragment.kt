@@ -28,7 +28,6 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ImageThumbBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.news.AdapterNews
 import org.ole.planet.myplanet.ui.news.AdapterNews.OnNewsItemClickListener
@@ -52,7 +51,6 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         imageList = RealmList()
-        profileDbHandler = UserProfileDbHandler(requireContext())
         openFolderLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
             if (result.resultCode == Activity.RESULT_OK) {
                 val data = result.data
@@ -102,12 +100,6 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
         if (context is OnHomeItemClickListener) homeItemClickListener = context
     }
 
-    override fun onDestroy() {
-        profileDbHandler?.onDestroy()
-        profileDbHandler = null
-        super.onDestroy()
-    }
-
     override fun showReply(news: RealmNews?, fromLogin: Boolean, nonTeamMember: Boolean) {
         if (news != null) {
             val intent = Intent(activity, ReplyActivity::class.java).putExtra("id", news.id)
@@ -119,7 +111,7 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
 
     override fun onMemberSelected(userModel: RealmUserModel?) {
         if (!isAdded) return
-        val handler = profileDbHandler ?: return
+        val handler = profileDbHandler
         val fragment = NewsActions.showMemberDetails(userModel, handler) ?: return
         NavigationHelper.replaceFragment(
             requireActivity().supportFragmentManager,

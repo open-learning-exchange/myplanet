@@ -64,7 +64,6 @@ abstract class BaseResourceFragment : Fragment() {
     var homeItemClickListener: OnHomeItemClickListener? = null
     var model: RealmUserModel? = null
     protected lateinit var mRealm: Realm
-    var profileDbHandler: UserProfileDbHandler? = null
     var editor: SharedPreferences.Editor? = null
     var lv: CheckboxListView? = null
     var convertView: View? = null
@@ -77,6 +76,8 @@ abstract class BaseResourceFragment : Fragment() {
     lateinit var submissionRepository: SubmissionRepository
     @Inject
     lateinit var databaseService: DatabaseService
+    @Inject
+    lateinit var profileDbHandler: UserProfileDbHandler
     @Inject
     @AppPreferences
     lateinit var settings: SharedPreferences
@@ -159,7 +160,7 @@ abstract class BaseResourceFragment : Fragment() {
         Service(requireContext()).isPlanetAvailable(object : PlanetAvailableListener {
             override fun isAvailable() {
                 if (!isAdded) return
-                val userId = profileDbHandler?.userModel?.id
+                val userId = profileDbHandler.userModel?.id
                 val librariesForDialog = if (userId.isNullOrBlank()) {
                     dbMyLibrary
                 } else {
@@ -214,7 +215,7 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     fun showPendingSurveyDialog() {
-        model = UserProfileDbHandler(requireContext()).userModel
+        model = profileDbHandler.userModel
         viewLifecycleOwner.lifecycleScope.launch {
             val list = submissionRepository.getPendingSurveys(model?.id)
             if (list.isEmpty()) return@launch
@@ -415,7 +416,7 @@ abstract class BaseResourceFragment : Fragment() {
     fun addToLibrary(libraryItems: List<RealmMyLibrary?>, selectedItems: ArrayList<Int>) {
         if (!isRealmInitialized()) return
         
-        val userId = profileDbHandler?.userModel?.id ?: return
+        val userId = profileDbHandler.userModel?.id ?: return
 
         try {
             if (!mRealm.isInTransaction) {
@@ -445,7 +446,7 @@ abstract class BaseResourceFragment : Fragment() {
     fun addAllToLibrary(libraryItems: List<RealmMyLibrary?>) {
         if (!isRealmInitialized()) return
 
-        val userId = profileDbHandler?.userModel?.id ?: return
+        val userId = profileDbHandler.userModel?.id ?: return
 
         try {
             if (!mRealm.isInTransaction) {
@@ -485,8 +486,9 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     override fun onDestroy() {
-        profileDbHandler?.onDestroy()
-        profileDbHandler = null
+        if (::profileDbHandler.isInitialized) {
+            profileDbHandler.onDestroy()
+        }
         cleanupRealm()
         super.onDestroy()
     }
