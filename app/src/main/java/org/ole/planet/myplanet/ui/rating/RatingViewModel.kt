@@ -86,7 +86,7 @@ class RatingViewModel @Inject constructor(
                     type = type,
                     itemId = itemId,
                     title = title,
-                    user = user,
+                    userId = user.id?.takeIf { it.isNotBlank() } ?: user._id ?: userId,
                     rating = rating,
                     comment = comment
                 )
