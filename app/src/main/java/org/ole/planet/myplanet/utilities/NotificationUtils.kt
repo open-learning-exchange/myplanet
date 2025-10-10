@@ -375,10 +375,6 @@ object NotificationUtils {
             saveActiveNotifications()
         }
 
-        fun clearSessionTracking() {
-            sessionShownNotifications.clear()
-        }
-
         private fun loadActiveNotifications() {
             val saved = preferences.getStringSet(KEY_ACTIVE_NOTIFICATIONS, emptySet()) ?: emptySet()
             activeNotifications.addAll(saved)

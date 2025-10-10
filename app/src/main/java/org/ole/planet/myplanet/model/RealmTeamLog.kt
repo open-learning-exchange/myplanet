@@ -39,13 +39,6 @@ open class RealmTeamLog : RealmObject() {
         }
 
         @JvmStatic
-        fun getVisitByTeam(realm: Realm, teamId: String?): Long {
-            val calendar = Calendar.getInstance()
-            calendar.add(Calendar.DAY_OF_YEAR, -30)
-            return realm.where(RealmTeamLog::class.java).equalTo("type", "teamVisit").equalTo("teamId", teamId).greaterThan("time", calendar.timeInMillis).count()
-        }
-
-        @JvmStatic
         fun serializeTeamActivities(log: RealmTeamLog, context: Context): JsonObject {
             val ob = JsonObject()
             ob.addProperty("user", log.user)

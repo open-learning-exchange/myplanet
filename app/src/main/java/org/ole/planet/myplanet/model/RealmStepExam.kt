@@ -89,12 +89,6 @@ open class RealmStepExam : RealmObject() {
         }
 
         @JvmStatic
-        fun getNoOfExam(mRealm: Realm, courseId: String?): Int {
-            val res: RealmResults<*>? = mRealm.where(RealmStepExam::class.java).equalTo("courseId", courseId).findAll()
-            return res?.size ?: 0
-        }
-
-        @JvmStatic
         fun serializeExam(mRealm: Realm, exam: RealmStepExam): JsonObject {
             val `object` = JsonObject()
             `object`.addProperty("_id", exam.id)

@@ -43,8 +43,4 @@ object ThreadSafeRealmHelper {
         }
     }
     
-    fun closeAllThreadRealms() {
-        // This is called during app shutdown
-        closeThreadRealm()
-    }
 }
