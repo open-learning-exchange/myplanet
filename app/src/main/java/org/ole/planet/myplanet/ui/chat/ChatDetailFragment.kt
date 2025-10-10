@@ -498,8 +498,10 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun showError(message: String?) {
-        binding.textGchatIndicator.visibility = View.VISIBLE
-        binding.textGchatIndicator.text = context?.getString(R.string.message_placeholder, message)
+        _binding?.let { binding ->
+            binding.textGchatIndicator.visibility = View.VISIBLE
+            binding.textGchatIndicator.text = context?.getString(R.string.message_placeholder, message)
+        }
     }
 
     private fun saveNewChat(query: String, chatResponse: String, responseBody: ChatModel) {
