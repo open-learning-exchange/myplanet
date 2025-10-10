@@ -126,7 +126,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         updateStepDisplay(currentPosition)
 
         // Update Next/Finish button visibility when returning from exam
-        if (currentPosition >= steps.size - 1) {
+        if (currentPosition >= steps.size) {
             binding.nextStep.visibility = View.GONE
             binding.finishStep.visibility = View.VISIBLE
         } else {
@@ -255,7 +255,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
     private fun onClickNext() {
         binding.tvStep.text = String.format(Locale.getDefault(), "${getString(R.string.step)} %d/%d", binding.viewPager2.currentItem, steps.size)
-        if (binding.viewPager2.currentItem >= steps.size - 1) {
+        if (binding.viewPager2.currentItem >= steps.size) {
             binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_grey_500))
             binding.nextStep.visibility = View.GONE
             binding.finishStep.visibility = View.VISIBLE
