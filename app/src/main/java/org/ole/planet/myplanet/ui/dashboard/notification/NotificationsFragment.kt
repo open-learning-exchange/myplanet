@@ -233,7 +233,9 @@ class NotificationsFragment : Fragment() {
     }
 
     private fun updateMarkAllAsReadButtonVisibility() {
-        binding.btnMarkAllAsRead.visibility = if (unreadCountCache > 0) View.VISIBLE else View.GONE
+        _binding?.let { binding ->
+            binding.btnMarkAllAsRead.visibility = if (unreadCountCache > 0) View.VISIBLE else View.GONE
+        }
     }
 
     private fun getUnreadNotificationsSize(): Int {
@@ -273,6 +275,7 @@ class NotificationsFragment : Fragment() {
         backgroundAction: suspend () -> Set<String>,
     ) {
         viewLifecycleOwner.lifecycleScope.launch {
+            val binding = _binding ?: return@launch
             val selectedFilter = binding.status.selectedItem.toString().lowercase()
             val previousList = adapter.currentList.toList()
             val previousUnreadCount = unreadCountCache
@@ -317,7 +320,13 @@ class NotificationsFragment : Fragment() {
                 }
                 updateMarkAllAsReadButtonVisibility()
                 updateUnreadCount()
-                Snackbar.make(binding.root, getString(R.string.failed_to_mark_as_read), Snackbar.LENGTH_LONG).show()
+                _binding?.let { currentBinding ->
+                    Snackbar.make(
+                        currentBinding.root,
+                        getString(R.string.failed_to_mark_as_read),
+                        Snackbar.LENGTH_LONG,
+                    ).show()
+                }
             }
         }
     }
