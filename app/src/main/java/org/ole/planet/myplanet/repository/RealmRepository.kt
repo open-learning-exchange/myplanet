@@ -39,12 +39,12 @@ open class RealmRepository(private val databaseService: DatabaseService) {
             val results = realm.where(clazz).apply(builder).findAllAsync()
             val listener =
                 RealmChangeListener<RealmResults<T>> { updatedResults ->
-                    if (!updatedResults.isClosed && updatedResults.isLoaded) {
+                    if (updatedResults.isLoaded) {
                         scope.trySend(realm.copyFromRealm(updatedResults))
                     }
                 }
             results.addChangeListener(listener)
-            if (results.isLoaded && !results.isClosed) {
+            if (results.isLoaded) {
                 scope.trySend(realm.copyFromRealm(results))
             }
             return@withRealmFlow { results.removeChangeListener(listener) }
