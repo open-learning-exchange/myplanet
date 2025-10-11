@@ -42,7 +42,7 @@ class CommunityPagerAdapter(private val fm: FragmentActivity, private val id: St
     }
 
     override fun getItemCount(): Int {
-        return if (fromLogin) 3 else 6
+        return 6
     }
 
     fun getPageTitle(position: Int): CharSequence {
@@ -55,9 +55,9 @@ class CommunityPagerAdapter(private val fm: FragmentActivity, private val id: St
             0 -> fm.getString(R.string.our_voices)
             1 -> leaders
             2 -> fm.getString(R.string.calendar)
-            3 -> if (!fromLogin) fm.getString(R.string.services) else ""
-            4 -> if (!fromLogin) fm.getString(R.string.finances) else ""
-            5 -> if (!fromLogin) fm.getString(R.string.reports) else ""
+            3 -> fm.getString(R.string.services)
+            4 -> fm.getString(R.string.finances)
+            5 -> fm.getString(R.string.reports)
             else -> ""
         }
     }
