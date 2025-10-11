@@ -4,7 +4,6 @@ import android.text.TextUtils
 import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmObject
-import io.realm.RealmResults
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.utilities.JsonUtils
 
