@@ -586,10 +586,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             try {
                 dashboardViewModel.updateResourceNotification(userId)
                 databaseService.realmInstance.use { backgroundRealm ->
-                    backgroundRealm.executeTransaction { realm ->
-                        val createdNotifications = createNotifications(realm, userId)
-                        newNotifications.addAll(createdNotifications)
-                    }
+                    val createdNotifications = createNotifications(backgroundRealm, userId)
+                    newNotifications.addAll(createdNotifications)
 
                     unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
                 }
@@ -705,7 +703,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    private fun createNotifications(realm: Realm, userId: String?): List<NotificationUtils.NotificationConfig> {
+    private suspend fun createNotifications(
+        realm: Realm,
+        userId: String?,
+    ): List<NotificationUtils.NotificationConfig> {
         val newNotifications = mutableListOf<NotificationUtils.NotificationConfig>()
         createSurveyDatabaseNotifications(realm, userId)
         createTaskDatabaseNotifications(realm, userId)
@@ -761,7 +762,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    private fun createSurveyDatabaseNotifications(realm: Realm, userId: String?) {
+    private suspend fun createSurveyDatabaseNotifications(realm: Realm, userId: String?) {
         val pendingSurveys = realm.where(RealmSubmission::class.java)
             .equalTo("userId", userId)
             .equalTo("status", "pending")
@@ -775,11 +776,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 .findFirst()
                 ?.name
         }.forEach { title ->
-            dashboardViewModel.createNotificationIfNotExists(realm, "survey", title, title, userId)
+            dashboardViewModel.createNotificationIfMissing("survey", title, title, userId)
         }
     }
 
-    private fun createTaskDatabaseNotifications(realm: Realm, userId: String?) {
+    private suspend fun createTaskDatabaseNotifications(realm: Realm, userId: String?) {
         val tasks = realm.where(RealmTeamTask::class.java)
             .notEqualTo("status", "archived")
             .equalTo("completed", false)
@@ -787,8 +788,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             .findAll()
 
         tasks.forEach { task ->
-            dashboardViewModel.createNotificationIfNotExists(
-                realm,
+            dashboardViewModel.createNotificationIfMissing(
                 "task",
                 "${task.title} ${formatDate(task.deadline)}",
                 task.id,
@@ -797,16 +797,16 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    private fun createStorageDatabaseNotifications(realm: Realm, userId: String?) {
+    private suspend fun createStorageDatabaseNotifications(realm: Realm, userId: String?) {
         val storageRatio = FileUtils.totalAvailableMemoryRatio(this)
         if (storageRatio > 85) {
-            dashboardViewModel.createNotificationIfNotExists(realm, "storage", "$storageRatio%", "storage", userId)
+            dashboardViewModel.createNotificationIfMissing("storage", "$storageRatio%", "storage", userId)
         }
 
-        dashboardViewModel.createNotificationIfNotExists(realm, "storage", "90%", "storage_test", userId)
+        dashboardViewModel.createNotificationIfMissing("storage", "90%", "storage_test", userId)
     }
 
-    private fun createJoinRequestDatabaseNotifications(realm: Realm, userId: String?) {
+    private suspend fun createJoinRequestDatabaseNotifications(realm: Realm, userId: String?) {
         val teamLeaderMemberships = realm.where(RealmMyTeam::class.java)
             .equalTo("userId", userId)
             .equalTo("docType", "membership")
@@ -832,8 +832,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 val teamName = team?.name ?: "Unknown Team"
                 val message = getString(R.string.user_requested_to_join_team, requesterName, teamName)
 
-                dashboardViewModel.createNotificationIfNotExists(
-                    realm, "join_request", message, joinRequest._id, userId
+                dashboardViewModel.createNotificationIfMissing(
+                    "join_request",
+                    message,
+                    joinRequest._id,
+                    userId
                 )
             }
         }
