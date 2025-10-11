@@ -11,7 +11,10 @@ import android.view.ViewGroup
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
+import androidx.core.view.isVisible
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.gson.JsonObject
 import io.realm.RealmResults
@@ -21,6 +24,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
@@ -45,9 +49,7 @@ class ReportsFragment : BaseTeamFragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentReportsBinding.inflate(inflater, container, false)
         prefData = SharedPrefManager(requireContext())
-        if (!isMember()) {
-            binding.addReports.visibility = View.GONE
-        }
+        binding.addReports.isVisible = false
         binding.addReports.setOnClickListener{
             val dialogAddReportBinding = DialogAddReportBinding.inflate(LayoutInflater.from(requireContext()))
             val v: View = dialogAddReportBinding.root
@@ -225,6 +227,17 @@ class ReportsFragment : BaseTeamFragment() {
             .sort("date", Sort.DESCENDING)
             .findAll()
         updatedReportsList(list as RealmResults<RealmMyTeam>)
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                isMemberFlow.collectLatest { isMember ->
+                    binding.addReports.isVisible = isMember
+                    if (this@ReportsFragment::adapterReports.isInitialized) {
+                        adapterReports.setNonTeamMember(!isMember)
+                    }
+                }
+            }
+        }
     }
 
     override fun onNewsItemClick(news: RealmNews?) {}
@@ -239,7 +252,7 @@ class ReportsFragment : BaseTeamFragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             adapterReports = AdapterReports(requireContext(), results)
-            adapterReports.setNonTeamMember(!isMember())
+            adapterReports.setNonTeamMember(!isMemberFlow.value)
             binding.rvReports.layoutManager = LinearLayoutManager(activity)
             binding.rvReports.adapter = adapterReports
             adapterReports.notifyDataSetChanged()
