@@ -56,6 +56,8 @@ class CourseRepositoryImpl @Inject constructor(
         hasExams: Boolean,
     ): Boolean {
         val userId = user?.id ?: return false
+        val planetCode = user.planetCode
+        val parentCode = user.parentCode
         var success = false
         executeTransaction { realm ->
             val step = realm.where(RealmCourseStep::class.java)
@@ -76,9 +78,9 @@ class CourseRepositoryImpl @Inject constructor(
             if (!hasExams) {
                 progress.passed = true
             }
-            progress.createdOn = user.planetCode
+            progress.createdOn = planetCode
             progress.updatedDate = now
-            progress.parentCode = user.parentCode
+            progress.parentCode = parentCode
             progress.userId = userId
             success = true
         }
