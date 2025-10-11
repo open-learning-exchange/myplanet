@@ -11,6 +11,7 @@ import android.widget.DatePicker
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.annotation.VisibleForTesting
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
@@ -18,6 +19,7 @@ import com.bumptech.glide.Glide
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayout
 import io.realm.Case
+import io.realm.Realm
 import io.realm.RealmChangeListener
 import io.realm.RealmObject
 import io.realm.RealmResults
@@ -251,25 +253,45 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     private fun setUpMyLife(userId: String?) {
-        val realm = databaseService.realmInstance
-        val realmObjects = RealmMyLife.getMyLifeByUserId(mRealm, settings)
-        if (realmObjects.isEmpty()) {
-            if (!realm.isInTransaction) {
-                realm.beginTransaction()
-            }
-            val myLifeListBase = getMyLifeListBase(userId)
-            var ml: RealmMyLife
+        val myLifeTemplates = getMyLifeListBase(userId)
+        databaseService.withRealm { realm ->
+            populateMyLifeIfEmpty(realm, userId, myLifeTemplates)
+        }
+    }
+
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal fun populateMyLifeIfEmpty(
+        realm: Realm,
+        userId: String?,
+        templates: List<RealmMyLife>,
+    ) {
+        if (realm.isClosed) {
+            return
+        }
+        val query = realm.where(RealmMyLife::class.java)
+        if (userId != null) {
+            query.equalTo("userId", userId)
+        } else {
+            query.isNull("userId")
+        }
+        val hasExistingEntries = query.findAll().isNotEmpty()
+        if (hasExistingEntries) {
+            return
+        }
+        realm.executeTransaction { transactionRealm ->
             var weight = 1
-            for (item in myLifeListBase) {
-                ml = realm.createObject(RealmMyLife::class.java, UUID.randomUUID().toString())
-                ml.title = item.title
-                ml.imageId = item.imageId
+            templates.forEach { template ->
+                val ml = transactionRealm.createObject(
+                    RealmMyLife::class.java,
+                    UUID.randomUUID().toString(),
+                )
+                ml.title = template.title
+                ml.imageId = template.imageId
                 ml.weight = weight
-                ml.userId = item.userId
+                ml.userId = template.userId ?: userId
                 ml.isVisible = true
                 weight++
             }
-            realm.commitTransaction()
         }
     }
 
