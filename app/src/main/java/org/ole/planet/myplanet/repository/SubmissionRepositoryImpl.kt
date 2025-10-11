@@ -100,6 +100,14 @@ class SubmissionRepositoryImpl @Inject constructor(
         return findByField(RealmSubmission::class.java, "id", id)
     }
 
+    override suspend fun getSubmissionsByIds(ids: List<String>): List<RealmSubmission> {
+        if (ids.isEmpty()) return emptyList()
+
+        return queryList(RealmSubmission::class.java) {
+            `in`("id", ids.toTypedArray())
+        }
+    }
+
     override suspend fun getSubmissionsByUserId(userId: String): List<RealmSubmission> {
         return queryList(RealmSubmission::class.java) {
             equalTo("userId", userId)

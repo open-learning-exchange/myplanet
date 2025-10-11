@@ -149,10 +149,10 @@ class BellDashboardFragment : BaseDashboardFragment() {
     }
 
     private fun checkPendingSurveys() {
-        if (checkScheduledReminders()) {
-            return
-        }
         viewLifecycleOwner.lifecycleScope.launch {
+            if (checkScheduledReminders()) {
+                return@launch
+            }
             val pendingSurveys = submissionRepository.getUniquePendingSurveys(user?.id)
 
             if (pendingSurveys.isNotEmpty()) {
@@ -256,7 +256,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         }
     }
 
-    private fun checkScheduledReminders(): Boolean {
+    private suspend fun checkScheduledReminders(): Boolean {
         val preferences = requireActivity().getSharedPreferences(PREF_SURVEY_REMINDERS, 0)
         val currentTime = System.currentTimeMillis()
 
@@ -276,12 +276,13 @@ class BellDashboardFragment : BaseDashboardFragment() {
         }
 
         for (surveyIds in remindersToShow) {
-            val surveyIdList = surveyIds.split(",")
-            val pendingSurveys = surveyIdList.mapNotNull { id ->
-                mRealm.where(RealmSubmission::class.java)
-                    .equalTo("id", id)
-                    .findFirst()
+            val surveyIdList = surveyIds.split(",").filter { it.isNotBlank() }
+            if (surveyIdList.isEmpty()) {
+                continue
             }
+            val submissions = submissionRepository.getSubmissionsByIds(surveyIdList)
+            val submissionsById = submissions.associateBy { it.id }
+            val pendingSurveys = surveyIdList.mapNotNull { submissionsById[it] }
 
             if (pendingSurveys.isNotEmpty()) {
                 showPendingSurveysReminder(pendingSurveys)
