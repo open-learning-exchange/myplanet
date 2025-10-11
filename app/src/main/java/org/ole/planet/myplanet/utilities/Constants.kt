@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.utilities
 
 import android.content.Context
 import androidx.preference.PreferenceManager
-import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmCertification
 import org.ole.planet.myplanet.model.RealmCourseProgress
