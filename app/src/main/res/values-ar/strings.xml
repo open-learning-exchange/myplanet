@@ -142,8 +142,6 @@
     <string name="languages">اللغات</string>
     <string name="txt_myLife">حياتي</string>
     <string name="achievements">إنجازاتي</string>
-    <string name="messeges">رسائلي</string>
-    <string name="contacts">جهات الاتصال</string>
     <string name="news">أخبار</string>
     <string name="references">المراجع</string>
     <string name="maps">الخرائط</string>
@@ -1049,7 +1047,6 @@
     <string name="confirm_removal">تأكيد الحذف</string>
     <string name="returning_user">مستخدم عائد</string>
     <string name="send_to_nation">اسمح بمشاركة إنجازاتك مع الوطن</string>
-    <string name="jcplayer_description">مشغل الصوت</string>
     <string name="image_resource">مصدر الصورة</string>
     <string name="play_audio">تشغيل الصوت</string>
     <string name="video_player">مشغل الفيديو</string>

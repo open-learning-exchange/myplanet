@@ -233,7 +233,9 @@ class NotificationsFragment : Fragment() {
     }
 
     private fun updateMarkAllAsReadButtonVisibility() {
-        _binding?.btnMarkAllAsRead?.visibility = if (unreadCountCache > 0) View.VISIBLE else View.GONE
+        _binding?.let { binding ->
+            binding.btnMarkAllAsRead.visibility = if (unreadCountCache > 0) View.VISIBLE else View.GONE
+        }
     }
 
     private fun getUnreadNotificationsSize(): Int {
@@ -323,9 +325,9 @@ class NotificationsFragment : Fragment() {
                 updateMarkAllAsReadButtonVisibility()
                 updateUnreadCount()
 
-                if (bindingOrNull != null) {
+                bindingOrNull?.let { currentBinding ->
                     Snackbar.make(
-                        bindingOrNull.root,
+                        currentBinding.root,
                         getString(R.string.failed_to_mark_as_read),
                         Snackbar.LENGTH_LONG,
                     ).show()

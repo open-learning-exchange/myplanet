@@ -183,7 +183,6 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.7.1'
     implementation 'androidx.recyclerview:recyclerview:1.4.0'
     implementation 'androidx.annotation:annotation:1.9.1'
-    implementation 'androidx.exifinterface:exifinterface:1.4.1'
     implementation 'androidx.cardview:cardview:1.0.0'
     implementation "androidx.core:core-ktx:1.17.0"
     implementation "androidx.security:security-crypto:1.1.0"
@@ -196,7 +195,6 @@ dependencies {
 
     implementation "com.github.VaibhavLakhera:Circular-Progress-View:0.1.2"
     implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
-    implementation 'com.github.jeancsanchez:jcplayer:2.7.2'
     implementation 'com.github.clans:fab:1.6.4'
     implementation 'com.applandeo:material-calendar-view:1.9.2'
     implementation 'com.afollestad.material-dialogs:commons:0.9.6.0'

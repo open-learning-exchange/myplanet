@@ -142,8 +142,6 @@
     <string name="languages">Languages</string>
     <string name="txt_myLife">myLife</string>
     <string name="achievements">myAchievements</string>
-    <string name="messeges">myMessages</string>
-    <string name="contacts">Contacts</string>
     <string name="news">News</string>
     <string name="references">References</string>
     <string name="maps">Maps</string>
@@ -1049,7 +1047,6 @@
     <string name="confirm_removal">Confirm removal</string>
     <string name="returning_user">Returning user</string>
     <string name="send_to_nation">Allow your achievements to be shared with the nation</string>
-    <string name="jcplayer_description">audio player</string>
     <string name="image_resource">image resource</string>
     <string name="play_audio">play audio</string>
     <string name="video_player">video player</string>
