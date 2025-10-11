@@ -211,6 +211,14 @@ class AddResourceActivity : AppCompatActivity() {
             else -> super.onOptionsItemSelected(item)
         }
     }
+
+    override fun onDestroy() {
+        if (::userProfileDbHandler.isInitialized) {
+            userProfileDbHandler.onDestroy()
+        }
+        super.onDestroy()
+    }
+
     private fun showExitConfirmationDialog() {
         AlertDialog.Builder(this,R.style.AlertDialogTheme)
             .setMessage(R.string.are_you_sure_you_want_to_exit_your_data_will_be_lost)
