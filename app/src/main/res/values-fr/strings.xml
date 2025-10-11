@@ -1047,7 +1047,6 @@
     <string name="confirm_removal">Confirmer la suppression</string>
     <string name="returning_user">Utilisateur régulier</string>
     <string name="send_to_nation">Autorisez la partage de vos réalisations avec la nation</string>
-    <string name="jcplayer_description">lecteur audio</string>
     <string name="image_resource">ressource d\'image</string>
     <string name="play_audio">lire l\'audio</string>
     <string name="video_player">lecteur vidéo</string>
