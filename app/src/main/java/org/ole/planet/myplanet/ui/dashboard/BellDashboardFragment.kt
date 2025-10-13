@@ -125,15 +125,15 @@ class BellDashboardFragment : BaseDashboardFragment() {
     }
 
     private suspend fun handleConnectingState() {
-        setNetworkIndicatorColor(R.color.md_yellow_600)
+        setNetworkIndicatorColor(com.mikepenz.materialize.R.color.md_yellow_600)
         val updateUrl = settings.getString("serverURL", "") ?: return
         val mapping = ServerUrlMapper().processUrl(updateUrl)
         try {
             val reachable = isServerReachable(mapping)
-            setNetworkIndicatorColor(if (reachable) R.color.green else R.color.md_yellow_600)
+            setNetworkIndicatorColor(if (reachable) R.color.green else com.mikepenz.materialize.R.color.md_yellow_600)
         } catch (e: Exception) {
             e.printStackTrace()
-            setNetworkIndicatorColor(R.color.md_yellow_600)
+            setNetworkIndicatorColor(com.mikepenz.materialize.R.color.md_yellow_600)
         }
     }
 
@@ -142,7 +142,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         context ?: return
 
         when (status) {
-            is NetworkStatus.Disconnected -> setNetworkIndicatorColor(R.color.md_red_700)
+            is NetworkStatus.Disconnected -> setNetworkIndicatorColor(com.mikepenz.materialize.R.color.md_red_700)
             is NetworkStatus.Connecting -> handleConnectingState()
             is NetworkStatus.Connected -> setNetworkIndicatorColor(R.color.green)
         }
@@ -393,7 +393,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         if (RealmCertification.isCourseCertified(mRealm, courseId)) {
             star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.colorPrimary))
         } else {
-            star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.md_blue_grey_300))
+            star.setColorFilter(ContextCompat.getColor(requireContext(), com.mikepenz.materialize.R.color.md_blue_grey_300))
         }
     }
 

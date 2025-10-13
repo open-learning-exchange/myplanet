@@ -481,14 +481,14 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     private fun getNews(holder: RecyclerView.ViewHolder, position: Int): RealmNews? {
         val news: RealmNews? = if (parentNews != null) {
             if (position == 0) {
-                (holder.itemView as CardView).setCardBackgroundColor(ContextCompat.getColor(context, R.color.md_blue_50))
+                (holder.itemView as CardView).setCardBackgroundColor(ContextCompat.getColor(context, com.mikepenz.materialize.R.color.md_blue_50))
                 parentNews
             } else {
-                (holder.itemView as CardView).setCardBackgroundColor(ContextCompat.getColor(context, R.color.md_white_1000))
+                (holder.itemView as CardView).setCardBackgroundColor(ContextCompat.getColor(context, com.mikepenz.materialize.R.color.md_white_1000))
                 getItem(position - 1)
             }
         } else {
-            (holder.itemView as CardView).setCardBackgroundColor(ContextCompat.getColor(context, R.color.md_white_1000))
+            (holder.itemView as CardView).setCardBackgroundColor(ContextCompat.getColor(context, com.mikepenz.materialize.R.color.md_white_1000))
             getItem(position)
         }
         return news
