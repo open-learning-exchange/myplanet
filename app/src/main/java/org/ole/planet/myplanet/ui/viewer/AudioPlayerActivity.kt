@@ -8,10 +8,13 @@ import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.DefaultTimeBar
 import com.bumptech.glide.Glide
 import java.io.File
 import java.util.regex.Pattern
@@ -20,9 +23,6 @@ import org.ole.planet.myplanet.databinding.ActivityAudioPlayerBinding
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
-import androidx.media3.ui.DefaultTimeBar
-import androidx.core.content.ContextCompat
-import androidx.media3.common.util.UnstableApi
 
 class AudioPlayerActivity : AppCompatActivity() {
 
