@@ -7,7 +7,6 @@ import android.net.NetworkCapabilities
 import android.os.Build
 import kotlin.math.max
 import kotlin.math.min
-import kotlinx.coroutines.sync.Semaphore
 
 data class SystemCapabilities(
     val availableMemoryMB: Long,
@@ -157,7 +156,4 @@ class AdaptiveBatchProcessor(private val context: Context) {
         }
     }
     
-    fun createSemaphore(config: SyncConfig): Semaphore {
-        return Semaphore(config.concurrencyLevel)
-    }
 }
