@@ -41,6 +41,7 @@ import com.bumptech.glide.request.target.Target
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
+import java.io.File
 import java.lang.String.format
 import java.util.ArrayList
 import java.util.Calendar
@@ -97,13 +98,19 @@ class UserProfileFragment : Fragment() {
         super.onCreate(savedInstanceState)
         pickImageLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == RESULT_OK && result.data != null) {
-                val url = result.data?.data
+                val url = result.data?.data ?: return@registerForActivityResult
                 imageUrl = url.toString()
 
                 val path = FileUtils.getRealPathFromURI(requireActivity(), url)
-                photoURI = path?.toUri()
+                    ?: FileUtils.getPathFromURI(requireActivity(), url)
+
+                photoURI = if (!path.isNullOrBlank()) {
+                    File(path).toUri()
+                } else {
+                    url
+                }
                 startIntent(photoURI)
-                binding.image.setImageURI(url)
+                binding.image.setImageURI(photoURI)
             }
         }
 
