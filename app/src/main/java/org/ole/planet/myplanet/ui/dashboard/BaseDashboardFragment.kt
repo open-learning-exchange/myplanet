@@ -11,7 +11,6 @@ import android.widget.DatePicker
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.annotation.VisibleForTesting
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
@@ -259,7 +258,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         }
     }
 
-    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal fun populateMyLifeIfEmpty(
         realm: Realm,
         userId: String?,
