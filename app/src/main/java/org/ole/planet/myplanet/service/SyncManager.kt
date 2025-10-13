@@ -77,7 +77,6 @@ class SyncManager @Inject constructor(
     private val syncScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val semaphore = Semaphore(5)
     private var betaSync = false
-    private lateinit var improvedSyncManager: ImprovedSyncManager
 
     fun start(listener: SyncListener?, type: String, syncTables: List<String>? = null) {
         this.listener = listener
@@ -85,16 +84,7 @@ class SyncManager @Inject constructor(
             settings.edit { remove("concatenated_links") }
             listener?.onSyncStarted()
             
-            // Use improved sync manager if beta sync is enabled
-            if (settings.getBoolean("useImprovedSync", false)) {
-                if (!::improvedSyncManager.isInitialized) {
-                    improvedSyncManager = ImprovedSyncManager(context, databaseService, settings)
-                    runBlocking { improvedSyncManager.initialize() }
-                }
-                improvedSyncManager.start(listener, type, syncTables)
-            } else {
-                authenticateAndSync(type, syncTables)
-            }
+            authenticateAndSync(type, syncTables)
         }
     }
 
