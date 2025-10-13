@@ -8,6 +8,7 @@ import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.realm.Realm
 import java.util.Locale
+import kotlin.LazyThreadSafetyMode
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SyncListener
@@ -19,7 +20,6 @@ import org.ole.planet.myplanet.utilities.UrlUtils
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import kotlin.LazyThreadSafetyMode
 
 class ManagerSync private constructor(private val context: Context) {
     private val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
