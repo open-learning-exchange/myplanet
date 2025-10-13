@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.di
 
 import android.content.Context
 import android.content.SharedPreferences
+import dagger.Lazy
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -14,6 +15,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.service.ImprovedSyncManager
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UploadToShelfService
@@ -39,9 +41,10 @@ object ServiceModule {
         @ApplicationContext context: Context,
         databaseService: DatabaseService,
         @AppPreferences preferences: SharedPreferences,
-        apiInterface: ApiInterface
+        apiInterface: ApiInterface,
+        improvedSyncManager: Lazy<ImprovedSyncManager>
     ): SyncManager {
-        return SyncManager(context, databaseService, preferences, apiInterface)
+        return SyncManager(context, databaseService, preferences, apiInterface, improvedSyncManager)
     }
 
     @Provides
