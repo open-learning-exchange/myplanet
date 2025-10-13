@@ -17,7 +17,6 @@
     <string name="app_project_name">myPlanet</string>
     <string name="action_settings">settings</string>
     <string name="hint_name">username</string>
-    <string name="hint_password">Password</string>
     <string name="btn_back">Back</string>
     <string name="btn_sign_in">Sign In</string>
     <string name="btn_sync">Sync</string>
