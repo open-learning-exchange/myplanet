@@ -314,13 +314,18 @@ class NotificationsFragment : Fragment() {
                 }
             } catch (e: Exception) {
                 unreadCountCache = previousUnreadCount
+                val bindingOrNull = _binding
+
                 if (notificationIdsForUi.isNotEmpty()) {
                     adapter.submitList(previousList)
-                    binding.emptyData.visibility = if (previousList.isEmpty()) View.VISIBLE else View.GONE
+                    bindingOrNull?.emptyData?.visibility =
+                        if (previousList.isEmpty()) View.VISIBLE else View.GONE
                 }
+
                 updateMarkAllAsReadButtonVisibility()
                 updateUnreadCount()
-                _binding?.let { currentBinding ->
+
+                bindingOrNull?.let { currentBinding ->
                     Snackbar.make(
                         currentBinding.root,
                         getString(R.string.failed_to_mark_as_read),
