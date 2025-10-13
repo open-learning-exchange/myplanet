@@ -26,6 +26,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
@@ -118,6 +119,7 @@ class SettingActivity : AppCompatActivity() {
 
             setBetaToggleOn()
             setAutoSyncToggleOn()
+            setImprovedSyncToggleOn()
             val lp = findPreference<Preference>("app_language")
             lp?.setOnPreferenceClickListener {
                 context?.let { it1 -> languageChanger(it1) }
@@ -241,6 +243,18 @@ class SettingActivity : AppCompatActivity() {
                 lastSyncDate?.setTitle(R.string.last_synced_never)
             } else if (lastSyncDate != null) {
                 lastSyncDate.title = getString(R.string.last_synced_colon) + TimeUtils.getRelativeTime(lastSynced)
+            }
+        }
+
+        private fun setImprovedSyncToggleOn() {
+            val improvedSyncPreference = findPreference<SwitchPreference>("beta_improved_sync")
+            improvedSyncPreference?.isChecked = settings.getBoolean("useImprovedSync", false)
+            improvedSyncPreference?.onPreferenceChangeListener = OnPreferenceChangeListener { _, newValue ->
+                val isChecked = newValue as? Boolean ?: return@OnPreferenceChangeListener false
+                settings.edit { putBoolean("useImprovedSync", isChecked) }
+                val state = if (isChecked) "enabled" else "disabled"
+                createLog("improved_sync_toggle", state)
+                true
             }
         }
 

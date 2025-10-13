@@ -9,11 +9,13 @@ import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
+import dagger.Lazy
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Realm
 import java.util.Date
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
@@ -32,6 +34,7 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.datamanager.ApiClient
@@ -39,6 +42,7 @@ import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.ManagerSync
 import org.ole.planet.myplanet.di.ApiInterfaceEntryPoint
+import org.ole.planet.myplanet.di.ImprovedSyncEntryPoint
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.DocumentResponse
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.insert
@@ -50,6 +54,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.save
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.insertMyTeams
 import org.ole.planet.myplanet.model.RealmResourceActivity.Companion.onSynced
 import org.ole.planet.myplanet.model.Rows
+import org.ole.planet.myplanet.service.sync.SyncMode
 import org.ole.planet.myplanet.service.sync.ThreadSafeRealmHelper
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
@@ -66,7 +71,8 @@ class SyncManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val databaseService: DatabaseService,
     @AppPreferences private val settings: SharedPreferences,
-    private val apiInterface: ApiInterface
+    private val apiInterface: ApiInterface,
+    private val improvedSyncManager: Lazy<ImprovedSyncManager>
 ) {
     private var td: Thread? = null
     lateinit var mRealm: Realm
@@ -77,22 +83,35 @@ class SyncManager @Inject constructor(
     private val syncScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val semaphore = Semaphore(5)
     private var betaSync = false
-    private lateinit var improvedSyncManager: ImprovedSyncManager
+    private val improvedSyncInitialized = AtomicBoolean(false)
 
     fun start(listener: SyncListener?, type: String, syncTables: List<String>? = null) {
         this.listener = listener
         if (!isSyncing) {
             settings.edit { remove("concatenated_links") }
             listener?.onSyncStarted()
-            
+
             // Use improved sync manager if beta sync is enabled
-            if (settings.getBoolean("useImprovedSync", false)) {
-                if (!::improvedSyncManager.isInitialized) {
-                    improvedSyncManager = ImprovedSyncManager(context, databaseService, settings)
-                    runBlocking { improvedSyncManager.initialize() }
+            val useImproved = settings.getBoolean("useImprovedSync", false)
+            val isSyncRequest = type.equals("sync", ignoreCase = true)
+            if (useImproved && isSyncRequest) {
+                val manager = improvedSyncManager.get()
+                if (improvedSyncInitialized.compareAndSet(false, true)) {
+                    runBlocking { manager.initialize() }
                 }
-                improvedSyncManager.start(listener, type, syncTables)
+                val syncMode = if (settings.getBoolean("fastSync", false)) {
+                    SyncMode.Fast
+                } else {
+                    SyncMode.Standard
+                }
+                createLog("sync_manager_route", "improved|mode=${syncMode.javaClass.simpleName}")
+                manager.start(listener, syncMode, syncTables)
             } else {
+                if (useImproved && !isSyncRequest) {
+                    createLog("sync_manager_route", "legacy|reason=$type")
+                } else if (!useImproved) {
+                    createLog("sync_manager_route", "legacy")
+                }
                 authenticateAndSync(type, syncTables)
             }
         }
@@ -1286,7 +1305,19 @@ class SyncManager @Inject constructor(
         EntryPointAccessors.fromApplication(
             context.applicationContext,
             ApiInterfaceEntryPoint::class.java
-        ).apiInterface()
+        ).apiInterface(),
+        object : Lazy<ImprovedSyncManager> {
+            private val appContext = context.applicationContext
+            private val entryPoint by lazy {
+                EntryPointAccessors.fromApplication(
+                    appContext,
+                    ImprovedSyncEntryPoint::class.java
+                )
+            }
+            private val cached by lazy { entryPoint.improvedSyncManager() }
+
+            override fun get(): ImprovedSyncManager = cached
+        }
     )
 
 }

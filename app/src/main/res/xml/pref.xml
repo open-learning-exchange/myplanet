@@ -38,6 +38,11 @@
             android:title="@string/beta_fast_sync" />
         <SwitchPreference
             android:defaultValue="false"
+            android:key="beta_improved_sync"
+            android:summary="@string/beta_improved_sync_summary"
+            android:title="@string/beta_improved_sync" />
+        <SwitchPreference
+            android:defaultValue="false"
             android:key="beta_wifi_switch"
             android:title="@string/beta_function_for_wifi_switch" />
         <SwitchPreference
