@@ -203,6 +203,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         val queryParts = s.split(" ").filterNot { it.isEmpty() }
         val data: RealmResults<LI> = mRealm.where(c).findAll()
         val normalizedQuery = normalizeText(s)
+        val normalizedParts = queryParts.map { normalizeText(it) }
         val startsWithQuery = mutableListOf<LI>()
         val containsQuery = mutableListOf<LI>()
 
@@ -211,7 +212,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
             if (title.startsWith(normalizedQuery, ignoreCase = true)) {
                 startsWithQuery.add(item)
-            } else if (queryParts.all { title.contains(normalizeText(it), ignoreCase = true) }) {
+            } else if (normalizedParts.all { title.contains(it, ignoreCase = true) }) {
                 containsQuery.add(item)
             }
         }
