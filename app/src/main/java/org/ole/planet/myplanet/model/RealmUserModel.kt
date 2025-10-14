@@ -196,124 +196,109 @@ open class RealmUserModel : RealmObject() {
     companion object {
         @JvmStatic
         fun createGuestUser(username: String?, mRealm: Realm, settings: SharedPreferences): RealmUserModel? {
-            val `object` = JsonObject()
-            `object`.addProperty("_id", "guest_$username")
-            `object`.addProperty("name", username)
-            `object`.addProperty("firstName", username)
-            val rolesArray = JsonArray()
-            rolesArray.add("guest")
-            `object`.add("roles", rolesArray)
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
-            return populateUsersTable(`object`, mRealm, settings)
+            if (username.isNullOrBlank()) return null
+
+            val payload = JsonObject().apply {
+                addProperty("_id", "guest_$username")
+                addProperty("name", username)
+                addProperty("firstName", username)
+                add("roles", JsonArray().apply { add("guest") })
+            }
+
+            return if (mRealm.isInTransaction) {
+                populateUsersTable(payload, mRealm, settings)
+            } else {
+                var model: RealmUserModel? = null
+                mRealm.executeTransaction { realm ->
+                    model = populateUsersTable(payload, realm, settings)
+                }
+                model
+            }
         }
 
         @JvmStatic
         fun populateUsersTable(jsonDoc: JsonObject?, mRealm: Realm?, settings: SharedPreferences): RealmUserModel? {
             if (jsonDoc == null || mRealm == null) return null
-            try {
-                val id = JsonUtils.getString("_id", jsonDoc).takeIf { it.isNotEmpty() } ?: UUID.randomUUID().toString()
-                val userName = JsonUtils.getString("name", jsonDoc)
-                var user: RealmUserModel? = null
 
-                if (!mRealm.isInTransaction) {
-                    mRealm.executeTransaction { realm ->
-                        user = realm.where(RealmUserModel::class.java)
-                            .equalTo("_id", id)
-                            .findFirst()
+            val work: (Realm) -> RealmUserModel? = { realm ->
+                try {
+                    val id = JsonUtils.getString("_id", jsonDoc).takeIf { it.isNotEmpty() }
+                        ?: UUID.randomUUID().toString()
+                    val userName = JsonUtils.getString("name", jsonDoc)
 
-                        if (user == null && id.startsWith("org.couchdb.user:") && userName.isNotEmpty()) {
-                            val guestUser = realm.where(RealmUserModel::class.java)
-                                .equalTo("name", userName)
-                                .beginsWith("_id", "guest_")
-                                .findFirst()
-
-                            if (guestUser != null) {
-                                val tempData = JsonObject()
-                                tempData.addProperty("_id", id)
-                                tempData.addProperty("name", guestUser.name)
-                                tempData.addProperty("firstName", guestUser.firstName)
-                                tempData.addProperty("lastName", guestUser.lastName)
-                                tempData.addProperty("middleName", guestUser.middleName)
-                                tempData.addProperty("email", guestUser.email)
-                                tempData.addProperty("phoneNumber", guestUser.phoneNumber)
-                                tempData.addProperty("level", guestUser.level)
-                                tempData.addProperty("language", guestUser.language)
-                                tempData.addProperty("gender", guestUser.gender)
-                                tempData.addProperty("birthDate", guestUser.dob)
-                                tempData.addProperty("planetCode", guestUser.planetCode)
-                                tempData.addProperty("parentCode", guestUser.parentCode)
-                                tempData.addProperty("userImage", guestUser.userImage)
-                                tempData.addProperty("joinDate", guestUser.joinDate)
-                                tempData.addProperty("isShowTopbar", guestUser.isShowTopbar)
-                                tempData.addProperty("isArchived", guestUser.isArchived)
-
-                                val rolesArray = JsonArray()
-                                guestUser.rolesList?.forEach { role ->
-                                    rolesArray.add(role)
-                                }
-                                tempData.add("roles", rolesArray)
-                                guestUser.deleteFromRealm()
-                                user = realm.createObject(RealmUserModel::class.java, id)
-                                user?.let { insertIntoUsers(tempData, it, settings) }
-                            }
-                        }
-
-                        if (user == null) {
-                            user = realm.createObject(RealmUserModel::class.java, id)
-                        }
-                        user?.let { insertIntoUsers(jsonDoc, it, settings) }
-                    }
-                } else {
-                    user = mRealm.where(RealmUserModel::class.java)
+                    var user = realm.where(RealmUserModel::class.java)
                         .equalTo("_id", id)
                         .findFirst()
 
                     if (user == null && id.startsWith("org.couchdb.user:") && userName.isNotEmpty()) {
-                        val guestUser = mRealm.where(RealmUserModel::class.java)
-                            .equalTo("name", userName)
-                            .beginsWith("_id", "guest_")
-                            .findFirst()
-
-                        if (guestUser != null) {
-                            val tempData = JsonObject()
-                            tempData.addProperty("_id", id)
-                            tempData.addProperty("name", guestUser.name)
-                            tempData.addProperty("firstName", guestUser.firstName)
-                            tempData.addProperty("lastName", guestUser.lastName)
-                            tempData.addProperty("middleName", guestUser.middleName)
-                            tempData.addProperty("email", guestUser.email)
-                            tempData.addProperty("phoneNumber", guestUser.phoneNumber)
-                            tempData.addProperty("level", guestUser.level)
-                            tempData.addProperty("language", guestUser.language)
-                            tempData.addProperty("gender", guestUser.gender)
-                            tempData.addProperty("birthDate", guestUser.dob)
-                            tempData.addProperty("planetCode", guestUser.planetCode)
-                            tempData.addProperty("parentCode", guestUser.parentCode)
-                            tempData.addProperty("userImage", guestUser.userImage)
-                            tempData.addProperty("joinDate", guestUser.joinDate)
-                            tempData.addProperty("isShowTopbar", guestUser.isShowTopbar)
-                            tempData.addProperty("isArchived", guestUser.isArchived)
-                            val rolesArray = JsonArray()
-                            guestUser.rolesList?.forEach { role ->
-                                rolesArray.add(role)
-                            }
-                            tempData.add("roles", rolesArray)
-                            guestUser.deleteFromRealm()
-                            user = mRealm.createObject(RealmUserModel::class.java, id)
-                            user?.let { insertIntoUsers(tempData, it, settings) }
-                        }
+                        user = migrateGuestUserToCouchUser(realm, id, userName, settings)
                     }
 
                     if (user == null) {
-                        user = mRealm.createObject(RealmUserModel::class.java, id)
+                        user = realm.createObject(RealmUserModel::class.java, id)
                     }
+
                     user?.let { insertIntoUsers(jsonDoc, it, settings) }
+                    user
+                } catch (err: Exception) {
+                    err.printStackTrace()
+                    null
                 }
-                return user
-            } catch (err: Exception) {
-                err.printStackTrace()
             }
-            return null
+
+            return if (mRealm.isInTransaction) {
+                work(mRealm)
+            } else {
+                var result: RealmUserModel? = null
+                mRealm.executeTransaction { realm ->
+                    result = work(realm)
+                }
+                result
+            }
+        }
+
+        private fun migrateGuestUserToCouchUser(
+            realm: Realm,
+            id: String,
+            userName: String,
+            settings: SharedPreferences,
+        ): RealmUserModel? {
+            val guestUser = realm.where(RealmUserModel::class.java)
+                .equalTo("name", userName)
+                .beginsWith("_id", "guest_")
+                .findFirst()
+                ?: return null
+
+            val tempData = JsonObject().apply {
+                addProperty("_id", id)
+                addProperty("name", guestUser.name)
+                addProperty("firstName", guestUser.firstName)
+                addProperty("lastName", guestUser.lastName)
+                addProperty("middleName", guestUser.middleName)
+                addProperty("email", guestUser.email)
+                addProperty("phoneNumber", guestUser.phoneNumber)
+                addProperty("level", guestUser.level)
+                addProperty("language", guestUser.language)
+                addProperty("gender", guestUser.gender)
+                addProperty("birthDate", guestUser.dob)
+                addProperty("planetCode", guestUser.planetCode)
+                addProperty("parentCode", guestUser.parentCode)
+                addProperty("userImage", guestUser.userImage)
+                addProperty("joinDate", guestUser.joinDate)
+                addProperty("isShowTopbar", guestUser.isShowTopbar)
+                addProperty("isArchived", guestUser.isArchived)
+
+                val rolesArray = JsonArray()
+                guestUser.rolesList?.forEach { role ->
+                    rolesArray.add(role)
+                }
+                add("roles", rolesArray)
+            }
+
+            guestUser.deleteFromRealm()
+            val migratedUser = realm.createObject(RealmUserModel::class.java, id)
+            insertIntoUsers(tempData, migratedUser, settings)
+            return migratedUser
         }
 
         private fun insertIntoUsers(jsonDoc: JsonObject?, user: RealmUserModel, settings: SharedPreferences) {

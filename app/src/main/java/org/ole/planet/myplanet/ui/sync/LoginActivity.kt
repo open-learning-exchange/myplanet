@@ -28,9 +28,11 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
 import java.util.Locale
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.databinding.ActivityLoginBinding
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.datamanager.Service
@@ -498,6 +500,18 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         }
         val dialog = builder.create()
         dialog.show()
+    }
+
+    suspend fun fetchGuestUser(username: String): RealmUserModel? {
+        return try {
+            MainApplication.service.withRealmAsync { realm ->
+                RealmUserModel.createGuestUser(username, realm, settings)?.let { realm.copyFromRealm(it) }
+            }
+        } catch (exception: CancellationException) {
+            throw exception
+        } catch (_: Throwable) {
+            null
+        }
     }
 
     internal fun showUserAlreadyMemberDialog(username: String) {
