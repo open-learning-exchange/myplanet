@@ -71,7 +71,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTeamBinding.inflate(inflater, container, false)
         mRealm = databaseService.realmInstance
-        user = userProfileDbHandler.userModel?.let { userProfileDbHandler.mRealm.copyFromRealm(it) }
+        user = userProfileDbHandler.getUserModelCopy()
 
         if (user?.isGuest() == true) {
             binding.addTeam.visibility = View.GONE
