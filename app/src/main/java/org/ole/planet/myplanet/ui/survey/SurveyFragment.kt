@@ -87,13 +87,6 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         startExamSync()
     }
 
-    override fun onDestroy() {
-        if (::profileDbHandler.isInitialized) {
-            profileDbHandler.onDestroy()
-        }
-        super.onDestroy()
-    }
-
     private fun startExamSync() {
         val isFastSync = settings.getBoolean("fastSync", false)
         if (isFastSync && !prefManager.isExamsSynced()) {
