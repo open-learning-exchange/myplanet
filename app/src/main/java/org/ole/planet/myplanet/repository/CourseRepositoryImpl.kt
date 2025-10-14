@@ -45,6 +45,36 @@ class CourseRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getCourseStep(stepId: String?): RealmCourseStep? {
+        if (stepId.isNullOrEmpty()) {
+            return null
+        }
+        return findByField(RealmCourseStep::class.java, "id", stepId)
+    }
+
+    override suspend fun getStepResources(stepId: String?, offlineOnly: Boolean?): List<RealmMyLibrary> {
+        if (stepId.isNullOrEmpty()) {
+            return emptyList()
+        }
+        return queryList(RealmMyLibrary::class.java) {
+            equalTo("stepId", stepId)
+            offlineOnly?.let {
+                equalTo("resourceOffline", it)
+                isNotNull("resourceLocalAddress")
+            }
+        }
+    }
+
+    override suspend fun getStepExams(stepId: String?, type: String?): List<RealmStepExam> {
+        if (stepId.isNullOrEmpty()) {
+            return emptyList()
+        }
+        return queryList(RealmStepExam::class.java) {
+            equalTo("stepId", stepId)
+            type?.let { equalTo("type", it) }
+        }
+    }
+
     private suspend fun getCourseResources(courseId: String?, isOffline: Boolean): List<RealmMyLibrary> {
         if (courseId.isNullOrEmpty()) {
             return emptyList()
