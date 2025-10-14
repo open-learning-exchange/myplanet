@@ -457,8 +457,6 @@ class UserProfileFragment : Fragment() {
             }
         }
 
-        println("hi")
-
         dialog.show()
     }
 
