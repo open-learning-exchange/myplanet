@@ -63,7 +63,7 @@ open class RealmNews : RealmObject() {
     val labelsArray: JsonArray
         get() {
             val array = JsonArray()
-            labels?.forEach{ s ->
+            labels?.forEach { s ->
                 array.add(s)
             }
             return array
@@ -74,12 +74,6 @@ open class RealmNews : RealmObject() {
         this.isEdited = true
         this.editedTime = Date().time
     }
-    fun addLabel(label: String?) {
-        if (label != null && labels?.contains(label) != true) {
-            labels?.add(label)
-        }
-    }
-
     fun setLabels(images: JsonArray) {
         labels = RealmList()
         for (ob in images) {

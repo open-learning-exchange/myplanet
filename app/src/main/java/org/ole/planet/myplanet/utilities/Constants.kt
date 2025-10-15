@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.utilities
 
 import android.content.Context
 import androidx.preference.PreferenceManager
-import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmCertification
 import org.ole.planet.myplanet.model.RealmCourseProgress
@@ -29,8 +28,6 @@ object Constants {
     const val KEY_AUTOSYNC_WEEKLY = "force_weekly_sync"
     const val KEY_AUTOSYNC_MONTHLY = "force_monthly_sync"
     const val KEY_UPGRADE_MAX = "beta_upgrade_max"
-    const val DISCLAIMER = R.string.disclaimer
-    const val ABOUT = R.string.about
     const val PREFS_NAME = "OLE_PLANET"
     var classList = mutableMapOf<String, Class<*>>()
     var LABELS = mutableMapOf<String, String>()

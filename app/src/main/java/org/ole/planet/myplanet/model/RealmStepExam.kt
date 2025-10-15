@@ -4,7 +4,6 @@ import android.text.TextUtils
 import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmObject
-import io.realm.RealmResults
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.utilities.JsonUtils
 
@@ -86,12 +85,6 @@ open class RealmStepExam : RealmObject() {
             if (!TextUtils.isEmpty(stepId)) {
                 myExam?.stepId = stepId
             }
-        }
-
-        @JvmStatic
-        fun getNoOfExam(mRealm: Realm, courseId: String?): Int {
-            val res: RealmResults<*>? = mRealm.where(RealmStepExam::class.java).equalTo("courseId", courseId).findAll()
-            return res?.size ?: 0
         }
 
         @JvmStatic
