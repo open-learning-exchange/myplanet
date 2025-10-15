@@ -28,8 +28,8 @@ import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.JsonUtils
+import org.ole.planet.myplanet.utilities.ServerUrlMapper
 
 class TeamRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
