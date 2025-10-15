@@ -31,11 +31,7 @@
     <color name="material_drawer_selected_text">@color/colorPrimary</color>
     <color name="material_drawer_dark_selected_text">@color/colorPrimary</color>
     <color name="offwhite">#fafafa</color>
-    <color name="pref_box_color">#F1F1F1</color>
-    <color name="preference_title">@color/md_grey_900</color>
 
-    <!-- changes logout button area background from white to whatever the background color for the drawer is.
-    Without it, the drawer and logout button area are different colors -->
     <color name="material_drawer_background">@color/colorPrimary</color>
     <color name="empty_rating">@color/md_white_1000</color>
     <color name="ic_download">#FFFFFF</color>
