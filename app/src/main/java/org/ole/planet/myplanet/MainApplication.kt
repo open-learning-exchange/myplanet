@@ -348,9 +348,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
     override fun onActivityStopped(activity: Activity) {
         isActivityChangingConfigurations = activity.isChangingConfigurations
-        if (--activityReferences == 0 && !isActivityChangingConfigurations) {
-            onAppBackgrounded()
-        }
+        --activityReferences
     }
 
     override fun onActivitySaveInstanceState(activity: Activity, bundle: Bundle) {}
@@ -367,22 +365,17 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         }
     }
 
-    private fun onAppBackgrounded() {}
-
     private fun onAppStarted() {
         applicationScope.launch {
             createLog("new login", "")
         }
     }
 
-    private fun onAppClosed() {}
-
     override fun onTerminate() {
         if (::anrWatchdog.isInitialized) {
             anrWatchdog.stop()
         }
         super.onTerminate()
-        onAppClosed()
         stopListenNetworkState()
         applicationScope.cancel()
     }
