@@ -30,6 +30,7 @@ import com.bumptech.glide.Glide
 import java.util.Locale
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.MainApplication
@@ -464,14 +465,8 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
 
             binding.inputName.setText(user.name)
         } else {
-            if (user.source == "guest"){
-                val model = RealmUserModel.createGuestUser(user.name, mRealm, settings)?.let { mRealm.copyFromRealm(it) }
-                if (model == null) {
-                    toast(this, getString(R.string.unable_to_login))
-                } else {
-                    saveUserInfoPref(settings, "", model)
-                    onLogin()
-                }
+            if (user.source == "guest") {
+                loginAsGuest(user.name)
             } else {
                 submitForm(user.name, user.password)
             }
@@ -490,16 +485,37 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         builder.setNegativeButton("cancel") { dialog: DialogInterface, _: Int -> dialog.dismiss() }
         builder.setPositiveButton("continue") { dialog: DialogInterface, _: Int ->
             dialog.dismiss()
-            val model = RealmUserModel.createGuestUser(username, mRealm, settings)?.let { mRealm.copyFromRealm(it) }
+            loginAsGuest(username)
+        }
+        val dialog = builder.create()
+        dialog.show()
+    }
+
+    private fun loginAsGuest(username: String?) {
+        val normalizedUsername = username?.trim()?.lowercase(Locale.ROOT)
+        if (normalizedUsername.isNullOrBlank()) {
+            toast(this, getString(R.string.unable_to_login))
+            return
+        }
+
+        if (!lifecycleScope.coroutineContext.isActive) {
+            return
+        }
+
+        lifecycleScope.launch {
+            val model = try {
+                fetchGuestUser(normalizedUsername)
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            }
+
             if (model == null) {
-                toast(this, getString(R.string.unable_to_login))
+                toast(this@LoginActivity, getString(R.string.unable_to_login))
             } else {
                 saveUserInfoPref(settings, "", model)
                 onLogin()
             }
         }
-        val dialog = builder.create()
-        dialog.show()
     }
 
     suspend fun fetchGuestUser(username: String): RealmUserModel? {
