@@ -30,7 +30,6 @@ import org.ole.planet.myplanet.repository.TagRepository
 import org.ole.planet.myplanet.utilities.CourseRatingUtils
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
-import org.ole.planet.myplanet.utilities.SelectionUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -85,38 +84,49 @@ class AdapterResource(
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         if (holder is ViewHolderLibrary) {
+            val library = libraryList.getOrNull(position) ?: return
             holder.bind()
-            holder.rowLibraryBinding.title.text = libraryList[position]?.title
-            setMarkdownText(holder.rowLibraryBinding.description, libraryList[position]?.description!!)
+            holder.rowLibraryBinding.title.text = library.title ?: ""
+            setMarkdownText(holder.rowLibraryBinding.description, library.description ?: "")
             holder.rowLibraryBinding.description.setOnClickListener {
-                val library = libraryList[position]
-                openLibrary(library)
+                val adapterPosition = holder.bindingAdapterPosition
+                if (adapterPosition != RecyclerView.NO_POSITION) {
+                    libraryList.getOrNull(adapterPosition)?.let { openLibrary(it) }
+                }
             }
-            holder.rowLibraryBinding.timesRated.text = context.getString(R.string.num_total, libraryList[position]?.timesRated)
-            holder.rowLibraryBinding.checkbox.isChecked = selectedItems.contains(libraryList[position])
-            holder.rowLibraryBinding.checkbox.contentDescription = "${context.getString(R.string.selected)} ${libraryList[position]?.title}"
+            holder.rowLibraryBinding.timesRated.text = context.getString(R.string.num_total, library.timesRated)
+            holder.rowLibraryBinding.checkbox.isChecked = selectedItems.contains(library)
+            val selectedText = context.getString(R.string.selected)
+            val libraryTitle = library.title.orEmpty()
+            holder.rowLibraryBinding.checkbox.contentDescription =
+                if (libraryTitle.isNotEmpty()) "$selectedText $libraryTitle" else selectedText
             holder.rowLibraryBinding.rating.text =
-                if (TextUtils.isEmpty(libraryList[position]?.averageRating)) {
+                if (TextUtils.isEmpty(library.averageRating)) {
                     "0.0"
                 } else {
-                    String.format(Locale.getDefault(), "%.1f", libraryList[position]?.averageRating?.toDouble())
+                    String.format(Locale.getDefault(), "%.1f", library.averageRating?.toDouble())
                 }
-            holder.rowLibraryBinding.tvDate.text = libraryList[position]?.createdDate?.let { formatDate(it, "MMM dd, yyyy") }
+            holder.rowLibraryBinding.tvDate.text = library.createdDate?.let { formatDate(it, "MMM dd, yyyy") }
             displayTagCloud(holder, position)
-            holder.itemView.setOnClickListener { openLibrary(libraryList[position]) }
-            if (libraryList[position]?.isResourceOffline() == true) {
+            holder.itemView.setOnClickListener {
+                val adapterPosition = holder.bindingAdapterPosition
+                if (adapterPosition != RecyclerView.NO_POSITION) {
+                    libraryList.getOrNull(adapterPosition)?.let { openLibrary(it) }
+                }
+            }
+            if (library.isResourceOffline() == true) {
                 holder.rowLibraryBinding.ivDownloaded.visibility = View.INVISIBLE
             } else {
                 holder.rowLibraryBinding.ivDownloaded.visibility = View.VISIBLE
             }
             holder.rowLibraryBinding.ivDownloaded.contentDescription =
-                if (libraryList[position]?.isResourceOffline() == true) {
+                if (library.isResourceOffline() == true) {
                     context.getString(R.string.view)
                 } else {
                     context.getString(R.string.download)
                 }
-            if (ratingMap.containsKey(libraryList[position]?.resourceId)) {
-                val `object` = ratingMap[libraryList[position]?.resourceId]
+            if (ratingMap.containsKey(library.resourceId)) {
+                val `object` = ratingMap[library.resourceId]
                 CourseRatingUtils.showRating(
                     context,
                     `object`,
@@ -130,9 +140,21 @@ class AdapterResource(
 
             if (userModel?.isGuest() == false) {
                 holder.rowLibraryBinding.checkbox.setOnClickListener { view: View ->
+                    val adapterPosition = holder.bindingAdapterPosition
+                    if (adapterPosition == RecyclerView.NO_POSITION) {
+                        return@setOnClickListener
+                    }
+                    val currentLibrary = libraryList.getOrNull(adapterPosition) ?: return@setOnClickListener
                     holder.rowLibraryBinding.checkbox.contentDescription =
-                        context.getString(R.string.select_res_course, libraryList[position]?.title)
-                    SelectionUtils.handleCheck((view as CheckBox).isChecked, position, selectedItems, libraryList)
+                        context.getString(R.string.select_res_course, currentLibrary.title ?: "")
+                    val isChecked = (view as CheckBox).isChecked
+                    if (isChecked) {
+                        if (!selectedItems.contains(currentLibrary)) {
+                            selectedItems.add(currentLibrary)
+                        }
+                    } else {
+                        selectedItems.remove(currentLibrary)
+                    }
                     if (listener != null) listener?.onSelectedListChange(selectedItems)
                 }
             } else {
@@ -293,11 +315,16 @@ class AdapterResource(
                 rowLibraryBinding.ratingBar.setOnTouchListener { _: View?, event: MotionEvent ->
                     if (event.action == MotionEvent.ACTION_UP) {
                         if (userModel?.isGuest() == false) {
-                            homeItemClickListener?.showRatingDialog("resource",
-                                libraryList[bindingAdapterPosition]?.resourceId,
-                                libraryList[bindingAdapterPosition]?.title,
-                                ratingChangeListener
-                            )
+                            val adapterPosition = bindingAdapterPosition
+                            if (adapterPosition != RecyclerView.NO_POSITION) {
+                                val library = libraryList.getOrNull(adapterPosition)
+                                homeItemClickListener?.showRatingDialog(
+                                    "resource",
+                                    library?.resourceId,
+                                    library?.title,
+                                    ratingChangeListener
+                                )
+                            }
                         }
                     }
                     true

@@ -20,7 +20,9 @@ class MembersFragment : BaseMemberFragment() {
     lateinit var userProfileDbHandler: UserProfileDbHandler
 
     private lateinit var currentUser: RealmUserModel
-    private lateinit var memberChangeListener: MemberChangeListener
+    private var memberChangeListener: MemberChangeListener = object : MemberChangeListener {
+        override fun onMemberChanged() = Unit
+    }
 
     fun setMemberChangeListener(listener: MemberChangeListener) {
         this.memberChangeListener = listener

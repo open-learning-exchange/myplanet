@@ -17,7 +17,6 @@
     <string name="app_project_name">myPlanet</string>
     <string name="action_settings">goobooyinka</string>
     <string name="hint_name">Magaca isticmaalaha</string>
-    <string name="hint_password">Furaha</string>
     <string name="btn_back">Dib</string>
     <string name="btn_sign_in">Soo gal</string>
     <string name="btn_sync">Isku xidh </string>
@@ -322,7 +321,6 @@
     <string name="blood_pressure">Dhererka Dhiiga (Xiran/Hoostooda)</string>
     <string name="orally">Dherer (Go\'do)</string>
     <string name="save">Keyd</string>
-    <string name="vital_signs">Kitaabka Dhererada Muhiimka ah</string>
     <string name="task">Hawlo (lazim)</string>
     <string name="deadline_required">Dib-u-heshiisi (lazim)</string>
     <string name="click_here_to_pick_date">Si aad u doorato taariikhda</string>

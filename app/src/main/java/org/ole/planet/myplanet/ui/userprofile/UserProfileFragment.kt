@@ -76,7 +76,6 @@ class UserProfileFragment : Fragment() {
     lateinit var userProfileDbHandler: UserProfileDbHandler
     private lateinit var mRealm: Realm
     private var model: RealmUserModel? = null
-    private var imageUrl = ""
     private lateinit var pickImageLauncher: ActivityResultLauncher<Intent>
     private var selectedGender: String? = null
     var selectedLevel: String? = null
@@ -97,13 +96,12 @@ class UserProfileFragment : Fragment() {
         super.onCreate(savedInstanceState)
         pickImageLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == RESULT_OK && result.data != null) {
-                val url = result.data?.data
-                imageUrl = url.toString()
-
-                val path = FileUtils.getRealPathFromURI(requireActivity(), url)
-                photoURI = path?.toUri()
+                val uri = result.data?.data ?: return@registerForActivityResult
+                photoURI  = uri
                 startIntent(photoURI)
-                binding.image.setImageURI(url)
+                Glide.with(this)
+                    .load(uri)
+                    .into(binding.image)
             }
         }
 
@@ -358,10 +356,13 @@ class UserProfileFragment : Fragment() {
                 selectedGender,
                 date?: model?.dob
             ) {
-                updateUIWithUserData(model)
+                mRealm.refresh()
+                val updatedModel = userProfileDbHandler.userModel
+                model = updatedModel
+                updateUIWithUserData(updatedModel)
+                realm.close()
+                dialog.dismiss()
             }
-            realm.close()
-            dialog.dismiss()
         }
     }
 
