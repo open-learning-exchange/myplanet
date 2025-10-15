@@ -8,6 +8,10 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
+import androidx.core.view.isVisible
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import dagger.hilt.android.AndroidEntryPoint
@@ -28,6 +32,9 @@ import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.news.AdapterNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -61,13 +68,7 @@ class DiscussionListFragment : BaseTeamFragment() {
                 }
             }
         }
-        if (user?.id?.startsWith("guest") == true) {
-            binding.addMessage.visibility = View.GONE
-        } else if (isMember()) {
-            binding.addMessage.visibility = View.VISIBLE
-        } else if (team?.isPublic == true && !isMember()) {
-            binding.addMessage.visibility = View.VISIBLE
-        }
+        binding.addMessage.isVisible = false
         updatedNewsList = mRealm.where(RealmNews::class.java).isEmpty("replyTo").sort("time", Sort.DESCENDING).findAllAsync()
 
         updatedNewsList?.addChangeListener { results ->
@@ -92,6 +93,20 @@ class DiscussionListFragment : BaseTeamFragment() {
         }
         changeLayoutManager(resources.configuration.orientation, binding.rvDiscussion)
         showRecyclerView(realmNewsList)
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                combine(isMemberFlow, teamFlow) { isMember, teamData ->
+                    Pair(isMember, teamData?.isPublic == true)
+                }.collectLatest { (isMember, isPublicTeamFromFlow) ->
+                    val isGuest = user?.id?.startsWith("guest") == true
+                    val isPublicTeam = isPublicTeamFromFlow || team?.isPublic == true
+                    val canPost = !isGuest && (isMember || isPublicTeam)
+                    binding.addMessage.isVisible = canPost
+                    (binding.rvDiscussion.adapter as? AdapterNews)?.setNonTeamMember(!isMember)
+                }
+            }
+        }
     }
 
     override fun onNewsItemClick(news: RealmNews?) {
@@ -171,7 +186,7 @@ class DiscussionListFragment : BaseTeamFragment() {
             }
             adapterNews?.setmRealm(mRealm)
             adapterNews?.setListener(this)
-            if (!isMember()) adapterNews?.setNonTeamMember(true)
+            if (!isMemberFlow.value) adapterNews?.setNonTeamMember(true)
             realmNewsList?.let { adapterNews?.updateList(it) }
             binding.rvDiscussion.adapter = adapterNews
             adapterNews?.let {

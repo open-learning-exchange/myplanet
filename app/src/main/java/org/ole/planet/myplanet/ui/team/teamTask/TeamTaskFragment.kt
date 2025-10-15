@@ -14,7 +14,10 @@ import android.widget.TextView
 import android.widget.TimePicker
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
+import androidx.core.view.isVisible
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.nex3z.togglebuttongroup.SingleSelectToggleGroup
 import dagger.hilt.android.AndroidEntryPoint
@@ -23,6 +26,7 @@ import io.realm.Sort
 import java.util.Calendar
 import java.util.Date
 import java.util.UUID
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertTaskBinding
@@ -81,9 +85,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentTeamTaskBinding.inflate(inflater, container, false)
-        if (!isMember()) {
-            binding.fab.visibility = View.GONE
-        }
+        binding.fab.isVisible = false
         binding.fab.setOnClickListener { showTaskAlert(null) }
         teamTaskList = mRealm.where(RealmTeamTask::class.java).equalTo("teamId", teamId)
             .notEqualTo("status", "archived").findAllAsync()
@@ -194,6 +196,15 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
             }
             setAdapter()
         }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                isMemberFlow.collectLatest { isMember ->
+                    binding.fab.isVisible = isMember
+                    setAdapter()
+                }
+            }
+        }
     }
 
     private fun allTasks() {
@@ -251,7 +262,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
             else {
                 showNoData(binding.tvNodata, list?.size, "")
             }
-            adapterTask = AdapterTask(requireContext(), mRealm, list, !isMember())
+            adapterTask = AdapterTask(requireContext(), mRealm, list, !isMemberFlow.value)
             adapterTask.setListener(this)
             binding.rvTask.adapter = adapterTask
         }
@@ -325,7 +336,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
 
     private fun updatedTeamTaskList(updatedList: RealmResults<RealmTeamTask>) {
         viewLifecycleOwner.lifecycleScope.launch {
-            adapterTask = AdapterTask(requireContext(), mRealm, updatedList, !isMember())
+            adapterTask = AdapterTask(requireContext(), mRealm, updatedList, !isMemberFlow.value)
             adapterTask.setListener(this@TeamTaskFragment)
             binding.rvTask.adapter = adapterTask
             adapterTask.notifyDataSetChanged()
