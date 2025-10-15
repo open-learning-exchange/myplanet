@@ -213,8 +213,7 @@ class MyHealthFragment : Fragment() {
     }
 
     private fun getCurrentUserProfileCopy(): RealmUserModel? {
-        val managedModel = userProfileDbHandler.userModel ?: return null
-        return userProfileDbHandler.mRealm.copyFromRealm(managedModel)
+        return userProfileDbHandler.getUserModelCopy()
     }
 
     private fun setupButtons() {
