@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.onBoarding
+package org.ole.planet.myplanet.ui.onboarding
 
 class OnBoardItem {
     var imageID: Int = 0
