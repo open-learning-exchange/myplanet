@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.resources
 
 import android.content.Context
-import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -92,15 +91,8 @@ class AdapterResource(
                 val library = libraryList[position]
                 openLibrary(library)
             }
-            holder.rowLibraryBinding.timesRated.text = context.getString(R.string.num_total, libraryList[position]?.timesRated)
             holder.rowLibraryBinding.checkbox.isChecked = selectedItems.contains(libraryList[position])
             holder.rowLibraryBinding.checkbox.contentDescription = "${context.getString(R.string.selected)} ${libraryList[position]?.title}"
-            holder.rowLibraryBinding.rating.text =
-                if (TextUtils.isEmpty(libraryList[position]?.averageRating)) {
-                    "0.0"
-                } else {
-                    String.format(Locale.getDefault(), "%.1f", libraryList[position]?.averageRating?.toDouble())
-                }
             holder.rowLibraryBinding.tvDate.text = libraryList[position]?.createdDate?.let { formatDate(it, "MMM dd, yyyy") }
             displayTagCloud(holder, position)
             holder.itemView.setOnClickListener { openLibrary(libraryList[position]) }
@@ -115,17 +107,22 @@ class AdapterResource(
                 } else {
                     context.getString(R.string.download)
                 }
-            if (ratingMap.containsKey(libraryList[position]?.resourceId)) {
-                val `object` = ratingMap[libraryList[position]?.resourceId]
+            val library = libraryList[position]
+            val ratingData = library?.resourceId?.let { ratingMap[it] }
+            if (ratingData != null) {
                 CourseRatingUtils.showRating(
                     context,
-                    `object`,
+                    ratingData,
                     holder.rowLibraryBinding.rating,
                     holder.rowLibraryBinding.timesRated,
                     holder.rowLibraryBinding.ratingBar
                 )
             } else {
-                holder.rowLibraryBinding.ratingBar.rating = 0f
+                val averageRating = library?.averageRating?.toFloatOrNull() ?: 0f
+                holder.rowLibraryBinding.rating.text = String.format(Locale.getDefault(), "%.2f", averageRating)
+                holder.rowLibraryBinding.timesRated.text =
+                    context.getString(R.string.rating_count_format, library?.timesRated ?: 0)
+                holder.rowLibraryBinding.ratingBar.rating = averageRating
             }
 
             if (userModel?.isGuest() == false) {
