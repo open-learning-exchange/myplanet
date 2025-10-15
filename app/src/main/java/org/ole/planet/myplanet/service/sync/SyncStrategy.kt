@@ -5,11 +5,7 @@ import kotlinx.coroutines.flow.Flow
 
 data class SyncConfig(
     val batchSize: Int = 50,
-    val concurrencyLevel: Int = 3,
-    val retryAttempts: Int = 3,
-    val timeoutMs: Long = 30000,
-    val enableOptimizations: Boolean = true,
-    val fallbackToStandard: Boolean = true
+    val concurrencyLevel: Int = 3
 )
 
 data class SyncResult(

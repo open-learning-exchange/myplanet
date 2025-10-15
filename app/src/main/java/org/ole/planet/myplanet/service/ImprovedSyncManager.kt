@@ -19,10 +19,10 @@ import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.ManagerSync
 import org.ole.planet.myplanet.di.AppPreferences
-import org.ole.planet.myplanet.service.sync.AdaptiveBatchProcessor
 import org.ole.planet.myplanet.service.sync.RealmPoolManager
 import org.ole.planet.myplanet.service.sync.StandardSyncStrategy
 import org.ole.planet.myplanet.service.sync.SyncMode
+import org.ole.planet.myplanet.service.sync.SyncConfig
 import org.ole.planet.myplanet.service.sync.SyncStrategy
 import org.ole.planet.myplanet.utilities.NotificationUtils
 import org.ole.planet.myplanet.utilities.SyncTimeLogger
@@ -34,7 +34,6 @@ class ImprovedSyncManager @Inject constructor(
     @AppPreferences private val settings: SharedPreferences
 ) {
 
-    private val batchProcessor = AdaptiveBatchProcessor(context)
     private val poolManager = RealmPoolManager.getInstance()
 
     private val standardStrategy = StandardSyncStrategy()
@@ -134,14 +133,12 @@ class ImprovedSyncManager @Inject constructor(
     }
 
     private suspend fun syncTable(table: String, strategy: SyncStrategy, logger: SyncTimeLogger) {
-        val config = batchProcessor.getOptimalConfig(table)
-
         try {
             logger.startProcess("${table}_sync")
 
             if (strategy.isSupported(table)) {
                 poolManager.useRealm { realm ->
-                    strategy.syncTable(table, realm, config).collect()
+                    strategy.syncTable(table, realm, SyncConfig()).collect()
                 }
             } else {
                 // Fallback to standard sync
