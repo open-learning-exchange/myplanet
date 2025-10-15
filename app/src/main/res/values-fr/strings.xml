@@ -17,7 +17,6 @@
     <string name="app_project_name">myPlanet</string>
     <string name="action_settings">paramètres</string>
     <string name="hint_name">Nom d\'utilisateur</string>
-    <string name="hint_password">Mot de passe</string>
     <string name="btn_back">Retourner</string>
     <string name="btn_sign_in">Se connecter</string>
     <string name="btn_sync">Synchroniser</string>
@@ -322,7 +321,6 @@
     <string name="blood_pressure">Pression artérielle (Systolique/Diastolique)</string>
     <string name="orally">Par voie orale</string>
     <string name="save">Enregistrer</string>
-    <string name="vital_signs">Enregistrement des signes vitaux</string>
     <string name="task">Tâche (obligatoire)</string>
     <string name="deadline_required">Date limite (obligatoire)</string>
     <string name="click_here_to_pick_date">Cliquez ici pour choisir la date</string>
