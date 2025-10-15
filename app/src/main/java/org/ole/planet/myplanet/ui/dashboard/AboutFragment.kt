@@ -9,7 +9,6 @@ import androidx.core.text.HtmlCompat
 import androidx.fragment.app.Fragment
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentAboutBinding
-import org.ole.planet.myplanet.utilities.Constants
 
 class AboutFragment : Fragment() {
     private var _binding: FragmentAboutBinding? = null

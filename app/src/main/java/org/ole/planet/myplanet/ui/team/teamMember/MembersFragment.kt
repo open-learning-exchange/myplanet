@@ -8,7 +8,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import org.ole.planet.myplanet.base.BaseMemberFragment
 import org.ole.planet.myplanet.callback.MemberChangeListener
-import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getRequestedMember
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
