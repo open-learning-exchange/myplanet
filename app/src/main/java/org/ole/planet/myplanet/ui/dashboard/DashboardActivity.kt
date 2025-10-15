@@ -862,8 +862,13 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val menuItem = binding.appBarBell.bellToolbar.menu.findItem(R.id.action_notifications)
         val actionView = MenuItemCompat.getActionView(menuItem)
         val smsCountTxt = actionView.findViewById<TextView>(R.id.notification_badge)
-        smsCountTxt.text = "$count"
-        smsCountTxt.visibility = if (count > 0) View.VISIBLE else View.GONE
+        if (count > 0) {
+            smsCountTxt.text = "$count"
+            smsCountTxt.visibility = View.VISIBLE
+        } else {
+            smsCountTxt.text = ""
+            smsCountTxt.visibility = View.GONE
+        }
         actionView.setOnClickListener(onClickListener)
     }
 
