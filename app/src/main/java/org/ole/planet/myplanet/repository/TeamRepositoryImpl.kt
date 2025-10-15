@@ -71,7 +71,7 @@ class TeamRepositoryImpl @Inject constructor(
         startDate: Long?,
         endDate: Long?,
         sortAscending: Boolean,
-    ): Flow<RealmResults<RealmMyTeam>> {
+    ): Flow<List<RealmMyTeam>> {
         val sortOrder = if (sortAscending) Sort.ASCENDING else Sort.DESCENDING
         return withRealmFlow { realm, scope ->
             val query = realm.where(RealmMyTeam::class.java)
@@ -84,10 +84,18 @@ class TeamRepositoryImpl @Inject constructor(
 
             val results = query.findAllAsync().sort("date", sortOrder)
             val listener = RealmChangeListener<RealmResults<RealmMyTeam>> { updatedResults ->
-                scope.trySend(updatedResults)
+                if (updatedResults.isLoaded && updatedResults.isValid) {
+                    scope.trySend(realm.copyFromRealm(updatedResults))
+                } else {
+                    scope.trySend(emptyList())
+                }
             }
             results.addChangeListener(listener)
-            scope.trySend(results)
+            if (results.isLoaded && results.isValid) {
+                scope.trySend(realm.copyFromRealm(results))
+            } else {
+                scope.trySend(emptyList())
+            }
 
             return@withRealmFlow { results.removeChangeListener(listener) }
         }

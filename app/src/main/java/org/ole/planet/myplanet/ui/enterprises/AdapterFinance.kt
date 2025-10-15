@@ -11,7 +11,6 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
-import io.realm.RealmResults
 import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowFinanceBinding
@@ -19,9 +18,13 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.ui.enterprises.AdapterFinance.ViewHolderFinance
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
-class AdapterFinance(private val context: Context, private var list: RealmResults<RealmMyTeam>) : RecyclerView.Adapter<ViewHolderFinance>() {
+class AdapterFinance(
+    private val context: Context,
+    list: List<RealmMyTeam>,
+) : RecyclerView.Adapter<ViewHolderFinance>() {
     private lateinit var rowFinanceBinding: RowFinanceBinding
     private val balances = mutableListOf<Int>()
+    private var list: List<RealmMyTeam> = list.toList()
 
     init {
         recomputeBalances()
@@ -32,29 +35,28 @@ class AdapterFinance(private val context: Context, private var list: RealmResult
     }
 
     override fun onBindViewHolder(holder: ViewHolderFinance, position: Int) {
-        list[position]?.let {
-            rowFinanceBinding.date.text = formatDate(it.date, "MMM dd, yyyy")
-            rowFinanceBinding.note.text = it.description
-            if (TextUtils.equals(it.type?.lowercase(Locale.getDefault()), "debit")) {
-                rowFinanceBinding.debit.text = context.getString(R.string.number_placeholder, it.amount)
-                rowFinanceBinding.credit.text = context.getString(R.string.message_placeholder, " -")
-                rowFinanceBinding.credit.setTextColor(Color.BLACK)
-            } else {
-                rowFinanceBinding.credit.text = context.getString(R.string.number_placeholder, it.amount)
-                rowFinanceBinding.debit.text = context.getString(R.string.message_placeholder, " -")
-                rowFinanceBinding.debit.setTextColor(Color.BLACK)
-            }
-            rowFinanceBinding.balance.text = getBalance(position)
-            updateBackgroundColor(rowFinanceBinding.llayout, position)
+        val item = list[position]
+        rowFinanceBinding.date.text = formatDate(item.date, "MMM dd, yyyy")
+        rowFinanceBinding.note.text = item.description
+        if (TextUtils.equals(item.type?.lowercase(Locale.getDefault()), "debit")) {
+            rowFinanceBinding.debit.text = context.getString(R.string.number_placeholder, item.amount)
+            rowFinanceBinding.credit.text = context.getString(R.string.message_placeholder, " -")
+            rowFinanceBinding.credit.setTextColor(Color.BLACK)
+        } else {
+            rowFinanceBinding.credit.text = context.getString(R.string.number_placeholder, item.amount)
+            rowFinanceBinding.debit.text = context.getString(R.string.message_placeholder, " -")
+            rowFinanceBinding.debit.setTextColor(Color.BLACK)
         }
+        rowFinanceBinding.balance.text = getBalance(position)
+        updateBackgroundColor(rowFinanceBinding.llayout, position)
     }
 
     private fun getBalance(position: Int): String {
         return balances.getOrNull(position)?.toString() ?: ""
     }
 
-    fun updateData(results: RealmResults<RealmMyTeam>) {
-        list = results
+    fun updateData(results: List<RealmMyTeam>) {
+        list = results.toList()
         recomputeBalances()
     }
 

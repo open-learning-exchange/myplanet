@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.repository
 
 import android.content.Context
 import com.google.gson.JsonObject
-import io.realm.RealmResults
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
@@ -68,7 +67,7 @@ interface TeamRepository {
         startDate: Long? = null,
         endDate: Long? = null,
         sortAscending: Boolean = false,
-    ): Flow<RealmResults<RealmMyTeam>>
+    ): Flow<List<RealmMyTeam>>
     suspend fun createTransaction(
         teamId: String,
         type: String,
