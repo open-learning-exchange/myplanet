@@ -1,7 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import org.ole.planet.myplanet.model.RealmUserModel
-
 interface RatingRepository {
     suspend fun getRatingSummary(type: String, itemId: String, userId: String): RatingSummary
 
@@ -9,7 +7,7 @@ interface RatingRepository {
         type: String,
         itemId: String,
         title: String,
-        user: RealmUserModel,
+        userId: String,
         rating: Float,
         comment: String,
     ): RatingSummary

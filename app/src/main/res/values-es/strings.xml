@@ -17,7 +17,6 @@
     <string name="app_project_name">myPlanet</string>
     <string name="action_settings">configuración</string>
     <string name="hint_name">Nombre</string>
-    <string name="hint_password">Contraseña</string>
     <string name="btn_back">Volver</string>
     <string name="btn_sign_in">Iniciar sesión</string>
     <string name="btn_sync">Sincronizar</string>
@@ -322,7 +321,6 @@
     <string name="blood_pressure">Presión arterial</string>
     <string name="orally">Oralmente</string>
     <string name="save">Guardar</string>
-    <string name="vital_signs">Registro de signos vitales</string>
     <string name="task">Tarea</string>
     <string name="deadline_required">Fecha límite (obligatorio)</string>
     <string name="click_here_to_pick_date">Haz clic aquí para seleccionar la fecha</string>
@@ -1047,7 +1045,6 @@
     <string name="confirm_removal">Confirmar eliminación</string>
     <string name="returning_user">Usuario recurrente</string>
     <string name="send_to_nation">Permite que tus logros se compartan con la nación</string>
-    <string name="jcplayer_description">reproductor de audio</string>
     <string name="image_resource">recurso de imagen</string>
     <string name="play_audio">reproducir audio</string>
     <string name="video_player">reproductor de video</string>

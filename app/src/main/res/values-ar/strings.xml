@@ -17,7 +17,6 @@
     <string name="app_project_name">myPlanet</string>
     <string name="action_settings">الإعدادات</string>
     <string name="hint_name">اسم المستخدم</string>
-    <string name="hint_password">كلمة المرور</string>
     <string name="btn_back">رجع</string>
     <string name="btn_sign_in">تسجيل الدخول</string>
     <string name="btn_sync">مزامنة</string>
@@ -322,7 +321,6 @@
     <string name="blood_pressure">ضغط الدم (الضغط الانقباضي/الانبساطي)</string>
     <string name="orally">عن طريق الفم</string>
     <string name="save">حفظ</string>
-    <string name="vital_signs">سجل علامات الحيوية</string>
     <string name="task">المهمة (مطلوبة)</string>
     <string name="deadline_required">الموعد النهائي (مطلوب)</string>
     <string name="click_here_to_pick_date">انقر هنا لاختيار التاريخ</string>
@@ -1047,7 +1045,6 @@
     <string name="confirm_removal">تأكيد الحذف</string>
     <string name="returning_user">مستخدم عائد</string>
     <string name="send_to_nation">اسمح بمشاركة إنجازاتك مع الوطن</string>
-    <string name="jcplayer_description">مشغل الصوت</string>
     <string name="image_resource">مصدر الصورة</string>
     <string name="play_audio">تشغيل الصوت</string>
     <string name="video_player">مشغل الفيديو</string>
