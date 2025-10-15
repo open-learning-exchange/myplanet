@@ -264,6 +264,9 @@ class ChatDetailFragment : Fragment() {
                 customProgressDialog.show()
                 chatApiHelper.fetchAiProviders { providers ->
                     customProgressDialog.dismiss()
+                    if (!isAdded || _binding == null) {
+                        return@fetchAiProviders
+                    }
                     if (providers == null || providers.values.all { !it }) {
                         onFailError()
                     } else {
@@ -277,6 +280,7 @@ class ChatDetailFragment : Fragment() {
     private fun updateAIButtons(aiProvidersResponse: Map<String, Boolean>) {
         if (!isAdded || context == null) return
 
+        val binding = _binding ?: return
         val aiTableRow = binding.aiTableRow
         aiTableRow.removeAllViews()
 
@@ -367,8 +371,10 @@ class ChatDetailFragment : Fragment() {
 
     private fun onFailError() {
         isAiUnavailable = true
-        binding.textGchatIndicator.visibility = View.VISIBLE
-        binding.textGchatIndicator.text = context?.getString(R.string.virtual_assistant_currently_not_available)
+        _binding?.let { binding ->
+            binding.textGchatIndicator.visibility = View.VISIBLE
+            binding.textGchatIndicator.text = context?.getString(R.string.virtual_assistant_currently_not_available)
+        }
         refreshInputState()
     }
 
@@ -468,6 +474,9 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun handleResponse(response: Response<ChatModel>, query: String, id: String?) {
+        if (!isAdded || _binding == null) {
+            return
+        }
         val responseBody = response.body()
         if (response.isSuccessful && responseBody != null) {
             if (responseBody.status == "Success") {
@@ -492,14 +501,19 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun handleFailure(errorMessage: String?, query: String, id: String?) {
+        if (!isAdded || _binding == null) {
+            return
+        }
         showError(errorMessage)
         id?.let { continueConversationRealm(it, query, "") }
         enableUI()
     }
 
     private fun showError(message: String?) {
-        binding.textGchatIndicator.visibility = View.VISIBLE
-        binding.textGchatIndicator.text = context?.getString(R.string.message_placeholder, message)
+        _binding?.let { binding ->
+            binding.textGchatIndicator.visibility = View.VISIBLE
+            binding.textGchatIndicator.text = context?.getString(R.string.message_placeholder, message)
+        }
     }
 
     private fun saveNewChat(query: String, chatResponse: String, responseBody: ChatModel) {
@@ -509,11 +523,13 @@ class ChatDetailFragment : Fragment() {
                 databaseService.executeTransactionAsync { realm ->
                     RealmChatHistory.insert(realm, jsonObject)
                 }
-                if (isAdded && activity is DashboardActivity) {
+                val binding = _binding
+                if (isAdded && binding != null && activity is DashboardActivity) {
                     (activity as DashboardActivity).refreshChatHistoryList()
                 }
             } catch (e: Exception) {
-                if (isAdded) {
+                val binding = _binding
+                if (isAdded && binding != null) {
                     Snackbar.make(binding.root, getString(R.string.failed_to_save_chat), Snackbar.LENGTH_LONG).show()
                 }
             }
