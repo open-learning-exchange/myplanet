@@ -442,8 +442,16 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     }
 
     private fun loadSavedProfileImage() {
-        val lastUserWithImage = prefData.getSavedUsers().lastOrNull { !it.image.isNullOrEmpty() }
-        lastUserWithImage?.image?.let { image ->
+        val savedUsers = prefData.getSavedUsers()
+        val lastLoggedInUser = settings.getString("name", null)?.trim()
+
+        val preferredUser = savedUsers.firstOrNull { user ->
+            val savedName = user.name?.trim()
+            !user.image.isNullOrEmpty() && !lastLoggedInUser.isNullOrEmpty() && savedName == lastLoggedInUser
+        }
+
+        val userWithImage = preferredUser ?: savedUsers.lastOrNull { !it.image.isNullOrEmpty() }
+        userWithImage?.image?.let { image ->
             Glide.with(this)
                 .load(image)
                 .placeholder(R.drawable.profile)
@@ -539,17 +547,22 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             }
             val newUser = User(userName, name, password, userProfile, "member")
             val existingUsers: MutableList<User> = ArrayList(prefData.getSavedUsers())
-            var newUserExists = false
-            for ((fullName1) in existingUsers) {
-                if (fullName1 == newUser.fullName?.trim { it <= ' ' }) {
-                    newUserExists = true
-                    break
-                }
-            }
-            if (!newUserExists) {
+            val trimmedName = newUser.name?.trim()
+            val existingIndex = existingUsers.indexOfFirst { it.name?.trim() == trimmedName }
+
+            if (existingIndex >= 0) {
+                val updatedUser = existingUsers.removeAt(existingIndex).copy(
+                    fullName = newUser.fullName,
+                    name = newUser.name,
+                    password = newUser.password,
+                    image = newUser.image,
+                    source = newUser.source
+                )
+                existingUsers.add(updatedUser)
+            } else {
                 existingUsers.add(newUser)
-                prefData.setSavedUsers(existingUsers)
             }
+            prefData.setSavedUsers(existingUsers)
         }
     }
 
