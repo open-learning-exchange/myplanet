@@ -321,7 +321,6 @@
     <string name="blood_pressure">Blood Pressure (Systolic/Diastolic)</string>
     <string name="orally">Orally</string>
     <string name="save">Save</string>
-    <string name="vital_signs">Vital Signs Record</string>
     <string name="task">Task (required)</string>
     <string name="deadline_required">Deadline (required)</string>
     <string name="click_here_to_pick_date">Click here to pick date</string>
