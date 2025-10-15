@@ -44,7 +44,6 @@ import java.util.HashMap
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
-import kotlin.isInitialized
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.launchIn
@@ -141,7 +140,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     var serverCheck = true
     var showAdditionalServers = false
     var serverAddressAdapter: ServerAddressAdapter? = null
-    lateinit var serverListAddresses: List<ServerAddressesModel>
+    var serverListAddresses: List<ServerAddressesModel> = emptyList()
     private var isProgressDialogShowing = false
     private lateinit var bManager: LocalBroadcastManager
 
@@ -484,7 +483,11 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 withContext(Dispatchers.Main) {
                     forceSyncTrigger()
                     val syncedUrl = settings.getString("serverURL", null)?.let { ServerConfigUtils.removeProtocol(it) }
-                    if (syncedUrl != null && serverListAddresses.any { it.url.replace(Regex("^https?://"), "") == syncedUrl }) {
+                    if (
+                        syncedUrl != null &&
+                        serverListAddresses.isNotEmpty() &&
+                        serverListAddresses.any { it.url.replace(Regex("^https?://"), "") == syncedUrl }
+                    ) {
                         editor.putString("pinnedServerUrl", syncedUrl).apply()
                     }
 
@@ -714,7 +717,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         setupFastSyncOption(binding)
 
         showAdditionalServers = false
-        if (::serverListAddresses.isInitialized && settings.getString("serverURL", "")?.isNotEmpty() == true) {
+        if (serverListAddresses.isNotEmpty() && settings.getString("serverURL", "")?.isNotEmpty() == true) {
             refreshServerList()
         }
 
