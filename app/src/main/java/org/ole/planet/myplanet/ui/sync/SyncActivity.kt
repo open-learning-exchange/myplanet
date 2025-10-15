@@ -118,6 +118,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     lateinit var syncIcon: ImageView
     lateinit var syncIconDrawable: AnimationDrawable
     lateinit var prefData: SharedPrefManager
+    @Inject
     lateinit var profileDbHandler: UserProfileDbHandler
     lateinit var spnCloud: Spinner
     lateinit var protocolCheckIn: RadioGroup
@@ -154,7 +155,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         mRealm = databaseService.realmInstance
         requestAllPermissions()
         prefData = SharedPrefManager(this)
-        profileDbHandler = UserProfileDbHandler(this)
         defaultPref = PreferenceManager.getDefaultSharedPreferences(this)
         processedUrl = UrlUtils.getUrl()
     }
@@ -654,8 +654,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     fun onLogin() {
-        val handler = UserProfileDbHandler(this)
-        handler.onLoginAsync(
+        profileDbHandler.onLoginAsync(
             callback = {
                 runOnUiThread {
                     editor.putBoolean(Constants.KEY_LOGIN, true).commit()
@@ -668,7 +667,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 }
             }
         )
-        handler.onDestroy()
 
         isNetworkConnectedFlow.onEach { isConnected ->
             if (isConnected) {
@@ -842,6 +840,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
         if (this::mRealm.isInitialized && !mRealm.isClosed) {
             mRealm.close()
+        }
+        if (this::profileDbHandler.isInitialized) {
+            profileDbHandler.onDestroy()
         }
         super.onDestroy()
     }
