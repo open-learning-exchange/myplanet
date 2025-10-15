@@ -11,10 +11,6 @@ class CourseRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
 ) : RealmRepository(databaseService), CourseRepository {
 
-    override suspend fun getAllCourses(): List<RealmMyCourse> {
-        return queryList(RealmMyCourse::class.java)
-    }
-
     override suspend fun getCourseByCourseId(courseId: String?): RealmMyCourse? {
         return courseId?.let { findByField(RealmMyCourse::class.java, "courseId", it) }
     }
