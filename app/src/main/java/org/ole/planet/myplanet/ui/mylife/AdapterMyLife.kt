@@ -24,7 +24,7 @@ import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyLife.Companion.updateVisibility
 import org.ole.planet.myplanet.model.RealmMyLife.Companion.updateWeight
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment
-import org.ole.planet.myplanet.ui.myPersonals.MyPersonalsFragment
+import org.ole.planet.myplanet.ui.mypersonals.MyPersonalsFragment
 import org.ole.planet.myplanet.ui.myhealth.MyHealthFragment
 import org.ole.planet.myplanet.ui.mylife.helper.ItemTouchHelperAdapter
 import org.ole.planet.myplanet.ui.mylife.helper.ItemTouchHelperViewHolder
