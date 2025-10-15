@@ -31,7 +31,7 @@
 
                 <TextView
                     android:id="@+id/tv_fragment_info"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="40dp"
                     android:layout_gravity="center_vertical"
                     android:layout_margin="@dimen/_10dp"
@@ -42,6 +42,7 @@
                     android:textColor="@color/md_white_1000"
                     android:textSize="@dimen/text_size_large"
                     android:textStyle="bold"
+                    android:maxLines="1"
                     android:minWidth="150dp" />
                 <Button
                     android:id="@+id/btn_remove"
@@ -64,12 +65,12 @@
                     android:layout_margin="@dimen/padding_small"
                     android:drawablePadding="4dp"
                     android:gravity="center"
+                    android:minWidth="160dp"
                     android:text="@string/join_selected"
                     android:textColor="@color/daynight_textColor"
                     app:drawableTint="@color/daynight_textColor"
                     android:textSize="@dimen/text_size_mid"
-                    app:drawableLeftCompat="@drawable/ic_add_library"
-                    android:width="180dp" />
+                    app:drawableLeftCompat="@drawable/ic_add_library"/>
                 <TextView
                     android:id="@+id/tv_selected"
                     android:layout_width="wrap_content"
