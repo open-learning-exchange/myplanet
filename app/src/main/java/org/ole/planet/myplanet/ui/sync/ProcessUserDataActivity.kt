@@ -12,7 +12,6 @@ import android.net.Uri
 import android.os.Build
 import android.text.TextUtils
 import android.view.View
-import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
 import android.webkit.URLUtil
 import android.widget.ImageView
@@ -121,12 +120,6 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
             .putExtra("from_login", true)
         startActivity(dashboard)
         finish()
-    }
-
-    private fun requestFocus(view: View) {
-        if (view.requestFocus()) {
-            window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE)
-        }
     }
 
     fun changeLogoColor() {
