@@ -8,10 +8,13 @@ import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.DefaultTimeBar
 import com.bumptech.glide.Glide
 import java.io.File
 import java.util.regex.Pattern
@@ -75,10 +78,9 @@ class AudioPlayerActivity : AppCompatActivity() {
         initializeExoPlayer()
 
         setupPlayPauseButtons()
-
-        binding.playerView.setOnTouchListener { _,_ -> true}
     }
 
+    @androidx.annotation.OptIn(UnstableApi::class)
     private fun initializeExoPlayer() {
         val fullPath = resolveFullPath(filePath)
 
@@ -91,6 +93,16 @@ class AudioPlayerActivity : AppCompatActivity() {
 
                 val controller = binding.playerView.findViewById<View>(R.id.exo_controller)
                 controller?.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+
+                val timeBar = binding.playerView.findViewById<DefaultTimeBar>(
+                    androidx.media3.ui.R.id.exo_progress
+                )
+                timeBar?.apply {
+                    setPlayedColor(ContextCompat.getColor(this@AudioPlayerActivity, R.color.daynight_textColor))
+                    setScrubberColor(ContextCompat.getColor(this@AudioPlayerActivity, R.color.daynight_textColor))
+                    setBufferedColor(ContextCompat.getColor(this@AudioPlayerActivity, R.color.hint_color))
+                    setUnplayedColor(ContextCompat.getColor(this@AudioPlayerActivity, R.color.disable_color))
+                }
 
                 player.addListener(object : Player.Listener {
                     override fun onPlayerError(error: PlaybackException) {

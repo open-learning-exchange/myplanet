@@ -77,7 +77,6 @@ class MyHealthFragment : Fragment() {
     private val binding get() = _binding!!
     private lateinit var alertMyPersonalBinding: AlertMyPersonalBinding
     private lateinit var alertHealthListBinding: AlertHealthListBinding
-    var profileDbHandler: UserProfileDbHandler? = null
     var userId: String? = null
     lateinit var mRealm: Realm
     var userModel: RealmUserModel? = null
@@ -167,11 +166,11 @@ class MyHealthFragment : Fragment() {
         if (!isAdded || requireActivity().isFinishing) return
 
         try {
-            profileDbHandler = UserProfileDbHandler(requireContext())
-            userId = if (TextUtils.isEmpty(profileDbHandler?.userModel?._id)) {
-                profileDbHandler?.userModel?.id
+            val currentUser = getCurrentUserProfileCopy()
+            userId = if (TextUtils.isEmpty(currentUser?._id)) {
+                currentUser?.id
             } else {
-                profileDbHandler?.userModel?._id
+                currentUser?._id
             }
             getHealthRecords(userId)
         } catch (e: Exception) {
@@ -208,9 +207,13 @@ class MyHealthFragment : Fragment() {
     }
 
     private fun setupInitialData() {
-        profileDbHandler = UserProfileDbHandler(alertMyPersonalBinding.root.context)
-        userId = if (TextUtils.isEmpty(profileDbHandler?.userModel?._id)) profileDbHandler?.userModel?.id else profileDbHandler?.userModel?._id
+        val currentUser = getCurrentUserProfileCopy()
+        userId = if (TextUtils.isEmpty(currentUser?._id)) currentUser?.id else currentUser?._id
         getHealthRecords(userId)
+    }
+
+    private fun getCurrentUserProfileCopy(): RealmUserModel? {
+        return userProfileDbHandler.getUserModelCopy()
     }
 
     private fun setupButtons() {

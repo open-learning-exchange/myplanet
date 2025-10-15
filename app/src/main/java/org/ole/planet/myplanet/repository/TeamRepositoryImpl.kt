@@ -28,8 +28,8 @@ import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.JsonUtils
+import org.ole.planet.myplanet.utilities.ServerUrlMapper
 
 class TeamRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
@@ -71,7 +71,7 @@ class TeamRepositoryImpl @Inject constructor(
         startDate: Long?,
         endDate: Long?,
         sortAscending: Boolean,
-    ): Flow<RealmResults<RealmMyTeam>> {
+    ): Flow<List<RealmMyTeam>> {
         val sortOrder = if (sortAscending) Sort.ASCENDING else Sort.DESCENDING
         return withRealmFlow { realm, scope ->
             val query = realm.where(RealmMyTeam::class.java)
@@ -84,10 +84,18 @@ class TeamRepositoryImpl @Inject constructor(
 
             val results = query.findAllAsync().sort("date", sortOrder)
             val listener = RealmChangeListener<RealmResults<RealmMyTeam>> { updatedResults ->
-                scope.trySend(updatedResults)
+                if (updatedResults.isLoaded && updatedResults.isValid) {
+                    scope.trySend(realm.copyFromRealm(updatedResults))
+                } else {
+                    scope.trySend(emptyList())
+                }
             }
             results.addChangeListener(listener)
-            scope.trySend(results)
+            if (results.isLoaded && results.isValid) {
+                scope.trySend(realm.copyFromRealm(results))
+            } else {
+                scope.trySend(emptyList())
+            }
 
             return@withRealmFlow { results.removeChangeListener(listener) }
         }
