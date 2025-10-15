@@ -6,7 +6,6 @@ import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
-import java.util.Calendar
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 
@@ -36,13 +35,6 @@ open class RealmTeamLog : RealmObject() {
                 .equalTo("user", userName)
                 .equalTo("teamId", teamId)
                 .max("time")?.toLong()
-        }
-
-        @JvmStatic
-        fun getVisitByTeam(realm: Realm, teamId: String?): Long {
-            val calendar = Calendar.getInstance()
-            calendar.add(Calendar.DAY_OF_YEAR, -30)
-            return realm.where(RealmTeamLog::class.java).equalTo("type", "teamVisit").equalTo("teamId", teamId).greaterThan("time", calendar.timeInMillis).count()
         }
 
         @JvmStatic

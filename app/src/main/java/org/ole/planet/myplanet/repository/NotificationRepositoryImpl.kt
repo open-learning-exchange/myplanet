@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import io.realm.Sort
 import java.util.Date
+import java.util.UUID
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -10,6 +11,37 @@ import org.ole.planet.myplanet.model.RealmNotification
 class NotificationRepositoryImpl @Inject constructor(
         databaseService: DatabaseService,
     ) : RealmRepository(databaseService), NotificationRepository {
+
+    override suspend fun createNotificationIfMissing(
+        type: String,
+        message: String,
+        relatedId: String?,
+        userId: String?,
+    ) {
+        val actualUserId = userId ?: ""
+        executeTransaction { realm ->
+            val query = realm.where(RealmNotification::class.java)
+                .equalTo("userId", actualUserId)
+                .equalTo("type", type)
+
+            val existingNotification =
+                if (relatedId != null) {
+                    query.equalTo("relatedId", relatedId).findFirst()
+                } else {
+                    query.isNull("relatedId").findFirst()
+                }
+
+            if (existingNotification == null) {
+                realm.createObject(RealmNotification::class.java, UUID.randomUUID().toString()).apply {
+                    this.userId = actualUserId
+                    this.type = type
+                    this.message = message
+                    this.relatedId = relatedId
+                    this.createdAt = Date()
+                }
+            }
+        }
+    }
 
     override suspend fun getNotifications(userId: String?, filter: NotificationFilter): List<RealmNotification> {
         if (userId.isNullOrEmpty()) return emptyList()
@@ -33,6 +65,7 @@ class NotificationRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getUnreadCount(userId: String?): Int {
+        if (userId == null) return 0
         return getUnreadNotifications(userId).size
     }
 
