@@ -52,10 +52,10 @@ class AudioPlayerActivity : AppCompatActivity() {
 
         binding.trackTitle.text = extractedFileName
         binding.artistName.text = resourceTitle
-        playButton = binding.playerView.findViewById(R.id.exo_play)
-        pauseButton = binding.playerView.findViewById(R.id.exo_pause)
+        playButton = binding.playerView.findViewById(androidx.media3.ui.R.id.exo_play)
+        pauseButton = binding.playerView.findViewById(androidx.media3.ui.R.id.exo_pause)
 
-        val overlay = binding.playerView.findViewById<FrameLayout>(R.id.exo_overlay)
+        val overlay = binding.playerView.findViewById<FrameLayout>(androidx.media3.ui.R.id.exo_overlay)
 
 
         val blurredImageView = ImageView(this).apply {
@@ -71,7 +71,7 @@ class AudioPlayerActivity : AppCompatActivity() {
             .into(blurredImageView)
 
         overlay.addView(blurredImageView, 0)
-        val controller = binding.playerView.findViewById<View>(R.id.exo_controller)
+        val controller = binding.playerView.findViewById<View>(androidx.media3.ui.R.id.exo_controller)
         controller?.setBackgroundColor(android.graphics.Color.TRANSPARENT)
 
 
@@ -91,7 +91,7 @@ class AudioPlayerActivity : AppCompatActivity() {
                 player.prepare()
                 player.playWhenReady = true
 
-                val controller = binding.playerView.findViewById<View>(R.id.exo_controller)
+                val controller = binding.playerView.findViewById<View>(androidx.media3.ui.R.id.exo_controller)
                 controller?.setBackgroundColor(android.graphics.Color.TRANSPARENT)
 
                 val timeBar = binding.playerView.findViewById<DefaultTimeBar>(
