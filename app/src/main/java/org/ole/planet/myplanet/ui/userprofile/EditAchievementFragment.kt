@@ -271,9 +271,22 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
 
     private fun initializeData() {
         if (achievement == null) {
-            aRealm.executeTransaction { realm ->
+            var startedTransaction = false
+            try {
+                if (!aRealm.isInTransaction) {
+                    aRealm.beginTransaction()
+                    startedTransaction = true
+                }
                 achievement =
-                    realm.createObject(RealmAchievement::class.java, user?.id + "@" + user?.planetCode)
+                    aRealm.createObject(RealmAchievement::class.java, user?.id + "@" + user?.planetCode)
+                if (startedTransaction) {
+                    aRealm.commitTransaction()
+                }
+            } catch (throwable: Throwable) {
+                if (startedTransaction && aRealm.isInTransaction) {
+                    aRealm.cancelTransaction()
+                }
+                throw throwable
             }
             return
         } else {
