@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.onBoarding
+package org.ole.planet.myplanet.ui.onboarding
 
 import android.content.Context
 import android.view.LayoutInflater
