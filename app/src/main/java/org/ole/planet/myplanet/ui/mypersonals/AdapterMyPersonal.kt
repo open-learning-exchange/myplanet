@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.myPersonals
+package org.ole.planet.myplanet.ui.mypersonals
 
 import android.content.Context
 import android.content.DialogInterface
@@ -16,7 +16,7 @@ import org.ole.planet.myplanet.callback.OnSelectedMyPersonal
 import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
 import org.ole.planet.myplanet.databinding.RowMyPersonalBinding
 import org.ole.planet.myplanet.model.RealmMyPersonal
-import org.ole.planet.myplanet.ui.myPersonals.AdapterMyPersonal.ViewHolderMyPersonal
+import org.ole.planet.myplanet.ui.mypersonals.AdapterMyPersonal.ViewHolderMyPersonal
 import org.ole.planet.myplanet.ui.viewer.ImageViewerActivity
 import org.ole.planet.myplanet.ui.viewer.PDFReaderActivity
 import org.ole.planet.myplanet.ui.viewer.VideoPlayerActivity
