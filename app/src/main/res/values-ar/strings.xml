@@ -17,7 +17,6 @@
     <string name="app_project_name">myPlanet</string>
     <string name="action_settings">الإعدادات</string>
     <string name="hint_name">اسم المستخدم</string>
-    <string name="hint_password">كلمة المرور</string>
     <string name="btn_back">رجع</string>
     <string name="btn_sign_in">تسجيل الدخول</string>
     <string name="btn_sync">مزامنة</string>
