@@ -11,7 +11,6 @@ data class SyncMetrics(
     val concurrencyLevel: Int,
     val success: Boolean,
     val errorMessage: String? = null,
-    val networkSpeed: NetworkSpeed,
     val memoryUsageMB: Long,
     val throughputItemsPerSecond: Double
 ) {
@@ -25,7 +24,6 @@ data class SyncMetrics(
             config: SyncConfig,
             success: Boolean,
             errorMessage: String? = null,
-            networkSpeed: NetworkSpeed,
             memoryUsageMB: Long
         ): SyncMetrics {
             val duration = endTime - startTime
@@ -44,7 +42,6 @@ data class SyncMetrics(
                 concurrencyLevel = config.concurrencyLevel,
                 success = success,
                 errorMessage = errorMessage,
-                networkSpeed = networkSpeed,
                 memoryUsageMB = memoryUsageMB,
                 throughputItemsPerSecond = throughput
             )
