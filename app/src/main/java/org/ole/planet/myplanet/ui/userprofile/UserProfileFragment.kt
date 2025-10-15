@@ -356,10 +356,13 @@ class UserProfileFragment : Fragment() {
                 selectedGender,
                 date?: model?.dob
             ) {
-                updateUIWithUserData(model)
+                mRealm.refresh()
+                val updatedModel = userProfileDbHandler.userModel
+                model = updatedModel
+                updateUIWithUserData(updatedModel)
+                realm.close()
+                dialog.dismiss()
             }
-            realm.close()
-            dialog.dismiss()
         }
     }
 
