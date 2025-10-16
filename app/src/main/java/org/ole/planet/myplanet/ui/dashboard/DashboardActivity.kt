@@ -85,8 +85,7 @@ import org.ole.planet.myplanet.ui.team.TeamFragment
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.JoinRequestsPage
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.TasksPage
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
-import org.ole.planet.myplanet.utilities.Constants
-import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
+import org.ole.planet.myplanet.utilities.Constants.isBetaWifiFeatureEnabled
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils
@@ -877,7 +876,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun hideWifi() {
         val navMenu = binding.appBarBell.bellToolbar.menu
         navMenu.findItem(R.id.menu_goOnline)
-            .setVisible((showBetaFeature(Constants.KEY_SYNC, this)))
+            .setVisible(isBetaWifiFeatureEnabled(this))
     }
 
     private fun checkUser() {
@@ -1211,7 +1210,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_bell_dashboard, menu)
-        menu.findItem(R.id.menu_goOnline).isVisible = showBetaFeature(Constants.KEY_SYNC, this)
+        menu.findItem(R.id.menu_goOnline).isVisible = isBetaWifiFeatureEnabled(this)
         return super.onCreateOptionsMenu(menu)
     }
 
