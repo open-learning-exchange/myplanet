@@ -164,29 +164,55 @@ class UploadManager @Inject constructor(
     }
 
     fun uploadExamResult(listener: SuccessListener) {
-        val apiInterface = client?.create(ApiInterface::class.java)
+        val apiInterface = client.create(ApiInterface::class.java)
 
-        databaseService.withRealm { realm ->
-            realm.executeTransactionAsync({ transactionRealm: Realm ->
-                val submissions: List<RealmSubmission> =
-                    transactionRealm.where(RealmSubmission::class.java).findAll()
+        try {
+            val hasLooper = Looper.myLooper() != null
 
-                submissions.processInBatches { sub ->
-                    try {
-                        if ((sub.answers?.size ?: 0) > 0) {
-                            RealmSubmission.continueResultUpload(sub, apiInterface, transactionRealm, context)
+            databaseService.withRealm { realm ->
+                if (hasLooper) {
+                    realm.executeTransactionAsync({ transactionRealm: Realm ->
+                        val submissions: List<RealmSubmission> =
+                            transactionRealm.where(RealmSubmission::class.java).findAll()
+
+                        submissions.processInBatches { sub ->
+                            try {
+                                if ((sub.answers?.size ?: 0) > 0) {
+                                    RealmSubmission.continueResultUpload(sub, apiInterface, transactionRealm, context)
+                                }
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
                         }
-                    } catch (e: Exception) {
+                    }, {
+                        uploadCourseProgress()
+                        listener.onSuccess("Result sync completed successfully")
+                    }) { e: Throwable ->
                         e.printStackTrace()
+                        listener.onSuccess("Error during result sync: ${e.message}")
                     }
+                } else {
+                    realm.executeTransaction { transactionRealm: Realm ->
+                        val submissions: List<RealmSubmission> =
+                            transactionRealm.where(RealmSubmission::class.java).findAll()
+
+                        submissions.processInBatches { sub ->
+                            try {
+                                if ((sub.answers?.size ?: 0) > 0) {
+                                    RealmSubmission.continueResultUpload(sub, apiInterface, transactionRealm, context)
+                                }
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                        }
+                    }
+                    uploadCourseProgress()
+                    listener.onSuccess("Result sync completed successfully")
                 }
-            }, {
-                uploadCourseProgress()
-                listener.onSuccess("Result sync completed successfully")
-            }) { e: Throwable ->
-                e.printStackTrace()
-                listener.onSuccess("Error during result sync: ${e.message}")
             }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            listener.onSuccess("Error during result sync: ${e.message}")
         }
     }
 
@@ -472,34 +498,70 @@ class UploadManager @Inject constructor(
     fun uploadSubmissions() {
         val apiInterface = client?.create(ApiInterface::class.java)
 
-        databaseService.withRealm { realm ->
-            realm.executeTransactionAsync { transactionRealm: Realm ->
-                val list: List<RealmSubmission> = transactionRealm.where(RealmSubmission::class.java)
-                    .equalTo("isUpdated", true).or().isEmpty("_id").findAll()
+        try {
+            val hasLooper = Looper.myLooper() != null
 
-                list.processInBatches { submission ->
-                    try {
-                        val requestJson = RealmSubmission.serialize(transactionRealm, submission)
-                        val response = apiInterface?.postDoc(
-                            UrlUtils.header,
-                            "application/json",
-                            "${UrlUtils.getUrl()}/submissions",
-                            requestJson
-                        )?.execute()
+            databaseService.withRealm { realm ->
+                if (hasLooper) {
+                    realm.executeTransactionAsync { transactionRealm: Realm ->
+                        val list: List<RealmSubmission> = transactionRealm.where(RealmSubmission::class.java)
+                            .equalTo("isUpdated", true).or().isEmpty("_id").findAll()
 
-                        val jsonObject = response?.body()
-                        if (jsonObject != null) {
-                            val rev = getString("rev", jsonObject)
-                            val id = getString("id", jsonObject)
-                            submission._rev = rev
-                            submission._id = id
-                            submission.isUpdated = false
+                        list.processInBatches { submission ->
+                            try {
+                                val requestJson = RealmSubmission.serialize(transactionRealm, submission)
+                                val response = apiInterface?.postDoc(
+                                    UrlUtils.header,
+                                    "application/json",
+                                    "${UrlUtils.getUrl()}/submissions",
+                                    requestJson
+                                )?.execute()
+
+                                val jsonObject = response?.body()
+                                if (jsonObject != null) {
+                                    val rev = getString("rev", jsonObject)
+                                    val id = getString("id", jsonObject)
+                                    submission._rev = rev
+                                    submission._id = id
+                                    submission.isUpdated = false
+                                }
+                            } catch (e: IOException) {
+                                e.printStackTrace()
+                            }
                         }
-                    } catch (e: IOException) {
-                        e.printStackTrace()
+                    }
+                } else {
+                    realm.executeTransaction { transactionRealm: Realm ->
+                        val list: List<RealmSubmission> = transactionRealm.where(RealmSubmission::class.java)
+                            .equalTo("isUpdated", true).or().isEmpty("_id").findAll()
+
+                        list.processInBatches { submission ->
+                            try {
+                                val requestJson = RealmSubmission.serialize(transactionRealm, submission)
+                                val response = apiInterface?.postDoc(
+                                    UrlUtils.header,
+                                    "application/json",
+                                    "${UrlUtils.getUrl()}/submissions",
+                                    requestJson
+                                )?.execute()
+
+                                val jsonObject = response?.body()
+                                if (jsonObject != null) {
+                                    val rev = getString("rev", jsonObject)
+                                    val id = getString("id", jsonObject)
+                                    submission._rev = rev
+                                    submission._id = id
+                                    submission.isUpdated = false
+                                }
+                            } catch (e: IOException) {
+                                e.printStackTrace()
+                            }
+                        }
                     }
                 }
             }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
