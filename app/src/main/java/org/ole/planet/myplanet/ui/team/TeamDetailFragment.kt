@@ -83,9 +83,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
     }
 
     private fun detachCurrentUser(): RealmUserModel? {
-        val userModel = getCurrentUser() ?: return null
-        val realmInstance = userProfileDbHandler.mRealm
-        return realmInstance.copyFromRealm(userModel)
+        return userProfileDbHandler.getUserModelCopy()
     }
 
     private fun pageIndexById(pageId: String?): Int? {
