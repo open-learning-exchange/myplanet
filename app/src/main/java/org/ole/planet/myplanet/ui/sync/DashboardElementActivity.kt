@@ -27,7 +27,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createActionAsync
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
@@ -39,7 +38,7 @@ import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.team.TeamFragment
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
+import org.ole.planet.myplanet.utilities.Constants.isBetaWifiFeatureEnabled
 import org.ole.planet.myplanet.utilities.NotificationUtils
 import org.ole.planet.myplanet.utilities.SecurePrefs
 import org.ole.planet.myplanet.utilities.SharedPrefManager
@@ -52,7 +51,6 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        profileDbHandler = UserProfileDbHandler(this)
         settings = applicationContext.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         prefData = SharedPrefManager(this)
         supportFragmentManager.addOnBackStackChangedListener(this)
@@ -122,7 +120,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         }
     }
     override fun onPrepareOptionsMenu(menu: Menu): Boolean {
-        goOnline.isVisible = showBetaFeature(Constants.KEY_SYNC, this)
+        goOnline.isVisible = isBetaWifiFeatureEnabled(this)
         return super.onPrepareOptionsMenu(menu)
     }
 
