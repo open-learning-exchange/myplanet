@@ -15,9 +15,14 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getTeamCreator
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.ui.team.teamCourse.AdapterTeamCourse.ViewHolderTeamCourse
-import org.ole.planet.myplanet.utilities.DiffUtils
 
-class AdapterTeamCourse(private val context: Context, private var list: MutableList<RealmMyCourse>, mRealm: Realm?, teamId: String?, settings: SharedPreferences) : RecyclerView.Adapter<ViewHolderTeamCourse>() {
+class AdapterTeamCourse(
+    private val context: Context,
+    private var list: MutableList<RealmMyCourse>,
+    mRealm: Realm?,
+    teamId: String?,
+    settings: SharedPreferences
+) : RecyclerView.Adapter<ViewHolderTeamCourse>() {
     private lateinit var rowTeamResourceBinding: RowTeamResourceBinding
     private var listener: OnHomeItemClickListener? = null
     private val settings: SharedPreferences
@@ -29,22 +34,6 @@ class AdapterTeamCourse(private val context: Context, private var list: MutableL
         }
         this.settings = settings
         teamCreator = getTeamCreator(teamId, mRealm)
-    }
-    
-    fun updateList(newList: List<RealmMyCourse>) {
-        val diffResult = DiffUtils.calculateDiff(
-            list,
-            newList,
-            areItemsTheSame = { old, new -> old.courseId == new.courseId },
-            areContentsTheSame = { old, new ->
-                old.courseTitle == new.courseTitle &&
-                    old.description == new.description &&
-                    old.createdDate == new.createdDate
-            }
-        )
-        list.clear()
-        list.addAll(newList)
-        diffResult.dispatchUpdatesTo(this)
     }
     
     fun getList(): List<RealmMyCourse> = list
