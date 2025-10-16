@@ -33,4 +33,13 @@
         android:layout_weight="1"
         android:textSize="18sp"
         android:textColor="@color/hint_color" />
+    <TextView
+        android:id="@+id/submission_count"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:textColor="@color/hint_color"
+        android:visibility="gone" />
 </LinearLayout>
