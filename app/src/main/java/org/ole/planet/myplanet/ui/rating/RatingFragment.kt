@@ -9,12 +9,11 @@ import android.view.ViewGroup
 import android.widget.RatingBar
 import android.widget.RatingBar.OnRatingBarChangeListener
 import androidx.fragment.app.DialogFragment
-import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.fragment.app.viewModels
 import dagger.hilt.android.AndroidEntryPoint
-import dagger.hilt.android.internal.lifecycle.HiltViewModelFactory
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
@@ -27,9 +26,10 @@ import org.ole.planet.myplanet.utilities.Utilities
 class RatingFragment : DialogFragment() {
     private var _binding: FragmentRatingBinding? = null
     private val binding get() = _binding!!
-    private val viewModel: RatingViewModel by viewModels {
-        HiltViewModelFactory.create(this, arguments)
-    }
+    private val viewModel: RatingViewModel by viewModels(
+        factoryProducer = { defaultViewModelProviderFactory },
+        extrasProducer = { defaultViewModelCreationExtras }
+    )
     private var currentUser: RealmUserModel? = null
     var id: String? = ""
     var type: String? = ""
