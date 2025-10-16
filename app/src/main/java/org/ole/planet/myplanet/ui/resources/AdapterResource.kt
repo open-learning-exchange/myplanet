@@ -126,16 +126,20 @@ class AdapterResource(
                     context.getString(R.string.download)
                 }
             if (ratingMap.containsKey(library.resourceId)) {
-                val `object` = ratingMap[library.resourceId]
+                val ratingData = ratingMap[library.resourceId]
                 CourseRatingUtils.showRating(
                     context,
-                    `object`,
+                    ratingData,
                     holder.rowLibraryBinding.rating,
                     holder.rowLibraryBinding.timesRated,
                     holder.rowLibraryBinding.ratingBar
                 )
             } else {
-                holder.rowLibraryBinding.ratingBar.rating = 0f
+                val averageRating = library.averageRating?.toFloatOrNull() ?: 0f
+                holder.rowLibraryBinding.rating.text = String.format(Locale.getDefault(), "%.2f", averageRating)
+                holder.rowLibraryBinding.timesRated.text =
+                    context.getString(R.string.rating_count_format, library.timesRated ?: 0)
+                holder.rowLibraryBinding.ratingBar.rating = averageRating
             }
 
             if (userModel?.isGuest() == false) {
