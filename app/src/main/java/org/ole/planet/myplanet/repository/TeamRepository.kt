@@ -77,4 +77,5 @@ interface TeamRepository {
         parentCode: String?,
         planetCode: String?,
     ): Result<Unit>
+    suspend fun respondToMemberRequest(teamId: String, userId: String, accept: Boolean): Result<Unit>
 }

@@ -206,6 +206,34 @@ class TeamRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun respondToMemberRequest(
+        teamId: String,
+        userId: String,
+        accept: Boolean,
+    ): Result<Unit> {
+        if (teamId.isBlank() || userId.isBlank()) {
+            return Result.failure(IllegalArgumentException("teamId and userId cannot be blank"))
+        }
+
+        return runCatching {
+            executeTransaction { realm ->
+                val request = realm.where(RealmMyTeam::class.java)
+                    .equalTo("teamId", teamId)
+                    .equalTo("userId", userId)
+                    .equalTo("docType", "request")
+                    .findFirst()
+                    ?: throw IllegalStateException("Request not found for user $userId")
+
+                if (accept) {
+                    request.docType = "membership"
+                    request.updated = true
+                } else {
+                    request.deleteFromRealm()
+                }
+            }
+        }
+    }
+
     override suspend fun leaveTeam(teamId: String, userId: String?) {
         if (teamId.isBlank() || userId.isNullOrBlank()) return
         executeTransaction { realm ->
