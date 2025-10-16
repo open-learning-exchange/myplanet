@@ -73,6 +73,14 @@ object Constants {
     }
 
     @JvmStatic
+    fun isBetaWifiFeatureEnabled(context: Context): Boolean {
+        val preferences = PreferenceManager.getDefaultSharedPreferences(context)
+        val betaEnabled = preferences.getBoolean("beta_function", false)
+        val wifiSwitchEnabled = preferences.getBoolean(KEY_SYNC, false)
+        return betaEnabled && wifiSwitchEnabled
+    }
+
+    @JvmStatic
     fun autoSynFeature(s: String?, context: Context): Boolean {
         val preferences = PreferenceManager.getDefaultSharedPreferences(context)
         return preferences.getBoolean(s, false)
