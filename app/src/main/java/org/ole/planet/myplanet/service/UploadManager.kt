@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.os.Looper
 import android.text.TextUtils
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -71,6 +72,10 @@ class UploadManager @Inject constructor(
 ) : FileUploadService() {
 
     private val gson = Gson()
+
+    companion object {
+        private const val TAG = "UploadManager"
+    }
 
     private fun uploadNewsActivities() {
         val apiInterface = client?.create(ApiInterface::class.java)
@@ -164,30 +169,52 @@ class UploadManager @Inject constructor(
     }
 
     fun uploadExamResult(listener: SuccessListener) {
+        Log.d(TAG, "uploadExamResult: Starting exam result upload")
         val apiInterface = client.create(ApiInterface::class.java)
 
         try {
             val hasLooper = Looper.myLooper() != null
+            Log.d(TAG, "uploadExamResult: hasLooper=$hasLooper")
 
             databaseService.withRealm { realm ->
                 if (hasLooper) {
                     realm.executeTransactionAsync({ transactionRealm: Realm ->
-                        val submissions: List<RealmSubmission> =
-                            transactionRealm.where(RealmSubmission::class.java).findAll()
+                        val submissions: List<RealmSubmission> = transactionRealm.where(RealmSubmission::class.java).findAll()
+
+                        Log.d(TAG, "uploadExamResult: Found ${submissions.size} total submissions")
+
+                        val submissionsWithAnswers = submissions.filter { (it.answers?.size ?: 0) > 0 }
+                        Log.d(TAG, "uploadExamResult: ${submissionsWithAnswers.size} submissions have answers")
+
+                        var processedCount = 0
+                        var errorCount = 0
 
                         submissions.processInBatches { sub ->
                             try {
                                 if ((sub.answers?.size ?: 0) > 0) {
+                                    Log.d(TAG, "uploadExamResult: Processing submission ID=${sub.id}, parentId=${sub.parentId}, total answers=${sub.answers?.size}")
+                                    sub.answers?.forEachIndexed { index, answer ->
+                                        Log.d(TAG, "uploadExamResult:   Answer[$index]: $answer")
+                                    }
                                     RealmSubmission.continueResultUpload(sub, apiInterface, transactionRealm, context)
+                                    processedCount++
+                                    Log.d(TAG, "uploadExamResult: Successfully uploaded submission ID=${sub.id}")
                                 }
                             } catch (e: Exception) {
+                                errorCount++
+                                Log.e(TAG, "uploadExamResult: Error uploading submission ID=${sub.id}", e)
                                 e.printStackTrace()
                             }
                         }
+
+                        Log.d(TAG, "uploadExamResult: Completed processing. Processed=$processedCount, Errors=$errorCount")
                     }, {
+                        Log.d(TAG, "uploadExamResult: Starting course progress upload")
                         uploadCourseProgress()
+                        Log.d(TAG, "uploadExamResult: Result sync completed successfully")
                         listener.onSuccess("Result sync completed successfully")
                     }) { e: Throwable ->
+                        Log.e(TAG, "uploadExamResult: Error during async transaction", e)
                         e.printStackTrace()
                         listener.onSuccess("Error during result sync: ${e.message}")
                     }
@@ -196,21 +223,42 @@ class UploadManager @Inject constructor(
                         val submissions: List<RealmSubmission> =
                             transactionRealm.where(RealmSubmission::class.java).findAll()
 
+                        Log.d(TAG, "uploadExamResult: Found ${submissions.size} total submissions")
+
+                        val submissionsWithAnswers = submissions.filter { (it.answers?.size ?: 0) > 0 }
+                        Log.d(TAG, "uploadExamResult: ${submissionsWithAnswers.size} submissions have answers")
+
+                        var processedCount = 0
+                        var errorCount = 0
+
                         submissions.processInBatches { sub ->
                             try {
                                 if ((sub.answers?.size ?: 0) > 0) {
+                                    Log.d(TAG, "uploadExamResult: Processing submission ID=${sub.id}, parentId=${sub.parentId}, total answers=${sub.answers?.size}")
+                                    sub.answers?.forEachIndexed { index, answer ->
+                                        Log.d(TAG, "uploadExamResult:   Answer[$index]: $answer")
+                                    }
                                     RealmSubmission.continueResultUpload(sub, apiInterface, transactionRealm, context)
+                                    processedCount++
+                                    Log.d(TAG, "uploadExamResult: Successfully uploaded submission ID=${sub.id}")
                                 }
                             } catch (e: Exception) {
+                                errorCount++
+                                Log.e(TAG, "uploadExamResult: Error uploading submission ID=${sub.id}", e)
                                 e.printStackTrace()
                             }
                         }
+
+                        Log.d(TAG, "uploadExamResult: Completed processing. Processed=$processedCount, Errors=$errorCount")
                     }
+                    Log.d(TAG, "uploadExamResult: Starting course progress upload")
                     uploadCourseProgress()
+                    Log.d(TAG, "uploadExamResult: Result sync completed successfully")
                     listener.onSuccess("Result sync completed successfully")
                 }
             }
         } catch (e: Exception) {
+            Log.e(TAG, "uploadExamResult: Exception occurred", e)
             e.printStackTrace()
             listener.onSuccess("Error during result sync: ${e.message}")
         }
@@ -254,7 +302,7 @@ class UploadManager @Inject constructor(
     }
 
     private fun uploadCourseProgress() {
-        val apiInterface = client?.create(ApiInterface::class.java)
+        val apiInterface = client.create(ApiInterface::class.java)
         databaseService.withRealm { realm ->
             realm.executeTransactionAsync { transactionRealm: Realm ->
                 val data: List<RealmCourseProgress> =
@@ -293,7 +341,7 @@ class UploadManager @Inject constructor(
     }
 
     fun uploadFeedback(listener: SuccessListener) {
-        val apiInterface = client?.create(ApiInterface::class.java)
+        val apiInterface = client.create(ApiInterface::class.java)
         databaseService.withRealm { realm ->
             realm.executeTransactionAsync(Realm.Transaction { transactionRealm: Realm ->
                 val feedbacks: List<RealmFeedback> =
@@ -344,7 +392,7 @@ class UploadManager @Inject constructor(
     }
 
     fun uploadSubmitPhotos(listener: SuccessListener?) {
-        val apiInterface = client?.create(ApiInterface::class.java)
+        val apiInterface = client.create(ApiInterface::class.java)
         databaseService.withRealm { realm ->
             realm.executeTransactionAsync { transactionRealm: Realm ->
                 val data: List<RealmSubmitPhotos> =
