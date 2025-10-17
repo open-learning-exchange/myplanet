@@ -267,7 +267,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
         return view.measuredHeight
     }
 
-    private fun showMeetupDialog(meetupList: List<RealmMeetup>) {
+    private fun showMeetupDialog(markedDates: List<RealmMeetup>) {
         val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.meetup_dialog, null)
         val recyclerView = dialogView.findViewById<RecyclerView>(R.id.rvMeetups)
         val dialogTitle = dialogView.findViewById< TextView>(R.id.tvTitle)
@@ -280,7 +280,9 @@ class TeamCalendarFragment : BaseTeamFragment() {
         recyclerView.layoutParams.height = cardHeight + extraHeight
         recyclerView.requestLayout()
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
-        recyclerView.adapter = AdapterMeetup(meetupList)
+        val meetupAdapter = AdapterMeetup()
+        recyclerView.adapter = meetupAdapter
+        meetupAdapter.submitList(markedDates)
 
         val dialog = AlertDialog.Builder(requireContext())
             .setView(dialogView)
