@@ -11,6 +11,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentServicesBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper.replaceFragment
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
@@ -85,17 +86,23 @@ class ServicesFragment : BaseTeamFragment() {
                 if (route != null && route.size >= 4) {
                     val teamId = route[3]
                     viewLifecycleOwner.lifecycleScope.launch {
-                        val teamObject = teamRepository.getTeamById(teamId)
                         val isMyTeam = teamRepository.isMember(user?.id, teamId)
 
-                        val f = TeamDetailFragment.newInstance(
-                            teamId = teamId,
-                            teamName = teamObject?.name ?: "",
-                            teamType = teamObject?.type ?: "",
-                            isMyTeam = isMyTeam
-                        )
+                        val f = TeamDetailFragment()
+                        val args = Bundle().apply {
+                            putString("id", teamId)
+                            putBoolean("isMyTeam", isMyTeam)
+                        }
+                        f.arguments = args
 
-                        homeItemClickListener?.openCallFragment(f)
+                        val activity = requireActivity()
+                        replaceFragment(
+                            activity.supportFragmentManager,
+                            R.id.fragment_container,
+                            f,
+                            addToBackStack = true,
+                            tag = ""
+                        )
                     }
                 }
             }
