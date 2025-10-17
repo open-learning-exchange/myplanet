@@ -59,6 +59,9 @@ class TeamCalendarFragment : BaseTeamFragment() {
     private lateinit var meetupList: RealmResults<RealmMeetup>
     private val eventDates: MutableList<Calendar> = mutableListOf()
     private var addMeetupDialog: AlertDialog? = null
+    private var meetupDialog: AlertDialog? = null
+    private var meetupAdapter: AdapterMeetup? = null
+    private var meetupDialogCalendar: Calendar? = null
     @Inject
     lateinit var meetupRepository: MeetupRepository
 
@@ -211,6 +214,10 @@ class TeamCalendarFragment : BaseTeamFragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        meetupDialog?.dismiss()
+        meetupDialog = null
+        meetupAdapter = null
+        meetupDialogCalendar = null
         _binding = null
     }
 
@@ -268,6 +275,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
     }
 
     private fun showMeetupDialog(markedDates: List<RealmMeetup>) {
+        meetupDialog?.dismiss()
         val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.meetup_dialog, null)
         val recyclerView = dialogView.findViewById<RecyclerView>(R.id.rvMeetups)
         val dialogTitle = dialogView.findViewById< TextView>(R.id.tvTitle)
@@ -280,11 +288,14 @@ class TeamCalendarFragment : BaseTeamFragment() {
         recyclerView.layoutParams.height = cardHeight + extraHeight
         recyclerView.requestLayout()
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
-        val meetupAdapter = AdapterMeetup()
+        if (meetupAdapter == null) {
+            meetupAdapter = AdapterMeetup()
+        }
         recyclerView.adapter = meetupAdapter
-        meetupAdapter.submitList(markedDates)
+        meetupAdapter?.submitList(markedDates.toList())
 
-        val dialog = AlertDialog.Builder(requireContext())
+        meetupDialogCalendar = clickedCalendar.clone() as Calendar
+        meetupDialog = AlertDialog.Builder(requireContext())
             .setView(dialogView)
             .create()
         val btnAdd = dialogView.findViewById<Button>(R.id.btnadd)
@@ -294,7 +305,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
             btnAdd.visibility = View.GONE
         }
         dialogView.findViewById<Button>(R.id.btnClose).setOnClickListener {
-            dialog.dismiss()
+            meetupDialog?.dismiss()
         }
         btnAdd.setOnClickListener {
             if(arguments?.getBoolean("fromLogin", false) != true){
@@ -304,16 +315,35 @@ class TeamCalendarFragment : BaseTeamFragment() {
             }
         }
 
-        dialog.setOnDismissListener {
-            eventDates.add(clickedCalendar)
+        meetupDialog?.setOnDismissListener {
+            meetupDialogCalendar?.let { calendarForDialog ->
+                eventDates.add(calendarForDialog)
+            }
             lifecycleScope.launch(Dispatchers.Main) {
                 binding.calendarView.selectedDates = emptyList()
                 binding.calendarView.selectedDates = eventDates.toList()
             }
             binding.calendarView.selectedDates = eventDates
+            meetupDialogCalendar = null
+            meetupDialog = null
         }
 
-        dialog.show()
+        meetupDialog?.show()
+    }
+
+    private fun updateMeetupDialogForClickedDate() {
+        if (meetupDialog?.isShowing == true && ::clickedCalendar.isInitialized && ::meetupList.isInitialized) {
+            val clickedDate = Instant.ofEpochMilli(clickedCalendar.timeInMillis)
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate()
+            val updatedMeetups = meetupList.mapNotNull { meetup ->
+                val meetupDate = Instant.ofEpochMilli(meetup.startDate)
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDate()
+                if (meetupDate == clickedDate) meetup else null
+            }
+            meetupAdapter?.submitList(updatedMeetups.toList())
+        }
     }
 
     private fun refreshCalendarView() {
@@ -333,6 +363,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
                 eventDates.clear()
                 eventDates.addAll(newDates)
                 binding.calendarView.selectedDates = ArrayList(newDates)
+                updateMeetupDialogForClickedDate()
             }
         }
     }
