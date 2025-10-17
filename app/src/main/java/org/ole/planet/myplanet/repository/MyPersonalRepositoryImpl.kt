@@ -32,6 +32,37 @@ class MyPersonalRepositoryImpl @Inject constructor(
         save(personal)
     }
 
+    override suspend fun updatePersonalResource(
+        personalId: String,
+        title: String?,
+        description: String?,
+    ) {
+        if (personalId.isBlank()) {
+            return
+        }
+
+        update(
+            RealmMyPersonal::class.java,
+            "_id",
+            personalId,
+        ) { personal ->
+            personal.title = title
+            personal.description = description
+        }
+    }
+
+    override suspend fun deletePersonalResource(personalId: String) {
+        if (personalId.isBlank()) {
+            return
+        }
+
+        delete(
+            RealmMyPersonal::class.java,
+            "_id",
+            personalId,
+        )
+    }
+
     override fun getPersonalResources(userId: String?): Flow<List<RealmMyPersonal>> {
         if (userId.isNullOrBlank()) {
             return flowOf(emptyList())

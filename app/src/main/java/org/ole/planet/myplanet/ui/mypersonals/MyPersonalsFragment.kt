@@ -113,4 +113,18 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
     override fun onAddedResource() {
         // List updates are handled via repository flow
     }
+
+    override fun onDeletePersonal(personal: RealmMyPersonal) {
+        val personalId = personal._id ?: personal.id ?: return
+        viewLifecycleOwner.lifecycleScope.launch {
+            myPersonalRepository.deletePersonalResource(personalId)
+        }
+    }
+
+    override fun onEditPersonal(personal: RealmMyPersonal, title: String, description: String) {
+        val personalId = personal._id ?: personal.id ?: return
+        viewLifecycleOwner.lifecycleScope.launch {
+            myPersonalRepository.updatePersonalResource(personalId, title, description)
+        }
+    }
 }
