@@ -33,7 +33,8 @@ class AdapterSurvey(
     private val isTeam: Boolean,
     val teamId: String?,
     private val surveyAdoptListener: SurveyAdoptListener,
-    private val settings: SharedPreferences
+    private val settings: SharedPreferences,
+    private val userProfileDbHandler: UserProfileDbHandler
 ) : RecyclerView.Adapter<AdapterSurvey.ViewHolderSurvey>() {
     private var examList: List<RealmStepExam> = emptyList()
     private var listener: OnHomeItemClickListener? = null
@@ -194,7 +195,7 @@ class AdapterSurvey(
         }
 
         fun adoptSurvey(exam: RealmStepExam, teamId: String?) {
-            val userModel = UserProfileDbHandler(context).userModel
+            val userModel = userProfileDbHandler.userModel
             val sParentCode = settings.getString("parentCode", "")
             val planetCode = settings.getString("planetCode", "")
 
