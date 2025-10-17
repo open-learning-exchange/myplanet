@@ -132,9 +132,7 @@ class JoinedMemberFragment : BaseMemberFragment() {
                         }
                     }
 
-                    databaseService.executeTransactionAsync { realm ->
-                        removeMemberSync(realm, memberId)
-                    }
+                    teamRepository.removeMember(teamId, memberId)
 
                     adapterJoined?.removeMember(memberId)
 
@@ -187,15 +185,6 @@ class JoinedMemberFragment : BaseMemberFragment() {
         if (newLeader != null) {
             newLeader.isLeader = true
         }
-    }
-
-    private fun removeMemberSync(realm: Realm, userId: String) {
-        val team = realm.where(RealmMyTeam::class.java)
-            .equalTo("teamId", teamId)
-            .equalTo("userId", userId)
-            .findFirst()
-
-        team?.deleteFromRealm()
     }
 
     private fun getNextOfKinSync(realm: Realm): RealmUserModel? {

@@ -14,6 +14,7 @@ import android.widget.RadioButton
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
+import dagger.hilt.android.AndroidEntryPoint
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.applandeo.materialcalendarview.CalendarDay
@@ -30,6 +31,7 @@ import java.time.ZoneId
 import java.util.Calendar
 import java.util.Locale
 import java.util.UUID
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -38,10 +40,12 @@ import org.ole.planet.myplanet.databinding.AddMeetupBinding
 import org.ole.planet.myplanet.databinding.FragmentEnterpriseCalendarBinding
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.repository.MeetupRepository
 import org.ole.planet.myplanet.ui.mymeetup.AdapterMeetup
 import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class TeamCalendarFragment : BaseTeamFragment() {
     private var _binding: FragmentEnterpriseCalendarBinding? = null
     private val binding get() = _binding!!
@@ -55,6 +59,8 @@ class TeamCalendarFragment : BaseTeamFragment() {
     private lateinit var meetupList: RealmResults<RealmMeetup>
     private val eventDates: MutableList<Calendar> = mutableListOf()
     private var addMeetupDialog: AlertDialog? = null
+    @Inject
+    lateinit var meetupRepository: MeetupRepository
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentEnterpriseCalendarBinding.inflate(inflater, container, false)
@@ -312,31 +318,22 @@ class TeamCalendarFragment : BaseTeamFragment() {
         if (teamId.isEmpty()) {
             return
         }
-        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-            val newDates = mutableListOf<Calendar>()
-            databaseService.withRealm { realm ->
-                try {
-                    val meetupList = realm.where(RealmMeetup::class.java).equalTo("teamId", teamId).findAll()
+        viewLifecycleOwner.lifecycleScope.launch {
+            val newDates = withContext(Dispatchers.IO) {
+                meetupRepository.getMeetupsForTeam(teamId).mapTo(mutableListOf()) { meetup ->
                     val calendarInstance = Calendar.getInstance()
-
-                    for (meetup in meetupList) {
-                        val startDateMillis = meetup.startDate
-                        calendarInstance.timeInMillis = startDateMillis
-                        newDates.add(calendarInstance.clone() as Calendar)
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
+                    calendarInstance.timeInMillis = meetup.startDate
+                    calendarInstance
                 }
             }
-            withContext(Dispatchers.Main) {
-                if (isAdded && activity != null) {
-                    eventDates.clear()
-                    eventDates.addAll(newDates)
-                    binding.calendarView.selectedDates = ArrayList(newDates)
-                }
+
+            if (isAdded && activity != null) {
+                eventDates.clear()
+                eventDates.addAll(newDates)
+                binding.calendarView.selectedDates = ArrayList(newDates)
             }
         }
     }
 
-    
+
 }
