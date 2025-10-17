@@ -10,6 +10,7 @@ import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
+import io.realm.RealmObject
 import java.io.File
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSelectedMyPersonal
@@ -35,7 +36,11 @@ class AdapterMyPersonal(private val context: Context, private var list: MutableL
     }
 
     fun updateList(newList: List<RealmMyPersonal>) {
-        val safeNewList = realm?.copyFromRealm(newList) ?: newList
+        val safeNewList = when {
+            newList.isEmpty() -> emptyList()
+            newList.any { RealmObject.isManaged(it) } -> realm?.copyFromRealm(newList) ?: newList
+            else -> newList
+        }
         val diffResult = DiffUtils.calculateDiff(
             list,
             safeNewList,
@@ -55,7 +60,9 @@ class AdapterMyPersonal(private val context: Context, private var list: MutableL
     fun getList(): List<RealmMyPersonal> = list
     fun setRealm(realm: Realm?) {
         this.realm = realm
-        list = realm?.copyFromRealm(list)?.toMutableList() ?: list
+        if (list.isNotEmpty() && list.any { RealmObject.isManaged(it) }) {
+            list = realm?.copyFromRealm(list)?.toMutableList() ?: list
+        }
     }
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderMyPersonal {
         rowMyPersonalBinding = RowMyPersonalBinding.inflate(LayoutInflater.from(context), parent, false)
