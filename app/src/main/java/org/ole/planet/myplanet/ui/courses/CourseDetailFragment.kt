@@ -50,7 +50,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         viewLifecycleOwner.lifecycleScope.launch {
-            courses = id?.let { courseRepository.getCourseByCourseId(it) }
+            courses = id?.takeIf { it.isNotBlank() }?.let { courseRepository.getCourseByCourseId(it) }
             initRatingView("course", id ?: courses?.courseId, courses?.courseTitle, this@CourseDetailFragment)
             courses?.let { bindCourseData(it) }
         }
@@ -121,7 +121,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     override fun onDownloadComplete() {
         super.onDownloadComplete()
         viewLifecycleOwner.lifecycleScope.launch {
-            courses = id?.let { courseRepository.getCourseByCourseId(it) } ?: courses
+            courses = id?.takeIf { it.isNotBlank() }?.let { courseRepository.getCourseByCourseId(it) } ?: courses
             courses?.let { bindCourseData(it) }
         }
     }
