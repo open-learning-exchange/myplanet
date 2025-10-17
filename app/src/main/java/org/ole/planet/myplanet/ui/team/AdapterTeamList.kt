@@ -90,8 +90,9 @@ class AdapterTeamList(
 
         with(holder.binding) {
             created.text = TimeUtils.getFormattedDate(team.createdDate)
-            type.text = team.teamType
-            type.visibility = if (team.teamType == null) View.GONE else View.VISIBLE
+            val displayType = team.teamType ?: team.type
+            type.text = displayType
+            type.visibility = if (displayType.isNullOrBlank()) View.GONE else View.VISIBLE
             name.text = team.name
             val visitCount = visitCounts[team._id.orEmpty()] ?: 0L
             noOfVisits.text = context.getString(R.string.number_placeholder, visitCount)
