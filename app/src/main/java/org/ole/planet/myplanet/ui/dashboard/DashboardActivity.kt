@@ -94,6 +94,7 @@ import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.NotificationUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities.toast
+import javax.inject.Inject
 
 @AndroidEntryPoint  
 class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener, NotificationListener {
@@ -112,6 +113,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private var dl: DrawerLayout? = null
     private val realmListeners = mutableListOf<RealmListener>()
     private val dashboardViewModel: DashboardViewModel by viewModels()
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
     private lateinit var challengeHelper: ChallengeHelper
     private lateinit var notificationManager: NotificationUtils.NotificationManager
     private var notificationsShownThisSession = false
@@ -198,7 +201,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             return true
         }
         navigationView.setOnItemSelectedListener(this)
-        navigationView.visibility = if (UserProfileDbHandler(this).userModel?.isShowTopbar == true) {
+        val isTopBarVisible = userProfileDbHandler.userModel?.isShowTopbar == true
+        navigationView.visibility = if (isTopBarVisible) {
             View.VISIBLE
         } else {
             View.GONE
@@ -880,7 +884,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun checkUser() {
-        user = UserProfileDbHandler(this).userModel
+        user = userProfileDbHandler.userModel
         if (user == null) {
             toast(this, getString(R.string.session_expired))
             logout()
