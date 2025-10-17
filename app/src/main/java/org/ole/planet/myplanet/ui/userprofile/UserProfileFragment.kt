@@ -17,7 +17,6 @@ import android.os.Environment
 import android.provider.MediaStore
 import android.provider.Settings
 import android.text.TextUtils
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -28,7 +27,6 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
-import androidx.core.net.toUri
 import androidx.core.view.children
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -339,14 +337,9 @@ class UserProfileFragment : Fragment() {
 
     private fun setupSaveButton(dialog: Dialog, binding: EditProfileDialogBinding) {
         binding.btnSave.setOnClickListener {
-            Log.d(TAG, "setupSaveButton: Save button clicked")
-
             if (!validateInputs(binding)) {
-                Log.w(TAG, "setupSaveButton: Validation failed")
                 return@setOnClickListener
             }
-
-            Log.d(TAG, "setupSaveButton: Validation passed, collecting user information")
 
             selectedGender = when {
                 binding.rbMale.isChecked -> "male"
@@ -361,41 +354,18 @@ class UserProfileFragment : Fragment() {
             val phoneNumber = binding.phoneNumber.text.toString()
             val dob = date ?: model?.dob
 
-            Log.d(TAG, "setupSaveButton: USER INFORMATION SUBMITTED:")
-            Log.d(TAG, "setupSaveButton:   First Name: '$firstName'")
-            Log.d(TAG, "setupSaveButton:   Middle Name: '$middleName'")
-            Log.d(TAG, "setupSaveButton:   Last Name: '$lastName'")
-            Log.d(TAG, "setupSaveButton:   Email: '$email'")
-            Log.d(TAG, "setupSaveButton:   Phone Number: '$phoneNumber'")
-            Log.d(TAG, "setupSaveButton:   Gender: '$selectedGender'")
-            Log.d(TAG, "setupSaveButton:   Level: '$selectedLevel'")
-            Log.d(TAG, "setupSaveButton:   Language: '$selectedLanguage'")
-            Log.d(TAG, "setupSaveButton:   Date of Birth: '$dob'")
-
             val realm = databaseService.realmInstance
             val userId = settings.getString("userId", "")
-            Log.d(TAG, "setupSaveButton: Updating database for userId='$userId'")
 
             RealmUserModel.updateUserDetails(
-                realm,
-                userId,
-                firstName,
-                lastName,
-                middleName,
-                email,
-                phoneNumber,
-                selectedLevel,
-                selectedLanguage.takeUnless { it == getString(R.string.language) },
-                selectedGender,
-                dob
+                realm, userId, firstName, lastName, middleName, email, phoneNumber, selectedLevel,
+                selectedLanguage.takeUnless { it == getString(R.string.language) }, selectedGender, dob
             ) {
-                Log.d(TAG, "setupSaveButton: Database update successful")
                 mRealm.refresh()
                 val updatedModel = userProfileDbHandler.userModel
                 model = updatedModel
                 updateUIWithUserData(updatedModel)
                 realm.close()
-                Log.d(TAG, "setupSaveButton: UI updated and dialog dismissed")
                 dialog.dismiss()
             }
         }
