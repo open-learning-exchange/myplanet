@@ -39,6 +39,16 @@ class LibraryRepositoryImpl @Inject constructor(
             .filter { it.userId?.contains(userId) == true }
     }
 
+    override suspend fun countLibrariesNeedingUpdate(userId: String?): Int {
+        if (userId == null) return 0
+
+        val results = queryList(RealmMyLibrary::class.java) {
+            equalTo("isPrivate", false)
+        }
+        return filterLibrariesNeedingUpdate(results)
+            .count { it.userId?.contains(userId) == true }
+    }
+
     override suspend fun saveLibraryItem(item: RealmMyLibrary) {
         save(item)
     }
