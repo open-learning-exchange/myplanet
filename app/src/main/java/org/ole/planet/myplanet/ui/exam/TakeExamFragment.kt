@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -43,6 +44,10 @@ import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
 class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButton.OnCheckedChangeListener, ImageCaptureCallback {
+    companion object {
+        private const val TAG = "TakeExamFragment"
+    }
+
     private var _binding: FragmentTakeExamBinding? = null
     private val binding get() = _binding!!
     private var isCertified = false
@@ -225,6 +230,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         mRealm.beginTransaction()
         try {
             sub = createSubmission(null, mRealm)
+            Log.d(TAG, "createSubmission: Created new submission with id='${sub?.id}'")
             setParentId()
             sub?.userId = user?.id
             sub?.status = "pending"
@@ -237,10 +243,14 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
             currentIndex = 0
             if (isTeam && teamId != null) {
+                Log.d(TAG, "createSubmission: Team survey detected - adding team information")
                 addTeamInformation(mRealm)
+                Log.d(TAG, "createSubmission: Team information added - submission ready for user info dialog")
             }
             mRealm.commitTransaction()
+            Log.d(TAG, "createSubmission: ✓ Submission created successfully - id='${sub?.id}', team='${sub?.team}', status='${sub?.status}'")
         } catch (e: Exception) {
+            Log.e(TAG, "createSubmission: Failed to create submission", e)
             mRealm.cancelTransaction()
             throw e
         }
@@ -268,12 +278,11 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         membershipDoc.teamId = teamId
         sub?.membershipDoc = membershipDoc
 
-        val userModel = UserProfileDbHandler(requireActivity()).userModel
-
+        // Initialize user data with empty fields - will be filled by UserInformationFragment
         try {
             val userJson = JSONObject()
-            userJson.put("age", userModel?.dob ?: "")
-            userJson.put("gender", userModel?.gender ?: "")
+            userJson.put("age", "")
+            userJson.put("gender", "")
             val membershipJson = JSONObject()
             membershipJson.put("teamId", teamId)
             userJson.put("membershipDoc", membershipJson)

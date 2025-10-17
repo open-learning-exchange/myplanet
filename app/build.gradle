@@ -186,12 +186,12 @@ dependencies {
     implementation 'androidx.cardview:cardview:1.0.0'
     implementation "androidx.core:core-ktx:1.17.0"
     implementation "androidx.security:security-crypto:1.1.0"
-    implementation "androidx.work:work-runtime:2.10.3"
+    implementation "androidx.work:work-runtime:2.10.5"
     implementation "androidx.slidingpanelayout:slidingpanelayout:1.2.0"
     implementation 'androidx.preference:preference-ktx:1.2.1'
 
-    implementation 'com.google.code.gson:gson:2.13.1'
-    implementation 'com.google.android.material:material:1.12.0'
+    implementation 'com.google.code.gson:gson:2.13.2'
+    implementation 'com.google.android.material:material:1.13.0'
 
     implementation "com.github.VaibhavLakhera:Circular-Progress-View:0.1.2"
     implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
@@ -208,7 +208,7 @@ dependencies {
     implementation 'de.hdodenhof:circleimageview:3.1.0'
     implementation 'de.rtner:PBKDF2:1.1.4'
     implementation 'org.osmdroid:osmdroid-android:6.1.20'
-    implementation 'org.jetbrains:annotations:26.0.2'
+    implementation 'org.jetbrains:annotations:26.0.2-1'
     implementation "org.jetbrains.kotlin:kotlin-stdlib:${rootProject.ext['kotlin_version']}"
     implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2"
@@ -222,13 +222,13 @@ dependencies {
     implementation 'com.mikepenz:crossfadedrawerlayout:1.1.0@aar'
     implementation('com.mikepenz:materialdrawer:6.1.1@aar') { transitive = true}
 
-    def camera_version = "1.4.2"
+    def camera_version = "1.5.1"
     implementation "androidx.camera:camera-core:$camera_version"
     implementation "androidx.camera:camera-camera2:$camera_version"
     implementation "androidx.camera:camera-lifecycle:$camera_version"
     implementation "androidx.camera:camera-view:$camera_version"
 
-    def dagger_hilt_version = "2.57.1"
+    def dagger_hilt_version = "2.57.2"
     implementation "com.google.dagger:hilt-android:$dagger_hilt_version"
     kapt "com.google.dagger:hilt-android-compiler:$dagger_hilt_version"
 
@@ -239,7 +239,7 @@ dependencies {
     def retrofit2_version = "3.0.0"
     implementation "com.squareup.retrofit2:retrofit:$retrofit2_version"
     implementation "com.squareup.retrofit2:converter-gson:$retrofit2_version"
-    implementation("com.squareup.okhttp3:okhttp:5.1.0")
+    implementation("com.squareup.okhttp3:okhttp:5.2.1")
 
     def glide_version = "4.16.0"
     implementation "com.github.bumptech.glide:glide:$glide_version"

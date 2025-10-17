@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.model
 
 import android.content.Context
 import android.text.TextUtils
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -47,6 +48,8 @@ open class RealmSubmission : RealmObject() {
     var isUpdated = false
 
     companion object {
+        private const val TAG = "RealmSubmission"
+
         @JvmStatic
         fun insert(mRealm: Realm, submission: JsonObject) {
             if (submission.has("_attachments")) {
@@ -297,15 +300,29 @@ open class RealmSubmission : RealmObject() {
                     jsonObject.add("parent", JsonParser.parseString(submission.parent))
                 }
 
+                // Use the submission's stored user data (interviewee information)
+                Log.d(TAG, "serialize: Preparing user data for submission ${submission.id}")
+                Log.d(TAG, "serialize: userId='${submission.userId}'")
+
                 if (!submission.user.isNullOrEmpty()) {
                     val userJson = JsonParser.parseString(submission.user).asJsonObject
+                    Log.d(TAG, "serialize: Using submission's user data")
+                    if (userJson.has("age")) {
+                        Log.d(TAG, "serialize: age='${userJson.get("age").asString}'")
+                    }
+                    if (userJson.has("gender")) {
+                        Log.d(TAG, "serialize: gender='${userJson.get("gender").asString}'")
+                    }
+
                     if (submission.membershipDoc != null) {
                         val membershipJson = JsonObject()
                         membershipJson.addProperty("teamId", submission.membershipDoc?.teamId ?: "")
-
                         userJson.add("membershipDoc", membershipJson)
                     }
                     jsonObject.add("user", userJson)
+                    Log.d(TAG, "serialize: ✓ User data serialized from submission")
+                } else {
+                    Log.e(TAG, "serialize: No user data available for submission")
                 }
 
                 val questions = mRealm.where(RealmExamQuestion::class.java)

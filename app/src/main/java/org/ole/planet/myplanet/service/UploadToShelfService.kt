@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.text.TextUtils
 import android.util.Base64
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -45,6 +46,34 @@ class UploadToShelfService @Inject constructor(
     private val dbService: DatabaseService,
     @AppPreferences private val sharedPreferences: SharedPreferences
 ) {
+    companion object {
+        private const val TAG = "UploadToShelfService"
+
+        private fun changeUserSecurity(model: RealmUserModel, obj: JsonObject) {
+            val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
+            val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
+            val apiInterface = client?.create(ApiInterface::class.java)
+            try {
+                val response: Response<JsonObject?>? = apiInterface?.getJsonObject(header, "${UrlUtils.getUrl()}/${table}/_security")?.execute()
+                if (response?.body() != null) {
+                    val jsonObject = response.body()
+                    val members = jsonObject?.getAsJsonObject("members")
+                    val rolesArray: JsonArray = if (members?.has("roles") == true) {
+                        members.getAsJsonArray("roles")
+                    } else {
+                        JsonArray()
+                    }
+                    rolesArray.add("health")
+                    members?.add("roles", rolesArray)
+                    jsonObject?.add("members", members)
+                    apiInterface.putDoc(header, "application/json", "${UrlUtils.getUrl()}/${table}/_security", jsonObject).execute()
+                }
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }
+    }
+
     lateinit var mRealm: Realm
 
     fun uploadUserData(listener: SuccessListener) {
@@ -56,21 +85,31 @@ class UploadToShelfService @Inject constructor(
                 .findAll()
                 .take(100)
             if (userModels.isEmpty()) {
+                Log.d(TAG, "uploadUserData: No users to upload")
                 return@executeTransactionAsync
             }
+            Log.d(TAG, "uploadUserData: Found ${userModels.size} users to upload")
             val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
             userModels.forEachIndexed { index, model ->
                 try {
+                    Log.d(TAG, "uploadUserData: Processing user #$index - name='${model.name}', isUpdated=${model.isUpdated}")
+                    Log.d(TAG, "uploadUserData: User #$index - age='${model.age}', gender='${model.gender}'")
+
                     val header = "Basic ${Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
                     val userExists = checkIfUserExists(apiInterface, header, model)
 
                     if (!userExists) {
+                        Log.d(TAG, "uploadUserData: User #$index does not exist - uploading new user")
                         uploadNewUser(apiInterface, realm, model)
                     } else if (model.isUpdated) {
+                        Log.d(TAG, "uploadUserData: User #$index exists and isUpdated=true - updating existing user")
                         updateExistingUser(apiInterface, header, model)
+                    } else {
+                        Log.d(TAG, "uploadUserData: User #$index exists but isUpdated=false - skipping")
                     }
                 } catch (e: IOException) {
                     e.printStackTrace()
+                    Log.e(TAG, "uploadUserData: IOException for user #$index", e)
                 }
             }
         }, {
@@ -170,11 +209,28 @@ class UploadToShelfService @Inject constructor(
 
     private fun updateExistingUser(apiInterface: ApiInterface?, header: String, model: RealmUserModel) {
         try {
+            Log.d(TAG, "updateExistingUser: Starting update for user '${model.name}'")
+            Log.d(TAG, "updateExistingUser: User age from database: '${model.age}'")
+            Log.d(TAG, "updateExistingUser: User gender from database: '${model.gender}'")
+
             val latestDocResponse = apiInterface?.getJsonObject(header, "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}")?.execute()
 
             if (latestDocResponse?.isSuccessful == true) {
                 val latestRev = latestDocResponse.body()?.get("_rev")?.asString
                 val obj = model.serialize()
+
+                Log.d(TAG, "updateExistingUser: Serialized JSON from model:")
+                Log.d(TAG, "updateExistingUser: - has 'age' field: ${obj.has("age")}")
+                if (obj.has("age")) {
+                    val ageValue = obj.get("age")
+                    Log.d(TAG, "updateExistingUser: - age value: '${ageValue.asString}', isNull: ${ageValue.isJsonNull}")
+                }
+                Log.d(TAG, "updateExistingUser: - has 'gender' field: ${obj.has("gender")}")
+                if (obj.has("gender")) {
+                    val genderValue = obj.get("gender")
+                    Log.d(TAG, "updateExistingUser: - gender value: '${genderValue.asString}', isNull: ${genderValue.isJsonNull}")
+                }
+
                 val objMap = obj.entrySet().associate { (key, value) -> key to value }
                 val mutableObj = mutableMapOf<String, Any>().apply { putAll(objMap) }
                 latestRev?.let { rev -> mutableObj["_rev"] = rev as Any }
@@ -183,16 +239,35 @@ class UploadToShelfService @Inject constructor(
                 val jsonElement = gson.toJsonTree(mutableObj)
                 val jsonObject = jsonElement.asJsonObject
 
+                Log.d(TAG, "updateExistingUser: Final JSON to be uploaded:")
+                Log.d(TAG, "updateExistingUser: - has 'age' field: ${jsonObject.has("age")}")
+                if (jsonObject.has("age")) {
+                    val ageValue = jsonObject.get("age")
+                    Log.d(TAG, "updateExistingUser: - age value: '${ageValue.asString}', isNull: ${ageValue.isJsonNull}")
+                }
+                Log.d(TAG, "updateExistingUser: - has 'gender' field: ${jsonObject.has("gender")}")
+                if (jsonObject.has("gender")) {
+                    val genderValue = jsonObject.get("gender")
+                    Log.d(TAG, "updateExistingUser: - gender value: '${genderValue.asString}', isNull: ${genderValue.isJsonNull}")
+                }
+
+                Log.d(TAG, "updateExistingUser: Complete JSON payload: $jsonObject")
+
                 val updateResponse = apiInterface.putDoc(header, "application/json", "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", jsonObject).execute()
 
                 if (updateResponse.isSuccessful) {
                     val updatedRev = updateResponse.body()?.get("rev")?.asString
                     model._rev = updatedRev
                     model.isUpdated = false
+                    Log.d(TAG, "updateExistingUser: ✓ User update successful - new rev: $updatedRev")
+                    Log.d(TAG, "updateExistingUser: ✓ Age field should be uploaded: '${model.age}'")
+                } else {
+                    Log.e(TAG, "updateExistingUser: Update failed - response code: ${updateResponse.code()}")
                 }
             }
         } catch (e: IOException) {
             e.printStackTrace()
+            Log.e(TAG, "updateExistingUser: IOException during update", e)
         }
     }
 
@@ -424,31 +499,5 @@ class UploadToShelfService @Inject constructor(
             }
         }
         return array
-    }
-
-    companion object {
-        private fun changeUserSecurity(model: RealmUserModel, obj: JsonObject) {
-            val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
-            val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
-            val apiInterface = client?.create(ApiInterface::class.java)
-            try {
-                val response: Response<JsonObject?>? = apiInterface?.getJsonObject(header, "${UrlUtils.getUrl()}/${table}/_security")?.execute()
-                if (response?.body() != null) {
-                    val jsonObject = response.body()
-                    val members = jsonObject?.getAsJsonObject("members")
-                    val rolesArray: JsonArray = if (members?.has("roles") == true) {
-                        members.getAsJsonArray("roles")
-                    } else {
-                        JsonArray()
-                    }
-                    rolesArray.add("health")
-                    members?.add("roles", rolesArray)
-                    jsonObject?.add("members", members)
-                    apiInterface.putDoc(header, "application/json", "${UrlUtils.getUrl()}/${table}/_security", jsonObject).execute()
-                }
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
-        }
     }
 }

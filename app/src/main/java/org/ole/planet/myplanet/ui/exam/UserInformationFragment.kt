@@ -6,6 +6,7 @@ import android.content.DialogInterface
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -44,6 +45,25 @@ import org.ole.planet.myplanet.utilities.Utilities
 class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     private lateinit var fragmentUserInformationBinding: FragmentUserInformationBinding
     var dob: String? = ""
+
+    companion object {
+        private const val TAG = "UserInformationFragment"
+
+        fun getInstance(id: String?, teamId: String?, shouldHideElements: Boolean): UserInformationFragment {
+            val f = UserInformationFragment()
+            setArgs(f, id, teamId, shouldHideElements)
+            return f
+        }
+
+        private fun setArgs(f: UserInformationFragment, id: String?, teamId: String?, shouldHideElements: Boolean) {
+            val b = Bundle()
+            b.putString("sub_id", id)
+            b.putString("teamId", teamId)
+            b.putBoolean("shouldHideElements", shouldHideElements)
+            f.arguments = b
+        }
+    }
+
     @Inject
     lateinit var databaseService: DatabaseService
     @Inject
@@ -149,8 +169,11 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
 
         if (fragmentUserInformationBinding.ltYob.isVisible) {
             yob = "${fragmentUserInformationBinding.etYob.text}".trim()
+            Log.d(TAG, "submitForm: Collecting Year of Birth (YOB) from input field")
+            Log.d(TAG, "submitForm: YOB entered by user: '$yob'")
 
             if (yob.isEmpty()) {
+                Log.w(TAG, "submitForm: YOB validation failed - empty input")
                 fragmentUserInformationBinding.etYob.error =
                     getString(R.string.year_of_birth_cannot_be_empty)
                 return
@@ -158,6 +181,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
 
             val yobInt = yob.toIntOrNull()
             if (yobInt == null) {
+                Log.w(TAG, "submitForm: YOB validation failed - not a valid integer: '$yob'")
                 fragmentUserInformationBinding.etYob.error =
                     getString(R.string.please_enter_a_valid_year_of_birth)
                 return
@@ -165,12 +189,15 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
 
             val currentYear = Calendar.getInstance().get(Calendar.YEAR)
             if (yobInt < 1900 || yobInt > currentYear) {
+                Log.w(TAG, "submitForm: YOB validation failed - out of range: $yobInt (must be 1900-$currentYear)")
                 fragmentUserInformationBinding.etYob.error =
                     getString(R.string.please_enter_a_valid_year_between_1900_and, currentYear)
                 return
             }
 
+            Log.d(TAG, "submitForm: YOB validation passed - Adding to user data as 'age': '$yob'")
             user.addProperty("age", yob)
+            Log.d(TAG, "submitForm: AGE FIELD SET - value='$yob', type=year_of_birth")
         }
 
         if (fname.isNotEmpty() || lname.isNotEmpty()) {
@@ -208,6 +235,14 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             }
         }
 
+        // Log all collected user information
+        Log.d(TAG, "submitForm: USER INFORMATION SUBMITTED:")
+        user.keySet().forEach { key ->
+            val value = user.get(key)?.asString ?: ""
+            Log.d(TAG, "submitForm:   $key: '$value'")
+        }
+        Log.d(TAG, "submitForm: Submission ID: ${if (TextUtils.isEmpty(id)) "NEW USER PROFILE UPDATE" else id}")
+
         if (TextUtils.isEmpty(id)) {
             val userId = userModel?.id
             viewLifecycleOwner.lifecycleScope.launch {
@@ -215,26 +250,36 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
                     databaseService.executeTransactionAsync { realm ->
                         val model = realm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
                         if (model != null) {
+                            Log.d(TAG, "submitForm: Updating user profile for userId='$userId'")
                             user.keySet().forEach { key ->
+                                val value = user.get(key).asString
                                 when (key) {
-                                    "firstName" -> model.firstName = user.get(key).asString
-                                    "lastName" -> model.lastName = user.get(key).asString
-                                    "middleName" -> model.middleName = user.get(key).asString
-                                    "email" -> model.email = user.get(key).asString
-                                    "language" -> model.language = user.get(key).asString
-                                    "phoneNumber" -> model.phoneNumber = user.get(key).asString
-                                    "birthDate" -> model.birthPlace = user.get(key).asString
-                                    "level" -> model.level = user.get(key).asString
-                                    "gender" -> model.gender = user.get(key).asString
-                                    "age" -> model.age = user.get(key).asString
+                                    "firstName" -> model.firstName = value
+                                    "lastName" -> model.lastName = value
+                                    "middleName" -> model.middleName = value
+                                    "email" -> model.email = value
+                                    "language" -> model.language = value
+                                    "phoneNumber" -> model.phoneNumber = value
+                                    "birthDate" -> model.birthPlace = value
+                                    "level" -> model.level = value
+                                    "gender" -> model.gender = value
+                                    "age" -> {
+                                        model.age = value
+                                        Log.d(TAG, "submitForm: ✓ AGE SAVED TO DATABASE - model.age='$value'")
+                                    }
                                 }
                             }
                             model.isUpdated = true
+                            Log.d(TAG, "submitForm: model.isUpdated set to true - will be uploaded during sync")
+                        } else {
+                            Log.w(TAG, "submitForm: User model not found for userId='$userId'")
                         }
                     }
+                    Log.d(TAG, "submitForm: User profile update successful")
                     Utilities.toast(MainApplication.context, getString(R.string.user_profile_updated))
                     if (isAdded) dialog?.dismiss()
-                } catch (_: Exception) {
+                } catch (e: Exception) {
+                    Log.e(TAG, "submitForm: Failed to update user profile", e)
                     Utilities.toast(MainApplication.context, getString(R.string.unable_to_update_user))
                     if (isAdded) dialog?.dismiss()
                 }
@@ -245,18 +290,44 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     }
 
     private fun saveSubmission(user: JsonObject) {
+        Log.d(TAG, "saveSubmission: Saving user information with submission")
+
+        // Log age specifically if present
+        if (user.has("age")) {
+            val ageValue = user.get("age").asString
+            Log.d(TAG, "saveSubmission: ✓ AGE FIELD IN SUBMISSION - value='$ageValue'")
+        } else {
+            Log.d(TAG, "saveSubmission: No age field in submission")
+        }
+
         id?.let { submissionId ->
+            Log.d(TAG, "saveSubmission: submissionId='$submissionId'")
             viewLifecycleOwner.lifecycleScope.launch {
-                val sub = submission ?: submissionRepository.getSubmissionById(submissionId)
-                sub?.let {
-                    it.user = user.toString()
-                    it.status = "complete"
-                    submissionRepository.saveSubmission(it)
-                }
-                if (isAdded) {
-                    dialog?.dismiss()
+                try {
+                    val sub = submission ?: submissionRepository.getSubmissionById(submissionId)
+                    sub?.let {
+                        val userJsonString = user.toString()
+                        it.user = userJsonString
+                        it.status = "complete"
+                        submissionRepository.saveSubmission(it)
+                        Log.d(TAG, "saveSubmission: ✓ SUBMISSION SAVED TO DATABASE")
+                        Log.d(TAG, "saveSubmission: User data JSON: $userJsonString")
+                        Log.d(TAG, "saveSubmission: Submission status set to 'complete' - ready for upload")
+                    } ?: run {
+                        Log.w(TAG, "saveSubmission: Submission not found for id='$submissionId'")
+                    }
+                    if (isAdded) {
+                        dialog?.dismiss()
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "saveSubmission: Failed to save submission", e)
+                    if (isAdded) {
+                        dialog?.dismiss()
+                    }
                 }
             }
+        } ?: run {
+            Log.w(TAG, "saveSubmission: submissionId is null, cannot save")
         }
     }
 
@@ -346,20 +417,4 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
 
     override val key: String
         get() = "sub_id"
-
-    companion object {
-        fun getInstance(id: String?, teamId: String?, shouldHideElements: Boolean): UserInformationFragment {
-            val f = UserInformationFragment()
-            setArgs(f, id, teamId, shouldHideElements)
-            return f
-        }
-
-        private fun setArgs(f: UserInformationFragment, id: String?, teamId: String?, shouldHideElements: Boolean) {
-            val b = Bundle()
-            b.putString("sub_id", id)
-            b.putString("teamId", teamId)
-            b.putBoolean("shouldHideElements", shouldHideElements)
-            f.arguments = b
-        }
-    }
 }

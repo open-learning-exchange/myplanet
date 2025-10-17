@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
+import android.util.Log
 import android.view.Gravity
 import android.view.View
 import android.widget.EditText
@@ -43,6 +44,10 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
+    companion object {
+        private const val TAG = "BaseExamFragment"
+    }
+
     var exam: RealmStepExam? = null
     @Inject
     lateinit var databaseService: DatabaseService
@@ -160,9 +165,18 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     }
 
     private fun showUserInfoDialog() {
+        Log.d(TAG, "showUserInfoDialog: Called")
+        Log.d(TAG, "showUserInfoDialog: isMySurvey=$isMySurvey, exam?.isFromNation=${exam?.isFromNation}")
+        Log.d(TAG, "showUserInfoDialog: sub is ${if (sub == null) "NULL" else "NOT NULL"}")
+        if (sub != null) {
+            Log.d(TAG, "showUserInfoDialog: sub.id='${sub?.id}', sub.status='${sub?.status}'")
+        }
+
         if (!isMySurvey && exam?.isFromNation != true) {
+            Log.d(TAG, "showUserInfoDialog: Showing UserInformationFragment with submissionId='${sub?.id}', teamId='$teamId'")
             UserInformationFragment.getInstance(sub?.id, teamId, !isMySurvey && exam?.isFromNation != true).show(childFragmentManager, "")
         } else {
+            Log.d(TAG, "showUserInfoDialog: Setting submission status to complete without dialog")
             if (!mRealm.isInTransaction) mRealm.beginTransaction()
             sub?.status = "complete"
             mRealm.commitTransaction()
