@@ -59,7 +59,6 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -69,10 +68,6 @@ class UserProfileFragment : Fragment() {
     private val binding get() = _binding!!
     private lateinit var rowStatBinding: RowStatBinding
     private lateinit var settings: SharedPreferences
-
-    companion object {
-        private const val TAG = "UserProfileFragment"
-    }
     @Inject
     lateinit var databaseService: DatabaseService
     @Inject
