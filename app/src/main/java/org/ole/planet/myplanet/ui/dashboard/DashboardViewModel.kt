@@ -41,7 +41,8 @@ class DashboardViewModel @Inject constructor(
     }
 
     suspend fun updateResourceNotification(userId: String?) {
-        notificationRepository.updateResourceNotification(userId)
+        val resourceCount = libraryRepository.countLibrariesNeedingUpdate(userId)
+        notificationRepository.updateResourceNotification(userId, resourceCount)
     }
 
     suspend fun createNotificationIfMissing(

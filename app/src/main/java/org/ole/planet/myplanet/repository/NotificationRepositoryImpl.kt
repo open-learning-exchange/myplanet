@@ -4,7 +4,6 @@ import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNotification
 
 class NotificationRepositoryImpl @Inject constructor(
@@ -51,12 +50,8 @@ class NotificationRepositoryImpl @Inject constructor(
         }.toInt()
     }
 
-    override suspend fun updateResourceNotification(userId: String?) {
+    override suspend fun updateResourceNotification(userId: String?, resourceCount: Int) {
         userId ?: return
-
-        val resourceCount = queryList(RealmMyLibrary::class.java) {
-            equalTo("isPrivate", false)
-        }.count { it.needToUpdate() && it.userId?.contains(userId) == true }
 
         val notificationId = "$userId:resource:count"
         val existingNotification = findByField(RealmNotification::class.java, "id", notificationId)
