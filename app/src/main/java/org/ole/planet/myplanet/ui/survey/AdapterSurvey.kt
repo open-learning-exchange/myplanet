@@ -146,12 +146,20 @@ class AdapterSurvey(
                     tvDescription.visibility = View.VISIBLE
                     tvDescription.text = exam.description
                 }
-                startSurvey.setOnClickListener {
-                    val isTeamSubmission = mRealm.where(RealmSubmission::class.java)
-                        .equalTo("parentId", exam.id).equalTo("membershipDoc.teamId", teamId)
-                        .findFirst() != null
+                var teamSubmission = mRealm.where(RealmSubmission::class.java)
+                    .equalTo("parentId", exam.id)
+                    .equalTo("membershipDoc.teamId", teamId)
+                    .findFirst()
 
-                    val shouldAdopt = exam.isTeamShareAllowed && !isTeamSubmission
+                startSurvey.setOnClickListener {
+                    if (teamSubmission?.isValid != true) {
+                        teamSubmission = mRealm.where(RealmSubmission::class.java)
+                            .equalTo("parentId", exam.id)
+                            .equalTo("membershipDoc.teamId", teamId)
+                            .findFirst()
+                    }
+
+                    val shouldAdopt = exam.isTeamShareAllowed && teamSubmission?.isValid != true
 
                     if (shouldAdopt) {
                         adoptSurvey(exam, teamId)
@@ -168,11 +176,7 @@ class AdapterSurvey(
                     startSurvey.visibility = View.GONE
                 }
 
-                val isTeamSubmission = mRealm.where(RealmSubmission::class.java)
-                    .equalTo("parentId", exam.id).equalTo("membershipDoc.teamId", teamId)
-                    .findFirst() != null
-
-                val shouldShowAdopt = exam.isTeamShareAllowed && !isTeamSubmission
+                val shouldShowAdopt = exam.isTeamShareAllowed && teamSubmission?.isValid != true
 
                 startSurvey.text = when {
                     shouldShowAdopt -> context.getString(R.string.adopt_survey)

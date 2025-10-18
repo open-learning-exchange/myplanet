@@ -25,6 +25,7 @@ class AdapterSteps(
     private var currentlyVisiblePosition = RecyclerView.NO_POSITION
     private val job = SupervisorJob()
     private val coroutineScope = CoroutineScope(job + Dispatchers.Main)
+    private val examQuestionCountCache = mutableMapOf<String, Int>()
 
     init {
         for (i in list.indices) {
@@ -65,16 +66,22 @@ class AdapterSteps(
 
             val stepId = step.id
             if (!stepId.isNullOrEmpty()) {
-                val currentPosition = position
-                loadJob = coroutineScope.launch {
-                    val size = submissionRepository.getExamQuestionCount(stepId)
-                    if (bindingAdapterPosition == RecyclerView.NO_POSITION) {
-                        return@launch
-                    }
-                    val adapterPosition = bindingAdapterPosition
-                    val currentStepId = list.getOrNull(adapterPosition)?.id
-                    if (currentStepId == stepId && currentPosition == adapterPosition) {
-                        rowStepsBinding.tvDescription.text = context.getString(R.string.test_size, size)
+                val cachedCount = examQuestionCountCache[stepId]
+                if (cachedCount != null) {
+                    rowStepsBinding.tvDescription.text = context.getString(R.string.test_size, cachedCount)
+                } else {
+                    val currentPosition = position
+                    loadJob = coroutineScope.launch {
+                        val size = submissionRepository.getExamQuestionCount(stepId)
+                        examQuestionCountCache[stepId] = size
+                        if (bindingAdapterPosition == RecyclerView.NO_POSITION) {
+                            return@launch
+                        }
+                        val adapterPosition = bindingAdapterPosition
+                        val currentStepId = list.getOrNull(adapterPosition)?.id
+                        if (currentStepId == stepId && currentPosition == adapterPosition) {
+                            rowStepsBinding.tvDescription.text = context.getString(R.string.test_size, size)
+                        }
                     }
                 }
             }
@@ -109,5 +116,9 @@ class AdapterSteps(
     override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
         super.onDetachedFromRecyclerView(recyclerView)
         job.cancelChildren()
+    }
+
+    fun clearExamQuestionCountCache() {
+        examQuestionCountCache.clear()
     }
 }

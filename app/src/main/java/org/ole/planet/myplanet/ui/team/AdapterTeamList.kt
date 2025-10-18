@@ -219,7 +219,7 @@ class AdapterTeamList(
         syncTeamActivities()
     }
 
-    private fun updateList() {
+    fun updateList() {
         val user: RealmUserModel? = currentUser
         val userId = user?.id
 
