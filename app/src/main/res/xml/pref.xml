@@ -59,11 +59,6 @@
         android:title="@string/upgrade_application">
 
         <SwitchPreference
-            android:defaultValue="true"
-            android:visibility="gone"
-            android:key="beta_auto_upgrade"
-            android:title="@string/auto_upgrade" />
-        <SwitchPreference
             android:key="beta_upgrade_max"
             android:title="@string/always_move_to_maximum_version" />
     </PreferenceCategory>
