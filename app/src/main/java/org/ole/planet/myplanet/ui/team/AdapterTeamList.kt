@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
+import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils
 
@@ -49,6 +50,7 @@ class AdapterTeamList(
     private val teamStatusCache = mutableMapOf<String, TeamStatus>()
     private var visitCounts: Map<String, Long> = emptyMap()
     private var updateListJob: Job? = null
+    private var displayedStatuses: Map<String, TeamStatus> = emptyMap()
 
     data class TeamStatus(
         val isMember: Boolean,
@@ -88,8 +90,9 @@ class AdapterTeamList(
 
         with(holder.binding) {
             created.text = TimeUtils.getFormattedDate(team.createdDate)
-            type.text = team.teamType
-            type.visibility = if (team.teamType == null) View.GONE else View.VISIBLE
+            val displayType = team.teamType ?: team.type
+            type.text = displayType
+            type.visibility = if (displayType.isNullOrBlank()) View.GONE else View.VISIBLE
             name.text = team.name
             val visitCount = visitCounts[team._id.orEmpty()] ?: 0L
             noOfVisits.text = context.getString(R.string.number_placeholder, visitCount)
@@ -228,9 +231,32 @@ class AdapterTeamList(
             val validTeams = list.filter { it.status?.isNotEmpty() == true }
             if (validTeams.isEmpty()) {
                 withContext(Dispatchers.Main) {
-                    visitCounts = emptyMap()
-                    filteredList = emptyList()
-                    notifyDataSetChanged()
+                    val oldList = filteredList
+                    val oldVisitCounts = visitCounts
+                    val oldStatuses = displayedStatuses
+                    val newList = emptyList<RealmMyTeam>()
+                    val newVisitCounts = emptyMap<String, Long>()
+                    val newStatuses = emptyMap<String, TeamStatus>()
+
+                    val (areItemsTheSame, areContentsTheSame) = createTeamDiffCallbacks(
+                        oldVisitCounts,
+                        newVisitCounts,
+                        oldStatuses,
+                        newStatuses
+                    )
+
+                    val diffResult = DiffUtils.calculateDiff(
+                        oldList,
+                        newList,
+                        areItemsTheSame,
+                        areContentsTheSame
+                    )
+
+                    visitCounts = newVisitCounts
+                    filteredList = newList
+                    displayedStatuses = newStatuses
+
+                    diffResult.dispatchUpdatesTo(this@AdapterTeamList)
                     updateCompleteListener?.onUpdateComplete(filteredList.size)
                 }
                 return@launch
@@ -276,7 +302,8 @@ class AdapterTeamList(
                 }
             }
 
-            val visitCounts = visitCountsDeferred.await()
+            val newVisitCounts = visitCountsDeferred.await()
+            val newStatuses = statusResults.toMap()
 
             val sortedTeams = validTeams.sortedWith(
                 compareByDescending<RealmMyTeam> { team ->
@@ -289,17 +316,71 @@ class AdapterTeamList(
                         else -> 1
                     }
                 }.thenByDescending { team ->
-                    visitCounts[team._id.orEmpty()] ?: 0L
+                    newVisitCounts[team._id.orEmpty()] ?: 0L
                 }
             )
 
             withContext(Dispatchers.Main) {
-                this@AdapterTeamList.visitCounts = visitCounts
+                val oldList = filteredList
+                val oldVisitCounts = visitCounts
+                val oldStatuses = displayedStatuses
+
+                val (areItemsTheSame, areContentsTheSame) = createTeamDiffCallbacks(
+                    oldVisitCounts,
+                    newVisitCounts,
+                    oldStatuses,
+                    newStatuses
+                )
+
+                val diffResult = DiffUtils.calculateDiff(
+                    oldList,
+                    sortedTeams,
+                    areItemsTheSame,
+                    areContentsTheSame
+                )
+
+                visitCounts = newVisitCounts
                 filteredList = sortedTeams
-                notifyDataSetChanged()
+                displayedStatuses = newStatuses
+
+                diffResult.dispatchUpdatesTo(this@AdapterTeamList)
                 updateCompleteListener?.onUpdateComplete(filteredList.size)
             }
         }
+    }
+
+    private fun createTeamDiffCallbacks(
+        oldVisitCounts: Map<String, Long>,
+        newVisitCounts: Map<String, Long>,
+        oldStatuses: Map<String, TeamStatus>,
+        newStatuses: Map<String, TeamStatus>
+    ): Pair<(RealmMyTeam, RealmMyTeam) -> Boolean, (RealmMyTeam, RealmMyTeam) -> Boolean> {
+        val areItemsTheSame = { oldTeam: RealmMyTeam, newTeam: RealmMyTeam ->
+            val oldId = oldTeam._id
+            val newId = newTeam._id
+            when {
+                !oldId.isNullOrBlank() && !newId.isNullOrBlank() -> oldId == newId
+                else -> oldTeam == newTeam
+            }
+        }
+
+        val areContentsTheSame = { oldTeam: RealmMyTeam, newTeam: RealmMyTeam ->
+            val teamId = oldTeam._id ?: newTeam._id
+            val oldStatus = teamId?.let { oldStatuses[it] }
+            val newStatus = teamId?.let { newStatuses[it] }
+            val oldVisits = teamId?.let { oldVisitCounts[it] }
+            val newVisits = teamId?.let { newVisitCounts[it] }
+
+            oldTeam.name == newTeam.name &&
+                oldTeam.createdDate == newTeam.createdDate &&
+                oldTeam.teamType == newTeam.teamType &&
+                oldTeam.type == newTeam.type &&
+                oldTeam.status == newTeam.status &&
+                oldStatus == newStatus &&
+                oldVisits == newVisits
+        }
+
+        return areItemsTheSame to areContentsTheSame
     }
 
 
