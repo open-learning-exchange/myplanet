@@ -172,15 +172,18 @@ class UploadManager @Inject constructor(
             databaseService.withRealm { realm ->
                 if (hasLooper) {
                     realm.executeTransactionAsync({ transactionRealm: Realm ->
-                        val submissions: List<RealmSubmission> =
-                            transactionRealm.where(RealmSubmission::class.java).findAll()
+                        val submissions: List<RealmSubmission> = transactionRealm.where(RealmSubmission::class.java).findAll()
+                        var processedCount = 0
+                        var errorCount = 0
 
                         submissions.processInBatches { sub ->
                             try {
                                 if ((sub.answers?.size ?: 0) > 0) {
                                     RealmSubmission.continueResultUpload(sub, apiInterface, transactionRealm, context)
+                                    processedCount++
                                 }
                             } catch (e: Exception) {
+                                errorCount++
                                 e.printStackTrace()
                             }
                         }
@@ -196,12 +199,17 @@ class UploadManager @Inject constructor(
                         val submissions: List<RealmSubmission> =
                             transactionRealm.where(RealmSubmission::class.java).findAll()
 
+                        var processedCount = 0
+                        var errorCount = 0
+
                         submissions.processInBatches { sub ->
                             try {
                                 if ((sub.answers?.size ?: 0) > 0) {
                                     RealmSubmission.continueResultUpload(sub, apiInterface, transactionRealm, context)
+                                    processedCount++
                                 }
                             } catch (e: Exception) {
+                                errorCount++
                                 e.printStackTrace()
                             }
                         }
@@ -254,7 +262,7 @@ class UploadManager @Inject constructor(
     }
 
     private fun uploadCourseProgress() {
-        val apiInterface = client?.create(ApiInterface::class.java)
+        val apiInterface = client.create(ApiInterface::class.java)
         databaseService.withRealm { realm ->
             realm.executeTransactionAsync { transactionRealm: Realm ->
                 val data: List<RealmCourseProgress> =
@@ -293,7 +301,7 @@ class UploadManager @Inject constructor(
     }
 
     fun uploadFeedback(listener: SuccessListener) {
-        val apiInterface = client?.create(ApiInterface::class.java)
+        val apiInterface = client.create(ApiInterface::class.java)
         databaseService.withRealm { realm ->
             realm.executeTransactionAsync(Realm.Transaction { transactionRealm: Realm ->
                 val feedbacks: List<RealmFeedback> =
@@ -344,7 +352,7 @@ class UploadManager @Inject constructor(
     }
 
     fun uploadSubmitPhotos(listener: SuccessListener?) {
-        val apiInterface = client?.create(ApiInterface::class.java)
+        val apiInterface = client.create(ApiInterface::class.java)
         databaseService.withRealm { realm ->
             realm.executeTransactionAsync { transactionRealm: Realm ->
                 val data: List<RealmSubmitPhotos> =
