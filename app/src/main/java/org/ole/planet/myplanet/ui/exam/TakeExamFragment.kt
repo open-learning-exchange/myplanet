@@ -22,6 +22,7 @@ import io.realm.RealmList
 import io.realm.RealmQuery
 import io.realm.Sort
 import java.util.Date
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -50,6 +51,9 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
     private val answerCache = mutableMapOf<String, AnswerData>()
 
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
+
     data class AnswerData(
         var singleAnswer: String = "",
         var multipleAnswers: HashMap<String, String> = HashMap(),
@@ -59,8 +63,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     override fun onCreateView(inflater: LayoutInflater, parent: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTakeExamBinding.inflate(inflater, parent, false)
         listAns = HashMap()
-        val dbHandler = UserProfileDbHandler(requireActivity())
-        user = dbHandler.userModel
+        user = userProfileDbHandler.userModel
         return binding.root
     }
 
@@ -268,7 +271,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         membershipDoc.teamId = teamId
         sub?.membershipDoc = membershipDoc
 
-        val userModel = UserProfileDbHandler(requireActivity()).userModel
+        val userModel = userProfileDbHandler.userModel
 
         try {
             val userJson = JSONObject()
