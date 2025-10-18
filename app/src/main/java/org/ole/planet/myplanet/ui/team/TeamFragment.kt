@@ -335,17 +335,6 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
         setTeamList()
     }
 
-    private fun sortTeams(list: List<RealmMyTeam>): List<RealmMyTeam> {
-        val user = user?.id
-        return list.sortedWith(compareByDescending { team ->
-            when {
-                RealmMyTeam.isTeamLeader(team.teamId, user, mRealm) -> 3
-                team.isMyTeam(user, mRealm) -> 2
-                else -> 1
-            }
-        })
-    }
-
     override fun onEditTeam(team: RealmMyTeam?) {
         team?.let { createTeamAlert(it) }
     }
@@ -361,21 +350,11 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
 
     private fun updatedTeamList() {
         viewLifecycleOwner.lifecycleScope.launch {
-            val list = teamList ?: return@launch
-            val sortedList = sortTeams(list)
-            val adapterTeamList = AdapterTeamList(
-                activity as Context,
-                sortedList,
-                childFragmentManager,
-                teamRepository,
-                user,
-            ).apply {
-                setType(type)
-                setTeamListener(this@TeamFragment)
-                setUpdateCompleteListener(this@TeamFragment)
+            if (!::adapterTeamList.isInitialized || binding.rvTeamList.adapter == null) {
+                setTeamList()
+            } else {
+                adapterTeamList.updateList()
             }
-
-            binding.rvTeamList.adapter = adapterTeamList
             listContentDescription(conditionApplied)
         }
     }
