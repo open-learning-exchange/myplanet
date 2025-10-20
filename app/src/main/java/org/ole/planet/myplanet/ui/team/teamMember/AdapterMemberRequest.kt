@@ -70,13 +70,9 @@ class AdapterMemberRequest(
 
             if (isRequester) {
                 btnAccept.isEnabled = false
-                btnReject.isEnabled = true
-                btnReject.setOnClickListener {
-                    val adapterPosition = holder.bindingAdapterPosition
-                    if (adapterPosition != RecyclerView.NO_POSITION && adapterPosition < list.size) {
-                        acceptReject(currentItem, false, adapterPosition)
-                    }
-                }
+                btnReject.isEnabled = false
+                btnAccept.setOnClickListener(null)
+                btnReject.setOnClickListener(null)
             } else if (isGuestUser() || !userCanModerateRequests) {
                 btnAccept.isEnabled = false
                 btnReject.isEnabled = false
@@ -115,6 +111,7 @@ class AdapterMemberRequest(
         val adapterPosition = holder.bindingAdapterPosition
         if (adapterPosition != RecyclerView.NO_POSITION && adapterPosition < list.size) {
             val targetUser = list[adapterPosition]
+            if (targetUser.id == currentUser.id) return
             acceptReject(targetUser, isAccepted, adapterPosition)
         }
     }
