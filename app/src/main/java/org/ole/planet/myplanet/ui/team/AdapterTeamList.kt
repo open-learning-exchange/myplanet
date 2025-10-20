@@ -17,7 +17,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -285,21 +284,23 @@ class AdapterTeamList(
                 }
             }
 
-            if (idsToFetch.isNotEmpty()) {
-                idsToFetch.map { teamId ->
-                    async(Dispatchers.IO) {
-                        val status = TeamStatus(
-                            isMember = teamRepository.isMember(userId, teamId),
-                            isLeader = teamRepository.isTeamLeader(teamId, userId),
-                            hasPendingRequest = teamRepository.hasPendingRequest(teamId, userId),
-                        )
-                        teamId to status
-                    }
-                }.awaitAll().forEach { (teamId, status) ->
-                    val cacheKey = "${teamId}_${userId}"
-                    teamStatusCache[cacheKey] = status
-                    statusResults[teamId] = status
+            val fetchedStatuses = if (idsToFetch.isNotEmpty()) {
+                async(Dispatchers.IO) {
+                    teamRepository.getTeamMembershipStatuses(userId, idsToFetch)
                 }
+            } else {
+                null
+            }
+
+            fetchedStatuses?.await()?.forEach { (teamId, status) ->
+                val cacheKey = "${teamId}_${userId}"
+                val teamStatus = TeamStatus(
+                    isMember = status.isMember,
+                    isLeader = status.isLeader,
+                    hasPendingRequest = status.hasPendingRequest,
+                )
+                teamStatusCache[cacheKey] = teamStatus
+                statusResults[teamId] = teamStatus
             }
 
             val newVisitCounts = visitCountsDeferred.await()

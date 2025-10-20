@@ -170,6 +170,53 @@ class TeamRepositoryImpl @Inject constructor(
         } > 0
     }
 
+    override suspend fun getTeamMembershipStatuses(
+        userId: String?,
+        teamIds: Collection<String>,
+    ): Map<String, TeamMembershipStatus> {
+        if (userId.isNullOrBlank() || teamIds.isEmpty()) {
+            return emptyMap()
+        }
+
+        val validIds = teamIds.filter { it.isNotBlank() }.distinct()
+        if (validIds.isEmpty()) {
+            return emptyMap()
+        }
+
+        return withRealmAsync { realm ->
+            val memberships = realm.where(RealmMyTeam::class.java)
+                .equalTo("docType", "membership")
+                .equalTo("userId", userId)
+                .`in`("teamId", validIds.toTypedArray())
+                .findAll()
+
+            val membershipStatus = mutableMapOf<String, Pair<Boolean, Boolean>>()
+            memberships.forEach { membership ->
+                val teamId = membership.teamId ?: return@forEach
+                val current = membershipStatus[teamId]
+                val isLeader = (current?.second == true) || membership.isLeader
+                membershipStatus[teamId] = true to isLeader
+            }
+
+            val pendingRequests = realm.where(RealmMyTeam::class.java)
+                .equalTo("docType", "request")
+                .equalTo("userId", userId)
+                .`in`("teamId", validIds.toTypedArray())
+                .findAll()
+                .mapNotNull { it.teamId }
+                .toSet()
+
+            validIds.associateWith { teamId ->
+                val (isMember, isLeader) = membershipStatus[teamId] ?: (false to false)
+                TeamMembershipStatus(
+                    isMember = isMember,
+                    isLeader = isLeader,
+                    hasPendingRequest = pendingRequests.contains(teamId),
+                )
+            }
+        }
+    }
+
     override suspend fun getRecentVisitCounts(teamIds: Collection<String>): Map<String, Long> {
         if (teamIds.isEmpty()) return emptyMap()
 
