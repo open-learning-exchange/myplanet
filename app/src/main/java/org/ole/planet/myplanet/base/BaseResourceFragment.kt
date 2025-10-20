@@ -265,8 +265,8 @@ abstract class BaseResourceFragment : Fragment() {
             }
 
             resourceNotFoundDialog = AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
-                .setTitle(R.string.resource_not_found)
-                .setMessage(R.string.resource_not_found_message)
+                .setTitle(R.string.resources)
+                .setMessage(R.string.resource_not_downloaded)
                 .setNegativeButton(R.string.close) { dialog, _ ->
                     dialog.dismiss()
                 }
