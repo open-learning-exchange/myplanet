@@ -12,6 +12,7 @@ import io.realm.RealmResults
 import java.io.File
 import java.io.IOException
 import java.util.Date
+import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
 import javax.inject.Singleton
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -54,6 +55,11 @@ import retrofit2.Callback
 import retrofit2.Response
 
 private const val BATCH_SIZE = 50
+
+private data class ResultSyncOutcome(
+    val processedCount: Int,
+    val errorCount: Int,
+)
 
 private inline fun <T> Iterable<T>.processInBatches(action: (T) -> Unit) {
     chunked(BATCH_SIZE).forEach { chunk ->
@@ -166,62 +172,64 @@ class UploadManager @Inject constructor(
     fun uploadExamResult(listener: SuccessListener) {
         val apiInterface = client.create(ApiInterface::class.java)
 
+        val handleSuccess: (ResultSyncOutcome) -> Unit = {
+            uploadCourseProgress()
+            listener.onSuccess("Result sync completed successfully")
+        }
+
+        val handleError: (Throwable) -> Unit = { error ->
+            error.printStackTrace()
+            listener.onSuccess("Error during result sync: ${error.message}")
+        }
+
         try {
-            val hasLooper = Looper.myLooper() != null
-
-            databaseService.withRealm { realm ->
-                if (hasLooper) {
+            if (Looper.myLooper() != null) {
+                databaseService.withRealm { realm ->
+                    val outcomeRef = AtomicReference(ResultSyncOutcome(0, 0))
                     realm.executeTransactionAsync({ transactionRealm: Realm ->
-                        val submissions: List<RealmSubmission> = transactionRealm.where(RealmSubmission::class.java).findAll()
-                        var processedCount = 0
-                        var errorCount = 0
-
-                        submissions.processInBatches { sub ->
-                            try {
-                                if ((sub.answers?.size ?: 0) > 0) {
-                                    RealmSubmission.continueResultUpload(sub, apiInterface, transactionRealm, context)
-                                    processedCount++
-                                }
-                            } catch (e: Exception) {
-                                errorCount++
-                                e.printStackTrace()
-                            }
-                        }
+                        outcomeRef.set(processExamResultUpload(transactionRealm, apiInterface))
                     }, {
-                        uploadCourseProgress()
-                        listener.onSuccess("Result sync completed successfully")
-                    }) { e: Throwable ->
-                        e.printStackTrace()
-                        listener.onSuccess("Error during result sync: ${e.message}")
+                        handleSuccess(outcomeRef.get())
+                    }) { error: Throwable ->
+                        handleError(error)
                     }
-                } else {
-                    realm.executeTransaction { transactionRealm: Realm ->
-                        val submissions: List<RealmSubmission> =
-                            transactionRealm.where(RealmSubmission::class.java).findAll()
-
-                        var processedCount = 0
-                        var errorCount = 0
-
-                        submissions.processInBatches { sub ->
-                            try {
-                                if ((sub.answers?.size ?: 0) > 0) {
-                                    RealmSubmission.continueResultUpload(sub, apiInterface, transactionRealm, context)
-                                    processedCount++
-                                }
-                            } catch (e: Exception) {
-                                errorCount++
-                                e.printStackTrace()
-                            }
-                        }
-                    }
-                    uploadCourseProgress()
-                    listener.onSuccess("Result sync completed successfully")
                 }
+            } else {
+                val outcome = databaseService.withRealm { realm ->
+                    var result = ResultSyncOutcome(0, 0)
+                    realm.executeTransaction { transactionRealm: Realm ->
+                        result = processExamResultUpload(transactionRealm, apiInterface)
+                    }
+                    result
+                }
+                handleSuccess(outcome)
             }
         } catch (e: Exception) {
-            e.printStackTrace()
-            listener.onSuccess("Error during result sync: ${e.message}")
+            handleError(e)
         }
+    }
+
+    private fun processExamResultUpload(
+        transactionRealm: Realm,
+        apiInterface: ApiInterface,
+    ): ResultSyncOutcome {
+        val submissions: List<RealmSubmission> = transactionRealm.where(RealmSubmission::class.java).findAll()
+        var processedCount = 0
+        var errorCount = 0
+
+        submissions.processInBatches { sub ->
+            try {
+                if ((sub.answers?.size ?: 0) > 0) {
+                    RealmSubmission.continueResultUpload(sub, apiInterface, transactionRealm, context)
+                    processedCount++
+                }
+            } catch (e: Exception) {
+                errorCount++
+                e.printStackTrace()
+            }
+        }
+
+        return ResultSyncOutcome(processedCount, errorCount)
     }
 
     private fun createImage(user: RealmUserModel?, imgObject: JsonObject?): JsonObject {
