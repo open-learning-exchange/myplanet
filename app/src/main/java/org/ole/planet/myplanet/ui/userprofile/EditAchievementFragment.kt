@@ -271,17 +271,26 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
 
     private fun initializeData() {
         if (achievement == null) {
-            if (!aRealm.isInTransaction) aRealm.beginTransaction()
-            achievement = aRealm.createObject(RealmAchievement::class.java, user?.id + "@" + user?.planetCode)
-            return
-        } else {
-            achievementArray = achievement?.achievementsArray
-            referenceArray = achievement?.getReferencesArray()
-            fragmentEditAchievementBinding.etAchievement.setText(achievement?.achievementsHeader)
-            fragmentEditAchievementBinding.etPurpose.setText(achievement?.purpose)
-            fragmentEditAchievementBinding.etGoals.setText(achievement?.goals)
-            fragmentEditAchievementBinding.cbSendToNation.isChecked = achievement?.sendToNation.toBoolean()
+            databaseService.withRealm { realm ->
+                realm.executeTransaction { transactionRealm ->
+                    transactionRealm.createObject(
+                        RealmAchievement::class.java,
+                        user?.id + "@" + user?.planetCode
+                    )
+                }
+            }
+            aRealm.refresh()
+            achievement = aRealm.where(RealmAchievement::class.java)
+                .equalTo("_id", user?.id + "@" + user?.planetCode)
+                .findFirst()
         }
+
+        achievementArray = achievement?.achievementsArray ?: achievementArray
+        referenceArray = achievement?.getReferencesArray() ?: referenceArray
+        fragmentEditAchievementBinding.etAchievement.setText(achievement?.achievementsHeader)
+        fragmentEditAchievementBinding.etPurpose.setText(achievement?.purpose)
+        fragmentEditAchievementBinding.etGoals.setText(achievement?.goals)
+        fragmentEditAchievementBinding.cbSendToNation.isChecked = achievement?.sendToNation.toBoolean()
         fragmentEditAchievementBinding.txtDob.text = if (TextUtils.isEmpty(user?.dob)) getString(R.string.birth_date) else getFormattedDate(user?.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
         resourceArray = JsonArray()
         fragmentEditAchievementBinding.etFname.setText(user?.firstName)
