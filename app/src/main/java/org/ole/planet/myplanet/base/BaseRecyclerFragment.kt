@@ -11,6 +11,7 @@ import androidx.annotation.RequiresApi
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmModel
 import io.realm.RealmObject
@@ -149,42 +150,120 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     fun deleteSelected(deleteProgress: Boolean) {
-        selectedItems?.forEach { item ->
+        val deletionRequests = selectedItems?.mapNotNull { item ->
+            when (item) {
+                is RealmMyLibrary -> item.resourceId?.let(DeletionRequest::Library)
+                is RealmMyCourse -> item.courseId?.let(DeletionRequest::Course)
+                is RealmObject -> null
+                else -> null
+            }
+        } ?: emptyList()
+
+        if (deletionRequests.isEmpty()) {
+            recyclerView.adapter = getAdapter()
+            showNoData(tvMessage, getAdapter().itemCount, "")
+            return
+        }
+
+        val userId = model?.id
+        viewLifecycleOwner.lifecycleScope.launch {
+            val toastMessages = mutableListOf<Int>()
             try {
-                if (!mRealm.isInTransaction) {
-                    mRealm.beginTransaction()
-                }
-                val `object` = item as RealmObject
-                deleteCourseProgress(deleteProgress, `object`)
-                removeFromShelf(`object`)
-                if (mRealm.isInTransaction) {
-                    mRealm.commitTransaction()
+                processDeletionInBatches(deletionRequests, deleteProgress, userId, toastMessages)
+                recyclerView.adapter = getAdapter()
+                showNoData(tvMessage, getAdapter().itemCount, "")
+                toastMessages.forEach { messageRes ->
+                    toast(activity, getString(messageRes))
                 }
             } catch (e: Exception) {
-                if (mRealm.isInTransaction) {
-                    mRealm.cancelTransaction()
-                }
                 throw e
             }
         }
-        recyclerView.adapter = getAdapter()
-        showNoData(tvMessage, getAdapter().itemCount, "")
+    }
+
+    private suspend fun processDeletionInBatches(
+        requests: List<DeletionRequest>,
+        deleteProgress: Boolean,
+        userId: String?,
+        toastMessages: MutableList<Int>,
+    ) {
+        requests.chunked(TRANSACTION_BATCH_SIZE).forEach { batch ->
+            databaseService.withRealmAsync { realm ->
+                batch.forEach { request ->
+                    processDeletionRequest(realm, request, deleteProgress, userId, toastMessages)
+                }
+            }
+        }
+    }
+
+    private fun processDeletionRequest(
+        realm: Realm,
+        request: DeletionRequest,
+        deleteProgress: Boolean,
+        userId: String?,
+        toastMessages: MutableList<Int>,
+    ) {
+        try {
+            if (!realm.isInTransaction) {
+                realm.beginTransaction()
+            }
+            val toastMessage = when (request) {
+                is DeletionRequest.Library -> removeLibraryFromShelf(realm, request.resourceId, userId)
+                is DeletionRequest.Course -> {
+                    deleteCourseProgress(realm, deleteProgress, request.courseId)
+                    removeCourseFromShelf(realm, request.courseId, userId)
+                }
+            }
+            if (realm.isInTransaction) {
+                realm.commitTransaction()
+            }
+            toastMessage?.let { toastMessages.add(it) }
+        } catch (e: Exception) {
+            if (realm.isInTransaction) {
+                realm.cancelTransaction()
+            }
+            throw e
+        }
+    }
+
+    private fun removeLibraryFromShelf(realm: Realm, resourceId: String, userId: String?): Int? {
+        val library = realm.where(RealmMyLibrary::class.java)
+            .equalTo("resourceId", resourceId)
+            .findFirst()
+        library?.removeUserId(userId)
+        if (!userId.isNullOrBlank()) {
+            onRemove(realm, "resources", userId, library?.resourceId ?: resourceId)
+        }
+        return R.string.removed_from_mylibrary
+    }
+
+    private fun removeCourseFromShelf(realm: Realm, courseId: String, userId: String?): Int? {
+        val course = getMyCourse(realm, courseId)
+        course?.removeUserId(userId)
+        if (!userId.isNullOrBlank()) {
+            onRemove(realm, "courses", userId, course?.courseId ?: courseId)
+        }
+        return R.string.removed_from_mycourse
     }
 
     fun countSelected(): Int {
         return selectedItems?.size ?: 0
     }
 
-    private fun deleteCourseProgress(deleteProgress: Boolean, `object`: RealmObject) {
-        if (deleteProgress && `object` is RealmMyCourse) {
-            mRealm.where(RealmCourseProgress::class.java).equalTo("courseId", `object`.courseId).findAll().deleteAllFromRealm()
-            val examList: List<RealmStepExam> = mRealm.where(RealmStepExam::class.java).equalTo("courseId", `object`.courseId).findAll()
-            for (exam in examList) {
-                mRealm.where(RealmSubmission::class.java).equalTo("parentId", exam.id)
-                    .notEqualTo("type", "survey").equalTo("uploaded", false).findAll()
-                    .deleteAllFromRealm()
-            }
+    private fun deleteCourseProgress(realm: Realm, deleteProgress: Boolean, courseId: String) {
+        if (!deleteProgress) return
+        realm.where(RealmCourseProgress::class.java).equalTo("courseId", courseId).findAll().deleteAllFromRealm()
+        val examList: List<RealmStepExam> = realm.where(RealmStepExam::class.java).equalTo("courseId", courseId).findAll()
+        for (exam in examList) {
+            realm.where(RealmSubmission::class.java).equalTo("parentId", exam.id)
+                .notEqualTo("type", "survey").equalTo("uploaded", false).findAll()
+                .deleteAllFromRealm()
         }
+    }
+
+    private sealed interface DeletionRequest {
+        data class Library(val resourceId: String) : DeletionRequest
+        data class Course(val courseId: String) : DeletionRequest
     }
 
     private fun checkAndAddToList(course: RealmMyCourse?, courses: MutableList<RealmMyCourse>, tags: List<RealmTag>) {
@@ -357,6 +436,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     companion object {
+        private const val TRANSACTION_BATCH_SIZE = 25
         private val noDataMessages = mapOf(
             "courses" to R.string.no_courses,
             "resources" to R.string.no_resources,
