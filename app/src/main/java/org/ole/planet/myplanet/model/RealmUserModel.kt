@@ -203,8 +203,25 @@ open class RealmUserModel : RealmObject() {
             val rolesArray = JsonArray()
             rolesArray.add("guest")
             `object`.add("roles", rolesArray)
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
-            return populateUsersTable(`object`, mRealm, settings)
+            var managedGuest: RealmUserModel? = null
+            val shouldExecuteTransaction = !mRealm.isInTransaction
+
+            return try {
+                if (shouldExecuteTransaction) {
+                    mRealm.executeTransaction { realm ->
+                        managedGuest = populateUsersTable(`object`, realm, settings)
+                    }
+                } else {
+                    managedGuest = populateUsersTable(`object`, mRealm, settings)
+                }
+                managedGuest?.let { mRealm.copyFromRealm(it) }
+            } catch (err: Exception) {
+                if (shouldExecuteTransaction && mRealm.isInTransaction) {
+                    mRealm.cancelTransaction()
+                }
+                err.printStackTrace()
+                null
+            }
         }
 
         @JvmStatic
