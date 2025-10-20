@@ -12,6 +12,7 @@ import io.realm.RealmResults
 import java.io.File
 import java.io.IOException
 import java.util.Date
+import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import javax.inject.Singleton
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -168,54 +169,51 @@ class UploadManager @Inject constructor(
 
         try {
             val hasLooper = Looper.myLooper() != null
+            val processedCount = AtomicInteger(0)
+            val errorCount = AtomicInteger(0)
+
+            val transaction = Realm.Transaction { transactionRealm: Realm ->
+                val submissions: List<RealmSubmission> = transactionRealm.where(RealmSubmission::class.java).findAll()
+
+                submissions.processInBatches { sub ->
+                    try {
+                        if ((sub.answers?.size ?: 0) > 0) {
+                            RealmSubmission.continueResultUpload(sub, apiInterface, transactionRealm, context)
+                            processedCount.incrementAndGet()
+                        }
+                    } catch (e: Exception) {
+                        errorCount.incrementAndGet()
+                        e.printStackTrace()
+                    }
+                }
+            }
+
+            val onSuccess = {
+                uploadCourseProgress()
+                val errors = errorCount.get()
+                val message = if (errors > 0) {
+                    "Result sync completed with $errors error(s)"
+                } else {
+                    "Result sync completed successfully"
+                }
+                listener.onSuccess(message)
+            }
+
+            val onError: (Throwable) -> Unit = { error ->
+                error.printStackTrace()
+                listener.onSuccess("Error during result sync: ${error.message}")
+            }
 
             databaseService.withRealm { realm ->
                 if (hasLooper) {
-                    realm.executeTransactionAsync({ transactionRealm: Realm ->
-                        val submissions: List<RealmSubmission> = transactionRealm.where(RealmSubmission::class.java).findAll()
-                        var processedCount = 0
-                        var errorCount = 0
-
-                        submissions.processInBatches { sub ->
-                            try {
-                                if ((sub.answers?.size ?: 0) > 0) {
-                                    RealmSubmission.continueResultUpload(sub, apiInterface, transactionRealm, context)
-                                    processedCount++
-                                }
-                            } catch (e: Exception) {
-                                errorCount++
-                                e.printStackTrace()
-                            }
-                        }
-                    }, {
-                        uploadCourseProgress()
-                        listener.onSuccess("Result sync completed successfully")
-                    }) { e: Throwable ->
-                        e.printStackTrace()
-                        listener.onSuccess("Error during result sync: ${e.message}")
-                    }
+                    realm.executeTransactionAsync(transaction, { onSuccess() }, { error -> onError(error) })
                 } else {
-                    realm.executeTransaction { transactionRealm: Realm ->
-                        val submissions: List<RealmSubmission> =
-                            transactionRealm.where(RealmSubmission::class.java).findAll()
-
-                        var processedCount = 0
-                        var errorCount = 0
-
-                        submissions.processInBatches { sub ->
-                            try {
-                                if ((sub.answers?.size ?: 0) > 0) {
-                                    RealmSubmission.continueResultUpload(sub, apiInterface, transactionRealm, context)
-                                    processedCount++
-                                }
-                            } catch (e: Exception) {
-                                errorCount++
-                                e.printStackTrace()
-                            }
-                        }
+                    try {
+                        realm.executeTransaction(transaction)
+                        onSuccess()
+                    } catch (error: Throwable) {
+                        onError(error)
                     }
-                    uploadCourseProgress()
-                    listener.onSuccess("Result sync completed successfully")
                 }
             }
         } catch (e: Exception) {
