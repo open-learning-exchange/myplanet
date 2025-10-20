@@ -380,10 +380,6 @@ class Service @Inject constructor(
         configurationManager.getMinApk(listener, url, pin, activity, callerActivity)
     }
 
-    fun showAlertDialog(message: String?, playStoreRedirect: Boolean) {
-        configurationManager.showAlertDialog(message, playStoreRedirect)
-    }
-
     private fun shouldPromptForSettings(settings: SharedPreferences): Boolean {
         if (!settings.getBoolean("isAlternativeUrl", false)) {
             if (settings.getString("couchdbURL", "").isNullOrEmpty()) {
