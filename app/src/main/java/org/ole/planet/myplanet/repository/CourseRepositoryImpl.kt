@@ -18,6 +18,16 @@ class CourseRepositoryImpl @Inject constructor(
         return findByField(RealmMyCourse::class.java, "courseId", courseId)
     }
 
+    override suspend fun getCoursesByIds(ids: Collection<String>): List<RealmMyCourse> {
+        val filteredIds = ids.filter { it.isNotBlank() }
+        if (filteredIds.isEmpty()) {
+            return emptyList()
+        }
+        return queryList(RealmMyCourse::class.java) {
+            `in`("id", filteredIds.toTypedArray())
+        }
+    }
+
     override suspend fun getCourseOnlineResources(courseId: String?): List<RealmMyLibrary> {
         return getCourseResources(courseId, isOffline = false)
     }
