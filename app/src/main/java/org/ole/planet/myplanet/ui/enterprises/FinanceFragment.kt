@@ -87,7 +87,8 @@ class FinanceFragment : BaseTeamFragment() {
             currentStartDate = null
             currentEndDate = null
             isAsc = false
-            observeTransactions(sortAscending = isAsc)
+            binding.imgDate.rotation = 0f
+            observeTransactions(sortAscending = isAsc, startDate = null, endDate = null)
         }
         return binding.root
     }
@@ -287,10 +288,10 @@ class FinanceFragment : BaseTeamFragment() {
                 if (adapterFinance == null) {
                     adapterFinance = AdapterFinance(requireActivity(), results)
                     binding.rvFinance.layoutManager = LinearLayoutManager(activity)
-                    binding.rvFinance.adapter = adapterFinance
                 } else {
                     adapterFinance?.updateData(results)
                 }
+                binding.rvFinance.adapter = adapterFinance
                 adapterFinance?.notifyDataSetChanged()
                 calculateTotal(results)
                 binding.dataLayout.visibility = View.VISIBLE
