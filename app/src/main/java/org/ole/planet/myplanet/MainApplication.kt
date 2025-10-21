@@ -33,8 +33,8 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
 import org.ole.planet.myplanet.callback.TeamPageListener
-import org.ole.planet.myplanet.datamanager.ApiClient
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.di.ApiClientEntryPoint
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.model.RealmApkLog
@@ -67,9 +67,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     @Inject
     @DefaultPreferences
     lateinit var defaultPreferences: SharedPreferences
-
-    @Inject
-    lateinit var apiClient: ApiClient
 
     companion object {
         private const val AUTO_SYNC_WORK_TAG = "autoSyncWork"
@@ -185,6 +182,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         super.onCreate()
         initApp()
         setupCriticalProperties()
+        ensureApiClientInitialized()
         setupStrictMode()
         registerExceptionHandler()
         setupLifecycleCallbacks()
@@ -209,6 +207,13 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         preferences = appPreferences
         service = databaseService
         defaultPref = defaultPreferences
+    }
+
+    private fun ensureApiClientInitialized() {
+        EntryPointAccessors.fromApplication(
+            this,
+            ApiClientEntryPoint::class.java
+        ).apiClient()
     }
     
     private suspend fun initializeDatabaseConnection() {
