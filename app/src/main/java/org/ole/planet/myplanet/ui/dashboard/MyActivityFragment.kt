@@ -62,7 +62,7 @@ class MyActivityFragment : Fragment() {
 
         val description = Description().apply {
             text = getString(R.string.chart_description)
-            this.textColor = textColor
+            setTextColor(textColor)
         }
 
         binding.chart.apply {
