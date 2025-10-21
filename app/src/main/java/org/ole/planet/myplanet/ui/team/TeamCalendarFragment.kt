@@ -14,7 +14,6 @@ import android.widget.RadioButton
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
-import dagger.hilt.android.AndroidEntryPoint
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.applandeo.materialcalendarview.CalendarDay
@@ -22,7 +21,7 @@ import com.applandeo.materialcalendarview.CalendarView
 import com.applandeo.materialcalendarview.listeners.OnCalendarDayClickListener
 import com.google.gson.Gson
 import com.google.gson.JsonObject
-import io.realm.RealmResults
+import dagger.hilt.android.AndroidEntryPoint
 import java.net.MalformedURLException
 import java.net.URL
 import java.text.SimpleDateFormat
@@ -56,7 +55,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
     private lateinit var end: Calendar
     private lateinit var clickedCalendar: Calendar
     private lateinit var calendarEventsMap: MutableMap<CalendarDay, RealmMeetup>
-    private lateinit var meetupList: RealmResults<RealmMeetup>
+    private var meetupList: List<RealmMeetup> = emptyList()
     private val eventDates: MutableList<Calendar> = mutableListOf()
     private var addMeetupDialog: AlertDialog? = null
     @Inject
@@ -217,35 +216,39 @@ class TeamCalendarFragment : BaseTeamFragment() {
     private fun setupCalendarClickListener(){
         binding.calendarView.setOnCalendarDayClickListener(object : OnCalendarDayClickListener {
             override fun onClick(calendarDay: CalendarDay) {
-                meetupList = mRealm.where(RealmMeetup::class.java).equalTo("teamId", teamId).findAll()
-                clickedCalendar = calendarDay.calendar
-                val clickedDateInMillis = clickedCalendar.timeInMillis
-                val clickedDate = Instant.ofEpochMilli(clickedDateInMillis)
-                    .atZone(ZoneId.systemDefault())
-                    .toLocalDate()
-
-                val markedDates = meetupList.mapNotNull { meetup ->
-                    val meetupDate = Instant.ofEpochMilli(meetup.startDate)
+                lifecycleScope.launch {
+                    meetupList = withContext(Dispatchers.IO) {
+                        meetupRepository.getMeetupsForTeam(teamId)
+                    }
+                    clickedCalendar = calendarDay.calendar
+                    val clickedDateInMillis = clickedCalendar.timeInMillis
+                    val clickedDate = Instant.ofEpochMilli(clickedDateInMillis)
                         .atZone(ZoneId.systemDefault())
                         .toLocalDate()
-                    if (meetupDate == clickedDate) meetup else null
-                }
 
-                if (markedDates.isNotEmpty()) {
-                    showMeetupDialog(markedDates)
-                } else {
-                    if(arguments?.getBoolean("fromLogin", false) != false || user?.id?.startsWith("guest") == true){
-                        binding.calendarView.selectedDates = eventDates
-                    } else{
-                        start = clickedCalendar.clone() as Calendar
-                        end = clickedCalendar.clone() as Calendar
-                        showMeetupAlert()
+                    val markedDates = meetupList.filter { meetup ->
+                        val meetupDate = Instant.ofEpochMilli(meetup.startDate)
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalDate()
+                        meetupDate == clickedDate
                     }
-                }
-                if (!selectedDates.contains(clickedCalendar)) {
-                    selectedDates.add(clickedCalendar)
-                } else {
-                    selectedDates.remove(clickedCalendar)
+
+                    if (markedDates.isNotEmpty()) {
+                        showMeetupDialog(markedDates)
+                    } else {
+                        if(arguments?.getBoolean("fromLogin", false) != false || user?.id?.startsWith("guest") == true){
+                            binding.calendarView.selectedDates = eventDates
+                        } else{
+                            start = clickedCalendar.clone() as Calendar
+                            end = clickedCalendar.clone() as Calendar
+                            showMeetupAlert()
+                        }
+                    }
+                    if (!selectedDates.contains(clickedCalendar)) {
+                        selectedDates.add(clickedCalendar)
+                    } else {
+                        selectedDates.remove(clickedCalendar)
+                    }
                 }
             }
         })

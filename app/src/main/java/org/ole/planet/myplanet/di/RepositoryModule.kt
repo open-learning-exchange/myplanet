@@ -56,11 +56,11 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindMyPersonalRepository(impl: MyPersonalRepositoryImpl): MyPersonalRepository
+    abstract fun bindMeetupRepository(impl: MeetupRepositoryImpl): MeetupRepository
 
     @Binds
     @Singleton
-    abstract fun bindMeetupRepository(impl: MeetupRepositoryImpl): MeetupRepository
+    abstract fun bindMyPersonalRepository(impl: MyPersonalRepositoryImpl): MyPersonalRepository
 
     @Binds
     @Singleton

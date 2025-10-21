@@ -325,7 +325,4 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         }
     }
 
-    companion object {
-        fun newInstance(): SurveyFragment = SurveyFragment()
-    }
 }
