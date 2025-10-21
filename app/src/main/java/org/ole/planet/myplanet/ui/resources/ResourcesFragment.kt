@@ -531,6 +531,10 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         return b
     }
 
+    override fun onRatingChanged() {
+        refreshResourcesData()
+    }
+
     override fun onResume() {
         super.onResume()
         refreshResourcesData()
