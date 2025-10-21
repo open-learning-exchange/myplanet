@@ -592,7 +592,17 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     val createdNotifications = createNotifications(backgroundRealm, userId)
                     newNotifications.addAll(createdNotifications)
 
-                    unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
+                    backgroundRealm.refresh()
+                    val unreadQuery = backgroundRealm.where(RealmNotification::class.java)
+                        .equalTo("isRead", false)
+
+                    val filteredQuery = if (userId != null) {
+                        unreadQuery.equalTo("userId", userId)
+                    } else {
+                        unreadQuery.isNull("userId")
+                    }
+
+                    unreadCount = filteredQuery.count().toInt()
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
