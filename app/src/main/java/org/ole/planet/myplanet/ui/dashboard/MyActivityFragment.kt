@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import com.github.mikephil.charting.components.Description
 import com.github.mikephil.charting.data.BarData
 import com.github.mikephil.charting.data.BarDataSet
@@ -13,13 +14,12 @@ import com.github.mikephil.charting.data.BarEntry
 import com.github.mikephil.charting.formatter.ValueFormatter
 import dagger.hilt.android.AndroidEntryPoint
 import java.text.DateFormatSymbols
-import java.text.SimpleDateFormat
 import java.util.Calendar
 import javax.inject.Inject
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentMyActivityBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.model.RealmOfflineActivity
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 
 @AndroidEntryPoint
@@ -27,9 +27,9 @@ class MyActivityFragment : Fragment() {
     private var _binding: FragmentMyActivityBinding? = null
     private val binding get() = _binding!!
     @Inject
-    lateinit var databaseService: DatabaseService
-    @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
+    @Inject
+    lateinit var userRepository: UserRepository
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentMyActivityBinding.inflate(inflater, container, false)
         return binding.root
@@ -38,62 +38,48 @@ class MyActivityFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val userModel = userProfileDbHandler.userModel
-        val calendar = Calendar.getInstance()
-        val daynight_textColor = ResourcesCompat.getColor(getResources(), R.color.daynight_textColor, null)
+        val daynightTextColor = ResourcesCompat.getColor(resources, R.color.daynight_textColor, null)
 
-        calendar.set(Calendar.YEAR, calendar.get(Calendar.YEAR) - 1)
-        databaseService.withRealm { realm ->
-            val resourceActivity = realm.where(RealmOfflineActivity::class.java).equalTo("userId", userModel?.id)
-                .between("loginTime", calendar.timeInMillis, Calendar.getInstance().timeInMillis)
-                .findAll()
+        val endMillis = Calendar.getInstance().timeInMillis
+        val startMillis = Calendar.getInstance().apply { add(Calendar.YEAR, -1) }.timeInMillis
 
-            val countMap = HashMap<String, Int>()
-            val format = SimpleDateFormat("MMM")
-            resourceActivity.forEach {
-                val d = format.format(it.loginTime)
-                if (countMap.containsKey(d)) {
-                    countMap[d] = countMap[d]!!.plus(1)
-                } else {
-                    countMap[d] = 1
-                }
-            }
-            val entries = ArrayList<BarEntry>()
-            var i = 0
-            for (entry in countMap.keys) {
-                val key = format.parse(entry)
-                val calendar = Calendar.getInstance()
-                key?.let {
-                    calendar.time = it
-                    val month = calendar.get(Calendar.MONTH)
-                    val en = countMap[entry]?.toFloat()
-                        ?.let { it1 -> BarEntry(month.toFloat(), it1) }
-                    if (en != null) {
-                        entries.add(en)
-                    }
-                }
-                i = i.plus(1)
-            }
-            var label = getString(R.string.chart_label)
-            val dataSet = BarDataSet(entries, label)
+        val userId = userModel?.id ?: return
 
-            val lineData = BarData(dataSet)
-            binding.chart.data = lineData
-            val d = Description()
-            d.text = getString(R.string.chart_description)
-            d.textColor = daynight_textColor
-            binding.chart.description = d
-            binding.chart.xAxis.valueFormatter = object : ValueFormatter() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val monthlyCounts = userRepository.getMonthlyLoginCounts(userId, startMillis, endMillis)
+            renderChart(monthlyCounts, daynightTextColor)
+        }
+    }
+
+    private fun renderChart(monthlyCounts: Map<Int, Int>, textColor: Int) {
+        val entries = monthlyCounts.entries
+            .sortedBy { it.key }
+            .map { (month, count) -> BarEntry(month.toFloat(), count.toFloat()) }
+
+        val label = getString(R.string.chart_label)
+        val dataSet = BarDataSet(entries, label)
+        val barData = BarData(dataSet)
+
+        val description = Description().apply {
+            text = getString(R.string.chart_description)
+            textColor = textColor
+        }
+
+        binding.chart.apply {
+            data = barData
+            this.description = description
+            xAxis.valueFormatter = object : ValueFormatter() {
                 override fun getFormattedValue(value: Float): String {
                     return getMonth(value.toInt())
                 }
             }
-            binding.chart.xAxis.textColor = daynight_textColor
-            binding.chart.axisLeft.textColor = daynight_textColor
-            binding.chart.axisRight.textColor = daynight_textColor
-            binding.chart.legend.textColor = daynight_textColor
-            binding.chart.description.setPosition(850f, 830f)
-            binding.chart.data.setValueTextColor(daynight_textColor)
-            binding.chart.invalidate()
+            xAxis.textColor = textColor
+            axisLeft.textColor = textColor
+            axisRight.textColor = textColor
+            legend.textColor = textColor
+            this.description.setPosition(850f, 830f)
+            this.data.setValueTextColor(textColor)
+            invalidate()
         }
     }
 
