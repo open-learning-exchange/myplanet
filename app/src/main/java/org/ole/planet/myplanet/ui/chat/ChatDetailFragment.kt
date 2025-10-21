@@ -555,11 +555,6 @@ class ChatDetailFragment : Fragment() {
                 databaseService.executeTransactionAsync { realm ->
                     addConversationToChatHistory(realm, id, query, chatResponse, _rev)
                 }
-                withContext(Dispatchers.Main) {
-                    if (isAdded && ::mAdapter.isInitialized) {
-                        mAdapter.notifyDataSetChanged()
-                    }
-                }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
                     if (isAdded) {
