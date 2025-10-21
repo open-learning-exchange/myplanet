@@ -5,8 +5,11 @@ import com.google.gson.JsonArray
 import io.realm.Case
 import io.realm.Sort
 import javax.inject.Inject
+import java.util.HashMap
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
+import org.ole.planet.myplanet.model.RealmUserModel
 
 class NewsRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
@@ -34,6 +37,12 @@ class NewsRepositoryImpl @Inject constructor(
 
         return allNews.filter { news ->
             isVisibleToUser(news, userIdentifier)
+        }
+    }
+
+    override suspend fun createNews(map: HashMap<String?, String>, user: RealmUserModel?): RealmNews {
+        return withRealmAsync { realm ->
+            createNews(map, realm, user, null)
         }
     }
 

@@ -17,6 +17,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.slidingpanelayout.widget.SlidingPaneLayout
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
+import java.util.HashMap
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -30,9 +31,12 @@ import org.ole.planet.myplanet.callback.TableDataUpdate
 import org.ole.planet.myplanet.databinding.FragmentChatHistoryListBinding
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.Conversation
+import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.ChatRepository
+import org.ole.planet.myplanet.repository.NewsRepository
+import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
@@ -56,6 +60,7 @@ class ChatHistoryListFragment : Fragment() {
     lateinit var settings: SharedPreferences
     private val serverUrlMapper = ServerUrlMapper()
     private var sharedNewsMessages: List<RealmNews> = emptyList()
+    private var shareTargets = ChatShareTargets(null, emptyList(), emptyList())
     
     @Inject
     lateinit var syncManager: SyncManager
@@ -63,6 +68,10 @@ class ChatHistoryListFragment : Fragment() {
     lateinit var chatRepository: ChatRepository
     @Inject
     lateinit var userRepository: UserRepository
+    @Inject
+    lateinit var teamRepository: TeamRepository
+    @Inject
+    lateinit var newsRepository: NewsRepository
     private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
     private lateinit var realtimeSyncListener: BaseRealtimeSyncListener
     private val serverUrl: String
@@ -240,16 +249,17 @@ class ChatHistoryListFragment : Fragment() {
             val currentUser = loadCurrentUser()
             sharedNewsMessages = chatRepository.getPlanetNewsMessages(currentUser?.planetCode)
             val list = chatRepository.getChatHistoryForUser(currentUser?.name)
+            shareTargets = loadShareTargets()
 
             val adapter = binding.recyclerView.adapter as? ChatHistoryListAdapter
             if (adapter == null) {
                 val newAdapter = ChatHistoryListAdapter(
                     requireContext(),
                     list,
-                    this@ChatHistoryListFragment,
-                    settings,
                     currentUser,
                     sharedNewsMessages,
+                    shareTargets,
+                    ::shareChat,
                 )
                 newAdapter.setChatHistoryItemClickListener(object : ChatHistoryListAdapter.ChatHistoryItemClickListener {
                     override fun onChatHistoryItemClicked(conversations: List<Conversation>?, id: String, rev: String?, aiProvider: String?) {
@@ -263,6 +273,7 @@ class ChatHistoryListFragment : Fragment() {
                 binding.recyclerView.adapter = newAdapter
             } else {
                 adapter.updateCachedData(currentUser, sharedNewsMessages)
+                adapter.updateShareTargets(shareTargets)
                 adapter.updateChatHistory(list)
                 binding.searchBar.visibility = View.VISIBLE
                 binding.recyclerView.visibility = View.VISIBLE
@@ -288,6 +299,37 @@ class ChatHistoryListFragment : Fragment() {
         val fetchedUser = userRepository.getUserById(userId)
         user = fetchedUser
         return fetchedUser
+    }
+
+    private suspend fun loadShareTargets(): ChatShareTargets {
+        val teams = teamRepository.getShareableTeams()
+        val enterprises = teamRepository.getShareableEnterprises()
+        val parentCode = settings.getString("parentCode", "")
+        val communityName = settings.getString("communityName", "")
+        val communityId = if (!communityName.isNullOrBlank() && !parentCode.isNullOrBlank()) {
+            "$communityName@$parentCode"
+        } else {
+            null
+        }
+        val community = communityId?.let { teamRepository.getTeamById(it) }
+        return ChatShareTargets(community, teams, enterprises)
+    }
+
+    private fun shareChat(map: HashMap<String?, String>, chatHistory: RealmChatHistory) {
+        if (!isAdded || _binding == null) {
+            return
+        }
+        viewLifecycleOwner.lifecycleScope.launch {
+            val currentUser = loadCurrentUser()
+            val createdNews = newsRepository.createNews(map, currentUser)
+            if (currentUser?.planetCode != null) {
+                sharedNewsMessages = sharedNewsMessages + createdNews
+            }
+            (binding.recyclerView.adapter as? ChatHistoryListAdapter)?.let { adapter ->
+                adapter.updateCachedData(currentUser, sharedNewsMessages)
+                adapter.notifyChatShared(chatHistory._id)
+            }
+        }
     }
 
     private fun setupRealtimeSync() {
