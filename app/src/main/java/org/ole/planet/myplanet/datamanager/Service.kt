@@ -25,10 +25,11 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SecurityDataCallback
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.di.ApiInterfaceEntryPoint
-import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmCommunity
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.isUserExists
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
+import org.ole.planet.myplanet.model.MyPlanet
+import org.ole.planet.myplanet.di.AutoSyncEntryPoint
 import org.ole.planet.myplanet.service.UploadToShelfService
 import org.ole.planet.myplanet.ui.sync.ProcessUserDataActivity
 import org.ole.planet.myplanet.ui.sync.SyncActivity
@@ -64,6 +65,13 @@ class Service @Inject constructor(
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
     private val configurationManager = ConfigurationManager(context, preferences, retrofitInterface)
+    private fun getUploadToShelfService(): UploadToShelfService {
+        val entryPoint = EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            AutoSyncEntryPoint::class.java
+        )
+        return entryPoint.uploadToShelfService()
+    }
 
     fun healthAccess(listener: SuccessListener) {
         try {
@@ -304,11 +312,7 @@ class Service @Inject constructor(
                 if (res.body() != null) {
                     val model = populateUsersTable(res.body(), realm1, settings)
                     if (model != null) {
-                        UploadToShelfService(
-                            MainApplication.context,
-                            DatabaseService(MainApplication.context),
-                            settings
-                        ).saveKeyIv(retrofitInterface, model, obj)
+                        getUploadToShelfService().saveKeyIv(retrofitInterface, model, obj)
                     }
                 }
             } catch (e: IOException) {
