@@ -21,7 +21,6 @@ import org.ole.planet.myplanet.utilities.IntentUtils.openAudioFile
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
 
 class AdapterMyPersonal(private val context: Context, private var list: MutableList<RealmMyPersonal>) : RecyclerView.Adapter<ViewHolderMyPersonal>() {
-    private lateinit var rowMyPersonalBinding: RowMyPersonalBinding
     private var listener: OnSelectedMyPersonal? = null
 
     fun setListener(listener: OnSelectedMyPersonal?) {
@@ -46,25 +45,37 @@ class AdapterMyPersonal(private val context: Context, private var list: MutableL
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderMyPersonal {
-        rowMyPersonalBinding = RowMyPersonalBinding.inflate(LayoutInflater.from(context), parent, false)
-        return ViewHolderMyPersonal(rowMyPersonalBinding)
+        val binding = RowMyPersonalBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        return ViewHolderMyPersonal(binding)
     }
     override fun onBindViewHolder(holder: ViewHolderMyPersonal, position: Int) {
-        rowMyPersonalBinding.title.text = list[position].title
-        rowMyPersonalBinding.description.text = list[position].description
-        rowMyPersonalBinding.date.text = getFormattedDate(list[position].date)
-        rowMyPersonalBinding.imgDelete.setOnClickListener {
-            listener?.onDeletePersonal(list[position])
+        val binding = holder.binding
+        val item = list[position]
+        binding.title.text = item.title
+        binding.description.text = item.description
+        binding.date.text = getFormattedDate(item.date)
+        binding.imgDelete.setOnClickListener {
+            val adapterPosition = holder.bindingAdapterPosition
+            if (adapterPosition != RecyclerView.NO_POSITION) {
+                listener?.onDeletePersonal(list[adapterPosition])
+            }
         }
-        rowMyPersonalBinding.imgEdit.setOnClickListener {
-            listener?.onEditPersonal(list[position])
+        binding.imgEdit.setOnClickListener {
+            val adapterPosition = holder.bindingAdapterPosition
+            if (adapterPosition != RecyclerView.NO_POSITION) {
+                listener?.onEditPersonal(list[adapterPosition])
+            }
         }
         holder.itemView.setOnClickListener {
-            openResource(list[position].path)
+            val adapterPosition = holder.bindingAdapterPosition
+            if (adapterPosition != RecyclerView.NO_POSITION) {
+                openResource(list[adapterPosition].path)
+            }
         }
-        rowMyPersonalBinding.imgUpload.setOnClickListener {
-            if (listener != null) {
-                listener?.onUpload(list[position])
+        binding.imgUpload.setOnClickListener {
+            val adapterPosition = holder.bindingAdapterPosition
+            if (adapterPosition != RecyclerView.NO_POSITION && listener != null) {
+                listener?.onUpload(list[adapterPosition])
             }
         }
     }
@@ -95,5 +106,5 @@ class AdapterMyPersonal(private val context: Context, private var list: MutableL
     override fun getItemCount(): Int {
         return list.size
     }
-    class ViewHolderMyPersonal(rowMyPersonalBinding: RowMyPersonalBinding) : RecyclerView.ViewHolder(rowMyPersonalBinding.root)
+    class ViewHolderMyPersonal(val binding: RowMyPersonalBinding) : RecyclerView.ViewHolder(binding.root)
 }
