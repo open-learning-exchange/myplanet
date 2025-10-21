@@ -146,7 +146,11 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         }
 
         getTeamMembers()
-        loadSavedProfileImage()
+
+        val fromLogout = intent.getBooleanExtra("fromLogout", false)
+        if (!fromLogout) {
+            loadSavedProfileImage()
+        }
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
