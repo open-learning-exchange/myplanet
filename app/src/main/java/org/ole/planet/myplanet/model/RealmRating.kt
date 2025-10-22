@@ -30,34 +30,58 @@ open class RealmRating : RealmObject() {
     companion object {
         @JvmStatic
         fun getRatings(mRealm: Realm, type: String?, userId: String?): HashMap<String?, JsonObject> {
-            val r = mRealm.where(RealmRating::class.java).equalTo("type", type).findAll()
+            val ratings = mRealm.where(RealmRating::class.java).equalTo("type", type).findAll()
+            val aggregated = aggregateRatings(ratings, userId)
             val map = HashMap<String?, JsonObject>()
-            for (rating in r) {
-                val `object` = getRatingsById(mRealm, rating.type, rating.item, userId)
-                if (`object` != null) map[rating.item] = `object`
+            for ((item, aggregation) in aggregated) {
+                map[item] = aggregation.toJson()
             }
             return map
         }
 
         @JvmStatic
         fun getRatingsById(mRealm: Realm, type: String?, id: String?, userid: String?): JsonObject? {
-            val r = mRealm.where(RealmRating::class.java).equalTo("type", type).equalTo("item", id).findAll()
-            if (r.isEmpty()) {
-                return null
+            val ratings = mRealm.where(RealmRating::class.java)
+                .equalTo("type", type)
+                .equalTo("item", id)
+                .findAll()
+            val aggregated = aggregateRatings(ratings, userid)[id]
+            return aggregated?.toJson()
+        }
+
+        private fun aggregateRatings(
+            ratings: Iterable<RealmRating>,
+            userId: String?
+        ): Map<String?, RatingAggregation> {
+            val aggregationMap = LinkedHashMap<String?, RatingAggregation>()
+            for (rating in ratings) {
+                val item = rating.item
+                val aggregation = aggregationMap.getOrPut(item) { RatingAggregation() }
+                aggregation.totalRating += rating.rate
+                aggregation.totalCount += 1
+                if (userId != null && userId == rating.userId) {
+                    aggregation.ratingByUser = rating.rate
+                }
             }
-            val `object` = JsonObject()
-            var totalRating = 0
-            for (rating in r) {
-                totalRating += rating.rate
+            return aggregationMap
+        }
+
+        private data class RatingAggregation(
+            var totalRating: Int = 0,
+            var totalCount: Int = 0,
+            var ratingByUser: Int? = null
+        ) {
+            fun toJson(): JsonObject {
+                val `object` = JsonObject()
+                if (ratingByUser != null) {
+                    `object`.addProperty("ratingByUser", ratingByUser)
+                }
+                if (totalCount > 0) {
+                    `object`.addProperty("averageRating", totalRating.toFloat() / totalCount)
+                    `object`.addProperty("total", totalCount)
+                }
+                return `object`
             }
-            val ratingObject = mRealm.where(RealmRating::class.java).equalTo("type", type)
-                .equalTo("userId", userid).equalTo("item", id).findFirst()
-            if (ratingObject != null) {
-                `object`.addProperty("ratingByUser", ratingObject.rate)
-            }
-            `object`.addProperty("averageRating", totalRating.toFloat() / r.size)
-            `object`.addProperty("total", r.size)
-            return `object`
         }
 
         @JvmStatic
