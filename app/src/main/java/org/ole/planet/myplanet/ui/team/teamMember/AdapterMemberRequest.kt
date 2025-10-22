@@ -132,7 +132,7 @@ class AdapterMemberRequest(
         MainApplication.applicationScope.launch {
             val result = teamRepository.respondToMemberRequest(teamId, userId, isAccept)
             if (result.isSuccess) {
-                runCatching { teamRepository.syncTeamActivities(context) }
+                runCatching { teamRepository.syncTeamActivities() }
                     .onFailure { it.printStackTrace() }
                 withContext(Dispatchers.Main) {
                     listener.onMemberChanged()

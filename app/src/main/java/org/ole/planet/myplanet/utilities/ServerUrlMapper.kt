@@ -3,9 +3,10 @@ package org.ole.planet.myplanet.utilities
 import android.content.SharedPreferences
 import android.net.Uri
 import androidx.core.net.toUri
+import javax.inject.Inject
 import org.ole.planet.myplanet.BuildConfig
 
-class ServerUrlMapper() {
+class ServerUrlMapper @Inject constructor() {
     private val serverMappings = mapOf(
         "http://${BuildConfig.PLANET_SANPABLO_URL}" to "https://${BuildConfig.PLANET_SANPABLO_CLONE_URL}",
         "http://${BuildConfig.PLANET_URIUR_URL}" to "https://${BuildConfig.PLANET_URIUR_CLONE_URL}",
