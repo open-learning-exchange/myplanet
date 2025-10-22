@@ -1272,6 +1272,8 @@
     <string name="adopt_survey">Adopter le sondage</string>
     <string name="survey_adopted_successfully">Enquête adoptée avec succès !</string>
     <string name="beta_fast_sync">synchronisation rapide bêta</string>
+    <string name="beta_improved_sync">beta improved sync</string>
+    <string name="beta_improved_sync_summary">Run the experimental sync manager during manual and auto syncs.</string>
     <string name="user_verification_in_progress">Vérification de l\'utilisateur en cours. Veuillez patienter pendant que nous traitons les données.</string>
     <string name="go_to_mylibrary">Aller à Ma Bibliothèque</string>
     <string name="choose_an_option">Choisissez une option</string>
