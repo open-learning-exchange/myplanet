@@ -191,7 +191,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         if (!isAdded || requireActivity().isFinishing) return
 
         try {
-            mRealm.refresh()
+            if (!mRealm.isInTransaction) {
+                mRealm.refresh()
+            }
             val map = getRatings(mRealm, "course", model?.id)
             val progressMap = getCourseProgress(mRealm, model?.id)
             val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>().filter { !it?.courseTitle.isNullOrBlank() }
@@ -227,7 +229,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
-        mRealm.refresh()
+        if (!mRealm.isInTransaction) {
+            mRealm.refresh()
+        }
 
         val map = getRatings(mRealm, "course", model?.id)
         val progressMap = getCourseProgress(mRealm, model?.id)
@@ -721,7 +725,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             return
         }
 
-        mRealm.refresh()
+        if (!mRealm.isInTransaction) {
+            mRealm.refresh()
+        }
         val map = getRatings(mRealm, "course", model?.id)
         val progressMap = getCourseProgress(mRealm, model?.id)
 
