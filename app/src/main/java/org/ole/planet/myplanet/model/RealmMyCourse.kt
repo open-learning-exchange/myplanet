@@ -248,15 +248,6 @@ open class RealmMyCourse : RealmObject() {
         }
 
         @JvmStatic
-        fun createMyCourse(course: RealmMyCourse?, mRealm: Realm, id: String?) {
-            if (!mRealm.isInTransaction) {
-                mRealm.beginTransaction()
-            }
-            course?.setUserId(id)
-            mRealm.commitTransaction()
-        }
-
-        @JvmStatic
         fun getMyCourseIds(realm: Realm?, userId: String?): JsonArray {
             val myCourses = getMyCourseByUserId(userId, realm?.where(RealmMyCourse::class.java)?.findAll())
             val ids = JsonArray()
