@@ -15,7 +15,6 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Utilities
 
 class UserProfileDbHandler @Inject constructor(
@@ -25,13 +24,6 @@ class UserProfileDbHandler @Inject constructor(
 ) {
     var mRealm: Realm
     private val fullName: String
-
-    // Backward compatibility constructor
-    constructor(context: Context) : this(
-        context,
-        DatabaseService(context),
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    )
 
     init {
         try {
