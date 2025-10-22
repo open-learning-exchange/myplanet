@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.submission
 
 import android.content.Context
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -70,6 +71,7 @@ class AdapterMySubmission(
             rowMySurveyBinding.title.text = examHashMap[submission.parentId]?.name
         }
         holder.itemView.setOnClickListener {
+            logSubmissionResponses(submission)
             if (type == "survey") {
                 openSurvey(listener, submission.id, true, false, "")
             } else {
@@ -94,6 +96,30 @@ class AdapterMySubmission(
             submittedBy.visibility = View.VISIBLE
             submittedBy.text = resolvedName
         }
+    }
+
+    private fun logSubmissionResponses(submission: RealmSubmission) {
+        val submissionTitle = examHashMap?.get(submission.parentId)?.name ?: "Unknown"
+        val answerCount = submission.answers?.size ?: 0
+
+        Log.d("SubmissionResponses", "=== Submission Clicked ===")
+        Log.d("SubmissionResponses", "Title: $submissionTitle")
+        Log.d("SubmissionResponses", "Submission ID: ${submission.id}")
+        Log.d("SubmissionResponses", "Status: ${submission.status}")
+        Log.d("SubmissionResponses", "Total Answers: $answerCount")
+        Log.d("SubmissionResponses", "")
+
+        submission.answers?.forEachIndexed { index, answer ->
+            Log.d("SubmissionResponses", "Answer ${index + 1}:")
+            Log.d("SubmissionResponses", "  Question ID: ${answer.questionId}")
+            Log.d("SubmissionResponses", "  Value: ${answer.value}")
+            Log.d("SubmissionResponses", "  Value Choices: ${answer.valueChoices?.joinToString(", ")}")
+            Log.d("SubmissionResponses", "  Passed: ${answer.isPassed}")
+            Log.d("SubmissionResponses", "  Mistakes: ${answer.mistakes}")
+            Log.d("SubmissionResponses", "")
+        }
+
+        Log.d("SubmissionResponses", "=== End of Submission ===")
     }
 
     private fun openSubmissionDetail(listener: OnHomeItemClickListener?, id: String?) {
