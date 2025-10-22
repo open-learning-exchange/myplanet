@@ -7,12 +7,14 @@ import android.util.Base64
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import dagger.hilt.android.EntryPointAccessors
 import io.realm.Realm
 import java.io.IOException
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.datamanager.ApiInterface
+import org.ole.planet.myplanet.di.WorkerDependenciesEntryPoint
 import org.ole.planet.myplanet.model.DocumentResponse
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.insert
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
@@ -81,7 +83,12 @@ object TransactionSyncManager {
 
     fun syncKeyIv(mRealm: Realm, settings: SharedPreferences, listener: SyncListener) {
         listener.onSyncStarted()
-        val model = UserProfileDbHandler(MainApplication.context).userModel
+        val userProfileDbHandler =
+            EntryPointAccessors.fromApplication(
+                MainApplication.context,
+                WorkerDependenciesEntryPoint::class.java,
+            ).userProfileDbHandler()
+        val model = userProfileDbHandler.userModel
         val userName = SecurePrefs.getUserName(MainApplication.context, settings) ?: ""
         val password = SecurePrefs.getPassword(MainApplication.context, settings) ?: ""
 //        val table = "userdb-" + model?.planetCode?.let { Utilities.toHex(it) } + "-" + model?.name?.let { Utilities.toHex(it) }
