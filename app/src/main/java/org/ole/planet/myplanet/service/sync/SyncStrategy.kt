@@ -36,5 +36,4 @@ sealed class SyncMode {
     object Standard : SyncMode()
     object Fast : SyncMode()
     object Optimized : SyncMode()
-    data class Custom(val strategy: SyncStrategy) : SyncMode()
 }

@@ -16,6 +16,7 @@ import android.widget.Toolbar
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatTextView
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import fisk.chipcloud.ChipCloud
@@ -26,6 +27,7 @@ import kotlin.Array
 import kotlin.Int
 import kotlin.String
 import kotlin.arrayOf
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.databinding.AlertAddAttachmentBinding
@@ -65,11 +67,8 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         aRealm = databaseService.realmInstance
         user = profileDbHandler.userModel
         achievementArray = JsonArray()
-        achievement = aRealm.where(RealmAchievement::class.java).equalTo("_id", user?.id + "@" + user?.planetCode).findFirst()
         initializeData()
         setListeners()
-        if (achievementArray != null) showAchievementAndInfo()
-        if (referenceArray != null) showReference()
         return fragmentEditAchievementBinding.root
     }
 
@@ -270,24 +269,59 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     }
 
     private fun initializeData() {
+        val achievementId = user?.id + "@" + user?.planetCode
+        achievement = aRealm.where(RealmAchievement::class.java)
+            .equalTo("_id", achievementId)
+            .findFirst()
+
         if (achievement == null) {
-            if (!aRealm.isInTransaction) aRealm.beginTransaction()
-            achievement = aRealm.createObject(RealmAchievement::class.java, user?.id + "@" + user?.planetCode)
-            return
+            lifecycleScope.launch {
+                databaseService.withRealmAsync { realm ->
+                    realm.executeTransaction { transactionRealm ->
+                        val existing = transactionRealm.where(RealmAchievement::class.java)
+                            .equalTo("_id", achievementId)
+                            .findFirst()
+                        if (existing == null) {
+                            transactionRealm.createObject(
+                                RealmAchievement::class.java,
+                                achievementId
+                            )
+                        }
+                    }
+                }
+                if (!isAdded) {
+                    return@launch
+                }
+                aRealm.refresh()
+                achievement = aRealm.where(RealmAchievement::class.java)
+                    .equalTo("_id", achievementId)
+                    .findFirst()
+                populateAchievementData()
+            }
         } else {
-            achievementArray = achievement?.achievementsArray
-            referenceArray = achievement?.getReferencesArray()
-            fragmentEditAchievementBinding.etAchievement.setText(achievement?.achievementsHeader)
-            fragmentEditAchievementBinding.etPurpose.setText(achievement?.purpose)
-            fragmentEditAchievementBinding.etGoals.setText(achievement?.goals)
-            fragmentEditAchievementBinding.cbSendToNation.isChecked = achievement?.sendToNation.toBoolean()
+            populateAchievementData()
         }
+    }
+
+    private fun populateAchievementData() {
+        achievementArray = achievement?.achievementsArray ?: achievementArray
+        referenceArray = achievement?.getReferencesArray() ?: referenceArray
+        fragmentEditAchievementBinding.etAchievement.setText(achievement?.achievementsHeader)
+        fragmentEditAchievementBinding.etPurpose.setText(achievement?.purpose)
+        fragmentEditAchievementBinding.etGoals.setText(achievement?.goals)
+        fragmentEditAchievementBinding.cbSendToNation.isChecked = achievement?.sendToNation.toBoolean()
         fragmentEditAchievementBinding.txtDob.text = if (TextUtils.isEmpty(user?.dob)) getString(R.string.birth_date) else getFormattedDate(user?.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
         resourceArray = JsonArray()
         fragmentEditAchievementBinding.etFname.setText(user?.firstName)
         fragmentEditAchievementBinding.etMname.setText(user?.middleName)
         fragmentEditAchievementBinding.etLname.setText(user?.lastName)
         fragmentEditAchievementBinding.etBirthplace.setText(user?.birthPlace)
+        if (achievementArray != null) {
+            showAchievementAndInfo()
+        }
+        if (referenceArray != null) {
+            showReference()
+        }
     }
 
     private fun createResourceList(myLibraryAlertdialogBinding: MyLibraryAlertdialogBinding, list: List<RealmMyLibrary>, prevList: List<String?>): CheckboxListView {
