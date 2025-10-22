@@ -31,9 +31,7 @@ import java.util.Calendar
 import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AddMeetupBinding
 import org.ole.planet.myplanet.databinding.FragmentEnterpriseCalendarBinding
@@ -217,9 +215,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
         binding.calendarView.setOnCalendarDayClickListener(object : OnCalendarDayClickListener {
             override fun onClick(calendarDay: CalendarDay) {
                 lifecycleScope.launch {
-                    meetupList = withContext(Dispatchers.IO) {
-                        meetupRepository.getMeetupsForTeam(teamId)
-                    }
+                    meetupList = meetupRepository.getMeetupsForTeam(teamId)
                     clickedCalendar = calendarDay.calendar
                     val clickedDateInMillis = clickedCalendar.timeInMillis
                     val clickedDate = Instant.ofEpochMilli(clickedDateInMillis)
@@ -307,7 +303,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
 
         dialog.setOnDismissListener {
             eventDates.add(clickedCalendar)
-            lifecycleScope.launch(Dispatchers.Main) {
+            lifecycleScope.launch {
                 binding.calendarView.selectedDates = emptyList()
                 binding.calendarView.selectedDates = eventDates.toList()
             }
@@ -322,12 +318,10 @@ class TeamCalendarFragment : BaseTeamFragment() {
             return
         }
         viewLifecycleOwner.lifecycleScope.launch {
-            val newDates = withContext(Dispatchers.IO) {
-                meetupRepository.getMeetupsForTeam(teamId).mapTo(mutableListOf()) { meetup ->
-                    val calendarInstance = Calendar.getInstance()
-                    calendarInstance.timeInMillis = meetup.startDate
-                    calendarInstance
-                }
+            val newDates = meetupRepository.getMeetupsForTeam(teamId).mapTo(mutableListOf()) { meetup ->
+                val calendarInstance = Calendar.getInstance()
+                calendarInstance.timeInMillis = meetup.startDate
+                calendarInstance
             }
 
             if (isAdded && activity != null) {
