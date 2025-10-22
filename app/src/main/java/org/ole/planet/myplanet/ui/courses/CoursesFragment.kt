@@ -714,4 +714,30 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         }
         super.onDestroyView()
     }
+
+    override fun onRatingChanged() {
+        if (!::adapterCourses.isInitialized) {
+            super.onRatingChanged()
+            return
+        }
+
+        mRealm.refresh()
+        val map = getRatings(mRealm, "course", model?.id)
+        val progressMap = getCourseProgress(mRealm, model?.id)
+
+        val filteredCourseList = if (etSearch.text.toString().isEmpty() && searchTags.isEmpty() && gradeLevel.isEmpty() && subjectLevel.isEmpty()) {
+            getFullCourseList()
+        } else {
+            filterCourseByTag(etSearch.text.toString(), searchTags)
+        }
+
+        adapterCourses = AdapterCourses(
+            requireActivity(), filteredCourseList, map, userProfileDbHandler,
+            tagRepository, this@CoursesFragment
+        )
+        adapterCourses.setProgressMap(progressMap)
+        adapterCourses.setListener(this)
+        adapterCourses.setRatingChangeListener(this)
+        recyclerView.adapter = adapterCourses
+    }
 }

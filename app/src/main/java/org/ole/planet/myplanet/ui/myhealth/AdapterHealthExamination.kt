@@ -26,8 +26,8 @@ import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 
 class AdapterHealthExamination(private val context: Context, private val list: List<RealmMyHealthPojo>?, private val mh: RealmMyHealthPojo, private val userModel: RealmUserModel?) : RecyclerView.Adapter<ViewHolderMyHealthExamination>() {
-    private lateinit var rowExaminationBinding: RowExaminationBinding
     private lateinit var mRealm: Realm
+    private val displayNameCache = mutableMapOf<String, String>()
     fun setmRealm(mRealm: Realm?) {
         if (mRealm != null) {
             this.mRealm = mRealm
@@ -35,39 +35,42 @@ class AdapterHealthExamination(private val context: Context, private val list: L
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderMyHealthExamination {
-        rowExaminationBinding = RowExaminationBinding.inflate(
+        val rowExaminationBinding = RowExaminationBinding.inflate(
             LayoutInflater.from(context), parent, false
         )
         return ViewHolderMyHealthExamination(rowExaminationBinding)
     }
 
     override fun onBindViewHolder(holder: ViewHolderMyHealthExamination, position: Int) {
-            rowExaminationBinding.txtTemp.text = list?.get(position)?.temperature.toString()
-            rowExaminationBinding.txtTemp.text = list?.get(position)?.let { checkEmpty(it.temperature) }
-            rowExaminationBinding.txtDate.text = list?.get(position)?.let { formatDate(it.date, "MMM dd, yyyy") }
-            val encrypted = userModel?.let { it1 -> list?.get(position)?.getEncryptedDataAsJson(it1) }
-
+        val binding = holder.binding
+        binding.txtTemp.text = list?.get(position)?.let { checkEmpty(it.temperature) }
+        val formattedDate = list?.get(position)?.let { formatDate(it.date, "MMM dd, yyyy") }
+        binding.txtDate.text = formattedDate
+        binding.txtDate.tag = formattedDate
+        val encrypted = userModel?.let { it1 -> list?.get(position)?.getEncryptedDataAsJson(it1) }
 
         val createdBy = getString("createdBy", encrypted)
         if (!TextUtils.isEmpty(createdBy) && !TextUtils.equals(createdBy, userModel?.id)) {
-            val model = mRealm.where(RealmUserModel::class.java).equalTo("id", createdBy).findFirst()
-            val name: String = model?.getFullName() ?: createdBy.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[1]
-            rowExaminationBinding.txtDate.text = context.getString(R.string.two_strings, rowExaminationBinding.txtDate.text, name).trimIndent()
+            val name = displayNameCache.getOrPut(createdBy) {
+                val model = mRealm.where(RealmUserModel::class.java).equalTo("id", createdBy).findFirst()
+                model?.getFullName() ?: createdBy.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray().getOrNull(1) ?: createdBy
+            }
+            binding.txtDate.text = context.getString(R.string.two_strings, binding.txtDate.text, name).trimIndent()
             holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.md_grey_50))
         } else {
-            rowExaminationBinding.txtDate.text = context.getString(R.string.self_examination, rowExaminationBinding.txtDate.text)
+            binding.txtDate.text = context.getString(R.string.self_examination, binding.txtDate.text)
             holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.md_green_50))
         }
 
-        rowExaminationBinding.txtPulse.text = list?.get(position)?.let { checkEmptyInt(it.pulse) }
-        rowExaminationBinding.txtBp.text = list?.get(position)?.bp
-        rowExaminationBinding.txtHearing.text = list?.get(position)?.hearing
-        rowExaminationBinding.txtHeight.text = list?.get(position)?.let { checkEmpty(it.height) }
-        rowExaminationBinding.txtWeight.text = list?.get(position)?.let { checkEmpty(it.weight) }
-        rowExaminationBinding.txtVision.text = list?.get(position)?.vision
+        binding.txtPulse.text = list?.get(position)?.let { checkEmptyInt(it.pulse) }
+        binding.txtBp.text = list?.get(position)?.bp
+        binding.txtHearing.text = list?.get(position)?.hearing
+        binding.txtHeight.text = list?.get(position)?.let { checkEmpty(it.height) }
+        binding.txtWeight.text = list?.get(position)?.let { checkEmpty(it.weight) }
+        binding.txtVision.text = list?.get(position)?.vision
         holder.itemView.setOnClickListener {
             if (encrypted != null) {
-                showAlert(position, encrypted)
+                showAlert(binding, position, encrypted)
             }
         }
     }
@@ -80,7 +83,7 @@ class AdapterHealthExamination(private val context: Context, private val list: L
         return if (value == 0) "" else value.toString() + ""
     }
 
-    private fun showAlert(position: Int, encrypted: JsonObject) {
+    private fun showAlert(binding: RowExaminationBinding, position: Int, encrypted: JsonObject) {
         val realmExamination = list?.get(position)
         val alertExaminationBinding = AlertExaminationBinding.inflate(LayoutInflater.from(context))
         if (realmExamination != null) {
@@ -91,7 +94,7 @@ class AdapterHealthExamination(private val context: Context, private val list: L
         showConditions(alertExaminationBinding.tvCondition, realmExamination)
         showEncryptedData(alertExaminationBinding.tvOtherNotes, encrypted)
         val dialog = AlertDialog.Builder(context, R.style.CustomAlertDialog)
-            .setTitle(realmExamination?.let { formatDate(it.date, "MMM dd, yyyy") })
+            .setTitle(binding.txtDate.tag as? CharSequence ?: binding.txtDate.text)
             .setView(alertExaminationBinding.root)
             .setPositiveButton("OK", null).create()
         val backgroundColor = ContextCompat.getColor(context, R.color.multi_select_grey)
@@ -132,5 +135,5 @@ class AdapterHealthExamination(private val context: Context, private val list: L
         return list?.size ?: 0
     }
 
-    class ViewHolderMyHealthExamination(rowExaminationBinding: RowExaminationBinding) : RecyclerView.ViewHolder(rowExaminationBinding.root)
+    class ViewHolderMyHealthExamination(val binding: RowExaminationBinding) : RecyclerView.ViewHolder(binding.root)
 }

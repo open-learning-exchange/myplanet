@@ -8,10 +8,11 @@ import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.realm.Realm
 import java.util.Locale
-import kotlin.LazyThreadSafetyMode
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SyncListener
+import org.ole.planet.myplanet.datamanager.DatabaseService
+import kotlin.LazyThreadSafetyMode
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.androidDecrypter
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
@@ -21,9 +22,11 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-class ManagerSync private constructor(private val context: Context) {
+class ManagerSync private constructor(
+    private val context: Context,
+    private val dbService: DatabaseService
+) {
     private val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    private val dbService: DatabaseService = DatabaseService(context)
 
     fun login(userName: String?, password: String?, listener: SyncListener) {
         try {
@@ -201,7 +204,7 @@ class ManagerSync private constructor(private val context: Context) {
     companion object {
         @JvmStatic
         val instance: ManagerSync by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
-            ManagerSync(MainApplication.context)
+            ManagerSync(MainApplication.context, MainApplication.service)
         }
     }
 }
