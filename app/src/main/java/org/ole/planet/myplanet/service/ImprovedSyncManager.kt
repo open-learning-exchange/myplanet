@@ -193,7 +193,6 @@ class ImprovedSyncManager @Inject constructor(
             SyncMode.Standard -> "Standard"
             SyncMode.Fast -> "Fast"
             SyncMode.Optimized -> "Optimized"
-            is SyncMode.Custom -> "Custom:${strategy.getStrategyName()}"
         }
     }
     
