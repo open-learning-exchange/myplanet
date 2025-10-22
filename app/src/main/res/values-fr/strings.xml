@@ -1080,9 +1080,6 @@
     <string name="actions_menu">menu d\'actions</string>
     <string name="icon">icône %1$s</string>
     <string name="select_res_course">sélectionner %1$s</string>
-    <string name="perplexity">perplexity</string>
-    <string name="openai">openai</string>
-    <string name="gemini">gemini</string>
     <string name="kindly_enter_message">Veuillez entrer le message</string>
     <string name="virtual_assistant_currently_not_available">assistant virtuel actuellement non disponible</string>
     <string name="no_courses">aucun cours disponible</string>
