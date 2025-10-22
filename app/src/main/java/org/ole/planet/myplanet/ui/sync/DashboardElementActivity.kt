@@ -225,6 +225,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
             
             val loginScreen = Intent(this@DashboardElementActivity, LoginActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
+                .putExtra("fromLogout", true)
             startActivity(loginScreen)
             doubleBackToExitPressedOnce = true
             finish()
