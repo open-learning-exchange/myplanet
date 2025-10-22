@@ -83,6 +83,14 @@ class NewsFragment : BaseNewsFragment() {
             binding.llAddNews.visibility = View.GONE
         }
 
+        if (mRealm.isInTransaction) {
+            try {
+                mRealm.commitTransaction()
+            } catch (_: Exception) {
+                mRealm.cancelTransaction()
+            }
+        }
+
         updatedNewsList = mRealm.where(RealmNews::class.java).sort("time", Sort.DESCENDING)
             .isEmpty("replyTo").equalTo("docType", "message", Case.INSENSITIVE)
             .findAllAsync()
