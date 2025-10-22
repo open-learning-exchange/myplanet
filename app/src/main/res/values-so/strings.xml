@@ -1080,9 +1080,6 @@
     <string name="actions_menu">menu falalka</string>
     <string name="icon">astan %1$s</string>
     <string name="select_res_course">xulo %1$s</string>
-    <string name="perplexity">perplexity</string>
-    <string name="openai">openai</string>
-    <string name="gemini">gemini</string>
     <string name="kindly_enter_message">Fadlan geli farriinta</string>
     <string name="virtual_assistant_currently_not_available">kaaliyaha farsamada hadda lama heli karo</string>
     <string name="no_courses">ma jiro koorsad la helin</string>

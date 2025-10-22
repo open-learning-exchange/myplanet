@@ -163,7 +163,6 @@ class ImprovedSyncManager @Inject constructor(
         return when (syncMode) {
             SyncMode.Standard -> standardStrategy
             SyncMode.Fast, SyncMode.Optimized -> standardStrategy
-            is SyncMode.Custom -> syncMode.strategy
         }
     }
 
