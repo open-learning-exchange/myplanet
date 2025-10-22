@@ -65,20 +65,16 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
                 `object`.addProperty("fileName", getFileNameFromUrl(path))
                 imageList.add(Gson().toJson(`object`))
                 try {
-                    llImage?.removeAllViews()
                     llImage?.visibility = View.VISIBLE
-                    for (img in imageList) {
-                        val ob = Gson().fromJson(img, JsonObject::class.java)
-                        val imageBinding = ImageThumbBinding.inflate(LayoutInflater.from(activity), llImage, false)
-                        Glide.with(requireActivity())
-                            .load(File(getString("imageUrl", ob)))
-                            .into(imageBinding.thumb)
-                        llImage?.addView(imageBinding.root)
-                    }
-                        if (result.resultCode == 102) adapterNews?.setImageList(imageList)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
+                    val imageBinding = ImageThumbBinding.inflate(LayoutInflater.from(activity), llImage, false)
+                    Glide.with(requireActivity())
+                        .load(File(path))
+                        .into(imageBinding.thumb)
+                    llImage?.addView(imageBinding.root)
+                    if (result.resultCode == 102) adapterNews?.setImageList(imageList)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
                 }
             }
         replyActivityLauncher = registerForActivityResult(
