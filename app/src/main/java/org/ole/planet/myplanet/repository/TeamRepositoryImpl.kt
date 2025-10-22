@@ -71,7 +71,7 @@ class TeamRepositoryImpl @Inject constructor(
         startDate: Long?,
         endDate: Long?,
         sortAscending: Boolean,
-    ): Flow<RealmResults<RealmMyTeam>> {
+    ): Flow<List<RealmMyTeam>> {
         val sortOrder = if (sortAscending) Sort.ASCENDING else Sort.DESCENDING
         return withRealmFlow { realm, scope ->
             val query = realm.where(RealmMyTeam::class.java)
@@ -84,10 +84,18 @@ class TeamRepositoryImpl @Inject constructor(
 
             val results = query.findAllAsync().sort("date", sortOrder)
             val listener = RealmChangeListener<RealmResults<RealmMyTeam>> { updatedResults ->
-                scope.trySend(updatedResults)
+                if (updatedResults.isLoaded && updatedResults.isValid) {
+                    scope.trySend(realm.copyFromRealm(updatedResults))
+                } else {
+                    scope.trySend(emptyList())
+                }
             }
             results.addChangeListener(listener)
-            scope.trySend(results)
+            if (results.isLoaded && results.isValid) {
+                scope.trySend(realm.copyFromRealm(results))
+            } else {
+                scope.trySend(emptyList())
+            }
 
             return@withRealmFlow { results.removeChangeListener(listener) }
         }
@@ -198,6 +206,34 @@ class TeamRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun respondToMemberRequest(
+        teamId: String,
+        userId: String,
+        accept: Boolean,
+    ): Result<Unit> {
+        if (teamId.isBlank() || userId.isBlank()) {
+            return Result.failure(IllegalArgumentException("teamId and userId cannot be blank"))
+        }
+
+        return runCatching {
+            executeTransaction { realm ->
+                val request = realm.where(RealmMyTeam::class.java)
+                    .equalTo("teamId", teamId)
+                    .equalTo("userId", userId)
+                    .equalTo("docType", "request")
+                    .findFirst()
+                    ?: throw IllegalStateException("Request not found for user $userId")
+
+                if (accept) {
+                    request.docType = "membership"
+                    request.updated = true
+                } else {
+                    request.deleteFromRealm()
+                }
+            }
+        }
+    }
+
     override suspend fun leaveTeam(teamId: String, userId: String?) {
         if (teamId.isBlank() || userId.isNullOrBlank()) return
         executeTransaction { realm ->
@@ -209,6 +245,18 @@ class TeamRepositoryImpl @Inject constructor(
             memberships.forEach { member ->
                 member?.deleteFromRealm()
             }
+        }
+    }
+
+    override suspend fun removeMember(teamId: String, userId: String) {
+        if (teamId.isBlank() || userId.isBlank()) return
+        executeTransaction { realm ->
+            realm.where(RealmMyTeam::class.java)
+                .equalTo("teamId", teamId)
+                .equalTo("userId", userId)
+                .equalTo("docType", "membership")
+                .findAll()
+                .deleteAllFromRealm()
         }
     }
 

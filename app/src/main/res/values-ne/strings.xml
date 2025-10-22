@@ -17,7 +17,6 @@
     <string name="app_project_name">myPlanet</string>
     <string name="action_settings">सेटिङ्स</string>
     <string name="hint_name">प्रयोगकर्तानाम</string>
-    <string name="hint_password">पासवर्ड</string>
     <string name="btn_back">पछाडी जाउ</string>
     <string name="btn_sign_in">साइन इन गर्नुहोस्</string>
     <string name="btn_sync">सिङ्क</string>
@@ -322,7 +321,6 @@
     <string name="blood_pressure">रक्त चाप (सिस्टोलिक / डायास्टोलिक)</string>
     <string name="orally">मुखबाट</string>
     <string name="save">सुरक्षित गर्नुहोस्</string>
-    <string name="vital_signs">महत्वपूर्ण चिन्हहरू दर्ता</string>
     <string name="task">कार्य (आवश्यक)</string>
     <string name="deadline_required">समयसीमा (आवश्यक)</string>
     <string name="click_here_to_pick_date">मिति चयन गर्न क्लिक गर्नुहोस्</string>
@@ -1016,7 +1014,6 @@
     <string name="force_monthly_sync">मासिक सिङ्क बलवान्त गर्नुहोस्</string>
     <string name="beta_function_for_wifi_switch">वाईफाई स्विचका लागि बीटा कार्य</string>
     <string name="upgrade_application">अनुप्रयोग अपग्रेड गर्नुहोस्</string>
-    <string name="auto_upgrade">स्वतः अपग्रेड</string>
     <string name="always_move_to_maximum_version">सधैं महत्तम संस्करणमा जानुहोस्</string>
     <string name="all_beta_functions">सबै बीटा कार्यहरू</string>
     <string name="auto_sync_device">स्वचालित सिङ्क यन्त्र</string>
@@ -1083,9 +1080,6 @@
     <string name="actions_menu">क्रियाहरूको मेनु</string>
     <string name="icon">%1$s आइकन</string>
     <string name="select_res_course">%1$s चयन गर्नुहोस्</string>
-    <string name="perplexity">perplexity</string>
-    <string name="openai">openai</string>
-    <string name="gemini">gemini</string>
     <string name="kindly_enter_message">कृपया सन्देश प्रविष्ट गर्नुहोस्</string>
     <string name="virtual_assistant_currently_not_available">भर्चुअल सहायक हाललाई उपलब्ध छैन</string>
     <string name="no_courses">कुनै पाठ्यक्रम उपलब्ध छैन</string>

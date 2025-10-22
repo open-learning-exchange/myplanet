@@ -10,23 +10,16 @@ import org.ole.planet.myplanet.model.RealmSubmission
 
 object ExamSubmissionUtils {
     fun saveAnswer(
-        realm: Realm,
-        submission: RealmSubmission?,
-        question: RealmExamQuestion,
-        ans: String,
-        listAns: Map<String, String>?,
-        otherText: String?,
-        otherVisible: Boolean,
-        type: String,
-        index: Int,
-        total: Int
+        realm: Realm, submission: RealmSubmission?, question: RealmExamQuestion,
+        ans: String, listAns: Map<String, String>?, otherText: String?, otherVisible: Boolean,
+        type: String, index: Int, total: Int
     ): Boolean {
         val submissionId = try {
             submission?.id
         } catch (e: IllegalStateException) {
             null
         }
-        
+
         val questionId = question.id
         realm.executeTransactionAsync { r ->
             val realmSubmission = if (submissionId != null) {
@@ -103,28 +96,29 @@ object ExamSubmissionUtils {
     }
 
     private fun populateAnswer(
-        answer: RealmAnswer,
-        question: RealmExamQuestion,
-        ans: String,
-        listAns: Map<String, String>?,
-        otherText: String?,
-        otherVisible: Boolean,
+        answer: RealmAnswer, question: RealmExamQuestion, ans: String, listAns: Map<String, String>?,
+        otherText: String?, otherVisible: Boolean,
     ) {
         when {
-            question.type.equals("select", ignoreCase = true) ->
+            question.type.equals("select", ignoreCase = true) -> {
                 populateSelectAnswer(answer, question, ans, otherText, otherVisible)
-            question.type.equals("selectMultiple", ignoreCase = true) ->
+            }
+            question.type.equals("selectMultiple", ignoreCase = true) -> {
                 populateMultipleSelectAnswer(answer, listAns, otherText, otherVisible)
-            else ->
-                populateTextAnswer(answer, ans)
+            }
+            else -> {
+                val textValue = if (otherVisible && !otherText.isNullOrEmpty()) {
+                    otherText
+                } else {
+                    ans
+                }
+                populateTextAnswer(answer, textValue)
+            }
         }
     }
 
     private fun populateSelectAnswer(
-        answer: RealmAnswer,
-        question: RealmExamQuestion,
-        ans: String,
-        otherText: String?,
+        answer: RealmAnswer, question: RealmExamQuestion, ans: String, otherText: String?,
         otherVisible: Boolean,
     ) {
         if (otherVisible && !otherText.isNullOrEmpty()) {
@@ -144,10 +138,7 @@ object ExamSubmissionUtils {
     }
 
     private fun populateMultipleSelectAnswer(
-        answer: RealmAnswer,
-        listAns: Map<String, String>?,
-        otherText: String?,
-        otherVisible: Boolean,
+        answer: RealmAnswer, listAns: Map<String, String>?, otherText: String?, otherVisible: Boolean
     ) {
         answer.value = ""
         answer.valueChoices = RealmList<String>().apply {

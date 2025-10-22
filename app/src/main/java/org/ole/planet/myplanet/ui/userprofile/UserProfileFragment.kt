@@ -27,7 +27,6 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
-import androidx.core.net.toUri
 import androidx.core.view.children
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -60,7 +59,6 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -76,7 +74,6 @@ class UserProfileFragment : Fragment() {
     lateinit var userProfileDbHandler: UserProfileDbHandler
     private lateinit var mRealm: Realm
     private var model: RealmUserModel? = null
-    private var imageUrl = ""
     private lateinit var pickImageLauncher: ActivityResultLauncher<Intent>
     private var selectedGender: String? = null
     var selectedLevel: String? = null
@@ -97,13 +94,12 @@ class UserProfileFragment : Fragment() {
         super.onCreate(savedInstanceState)
         pickImageLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == RESULT_OK && result.data != null) {
-                val url = result.data?.data
-                imageUrl = url.toString()
-
-                val path = FileUtils.getRealPathFromURI(requireActivity(), url)
-                photoURI = path?.toUri()
+                val uri = result.data?.data ?: return@registerForActivityResult
+                photoURI  = uri
                 startIntent(photoURI)
-                binding.image.setImageURI(url)
+                Glide.with(this)
+                    .load(uri)
+                    .into(binding.image)
             }
         }
 
@@ -336,32 +332,37 @@ class UserProfileFragment : Fragment() {
 
     private fun setupSaveButton(dialog: Dialog, binding: EditProfileDialogBinding) {
         binding.btnSave.setOnClickListener {
-            if (!validateInputs(binding)) return@setOnClickListener
+            if (!validateInputs(binding)) {
+                return@setOnClickListener
+            }
 
             selectedGender = when {
                 binding.rbMale.isChecked -> "male"
                 binding.rbFemale.isChecked -> "female"
                 else -> selectedGender
             }
+
+            val firstName = binding.firstName.text.toString()
+            val lastName = binding.lastName.text.toString()
+            val middleName = binding.middleName.text.toString()
+            val email = binding.email.text.toString()
+            val phoneNumber = binding.phoneNumber.text.toString()
+            val dob = date ?: model?.dob
+
             val realm = databaseService.realmInstance
             val userId = settings.getString("userId", "")
+
             RealmUserModel.updateUserDetails(
-                realm,
-                userId,
-                binding.firstName.text.toString(),
-                binding.lastName.text.toString(),
-                binding.middleName.text.toString(),
-                binding.email.text.toString(),
-                binding.phoneNumber.text.toString(),
-                selectedLevel,
-                selectedLanguage.takeUnless { it == getString(R.string.language) },
-                selectedGender,
-                date?: model?.dob
+                realm, userId, firstName, lastName, middleName, email, phoneNumber, selectedLevel,
+                selectedLanguage.takeUnless { it == getString(R.string.language) }, selectedGender, dob
             ) {
-                updateUIWithUserData(model)
+                mRealm.refresh()
+                val updatedModel = userProfileDbHandler.userModel
+                model = updatedModel
+                updateUIWithUserData(updatedModel)
+                realm.close()
+                dialog.dismiss()
             }
-            realm.close()
-            dialog.dismiss()
         }
     }
 

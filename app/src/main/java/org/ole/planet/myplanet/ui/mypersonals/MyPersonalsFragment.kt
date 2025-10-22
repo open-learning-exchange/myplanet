@@ -1,21 +1,21 @@
-package org.ole.planet.myplanet.ui.myPersonals
+package org.ole.planet.myplanet.ui.mypersonals
 
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
 import javax.inject.Inject
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSelectedMyPersonal
+import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
 import org.ole.planet.myplanet.databinding.FragmentMyPersonalsBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyPersonal
 import org.ole.planet.myplanet.repository.MyPersonalRepository
 import org.ole.planet.myplanet.service.UploadManager
@@ -28,15 +28,12 @@ import org.ole.planet.myplanet.utilities.Utilities
 class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
     private var _binding: FragmentMyPersonalsBinding? = null
     private val binding get() = _binding!!
-    lateinit var mRealm: Realm
     private lateinit var pg: DialogUtils.CustomProgressDialog
     private var addResourceFragment: AddResourceFragment? = null
     private var personalAdapter: AdapterMyPersonal? = null
-    
+
     @Inject
     lateinit var uploadManager: UploadManager
-    @Inject
-    lateinit var databaseService: DatabaseService
     @Inject
     lateinit var myPersonalRepository: MyPersonalRepository
     @Inject
@@ -44,7 +41,6 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentMyPersonalsBinding.inflate(inflater, container, false)
         pg = DialogUtils.getCustomProgressDialog(requireContext())
-        mRealm = databaseService.realmInstance
         binding.rvMypersonal.layoutManager = LinearLayoutManager(activity)
         binding.addMyPersonal.setOnClickListener {
             addResourceFragment = AddResourceFragment()
@@ -65,7 +61,6 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
         val model = userProfileDbHandler.userModel
         personalAdapter = AdapterMyPersonal(requireActivity(), mutableListOf())
         personalAdapter?.setListener(this)
-        personalAdapter?.setRealm(mRealm)
         binding.rvMypersonal.adapter = personalAdapter
         viewLifecycleOwner.lifecycleScope.launch {
             myPersonalRepository.getPersonalResources(model?.id).collectLatest { realmMyPersonals ->
@@ -90,13 +85,6 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
         _binding = null
     }
 
-    override fun onDestroy() {
-        if (::mRealm.isInitialized && !mRealm.isClosed) {
-            mRealm.close()
-        }
-        super.onDestroy()
-    }
-
     override fun onUpload(personal: RealmMyPersonal?) {
         pg.setText("Please wait......")
         pg.show()
@@ -112,5 +100,49 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
 
     override fun onAddedResource() {
         // List updates are handled via repository flow
+    }
+
+    override fun onEditPersonal(personal: RealmMyPersonal) {
+        val alertMyPersonalBinding = AlertMyPersonalBinding.inflate(LayoutInflater.from(requireContext()))
+        alertMyPersonalBinding.etDescription.setText(personal.description)
+        alertMyPersonalBinding.etTitle.setText(personal.title)
+        AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
+            .setTitle(R.string.edit_personal)
+            .setIcon(R.drawable.ic_edit)
+            .setView(alertMyPersonalBinding.root)
+            .setPositiveButton(R.string.button_submit) { _, _ ->
+                val title = alertMyPersonalBinding.etDescription.text.toString().trim { it <= ' ' }
+                val desc = alertMyPersonalBinding.etTitle.text.toString().trim { it <= ' ' }
+                if (title.isEmpty()) {
+                    Utilities.toast(requireContext(), getString(R.string.please_enter_title))
+                    return@setPositiveButton
+                }
+                val id = personal.id ?: personal._id
+                if (id != null) {
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        myPersonalRepository.updatePersonalResource(id) { realmPersonal ->
+                            realmPersonal.description = desc
+                            realmPersonal.title = title
+                        }
+                    }
+                }
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    override fun onDeletePersonal(personal: RealmMyPersonal) {
+        AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
+            .setMessage(R.string.delete_record)
+            .setPositiveButton(R.string.ok) { _, _ ->
+                val id = personal.id ?: personal._id
+                if (id != null) {
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        myPersonalRepository.deletePersonalResource(id)
+                    }
+                }
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
     }
 }

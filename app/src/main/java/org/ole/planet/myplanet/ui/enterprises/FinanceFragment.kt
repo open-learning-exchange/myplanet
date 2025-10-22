@@ -10,7 +10,6 @@ import android.widget.DatePicker
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import io.realm.RealmResults
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -33,7 +32,7 @@ class FinanceFragment : BaseTeamFragment() {
     private lateinit var addTransactionBinding: AddTransactionBinding
     private var adapterFinance: AdapterFinance? = null
     var date: Calendar? = null
-    var list: RealmResults<RealmMyTeam>? = null
+    private var transactions: List<RealmMyTeam> = emptyList()
     private var isAsc = false
     private var transactionsJob: Job? = null
     private var currentStartDate: Long? = null
@@ -88,7 +87,8 @@ class FinanceFragment : BaseTeamFragment() {
             currentStartDate = null
             currentEndDate = null
             isAsc = false
-            observeTransactions(sortAscending = isAsc)
+            binding.imgDate.rotation = 0f
+            observeTransactions(sortAscending = isAsc, startDate = null, endDate = null)
         }
         return binding.root
     }
@@ -216,10 +216,10 @@ class FinanceFragment : BaseTeamFragment() {
         llImage?.removeAllViews()
     }
 
-    private fun calculateTotal(list: List<RealmMyTeam>?) {
+    private fun calculateTotal(list: List<RealmMyTeam>) {
         var debit = 0
         var credit = 0
-        for (team in list ?: emptyList()) {
+        for (team in list) {
             if ("credit".equals(team.type?.lowercase(Locale.getDefault()), ignoreCase = true)) {
                 credit += team.amount
             } else {
@@ -281,18 +281,21 @@ class FinanceFragment : BaseTeamFragment() {
         return addTransactionBinding.root
     }
 
-    private fun updatedFinanceList(results: RealmResults<RealmMyTeam>) {
+    private fun updatedFinanceList(results: List<RealmMyTeam>) {
         if (view == null) return
         viewLifecycleOwner.lifecycleScope.launch {
-            if (!results.isEmpty()) {
+            if (results.isNotEmpty()) {
                 if (adapterFinance == null) {
                     adapterFinance = AdapterFinance(requireActivity(), results)
                     binding.rvFinance.layoutManager = LinearLayoutManager(activity)
-                    binding.rvFinance.adapter = adapterFinance
+                } else {
+                    adapterFinance?.updateData(results)
                 }
-                adapterFinance?.updateData(results)
+                binding.rvFinance.adapter = adapterFinance
                 adapterFinance?.notifyDataSetChanged()
                 calculateTotal(results)
+                binding.dataLayout.visibility = View.VISIBLE
+                binding.tvNodata.visibility = View.GONE
             } else if (binding.tvFromDateCalendar.text.isNullOrEmpty()
                 && binding.etToDate.text.isNullOrEmpty()) {
                 binding.rvFinance.adapter = null
@@ -310,7 +313,7 @@ class FinanceFragment : BaseTeamFragment() {
     override fun onDestroyView() {
         transactionsJob?.cancel()
         transactionsJob = null
-        list = null
+        transactions = emptyList()
         _binding = null
         super.onDestroyView()
     }
@@ -328,9 +331,9 @@ class FinanceFragment : BaseTeamFragment() {
                 endDate = endDate,
                 sortAscending = sortAscending,
             ).collectLatest { results ->
-                list = results
+                transactions = results
                 updatedFinanceList(results)
-                showNoData(binding.tvNodata, adapterFinance?.itemCount, "finances")
+                showNoData(binding.tvNodata, transactions.size, "finances")
             }
         }
     }

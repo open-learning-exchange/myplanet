@@ -10,10 +10,14 @@ import android.widget.ArrayAdapter
 import android.widget.ListView
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
+import androidx.core.view.isVisible
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.GridLayoutManager
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.TeamPageListener
@@ -38,10 +42,16 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdat
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         showLibraryList()
-        if (!isMember()) {
-            binding.fabAddResource.visibility = View.GONE
-        }
+        binding.fabAddResource.isVisible = false
         binding.fabAddResource.setOnClickListener { showResourceListDialog() }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                isMemberFlow.collectLatest { isMember ->
+                    binding.fabAddResource.isVisible = isMember
+                }
+            }
+        }
     }
 
     override fun onNewsItemClick(news: RealmNews?) {}

@@ -23,6 +23,14 @@ class LibraryRepositoryImpl @Inject constructor(
         return findByField(RealmMyLibrary::class.java, "_id", resourceId)
     }
 
+    override suspend fun getLibraryItemsByIds(ids: Collection<String>): List<RealmMyLibrary> {
+        if (ids.isEmpty()) return emptyList()
+
+        return queryList(RealmMyLibrary::class.java) {
+            this.`in`("_id", ids.toTypedArray())
+        }
+    }
+
     override suspend fun getLibraryItemsByLocalAddress(localAddress: String): List<RealmMyLibrary> {
         return queryList(RealmMyLibrary::class.java) {
             equalTo("resourceLocalAddress", localAddress)
@@ -37,6 +45,16 @@ class LibraryRepositoryImpl @Inject constructor(
         }
         return filterLibrariesNeedingUpdate(results)
             .filter { it.userId?.contains(userId) == true }
+    }
+
+    override suspend fun countLibrariesNeedingUpdate(userId: String?): Int {
+        if (userId == null) return 0
+
+        val results = queryList(RealmMyLibrary::class.java) {
+            equalTo("isPrivate", false)
+        }
+        return filterLibrariesNeedingUpdate(results)
+            .count { it.userId?.contains(userId) == true }
     }
 
     override suspend fun saveLibraryItem(item: RealmMyLibrary) {

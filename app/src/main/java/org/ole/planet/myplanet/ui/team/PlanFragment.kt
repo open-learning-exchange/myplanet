@@ -37,10 +37,25 @@ class PlanFragment : BaseTeamFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        updateUIWithTeamData(team)
 
-        val isMyTeam = RealmMyTeam.isTeamLeader(team?._id, user?.id, mRealm)
-        isEnterprise = team?.type?.equals("enterprise", ignoreCase = true) == true
+        viewLifecycleOwner.lifecycleScope.launch {
+            teamFlow.collect { updatedTeam ->
+                if (updatedTeam != null) {
+                    updateUIWithTeamData(updatedTeam)
+                    updateButtonVisibility(updatedTeam)
+                }
+            }
+        }
+        
+        if (team != null) {
+            updateUIWithTeamData(team)
+            updateButtonVisibility(team!!)
+        }
+    }
+
+    private fun updateButtonVisibility(currentTeam: RealmMyTeam) {
+        val isMyTeam = RealmMyTeam.isTeamLeader(currentTeam._id, user?.id, mRealm)
+        isEnterprise = currentTeam.type?.equals("enterprise", ignoreCase = true) == true
 
         binding.btnAddPlan.text = if (isEnterprise) {
             getString(R.string.edit_mission_and_services)
@@ -187,7 +202,7 @@ class PlanFragment : BaseTeamFragment() {
 
     private fun updateUIWithTeamData(updatedTeam: RealmMyTeam?) {
         if (updatedTeam == null) return
-        isEnterprise=  team?.type?.equals("enterprise", ignoreCase = true) == true
+        isEnterprise = updatedTeam.type?.equals("enterprise", ignoreCase = true) == true
 
         val missionText = formatTeamDetail(updatedTeam.description,
             getString(if (isEnterprise) R.string.entMission else R.string.what_is_your_team_s_plan)

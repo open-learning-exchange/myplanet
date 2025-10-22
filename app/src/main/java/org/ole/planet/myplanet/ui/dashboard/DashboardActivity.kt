@@ -44,6 +44,7 @@ import io.realm.Realm
 import io.realm.RealmChangeListener
 import io.realm.RealmObject
 import io.realm.RealmResults
+import javax.inject.Inject
 import kotlin.math.ceil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -85,8 +86,7 @@ import org.ole.planet.myplanet.ui.team.TeamFragment
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.JoinRequestsPage
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.TasksPage
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
-import org.ole.planet.myplanet.utilities.Constants
-import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
+import org.ole.planet.myplanet.utilities.Constants.isBetaWifiFeatureEnabled
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils
@@ -113,6 +113,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private var dl: DrawerLayout? = null
     private val realmListeners = mutableListOf<RealmListener>()
     private val dashboardViewModel: DashboardViewModel by viewModels()
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
     private lateinit var challengeHelper: ChallengeHelper
     private lateinit var notificationManager: NotificationUtils.NotificationManager
     private var notificationsShownThisSession = false
@@ -199,7 +201,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             return true
         }
         navigationView.setOnItemSelectedListener(this)
-        navigationView.visibility = if (UserProfileDbHandler(this).userModel?.isShowTopbar == true) {
+        val isTopBarVisible = userProfileDbHandler.userModel?.isShowTopbar == true
+        navigationView.visibility = if (isTopBarVisible) {
             View.VISIBLE
         } else {
             View.GONE
@@ -877,11 +880,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun hideWifi() {
         val navMenu = binding.appBarBell.bellToolbar.menu
         navMenu.findItem(R.id.menu_goOnline)
-            .setVisible((showBetaFeature(Constants.KEY_SYNC, this)))
+            .setVisible(isBetaWifiFeatureEnabled(this))
     }
 
     private fun checkUser() {
-        user = UserProfileDbHandler(this).userModel
+        user = userProfileDbHandler.userModel
         if (user == null) {
             toast(this, getString(R.string.session_expired))
             logout()
@@ -1211,7 +1214,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_bell_dashboard, menu)
-        menu.findItem(R.id.menu_goOnline).isVisible = showBetaFeature(Constants.KEY_SYNC, this)
+        menu.findItem(R.id.menu_goOnline).isVisible = isBetaWifiFeatureEnabled(this)
         return super.onCreateOptionsMenu(menu)
     }
 

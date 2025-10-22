@@ -13,4 +13,8 @@ interface MyPersonalRepository {
     )
 
     fun getPersonalResources(userId: String?): Flow<List<RealmMyPersonal>>
+
+    suspend fun deletePersonalResource(id: String)
+
+    suspend fun updatePersonalResource(id: String, updater: (RealmMyPersonal) -> Unit)
 }

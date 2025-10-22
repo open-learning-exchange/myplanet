@@ -17,7 +17,6 @@
     <string name="app_project_name">myPlanet</string>
     <string name="action_settings">configuración</string>
     <string name="hint_name">Nombre</string>
-    <string name="hint_password">Contraseña</string>
     <string name="btn_back">Volver</string>
     <string name="btn_sign_in">Iniciar sesión</string>
     <string name="btn_sync">Sincronizar</string>
@@ -322,7 +321,6 @@
     <string name="blood_pressure">Presión arterial</string>
     <string name="orally">Oralmente</string>
     <string name="save">Guardar</string>
-    <string name="vital_signs">Registro de signos vitales</string>
     <string name="task">Tarea</string>
     <string name="deadline_required">Fecha límite (obligatorio)</string>
     <string name="click_here_to_pick_date">Haz clic aquí para seleccionar la fecha</string>
@@ -1016,7 +1014,6 @@
     <string name="force_monthly_sync">Forzar sincronización mensual</string>
     <string name="beta_function_for_wifi_switch">Función beta para interruptor de WiFi</string>
     <string name="upgrade_application">Actualizar aplicación</string>
-    <string name="auto_upgrade">Actualización automática</string>
     <string name="always_move_to_maximum_version">¿Mover siempre a la versión máxima?</string>
     <string name="all_beta_functions">Todas las funciones beta</string>
     <string name="auto_sync_device">Sincronizar automáticamente el dispositivo</string>
@@ -1083,9 +1080,6 @@
     <string name="actions_menu">menú de acciones</string>
     <string name="icon">icono de %1$s</string>
     <string name="select_res_course">seleccionar %1$s</string>
-    <string name="perplexity">perplexity</string>
-    <string name="openai">openai</string>
-    <string name="gemini">gemini</string>
     <string name="kindly_enter_message">Por favor, introduzca el mensaje</string>
     <string name="virtual_assistant_currently_not_available">asistente virtual actualmente no disponible</string>
     <string name="no_courses">no hay cursos disponibles</string>

@@ -17,7 +17,6 @@
     <string name="app_project_name">myPlanet</string>
     <string name="action_settings">settings</string>
     <string name="hint_name">username</string>
-    <string name="hint_password">Password</string>
     <string name="btn_back">Back</string>
     <string name="btn_sign_in">Sign In</string>
     <string name="btn_sync">Sync</string>
@@ -322,7 +321,6 @@
     <string name="blood_pressure">Blood Pressure (Systolic/Diastolic)</string>
     <string name="orally">Orally</string>
     <string name="save">Save</string>
-    <string name="vital_signs">Vital Signs Record</string>
     <string name="task">Task (required)</string>
     <string name="deadline_required">Deadline (required)</string>
     <string name="click_here_to_pick_date">Click here to pick date</string>
@@ -1016,7 +1014,6 @@
     <string name="force_monthly_sync">force monthly sync</string>
     <string name="beta_function_for_wifi_switch">beta function for wifi switch</string>
     <string name="upgrade_application">upgrade application</string>
-    <string name="auto_upgrade">auto upgrade</string>
     <string name="always_move_to_maximum_version">Always move to maximum version</string>
     <string name="all_beta_functions">all beta functions</string>
     <string name="auto_sync_device">auto sync device</string>
@@ -1083,9 +1080,6 @@
     <string name="actions_menu">actions menu</string>
     <string name="icon">%1$s icon</string>
     <string name="select_res_course">select %1$s</string>
-    <string name="perplexity">perplexity</string>
-    <string name="openai">openai</string>
-    <string name="gemini">gemini</string>
     <string name="kindly_enter_message">Kindly enter message</string>
     <string name="virtual_assistant_currently_not_available">virtual assistant currently not available</string>
     <string name="no_courses">no courses available</string>

@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.repository
 
 import android.content.Context
 import com.google.gson.JsonObject
-import io.realm.RealmResults
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
@@ -20,6 +19,7 @@ interface TeamRepository {
     suspend fun getRecentVisitCounts(teamIds: Collection<String>): Map<String, Long>
     suspend fun requestToJoin(teamId: String, userId: String?, userPlanetCode: String?, teamType: String?)
     suspend fun leaveTeam(teamId: String, userId: String?)
+    suspend fun removeMember(teamId: String, userId: String)
     suspend fun addResourceLinks(teamId: String, resources: List<RealmMyLibrary>, user: RealmUserModel?)
     suspend fun removeResourceLink(teamId: String, resourceId: String)
     suspend fun deleteTask(taskId: String)
@@ -68,7 +68,7 @@ interface TeamRepository {
         startDate: Long? = null,
         endDate: Long? = null,
         sortAscending: Boolean = false,
-    ): Flow<RealmResults<RealmMyTeam>>
+    ): Flow<List<RealmMyTeam>>
     suspend fun createTransaction(
         teamId: String,
         type: String,
@@ -78,4 +78,5 @@ interface TeamRepository {
         parentCode: String?,
         planetCode: String?,
     ): Result<Unit>
+    suspend fun respondToMemberRequest(teamId: String, userId: String, accept: Boolean): Result<Unit>
 }
