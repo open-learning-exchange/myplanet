@@ -8,15 +8,18 @@ import android.widget.ArrayAdapter
 import android.widget.ListView
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
+import java.util.ArrayList
+import java.util.HashMap
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentMyMeetupDetailBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.getHashMap
-import org.ole.planet.myplanet.model.RealmMeetup.Companion.getJoinedUserIds
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.MeetupRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
@@ -27,9 +30,9 @@ class MyMeetupDetailFragment : Fragment(), View.OnClickListener {
     private val binding get() = _binding!!
     private var meetups: RealmMeetup? = null
     @Inject
-    lateinit var databaseService: DatabaseService
-    @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
+    @Inject
+    lateinit var meetupRepository: MeetupRepository
     private var meetUpId: String? = null
     var user: RealmUserModel? = null
     private var listUsers: ListView? = null
@@ -50,45 +53,38 @@ class MyMeetupDetailFragment : Fragment(), View.OnClickListener {
         binding.btnInvite.visibility = if (showBetaFeature(Constants.KEY_MEETUPS, requireContext())) View.VISIBLE else View.GONE
         binding.btnLeave.visibility = if (showBetaFeature(Constants.KEY_MEETUPS, requireContext())) View.VISIBLE else View.GONE
         binding.btnLeave.setOnClickListener(this)
-        databaseService.withRealm { realm ->
-            user = userProfileDbHandler.userModel?.let { realm.copyFromRealm(it) }
-        }
+        user = userProfileDbHandler.getUserModelCopy()
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        databaseService.withRealm { realm ->
-            meetups = realm.where(RealmMeetup::class.java)
-                .equalTo("meetupId", meetUpId)
-                .findFirst()
-                ?.let { realm.copyFromRealm(it) }
-        }
-        setUpData()
-        setUserList()
-    }
-
-    private fun setUserList() {
-        databaseService.withRealm { realm ->
-            val ids = getJoinedUserIds(realm)
-            val users = realm.where(RealmUserModel::class.java).`in`("id", ids).findAll()
-            val userCopies = realm.copyFromRealm(users)
-            listUsers?.adapter = ArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, userCopies)
-            tvJoined?.text = String.format(
-                getString(R.string.joined_members_colon) + " %s",
-                if (userCopies.size == 0) {
-                    """(0) ${getString(R.string.no_members_has_joined_this_meet_up)}"""
-                } else {
-                    userCopies.size
-                }
-            )
+        viewLifecycleOwner.lifecycleScope.launch {
+            meetups = meetUpId?.takeIf { it.isNotBlank() }?.let { meetupRepository.getMeetupById(it) }
+            meetups?.let { setUpData(it) }
+            updateAttendanceButton()
+            val members = meetUpId?.takeIf { it.isNotBlank() }?.let { meetupRepository.getJoinedMembers(it) }.orEmpty()
+            setUserList(members)
         }
     }
 
-    private fun setUpData() {
-        binding.meetupTitle.text = meetups?.title
-        val map: HashMap<String, String>? = meetups?.let { getHashMap(it) }
-        val keys = ArrayList(map?.keys ?: emptyList())
+    private fun setUserList(users: List<RealmUserModel>) {
+        listUsers?.adapter = ArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, users)
+        val joinedText = if (users.isEmpty()) {
+            """(0) ${getString(R.string.no_members_has_joined_this_meet_up)}"""
+        } else {
+            users.size.toString()
+        }
+        tvJoined?.text = String.format(
+            getString(R.string.joined_members_colon) + " %s",
+            joinedText
+        )
+    }
+
+    private fun setUpData(meetup: RealmMeetup) {
+        binding.meetupTitle.text = meetup.title
+        val map: HashMap<String, String> = getHashMap(meetup)
+        val keys = ArrayList(map.keys)
         listDesc?.adapter = object : ArrayAdapter<String?>(requireActivity(), R.layout.row_description, keys) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
                 var convertedView = convertView
@@ -96,7 +92,7 @@ class MyMeetupDetailFragment : Fragment(), View.OnClickListener {
                     convertedView = LayoutInflater.from(activity).inflate(R.layout.row_description, parent, false)
                 }
                 (convertedView?.findViewById<View>(R.id.title) as TextView).text = context.getString(R.string.message_placeholder, "${getItem(position)} : ")
-                (convertedView.findViewById<View>(R.id.description) as TextView).text = context.getString(R.string.message_placeholder, map?.get(getItem(position)))
+                (convertedView.findViewById<View>(R.id.description) as TextView).text = context.getString(R.string.message_placeholder, map[getItem(position)])
                 return convertedView
             }
         }
@@ -109,21 +105,19 @@ class MyMeetupDetailFragment : Fragment(), View.OnClickListener {
     }
 
     private fun leaveJoinMeetUp() {
-        databaseService.withRealm { realm ->
-            realm.executeTransaction { r ->
-                val meetup = r.where(RealmMeetup::class.java)
-                    .equalTo("meetupId", meetUpId)
-                    .findFirst()
-                if (meetup?.userId.isNullOrEmpty()) {
-                    meetup?.userId = user?.id
-                    binding.btnLeave.setText(R.string.leave)
-                } else {
-                    meetup?.userId = ""
-                    binding.btnLeave.setText(R.string.join)
-                }
-                meetups = meetup?.let { r.copyFromRealm(it) }
-            }
+        val meetupId = meetUpId ?: return
+        viewLifecycleOwner.lifecycleScope.launch {
+            meetups = meetupRepository.toggleAttendance(meetupId, user?.id)
+            updateAttendanceButton()
+            val members = meetupRepository.getJoinedMembers(meetupId)
+            setUserList(members)
         }
+    }
+
+    private fun updateAttendanceButton() {
+        val isJoined = !meetups?.userId.isNullOrEmpty()
+        binding.btnLeave.setText(if (isJoined) R.string.leave else R.string.join)
+        binding.btnLeave.isEnabled = user?.id?.isNotBlank() == true
     }
 
     override fun onDestroyView() {

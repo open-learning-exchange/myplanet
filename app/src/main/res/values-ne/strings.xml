@@ -1080,9 +1080,6 @@
     <string name="actions_menu">क्रियाहरूको मेनु</string>
     <string name="icon">%1$s आइकन</string>
     <string name="select_res_course">%1$s चयन गर्नुहोस्</string>
-    <string name="perplexity">perplexity</string>
-    <string name="openai">openai</string>
-    <string name="gemini">gemini</string>
     <string name="kindly_enter_message">कृपया सन्देश प्रविष्ट गर्नुहोस्</string>
     <string name="virtual_assistant_currently_not_available">भर्चुअल सहायक हाललाई उपलब्ध छैन</string>
     <string name="no_courses">कुनै पाठ्यक्रम उपलब्ध छैन</string>
@@ -1275,6 +1272,8 @@
     <string name="adopt_survey">सर्वेक्षण अपनाउनुहोस्</string>
     <string name="survey_adopted_successfully">सर्वेक्षण सफलतापूर्वक अपनाइयो!</string>
     <string name="beta_fast_sync">बेटा फास्ट सिंक</string>
+    <string name="beta_improved_sync">beta improved sync</string>
+    <string name="beta_improved_sync_summary">Run the experimental sync manager during manual and auto syncs.</string>
     <string name="user_verification_in_progress">प्रयोगकर्ता प्रमाणीकरण प्रक्रिया भइरहेको छ। कृपया डेटा प्रशोधन भइरहेसम्म प्रतीक्षा गर्नुहोस्।</string>
     <string name="go_to_mylibrary">मेरो पुस्तकालयमा जानुहोस्</string>
     <string name="choose_an_option">एउटा विकल्प छान्नुहोस्</string>

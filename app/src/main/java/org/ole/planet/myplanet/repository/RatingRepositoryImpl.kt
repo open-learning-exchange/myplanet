@@ -7,6 +7,7 @@ import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmUserModel
+import kotlin.math.roundToInt
 
 class RatingRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
@@ -105,7 +106,7 @@ class RatingRepositoryImpl @Inject constructor(
         ratingObject.apply {
             isUpdated = true
             this.comment = comment
-            rate = rating.toInt()
+            rate = roundToSupportedRating(rating)
             time = Date().time
             userId = resolvedUserId
             createdOn = resolvedUser.parentCode
@@ -115,6 +116,15 @@ class RatingRepositoryImpl @Inject constructor(
             this.type = type
             item = itemId
             this.title = title
+        }
+    }
+
+    companion object {
+        private const val MIN_RATING = 1
+        private const val MAX_RATING = 5
+
+        internal fun roundToSupportedRating(rating: Float): Int {
+            return rating.roundToInt().coerceIn(MIN_RATING, MAX_RATING)
         }
     }
 }

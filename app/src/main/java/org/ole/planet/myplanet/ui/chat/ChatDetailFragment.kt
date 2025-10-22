@@ -550,14 +550,23 @@ class ChatDetailFragment : Fragment() {
         }
 
     private fun continueConversationRealm(id: String, query: String, chatResponse: String) {
+        val realmChatId = when {
+            id.isNotBlank() -> id
+            _id.isNotBlank() -> _id
+            currentID.isNotBlank() -> currentID
+            else -> return
+        }
+
+        if (query.isBlank() && chatResponse.isBlank()) return
+
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 databaseService.executeTransactionAsync { realm ->
-                    addConversationToChatHistory(realm, id, query, chatResponse, _rev)
+                    addConversationToChatHistory(realm, realmChatId, query, chatResponse, _rev)
                 }
                 withContext(Dispatchers.Main) {
-                    if (isAdded && ::mAdapter.isInitialized) {
-                        mAdapter.notifyDataSetChanged()
+                    if (isAdded && activity is DashboardActivity) {
+                        (activity as DashboardActivity).refreshChatHistoryList()
                     }
                 }
             } catch (e: Exception) {

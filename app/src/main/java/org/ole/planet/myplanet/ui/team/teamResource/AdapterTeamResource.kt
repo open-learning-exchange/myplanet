@@ -26,26 +26,31 @@ class AdapterTeamResource(
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderTeamResource {
-        val rowTeamResourceBinding = RowTeamResourceBinding.inflate(LayoutInflater.from(context), parent, false)
-        return ViewHolderTeamResource(rowTeamResourceBinding)
+        val binding = RowTeamResourceBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        return ViewHolderTeamResource(binding)
     }
 
     override fun onBindViewHolder(holder: ViewHolderTeamResource, position: Int) {
-        val resource = list[position]
+        val adapterPosition = holder.bindingAdapterPosition
+        if (adapterPosition == RecyclerView.NO_POSITION) return
 
-        holder.rowTeamResourceBinding.tvTitle.text = resource.title
-        holder.rowTeamResourceBinding.tvDescription.text = resource.description
+        val resource = list[adapterPosition]
 
-        holder.itemView.setOnClickListener {
-            listener?.openLibraryDetailFragment(resource)
-        }
+        holder.binding.apply {
+            tvTitle.text = resource.title
+            tvDescription.text = resource.description
 
-        holder.rowTeamResourceBinding.ivRemove.apply {
-            visibility = if (canRemoveResources) View.VISIBLE else View.GONE
-            setOnClickListener {
-                val adapterPosition = holder.bindingAdapterPosition
-                if (adapterPosition != RecyclerView.NO_POSITION) {
-                    onRemoveResource(resource, adapterPosition)
+            root.setOnClickListener {
+                listener?.openLibraryDetailFragment(resource)
+            }
+
+            ivRemove.apply {
+                visibility = if (canRemoveResources) View.VISIBLE else View.GONE
+                setOnClickListener {
+                    val currentPosition = holder.bindingAdapterPosition
+                    if (currentPosition != RecyclerView.NO_POSITION) {
+                        onRemoveResource(list[currentPosition], currentPosition)
+                    }
                 }
             }
         }
@@ -62,5 +67,5 @@ class AdapterTeamResource(
         updateListener.onResourceListUpdated()
     }
 
-    class ViewHolderTeamResource(val rowTeamResourceBinding: RowTeamResourceBinding) : RecyclerView.ViewHolder(rowTeamResourceBinding.root)
+    class ViewHolderTeamResource(val binding: RowTeamResourceBinding) : RecyclerView.ViewHolder(binding.root)
 }
