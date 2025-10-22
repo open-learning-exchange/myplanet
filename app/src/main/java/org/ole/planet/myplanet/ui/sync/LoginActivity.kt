@@ -146,7 +146,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         }
 
         getTeamMembers()
-        loadSavedProfileImage()
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -585,6 +584,11 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             }
             prefData.setSavedUsers(existingUsers)
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        binding.userProfile.setImageResource(R.drawable.profile)
     }
 
     override fun onDestroy() {

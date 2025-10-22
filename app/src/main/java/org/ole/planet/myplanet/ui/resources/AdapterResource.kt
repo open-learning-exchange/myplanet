@@ -228,9 +228,17 @@ class AdapterResource(
                     tagRepository.getTagsForResource(resourceId)
                 }
                 tagCache[resourceId] = tags
-                val adapterPosition = holder.bindingAdapterPosition
-                if (adapterPosition != RecyclerView.NO_POSITION) {
-                    notifyItemChanged(adapterPosition, TAGS_PAYLOAD)
+
+                val flexboxLayout = holder.rowLibraryBinding.flexboxDrawable
+                holder.itemView.post {
+                    val adapterPosition = holder.bindingAdapterPosition
+                    if (adapterPosition == RecyclerView.NO_POSITION) {
+                        return@post
+                    }
+                    val currentResourceId = libraryList.getOrNull(adapterPosition)?.id
+                    if (currentResourceId == resourceId) {
+                        renderTagCloud(flexboxLayout, tags)
+                    }
                 }
             } finally {
                 tagRequestsInProgress.remove(resourceId)
