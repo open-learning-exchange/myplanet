@@ -50,6 +50,10 @@ open class RealmAnswer : RealmObject() {
             }
             `object`.addProperty("mistakes", ans.mistakes)
             `object`.addProperty("passed", ans.isPassed)
+
+            if (!TextUtils.isEmpty(ans.questionId)) {
+                `object`.addProperty("questionId", ans.questionId)
+            }
             return `object`
         }
     }
