@@ -100,6 +100,31 @@ open class RealmSubmission : RealmObject() {
                     userId
                 }
 
+                if (submission.has("answers")) {
+                    val answersArray = submission.get("answers").asJsonArray
+                    sub?.answers = RealmList<RealmAnswer>()
+
+                    for (i in 0 until answersArray.size()) {
+                        val answerJson = answersArray[i].asJsonObject
+                        val realmAnswer = mRealm.createObject(RealmAnswer::class.java, UUID.randomUUID().toString())
+
+                        realmAnswer.value = JsonUtils.getString("value", answerJson)
+                        realmAnswer.mistakes = JsonUtils.getInt("mistakes", answerJson)
+                        realmAnswer.isPassed = JsonUtils.getBoolean("passed", answerJson)
+                        realmAnswer.submissionId = sub?._id
+                        realmAnswer.examId = sub?.parentId
+
+                        val examIdPart = sub?.parentId?.split("@")?.get(0) ?: sub?.parentId
+                        realmAnswer.questionId = if (answerJson.has("questionId")) {
+                            JsonUtils.getString("questionId", answerJson)
+                        } else {
+                            "$examIdPart-$i"
+                        }
+
+                        sub?.answers?.add(realmAnswer)
+                    }
+                }
+
                 if (transactionStarted) {
                     mRealm.commitTransaction()
                 }
