@@ -588,14 +588,15 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
             try {
                 dashboardViewModel.updateResourceNotification(userId)
-                databaseService.realmInstance.use { backgroundRealm ->
-                    val createdNotifications = createNotifications(backgroundRealm, userId)
-                    newNotifications.addAll(createdNotifications)
-
-                    unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
+                val createdNotifications = databaseService.withRealmAsync { backgroundRealm ->
+                    createNotifications(backgroundRealm, userId)
                 }
+
+                newNotifications.addAll(createdNotifications)
+                unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
             } catch (e: Exception) {
                 e.printStackTrace()
+                throw e
             }
 
             withContext(Dispatchers.Main) {
