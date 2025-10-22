@@ -147,11 +147,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
 
         getTeamMembers()
 
-        val fromLogout = intent.getBooleanExtra("fromLogout", false)
-        if (!fromLogout) {
-            loadSavedProfileImage()
-        }
-
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 if (System.currentTimeMillis() - backPressedTime < backPressedInterval) {
@@ -589,6 +584,11 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             }
             prefData.setSavedUsers(existingUsers)
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        binding.userProfile.setImageResource(R.drawable.profile)
     }
 
     override fun onDestroy() {
