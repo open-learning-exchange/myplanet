@@ -7,7 +7,6 @@ import dagger.hilt.android.EntryPointAccessors
 import java.util.Calendar
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.di.WorkerDependenciesEntryPoint
-import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.utilities.NotificationUtils.create
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
@@ -21,23 +20,29 @@ class TaskNotificationWorker(private val context: Context, workerParams: WorkerP
             context.applicationContext,
             WorkerDependenciesEntryPoint::class.java
         )
-        val databaseService = entryPoint.databaseService()
         val userProfileDbHandler = entryPoint.userProfileDbHandler()
+        val teamRepository = entryPoint.teamRepository()
 
         val user = userProfileDbHandler.userModel
-        if (user != null) {
-            databaseService.withRealm { realm ->
-                val tasks: List<RealmTeamTask> = realm.where(RealmTeamTask::class.java)
-                    .equalTo("completed", false)
-                    .equalTo("assignee", user.id)
-                    .equalTo("isNotified", false)
-                    .between("deadline", current, tomorrow.timeInMillis)
-                    .findAll()
-                realm.executeTransaction {
-                    for (task in tasks) {
-                        create(context, R.drawable.ole_logo, task.title, "Task expires on " + formatDate(task.deadline, ""))
-                        task.isNotified = true
-                    }
+        val userId = user?.id
+        if (!userId.isNullOrBlank()) {
+            val tasks = runCatching {
+                teamRepository.getPendingTasksForUser(userId, current, tomorrow.timeInMillis)
+            }.getOrElse { emptyList() }
+
+            if (tasks.isNotEmpty()) {
+                tasks.forEach { task ->
+                    create(
+                        context,
+                        R.drawable.ole_logo,
+                        task.title,
+                        "Task expires on " + formatDate(task.deadline, ""),
+                    )
+                }
+
+                val taskIds = tasks.mapNotNull { it.id }.filter { it.isNotBlank() }
+                if (taskIds.isNotEmpty()) {
+                    runCatching { teamRepository.markTasksNotified(taskIds) }
                 }
             }
         }
