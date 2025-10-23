@@ -245,47 +245,68 @@ class AdapterSurvey(
             val examId = exam.id
             val userId = userModel?.id
 
-            mRealm.executeTransactionAsync({ realm ->
-                val existingAdoption = realm.where(RealmSubmission::class.java)
-                    .equalTo("userId", userId)
-                    .equalTo("parentId", examId)
-                    .equalTo("status", "")
-                    .findFirst()
+            if (mRealm.isClosed) {
+                Snackbar.make(binding.root, context.getString(R.string.failed_to_adopt_survey), Snackbar.LENGTH_LONG).show()
+                return
+            }
 
-                if (existingAdoption == null) {
-                    realm.createObject(RealmSubmission::class.java, adoptionId).apply {
-                        parentId = examId
-                        parent = parentJsonString
-                        this.userId = userId
-                        user = userJsonString
-                        type = "survey"
-                        status = ""
-                        uploaded = false
-                        source = planetCode ?: ""
-                        parentCode = sParentCode ?: ""
-                        startTime = System.currentTimeMillis()
-                        lastUpdateTime = System.currentTimeMillis()
-                        isUpdated = true
+            try {
+                mRealm.executeTransactionAsync({ realm ->
+                    val existingAdoption = if (isTeam && teamId != null) {
+                        realm.where(RealmSubmission::class.java)
+                            .equalTo("userId", userId)
+                            .equalTo("parentId", examId)
+                            .equalTo("status", "")
+                            .equalTo("membershipDoc.teamId", teamId)
+                            .findFirst()
+                    } else {
+                        realm.where(RealmSubmission::class.java)
+                            .equalTo("userId", userId)
+                            .equalTo("parentId", examId)
+                            .equalTo("status", "")
+                            .isNull("membershipDoc")
+                            .findFirst()
+                    }
 
-                        if (isTeam && teamId != null) {
-                            membershipDoc = realm.createObject(RealmMembershipDoc::class.java).apply {
-                                this.teamId = teamId
+                    if (existingAdoption == null) {
+                        realm.createObject(RealmSubmission::class.java, adoptionId).apply {
+                            parentId = examId
+                            parent = parentJsonString
+                            this.userId = userId
+                            user = userJsonString
+                            type = "survey"
+                            status = ""
+                            uploaded = false
+                            source = planetCode ?: ""
+                            parentCode = sParentCode ?: ""
+                            startTime = System.currentTimeMillis()
+                            lastUpdateTime = System.currentTimeMillis()
+                            isUpdated = true
+
+                            if (isTeam && teamId != null) {
+                                membershipDoc = realm.createObject(RealmMembershipDoc::class.java).apply {
+                                    this.teamId = teamId
+                                }
                             }
                         }
                     }
-                }
-            }, {
-                adoptedSurveyIds.add("$examId")
-                val position = examList.indexOfFirst { it.id == examId }
-                if (position != -1) {
-                    notifyItemChanged(position)
-                }
+                }, {
+                    mRealm.refresh()
 
-                Snackbar.make(binding.root, context.getString(R.string.survey_adopted_successfully), Snackbar.LENGTH_LONG).show()
-                surveyAdoptListener.onSurveyAdopted()
-            }, {
+                    adoptedSurveyIds.add("$examId")
+                    val position = examList.indexOfFirst { it.id == examId }
+                    if (position != -1) {
+                        notifyItemChanged(position)
+                    }
+
+                    Snackbar.make(binding.root, context.getString(R.string.survey_adopted_successfully), Snackbar.LENGTH_LONG).show()
+                    surveyAdoptListener.onSurveyAdopted()
+                }, { error ->
+                    Snackbar.make(binding.root, context.getString(R.string.failed_to_adopt_survey), Snackbar.LENGTH_LONG).show()
+                })
+            } catch (e: Exception) {
                 Snackbar.make(binding.root, context.getString(R.string.failed_to_adopt_survey), Snackbar.LENGTH_LONG).show()
-            })
+            }
         }
     }
 }
