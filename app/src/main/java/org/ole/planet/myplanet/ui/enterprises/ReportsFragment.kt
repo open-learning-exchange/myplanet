@@ -251,7 +251,7 @@ class ReportsFragment : BaseTeamFragment() {
         if (_binding == null) return
 
         viewLifecycleOwner.lifecycleScope.launch {
-            adapterReports = AdapterReports(requireContext(), results)
+            adapterReports = AdapterReports(requireContext(), databaseService, results)
             adapterReports.setNonTeamMember(!isMemberFlow.value)
             binding.rvReports.layoutManager = LinearLayoutManager(activity)
             binding.rvReports.adapter = adapterReports
