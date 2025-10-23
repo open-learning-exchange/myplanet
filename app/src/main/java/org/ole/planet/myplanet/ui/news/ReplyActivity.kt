@@ -21,6 +21,7 @@ import com.bumptech.glide.Glide
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
+import io.realm.Realm
 import io.realm.RealmList
 import java.io.File
 import javax.inject.Inject
@@ -51,12 +52,13 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     var user: RealmUserModel? = null
 
     private val viewModel: ReplyViewModel by viewModels()
-    
+
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     private lateinit var imageList: RealmList<String>
     private var llImage: LinearLayout? = null
     private lateinit var openFolderLauncher: ActivityResultLauncher<Intent>
+    private lateinit var replyRealm: Realm
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -69,6 +71,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         imageList = RealmList()
         id = intent.getStringExtra("id")
         user = userProfileDbHandler.userModel
+        replyRealm = databaseService.realmInstance
         activityReplyBinding.rvReply.layoutManager = LinearLayoutManager(this)
         activityReplyBinding.rvReply.isNestedScrollingEnabled = false
         showData(id)
@@ -86,16 +89,24 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         id ?: return
         lifecycleScope.launch {
             val (news, list) = viewModel.getNewsWithReplies(id)
-            databaseService.withRealm { realm ->
+            if (!::replyRealm.isInitialized || replyRealm.isClosed) {
+                replyRealm = databaseService.realmInstance
+            }
+            if (!::newsAdapter.isInitialized) {
                 newsAdapter = AdapterNews(this@ReplyActivity, user, news, "", null, userProfileDbHandler)
                 newsAdapter.setListener(this@ReplyActivity)
-                newsAdapter.setmRealm(realm)
-                newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
-                newsAdapter.setNonTeamMember(intent.getBooleanExtra("nonTeamMember", false))
-                newsAdapter.setImageList(imageList)
-                newsAdapter.updateList(list)
+                activityReplyBinding.rvReply.adapter = newsAdapter
+            } else if (activityReplyBinding.rvReply.adapter == null) {
                 activityReplyBinding.rvReply.adapter = newsAdapter
             }
+            if (!replyRealm.isClosed) {
+                newsAdapter.setmRealm(replyRealm)
+            }
+            newsAdapter.user = user
+            newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
+            newsAdapter.setNonTeamMember(intent.getBooleanExtra("nonTeamMember", false))
+            newsAdapter.setImageList(imageList)
+            newsAdapter.updateList(list)
         }
     }
 
@@ -194,6 +205,9 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     }
 
     override fun onDestroy() {
+        if (::replyRealm.isInitialized && !replyRealm.isClosed) {
+            replyRealm.close()
+        }
         super.onDestroy()
     }
 }
