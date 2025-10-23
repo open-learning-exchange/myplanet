@@ -47,6 +47,7 @@ import org.ole.planet.myplanet.utilities.DialogUtils.showAlert
 import org.ole.planet.myplanet.utilities.DialogUtils.showError
 import org.ole.planet.myplanet.utilities.FileUtils.installApk
 import org.ole.planet.myplanet.utilities.UrlUtils
+import org.ole.planet.myplanet.repository.UserRepository
 
 @AndroidEntryPoint
 abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
@@ -63,6 +64,9 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
 
     @Inject
     lateinit var uploadToShelfService: UploadToShelfService
+
+    @Inject
+    lateinit var userRepository: UserRepository
     
     lateinit var settings: SharedPreferences
     val customProgressDialog: DialogUtils.CustomProgressDialog by lazy {
@@ -332,9 +336,7 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
                     val iterations = userDoc?.get("iterations")?.asString
                     val userId = userDoc?.get("_id")?.asString
                     val rev = userDoc?.get("_rev")?.asString
-                    withContext(Dispatchers.Main) {
-                        updateRealmUserSecurityData(name, userId, rev, derivedKey, salt, passwordScheme, iterations, securityCallback)
-                    }
+                    updateRealmUserSecurityData(name, userId, rev, derivedKey, salt, passwordScheme, iterations, securityCallback)
 
                 } else {
                     withContext(Dispatchers.Main) {
@@ -351,33 +353,26 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         }
     }
 
-    private fun updateRealmUserSecurityData(name: String, userId: String?, rev: String?, derivedKey: String?, salt: String?, passwordScheme: String?, iterations: String?, securityCallback: SecurityDataCallback? = null) {
+    private suspend fun updateRealmUserSecurityData(
+        name: String,
+        userId: String?,
+        rev: String?,
+        derivedKey: String?,
+        salt: String?,
+        passwordScheme: String?,
+        iterations: String?,
+        securityCallback: SecurityDataCallback? = null,
+    ) {
         try {
-            databaseService.withRealm { realm ->
-                realm.executeTransactionAsync({ transactionRealm ->
-                    val user = transactionRealm.where(RealmUserModel::class.java)
-                        .equalTo("name", name)
-                        .findFirst()
-
-                    if (user != null) {
-                        user._id = userId
-                        user._rev = rev
-                        user.derived_key = derivedKey
-                        user.salt = salt
-                        user.password_scheme = passwordScheme
-                        user.iterations = iterations
-                        user.isUpdated = false
-                    }
-                }, {
-                    securityCallback?.onSecurityDataUpdated()
-                }) { error ->
-                    error.printStackTrace()
-                    securityCallback?.onSecurityDataUpdated()
-                }
+            userRepository.updateSecurityData(name, userId, rev, derivedKey, salt, passwordScheme, iterations)
+            withContext(Dispatchers.Main) {
+                securityCallback?.onSecurityDataUpdated()
             }
         } catch (e: Exception) {
-            e.printStackTrace()
-            securityCallback?.onSecurityDataUpdated()
+            withContext(Dispatchers.Main) {
+                e.printStackTrace()
+                securityCallback?.onSecurityDataUpdated()
+            }
         }
     }
 }
