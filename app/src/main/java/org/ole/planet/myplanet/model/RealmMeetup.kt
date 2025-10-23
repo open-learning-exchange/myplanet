@@ -109,16 +109,6 @@ open class RealmMeetup : RealmObject() {
             return map
         }
 
-        @JvmStatic
-        fun getJoinedUserIds(mRealm: Realm): Array<String?> {
-            val list: List<RealmMeetup> = mRealm.where(RealmMeetup::class.java).isNotEmpty("userId").findAll()
-            val myIds = arrayOfNulls<String>(list.size)
-            for (i in list.indices) {
-                myIds[i] = list[i].userId
-            }
-            return myIds
-        }
-
         private fun checkNull(s: String?): String {
             return if (TextUtils.isEmpty(s)) "" else s!!
         }
