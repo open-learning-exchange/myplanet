@@ -439,18 +439,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         binding.recyclerView.isVerticalScrollBarEnabled = true
 
     }
-
-    private fun loadSavedProfileImage() {
-        val lastUserWithImage = prefData.getSavedUsers().lastOrNull { !it.image.isNullOrEmpty() }
-        lastUserWithImage?.image?.let { image ->
-            Glide.with(this)
-                .load(image)
-                .placeholder(R.drawable.profile)
-                .error(R.drawable.profile)
-                .into(binding.userProfile)
-        }
-    }
-
     override fun onItemClick(user: User) {
         if (user.password?.isEmpty() == true && user.source != "guest") {
             Glide.with(this)
