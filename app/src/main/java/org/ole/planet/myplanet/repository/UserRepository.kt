@@ -5,4 +5,9 @@ import org.ole.planet.myplanet.model.RealmUserModel
 interface UserRepository {
     suspend fun getUserById(userId: String): RealmUserModel?
     suspend fun getAllUsers(): List<RealmUserModel>
+    suspend fun getMonthlyLoginCounts(
+        userId: String,
+        startMillis: Long,
+        endMillis: Long,
+    ): Map<Int, Int>
 }
