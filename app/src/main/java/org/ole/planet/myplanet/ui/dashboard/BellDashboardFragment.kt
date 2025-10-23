@@ -21,9 +21,7 @@ import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
 import java.util.Date
 import java.util.concurrent.TimeUnit
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -103,21 +101,14 @@ class BellDashboardFragment : BaseDashboardFragment() {
     }
 
     private suspend fun isServerReachable(mapping: ServerUrlMapper.UrlMapping): Boolean {
-        val serverCheckPrimary = lifecycleScope.async(Dispatchers.IO) {
-            viewModel.checkServerConnection(mapping.primaryUrl)
-        }
-
-        val primaryAvailable = serverCheckPrimary.await()
+        val primaryAvailable = viewModel.checkServerConnection(mapping.primaryUrl)
 
         if (primaryAvailable) {
             return true
         }
 
         mapping.alternativeUrl?.let {
-            val serverCheckAlternative = lifecycleScope.async(Dispatchers.IO) {
-                viewModel.checkServerConnection(it)
-            }
-            val alternativeAvailable = serverCheckAlternative.await()
+            val alternativeAvailable = viewModel.checkServerConnection(it)
             return alternativeAvailable
         }
 
