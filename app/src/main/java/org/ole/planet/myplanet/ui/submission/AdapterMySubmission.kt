@@ -6,7 +6,6 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.ListAdapter
@@ -39,7 +38,6 @@ class AdapterMySubmission(
         }
     )
 ) {
-    private lateinit var rowMySurveyBinding: RowMysurveyBinding
     private var listener: OnHomeItemClickListener? = null
     private var type = ""
 
@@ -58,17 +56,18 @@ class AdapterMySubmission(
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderMySurvey {
-        rowMySurveyBinding = RowMysurveyBinding.inflate(LayoutInflater.from(context), parent, false)
-        return ViewHolderMySurvey(rowMySurveyBinding)
+        val binding = RowMysurveyBinding.inflate(LayoutInflater.from(context), parent, false)
+        return ViewHolderMySurvey(binding)
     }
 
     override fun onBindViewHolder(holder: ViewHolderMySurvey, position: Int) {
         val submission = getItem(position)
-        rowMySurveyBinding.status.text = submission.status
-        rowMySurveyBinding.date.text = getFormattedDate(submission.startTime)
-        showSubmittedBy(rowMySurveyBinding.submittedBy, submission)
+        val binding = holder.binding
+        binding.status.text = submission.status
+        binding.date.text = getFormattedDate(submission.startTime)
+        showSubmittedBy(binding, submission)
         if (examHashMap?.containsKey(submission.parentId) == true) {
-            rowMySurveyBinding.title.text = examHashMap[submission.parentId]?.name
+            binding.title.text = examHashMap[submission.parentId]?.name
         }
         holder.itemView.setOnClickListener {
             logSubmissionResponses(submission)
@@ -80,7 +79,7 @@ class AdapterMySubmission(
         }
     }
 
-    private fun showSubmittedBy(submittedBy: TextView, submission: RealmSubmission) {
+    private fun showSubmittedBy(binding: RowMysurveyBinding, submission: RealmSubmission) {
         val embeddedName = runCatching {
             submission.user?.takeIf { it.isNotBlank() }?.let { userJson ->
                 JSONObject(userJson).optString("name").takeIf { name -> name.isNotBlank() }
@@ -90,11 +89,11 @@ class AdapterMySubmission(
         val resolvedName = embeddedName ?: nameResolver(submission.userId)
 
         if (resolvedName.isNullOrBlank()) {
-            submittedBy.visibility = View.GONE
-            submittedBy.text = ""
+            binding.submittedBy.visibility = View.GONE
+            binding.submittedBy.text = ""
         } else {
-            submittedBy.visibility = View.VISIBLE
-            submittedBy.text = resolvedName
+            binding.submittedBy.visibility = View.VISIBLE
+            binding.submittedBy.text = resolvedName
         }
     }
 
@@ -138,7 +137,7 @@ class AdapterMySubmission(
         }
     }
 
-    class ViewHolderMySurvey(rowMySurveyBinding: RowMysurveyBinding) : RecyclerView.ViewHolder(rowMySurveyBinding.root)
+    class ViewHolderMySurvey(val binding: RowMysurveyBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {
         @JvmStatic
