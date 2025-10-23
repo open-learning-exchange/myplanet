@@ -15,15 +15,19 @@ import java.util.Calendar
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.DialogAddReportBinding
 import org.ole.planet.myplanet.databinding.ReportListItemBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils
 
-class AdapterReports(private val context: Context, private var list: RealmResults<RealmMyTeam>) : RecyclerView.Adapter<AdapterReports.ViewHolderReports>() {
+class AdapterReports(
+    private val context: Context,
+    private val databaseService: DatabaseService,
+    private var list: RealmResults<RealmMyTeam>
+) : RecyclerView.Adapter<AdapterReports.ViewHolderReports>() {
     private lateinit var reportListItemBinding: ReportListItemBinding
     private var startTimeStamp: String? = null
     private var endTimeStamp: String? = null
@@ -158,7 +162,7 @@ class AdapterReports(private val context: Context, private var list: RealmResult
                     }
                     CoroutineScope(Dispatchers.Main).launch {
                         try {
-                            MainApplication.service.executeTransactionAsync { realm ->
+                            databaseService.executeTransactionAsync { realm ->
                                 RealmMyTeam.updateReports(doc, realm)
                             }
                             dialog.dismiss()
@@ -180,7 +184,7 @@ class AdapterReports(private val context: Context, private var list: RealmResult
                     .setPositiveButton(R.string.ok) { _, _ ->
                         CoroutineScope(Dispatchers.Main).launch {
                             try {
-                                MainApplication.service.executeTransactionAsync { realm ->
+                                databaseService.executeTransactionAsync { realm ->
                                     realm.where(RealmMyTeam::class.java)
                                         .equalTo("_id", reportId)
                                         .findFirst()?.apply {
