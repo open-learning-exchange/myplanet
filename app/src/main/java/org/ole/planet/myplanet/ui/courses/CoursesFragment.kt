@@ -191,7 +191,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         if (!isAdded || requireActivity().isFinishing) return
 
         try {
-            mRealm.refresh()
+            if (!mRealm.isInTransaction) {
+                mRealm.refresh()
+            }
             val map = getRatings(mRealm, "course", model?.id)
             val progressMap = getCourseProgress(mRealm, model?.id)
             val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>().filter { !it?.courseTitle.isNullOrBlank() }
@@ -227,7 +229,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
-        mRealm.refresh()
+        if (!mRealm.isInTransaction) {
+            mRealm.refresh()
+        }
 
         val map = getRatings(mRealm, "course", model?.id)
         val progressMap = getCourseProgress(mRealm, model?.id)
@@ -713,5 +717,33 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             realtimeSyncHelper.cleanup()
         }
         super.onDestroyView()
+    }
+
+    override fun onRatingChanged() {
+        if (!::adapterCourses.isInitialized) {
+            super.onRatingChanged()
+            return
+        }
+
+        if (!mRealm.isInTransaction) {
+            mRealm.refresh()
+        }
+        val map = getRatings(mRealm, "course", model?.id)
+        val progressMap = getCourseProgress(mRealm, model?.id)
+
+        val filteredCourseList = if (etSearch.text.toString().isEmpty() && searchTags.isEmpty() && gradeLevel.isEmpty() && subjectLevel.isEmpty()) {
+            getFullCourseList()
+        } else {
+            filterCourseByTag(etSearch.text.toString(), searchTags)
+        }
+
+        adapterCourses = AdapterCourses(
+            requireActivity(), filteredCourseList, map, userProfileDbHandler,
+            tagRepository, this@CoursesFragment
+        )
+        adapterCourses.setProgressMap(progressMap)
+        adapterCourses.setListener(this)
+        adapterCourses.setRatingChangeListener(this)
+        recyclerView.adapter = adapterCourses
     }
 }

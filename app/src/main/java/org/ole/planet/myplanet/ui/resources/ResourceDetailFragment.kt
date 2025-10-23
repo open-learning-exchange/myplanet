@@ -57,17 +57,15 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             val userId = withContext(Dispatchers.Main) {
                 profileDbHandler.userModel?.id
             }
-            withContext(Dispatchers.IO) {
-                try {
-                    val backgroundLibrary = fetchLibrary(libraryId!!)
-                    if (backgroundLibrary != null && backgroundLibrary.userId?.contains(userId) != true && userId != null) {
-                        library = libraryRepository.updateUserLibrary(libraryId!!, userId, true)!!
-                    } else if (backgroundLibrary != null) {
-                        library = backgroundLibrary
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
+            try {
+                val backgroundLibrary = fetchLibrary(libraryId!!)
+                if (backgroundLibrary != null && backgroundLibrary.userId?.contains(userId) != true && userId != null) {
+                    library = libraryRepository.updateUserLibrary(libraryId!!, userId, true)!!
+                } else if (backgroundLibrary != null) {
+                    library = backgroundLibrary
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
             withContext(Dispatchers.Main) {
                 binding.btnDownload.setImageResource(R.drawable.ic_play)
@@ -97,9 +95,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                 return@launch
             }
 
-            val fetchedLibrary = withContext(Dispatchers.IO) {
-                fetchLibrary(id)
-            }
+            val fetchedLibrary = fetchLibrary(id)
 
             if (fetchedLibrary == null) {
                 handleLibraryNotFound()
@@ -217,14 +213,12 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         binding.btnRemove.setOnClickListener {
             val userId = profileDbHandler.userModel?.id
             fragmentScope.launch {
-                withContext(Dispatchers.IO) {
-                    try {
-                        if (userId != null) {
-                            library = libraryRepository.updateUserLibrary(libraryId!!, userId, isAdd)!!
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
+                try {
+                    if (userId != null) {
+                        library = libraryRepository.updateUserLibrary(libraryId!!, userId, isAdd)!!
                     }
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
                 withContext(Dispatchers.Main) {
                     Utilities.toast(activity, getString(R.string.resources) + " " +

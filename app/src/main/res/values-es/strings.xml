@@ -1080,9 +1080,6 @@
     <string name="actions_menu">menú de acciones</string>
     <string name="icon">icono de %1$s</string>
     <string name="select_res_course">seleccionar %1$s</string>
-    <string name="perplexity">perplexity</string>
-    <string name="openai">openai</string>
-    <string name="gemini">gemini</string>
     <string name="kindly_enter_message">Por favor, introduzca el mensaje</string>
     <string name="virtual_assistant_currently_not_available">asistente virtual actualmente no disponible</string>
     <string name="no_courses">no hay cursos disponibles</string>
@@ -1275,6 +1272,8 @@
     <string name="adopt_survey">Adoptar encuesta</string>
     <string name="survey_adopted_successfully">¡Encuesta adoptada con éxito!</string>
     <string name="beta_fast_sync">sincronización rápida beta</string>
+    <string name="beta_improved_sync">beta improved sync</string>
+    <string name="beta_improved_sync_summary">Run the experimental sync manager during manual and auto syncs.</string>
     <string name="user_verification_in_progress">Verificación de usuario en progreso. Por favor, espere mientras procesamos los datos.</string>
     <string name="go_to_mylibrary">Ir a Mi Biblioteca</string>
     <string name="choose_an_option">Elige una opción</string>

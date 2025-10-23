@@ -1080,9 +1080,6 @@
     <string name="actions_menu">قائمة الإجراءات</string>
     <string name="icon">أيقونة %1$s</string>
     <string name="select_res_course">حدد %1$s</string>
-    <string name="perplexity">التعقيد</string>
-    <string name="openai">أوبين أي</string>
-    <string name="gemini">جيميني</string>
     <string name="kindly_enter_message">يرجى إدخال رسالة</string>
     <string name="virtual_assistant_currently_not_available">المساعد الافتراضي غير متاح حالياً</string>
     <string name="no_courses">لا تتوفر دورات</string>
@@ -1275,6 +1272,8 @@
     <string name="adopt_survey">تبنَّى الاستبيان</string>
     <string name="survey_adopted_successfully">تم تبني الاستبيان بنجاح!</string>
     <string name="beta_fast_sync">مزامنة سريعة بيتا</string>
+    <string name="beta_improved_sync">beta improved sync</string>
+    <string name="beta_improved_sync_summary">Run the experimental sync manager during manual and auto syncs.</string>
     <string name="user_verification_in_progress">جارٍ التحقق من المستخدم. يرجى الانتظار أثناء معالجة البيانات.</string>
     <string name="go_to_mylibrary">انتقل إلى مكتبتي</string>
     <string name="choose_an_option">اختر خيارًا</string>

@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
 import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -9,6 +8,8 @@ import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
 
 interface TeamRepository {
+    suspend fun getShareableTeams(): List<RealmMyTeam>
+    suspend fun getShareableEnterprises(): List<RealmMyTeam>
     suspend fun getTeamResources(teamId: String): List<RealmMyLibrary>
     suspend fun getTeamByDocumentIdOrTeamId(id: String): RealmMyTeam?
     suspend fun getTeamLinks(): List<RealmMyTeam>
@@ -62,7 +63,7 @@ interface TeamRepository {
         isPublic: Boolean,
         createdBy: String,
     ): Boolean
-    suspend fun syncTeamActivities(context: Context)
+    suspend fun syncTeamActivities()
     fun getTeamTransactions(
         teamId: String,
         startDate: Long? = null,
