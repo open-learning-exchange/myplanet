@@ -19,8 +19,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.applandeo.materialcalendarview.CalendarDay
 import com.applandeo.materialcalendarview.CalendarView
 import com.applandeo.materialcalendarview.listeners.OnCalendarDayClickListener
-import com.google.gson.Gson
-import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import java.net.MalformedURLException
 import java.net.URL
@@ -29,7 +27,6 @@ import java.time.Instant
 import java.time.ZoneId
 import java.util.Calendar
 import java.util.Locale
-import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
@@ -102,51 +99,39 @@ class TeamCalendarFragment : BaseTeamFragment() {
             } else if (!link.isValidWebLink() && link.isNotEmpty()) {
                 Utilities.toast(activity, getString(R.string.invalid_url))
             } else {
-                try {
-                    if (!mRealm.isInTransaction) {
-                        mRealm.beginTransaction()
+                val defaultPlaceholder = getString(R.string.click_here_to_pick_time)
+                val startTime = addMeetupBinding.tvStartTime.text.toString().takeUnless {
+                    it == defaultPlaceholder
+                }
+                val endTime = addMeetupBinding.tvEndTime.text.toString().takeUnless {
+                    it == defaultPlaceholder
+                }
+                val recurring = addMeetupBinding.rgRecuring
+                    .findViewById<RadioButton>(addMeetupBinding.rgRecuring.checkedRadioButtonId)
+                    ?.text
+                    ?.toString()
+                lifecycleScope.launch {
+                    meetupRepository.createLocalTeamMeetup(
+                        teamId = teamId,
+                        teamPlanetCode = team?.teamPlanetCode,
+                        creatorName = user?.name,
+                        title = title,
+                        description = description,
+                        meetupLink = link,
+                        location = location,
+                        startDateMillis = start.timeInMillis,
+                        endDateMillis = end.timeInMillis,
+                        startTime = startTime,
+                        endTime = endTime,
+                        recurring = recurring,
+                    ).onSuccess {
+                        Utilities.toast(activity, getString(R.string.meetup_added))
+                        addMeetupDialog?.dismiss()
+                        refreshCalendarView()
+                    }.onFailure { error ->
+                        error.printStackTrace()
+                        Utilities.toast(activity, getString(R.string.meetup_not_added))
                     }
-                    val defaultPlaceholder = getString(R.string.click_here_to_pick_time)
-                    val meetup = mRealm.createObject(RealmMeetup::class.java, "${UUID.randomUUID()}")
-                    meetup.title = title
-                    meetup.meetupLink = link
-                    meetup.description = description
-                    meetup.meetupLocation = location
-                    meetup.creator = user?.name
-                    meetup.startDate = start.timeInMillis
-                    meetup.endDate = end.timeInMillis
-                    if (addMeetupBinding.tvStartTime.text == defaultPlaceholder) {
-                        meetup.startTime = ""
-                    } else {
-                        meetup.startTime = "${addMeetupBinding.tvStartTime.text}"
-                    }
-                    if (addMeetupBinding.tvEndTime.text == defaultPlaceholder) {
-                        meetup.endTime = ""
-                    } else {
-                        meetup.endTime = "${addMeetupBinding.tvEndTime.text}"
-                    }
-                    meetup.createdDate = System.currentTimeMillis()
-                    meetup.sourcePlanet = team?.teamPlanetCode
-                    val jo = JsonObject()
-                    jo.addProperty("type", "local")
-                    jo.addProperty("planetCode", team?.teamPlanetCode)
-                    meetup.sync = Gson().toJson(jo)
-                    val rb = addMeetupBinding.rgRecuring.findViewById<RadioButton>(addMeetupBinding.rgRecuring.checkedRadioButtonId)
-                    if (rb != null) {
-                        meetup.recurring = "${rb.text}"
-                    }
-                    val ob = JsonObject()
-                    ob.addProperty("teams", teamId)
-                    meetup.link = Gson().toJson(ob)
-                    meetup.teamId = teamId
-                    mRealm.commitTransaction()
-                    Utilities.toast(activity, getString(R.string.meetup_added))
-                    addMeetupDialog?.dismiss()
-                    refreshCalendarView()
-                } catch (e: Exception) {
-                    mRealm.cancelTransaction()
-                    e.printStackTrace()
-                    Utilities.toast(activity, getString(R.string.meetup_not_added))
                 }
             }
         }

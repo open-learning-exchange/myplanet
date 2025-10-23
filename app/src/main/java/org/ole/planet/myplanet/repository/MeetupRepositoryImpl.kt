@@ -1,5 +1,8 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.Gson
+import com.google.gson.JsonObject
+import java.util.UUID
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMeetup
@@ -65,5 +68,60 @@ class MeetupRepositoryImpl @Inject constructor(
             updatedMeetup = realm.copyFromRealm(meetup)
         }
         return updatedMeetup ?: getMeetupById(meetupId)
+    }
+
+    override suspend fun createLocalTeamMeetup(
+        teamId: String,
+        teamPlanetCode: String?,
+        creatorName: String?,
+        title: String,
+        description: String,
+        meetupLink: String,
+        location: String,
+        startDateMillis: Long,
+        endDateMillis: Long,
+        startTime: String?,
+        endTime: String?,
+        recurring: String?,
+    ): Result<RealmMeetup> {
+        val meetupId = UUID.randomUUID().toString()
+        return runCatching {
+            withRealmAsync { realm ->
+                realm.executeTransaction { transactionRealm ->
+                    val meetup = transactionRealm.createObject(RealmMeetup::class.java, meetupId)
+                    meetup.title = title
+                    meetup.meetupLink = meetupLink
+                    meetup.description = description
+                    meetup.meetupLocation = location
+                    meetup.creator = creatorName
+                    meetup.startDate = startDateMillis
+                    meetup.endDate = endDateMillis
+                    meetup.startTime = startTime ?: ""
+                    meetup.endTime = endTime ?: ""
+                    meetup.createdDate = System.currentTimeMillis()
+                    meetup.sourcePlanet = teamPlanetCode
+
+                    val syncObject = JsonObject().apply {
+                        addProperty("type", "local")
+                        addProperty("planetCode", teamPlanetCode)
+                    }
+                    meetup.sync = Gson().toJson(syncObject)
+
+                    recurring?.let { meetup.recurring = it }
+
+                    val linkObject = JsonObject().apply {
+                        addProperty("teams", teamId)
+                    }
+                    meetup.link = Gson().toJson(linkObject)
+                    meetup.teamId = teamId
+                }
+
+                val createdMeetup = realm.where(RealmMeetup::class.java)
+                    .equalTo("meetupId", meetupId)
+                    .findFirst()
+                    ?: throw IllegalStateException("Meetup was not persisted")
+                realm.copyFromRealm(createdMeetup)
+            }
+        }
     }
 }
