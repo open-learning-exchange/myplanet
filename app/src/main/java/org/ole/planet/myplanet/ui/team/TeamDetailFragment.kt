@@ -351,7 +351,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
                 binding.btnLeave.text = getString(R.string.requested)
                 binding.btnLeave.isEnabled = false
                 viewLifecycleOwner.lifecycleScope.launch {
-                    teamRepository.syncTeamActivities(requireContext())
+                    teamRepository.syncTeamActivities()
                 }
             }
         }

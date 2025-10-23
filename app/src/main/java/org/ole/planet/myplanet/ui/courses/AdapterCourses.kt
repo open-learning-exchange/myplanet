@@ -18,9 +18,7 @@ import com.google.android.flexbox.FlexboxLayout
 import com.google.gson.JsonObject
 import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnCourseItemSelected
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
@@ -346,9 +344,7 @@ class AdapterCourses(
 
         lifecycleOwner.lifecycleScope.launch {
             try {
-                val tags = withContext(Dispatchers.IO) {
-                    tagRepository.getTagsForCourse(courseId)
-                }
+                val tags = tagRepository.getTagsForCourse(courseId)
                 tagCache[courseId] = tags
                 val adapterPosition = holder.bindingAdapterPosition
                 if (adapterPosition != RecyclerView.NO_POSITION) {
