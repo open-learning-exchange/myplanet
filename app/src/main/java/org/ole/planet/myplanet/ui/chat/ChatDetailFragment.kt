@@ -490,7 +490,7 @@ class ChatDetailFragment : Fragment() {
         val jsonObject = buildChatHistoryObject(query, chatResponse, responseBody)
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                withContext(Dispatchers.IO) { chatRepository.saveChatHistory(jsonObject) }
+                chatRepository.saveChatHistory(jsonObject)
                 if (isAdded && activity is DashboardActivity) {
                     (activity as DashboardActivity).refreshChatHistoryList()
                 }
@@ -532,9 +532,7 @@ class ChatDetailFragment : Fragment() {
     private fun continueConversationRealm(id: String, query: String, chatResponse: String) {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                withContext(Dispatchers.IO) {
-                    chatRepository.appendConversation(id, query, chatResponse, _rev)
-                }
+                chatRepository.appendConversation(id, query, chatResponse, _rev)
                 withContext(Dispatchers.Main) {
                     if (isAdded && ::mAdapter.isInitialized) {
                         mAdapter.notifyDataSetChanged()
