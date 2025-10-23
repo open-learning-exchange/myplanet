@@ -39,7 +39,6 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private suspend fun fetchLibrary(libraryId: String): RealmMyLibrary? {
         return libraryRepository.getLibraryItemById(libraryId)
             ?: libraryRepository.getLibraryItemByResourceId(libraryId)
-            ?: libraryRepository.getAllLibraryItems().firstOrNull { it.resourceId == libraryId }
     }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
