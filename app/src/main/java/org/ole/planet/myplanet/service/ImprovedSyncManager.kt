@@ -15,6 +15,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.ManagerSync
@@ -80,6 +81,10 @@ class ImprovedSyncManager @Inject constructor(
         if (!isSyncing) {
             settings.edit { remove("concatenated_links") }
             listener?.onSyncStarted()
+            createLog(
+                "improved_sync_start",
+                "mode=${syncMode.describe()}|tables=${syncTables?.joinToString() ?: "default"}"
+            )
             startSyncProcess(syncMode, syncTables)
         }
     }
@@ -163,7 +168,6 @@ class ImprovedSyncManager @Inject constructor(
         return when (syncMode) {
             SyncMode.Standard -> standardStrategy
             SyncMode.Fast, SyncMode.Optimized -> standardStrategy
-            is SyncMode.Custom -> syncMode.strategy
         }
     }
 
@@ -184,6 +188,14 @@ class ImprovedSyncManager @Inject constructor(
         listener?.onSyncComplete()
     }
 
+    private fun SyncMode.describe(): String {
+        return when (this) {
+            SyncMode.Standard -> "Standard"
+            SyncMode.Fast -> "Fast"
+            SyncMode.Optimized -> "Optimized"
+        }
+    }
+    
     private fun handleException(message: String) {
         if (listener != null) {
             isSyncing = false

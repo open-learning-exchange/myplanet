@@ -336,7 +336,7 @@ class AdapterTeamList(
 
     private fun syncTeamActivities() {
         MainApplication.applicationScope.launch {
-            teamRepository.syncTeamActivities(context)
+            teamRepository.syncTeamActivities()
         }
     }
 

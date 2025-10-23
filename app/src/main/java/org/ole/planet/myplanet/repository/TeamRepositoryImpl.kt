@@ -1,6 +1,6 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
+import android.content.SharedPreferences
 import androidx.core.net.toUri
 import com.google.gson.Gson
 import com.google.gson.JsonObject
@@ -19,6 +19,7 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamLog
@@ -27,7 +28,6 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 
@@ -36,6 +36,8 @@ class TeamRepositoryImpl @Inject constructor(
     private val userProfileDbHandler: UserProfileDbHandler,
     private val uploadManager: UploadManager,
     private val gson: Gson,
+    @AppPreferences private val preferences: SharedPreferences,
+    private val serverUrlMapper: ServerUrlMapper,
 ) : RealmRepository(databaseService), TeamRepository {
 
     override suspend fun getShareableTeams(): List<RealmMyTeam> {
@@ -480,11 +482,8 @@ class TeamRepositoryImpl @Inject constructor(
         return updated.get()
     }
 
-    override suspend fun syncTeamActivities(context: Context) {
-        val applicationContext = context.applicationContext
-        val settings = applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val updateUrl = settings.getString("serverURL", "") ?: ""
-        val serverUrlMapper = ServerUrlMapper()
+    override suspend fun syncTeamActivities() {
+        val updateUrl = preferences.getString("serverURL", "") ?: ""
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
         val primaryAvailable = MainApplication.isServerReachable(mapping.primaryUrl)
@@ -494,8 +493,8 @@ class TeamRepositoryImpl @Inject constructor(
         if (!primaryAvailable && alternativeAvailable) {
             mapping.alternativeUrl?.let { alternativeUrl ->
                 val uri = updateUrl.toUri()
-                val editor = settings.edit()
-                serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, settings)
+                val editor = preferences.edit()
+                serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, preferences)
             }
         }
 

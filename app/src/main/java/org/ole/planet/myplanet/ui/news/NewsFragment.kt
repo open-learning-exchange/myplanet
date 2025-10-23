@@ -83,6 +83,14 @@ class NewsFragment : BaseNewsFragment() {
             binding.llAddNews.visibility = View.GONE
         }
 
+        if (mRealm.isInTransaction) {
+            try {
+                mRealm.commitTransaction()
+            } catch (_: Exception) {
+                mRealm.cancelTransaction()
+            }
+        }
+
         updatedNewsList = mRealm.where(RealmNews::class.java).sort("time", Sort.DESCENDING)
             .isEmpty("replyTo").equalTo("docType", "message", Case.INSENSITIVE)
             .findAllAsync()
@@ -191,23 +199,25 @@ class NewsFragment : BaseNewsFragment() {
 
         if (binding.rvNews.adapter == null) {
             changeLayoutManager(resources.configuration.orientation, binding.rvNews)
-            val resourceIds: MutableList<String> = ArrayList()
+            val resourceIds = mutableSetOf<String>()
             list.forEach { news ->
                 if ((news?.imagesArray?.size() ?: 0) > 0) {
                     val ob = news?.imagesArray?.get(0)?.asJsonObject
                     val resourceId = getString("resourceId", ob?.asJsonObject)
-                    resourceId.let {
-                        resourceIds.add(it)
+                    if (!resourceId.isNullOrBlank()) {
+                        resourceIds.add(resourceId)
                     }
                 }
             }
-            val lib: List<RealmMyLibrary?> = databaseService.withRealm { realm ->
-                realm.where(RealmMyLibrary::class.java)
-                    .`in`("_id", resourceIds.toTypedArray())
-                    .findAll()
-                    .let { realm.copyFromRealm(it) }
+            viewLifecycleOwner.lifecycleScope.launch {
+                if (resourceIds.isNotEmpty()) {
+                    val libraries = libraryRepository.getLibraryItemsByIds(resourceIds)
+                    getUrlsAndStartDownload(
+                        libraries.map<RealmMyLibrary, RealmMyLibrary?> { it },
+                        arrayListOf()
+                    )
+                }
             }
-            getUrlsAndStartDownload(lib, ArrayList())
             val updatedListAsMutable: MutableList<RealmNews?> = list.toMutableList()
             val sortedList = updatedListAsMutable.sortedWith(compareByDescending { news ->
                 getSortDate(news)
