@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.model
 import android.text.TextUtils
 import com.google.gson.Gson
 import com.google.gson.JsonObject
-import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
@@ -49,35 +48,6 @@ open class RealmMyHealthPojo : RealmObject() {
     }
 
     companion object {
-        @JvmStatic
-        fun insert(mRealm: Realm, act: JsonObject?) {
-            var myHealth = mRealm.where(RealmMyHealthPojo::class.java)
-                .equalTo("_id", JsonUtils.getString("_id", act)).findFirst()
-            if (myHealth == null) {
-                myHealth = mRealm.createObject(RealmMyHealthPojo::class.java, JsonUtils.getString("_id", act))
-            }
-            myHealth?.data = JsonUtils.getString("data", act)
-            myHealth?.userId = JsonUtils.getString("_id", act)
-            myHealth?._rev = JsonUtils.getString("_rev", act)
-            myHealth?.setTemperature(JsonUtils.getFloat("temperature", act))
-            myHealth?.isUpdated = false
-            myHealth?.pulse = JsonUtils.getInt("pulse", act)
-            myHealth?.height = JsonUtils.getFloat("height", act)
-            myHealth?.setWeight(JsonUtils.getFloat("weight", act))
-            myHealth?.vision = JsonUtils.getString("vision", act)
-            myHealth?.hearing = JsonUtils.getString("hearing", act)
-            myHealth?.bp = JsonUtils.getString("bp", act)
-            myHealth?.isSelfExamination = JsonUtils.getBoolean("selfExamination", act)
-            myHealth?.isHasInfo = JsonUtils.getBoolean("hasInfo", act)
-            myHealth?.date = JsonUtils.getLong("date", act)
-            myHealth?.profileId = JsonUtils.getString("profileId", act)
-            myHealth?.creatorId = JsonUtils.getString("creatorId", act)
-            myHealth?.age = JsonUtils.getInt("age", act)
-            myHealth?.gender = JsonUtils.getString("gender", act)
-            myHealth?.planetCode = JsonUtils.getString("planetCode", act)
-            myHealth?.conditions = Gson().toJson(JsonUtils.getJsonObject("conditions", act))
-        }
-
         @JvmStatic
         fun serialize(health: RealmMyHealthPojo): JsonObject {
             val `object` = JsonObject()
