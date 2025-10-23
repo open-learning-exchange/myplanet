@@ -40,6 +40,22 @@ class TeamRepositoryImpl @Inject constructor(
     private val serverUrlMapper: ServerUrlMapper,
 ) : RealmRepository(databaseService), TeamRepository {
 
+    override suspend fun getShareableTeams(): List<RealmMyTeam> {
+        return queryList(RealmMyTeam::class.java) {
+            isEmpty("teamId")
+            notEqualTo("status", "archived")
+            equalTo("type", "team")
+        }
+    }
+
+    override suspend fun getShareableEnterprises(): List<RealmMyTeam> {
+        return queryList(RealmMyTeam::class.java) {
+            isEmpty("teamId")
+            notEqualTo("status", "archived")
+            equalTo("type", "enterprise")
+        }
+    }
+
     override suspend fun getTeamResources(teamId: String): List<RealmMyLibrary> {
         val resourceIds = getResourceIds(teamId)
         return if (resourceIds.isEmpty()) {
