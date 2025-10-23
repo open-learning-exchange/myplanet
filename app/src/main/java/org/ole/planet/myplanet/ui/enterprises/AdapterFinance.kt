@@ -22,7 +22,6 @@ class AdapterFinance(
     private val context: Context,
     list: List<RealmMyTeam>,
 ) : RecyclerView.Adapter<ViewHolderFinance>() {
-    private lateinit var rowFinanceBinding: RowFinanceBinding
     private val balances = mutableListOf<Int>()
     private var list: List<RealmMyTeam> = list.toList()
 
@@ -30,25 +29,26 @@ class AdapterFinance(
         recomputeBalances()
     }
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderFinance {
-        rowFinanceBinding = RowFinanceBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return ViewHolderFinance(rowFinanceBinding)
+        val binding = RowFinanceBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        return ViewHolderFinance(binding)
     }
 
     override fun onBindViewHolder(holder: ViewHolderFinance, position: Int) {
         val item = list[position]
-        rowFinanceBinding.date.text = formatDate(item.date, "MMM dd, yyyy")
-        rowFinanceBinding.note.text = item.description
+        val binding = holder.binding
+        binding.date.text = formatDate(item.date, "MMM dd, yyyy")
+        binding.note.text = item.description
+        binding.debit.setTextColor(Color.BLACK)
+        binding.credit.setTextColor(Color.BLACK)
         if (TextUtils.equals(item.type?.lowercase(Locale.getDefault()), "debit")) {
-            rowFinanceBinding.debit.text = context.getString(R.string.number_placeholder, item.amount)
-            rowFinanceBinding.credit.text = context.getString(R.string.message_placeholder, " -")
-            rowFinanceBinding.credit.setTextColor(Color.BLACK)
+            binding.debit.text = context.getString(R.string.number_placeholder, item.amount)
+            binding.credit.text = context.getString(R.string.message_placeholder, " -")
         } else {
-            rowFinanceBinding.credit.text = context.getString(R.string.number_placeholder, item.amount)
-            rowFinanceBinding.debit.text = context.getString(R.string.message_placeholder, " -")
-            rowFinanceBinding.debit.setTextColor(Color.BLACK)
+            binding.credit.text = context.getString(R.string.number_placeholder, item.amount)
+            binding.debit.text = context.getString(R.string.message_placeholder, " -")
         }
-        rowFinanceBinding.balance.text = getBalance(position)
-        updateBackgroundColor(rowFinanceBinding.llayout, position)
+        binding.balance.text = getBalance(position)
+        updateBackgroundColor(binding.llayout, position)
     }
 
     private fun getBalance(position: Int): String {
@@ -90,7 +90,7 @@ class AdapterFinance(
         }
     }
 
-    class ViewHolderFinance(rowFinanceBinding: RowFinanceBinding) : RecyclerView.ViewHolder(
-        rowFinanceBinding.root
+    class ViewHolderFinance(val binding: RowFinanceBinding) : RecyclerView.ViewHolder(
+        binding.root
     )
 }
