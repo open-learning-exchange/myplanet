@@ -89,6 +89,7 @@ class MeetupRepositoryImpl @Inject constructor(
             withRealmAsync { realm ->
                 realm.executeTransaction { transactionRealm ->
                     val meetup = transactionRealm.createObject(RealmMeetup::class.java, meetupId)
+                    meetup.meetupId = meetupId
                     meetup.title = title
                     meetup.meetupLink = meetupLink
                     meetup.description = description
