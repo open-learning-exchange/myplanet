@@ -45,24 +45,4 @@ class UserRepositoryImpl @Inject constructor(
             .eachCount()
             .toSortedMap()
     }
-
-    override suspend fun updateSecurityData(
-        name: String,
-        userId: String?,
-        rev: String?,
-        derivedKey: String?,
-        salt: String?,
-        passwordScheme: String?,
-        iterations: String?,
-    ) {
-        update(RealmUserModel::class.java, "name", name) { user ->
-            user._id = userId
-            user._rev = rev
-            user.derived_key = derivedKey
-            user.salt = salt
-            user.password_scheme = passwordScheme
-            user.iterations = iterations
-            user.isUpdated = false
-        }
-    }
 }

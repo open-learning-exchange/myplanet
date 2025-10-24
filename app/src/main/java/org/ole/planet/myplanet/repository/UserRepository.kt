@@ -10,13 +10,4 @@ interface UserRepository {
         startMillis: Long,
         endMillis: Long,
     ): Map<Int, Int>
-    suspend fun updateSecurityData(
-        name: String,
-        userId: String?,
-        rev: String?,
-        derivedKey: String?,
-        salt: String?,
-        passwordScheme: String?,
-        iterations: String?,
-    )
 }
