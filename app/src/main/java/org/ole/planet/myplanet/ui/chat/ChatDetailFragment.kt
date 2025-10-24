@@ -143,13 +143,17 @@ class ChatDetailFragment : Fragment() {
 
     private fun setupSendButton() {
         binding.buttonGchatSend.setOnClickListener {
-            val aiProvider = AiProvider(name = aiName, model = aiModel)
-            binding.textGchatIndicator.visibility = View.GONE
-            if (TextUtils.isEmpty("${binding.editGchatMessage.text}".trim())) {
-                binding.textGchatIndicator.visibility = View.VISIBLE
-                binding.textGchatIndicator.text = context?.getString(R.string.kindly_enter_message)
-            } else {
-                val message = "${binding.editGchatMessage.text}".replace("\n", " ")
+            viewLifecycleOwner.lifecycleScope.launch {
+                val aiProvider = AiProvider(name = aiName, model = aiModel)
+                binding.textGchatIndicator.visibility = View.GONE
+                val userInput = "${binding.editGchatMessage.text}"
+                if (TextUtils.isEmpty(userInput.trim())) {
+                    binding.textGchatIndicator.visibility = View.VISIBLE
+                    binding.textGchatIndicator.text = context?.getString(R.string.kindly_enter_message)
+                    return@launch
+                }
+
+                val message = userInput.replace("\n", " ")
                 mAdapter.addQuery(message)
                 when {
                     _id.isNotEmpty() -> {
@@ -437,9 +441,9 @@ class ChatDetailFragment : Fragment() {
         return jsonRequestBody(jsonContent)
     }
 
-    private fun getLatestRev(id: String): String? {
+    private suspend fun getLatestRev(id: String): String? {
         return try {
-            databaseService.withRealm { realm ->
+            databaseService.withRealmAsync { realm ->
                 realm.refresh()
                 realm.where(RealmChatHistory::class.java)
                     .equalTo("_id", id)
