@@ -16,35 +16,45 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.team.teamTask.AdapterTask.ViewHolderTask
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
-class AdapterTask(private val context: Context, private val realm: Realm, private val list: List<RealmTeamTask>?, private val nonTeamMember: Boolean) : RecyclerView.Adapter<ViewHolderTask>() {
-    private lateinit var rowTaskBinding: RowTaskBinding
+class AdapterTask(
+    private val context: Context,
+    private val realm: Realm,
+    private val list: List<RealmTeamTask>?,
+    private val nonTeamMember: Boolean
+) : RecyclerView.Adapter<ViewHolderTask>() {
     private var listener: OnCompletedListener? = null
     fun setListener(listener: OnCompletedListener?) {
         this.listener = listener
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderTask {
-        rowTaskBinding = RowTaskBinding.inflate(LayoutInflater.from(context), parent, false)
-        return ViewHolderTask(rowTaskBinding) }
+        val binding = RowTaskBinding.inflate(LayoutInflater.from(context), parent, false)
+        return ViewHolderTask(binding)
+    }
 
     override fun onBindViewHolder(holder: ViewHolderTask, position: Int) {
         list?.get(position)?.let {
-            rowTaskBinding.checkbox.text = it.title
-            rowTaskBinding.checkbox.isChecked = it.completed
+            val binding = holder.binding
+            binding.checkbox.setOnCheckedChangeListener(null)
+            binding.checkbox.text = it.title
+            binding.checkbox.isChecked = it.completed
             if (!it.completed) {
-                rowTaskBinding.deadline.text = context.getString(R.string.deadline_colon, formatDate(it.deadline))
+                binding.deadline.text = context.getString(R.string.deadline_colon, formatDate(it.deadline))
             } else {
-                rowTaskBinding.deadline.text =context.getString(R.string.two_strings,
-                    context.getString(R.string.deadline_colon, formatDate(it.deadline)), context.getString(R.string.completed_colon, formatDate(it.deadline)))
+                binding.deadline.text = context.getString(
+                    R.string.two_strings,
+                    context.getString(R.string.deadline_colon, formatDate(it.deadline)),
+                    context.getString(R.string.completed_colon, formatDate(it.deadline))
+                )
             }
-            showAssignee(it)
-            rowTaskBinding.icMore.setOnClickListener {
+            showAssignee(binding, it)
+            binding.icMore.setOnClickListener {
                 listener?.onClickMore(list[position])
             }
-            rowTaskBinding.editTask.setOnClickListener {
+            binding.editTask.setOnClickListener {
                 listener?.onEdit(list[position])
             }
-            rowTaskBinding.deleteTask.setOnClickListener {
+            binding.deleteTask.setOnClickListener {
                 listener?.onDelete(list[position])
             }
             holder.itemView.setOnClickListener {
@@ -55,31 +65,32 @@ class AdapterTask(private val context: Context, private val realm: Realm, privat
                         dialog.dismiss()
                     }
                     .create()
-
+                
                 alertDialog.show()
             }
             if (nonTeamMember) {
-                rowTaskBinding.editTask.visibility = View.GONE
-                rowTaskBinding.deleteTask.visibility = View.GONE
-                rowTaskBinding.icMore.visibility = View.GONE
-                rowTaskBinding.checkbox.isClickable = false
-                rowTaskBinding.checkbox.isFocusable = false
+                binding.editTask.visibility = View.GONE
+                binding.deleteTask.visibility = View.GONE
+                binding.icMore.visibility = View.GONE
+                binding.checkbox.isClickable = false
+                binding.checkbox.isFocusable = false
             } else {
-                rowTaskBinding.checkbox.setOnCheckedChangeListener { _: CompoundButton?, b: Boolean ->
+                binding.checkbox.setOnCheckedChangeListener { _: CompoundButton?, b: Boolean ->
                     listener?.onCheckChange(it, b)
                 }
             }
         }
     }
 
-    private fun showAssignee(realmTeamTask: RealmTeamTask) {
+    private fun showAssignee(binding: RowTaskBinding, realmTeamTask: RealmTeamTask) {
         if (!TextUtils.isEmpty(realmTeamTask.assignee)) {
             val model = realm.where(RealmUserModel::class.java).equalTo("id", realmTeamTask.assignee).findFirst()
             if (model != null) {
-                rowTaskBinding.assignee.text = context.getString(R.string.assigned_to_colon, model.name)
+                binding.assignee.text = context.getString(R.string.assigned_to_colon, model.name)
+                return
             }
-        } else {
-            rowTaskBinding.assignee.setText(R.string.no_assignee) }
+        }
+        binding.assignee.setText(R.string.no_assignee)
     }
 
     override fun getItemCount(): Int {
@@ -93,5 +104,5 @@ class AdapterTask(private val context: Context, private val realm: Realm, privat
         fun onClickMore(realmTeamTask: RealmTeamTask?)
     }
 
-    class ViewHolderTask(rowTaskBinding: RowTaskBinding) : RecyclerView.ViewHolder(rowTaskBinding.root)
+    class ViewHolderTask(val binding: RowTaskBinding) : RecyclerView.ViewHolder(binding.root)
 }
