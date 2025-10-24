@@ -315,6 +315,34 @@ class TeamRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getPendingTasksForUser(
+        userId: String,
+        start: Long,
+        end: Long,
+    ): List<RealmTeamTask> {
+        if (userId.isBlank() || start > end) return emptyList()
+        return queryList(RealmTeamTask::class.java) {
+            equalTo("completed", false)
+            equalTo("assignee", userId)
+            equalTo("isNotified", false)
+            between("deadline", start, end)
+        }
+    }
+
+    override suspend fun markTasksNotified(taskIds: Collection<String>) {
+        if (taskIds.isEmpty()) return
+        val validIds = taskIds.mapNotNull { it.takeIf(String::isNotBlank) }.distinct()
+        if (validIds.isEmpty()) return
+        executeTransaction { realm ->
+            val tasks = realm.where(RealmTeamTask::class.java)
+                .`in`("id", validIds.toTypedArray())
+                .findAll()
+            tasks.forEach { task ->
+                task.isNotified = true
+            }
+        }
+    }
+
     override suspend fun deleteTask(taskId: String) {
         delete(RealmTeamTask::class.java, "id", taskId)
     }

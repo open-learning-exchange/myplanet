@@ -53,26 +53,28 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             return
         }
         fragmentScope.launch {
-            val userId = withContext(Dispatchers.Main) {
-                profileDbHandler.userModel?.id
-            }
+            val userId = profileDbHandler.userModel?.id
             try {
-                val backgroundLibrary = fetchLibrary(libraryId!!)
-                if (backgroundLibrary != null && backgroundLibrary.userId?.contains(userId) != true && userId != null) {
-                    library = libraryRepository.updateUserLibrary(libraryId!!, userId, true)!!
-                } else if (backgroundLibrary != null) {
-                    library = backgroundLibrary
+                val updatedLibrary = withContext(Dispatchers.IO) {
+                    val backgroundLibrary = fetchLibrary(libraryId!!)
+                    when {
+                        backgroundLibrary == null -> null
+                        backgroundLibrary.userId?.contains(userId) != true && userId != null ->
+                            libraryRepository.updateUserLibrary(libraryId!!, userId, true)
+                        else -> backgroundLibrary
+                    }
+                }
+                if (updatedLibrary != null) {
+                    library = updatedLibrary
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
-            withContext(Dispatchers.Main) {
-                binding.btnDownload.setImageResource(R.drawable.ic_play)
-                val currentUserId = profileDbHandler.userModel?.id
-                if (currentUserId != null && library.userId?.contains(currentUserId) != true) {
-                    Utilities.toast(activity, getString(R.string.added_to_my_library))
-                    binding.btnRemove.setImageResource(R.drawable.close_x)
-                }
+            binding.btnDownload.setImageResource(R.drawable.ic_play)
+            val currentUserId = profileDbHandler.userModel?.id
+            if (currentUserId != null && library.userId?.contains(currentUserId) != true) {
+                Utilities.toast(activity, getString(R.string.added_to_my_library))
+                binding.btnRemove.setImageResource(R.drawable.close_x)
             }
         }
     }
@@ -135,22 +137,20 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             setTextViewVisibility(tvType, llType, library.resourceType)
         }
         fragmentScope.launch {
-            withContext(Dispatchers.Main) {
-                try {
+            try {
+                withContext(Dispatchers.IO) {
                     profileDbHandler.setResourceOpenCount(library)
-                } catch (ex: Exception) {
-                    ex.printStackTrace()
                 }
+            } catch (ex: Exception) {
+                ex.printStackTrace()
             }
-            withContext(Dispatchers.Main) {
-                try {
-                    onRatingChanged()
-                } catch (ex: Exception) {
-                    ex.printStackTrace()
-                }
-                setupDownloadButton()
-                setClickListeners()
+            try {
+                onRatingChanged()
+            } catch (ex: Exception) {
+                ex.printStackTrace()
             }
+            setupDownloadButton()
+            setClickListeners()
         }
     }
 
@@ -212,19 +212,29 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         binding.btnRemove.setOnClickListener {
             val userId = profileDbHandler.userModel?.id
             fragmentScope.launch {
+                val updatedLibrary = withContext(Dispatchers.IO) {
+                    try {
+                        if (userId != null) {
+                            libraryRepository.updateUserLibrary(libraryId!!, userId, isAdd)
+                        } else {
+                            null
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        null
+                    }
+                }
                 try {
-                    if (userId != null) {
-                        library = libraryRepository.updateUserLibrary(libraryId!!, userId, isAdd)!!
+                    if (updatedLibrary != null) {
+                        library = updatedLibrary
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
-                withContext(Dispatchers.Main) {
-                    Utilities.toast(activity, getString(R.string.resources) + " " +
-                            if (isAdd) getString(R.string.added_to_my_library)
-                            else getString(R.string.removed_from_mylibrary))
-                    setLibraryData()
-                }
+                Utilities.toast(activity, getString(R.string.resources) + " " +
+                        if (isAdd) getString(R.string.added_to_my_library)
+                        else getString(R.string.removed_from_mylibrary))
+                setLibraryData()
             }
         }
         binding.btnBack.setOnClickListener {
