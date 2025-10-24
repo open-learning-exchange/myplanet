@@ -1164,7 +1164,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         get() {
             val menuImageListFooter = ArrayList<Drawable>()
             ResourcesCompat.getDrawable(resources, R.drawable.logout, null)?.let { menuImageListFooter.add(it) }
-            return arrayOf(changeUX(R.string.menu_logout, menuImageListFooter[0]))
+            return arrayOf(changeFooterUX(R.string.menu_logout, menuImageListFooter[0]))
         }
 
     private fun changeUX(iconText: Int, drawable: Drawable?): PrimaryDrawerItem {
@@ -1176,6 +1176,15 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             .withSelectedIconColor(ContextCompat.getColor(this, R.color.primary_dark))
             .withSelectedColor(ContextCompat.getColor(this, R.color.textColorPrimary))
             .withIconTintingEnabled(true)
+    }
+
+    private fun changeFooterUX(iconText: Int, drawable: Drawable?): PrimaryDrawerItem {
+        return changeUX(iconText, drawable)
+            .withTextColor(ContextCompat.getColor(this, R.color.md_white_1000))
+            .withSelectedTextColor(ContextCompat.getColor(this, R.color.md_white_1000))
+            .withIconColor(ContextCompat.getColor(this, R.color.md_white_1000))
+            .withSelectedIconColor(ContextCompat.getColor(this, R.color.md_white_1000))
+            .withSelectedColor(ContextCompat.getColor(this, R.color.colorPrimaryDark))
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
