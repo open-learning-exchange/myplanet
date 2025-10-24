@@ -6,6 +6,7 @@ import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onAdd
 
 class CourseRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
@@ -41,6 +42,25 @@ class CourseRepositoryImpl @Inject constructor(
         }
         return queryList(RealmCourseStep::class.java) {
             equalTo("courseId", courseId)
+        }
+    }
+
+    override suspend fun markCourseAdded(courseId: String, userId: String?) {
+        if (courseId.isBlank()) {
+            return
+        }
+
+        executeTransaction { realm ->
+            realm.where(RealmMyCourse::class.java)
+                .equalTo("courseId", courseId)
+                .findFirst()
+                ?.setUserId(userId)
+        }
+
+        if (!userId.isNullOrBlank()) {
+            withRealmAsync { realm ->
+                onAdd(realm, "courses", userId, courseId)
+            }
         }
     }
 

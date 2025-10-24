@@ -23,12 +23,10 @@ import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getAllCourses
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourseByUserId
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getMyLibraryByUserId
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getOurLibrary
-import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTag
@@ -138,39 +136,17 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             var libraryAdded = false
             var courseAdded = false
             val result = runCatching {
-                databaseService.executeTransactionAsync { realm ->
-                    resourceIds.forEach { resourceId ->
-                        val resource = realm.where(RealmMyLibrary::class.java)
-                            .equalTo("resourceId", resourceId)
-                            .findFirst()
-                        if (resource != null) {
-                            resource.setUserId(userId)
-                            if (!userId.isNullOrBlank()) {
-                                realm.where(RealmRemovedLog::class.java)
-                                    .equalTo("type", "resources")
-                                    .equalTo("userId", userId)
-                                    .equalTo("docId", resource.resourceId)
-                                    .findAll()
-                                    .deleteAllFromRealm()
-                            }
-                            libraryAdded = true
-                        }
+                resourceIds.forEach { resourceId ->
+                    if (!userId.isNullOrBlank()) {
+                        libraryRepository.updateUserLibrary(resourceId, userId, isAdd = true)
+                        libraryAdded = true
                     }
+                }
 
-                    courseIds.forEach { courseId ->
-                        val course = getMyCourse(realm, courseId)
-                        if (course != null) {
-                            course.setUserId(userId)
-                            if (!userId.isNullOrBlank()) {
-                                realm.where(RealmRemovedLog::class.java)
-                                    .equalTo("type", "courses")
-                                    .equalTo("userId", userId)
-                                    .equalTo("docId", course.courseId)
-                                    .findAll()
-                                    .deleteAllFromRealm()
-                            }
-                            courseAdded = true
-                        }
+                courseIds.forEach { courseId ->
+                    if (courseId.isNotBlank()) {
+                        courseRepository.markCourseAdded(courseId, userId)
+                        courseAdded = true
                     }
                 }
             }
