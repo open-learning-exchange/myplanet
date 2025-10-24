@@ -30,4 +30,18 @@ class ChatRepositoryImpl @Inject constructor(
             equalTo("createdOn", planetCode, Case.INSENSITIVE)
         }
     }
+
+    override suspend fun getLatestRevision(chatId: String): String? {
+        if (chatId.isEmpty()) {
+            return null
+        }
+        return withRealmAsync { realm ->
+            realm.refresh()
+            realm.where(RealmChatHistory::class.java)
+                .equalTo("_id", chatId)
+                .findAll()
+                .maxByOrNull { rev -> rev._rev?.split("-")?.get(0)?.toIntOrNull() ?: 0 }
+                ?._rev
+        }
+    }
 }

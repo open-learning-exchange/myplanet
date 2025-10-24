@@ -51,6 +51,7 @@ import org.ole.planet.myplanet.model.Data
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.addConversationToChatHistory
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utilities.DialogUtils
@@ -84,6 +85,8 @@ class ChatDetailFragment : Fragment() {
     lateinit var chatApiHelper: ChatApiHelper
     @Inject
     lateinit var userRepository: UserRepository
+    @Inject
+    lateinit var chatRepository: ChatRepository
     private val gson = Gson()
     private val serverUrlMapper = ServerUrlMapper()
     private val jsonMediaType = "application/json".toMediaTypeOrNull()
@@ -151,19 +154,28 @@ class ChatDetailFragment : Fragment() {
             } else {
                 val message = "${binding.editGchatMessage.text}".replace("\n", " ")
                 mAdapter.addQuery(message)
-                when {
-                    _id.isNotEmpty() -> {
-                        val newRev = getLatestRev(_id) ?: _rev
-                        val requestBody = createContinueChatRequest(message, aiProvider, _id, newRev)
-                        launchRequest(requestBody, message, _id)
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val latestRev = if (_id.isNotEmpty()) {
+                        withContext(Dispatchers.IO) {
+                            chatRepository.getLatestRevision(_id)
+                        }
+                    } else {
+                        null
                     }
-                    currentID.isNotEmpty() -> {
-                        val requestBody = createContinueChatRequest(message, aiProvider, currentID, _rev)
-                        launchRequest(requestBody, message, currentID)
-                    }
-                    else -> {
-                        val requestBody = createChatRequest(message, aiProvider)
-                        launchRequest(requestBody, message, null)
+                    when {
+                        _id.isNotEmpty() -> {
+                            val newRev = latestRev ?: _rev
+                            val requestBody = createContinueChatRequest(message, aiProvider, _id, newRev)
+                            launchRequest(requestBody, message, _id)
+                        }
+                        currentID.isNotEmpty() -> {
+                            val requestBody = createContinueChatRequest(message, aiProvider, currentID, _rev)
+                            launchRequest(requestBody, message, currentID)
+                        }
+                        else -> {
+                            val requestBody = createChatRequest(message, aiProvider)
+                            launchRequest(requestBody, message, null)
+                        }
                     }
                 }
                 binding.editGchatMessage.text.clear()
@@ -435,22 +447,6 @@ class ChatDetailFragment : Fragment() {
         val chatData = ChatRequestModel(data = ContentData("${user?.name}", message, aiProvider), save = true)
         val jsonContent = gson.toJson(chatData)
         return jsonRequestBody(jsonContent)
-    }
-
-    private fun getLatestRev(id: String): String? {
-        return try {
-            databaseService.withRealm { realm ->
-                realm.refresh()
-                realm.where(RealmChatHistory::class.java)
-                    .equalTo("_id", id)
-                    .findAll()
-                    .maxByOrNull { rev -> rev._rev?.split("-")?.get(0)?.toIntOrNull() ?: 0 }
-                    ?._rev
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
-        }
     }
 
     private fun sendChatRequest(content: RequestBody, query: String, id: String?, newChat: Boolean) {
