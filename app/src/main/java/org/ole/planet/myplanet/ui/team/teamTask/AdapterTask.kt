@@ -121,7 +121,7 @@ class AdapterTask(
 
         users.forEach { user ->
             val id = user.id
-            val name = user.name
+            val name = getDisplayName(user)
             if (!id.isNullOrBlank() && !name.isNullOrBlank()) {
                 assigneeCache[id] = name
             }
@@ -132,11 +132,26 @@ class AdapterTask(
         val model = realm.where(RealmUserModel::class.java).equalTo("id", assigneeId).findFirst()
             ?: return null
         val unmanagedModel = realm.copyFromRealm(model)
-        val name = unmanagedModel.name
+        val name = getDisplayName(unmanagedModel)
         if (!name.isNullOrBlank()) {
             assigneeCache[assigneeId] = name
         }
         return name
+    }
+
+    private fun getDisplayName(user: RealmUserModel): String? {
+        val nameFromParts = listOfNotNull(
+            user.firstName?.trim(),
+            user.middleName?.trim(),
+            user.lastName?.trim()
+        )
+            .filter { it.isNotBlank() }
+            .joinToString(" ")
+            .takeIf { it.isNotBlank() }
+
+        val username = user.name?.trim()?.takeIf { it.isNotBlank() }
+
+        return nameFromParts ?: username
     }
 
     override fun getItemCount(): Int {
