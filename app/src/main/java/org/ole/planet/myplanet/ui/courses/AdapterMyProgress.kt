@@ -6,10 +6,12 @@ import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.LinearLayout
+import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.JsonArray
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.databinding.ItemProgressBinding
 import org.ole.planet.myplanet.databinding.RowMyProgressBinding
 
 class AdapterMyProgress(private val context: Context, private val list: JsonArray) :
@@ -43,13 +45,35 @@ class AdapterMyProgress(private val context: Context, private val list: JsonArra
 
             if (stepMistake.keySet().isNotEmpty()) {
                 binding.llHeader.visibility = View.VISIBLE
+                val textColor = ContextCompat.getColor(context, R.color.daynight_textColor)
                 stepMistake.keySet().forEach { stepKey ->
-                    val dataBinding = ItemProgressBinding.inflate(LayoutInflater.from(context))
-                    dataBinding.step.text = "${stepKey.toInt().plus(1)}"
-                    dataBinding.step.gravity = Gravity.CENTER
-                    dataBinding.mistake.text = "${stepMistake[stepKey].asInt}"
-                    dataBinding.mistake.gravity = Gravity.CENTER
-                    binding.llProgress.addView(dataBinding.root)
+                    val row = LinearLayout(context).apply {
+                        layoutParams = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT
+                        )
+                        orientation = LinearLayout.HORIZONTAL
+                        gravity = Gravity.CENTER
+                    }
+
+                    val stepView = TextView(context).apply {
+                        layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                        text = "${stepKey.toInt().plus(1)}"
+                        gravity = Gravity.CENTER
+                        setTextColor(textColor)
+                    }
+
+                    val mistakeView = TextView(context).apply {
+                        layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                        text = "${stepMistake[stepKey].asInt}"
+                        gravity = Gravity.CENTER
+                        setTextColor(textColor)
+                    }
+
+                    row.addView(stepView)
+                    row.addView(mistakeView)
+
+                    binding.llProgress.addView(row)
                 }
             } else {
                 binding.llHeader.visibility = View.GONE
