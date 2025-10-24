@@ -286,9 +286,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 updateTeamDropdown()
             }
         } finally {
-            if (!mRealm.isClosed) {
-                mRealm.close()
-            }
+            // Realm instance is managed by SyncActivity; do not close it here.
         }
     }
 
