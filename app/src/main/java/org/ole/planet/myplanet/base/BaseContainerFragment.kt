@@ -99,8 +99,17 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             pendingAutoOpenLibrary?.let { library ->
                 shouldAutoOpenAfterDownload = false
                 pendingAutoOpenLibrary = null
-                if (library.isResourceOffline() || FileUtils.checkFileExist(requireContext(), UrlUtils.getUrl(library))) {
-                    ResourceOpener.openFileType(requireActivity(), library, "offline", profileDbHandler)
+
+                val isDownloaded = if (library.mediaType == "HTML") {
+                    val directory = File(context?.getExternalFilesDir(null), "ole/${library.resourceId}")
+                    val indexFile = File(directory, "index.html")
+                    indexFile.exists()
+                } else {
+                    library.isResourceOffline() || FileUtils.checkFileExist(requireContext(), UrlUtils.getUrl(library))
+                }
+
+                if (isDownloaded) {
+                    openResource(library)
                 }
             }
         }
