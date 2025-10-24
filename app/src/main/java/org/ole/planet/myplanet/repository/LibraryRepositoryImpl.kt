@@ -41,21 +41,13 @@ class LibraryRepositoryImpl @Inject constructor(
     override suspend fun getLibraryListForUser(userId: String?): List<RealmMyLibrary> {
         if (userId == null) return emptyList()
 
-        val results = queryList(RealmMyLibrary::class.java) {
-            equalTo("isPrivate", false)
-        }
-        return filterLibrariesNeedingUpdate(results)
-            .filter { it.userId?.contains(userId) == true }
+        return queryLibrariesNeedingUpdateForUser(userId)
     }
 
     override suspend fun countLibrariesNeedingUpdate(userId: String?): Int {
         if (userId == null) return 0
 
-        val results = queryList(RealmMyLibrary::class.java) {
-            equalTo("isPrivate", false)
-        }
-        return filterLibrariesNeedingUpdate(results)
-            .count { it.userId?.contains(userId) == true }
+        return queryLibrariesNeedingUpdateForUser(userId).size
     }
 
     override suspend fun saveLibraryItem(item: RealmMyLibrary) {
@@ -113,5 +105,13 @@ class LibraryRepositoryImpl @Inject constructor(
 
     private fun filterLibrariesNeedingUpdate(results: Collection<RealmMyLibrary>): List<RealmMyLibrary> {
         return results.filter { it.needToUpdate() }
+    }
+
+    private suspend fun queryLibrariesNeedingUpdateForUser(userId: String): List<RealmMyLibrary> {
+        val results = queryList(RealmMyLibrary::class.java) {
+            equalTo("isPrivate", false)
+            contains("userId", userId)
+        }
+        return filterLibrariesNeedingUpdate(results)
     }
 }
