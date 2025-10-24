@@ -429,6 +429,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
             mRealm.close()
         }
         hideLoadingDialog()
+        userProfileDbHandler.onDestroy()
         _binding = null
         super.onDestroyView()
     }

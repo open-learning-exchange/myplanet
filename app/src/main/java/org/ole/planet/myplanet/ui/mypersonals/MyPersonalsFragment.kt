@@ -58,7 +58,7 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
     }
 
     private fun setAdapter() {
-        val model = userProfileDbHandler.userModel
+        val model = userProfileDbHandler.getUserModelCopy() ?: userProfileDbHandler.userModel
         personalAdapter = AdapterMyPersonal(requireActivity(), mutableListOf())
         personalAdapter?.setListener(this)
         binding.rvMypersonal.adapter = personalAdapter
@@ -81,8 +81,9 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
     }
 
     override fun onDestroyView() {
-        super.onDestroyView()
+        userProfileDbHandler.onDestroy()
         _binding = null
+        super.onDestroyView()
     }
 
     override fun onUpload(personal: RealmMyPersonal?) {
