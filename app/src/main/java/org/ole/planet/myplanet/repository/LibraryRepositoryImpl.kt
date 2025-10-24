@@ -20,7 +20,8 @@ class LibraryRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getLibraryItemByResourceId(resourceId: String): RealmMyLibrary? {
-        return findByField(RealmMyLibrary::class.java, "_id", resourceId)
+        return findByField(RealmMyLibrary::class.java, "resourceId", resourceId)
+            ?: findByField(RealmMyLibrary::class.java, "_id", resourceId)
     }
 
     override suspend fun getLibraryItemsByIds(ids: Collection<String>): List<RealmMyLibrary> {
@@ -90,9 +91,8 @@ class LibraryRepositoryImpl @Inject constructor(
                 onRemove(realm, "resources", userId, resourceId)
             }
         }
-        return findByField(RealmMyLibrary::class.java, "resourceId", resourceId)
+        return getLibraryItemByResourceId(resourceId)
             ?: getLibraryItemById(resourceId)
-            ?: getLibraryItemByResourceId(resourceId)
     }
 
     override suspend fun updateLibraryItem(id: String, updater: (RealmMyLibrary) -> Unit) {
