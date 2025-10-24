@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.team.teamTask
 
 import android.app.AlertDialog
 import android.content.Context
-import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -23,6 +22,11 @@ class AdapterTask(
     private val nonTeamMember: Boolean
 ) : RecyclerView.Adapter<ViewHolderTask>() {
     private var listener: OnCompletedListener? = null
+    private val assigneeCache: MutableMap<String, String> = mutableMapOf()
+
+    init {
+        preloadAssigneeCache(list)
+    }
     fun setListener(listener: OnCompletedListener?) {
         this.listener = listener
     }
@@ -83,14 +87,56 @@ class AdapterTask(
     }
 
     private fun showAssignee(binding: RowTaskBinding, realmTeamTask: RealmTeamTask) {
-        if (!TextUtils.isEmpty(realmTeamTask.assignee)) {
-            val model = realm.where(RealmUserModel::class.java).equalTo("id", realmTeamTask.assignee).findFirst()
-            if (model != null) {
-                binding.assignee.text = context.getString(R.string.assigned_to_colon, model.name)
-                return
+        val assigneeId = realmTeamTask.assignee
+        if (assigneeId.isNullOrBlank()) {
+            binding.assignee.setText(R.string.no_assignee)
+            return
+        }
+
+        val assigneeName = assigneeCache[assigneeId] ?: fetchAndCacheAssignee(assigneeId)
+
+        if (!assigneeName.isNullOrBlank()) {
+            binding.assignee.text = context.getString(R.string.assigned_to_colon, assigneeName)
+        } else {
+            binding.assignee.setText(R.string.no_assignee)
+        }
+    }
+
+    private fun preloadAssigneeCache(tasks: List<RealmTeamTask>?) {
+        assigneeCache.clear()
+        val assigneeIds = tasks
+            ?.mapNotNull { it.assignee?.takeIf { id -> id.isNotBlank() } }
+            ?.distinct()
+            ?: emptyList()
+
+        if (assigneeIds.isEmpty()) {
+            return
+        }
+
+        val users = realm.copyFromRealm(
+            realm.where(RealmUserModel::class.java)
+                .`in`("id", assigneeIds.toTypedArray())
+                .findAll()
+        )
+
+        users.forEach { user ->
+            val id = user.id
+            val name = user.name
+            if (!id.isNullOrBlank() && !name.isNullOrBlank()) {
+                assigneeCache[id] = name
             }
         }
-        binding.assignee.setText(R.string.no_assignee)
+    }
+
+    private fun fetchAndCacheAssignee(assigneeId: String): String? {
+        val model = realm.where(RealmUserModel::class.java).equalTo("id", assigneeId).findFirst()
+            ?: return null
+        val unmanagedModel = realm.copyFromRealm(model)
+        val name = unmanagedModel.name
+        if (!name.isNullOrBlank()) {
+            assigneeCache[assigneeId] = name
+        }
+        return name
     }
 
     override fun getItemCount(): Int {
