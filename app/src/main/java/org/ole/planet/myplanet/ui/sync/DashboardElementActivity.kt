@@ -27,7 +27,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createActionAsync
-import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.dashboard.BellDashboardFragment
@@ -69,10 +68,9 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         }
     }
 
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.menu_dashboard, menu)
+    protected fun bindGoOnlineMenu(menu: Menu) {
         goOnline = menu.findItem(R.id.menu_goOnline)
-        return true
+        updateGoOnlineVisibility()
     }
 
     fun openCallFragment(newFragment: Fragment, tag: String?) {
@@ -119,9 +117,10 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
             }
         }
     }
-    override fun onPrepareOptionsMenu(menu: Menu): Boolean {
-        goOnline.isVisible = isBetaWifiFeatureEnabled(this)
-        return super.onPrepareOptionsMenu(menu)
+    protected fun updateGoOnlineVisibility() {
+        if (::goOnline.isInitialized) {
+            goOnline.isVisible = isBetaWifiFeatureEnabled(this)
+        }
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -135,9 +134,6 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
             }
             R.id.action_feedback -> {
                 openCallFragment(FeedbackFragment(), getString(R.string.menu_feedback))
-            }
-            R.id.action_setting -> {
-                startActivity(Intent(this, SettingActivity::class.java))
             }
             R.id.action_sync -> {
                 logSyncInSharedPrefs()
