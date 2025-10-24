@@ -1378,5 +1378,8 @@
     <string name="please_enter_a_valid_year_of_birth">veuillez entrer une année de naissance valide</string>
     <string name="please_enter_a_valid_year_between_1900_and">veuillez entrer une année valide entre 1900 et %1$d</string>
     <string name="redo_survey">refaire le sondage</string>
+    <string name="resource_not_found_in_database">Ressource introuvable dans la base de données</string>
+    <string name="resource_has_no_attachments">La ressource n’a pas de fichiers téléchargeables</string>
+    <string name="unable_to_download_resource">Impossible de télécharger la ressource</string>
 
 </resources>

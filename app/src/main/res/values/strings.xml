@@ -1378,5 +1378,8 @@
     <string name="please_enter_a_valid_year_of_birth">please enter a valid year of birth</string>
     <string name="please_enter_a_valid_year_between_1900_and">please enter a valid year between 1900 and %1$d</string>
     <string name="redo_survey">redo survey</string>
+    <string name="resource_not_found_in_database">Resource not found in database</string>
+    <string name="resource_has_no_attachments">Resource has no downloadable files</string>
+    <string name="unable_to_download_resource">Unable to download resource</string>
 
 </resources>

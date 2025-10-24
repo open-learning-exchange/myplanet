@@ -1378,5 +1378,8 @@
     <string name="please_enter_a_valid_year_of_birth">يرجى إدخال سنة ميلاد صالحة</string>
     <string name="please_enter_a_valid_year_between_1900_and">يرجى إدخال سنة صالحة بين 1900 و %1$d</string>
     <string name="redo_survey">أعد إجراء الاستبيان</string>
+    <string name="resource_not_found_in_database">المورد غير موجود في قاعدة البيانات</string>
+    <string name="resource_has_no_attachments">المورد لا يحتوي على ملفات قابلة للتنزيل</string>
+    <string name="unable_to_download_resource">غير قادر على تنزيل المورد</string>
 
 </resources>
