@@ -24,6 +24,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import java.util.UUID
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
@@ -128,15 +129,16 @@ class ReportsFragment : BaseTeamFragment() {
                     dialogAddReportBinding.nonPersonnel.error = "non-personnel is required"
                 } else {
                     val doc = JsonObject().apply {
+                        addProperty("_id", UUID.randomUUID().toString())
                         addProperty("createdDate", System.currentTimeMillis())
                         addProperty("description", "${dialogAddReportBinding.summary.text}")
-                        addProperty("beginningBalance", "${dialogAddReportBinding.beginningBalance.text}")
-                        addProperty("sales", "${dialogAddReportBinding.sales.text}")
-                        addProperty("otherIncome", "${dialogAddReportBinding.otherIncome.text}")
-                        addProperty("wages", "${dialogAddReportBinding.personnel.text}")
-                        addProperty("otherExpenses", "${dialogAddReportBinding.nonPersonnel.text}")
-                        addProperty("startDate", startTimeStamp)
-                        addProperty("endDate", endTimeStamp)
+                        addProperty("beginningBalance", dialogAddReportBinding.beginningBalance.text.toString().toIntOrNull() ?: 0)
+                        addProperty("sales", dialogAddReportBinding.sales.text.toString().toIntOrNull() ?: 0)
+                        addProperty("otherIncome", dialogAddReportBinding.otherIncome.text.toString().toIntOrNull() ?: 0)
+                        addProperty("wages", dialogAddReportBinding.personnel.text.toString().toIntOrNull() ?: 0)
+                        addProperty("otherExpenses", dialogAddReportBinding.nonPersonnel.text.toString().toIntOrNull() ?: 0)
+                        addProperty("startDate", startTimeStamp?.toLongOrNull() ?: 0L)
+                        addProperty("endDate", endTimeStamp?.toLongOrNull() ?: 0L)
                         addProperty("updatedDate", System.currentTimeMillis())
                         addProperty("teamId", teamId)
                         addProperty("teamType", team?.teamType)
@@ -172,7 +174,7 @@ class ReportsFragment : BaseTeamFragment() {
             .equalTo("teamId", teamId)
             .equalTo("docType", "report")
             .notEqualTo("status", "archived")
-            .sort("date", Sort.DESCENDING)
+            .sort("createdDate", Sort.DESCENDING)
             .findAllAsync()
 
         list?.addChangeListener { results ->
@@ -188,7 +190,7 @@ class ReportsFragment : BaseTeamFragment() {
                             .equalTo("teamId", teamId)
                             .equalTo("docType", "report")
                             .notEqualTo("status", "archived")
-                            .sort("date", Sort.DESCENDING)
+                            .sort("createdDate", Sort.DESCENDING)
                             .findAll()
                         val csvBuilder = StringBuilder()
                         csvBuilder.append("${prefData.getTeamName()} Financial Report Summary\n\n")
@@ -224,7 +226,7 @@ class ReportsFragment : BaseTeamFragment() {
             .equalTo("teamId", teamId)
             .equalTo("docType", "report")
             .notEqualTo("status", "archived")
-            .sort("date", Sort.DESCENDING)
+            .sort("createdDate", Sort.DESCENDING)
             .findAll()
         updatedReportsList(list as RealmResults<RealmMyTeam>)
 
