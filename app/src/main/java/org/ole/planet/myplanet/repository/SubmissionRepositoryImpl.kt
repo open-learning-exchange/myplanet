@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import io.realm.Case
 import io.realm.Sort
 import java.util.Date
 import javax.inject.Inject
@@ -141,6 +142,23 @@ class SubmissionRepositoryImpl @Inject constructor(
             equalTo("userId", userId)
             equalTo("parentId", parentId)
             equalTo("type", type)
+        } > 0
+    }
+
+    override suspend fun hasPendingOfflineSubmissions(): Boolean {
+        return count(RealmSubmission::class.java) {
+            beginGroup()
+            equalTo("isUpdated", true)
+            or()
+            isEmpty("_id")
+            endGroup()
+        } > 0
+    }
+
+    override suspend fun hasPendingExamResults(): Boolean {
+        return count(RealmSubmission::class.java) {
+            equalTo("status", "pending", Case.INSENSITIVE)
+            isNotEmpty("answers")
         } > 0
     }
 
