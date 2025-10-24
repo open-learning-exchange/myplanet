@@ -129,7 +129,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
                 wifiStatusSwitch()
                 return true
             }
-            R.id.menu_logout -> {
+            R.id.action_logout -> {
                 logout()
             }
             R.id.action_feedback -> {
