@@ -151,12 +151,6 @@
 
     <style name="MyMaterialTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
 
-    <style name="CustomAlertDialogStyle">
-        <item name="android:background">@drawable/alertdialog_background</item>
-        <item name="android:textColorPrimary">@color/daynight_textColor</item>
-        <item name="android:textColor">@color/daynight_textColor</item>
-    </style>
-
     <style name="CustomAlertDialog" parent="ThemeOverlay.MaterialComponents.Dialog.Alert">
         <item name="android:background">@color/daynight_grey</item>
         <item name="android:textColorPrimary">@color/daynight_textColor</item>
