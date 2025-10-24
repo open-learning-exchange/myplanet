@@ -15,36 +15,43 @@ import java.util.Calendar
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.DialogAddReportBinding
 import org.ole.planet.myplanet.databinding.ReportListItemBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils
 
-class AdapterReports(private val context: Context, private var list: RealmResults<RealmMyTeam>) : RecyclerView.Adapter<AdapterReports.ViewHolderReports>() {
-    private lateinit var reportListItemBinding: ReportListItemBinding
+class AdapterReports(
+    private val context: Context,
+    private val databaseService: DatabaseService,
+    private var list: RealmResults<RealmMyTeam>
+) : RecyclerView.Adapter<AdapterReports.ViewHolderReports>() {
     private var startTimeStamp: String? = null
     private var endTimeStamp: String? = null
     lateinit var prefData: SharedPrefManager
     private var nonTeamMember = false
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderReports {
-        reportListItemBinding = ReportListItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        val binding = ReportListItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         prefData = SharedPrefManager(context)
-        return ViewHolderReports(reportListItemBinding)
+        return ViewHolderReports(binding)
     }
 
     override fun onBindViewHolder(holder: ViewHolderReports, position: Int) {
+        val binding = holder.binding
         if (nonTeamMember) {
-            reportListItemBinding.edit.visibility = View.GONE
-            reportListItemBinding.delete.visibility = View.GONE
+            binding.edit.visibility = View.GONE
+            binding.delete.visibility = View.GONE
+        } else {
+            binding.edit.visibility = View.VISIBLE
+            binding.delete.visibility = View.VISIBLE
         }
         val report = list[position]
-        reportListItemBinding.tvReportTitle.text = context.getString(R.string.team_financial_report, prefData.getTeamName())
+        binding.tvReportTitle.text = context.getString(R.string.team_financial_report, prefData.getTeamName())
         report?.let {
-            with(reportListItemBinding) {
+            with(binding) {
                 val totalIncome = report.sales + report.otherIncome
                 val totalExpenses = report.wages + report.otherExpenses
                 val profitLoss = totalIncome - totalExpenses
@@ -64,7 +71,10 @@ class AdapterReports(private val context: Context, private var list: RealmResult
             }
         }
 
-        reportListItemBinding.edit.setOnClickListener {
+        binding.edit.setOnClickListener {
+            val adapterPosition = holder.bindingAdapterPosition
+            if (adapterPosition == RecyclerView.NO_POSITION) return@setOnClickListener
+            val currentReport = list[adapterPosition] ?: return@setOnClickListener
             val dialogAddReportBinding = DialogAddReportBinding.inflate(LayoutInflater.from(context))
             val v: View = dialogAddReportBinding.root
             val builder = AlertDialog.Builder(context, R.style.AlertDialogTheme)
@@ -80,14 +90,17 @@ class AdapterReports(private val context: Context, private var list: RealmResult
             val calendar = Calendar.getInstance()
             calendar.set(Calendar.DAY_OF_MONTH, 1)
 
-            dialogAddReportBinding.startDate.text = context.getString(R.string.message_placeholder, report?.let { it1 -> TimeUtils.formatDate(it1.startDate, " MMM dd, yyyy") })
-            dialogAddReportBinding.endDate.text = context.getString(R.string.message_placeholder, report?.let { it1 -> TimeUtils.formatDate(it1.endDate, " MMM dd, yyyy") })
-            dialogAddReportBinding.summary.setText(context.getString(R.string.message_placeholder, report?.description))
-            dialogAddReportBinding.beginningBalance.setText(context.getString(R.string.number_placeholder, report?.beginningBalance))
-            dialogAddReportBinding.sales.setText(context.getString(R.string.number_placeholder, report?.sales))
-            dialogAddReportBinding.otherIncome.setText(context.getString(R.string.number_placeholder, report?.otherIncome))
-            dialogAddReportBinding.personnel.setText(context.getString(R.string.number_placeholder, report?.wages))
-            dialogAddReportBinding.nonPersonnel.setText(context.getString(R.string.number_placeholder, report?.otherExpenses))
+            startTimeStamp = currentReport.startDate.toString()
+            endTimeStamp = currentReport.endDate.toString()
+
+            dialogAddReportBinding.startDate.text = context.getString(R.string.message_placeholder, TimeUtils.formatDate(currentReport.startDate, " MMM dd, yyyy"))
+            dialogAddReportBinding.endDate.text = context.getString(R.string.message_placeholder, TimeUtils.formatDate(currentReport.endDate, " MMM dd, yyyy"))
+            dialogAddReportBinding.summary.setText(context.getString(R.string.message_placeholder, currentReport.description))
+            dialogAddReportBinding.beginningBalance.setText(context.getString(R.string.number_placeholder, currentReport.beginningBalance))
+            dialogAddReportBinding.sales.setText(context.getString(R.string.number_placeholder, currentReport.sales))
+            dialogAddReportBinding.otherIncome.setText(context.getString(R.string.number_placeholder, currentReport.otherIncome))
+            dialogAddReportBinding.personnel.setText(context.getString(R.string.number_placeholder, currentReport.wages))
+            dialogAddReportBinding.nonPersonnel.setText(context.getString(R.string.number_placeholder, currentReport.otherExpenses))
 
             dialogAddReportBinding.ltStartDate.setOnClickListener {
                 val year = calendar.get(Calendar.YEAR)
@@ -142,9 +155,7 @@ class AdapterReports(private val context: Context, private var list: RealmResult
                     dialogAddReportBinding.nonPersonnel.error = "non-personnel is required"
                 } else {
                     val doc = JsonObject().apply {
-                        if (report != null) {
-                            addProperty("_id", report._id)
-                        }
+                        addProperty("_id", currentReport._id)
                         addProperty("description", "${dialogAddReportBinding.summary.text}")
                         addProperty("beginningBalance", "${dialogAddReportBinding.beginningBalance.text}")
                         addProperty("sales", "${dialogAddReportBinding.sales.text}")
@@ -158,12 +169,12 @@ class AdapterReports(private val context: Context, private var list: RealmResult
                     }
                     CoroutineScope(Dispatchers.Main).launch {
                         try {
-                            MainApplication.service.executeTransactionAsync { realm ->
+                            databaseService.executeTransactionAsync { realm ->
                                 RealmMyTeam.updateReports(doc, realm)
                             }
                             dialog.dismiss()
                         } catch (e: Exception) {
-                            Snackbar.make(reportListItemBinding.root, "Failed to update report. Please try again.", Snackbar.LENGTH_LONG).show()
+                            Snackbar.make(binding.root, "Failed to update report. Please try again.", Snackbar.LENGTH_LONG).show()
                         }
                     }
                 }
@@ -172,15 +183,18 @@ class AdapterReports(private val context: Context, private var list: RealmResult
             cancel.setOnClickListener { dialog.dismiss() }
         }
 
-        reportListItemBinding.delete.setOnClickListener {
-            report?._id?.let { reportId ->
+        binding.delete.setOnClickListener {
+            val adapterPosition = holder.bindingAdapterPosition
+            if (adapterPosition == RecyclerView.NO_POSITION) return@setOnClickListener
+            val reportToDelete = list[adapterPosition]
+            reportToDelete?._id?.let { reportId ->
                 val builder = AlertDialog.Builder(context, R.style.AlertDialogTheme)
                 builder.setTitle(context.getString(R.string.delete_report))
                     .setMessage(R.string.delete_record)
                     .setPositiveButton(R.string.ok) { _, _ ->
                         CoroutineScope(Dispatchers.Main).launch {
                             try {
-                                MainApplication.service.executeTransactionAsync { realm ->
+                                databaseService.executeTransactionAsync { realm ->
                                     realm.where(RealmMyTeam::class.java)
                                         .equalTo("_id", reportId)
                                         .findFirst()?.apply {
@@ -190,7 +204,7 @@ class AdapterReports(private val context: Context, private var list: RealmResult
                                 }
                                 notifyDataSetChanged()
                             } catch (e: Exception) {
-                                reportListItemBinding.root.let { view ->
+                                binding.root.let { view ->
                                     Snackbar.make(view, context.getString(R.string.failed_to_delete_report), Snackbar.LENGTH_LONG).show()
                                 }
                             }
@@ -212,5 +226,5 @@ class AdapterReports(private val context: Context, private var list: RealmResult
         this.nonTeamMember = nonTeamMember
     }
 
-    class ViewHolderReports(reportListItemBinding: ReportListItemBinding) : RecyclerView.ViewHolder(reportListItemBinding.root)
+    class ViewHolderReports(val binding: ReportListItemBinding) : RecyclerView.ViewHolder(binding.root)
 }
