@@ -26,22 +26,18 @@ class MeetupRepositoryImpl @Inject constructor(
         if (meetupId.isBlank()) {
             return emptyList()
         }
-        return withRealmAsync { realm ->
-            val meetupMembers = realm.where(RealmMeetup::class.java)
-                .equalTo("meetupId", meetupId)
-                .isNotEmpty("userId")
-                .findAll()
-            val memberIds = meetupMembers.mapNotNull { member ->
-                member.userId?.takeUnless { it.isBlank() }
-            }.distinct()
-            if (memberIds.isEmpty()) {
-                emptyList()
-            } else {
-                val users = realm.where(RealmUserModel::class.java)
-                    .`in`("id", memberIds.toTypedArray())
-                    .findAll()
-                realm.copyFromRealm(users)
-            }
+        val meetupMembers = queryList(RealmMeetup::class.java) {
+            equalTo("meetupId", meetupId)
+            isNotEmpty("userId")
+        }
+        val memberIds = meetupMembers.mapNotNull { member ->
+            member.userId?.takeUnless { it.isBlank() }
+        }.distinct()
+        if (memberIds.isEmpty()) {
+            return emptyList()
+        }
+        return queryList(RealmUserModel::class.java) {
+            `in`("id", memberIds.toTypedArray())
         }
     }
 
