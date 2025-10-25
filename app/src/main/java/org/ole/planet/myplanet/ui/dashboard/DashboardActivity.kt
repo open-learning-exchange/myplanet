@@ -961,9 +961,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     override fun onPrepareOptionsMenu(menu: Menu): Boolean {
-        if (user?.rolesList?.isEmpty() == true) {
-            menu.findItem(R.id.action_setting).isEnabled = false
-        }
+        updateGoOnlineVisibility()
         return super.onPrepareOptionsMenu(menu)
     }
 
@@ -1214,7 +1212,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_bell_dashboard, menu)
-        menu.findItem(R.id.menu_goOnline).isVisible = isBetaWifiFeatureEnabled(this)
+        bindGoOnlineMenu(menu)
         return super.onCreateOptionsMenu(menu)
     }
 
