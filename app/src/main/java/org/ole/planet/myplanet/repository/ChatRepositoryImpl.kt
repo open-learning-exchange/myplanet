@@ -32,16 +32,20 @@ class ChatRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getLatestRevision(chatId: String): String? {
-        if (chatId.isEmpty()) {
+        if (chatId.isBlank()) {
             return null
         }
-        return withRealmAsync { realm ->
-            realm.refresh()
-            realm.where(RealmChatHistory::class.java)
-                .equalTo("_id", chatId)
-                .findAll()
-                .maxByOrNull { rev -> rev._rev?.split("-")?.get(0)?.toIntOrNull() ?: 0 }
-                ?._rev
+        return runCatching {
+            withRealmAsync { realm ->
+                realm.refresh()
+                realm.where(RealmChatHistory::class.java)
+                    .equalTo("_id", chatId)
+                    .findFirst()
+                    ?._rev
+            }
+        }.getOrElse {
+            it.printStackTrace()
+            null
         }
     }
 }

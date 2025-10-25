@@ -157,7 +157,9 @@ class ChatDetailFragment : Fragment() {
                 viewLifecycleOwner.lifecycleScope.launch {
                     val latestRev = if (_id.isNotEmpty()) {
                         withContext(Dispatchers.IO) {
-                            chatRepository.getLatestRevision(_id)
+                            runCatching { chatRepository.getLatestRevision(_id) }
+                                .onFailure { it.printStackTrace() }
+                                .getOrNull()
                         }
                     } else {
                         null
@@ -524,6 +526,7 @@ class ChatDetailFragment : Fragment() {
             val rev = responseBody.couchDBResponse?.rev
             if (id != null) {
                 currentID = id
+                _id = id
             }
             if (rev != null) {
                 _rev = rev
