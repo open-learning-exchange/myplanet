@@ -202,6 +202,7 @@ class MyDownloadService : Service() {
 
         if (completedDownloadsCount >= totalDownloadsCount) {
             showCompletionNotification(true)
+            stopSelf()
         }
 
         if (!fromSync) {
@@ -220,46 +221,44 @@ class MyDownloadService : Service() {
         val startTime = System.currentTimeMillis()
         var timeCount = 1
 
-        try {
-            BufferedInputStream(body.byteStream(), 1024 * 8).use { bis ->
-                FileOutputStream(outputFile).use { output ->
-                    while (true) {
-                        val readCount = bis.read(data)
-                        if (readCount == -1) break
+        BufferedInputStream(body.byteStream(), 1024 * 8).use { bis ->
+            FileOutputStream(outputFile).use { output ->
+                while (true) {
+                    val readCount = bis.read(data)
+                    if (readCount == -1) break
 
-                        if (readCount > 0) {
-                            total += readCount
-                            val current = (total / 1024.0).roundToInt().toDouble()
-                            val currentTime = System.currentTimeMillis() - startTime
+                    if (readCount > 0) {
+                        total += readCount
+                        val current = (total / 1024.0).roundToInt().toDouble()
+                        val currentTime = System.currentTimeMillis() - startTime
 
-                            val download = Download().apply {
-                                fileName = getFileNameFromUrl(url)
-                            }
-
-                            if (fileSize > 0) {
-                                totalFileSize = (fileSize / 1024.0).toInt()
-                                val progress = (total * 100 / fileSize).toInt()
-                                this@MyDownloadService.totalFileSize = totalFileSize
-                                download.totalFileSize = totalFileSize
-                                download.progress = progress
-                            } else {
-                                download.totalFileSize = 0
-                                download.progress = -1
-                            }
-
-                            if (currentTime > 1000 * timeCount) {
-                                download.currentFileSize = current.toInt()
-                                sendNotification(download)
-                                timeCount++
-                            }
-                            output.write(data, 0, readCount)
+                        val download = Download().apply {
+                            fileName = getFileNameFromUrl(url)
                         }
+
+                        if (fileSize > 0) {
+                            totalFileSize = (fileSize / 1024.0).toInt()
+                            val progress = (total * 100 / fileSize).toInt()
+                            this@MyDownloadService.totalFileSize = totalFileSize
+                            download.totalFileSize = totalFileSize
+                            download.progress = progress
+                        } else {
+                            download.totalFileSize = 0
+                            download.progress = -1
+                        }
+
+                        if (currentTime > 1000 * timeCount) {
+                            download.currentFileSize = current.toInt()
+                            sendNotification(download)
+                            timeCount++
+                        }
+                        output.write(data, 0, readCount)
                     }
                 }
             }
-        } finally {
-            onDownloadComplete(url)
         }
+
+        onDownloadComplete(url)
     }
 
     private fun checkStorage(fileSize: Long): Boolean {
