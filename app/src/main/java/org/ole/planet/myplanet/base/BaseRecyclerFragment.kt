@@ -145,8 +145,8 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
                 courseIds.forEach { courseId ->
                     if (courseId.isNotBlank()) {
-                        courseRepository.markCourseAdded(courseId, userId)
-                        courseAdded = true
+                        val added = courseRepository.markCourseAdded(courseId, userId)
+                        courseAdded = courseAdded || added
                     }
                 }
             }

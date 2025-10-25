@@ -5,8 +5,8 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onAdd
 
 class CourseRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
@@ -45,23 +45,31 @@ class CourseRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun markCourseAdded(courseId: String, userId: String?) {
+    override suspend fun markCourseAdded(courseId: String, userId: String?): Boolean {
         if (courseId.isBlank()) {
-            return
+            return false
         }
 
+        var courseFound = false
         executeTransaction { realm ->
             realm.where(RealmMyCourse::class.java)
                 .equalTo("courseId", courseId)
                 .findFirst()
-                ?.setUserId(userId)
+                ?.let { course ->
+                    course.setUserId(userId)
+                    if (!userId.isNullOrBlank()) {
+                        realm.where(RealmRemovedLog::class.java)
+                            .equalTo("type", "courses")
+                            .equalTo("userId", userId)
+                            .equalTo("docId", course.courseId)
+                            .findAll()
+                            .deleteAllFromRealm()
+                    }
+                    courseFound = true
+                }
         }
 
-        if (!userId.isNullOrBlank()) {
-            withRealmAsync { realm ->
-                onAdd(realm, "courses", userId, courseId)
-            }
-        }
+        return courseFound
     }
 
     private suspend fun getCourseResources(courseId: String?, isOffline: Boolean): List<RealmMyLibrary> {
