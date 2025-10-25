@@ -110,7 +110,7 @@ class LibraryRepositoryImpl @Inject constructor(
     private suspend fun queryLibrariesNeedingUpdateForUser(userId: String): List<RealmMyLibrary> {
         val results = queryList(RealmMyLibrary::class.java) {
             equalTo("isPrivate", false)
-            contains("userId", userId)
+            equalTo("userId", userId)
         }
         return filterLibrariesNeedingUpdate(results)
     }
