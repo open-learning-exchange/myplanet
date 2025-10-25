@@ -38,8 +38,8 @@ import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.ManagerSync
 import org.ole.planet.myplanet.di.ApiInterfaceEntryPoint
-import org.ole.planet.myplanet.di.ImprovedSyncEntryPoint
 import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.di.ImprovedSyncEntryPoint
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.insert
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.insertMyCourses
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs

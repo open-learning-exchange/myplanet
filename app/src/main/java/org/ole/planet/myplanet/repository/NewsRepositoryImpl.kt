@@ -4,8 +4,8 @@ import com.google.gson.Gson
 import com.google.gson.JsonArray
 import io.realm.Case
 import io.realm.Sort
-import javax.inject.Inject
 import java.util.HashMap
+import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews

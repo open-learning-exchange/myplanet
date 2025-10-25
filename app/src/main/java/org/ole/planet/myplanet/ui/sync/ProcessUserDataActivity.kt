@@ -39,6 +39,7 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UploadToShelfService
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
@@ -47,7 +48,6 @@ import org.ole.planet.myplanet.utilities.DialogUtils.showAlert
 import org.ole.planet.myplanet.utilities.DialogUtils.showError
 import org.ole.planet.myplanet.utilities.FileUtils.installApk
 import org.ole.planet.myplanet.utilities.UrlUtils
-import org.ole.planet.myplanet.repository.UserRepository
 
 @AndroidEntryPoint
 abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {

@@ -25,11 +25,11 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SecurityDataCallback
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.di.ApiInterfaceEntryPoint
+import org.ole.planet.myplanet.di.AutoSyncEntryPoint
+import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmCommunity
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.isUserExists
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
-import org.ole.planet.myplanet.model.MyPlanet
-import org.ole.planet.myplanet.di.AutoSyncEntryPoint
 import org.ole.planet.myplanet.service.UploadToShelfService
 import org.ole.planet.myplanet.ui.sync.ProcessUserDataActivity
 import org.ole.planet.myplanet.ui.sync.SyncActivity

@@ -37,8 +37,8 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.di.ApiClientEntryPoint
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.DefaultPreferences
-import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.di.WorkerDependenciesEntryPoint
+import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.service.AutoSyncWorker
 import org.ole.planet.myplanet.service.NetworkMonitorWorker
 import org.ole.planet.myplanet.service.StayOnlineWorker

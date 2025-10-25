@@ -8,7 +8,6 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import java.io.File
-import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSelectedMyPersonal
 import org.ole.planet.myplanet.databinding.RowMyPersonalBinding
 import org.ole.planet.myplanet.model.RealmMyPersonal
