@@ -18,7 +18,6 @@ import org.ole.planet.myplanet.databinding.FragmentCourseDetailBinding
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.CourseRepository
 import org.ole.planet.myplanet.repository.RatingRepository
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
@@ -30,8 +29,6 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     var courses: RealmMyCourse? = null
     var user: RealmUserModel? = null
     var id: String? = null
-    @Inject
-    lateinit var courseRepository: CourseRepository
     @Inject
     lateinit var ratingRepository: RatingRepository
     override fun onCreate(savedInstanceState: Bundle?) {
