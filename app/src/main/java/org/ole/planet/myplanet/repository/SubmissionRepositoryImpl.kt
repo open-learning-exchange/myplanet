@@ -192,8 +192,4 @@ class SubmissionRepositoryImpl @Inject constructor(
         save(submission)
     }
 
-    override suspend fun updateSubmission(id: String, updater: (RealmSubmission) -> Unit) {
-        update(RealmSubmission::class.java, "id", id, updater)
-    }
-
 }

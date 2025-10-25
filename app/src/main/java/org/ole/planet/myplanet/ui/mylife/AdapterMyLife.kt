@@ -30,7 +30,6 @@ import org.ole.planet.myplanet.ui.mylife.helper.ItemTouchHelperViewHolder
 import org.ole.planet.myplanet.ui.mylife.helper.OnStartDragListener
 import org.ole.planet.myplanet.ui.mypersonals.MyPersonalsFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
-import org.ole.planet.myplanet.ui.news.NewsFragment
 import org.ole.planet.myplanet.ui.references.ReferenceFragment
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment.Companion.newInstance
@@ -100,10 +99,6 @@ class AdapterMyLife(private val context: Context, private val myLifeList: List<R
         holder.rvItemContainer.alpha = alpha
     }
 
-    fun setmRealm(mRealm: Realm) {
-        this.mRealm = mRealm
-    }
-
     override fun getItemCount(): Int {
         return myLifeList.size
     }
@@ -140,7 +135,6 @@ class AdapterMyLife(private val context: Context, private val myLifeList: List<R
         fun findFragment(frag: String?): Fragment? {
             when (frag) {
                 "ic_mypersonals" -> return MyPersonalsFragment()
-                "ic_news" -> return NewsFragment()
                 "ic_submissions" -> return MySubmissionFragment()
                 "ic_my_survey" -> return newInstance("survey")
                 "ic_myhealth" -> return MyHealthFragment()
