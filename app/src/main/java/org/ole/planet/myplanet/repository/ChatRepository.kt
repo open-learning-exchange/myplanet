@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.JsonObject
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmNews
 
@@ -14,4 +15,6 @@ interface ChatRepository {
     )
 
     suspend fun getLatestRevisionId(chatHistoryId: String): String?
+
+    suspend fun saveChatHistory(chatHistory: JsonObject)
 }
