@@ -22,7 +22,6 @@ import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.ui.myhealth.MyHealthFragment
 import org.ole.planet.myplanet.ui.mymeetup.MyMeetupDetailFragment
 import org.ole.planet.myplanet.ui.mypersonals.MyPersonalsFragment
-import org.ole.planet.myplanet.ui.news.NewsFragment
 import org.ole.planet.myplanet.ui.references.ReferenceFragment
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
@@ -61,7 +60,6 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
             homeItemClickListener?.let { listener ->
                 when (title) {
                     "mySubmissions" -> openIfLoggedIn { listener.openCallFragment(MySubmissionFragment()) }
-                    "Our News" -> listener.openCallFragment(NewsFragment())
                     "References" -> listener.openCallFragment(ReferenceFragment())
                     "Calendar" -> listener.openCallFragment(CalendarFragment())
                     "mySurveys" -> openIfLoggedIn { listener.openCallFragment(MySubmissionFragment.newInstance("survey")) }

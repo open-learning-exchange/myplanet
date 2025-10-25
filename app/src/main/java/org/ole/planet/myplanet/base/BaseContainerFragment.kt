@@ -99,8 +99,17 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             pendingAutoOpenLibrary?.let { library ->
                 shouldAutoOpenAfterDownload = false
                 pendingAutoOpenLibrary = null
-                if (library.isResourceOffline() || FileUtils.checkFileExist(requireContext(), UrlUtils.getUrl(library))) {
-                    ResourceOpener.openFileType(requireActivity(), library, "offline", profileDbHandler)
+
+                val isDownloaded = if (library.mediaType == "HTML") {
+                    val directory = File(context?.getExternalFilesDir(null), "ole/${library.resourceId}")
+                    val indexFile = File(directory, "index.html")
+                    indexFile.exists()
+                } else {
+                    library.isResourceOffline() || FileUtils.checkFileExist(requireContext(), UrlUtils.getUrl(library))
+                }
+
+                if (isDownloaded) {
+                    openResource(library)
                 }
             }
         }
@@ -152,7 +161,10 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
 
     private fun openHtmlResource(items: RealmMyLibrary) {
-        if (items.resourceOffline) {
+        val directory = File(context?.getExternalFilesDir(null), "ole/${items.resourceId}")
+        val indexFile = File(directory, "index.html")
+
+        if (indexFile.exists()) {
             val intent = Intent(activity, WebViewActivity::class.java)
             intent.putExtra("RESOURCE_ID", items.id)
             intent.putExtra("LOCAL_ADDRESS", items.resourceLocalAddress)
@@ -174,6 +186,13 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 
             if (downloadUrls.isNotEmpty()) {
                 startDownloadWithAutoOpen(downloadUrls, items)
+            } else {
+                val errorMessage = when {
+                    resource == null -> getString(R.string.resource_not_found_in_database)
+                    resource.attachments.isNullOrEmpty() -> getString(R.string.resource_has_no_attachments)
+                    else -> getString(R.string.unable_to_download_resource)
+                }
+                Utilities.toast(activity, errorMessage)
             }
         }
     }
