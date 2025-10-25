@@ -99,10 +99,6 @@ class AdapterMyLife(private val context: Context, private val myLifeList: List<R
         holder.rvItemContainer.alpha = alpha
     }
 
-    fun setmRealm(mRealm: Realm) {
-        this.mRealm = mRealm
-    }
-
     override fun getItemCount(): Int {
         return myLifeList.size
     }
