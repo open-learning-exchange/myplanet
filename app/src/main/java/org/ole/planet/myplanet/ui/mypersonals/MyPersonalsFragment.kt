@@ -58,15 +58,20 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
     }
 
     private fun setAdapter() {
-        val model = userProfileDbHandler.userModel
+        val model = userProfileDbHandler.getUserModelCopy() ?: userProfileDbHandler.userModel
+        val userId = model?.id ?: model?._id
         personalAdapter = AdapterMyPersonal(requireActivity(), mutableListOf())
         personalAdapter?.setListener(this)
         binding.rvMypersonal.adapter = personalAdapter
-        viewLifecycleOwner.lifecycleScope.launch {
-            myPersonalRepository.getPersonalResources(model?.id).collectLatest { realmMyPersonals ->
-                personalAdapter?.updateList(realmMyPersonals)
-                showNodata()
+        if (!userId.isNullOrBlank()) {
+            viewLifecycleOwner.lifecycleScope.launch {
+                myPersonalRepository.getPersonalResources(userId).collectLatest { realmMyPersonals ->
+                    personalAdapter?.updateList(realmMyPersonals)
+                    showNodata()
+                }
             }
+        } else {
+            personalAdapter?.updateList(emptyList())
         }
         showNodata()
     }
@@ -81,8 +86,9 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
     }
 
     override fun onDestroyView() {
-        super.onDestroyView()
+        userProfileDbHandler.onDestroy()
         _binding = null
+        super.onDestroyView()
     }
 
     override fun onUpload(personal: RealmMyPersonal?) {

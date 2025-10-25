@@ -32,7 +32,7 @@ class CommunityTabFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         val parentCode = settings.getString("parentCode", "").orEmpty()
         val communityName = settings.getString("communityName", "").orEmpty()
-        val user = userProfileDbHandler.userModel
+        val user = userProfileDbHandler.getUserModelCopy() ?: userProfileDbHandler.userModel
         val planetCode = user?.planetCode.orEmpty()
         binding.viewPager2.adapter = CommunityPagerAdapter(requireActivity(), "$planetCode@$parentCode", false, settings)
         TabLayoutMediator(binding.tabLayout, binding.viewPager2) { tab, position ->
@@ -44,7 +44,8 @@ class CommunityTabFragment : Fragment() {
     }
 
     override fun onDestroyView() {
-        super.onDestroyView()
+        userProfileDbHandler.onDestroy()
         _binding = null
+        super.onDestroyView()
     }
 }
