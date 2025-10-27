@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.viewer
 
-import android.app.Activity
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -24,11 +23,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
-import dagger.Module
-import dagger.Provides
-import dagger.hilt.InstallIn
 import dagger.hilt.android.AndroidEntryPoint
-import dagger.hilt.android.components.ActivityComponent
 import javax.inject.Inject
 import javax.inject.Provider
 import org.ole.planet.myplanet.R
@@ -258,14 +253,5 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
             e.printStackTrace()
         }
         super.onDestroy()
-    }
-}
-
-@Module
-@InstallIn(ActivityComponent::class)
-object VideoPlayerActivityModule {
-    @Provides
-    fun provideAuthCallback(activity: Activity): AuthSessionUpdater.AuthCallback {
-        return activity as AuthSessionUpdater.AuthCallback
     }
 }
