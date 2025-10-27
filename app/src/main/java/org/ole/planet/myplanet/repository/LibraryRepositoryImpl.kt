@@ -73,16 +73,16 @@ class LibraryRepositoryImpl @Inject constructor(
         userId: String,
         isAdd: Boolean,
     ): RealmMyLibrary? {
-        executeTransaction { realm ->
-            realm.where(RealmMyLibrary::class.java)
-                .equalTo("resourceId", resourceId)
-                .findFirst()?.let { library ->
-                    if (isAdd) {
-                        library.setUserId(userId)
-                    } else {
-                        library.removeUserId(userId)
-                    }
-                }
+        update(
+            RealmMyLibrary::class.java,
+            "resourceId",
+            resourceId,
+        ) { library ->
+            if (isAdd) {
+                library.setUserId(userId)
+            } else {
+                library.removeUserId(userId)
+            }
         }
         withRealmAsync { realm ->
             if (isAdd) {
