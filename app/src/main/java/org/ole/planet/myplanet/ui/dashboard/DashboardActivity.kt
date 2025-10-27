@@ -103,12 +103,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private var headerResult: AccountHeader? = null
     var user: RealmUserModel? = null
     var result: Drawer? = null
-    private var menul: TabLayout.Tab? = null
-    private var menuh: TabLayout.Tab? = null
-    private var menuc: TabLayout.Tab? = null
-    private var menue: TabLayout.Tab? = null
-    private var menuco: TabLayout.Tab? = null
-    private var menut: TabLayout.Tab? = null
     private var tl: TabLayout? = null
     private var dl: DrawerLayout? = null
     private val realmListeners = mutableListOf<RealmListener>()
@@ -301,12 +295,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun initTabs() {
-        menuh = tl?.getTabAt(0)
-        menul = tl?.getTabAt(1)
-        menuc = tl?.getTabAt(2)
-        menut = tl?.getTabAt(3)
-        menue = tl?.getTabAt(4)
-        menuco = tl?.getTabAt(5)
     }
 
     private fun addBackPressCallback() {
