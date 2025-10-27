@@ -87,7 +87,6 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         }
     )
 ) {
-    private lateinit var rowNewsBinding: RowNewsBinding
     private var listener: OnNewsItemClickListener? = null
     private var imageList: RealmList<String>? = null
     lateinit var mRealm: Realm
@@ -141,7 +140,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-        rowNewsBinding = RowNewsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        val rowNewsBinding = RowNewsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         sharedPreferences = SharedPrefManager(context)
         user = userProfileDbHandler.userModel
         settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -173,11 +172,11 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
 
                 configureEditDeleteButtons(viewHolder, news)
 
-                loadImage(viewHolder.rowNewsBinding, news)
+                loadImage(viewHolder.binding, news)
                 showReplyButton(viewHolder, news, position)
                 val canManageLabels = canAddLabel(news)
-                labelManager?.setupAddLabelMenu(viewHolder.rowNewsBinding, news, canManageLabels)
-                news.let { labelManager?.showChips(viewHolder.rowNewsBinding, it, canManageLabels) }
+                labelManager?.setupAddLabelMenu(viewHolder.binding, news, canManageLabels)
+                news.let { labelManager?.showChips(viewHolder.binding, it, canManageLabels) }
 
                 handleChat(viewHolder, news)
 
@@ -216,7 +215,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     }
 
     private fun resetViews(holder: ViewHolderNews) {
-        with(holder.rowNewsBinding) {
+        with(holder.binding) {
             tvName.text = ""
             imgUser.setImageResource(0)
             llEditDelete.visibility = View.GONE
@@ -262,13 +261,13 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         }
         val userFullName = userModel?.getFullNameWithMiddleName()?.trim()
         if (userModel != null && currentUser != null) {
-            holder.rowNewsBinding.tvName.text =
+            holder.binding.tvName.text =
                 if (userFullName.isNullOrEmpty()) news.userName else userFullName
-            ImageUtils.loadImage(userModel.userImage, holder.rowNewsBinding.imgUser)
+            ImageUtils.loadImage(userModel.userImage, holder.binding.imgUser)
             showHideButtons(news, holder)
         } else {
-            holder.rowNewsBinding.tvName.text = news.userName
-            ImageUtils.loadImage(null, holder.rowNewsBinding.imgUser)
+            holder.binding.tvName.text = news.userName
+            ImageUtils.loadImage(null, holder.binding.imgUser)
         }
         return userModel
     }
@@ -280,28 +279,28 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
             600,
             350
         )
-        setMarkdownText(holder.rowNewsBinding.tvMessage, markdownContentWithLocalPaths)
-        val fulltext = holder.rowNewsBinding.tvMessage.text
-        holder.rowNewsBinding.tvMessage.makeExpandable(
+        setMarkdownText(holder.binding.tvMessage, markdownContentWithLocalPaths)
+        val fulltext = holder.binding.tvMessage.text
+        holder.binding.tvMessage.makeExpandable(
             fullText = fulltext,
             collapsedMaxLines = 6
         )
-        holder.rowNewsBinding.tvDate.text =
+        holder.binding.tvDate.text =
             if (sharedTeamName.isEmpty() || teamName.isNotEmpty()) {
                 formatDate(news.time)
             } else {
                 "${formatDate(news.time)} | Shared from $sharedTeamName"
             }
-        holder.rowNewsBinding.tvEdited.visibility = if (news.isEdited) View.VISIBLE else View.GONE
+        holder.binding.tvEdited.visibility = if (news.isEdited) View.VISIBLE else View.GONE
     }
 
     private fun configureEditDeleteButtons(holder: ViewHolderNews, news: RealmNews) {
         if (news.sharedBy == currentUser?._id && !fromLogin && !nonTeamMember && teamName.isEmpty()) {
-            holder.rowNewsBinding.imgDelete.visibility = View.VISIBLE
+            holder.binding.imgDelete.visibility = View.VISIBLE
         }
 
         if (news.userId == currentUser?._id || news.sharedBy == currentUser?._id) {
-            holder.rowNewsBinding.imgDelete.setOnClickListener {
+            holder.binding.imgDelete.setOnClickListener {
                 AlertDialog.Builder(context, R.style.AlertDialogTheme)
                     .setMessage(R.string.delete_record)
                     .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
@@ -320,7 +319,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         }
 
         if (news.userId == currentUser?._id) {
-            holder.rowNewsBinding.imgEdit.setOnClickListener {
+            holder.binding.imgEdit.setOnClickListener {
                 NewsActions.showEditAlert(
                     context,
                     mRealm,
@@ -335,14 +334,14 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
                 }
             }
         } else {
-            holder.rowNewsBinding.imgEdit.visibility = View.GONE
+            holder.binding.imgEdit.visibility = View.GONE
         }
     }
 
     private fun handleChat(holder: ViewHolderNews, news: RealmNews) {
         if (news.newsId?.isNotEmpty() == true) {
             val conversations = gson.fromJson(news.conversations, Array<Conversation>::class.java).toList()
-            val chatAdapter = ChatAdapter(context, holder.rowNewsBinding.recyclerGchat)
+            val chatAdapter = ChatAdapter(context, holder.binding.recyclerGchat)
 
             if (user?.id?.startsWith("guest") == false) {
                 chatAdapter.setOnChatItemClickListener(object : ChatAdapter.OnChatItemClickListener {
@@ -364,13 +363,13 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
                 }
             }
 
-            holder.rowNewsBinding.recyclerGchat.adapter = chatAdapter
-            holder.rowNewsBinding.recyclerGchat.layoutManager = LinearLayoutManager(context)
-            holder.rowNewsBinding.recyclerGchat.visibility = View.VISIBLE
-            holder.rowNewsBinding.sharedChat.visibility = View.VISIBLE
+            holder.binding.recyclerGchat.adapter = chatAdapter
+            holder.binding.recyclerGchat.layoutManager = LinearLayoutManager(context)
+            holder.binding.recyclerGchat.visibility = View.VISIBLE
+            holder.binding.sharedChat.visibility = View.VISIBLE
         } else {
-            holder.rowNewsBinding.recyclerGchat.visibility = View.GONE
-            holder.rowNewsBinding.sharedChat.visibility = View.GONE
+            holder.binding.recyclerGchat.visibility = View.GONE
+            holder.binding.sharedChat.visibility = View.GONE
         }
     }
 
@@ -411,11 +410,11 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
 
     private fun setMemberClickListeners(holder: ViewHolderNews, userModel: RealmUserModel?, currentLeader: RealmUserModel?) {
         if (!fromLogin) {
-            holder.rowNewsBinding.imgUser.setOnClickListener {
+            holder.binding.imgUser.setOnClickListener {
                 val model = userModel ?: currentLeader
                 listener?.onMemberSelected(model)
             }
-            holder.rowNewsBinding.tvName.setOnClickListener {
+            holder.binding.tvName.setOnClickListener {
                 val model = userModel ?: currentLeader
                 listener?.onMemberSelected(model)
             }
@@ -470,7 +469,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         .findAll()
 
     private fun updateReplyCount(viewHolder: ViewHolderNews, replies: List<RealmNews>, position: Int) {
-        with(viewHolder.rowNewsBinding) {
+        with(viewHolder.binding) {
             btnShowReply.text = String.format(Locale.getDefault(),"(%d)", replies.size)
             btnShowReply.setTextColor(context.getColor(R.color.daynight_textColor))
             val visible = replies.isNotEmpty() && !(position == 0 && parentNews != null) && canReply()
@@ -496,7 +495,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
 
     private fun showHideButtons(news: RealmNews?, holder: RecyclerView.ViewHolder) {
         val viewHolder = holder as ViewHolderNews
-        with(viewHolder.rowNewsBinding) {
+        with(viewHolder.binding) {
             imgEdit.setVisibility(canEdit(news))
             imgDelete.setVisibility(canDelete(news))
             btnAddLabel.setVisibility(canAddLabel(news))
@@ -509,8 +508,8 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     private fun showReplyButton(holder: RecyclerView.ViewHolder, finalNews: RealmNews?, position: Int) {
         val viewHolder = holder as ViewHolderNews
         if (shouldShowReplyButton()) {
-            viewHolder.rowNewsBinding.btnReply.visibility = if (nonTeamMember) View.GONE else View.VISIBLE
-            viewHolder.rowNewsBinding.btnReply.setOnClickListener {
+            viewHolder.binding.btnReply.visibility = if (nonTeamMember) View.GONE else View.VISIBLE
+            viewHolder.binding.btnReply.setOnClickListener {
                 NewsActions.showEditAlert(
                     context,
                     mRealm,
@@ -522,13 +521,13 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
                 ) { holder, news, i -> showReplyButton(holder, news, i) }
             }
         } else {
-            viewHolder.rowNewsBinding.btnReply.visibility = View.GONE
+            viewHolder.binding.btnReply.visibility = View.GONE
         }
 
         val replies = getReplies(finalNews)
         updateReplyCount(viewHolder, replies, position)
 
-        viewHolder.rowNewsBinding.btnShowReply.setOnClickListener {
+        viewHolder.binding.btnShowReply.setOnClickListener {
             sharedPreferences?.setRepliedNewsId(finalNews?.id)
             listener?.showReply(finalNews, fromLogin, nonTeamMember)
         }
@@ -551,9 +550,9 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     private fun showShareButton(holder: RecyclerView.ViewHolder, news: RealmNews?) {
         val viewHolder = holder as ViewHolderNews
 
-        viewHolder.rowNewsBinding.btnShare.setVisibility(canShare(news))
+        viewHolder.binding.btnShare.setVisibility(canShare(news))
 
-        viewHolder.rowNewsBinding.btnShare.setOnClickListener {
+        viewHolder.binding.btnShare.setOnClickListener {
             AlertDialog.Builder(context, R.style.AlertDialogTheme)
                 .setTitle(R.string.share_with_community)
                 .setMessage(R.string.confirm_share_community)
@@ -587,7 +586,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
                     managedNews?.viewIn = gson.toJson(array)
                     mRealm.commitTransaction()
                     Utilities.toast(context, context.getString(R.string.shared_to_community))
-                    viewHolder.rowNewsBinding.btnShare.visibility = View.GONE
+                    viewHolder.binding.btnShare.visibility = View.GONE
                 }
                 .setNegativeButton(R.string.cancel, null)
                 .show()
@@ -686,7 +685,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         dialog.show()
     }
 
-    internal inner class ViewHolderNews(val rowNewsBinding: RowNewsBinding) : RecyclerView.ViewHolder(rowNewsBinding.root) {
+    internal inner class ViewHolderNews(val binding: RowNewsBinding) : RecyclerView.ViewHolder(binding.root) {
         private var adapterPosition = 0
         fun bind(position: Int) {
             adapterPosition = position
