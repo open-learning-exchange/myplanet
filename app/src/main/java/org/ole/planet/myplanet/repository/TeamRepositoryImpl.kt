@@ -410,6 +410,7 @@ class TeamRepositoryImpl @Inject constructor(
         return runCatching {
             val teamId = AndroidDecrypter.generateIv()
             executeTransaction { realm ->
+                val creatorUserId = user.id?.takeIf { it.isNotBlank() } ?: user._id
                 val team = realm.createObject(RealmMyTeam::class.java, teamId)
                 team.status = "active"
                 team.createdDate = Date().time
@@ -426,14 +427,15 @@ class TeamRepositoryImpl @Inject constructor(
                 team.createdBy = user._id
                 team.teamId = ""
                 team.isPublic = isPublic
-                team.userId = user.id
+                team.userId = creatorUserId
                 team.parentCode = user.parentCode
                 team.teamPlanetCode = user.planetCode
                 team.updated = true
 
                 val membershipId = AndroidDecrypter.generateIv()
                 val membership = realm.createObject(RealmMyTeam::class.java, membershipId)
-                membership.userId = user._id
+                val membershipUserId = creatorUserId
+                membership.userId = membershipUserId
                 membership.teamId = teamId
                 membership.teamPlanetCode = user.planetCode
                 membership.userPlanetCode = user.planetCode
@@ -442,7 +444,49 @@ class TeamRepositoryImpl @Inject constructor(
                 membership.teamType = teamType
                 membership.updated = true
             }
+            refreshCreatorMembershipCache(user, teamId)
             teamId
+        }
+    }
+
+    private suspend fun refreshCreatorMembershipCache(user: RealmUserModel, teamId: String) {
+        val primaryUserId = user.id?.takeIf { it.isNotBlank() } ?: return
+        val fallbackUserId = user._id?.takeIf { it.isNotBlank() && it != primaryUserId }
+
+        executeTransaction { realm ->
+            realm.where(RealmMyTeam::class.java)
+                .equalTo("teamId", teamId)
+                .equalTo("docType", "membership")
+                .findAll()
+                .forEach { membership ->
+                    if (membership.userId != primaryUserId) {
+                        membership.userId = primaryUserId
+                        membership.updated = true
+                    }
+                }
+
+            fallbackUserId?.let { alternateId ->
+                realm.where(RealmMyTeam::class.java)
+                    .equalTo("docType", "membership")
+                    .equalTo("userId", alternateId)
+                    .findAll()
+                    .forEach { membership ->
+                        if (membership.userId != primaryUserId) {
+                            membership.userId = primaryUserId
+                            membership.updated = true
+                        }
+                    }
+            }
+
+            realm.where(RealmMyTeam::class.java)
+                .equalTo("_id", teamId)
+                .findFirst()
+                ?.let { team ->
+                    if (team.userId != primaryUserId) {
+                        team.userId = primaryUserId
+                        team.updated = true
+                    }
+                }
         }
     }
 
