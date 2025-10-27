@@ -140,14 +140,14 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-        val rowNewsBinding = RowNewsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        val binding = RowNewsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         sharedPreferences = SharedPrefManager(context)
         user = userProfileDbHandler.userModel
         settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         if (::mRealm.isInitialized) {
             if (labelManager == null) labelManager = NewsLabelManager(context, mRealm)
         }
-        return ViewHolderNews(rowNewsBinding)
+        return ViewHolderNews(binding)
     }
 
     @SuppressLint("SetTextI18n")
