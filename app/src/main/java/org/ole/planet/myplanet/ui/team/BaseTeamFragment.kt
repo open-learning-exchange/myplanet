@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.ui.team
 import android.os.Bundle
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,9 +15,6 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TeamRepository
-
-private val Realm.isOpen: Boolean
-    get() = !isClosed
 
 @AndroidEntryPoint
 abstract class BaseTeamFragment : BaseNewsFragment() {
@@ -43,8 +39,7 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
         super.onCreate(savedInstanceState)
         val sParentCode = settings.getString("parentCode", "")
         val communityName = settings.getString("communityName", "")
-        mRealm = databaseService.realmInstance
-        user = profileDbHandler?.userModel?.let { mRealm.copyFromRealm(it) }
+        user = profileDbHandler.getUserModelCopy()
         teamId = requireArguments().getString("id", "") ?: "$communityName@$sParentCode"
 
         loadTeamData()
@@ -101,13 +96,4 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
     protected fun getEffectiveTeamId(): String {
         return requireArguments().getString("teamId") ?: teamId
     }
-
-    override fun onDestroy() {
-        _isMemberFlow.value = false
-        if (isRealmInitialized() && mRealm.isOpen) {
-            mRealm.close()
-        }
-        super.onDestroy()
-    }
-    
 }
