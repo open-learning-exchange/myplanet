@@ -25,7 +25,6 @@ import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import javax.inject.Provider
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityExoPlayerVideoBinding
 import org.ole.planet.myplanet.datamanager.auth.AuthSessionUpdater
@@ -45,7 +44,7 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
     private var currentPosition = 0L
     private var isActivityVisible = false
     @Inject
-    lateinit var authSessionUpdaterProvider: Provider<AuthSessionUpdater>
+    lateinit var authSessionUpdaterFactory: AuthSessionUpdater.Factory
     private var authSessionUpdater: AuthSessionUpdater? = null
 
     private val audioBecomingNoisyReceiver = object : BroadcastReceiver() {
@@ -72,7 +71,7 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
         when (videoType) {
             "offline" -> prepareExoPlayerFromFileUri(videoURL)
             "online" -> {
-                authSessionUpdater = authSessionUpdaterProvider.get()
+                authSessionUpdater = authSessionUpdaterFactory.create(this)
             }
         }
 
