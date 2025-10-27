@@ -134,7 +134,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         setupNavigation()
         handleInitialFragment()
         setupToolbarActions()
-        initTabs()
         hideWifi()
         setupRealmListeners()
         setupSystemNotificationReceiver()
@@ -292,9 +291,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             R.id.change_language -> SettingActivity.SettingFragment.languageChanger(this)
             else -> {}
         }
-    }
-
-    private fun initTabs() {
     }
 
     private fun addBackPressCallback() {
