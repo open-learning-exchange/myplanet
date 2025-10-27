@@ -40,7 +40,9 @@ class AdapterSurvey(
     private var listener: OnHomeItemClickListener? = null
     private val adoptedSurveyIds = mutableSetOf<String>()
     private var isTitleAscending = true
-    private var sortType = SurveySortType.DATE_DESC
+    private var sortStrategy: (List<RealmStepExam>) -> List<RealmStepExam> = { list ->
+        sortSurveyList(false, list)
+    }
 
     init {
         if (context is OnHomeItemClickListener) {
@@ -57,18 +59,14 @@ class AdapterSurvey(
         val sortedList = if (oldList.isEmpty()) {
             sortSurveyList(false, newList)
         } else {
-            when (sortType) {
-                SurveySortType.DATE_DESC -> sortSurveyList(false, newList)
-                SurveySortType.DATE_ASC -> sortSurveyList(true, newList)
-                SurveySortType.TITLE -> sortSurveyListByName(isTitleAscending, newList)
-            }
+            sortStrategy(newList)
         }
         dispatchDiff(oldList, sortedList)
     }
 
     private fun sortSurveyList(
         isAscend: Boolean,
-        list: List<RealmStepExam> = examList
+        list: List<RealmStepExam>
     ): List<RealmStepExam> {
         return if (isAscend) {
             list.sortedBy { it.createdDate }
@@ -78,15 +76,15 @@ class AdapterSurvey(
     }
 
     fun sortByDate(isAscend: Boolean) {
-        sortType = if (isAscend) SurveySortType.DATE_ASC else SurveySortType.DATE_DESC
         val oldList = examList
-        val sortedList = sortSurveyList(isAscend)
+        sortStrategy = { list -> sortSurveyList(isAscend, list) }
+        val sortedList = sortStrategy(examList)
         dispatchDiff(oldList, sortedList)
     }
 
     private fun sortSurveyListByName(
         isAscend: Boolean,
-        list: List<RealmStepExam> = examList
+        list: List<RealmStepExam>
     ): List<RealmStepExam> {
         return if (isAscend) {
             list.sortedBy { it.name?.lowercase() }
@@ -96,10 +94,10 @@ class AdapterSurvey(
     }
 
     fun toggleTitleSortOrder() {
-        sortType = SurveySortType.TITLE
         isTitleAscending = !isTitleAscending
         val oldList = examList
-        val sortedList = sortSurveyListByName(isTitleAscending)
+        sortStrategy = { list -> sortSurveyListByName(isTitleAscending, list) }
+        val sortedList = sortStrategy(examList)
         dispatchDiff(oldList, sortedList)
     }
 
@@ -309,10 +307,4 @@ class AdapterSurvey(
             }
         }
     }
-}
-
-enum class SurveySortType {
-    DATE_DESC,
-    DATE_ASC,
-    TITLE
 }
