@@ -12,6 +12,7 @@ interface SubmissionRepository {
     suspend fun getSubmissionsByUserId(userId: String): List<RealmSubmission>
     suspend fun getExamMapForSubmissions(submissions: List<RealmSubmission>): Map<String?, RealmStepExam>
     suspend fun getExamQuestionCount(stepId: String): Int
+    suspend fun findStepExamByName(name: String): RealmStepExam?
     suspend fun hasSubmission(
         stepExamId: String?,
         courseId: String?,
