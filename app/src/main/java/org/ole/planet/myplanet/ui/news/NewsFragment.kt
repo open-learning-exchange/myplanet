@@ -21,6 +21,7 @@ import io.realm.RealmResults
 import io.realm.Sort
 import javax.inject.Inject
 import kotlinx.coroutines.launch
+import java.util.LinkedHashSet
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseNewsFragment
 import org.ole.planet.myplanet.databinding.FragmentNewsBinding
@@ -54,6 +55,8 @@ class NewsFragment : BaseNewsFragment() {
     private val gson = Gson()
     private lateinit var etSearch: EditText
     private var selectedLabel: String = "All"
+    private var currentLabelOptions: List<String> = emptyList()
+    private var isLabelFilterListenerAttached = false
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentNewsBinding.inflate(inflater, container, false)
@@ -104,9 +107,10 @@ class NewsFragment : BaseNewsFragment() {
             setData(searchFilteredList)
             scrollToTop()
         }
-        
+
         etSearch = binding.root.findViewById(R.id.et_search)
         setupSearchTextListener()
+        initializeLabelSpinner()
         setupLabelFilter()
         
         return binding.root
@@ -336,45 +340,65 @@ class NewsFragment : BaseNewsFragment() {
     private fun setupLabelFilter() {
         updateLabelSpinner()
 
-        binding.filterByLabel.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                val labels = (binding.filterByLabel.adapter as ArrayAdapter<String>)
-                selectedLabel = labels.getItem(position) ?: "All"
-                labelFilteredList = applyLabelFilter(filteredNewsList)
-                searchFilteredList = applySearchFilter(labelFilteredList)
-                setData(searchFilteredList)
-                scrollToTop()
+        if (!isLabelFilterListenerAttached) {
+            binding.filterByLabel.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                    val labels = (binding.filterByLabel.adapter as ArrayAdapter<String>)
+                    selectedLabel = labels.getItem(position) ?: "All"
+                    labelFilteredList = applyLabelFilter(filteredNewsList)
+                    searchFilteredList = applySearchFilter(labelFilteredList)
+                    setData(searchFilteredList)
+                    scrollToTop()
+                }
+                override fun onNothingSelected(parent: AdapterView<*>?) {}
             }
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
+            isLabelFilterListenerAttached = true
         }
     }
-    
+
+    private fun initializeLabelSpinner() {
+        setLabelSpinnerItems(getDefaultLabelOptions())
+    }
+
     private fun updateLabelSpinner() {
         val binding = _binding ?: return
         val labels = collectAllLabels(filteredNewsList)
+        setLabelSpinnerItems(labels)
+    }
+
+    private fun setLabelSpinnerItems(labels: List<String>) {
+        val binding = _binding ?: return
+        if (labels == currentLabelOptions && binding.filterByLabel.adapter != null) {
+            restoreSpinnerSelection(labels)
+            return
+        }
+
         val themedContext = androidx.appcompat.view.ContextThemeWrapper(requireContext(), R.style.ResourcePopupMenu)
         val adapter = ArrayAdapter(themedContext, android.R.layout.simple_spinner_item, labels)
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         binding.filterByLabel.adapter = adapter
+        currentLabelOptions = labels
 
+        restoreSpinnerSelection(labels)
+    }
+
+    private fun restoreSpinnerSelection(labels: List<String>) {
+        val binding = _binding ?: return
         val position = labels.indexOf(selectedLabel)
         if (position >= 0) {
             binding.filterByLabel.setSelection(position)
         } else {
             selectedLabel = "All"
-            binding.filterByLabel.setSelection(0)
+            val defaultPosition = labels.indexOf(selectedLabel).takeIf { it >= 0 } ?: 0
+            binding.filterByLabel.setSelection(defaultPosition)
         }
     }
-    
+
     private fun collectAllLabels(list: List<RealmNews?>): List<String> {
-        val allLabels = mutableSetOf<String>()
-        allLabels.add("All")
+        val baseLabels = LinkedHashSet<String>()
+        getDefaultLabelOptions().forEach { baseLabels.add(it) }
 
-        Constants.LABELS.keys.forEach { labelName ->
-            allLabels.add(labelName)
-        }
-
-        allLabels.add("Shared Chat")
+        val dynamicLabels = mutableSetOf<String>()
 
         list.forEach { news ->
             if (!news?.viewIn.isNullOrEmpty()) {
@@ -385,7 +409,7 @@ class NewsFragment : BaseNewsFragment() {
                         if (ob.has("name") && !ob.get("name").isJsonNull) {
                             val sharedTeamName = ob.get("name").asString
                             if (sharedTeamName.isNotEmpty()) {
-                                allLabels.add(sharedTeamName)
+                                dynamicLabels.add(sharedTeamName)
                             }
                         }
                     }
@@ -396,12 +420,22 @@ class NewsFragment : BaseNewsFragment() {
 
             news?.labels?.forEach { label ->
                 Constants.LABELS.entries.find { it.value == label }?.key?.let { labelName ->
-                    allLabels.add(labelName)
+                    baseLabels.add(labelName)
                 }
             }
         }
-        
-        return allLabels.sorted()
+
+        dynamicLabels.sorted().forEach { baseLabels.add(it) }
+
+        return baseLabels.toList()
+    }
+
+    private fun getDefaultLabelOptions(): List<String> {
+        val defaultLabels = LinkedHashSet<String>()
+        defaultLabels.add("All")
+        Constants.LABELS.keys.sorted().forEach { defaultLabels.add(it) }
+        defaultLabels.add("Shared Chat")
+        return defaultLabels.toList()
     }
     
     private fun applyLabelFilter(list: List<RealmNews?>): List<RealmNews?> {
