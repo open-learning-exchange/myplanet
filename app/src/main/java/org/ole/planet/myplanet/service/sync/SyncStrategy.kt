@@ -12,21 +12,12 @@ data class SyncConfig(
     val fallbackToStandard: Boolean = true
 )
 
-data class SyncResult(
-    val table: String,
-    val processedItems: Int,
-    val success: Boolean,
-    val errorMessage: String? = null,
-    val duration: Long,
-    val strategy: String
-)
-
 interface SyncStrategy {
     suspend fun syncTable(
         table: String,
         realm: Realm,
         config: SyncConfig
-    ): Flow<SyncResult>
+    ): Flow<Unit>
 
     fun getStrategyName(): String
     fun isSupported(table: String): Boolean

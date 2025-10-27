@@ -11,36 +11,9 @@ class StandardSyncStrategy : SyncStrategy {
         table: String,
         realm: Realm,
         config: SyncConfig
-    ): Flow<SyncResult> = flow {
-        val startTime = System.currentTimeMillis()
-        
-        try {
-            // Use the existing TransactionSyncManager for standard sync
-            TransactionSyncManager.syncDb(realm, table)
-            
-            val endTime = System.currentTimeMillis()
-            emit(
-                SyncResult(
-                    table = table,
-                    processedItems = -1, // TransactionSyncManager doesn't return count
-                    success = true,
-                    duration = endTime - startTime,
-                    strategy = getStrategyName()
-                )
-            )
-        } catch (e: Exception) {
-            val endTime = System.currentTimeMillis()
-            emit(
-                SyncResult(
-                    table = table,
-                    processedItems = 0,
-                    success = false,
-                    errorMessage = e.message,
-                    duration = endTime - startTime,
-                    strategy = getStrategyName()
-                )
-            )
-        }
+    ): Flow<Unit> = flow {
+        TransactionSyncManager.syncDb(realm, table)
+        emit(Unit)
     }
     
     override fun getStrategyName(): String = "standard"
