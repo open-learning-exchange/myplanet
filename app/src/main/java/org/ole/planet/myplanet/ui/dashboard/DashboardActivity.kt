@@ -1178,6 +1178,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             .withSelectedColor(ContextCompat.getColor(this, R.color.textColorPrimary))
             .withIconTintingEnabled(true)
     }
+    
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         item.isChecked = true
         when (item.itemId) {
