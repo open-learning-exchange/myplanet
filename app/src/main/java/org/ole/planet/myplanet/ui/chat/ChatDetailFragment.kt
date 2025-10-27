@@ -375,9 +375,10 @@ class ChatDetailFragment : Fragment() {
     private fun launchRequest(content: RequestBody, query: String, id: String?) {
         disableUI()
         val mapping = processServerUrl()
+        val isNewChat = id.isNullOrBlank()
         viewLifecycleOwner.lifecycleScope.launch {
             withContext(Dispatchers.IO) { updateServerIfNecessary(mapping) }
-            sendChatRequest(content, query, id, id == null)
+            sendChatRequest(content, query, id, isNewChat)
         }
     }
 
@@ -453,47 +454,62 @@ class ChatDetailFragment : Fragment() {
         }
     }
 
-    private fun sendChatRequest(content: RequestBody, query: String, id: String?, newChat: Boolean) {
+    private fun sendChatRequest(content: RequestBody, query: String, id: String?, isNewChat: Boolean) {
         viewLifecycleOwner.lifecycleScope.launch {
             chatApiHelper.sendChatRequest(content, object : Callback<ChatModel> {
                 override fun onResponse(call: Call<ChatModel>, response: Response<ChatModel>) {
-                    handleResponse(response, query, id)
+                    handleResponse(response, query, id, isNewChat)
                 }
 
                 override fun onFailure(call: Call<ChatModel>, t: Throwable) {
-                    handleFailure(t.message, query, id)
+                    handleFailure(t.message, query, id, isNewChat)
                 }
             })
         }
     }
 
-    private fun handleResponse(response: Response<ChatModel>, query: String, id: String?) {
+    private fun handleResponse(response: Response<ChatModel>, query: String, id: String?, isNewChat: Boolean) {
         val responseBody = response.body()
         if (response.isSuccessful && responseBody != null) {
             if (responseBody.status == "Success") {
                 responseBody.chat?.let { chatResponse ->
-                    processSuccessfulResponse(chatResponse, responseBody, query, id)
+                    processSuccessfulResponse(chatResponse, responseBody, query, id, isNewChat)
                 }
             } else {
                 showError(responseBody.message)
             }
         } else {
             showError(response.message() ?: context?.getString(R.string.request_failed_please_retry))
-            id?.let { continueConversationRealm(it, query, "") }
+            if (!isNewChat) {
+                continueConversationRealm(id ?: currentID, query, "")
+            }
         }
         enableUI()
     }
 
-    private fun processSuccessfulResponse(chatResponse: String, responseBody: ChatModel, query: String, id: String?) {
+    private fun processSuccessfulResponse(
+        chatResponse: String,
+        responseBody: ChatModel,
+        query: String,
+        id: String?,
+        isNewChat: Boolean,
+    ) {
         mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_NETWORK
         mAdapter.addResponse(chatResponse)
         responseBody.couchDBResponse?.rev?.let { _rev = it }
-        id?.let { continueConversationRealm(it, query, chatResponse) } ?: saveNewChat(query, chatResponse, responseBody)
+        if (isNewChat) {
+            saveNewChat(query, chatResponse, responseBody)
+        } else {
+            val conversationId = id ?: responseBody.couchDBResponse?.id ?: currentID
+            continueConversationRealm(conversationId, query, chatResponse)
+        }
     }
 
-    private fun handleFailure(errorMessage: String?, query: String, id: String?) {
+    private fun handleFailure(errorMessage: String?, query: String, id: String?, isNewChat: Boolean) {
         showError(errorMessage)
-        id?.let { continueConversationRealm(it, query, "") }
+        if (!isNewChat) {
+            continueConversationRealm(id ?: currentID, query, "")
+        }
         enableUI()
     }
 
@@ -511,12 +527,16 @@ class ChatDetailFragment : Fragment() {
                 databaseService.executeTransactionAsync { realm ->
                     RealmChatHistory.insert(realm, jsonObject)
                 }
-                if (isAdded && activity is DashboardActivity) {
-                    (activity as DashboardActivity).refreshChatHistoryList()
+                withContext(Dispatchers.Main) {
+                    if (isAdded && activity is DashboardActivity) {
+                        (activity as DashboardActivity).refreshChatHistoryList()
+                    }
                 }
             } catch (e: Exception) {
-                if (isAdded) {
-                    Snackbar.make(binding.root, getString(R.string.failed_to_save_chat), Snackbar.LENGTH_LONG).show()
+                withContext(Dispatchers.Main) {
+                    if (isAdded) {
+                        Snackbar.make(binding.root, getString(R.string.failed_to_save_chat), Snackbar.LENGTH_LONG).show()
+                    }
                 }
             }
         }
