@@ -50,9 +50,10 @@ class RatingViewModel @Inject constructor(
             try {
                 _ratingState.value = RatingUiState.Loading
 
-                _userState.value = userRepository.getUserById(userId)
+                val user = userRepository.getUserById(userId)
+                val effectiveUserId = resolveUserId(user, userId)
 
-                val summary = ratingRepository.getRatingSummary(type, itemId, userId)
+                val summary = ratingRepository.getRatingSummary(type, itemId, effectiveUserId)
                 _ratingState.value = summary.toUiState()
             } catch (e: Exception) {
                 _userState.value = null
@@ -80,13 +81,13 @@ class RatingViewModel @Inject constructor(
                     return@launch
                 }
 
-                _userState.value = user
+                val effectiveUserId = resolveUserId(user, userId)
 
                 val summary = ratingRepository.submitRating(
                     type = type,
                     itemId = itemId,
                     title = title,
-                    userId = user.id?.takeIf { it.isNotBlank() } ?: user._id ?: userId,
+                    userId = effectiveUserId,
                     rating = rating,
                     comment = comment
                 )
@@ -108,4 +109,23 @@ class RatingViewModel @Inject constructor(
             totalRatings = totalRatings,
             userRating = userRating
         )
+
+    private fun resolveUserId(user: RealmUserModel?, fallbackId: String): String {
+        if (user == null) {
+            _userState.value = null
+            return fallbackId
+        }
+
+        if (
+            _userState.value == null ||
+            _userState.value?.id != user.id ||
+            _userState.value?._id != user._id
+        ) {
+            _userState.value = user
+        }
+
+        return user.id?.takeIf { it.isNotBlank() }
+            ?: user._id?.takeIf { it.isNotBlank() }
+            ?: fallbackId
+    }
 }
