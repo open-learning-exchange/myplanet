@@ -26,7 +26,6 @@ class AdapterMemberRequest(
     private val listener: MemberChangeListener,
     private val teamRepository: TeamRepository,
 ) : RecyclerView.Adapter<AdapterMemberRequest.ViewHolderUser>() {
-    private lateinit var rowMemberRequestBinding: RowMemberRequestBinding
     private var teamId: String? = null
     private lateinit var team: RealmMyTeam
     private var cachedModerationStatus: Boolean? = null
@@ -37,13 +36,14 @@ class AdapterMemberRequest(
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderUser {
-        rowMemberRequestBinding = RowMemberRequestBinding.inflate(LayoutInflater.from(context), parent, false)
-        return ViewHolderUser(rowMemberRequestBinding)
+        val binding = RowMemberRequestBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        return ViewHolderUser(binding)
     }
 
     override fun onBindViewHolder(holder: ViewHolderUser, position: Int) {
         val currentItem = list.getOrNull(position) ?: return
-        rowMemberRequestBinding.tvName.text = currentItem.name ?: currentItem.toString()
+        val binding = holder.binding
+        binding.tvName.text = currentItem.name ?: currentItem.toString()
 
         team = try {
             mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
@@ -59,7 +59,7 @@ class AdapterMemberRequest(
             }
         }
 
-        with(rowMemberRequestBinding) {
+        with(binding) {
             val members = getJoinedMember("$teamId", mRealm).size
             val userCanModerateRequests = canModerateRequests()
             val isRequester = currentItem.id == currentUser.id
@@ -152,5 +152,5 @@ class AdapterMemberRequest(
         return list.size
     }
 
-    class ViewHolderUser(rowMemberRequestBinding: RowMemberRequestBinding) : RecyclerView.ViewHolder(rowMemberRequestBinding.root)
+    class ViewHolderUser(val binding: RowMemberRequestBinding) : RecyclerView.ViewHolder(binding.root)
 }
