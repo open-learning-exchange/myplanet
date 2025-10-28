@@ -8,6 +8,7 @@ import android.content.SharedPreferences
 import android.content.res.Configuration
 import android.os.Bundle
 import android.os.StrictMode
+import android.os.StrictMode.ThreadPolicy
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
 import androidx.appcompat.app.AppCompatDelegate
@@ -223,9 +224,19 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     }
 
     private fun setupStrictMode() {
-        val builder = VmPolicy.Builder()
-        StrictMode.setVmPolicy(builder.build())
-        builder.detectFileUriExposure()
+        val vmPolicyBuilder = VmPolicy.Builder()
+            .detectFileUriExposure()
+        StrictMode.setVmPolicy(vmPolicyBuilder.build())
+
+        if (BuildConfig.DEBUG) {
+            val threadPolicy = ThreadPolicy.Builder()
+                .detectDiskReads()
+                .detectDiskWrites()
+                .detectNetwork()
+                .penaltyLog()
+                .build()
+            StrictMode.setThreadPolicy(threadPolicy)
+        }
     }
 
     private suspend fun setupAnrWatchdog() {

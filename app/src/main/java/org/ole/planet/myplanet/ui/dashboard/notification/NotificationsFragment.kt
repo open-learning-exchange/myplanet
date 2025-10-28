@@ -67,36 +67,16 @@ class NotificationsFragment : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentNotificationsBinding.inflate(inflater, container, false)
+        return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         userId = arguments?.getString("userId") ?: ""
-
-        val notifications = loadNotifications(userId, "all")
-
-        val options = resources.getStringArray(status_options)
-        val optionsList: MutableList<String?> = ArrayList(listOf(*options))
-        val spinnerAdapter = ArrayAdapter(requireContext(), R.layout.spinner_item, optionsList)
-        spinnerAdapter.setDropDownViewResource(R.layout.spinner_item)
-        binding.status.adapter = spinnerAdapter
-        binding.status.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
-                val selectedOption = parent.getItemAtPosition(position).toString().lowercase()
-                val filteredNotifications = loadNotifications(userId, selectedOption)
-                adapter.updateNotifications(filteredNotifications)
-
-                binding.emptyData.visibility = if (filteredNotifications.isEmpty()) View.VISIBLE else View.GONE
-            }
-
-            override fun onNothingSelected(parent: AdapterView<*>) {}
-        }
-
-        if (notifications.isEmpty()) {
-            binding.emptyData.visibility = View.VISIBLE
-        }
-
-        refreshUnreadCountCache()
 
         adapter = AdapterNotification(
             databaseService,
-            notifications,
+            emptyList(),
             onMarkAsReadClick = { notificationId ->
                 markAsReadById(notificationId)
             },
@@ -107,12 +87,39 @@ class NotificationsFragment : Fragment() {
         binding.rvNotifications.adapter = adapter
         binding.rvNotifications.layoutManager = LinearLayoutManager(requireContext())
 
+        binding.btnMarkAllAsRead.visibility = View.GONE
         binding.btnMarkAllAsRead.setOnClickListener {
             markAllAsRead()
         }
-        updateMarkAllAsReadButtonVisibility()
-        updateUnreadCount()
-        return binding.root
+
+        val options = resources.getStringArray(status_options)
+        val optionsList: MutableList<String?> = ArrayList(listOf(*options))
+        val spinnerAdapter = ArrayAdapter(requireContext(), R.layout.spinner_item, optionsList)
+        spinnerAdapter.setDropDownViewResource(R.layout.spinner_item)
+        binding.status.adapter = spinnerAdapter
+        binding.status.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
+                val selectedOption = parent.getItemAtPosition(position).toString().lowercase()
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val filteredNotifications = loadNotifications(userId, selectedOption)
+                    val binding = _binding ?: return@launch
+                    adapter.updateNotifications(filteredNotifications)
+                    binding.emptyData.visibility = if (filteredNotifications.isEmpty()) View.VISIBLE else View.GONE
+                }
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>) {}
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            val initialNotifications = loadNotifications(userId, "all")
+            val binding = _binding ?: return@launch
+            adapter.updateNotifications(initialNotifications)
+            binding.emptyData.visibility = if (initialNotifications.isEmpty()) View.VISIBLE else View.GONE
+            refreshUnreadCountCache()
+            updateMarkAllAsReadButtonVisibility()
+            updateUnreadCount()
+        }
     }
 
     private fun handleNotificationClick(notification: RealmNotification) {
@@ -199,22 +206,24 @@ class NotificationsFragment : Fragment() {
         }
     }
 
-    private fun loadNotifications(userId: String, filter: String): List<RealmNotification> {
-        return databaseService.withRealm { realm ->
-            val query = realm.where(RealmNotification::class.java)
-                .equalTo("userId", userId)
+    private suspend fun loadNotifications(userId: String, filter: String): List<RealmNotification> {
+        return withContext(Dispatchers.IO) {
+            databaseService.withRealm { realm ->
+                val query = realm.where(RealmNotification::class.java)
+                    .equalTo("userId", userId)
 
-            when (filter) {
-                "read" -> query.equalTo("isRead", true)
-                "unread" -> query.equalTo("isRead", false)
-                "all" -> {}
-            }
+                when (filter) {
+                    "read" -> query.equalTo("isRead", true)
+                    "unread" -> query.equalTo("isRead", false)
+                    "all" -> {}
+                }
 
-            val results = query
-                .sort("isRead", Sort.ASCENDING, "createdAt", Sort.DESCENDING)
-                .findAll()
-            realm.copyFromRealm(results).filter {
-                it.message.isNotEmpty() && it.message != "INVALID"
+                val results = query
+                    .sort("isRead", Sort.ASCENDING, "createdAt", Sort.DESCENDING)
+                    .findAll()
+                realm.copyFromRealm(results).filter {
+                    it.message.isNotEmpty() && it.message != "INVALID"
+                }
             }
         }
     }
@@ -238,13 +247,15 @@ class NotificationsFragment : Fragment() {
         }
     }
 
-    private fun getUnreadNotificationsSize(): Int {
-        return databaseService.withRealm { realm ->
-            realm.where(RealmNotification::class.java)
-                .equalTo("userId", userId)
-                .equalTo("isRead", false)
-                .count()
-                .toInt()
+    private suspend fun getUnreadNotificationsSize(): Int {
+        return withContext(Dispatchers.IO) {
+            databaseService.withRealm { realm ->
+                realm.where(RealmNotification::class.java)
+                    .equalTo("userId", userId)
+                    .equalTo("isRead", false)
+                    .count()
+                    .toInt()
+            }
         }
     }
 
@@ -253,19 +264,21 @@ class NotificationsFragment : Fragment() {
     }
 
     fun refreshNotificationsList() {
-        if (::adapter.isInitialized && _binding != null) {
-            val selectedFilter = binding.status.selectedItem.toString().lowercase()
+        val binding = _binding ?: return
+        if (!::adapter.isInitialized) return
+        val selectedFilter = binding.status.selectedItem.toString().lowercase()
+        viewLifecycleOwner.lifecycleScope.launch {
             val notifications = loadNotifications(userId, selectedFilter)
+            val currentBinding = _binding ?: return@launch
             adapter.updateNotifications(notifications)
+            currentBinding.emptyData.visibility = if (notifications.isEmpty()) View.VISIBLE else View.GONE
             refreshUnreadCountCache()
             updateMarkAllAsReadButtonVisibility()
             updateUnreadCount()
-
-            binding.emptyData.visibility = if (notifications.isEmpty()) View.VISIBLE else View.GONE
         }
     }
 
-    private fun refreshUnreadCountCache() {
+    private suspend fun refreshUnreadCountCache() {
         unreadCountCache = getUnreadNotificationsSize()
     }
 
@@ -312,6 +325,9 @@ class NotificationsFragment : Fragment() {
                     val notificationManager = NotificationUtils.getInstance(appContext)
                     idsToClear.forEach { notificationManager.clearNotification(it) }
                 }
+                refreshUnreadCountCache()
+                updateMarkAllAsReadButtonVisibility()
+                updateUnreadCount()
             } catch (e: Exception) {
                 unreadCountCache = previousUnreadCount
                 val bindingOrNull = _binding
