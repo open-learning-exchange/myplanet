@@ -233,18 +233,34 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             if (shouldUseCache) {
                 return@withContext ResourceData(
                     ratings = HashMap(cached!!.ratings),
-                    libraryList = cached.libraryList
+                    libraryList = ArrayList(cached.libraryList)
                 )
             }
 
-            val ratings = getRatings(mRealm, "resource", model?.id)
-            val libraryList: List<RealmMyLibrary?> =
-                getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary?>()
+            val (ratings, libraryList) = databaseService.withRealmAsync { realm ->
+                val freshRatings = getRatings(realm, "resource", model?.id)
+
+                val managedLibraries = if (isMyCourseLib) {
+                    val results = realm.where(RealmMyLibrary::class.java).findAll().toList()
+                    RealmMyLibrary.getMyLibraryByUserId(model?.id, results)
+                } else {
+                    val results = realm.where(RealmMyLibrary::class.java)
+                        .equalTo("isPrivate", false)
+                        .findAll()
+                        .toList()
+                    RealmMyLibrary.getOurLibrary(model?.id, results)
+                }
+
+                val unmanagedLibraries = realm.copyFromRealm(managedLibraries)
+                    .map { it as RealmMyLibrary? }
+
+                Pair(freshRatings, unmanagedLibraries)
+            }
 
             val freshCache = CachedResourceData(
                 timestamp = now,
                 ratings = HashMap(ratings),
-                libraryList = libraryList
+                libraryList = ArrayList(libraryList)
             )
             cachedResourceData = freshCache
 
