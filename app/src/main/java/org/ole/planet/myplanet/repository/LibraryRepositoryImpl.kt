@@ -48,6 +48,16 @@ class LibraryRepositoryImpl @Inject constructor(
             .filter { it.userId?.contains(userId) == true }
     }
 
+    override suspend fun getStepResources(stepId: String?, resourceOffline: Boolean): List<RealmMyLibrary> {
+        if (stepId == null) return emptyList()
+
+        return queryList(RealmMyLibrary::class.java) {
+            equalTo("stepId", stepId)
+            equalTo("resourceOffline", resourceOffline)
+            isNotNull("resourceLocalAddress")
+        }
+    }
+
     override suspend fun countLibrariesNeedingUpdate(userId: String?): Int {
         if (userId == null) return 0
 
