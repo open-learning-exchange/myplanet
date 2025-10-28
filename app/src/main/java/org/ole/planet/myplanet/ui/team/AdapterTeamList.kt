@@ -39,7 +39,6 @@ class AdapterTeamList(
     private val teamRepository: TeamRepository,
     private val currentUser: RealmUserModel?,
 ) : RecyclerView.Adapter<AdapterTeamList.ViewHolderTeam>() {
-    private lateinit var itemTeamListBinding: ItemTeamListBinding
     private var type: String? = ""
     private var teamListener: OnClickTeamItem? = null
     private var updateCompleteListener: OnUpdateCompleteListener? = null
@@ -73,9 +72,9 @@ class AdapterTeamList(
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderTeam {
-        itemTeamListBinding = ItemTeamListBinding.inflate(LayoutInflater.from(context), parent, false)
+        val binding = ItemTeamListBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         prefData = SharedPrefManager(context)
-        return ViewHolderTeam(itemTeamListBinding)
+        return ViewHolderTeam(binding)
     }
 
     init {
