@@ -7,6 +7,16 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
 
+data class TeamTaskLists(
+    val all: List<RealmTeamTask>,
+    val completed: List<RealmTeamTask>,
+    val my: List<RealmTeamTask>,
+) {
+    companion object {
+        val EMPTY = TeamTaskLists(emptyList(), emptyList(), emptyList())
+    }
+}
+
 interface TeamRepository {
     suspend fun getShareableTeams(): List<RealmMyTeam>
     suspend fun getShareableEnterprises(): List<RealmMyTeam>
@@ -27,6 +37,7 @@ interface TeamRepository {
     suspend fun upsertTask(task: RealmTeamTask)
     suspend fun assignTask(taskId: String, assigneeId: String?)
     suspend fun setTaskCompletion(taskId: String, completed: Boolean)
+    suspend fun getTeamTaskLists(teamId: String, userId: String?): TeamTaskLists
     suspend fun getPendingTasksForUser(userId: String, start: Long, end: Long): List<RealmTeamTask>
     suspend fun markTasksNotified(taskIds: Collection<String>)
     suspend fun addReport(report: JsonObject)

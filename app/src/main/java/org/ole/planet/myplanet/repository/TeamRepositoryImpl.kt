@@ -377,6 +377,38 @@ class TeamRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getTeamTaskLists(teamId: String, userId: String?): TeamTaskLists {
+        if (teamId.isBlank()) {
+            return TeamTaskLists.EMPTY
+        }
+
+        val pendingTasks = queryList(RealmTeamTask::class.java) {
+            equalTo("teamId", teamId)
+            notEqualTo("status", "archived")
+            equalTo("completed", false)
+            sort("deadline", Sort.DESCENDING)
+        }
+
+        val completedTasks = queryList(RealmTeamTask::class.java) {
+            equalTo("teamId", teamId)
+            notEqualTo("status", "archived")
+            equalTo("completed", true)
+            sort("completedTime", Sort.DESCENDING)
+        }
+
+        val myTasks = if (userId.isNullOrBlank()) {
+            emptyList()
+        } else {
+            pendingTasks.filter { it.assignee == userId }
+        }
+
+        return TeamTaskLists(
+            all = pendingTasks + completedTasks,
+            completed = completedTasks,
+            my = myTasks,
+        )
+    }
+
     override suspend fun logTeamVisit(
         teamId: String,
         userName: String?,
