@@ -59,6 +59,25 @@ open class RealmRepository(private val databaseService: DatabaseService) {
             realm.findCopyByField(clazz, fieldName, value)
         }
 
+    protected suspend fun <T : RealmObject, V : Any> findFirstByFields(
+        clazz: Class<T>,
+        value: V,
+        vararg fieldNames: String,
+    ): T? {
+        require(fieldNames.isNotEmpty()) { "At least one field name must be provided" }
+        return databaseService.withRealmAsync { realm ->
+            fieldNames.forEach { fieldName ->
+                if (fieldName.isNotBlank()) {
+                    val result = realm.findCopyByField(clazz, fieldName, value)
+                    if (result != null) {
+                        return@withRealmAsync result
+                    }
+                }
+            }
+            null
+        }
+    }
+
     protected suspend fun <T : RealmObject> save(item: T) {
         executeTransaction { realm ->
             realm.copyToRealmOrUpdate(item)

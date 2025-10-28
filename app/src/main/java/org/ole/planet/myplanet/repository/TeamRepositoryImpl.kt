@@ -69,8 +69,7 @@ class TeamRepositoryImpl @Inject constructor(
 
     override suspend fun getTeamByDocumentIdOrTeamId(id: String): RealmMyTeam? {
         if (id.isBlank()) return null
-        return findByField(RealmMyTeam::class.java, "_id", id)
-            ?: findByField(RealmMyTeam::class.java, "teamId", id)
+        return findFirstByFields(RealmMyTeam::class.java, id, "_id", "teamId")
     }
 
     override suspend fun getTeamLinks(): List<RealmMyTeam> {

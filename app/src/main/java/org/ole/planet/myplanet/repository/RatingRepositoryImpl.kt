@@ -83,8 +83,7 @@ class RatingRepositoryImpl @Inject constructor(
     private suspend fun findUserForRating(userId: String): RealmUserModel {
         require(userId.isNotBlank()) { "User ID is required to submit a rating" }
 
-        val user = findByField(RealmUserModel::class.java, "id", userId)
-            ?: findByField(RealmUserModel::class.java, "_id", userId)
+        val user = findFirstByFields(RealmUserModel::class.java, userId, "id", "_id")
 
         return requireNotNull(user) { "Unable to locate user with ID '$userId'" }
     }

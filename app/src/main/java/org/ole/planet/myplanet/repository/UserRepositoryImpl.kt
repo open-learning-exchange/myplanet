@@ -14,8 +14,7 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getUserByAnyId(id: String): RealmUserModel? {
-        return findByField(RealmUserModel::class.java, "_id", id)
-            ?: findByField(RealmUserModel::class.java, "id", id)
+        return findFirstByFields(RealmUserModel::class.java, id, "_id", "id")
     }
 
     override suspend fun getAllUsers(): List<RealmUserModel> {
