@@ -49,6 +49,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TagRepository
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
+import org.ole.planet.myplanet.ui.navigation.DashboardDestination
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
@@ -393,12 +394,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 if (userModel?.id?.startsWith("guest") == true) {
                     guestDialog(requireContext())
                 } else {
-                    val fragment = ResourcesFragment().apply {
-                        arguments = Bundle().apply {
-                            putBoolean("isMyCourseLib", true)
-                        }
-                    }
-                    homeItemClickListener?.openMyFragment(fragment)
+                    homeItemClickListener?.openMyFragment(DashboardDestination.MyLibrary())
                 }
             }
         builder.setNegativeButton(getString(R.string.ok)) { dialog: DialogInterface, _: Int ->

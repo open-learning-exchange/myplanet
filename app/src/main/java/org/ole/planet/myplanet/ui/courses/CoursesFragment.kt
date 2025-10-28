@@ -35,6 +35,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.callback.OnCourseItemSelected
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
+import org.ole.planet.myplanet.ui.navigation.DashboardDestination
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.callback.TableDataUpdate
 import org.ole.planet.myplanet.callback.TagClickListener
@@ -543,12 +544,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 if (userModel?.id?.startsWith("guest") == true) {
                     DialogUtils.guestDialog(requireContext())
                 } else {
-                    val fragment = CoursesFragment().apply {
-                        arguments = Bundle().apply {
-                            putBoolean("isMyCourseLib", true)
-                        }
-                    }
-                    homeItemClickListener?.openMyFragment(fragment)
+                    homeItemClickListener?.openMyFragment(DashboardDestination.MyCourses())
                 }
             }
             .setNegativeButton(R.string.ok) { dialog: DialogInterface, _: Int ->

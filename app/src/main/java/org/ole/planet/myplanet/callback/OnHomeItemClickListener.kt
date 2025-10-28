@@ -1,12 +1,12 @@
 package org.ole.planet.myplanet.callback
 
-import androidx.fragment.app.Fragment
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.ui.navigation.DashboardDestination
 
 interface OnHomeItemClickListener {
-    fun openMyFragment(f: Fragment)
-    fun openCallFragment(f: Fragment)
+    fun openMyFragment(destination: DashboardDestination)
+    fun openCallFragment(destination: DashboardDestination)
     fun openLibraryDetailFragment(library: RealmMyLibrary?)
     fun showRatingDialog(type: String?, resourceId: String?, title: String?, listener: OnRatingChangeListener?)
 

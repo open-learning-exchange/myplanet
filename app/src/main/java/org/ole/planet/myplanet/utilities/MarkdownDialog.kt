@@ -16,10 +16,9 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.DialogCampaignChallengeBinding
 import org.ole.planet.myplanet.model.RealmUserChallengeActions
-import org.ole.planet.myplanet.ui.community.CommunityTabFragment
-import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.DashboardElementActivity
+import org.ole.planet.myplanet.ui.navigation.DashboardDestination
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 
 class MarkdownDialog : DialogFragment() {
@@ -124,15 +123,12 @@ class MarkdownDialog : DialogFragment() {
                 val courseId = "4e6b78800b6ad18b4e8b0e1e38a98cac"
                 when (buttonText) {
                     context.getString(R.string.start), context.getString(R.string.continuation) -> {
-                        val fragment = TakeCourseFragment().apply {
-                            arguments = Bundle().apply {
-                                putString("id", courseId)
-                            }
-                        }
-                        (activity as? OnHomeItemClickListener)?.openCallFragment(fragment)
+                        (activity as? OnHomeItemClickListener)?.openCallFragment(
+                            DashboardDestination.TakeCourse(courseId)
+                        )
                     }
                     context.getString(R.string.next) -> {
-                        (activity as DashboardActivity).openCallFragment(CommunityTabFragment())
+                        (activity as DashboardActivity).openCallFragment(DashboardDestination.Community)
                     }
                     context.getString(R.string.sync) -> {
                         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {

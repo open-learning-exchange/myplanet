@@ -38,6 +38,7 @@ import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
+import org.ole.planet.myplanet.ui.navigation.DashboardDestination
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.UrlUtils
 
@@ -76,7 +77,7 @@ class AchievementFragment : BaseContainerFragment() {
         aRealm = databaseService.realmInstance
         user = profileDbHandler.userModel
         binding.btnEdit.setOnClickListener {
-            if (listener != null) listener?.openCallFragment(EditAchievementFragment())
+            if (listener != null) listener?.openCallFragment(DashboardDestination.EditAchievement)
         }
         return binding.root
     }

@@ -15,7 +15,6 @@ import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.core.graphics.drawable.DrawableCompat
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
@@ -27,14 +26,9 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createActionAsync
-import org.ole.planet.myplanet.ui.community.CommunityTabFragment
-import org.ole.planet.myplanet.ui.courses.CoursesFragment
-import org.ole.planet.myplanet.ui.dashboard.BellDashboardFragment
-import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
-import org.ole.planet.myplanet.ui.navigation.NavigationHelper
+import org.ole.planet.myplanet.ui.navigation.DashboardDestination
+import org.ole.planet.myplanet.ui.navigation.DashboardNavigator
 import org.ole.planet.myplanet.ui.rating.RatingFragment.Companion.newInstance
-import org.ole.planet.myplanet.ui.resources.ResourcesFragment
-import org.ole.planet.myplanet.ui.team.TeamFragment
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Constants.isBetaWifiFeatureEnabled
@@ -46,7 +40,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
     lateinit var navigationView: BottomNavigationView
     var doubleBackToExitPressedOnce = false
     private lateinit var goOnline: MenuItem
-    var c = 0
+    protected lateinit var dashboardNavigator: DashboardNavigator
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,16 +50,38 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
     }
 
     fun onClickTabItems(position: Int) {
-        when (position) {
-            0 -> openCallFragment(BellDashboardFragment(), "dashboard")
-            1 -> openCallFragment(ResourcesFragment(), "library")
-            2 -> openCallFragment(CoursesFragment(), "course")
-            4 -> openEnterpriseFragment()
-            3 -> openCallFragment(TeamFragment(), "survey")
-            5 -> {
-                openCallFragment(CommunityTabFragment(), "community")
-            }
+        val destination = when (position) {
+            0 -> DashboardDestination.Home
+            1 -> DashboardDestination.Library
+            2 -> DashboardDestination.Courses
+            3 -> DashboardDestination.Team()
+            4 -> DashboardDestination.Team(type = "enterprise")
+            5 -> DashboardDestination.Community
+            else -> null
         }
+        destination?.let { openCallFragment(it) }
+    }
+
+    protected fun setupDashboardNavigator(
+        bottomNavigationView: BottomNavigationView? = null,
+        drawerSelectionListener: ((Long?) -> Unit)? = null
+    ) {
+        dashboardNavigator = DashboardNavigator(
+            fragmentManager = supportFragmentManager,
+            containerId = R.id.fragment_container,
+            bottomNavigationView = bottomNavigationView,
+            drawerSelectionListener = drawerSelectionListener
+        )
+    }
+
+    private fun ensureNavigator(): DashboardNavigator {
+        if (!::dashboardNavigator.isInitialized) {
+            dashboardNavigator = DashboardNavigator(
+                fragmentManager = supportFragmentManager,
+                containerId = R.id.fragment_container
+            )
+        }
+        return dashboardNavigator
     }
 
     protected fun bindGoOnlineMenu(menu: Menu) {
@@ -73,49 +89,8 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         updateGoOnlineVisibility()
     }
 
-    fun openCallFragment(newFragment: Fragment, tag: String?) {
-        val fragmentManager = supportFragmentManager
-        if(c<2){
-            c=0
-        }
-        val existingFragment = fragmentManager.findFragmentByTag(tag)
-        if (tag == "") {
-            c++
-            if(c>2){
-                c--
-                NavigationHelper.popBackStack(fragmentManager, tag, 0)
-            }else{
-                NavigationHelper.replaceFragment(
-                    fragmentManager,
-                    R.id.fragment_container,
-                    newFragment,
-                    addToBackStack = true,
-                    tag = tag
-                )
-            }
-        } else {
-            if (existingFragment != null && existingFragment.isVisible) {
-                return
-            } else if (existingFragment != null) {
-                if(c>0 && c>2){
-                    c=0
-                }
-                NavigationHelper.popBackStack(fragmentManager, tag, 0)
-            } else {
-                if(c>0 && c>2){
-                    c=0
-                }
-                if(tag!="") {
-                    NavigationHelper.replaceFragment(
-                        fragmentManager,
-                        R.id.fragment_container,
-                        newFragment,
-                        addToBackStack = true,
-                        tag = tag
-                    )
-                }
-            }
-        }
+    fun openCallFragment(destination: DashboardDestination) {
+        ensureNavigator().navigate(destination)
     }
     protected fun updateGoOnlineVisibility() {
         if (::goOnline.isInitialized) {
@@ -133,7 +108,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
                 logout()
             }
             R.id.action_feedback -> {
-                openCallFragment(FeedbackFragment(), getString(R.string.menu_feedback))
+                openCallFragment(DashboardDestination.Feedback)
             }
             R.id.action_sync -> {
                 logSyncInSharedPrefs()
@@ -248,21 +223,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
     }
 
     override fun onBackStackChanged() {
-        val f = supportFragmentManager.findFragmentById(R.id.fragment_container)
-        val fragmentTag = f?.tag
-        if (f is CoursesFragment) {
-            if ("MyCoursesFragment" == fragmentTag) {
-                navigationView.menu.findItem(R.id.menu_mycourses).isChecked = true
-            } else {
-                navigationView.menu.findItem(R.id.menu_courses).isChecked = true
-            }
-        } else if (f is ResourcesFragment) {
-            if ("MyResourcesFragment" == fragmentTag) {
-                navigationView.menu.findItem(R.id.menu_mylibrary).isChecked = true
-            } else {
-                navigationView.menu.findItem(R.id.menu_library).isChecked = true
-            }
-        }
+        ensureNavigator().handleBackStackChanged()
     }
 
     fun openEnterpriseFragment() {
@@ -270,6 +231,6 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         val b = Bundle()
         b.putString("type", "enterprise")
         fragment.arguments = b
-        openCallFragment(fragment, "Enterprise")
+        openCallFragment(DashboardDestination.Team(type = "enterprise"))
     }
 }

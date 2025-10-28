@@ -69,20 +69,14 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.chat.ChatHistoryListFragment
-import org.ole.planet.myplanet.ui.community.CommunityTabFragment
-import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.dashboard.notification.NotificationListener
 import org.ole.planet.myplanet.ui.dashboard.notification.NotificationsFragment
-import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
-import org.ole.planet.myplanet.ui.navigation.NavigationHelper
-import org.ole.planet.myplanet.ui.resources.ResourceDetailFragment
-import org.ole.planet.myplanet.ui.resources.ResourcesFragment
+import org.ole.planet.myplanet.ui.navigation.DashboardDestination
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.ui.survey.SendSurveyFragment
 import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.ui.sync.DashboardElementActivity
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
-import org.ole.planet.myplanet.ui.team.TeamFragment
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.JoinRequestsPage
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.TasksPage
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
@@ -190,7 +184,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun handleGuestAccess(): Boolean {
         if (user != null && user?.rolesList?.isEmpty() == true && !user?.userAdmin!!) {
             navigationView.visibility = View.GONE
-            openCallFragment(InactiveDashboardFragment(), "Dashboard")
+            openCallFragment(DashboardDestination.Inactive)
             return true
         }
         navigationView.setOnItemSelectedListener(this)
@@ -206,28 +200,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun setupNavigation() {
         headerResult = accountHeader
         createDrawer()
-        supportFragmentManager.addOnBackStackChangedListener {
-            val frag = supportFragmentManager.findFragmentById(R.id.fragment_container)
-            val idToSelect = when (frag) {
-                is BellDashboardFragment -> 0L
-                is ResourcesFragment -> {
-                    val isMy = frag.arguments?.getBoolean("isMyCourseLib", false) == true
-                    if (isMy) 1L else 3L
-                }
-                is CoursesFragment -> {
-                    val isMy = frag.arguments?.getBoolean("isMyCourseLib", false) == true
-                    if (isMy) 2L else 4L
-                }
-                is TeamFragment -> {
-                    val isDashboard = frag.arguments?.getBoolean("fromDashboard", false) == true
-                    val isEnterprise = frag.arguments?.getString("type") == "enterprise"
-                    if (isDashboard) 0L else if (isEnterprise) 6L else 5L
-                }
-                is CommunityTabFragment -> 7L
-                is SurveyFragment -> 8L
-                else -> null
-            }
-            idToSelect?.let { result?.setSelection(it, false) }
+        setupDashboardNavigator(navigationView) { identifier ->
+            identifier?.let { result?.setSelection(it, false) }
         }
         if (!(user?.id?.startsWith("guest") == true && profileDbHandler.offlineVisits >= 3) &&
             resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
@@ -243,10 +217,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         if (intent != null && intent.hasExtra("fragmentToOpen")) {
             val fragmentToOpen = intent.getStringExtra("fragmentToOpen")
             if ("feedbackList" == fragmentToOpen) {
-                openMyFragment(FeedbackListFragment())
+                openMyFragment(DashboardDestination.FeedbackList)
             }
         } else {
-            openCallFragment(BellDashboardFragment())
+            openCallFragment(DashboardDestination.Home)
             binding.appBarBell.bellToolbar.visibility = View.VISIBLE
         }
     }
@@ -264,10 +238,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         when (itemId) {
             R.id.action_chat -> {
                 if (user?.id?.startsWith("guest") == false) {
-                    openCallFragment(
-                        ChatHistoryListFragment(),
-                        ChatHistoryListFragment::class.java.simpleName
-                    )
+                    openCallFragment(DashboardDestination.ChatHistory)
                 } else {
                     guestDialog(this)
                 }
@@ -276,17 +247,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             R.id.action_sync -> logSyncInSharedPrefs()
             R.id.action_feedback -> {
                 if (user?.id?.startsWith("guest") == false) {
-                    openCallFragment(
-                        FeedbackListFragment(),
-                        FeedbackListFragment::class.java.simpleName
-                    )
+                    openCallFragment(DashboardDestination.FeedbackList)
                 } else {
                     guestDialog(this)
                 }
             }
             R.id.action_settings -> startActivity(Intent(this@DashboardActivity, SettingActivity::class.java))
-            R.id.action_disclaimer -> openCallFragment(DisclaimerFragment(), DisclaimerFragment::class.java.simpleName)
-            R.id.action_about -> openCallFragment(AboutFragment(), AboutFragment::class.java.simpleName)
+            R.id.action_disclaimer -> openCallFragment(DashboardDestination.Disclaimer)
+            R.id.action_about -> openCallFragment(DashboardDestination.About)
             R.id.action_logout -> logout()
             R.id.change_language -> SettingActivity.SettingFragment.languageChanger(this)
             else -> {}
@@ -337,11 +305,19 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 NotificationUtils.TYPE_SURVEY -> {
                     val surveyId = intent.getStringExtra("surveyId")
                     if (surveyId != null) {
-                        openCallFragment(SurveyFragment().apply {
-                            arguments = Bundle().apply {
-                                putString("surveyId", surveyId)
-                            }
-                        })
+                        openCallFragment(
+                            DashboardDestination.Custom(
+                                fragmentFactory = {
+                                    SurveyFragment().apply {
+                                        arguments = Bundle().apply {
+                                            putString("surveyId", surveyId)
+                                        }
+                                    }
+                                },
+                                stableTag = "Survey_$surveyId",
+                                customSelection = DashboardDestination.Selection(drawerItemIdentifier = 8L)
+                            )
+                        )
                     } else {
                         openNotificationsList(user?.id ?: "")
                     }
@@ -349,11 +325,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 NotificationUtils.TYPE_TASK -> {
                     val taskId = intent.getStringExtra("taskId")
                     if (taskId != null) {
-                        openMyFragment(TeamFragment().apply {
-                            arguments = Bundle().apply {
-                                putString("taskId", taskId)
-                            }
-                        })
+                        val extras = Bundle().apply { putString("taskId", taskId) }
+                        openMyFragment(DashboardDestination.Team(extras = extras))
                     } else {
                         openNotificationsList(user?.id ?: "")
                     }
@@ -363,11 +336,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 }
                 NotificationUtils.TYPE_JOIN_REQUEST -> {
                     val teamName = intent.getStringExtra("teamName")
-                    openMyFragment(TeamFragment().apply {
-                        arguments = Bundle().apply {
-                            teamName?.let { putString("teamName", it) }
-                        }
-                    })
+                    val extras = Bundle().apply {
+                        teamName?.let { putString("teamName", it) }
+                    }
+                    openMyFragment(DashboardDestination.Team(extras = extras))
                 }
                 else -> {
                     openNotificationsList(user?.id ?: "")
@@ -393,7 +365,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     handleJoinRequestNavigation(relatedId)
                 }
                 NotificationUtils.TYPE_RESOURCE -> {
-                    openCallFragment(ResourcesFragment(), "Resources")
+                    openCallFragment(DashboardDestination.Library)
                 }
             }
 
@@ -423,19 +395,25 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             if (teamId.isNotEmpty()) {
                 val teamObject = mRealm.where(RealmMyTeam::class.java)?.equalTo("_id", teamId)?.findFirst()
 
-                val f = TeamDetailFragment.newInstance(
-                    teamId = teamId,
-                    teamName = teamObject?.name ?: "",
-                    teamType = teamObject?.type ?: "",
-                    isMyTeam = true,
-                    navigateToPage = TasksPage
+                openCallFragment(
+                    DashboardDestination.Custom(
+                        fragmentFactory = {
+                            TeamDetailFragment.newInstance(
+                                teamId = teamId,
+                                teamName = teamObject?.name ?: "",
+                                teamType = teamObject?.type ?: "",
+                                isMyTeam = true,
+                                navigateToPage = TasksPage
+                            )
+                        },
+                        stableTag = "TeamDetail_${teamId}_${TasksPage.id}",
+                        customSelection = DashboardDestination.Selection(drawerItemIdentifier = 5L)
+                    )
                 )
-
-                openCallFragment(f)
             }
         }
     }
-    
+
     private fun handleJoinRequestNavigation(requestId: String?) {
         if (requestId != null) {
             val actualJoinRequestId = if (requestId.startsWith("join_request_")) {
@@ -451,13 +429,21 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             val teamId = joinRequest?.teamId
 
             if (teamId?.isNotEmpty() == true) {
-                val f = TeamDetailFragment()
-                val b = Bundle()
-                b.putString("id", teamId)
-                b.putBoolean("isMyTeam", true)
-                b.putString("navigateToPage", JoinRequestsPage.id)
-                f.arguments = b
-                openCallFragment(f)
+                openCallFragment(
+                    DashboardDestination.Custom(
+                        fragmentFactory = {
+                            TeamDetailFragment().apply {
+                                arguments = Bundle().apply {
+                                    putString("id", teamId)
+                                    putBoolean("isMyTeam", true)
+                                    putString("navigateToPage", JoinRequestsPage.id)
+                                }
+                            }
+                        },
+                        stableTag = "TeamDetail_${teamId}_${JoinRequestsPage.id}",
+                        customSelection = DashboardDestination.Selection(drawerItemIdentifier = 5L)
+                    )
+                )
             }
         }
     }
@@ -830,13 +816,17 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun openNotificationsList(userId: String) {
-        val fragment = NotificationsFragment().apply {
-            arguments = Bundle().apply {
-                putString("userId", userId)
-            }
-            setNotificationUpdateListener(this@DashboardActivity)
-        }
-        openCallFragment(fragment)
+        openCallFragment(
+            DashboardDestination.Custom(
+                fragmentFactory = {
+                    NotificationsFragment().apply {
+                        arguments = Bundle().apply { putString("userId", userId) }
+                        setNotificationUpdateListener(this@DashboardActivity)
+                    }
+                },
+                stableTag = "Notifications_$userId"
+            )
+        )
     }
 
     override fun onNotificationCountUpdated(unreadCount: Int) {
@@ -1030,58 +1020,38 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun handleDrawerSelection(selectedMenuId: Int) {
         when (selectedMenuId) {
-            R.string.menu_myplanet -> openCallFragment(BellDashboardFragment())
-            R.string.menu_library -> openCallFragment(ResourcesFragment())
-            R.string.menu_surveys -> openCallFragment(SurveyFragment())
-            R.string.menu_courses -> openCallFragment(CoursesFragment())
-            R.string.menu_community -> openCallFragment(CommunityTabFragment())
+            R.string.menu_myplanet -> openCallFragment(DashboardDestination.Home)
+            R.string.menu_library -> openCallFragment(DashboardDestination.Library)
+            R.string.menu_surveys -> openCallFragment(DashboardDestination.Surveys)
+            R.string.menu_courses -> openCallFragment(DashboardDestination.Courses)
+            R.string.menu_community -> openCallFragment(DashboardDestination.Community)
             R.string.txt_myLibrary -> {
                 if (user?.id?.startsWith("guest") == true) {
                     guestDialog(this)
                 } else {
-                    openMyFragment(ResourcesFragment())
+                    openMyFragment(DashboardDestination.MyLibrary())
                 }
             }
-            R.string.team -> openMyFragment(TeamFragment().apply {
-                arguments = Bundle().apply {
-                    putBoolean("fromDashboard", false)
-                }
-            })
+            R.string.team -> openMyFragment(
+                DashboardDestination.Team(
+                    extras = Bundle().apply { putBoolean("fromDashboard", false) }
+                )
+            )
             R.string.txt_myCourses -> {
                 if (user?.id?.startsWith("guest") == true) {
                     guestDialog(this)
                 } else {
-                    openMyFragment(CoursesFragment())
+                    openMyFragment(DashboardDestination.MyCourses())
                 }
             }
             R.string.enterprises -> openEnterpriseFragment()
             R.string.menu_logout -> logout()
-            else -> openCallFragment(BellDashboardFragment())
+            else -> openCallFragment(DashboardDestination.Home)
         }
     }
 
-    override fun openMyFragment(f: Fragment) {
-        val fragmentName = f::class.java.simpleName
-        var tag = "My$fragmentName"
-        val isDashboard = f.arguments?.getBoolean("fromDashboard", false) == true
-        if(tag != "MyTeamFragment") {
-            val b = Bundle()
-            b.putBoolean("isMyCourseLib", true)
-            f.arguments = b
-        }
-        if (isDashboard) {
-            tag = "MyTeamDashboardFragment"
-        }
-        when (tag) {
-            "MyCoursesFragment" -> result?.setSelection(2, false)
-            "MyResourcesFragment" -> result?.setSelection(1, false)
-            "MyTeamDashboardFragment" -> result?.setSelection(0, false)
-            "MyTeamFragment" ->  result?.setSelection(5, false)
-            else -> {
-                result?.setSelection(0, false)
-            }
-        }
-        openCallFragment(f, tag)
+    override fun openMyFragment(destination: DashboardDestination) {
+        openCallFragment(destination)
     }
 
     override fun onDestroy() {
@@ -1096,17 +1066,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         super.onDestroy()
     }
 
-    override fun openCallFragment(f: Fragment) {
-        val tag = f::class.java.simpleName
-        openCallFragment(f,tag)
-    }
-
     override fun openLibraryDetailFragment(library: RealmMyLibrary?) {
-        val f: Fragment = ResourceDetailFragment()
-        val b = Bundle()
-        b.putString("libraryId", library?.resourceId)
-        f.arguments = b
-        openCallFragment(f)
+        openCallFragment(DashboardDestination.ResourceDetail(library?.resourceId))
     }
 
     override fun sendSurvey(current: RealmStepExam?) {
@@ -1164,30 +1125,30 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         item.isChecked = true
         when (item.itemId) {
             R.id.menu_library -> {
-                openCallFragment(ResourcesFragment())
+                openCallFragment(DashboardDestination.Library)
             }
             R.id.menu_courses -> {
-                openCallFragment(CoursesFragment())
+                openCallFragment(DashboardDestination.Courses)
             }
             R.id.menu_mycourses -> {
                 if (user?.id?.startsWith("guest") == true) {
                     guestDialog(this)
                 } else {
-                    openMyFragment(CoursesFragment())
+                    openMyFragment(DashboardDestination.MyCourses())
                 }
             }
             R.id.menu_mylibrary -> {
                 if (user?.id?.startsWith("guest") == true) {
                     guestDialog(this)
                 } else {
-                    openMyFragment(ResourcesFragment())
+                    openMyFragment(DashboardDestination.MyLibrary())
                 }
             }
             R.id.menu_enterprises -> {
                 openEnterpriseFragment()
             }
             R.id.menu_home -> {
-                openCallFragment(BellDashboardFragment())
+                openCallFragment(DashboardDestination.Home)
             }
         }
         item.isChecked = true

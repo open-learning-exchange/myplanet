@@ -7,7 +7,6 @@ import android.text.style.URLSpan
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import java.util.Date
 import java.util.UUID
@@ -24,6 +23,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.exam.TakeExamFragment
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
+import org.ole.planet.myplanet.ui.navigation.DashboardDestination
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
 import org.ole.planet.myplanet.utilities.CustomClickableSpan
@@ -191,12 +191,19 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         setResourceButton(notDownloadedResources, fragmentCourseStepBinding.btnResources)
         fragmentCourseStepBinding.btnTakeTest.setOnClickListener {
             if (stepExams.isNotEmpty()) {
-                val takeExam: Fragment = TakeExamFragment()
-                val b = Bundle()
-                b.putString("stepId", stepId)
-                b.putInt("stepNum", stepNumber)
-                takeExam.arguments = b
-                homeItemClickListener?.openCallFragment(takeExam)
+                homeItemClickListener?.openCallFragment(
+                    DashboardDestination.Custom(
+                        fragmentFactory = {
+                            TakeExamFragment().apply {
+                                arguments = Bundle().apply {
+                                    putString("stepId", stepId)
+                                    putInt("stepNum", stepNumber)
+                                }
+                            }
+                        },
+                        stableTag = "TakeExam_${stepId ?: stepNumber}"
+                    )
+                )
                 capturePhoto(this)
             }
         }

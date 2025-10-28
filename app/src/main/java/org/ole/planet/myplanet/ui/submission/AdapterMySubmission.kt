@@ -7,7 +7,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.json.JSONObject
@@ -17,6 +16,7 @@ import org.ole.planet.myplanet.databinding.RowMysurveyBinding
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.ui.exam.TakeExamFragment
+import org.ole.planet.myplanet.ui.navigation.DashboardDestination
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission.ViewHolderMySurvey
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
@@ -123,11 +123,7 @@ class AdapterMySubmission(
 
     private fun openSubmissionDetail(listener: OnHomeItemClickListener?, id: String?) {
         if (listener != null) {
-            val b = Bundle()
-            b.putString("id", id)
-            val f: Fragment = SubmissionDetailFragment()
-            f.arguments = b
-            listener.openCallFragment(f)
+            listener.openCallFragment(DashboardDestination.SubmissionDetail(id))
         }
     }
 
@@ -143,15 +139,22 @@ class AdapterMySubmission(
         @JvmStatic
         fun openSurvey(listener: OnHomeItemClickListener?, id: String?, isMySurvey: Boolean, isTeam: Boolean, teamId: String?) {
             if (listener != null) {
-                val b = Bundle()
-                b.putString("type", "survey")
-                b.putString("id", id)
-                b.putBoolean("isMySurvey", isMySurvey)
-                b.putBoolean("isTeam", isTeam)
-                b.putString("teamId", teamId)
-                val f: Fragment = TakeExamFragment()
-                f.arguments = b
-                listener.openCallFragment(f)
+                listener.openCallFragment(
+                    DashboardDestination.Custom(
+                        fragmentFactory = {
+                            TakeExamFragment().apply {
+                                arguments = Bundle().apply {
+                                    putString("type", "survey")
+                                    putString("id", id)
+                                    putBoolean("isMySurvey", isMySurvey)
+                                    putBoolean("isTeam", isTeam)
+                                    putString("teamId", teamId)
+                                }
+                            }
+                        },
+                        stableTag = "TakeExam_${id ?: "unknown"}"
+                    )
+                )
             }
         }
     }

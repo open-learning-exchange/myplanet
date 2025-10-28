@@ -11,7 +11,6 @@ import android.widget.RadioGroup
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -32,14 +31,8 @@ import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.ui.courses.CoursesFragment
-import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
-import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
-import org.ole.planet.myplanet.ui.mylife.LifeFragment
-import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
-import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
-import org.ole.planet.myplanet.ui.team.TeamFragment
+import org.ole.planet.myplanet.ui.navigation.DashboardDestination
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.TimeUtils
@@ -320,7 +313,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
             .setTitle(title)
             .setView(dialogView)
             .setPositiveButton(getString(R.string.ok)) { dialog, _ ->
-                homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("survey"))
+                homeItemClickListener?.openCallFragment(DashboardDestination.MySubmission("survey"))
                 dialog.dismiss()
             }
             .setNeutralButton(getString(R.string.remind_later)) { _, _ -> }
@@ -371,12 +364,11 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     private fun openCourse(realmMyCourses: RealmMyCourse?, position: Int) {
         if (homeItemClickListener != null) {
-            val f: Fragment = TakeCourseFragment()
-            val b = Bundle()
-            b.putString("id", realmMyCourses?.courseId)
-            b.putInt("position", position)
-            f.arguments = b
-            homeItemClickListener?.openCallFragment(f)
+            val destination = DashboardDestination.TakeCourse(
+                courseId = realmMyCourses?.courseId,
+                position = position
+            )
+            homeItemClickListener?.openCallFragment(destination)
         }
     }
 
@@ -390,37 +382,31 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     private fun declareElements() {
         binding.homeCardTeams.llHomeTeam.setOnClickListener {
-            val fragment = TeamFragment().apply {
-                arguments = Bundle().apply {
-                    putBoolean("fromDashboard", true)
-                }
-            }
-            homeItemClickListener?.openMyFragment(fragment)
+            homeItemClickListener?.openMyFragment(DashboardDestination.Team(fromDashboard = true))
         }
         binding.homeCardLibrary.myLibraryImageButton.setOnClickListener {
             if (user?.id?.startsWith("guest") == true) {
                 guestDialog(requireContext())
             } else {
-                homeItemClickListener?.openMyFragment(ResourcesFragment())
+                homeItemClickListener?.openMyFragment(DashboardDestination.MyLibrary())
             }
         }
         binding.homeCardCourses.myCoursesImageButton.setOnClickListener {
             if (user?.id?.startsWith("guest") == true) {
                 guestDialog(requireContext())
             } else {
-                homeItemClickListener?.openMyFragment(CoursesFragment())
+                homeItemClickListener?.openMyFragment(DashboardDestination.MyCourses())
             }
         }
-        binding.fabMyActivity.setOnClickListener { openHelperFragment(MyActivityFragment()) }
-        binding.cardProfileBell.fabFeedback.setOnClickListener { openHelperFragment(FeedbackListFragment()) }
-        binding.homeCardMyLife.myLifeImageButton.setOnClickListener { homeItemClickListener?.openCallFragment(LifeFragment()) }
-    }
-
-    private fun openHelperFragment(f: Fragment) {
-        val b = Bundle()
-        b.putBoolean("isMyCourseLib", true)
-        f.arguments = b
-        homeItemClickListener?.openCallFragment(f)
+        binding.fabMyActivity.setOnClickListener {
+            homeItemClickListener?.openCallFragment(DashboardDestination.MyActivity)
+        }
+        binding.cardProfileBell.fabFeedback.setOnClickListener {
+            homeItemClickListener?.openCallFragment(DashboardDestination.FeedbackList)
+        }
+        binding.homeCardMyLife.myLifeImageButton.setOnClickListener {
+            homeItemClickListener?.openCallFragment(DashboardDestination.Life)
+        }
     }
 
     override fun onPause() {

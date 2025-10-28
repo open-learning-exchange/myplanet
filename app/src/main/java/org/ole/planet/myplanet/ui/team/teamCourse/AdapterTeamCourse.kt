@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.team.teamCourse
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -13,7 +12,7 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.RowTeamResourceBinding
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getTeamCreator
-import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
+import org.ole.planet.myplanet.ui.navigation.DashboardDestination
 import org.ole.planet.myplanet.ui.team.teamCourse.AdapterTeamCourse.ViewHolderTeamCourse
 
 class AdapterTeamCourse(
@@ -48,9 +47,7 @@ class AdapterTeamCourse(
         holder.binding.tvDescription.text = course.description
         holder.binding.root.setOnClickListener {
             if (listener != null) {
-                val b = Bundle()
-                b.putString("id", course.courseId)
-                listener?.openCallFragment(TakeCourseFragment.newInstance(b))
+                listener?.openCallFragment(DashboardDestination.TakeCourse(course.courseId))
             }
         }
         if (!settings.getString("userId", "--").equals(teamCreator, ignoreCase = true)) {

@@ -33,7 +33,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import org.ole.planet.myplanet.ui.resources.ResourcesFragment
+import org.ole.planet.myplanet.ui.navigation.DashboardDestination
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.JoinRequestsPage
@@ -150,15 +150,21 @@ class NotificationsFragment : Fragment() {
                         val teamObject = realm.where(RealmMyTeam::class.java)
                             .equalTo("_id", teamId)
                             .findFirst()
-                        val f = TeamDetailFragment.newInstance(
-                            teamId = teamId,
-                            teamName = teamObject?.name ?: "",
-                            teamType = teamObject?.type ?: "",
-                            isMyTeam = true,
-                            navigateToPage = TasksPage,
+                        (activity as OnHomeItemClickListener).openCallFragment(
+                            DashboardDestination.Custom(
+                                fragmentFactory = {
+                                    TeamDetailFragment.newInstance(
+                                        teamId = teamId,
+                                        teamName = teamObject?.name ?: "",
+                                        teamType = teamObject?.type ?: "",
+                                        isMyTeam = true,
+                                        navigateToPage = TasksPage,
+                                    )
+                                },
+                                stableTag = "TeamDetail_${teamId}_${TasksPage.id}",
+                                customSelection = DashboardDestination.Selection(drawerItemIdentifier = 5L)
+                            )
                         )
-
-                        (activity as OnHomeItemClickListener).openCallFragment(f)
                     }
                 }
             }
@@ -178,19 +184,27 @@ class NotificationsFragment : Fragment() {
 
                         val teamId = joinRequest?.teamId
                         if (teamId?.isNotEmpty() == true) {
-                            val f = TeamDetailFragment()
-                            val b = Bundle()
-                            b.putString("id", teamId)
-                            b.putBoolean("isMyTeam", true)
-                            b.putString("navigateToPage", JoinRequestsPage.id)
-                            f.arguments = b
-                            (activity as OnHomeItemClickListener).openCallFragment(f)
+                            (activity as OnHomeItemClickListener).openCallFragment(
+                                DashboardDestination.Custom(
+                                    fragmentFactory = {
+                                        TeamDetailFragment().apply {
+                                            arguments = Bundle().apply {
+                                                putString("id", teamId)
+                                                putBoolean("isMyTeam", true)
+                                                putString("navigateToPage", JoinRequestsPage.id)
+                                            }
+                                        }
+                                    },
+                                    stableTag = "TeamDetail_${teamId}_${JoinRequestsPage.id}",
+                                    customSelection = DashboardDestination.Selection(drawerItemIdentifier = 5L)
+                                )
+                            )
                         }
                     }
                 }
             }
             "resource" -> {
-                dashboardActivity.openMyFragment(ResourcesFragment())
+                dashboardActivity.openMyFragment(DashboardDestination.MyLibrary())
             }
         }
 

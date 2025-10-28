@@ -6,7 +6,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.widget.TextView
 import androidx.core.content.ContextCompat
-import androidx.fragment.app.Fragment
 import io.realm.RealmObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
@@ -17,40 +16,18 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.ui.calendar.CalendarFragment
-import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
-import org.ole.planet.myplanet.ui.myhealth.MyHealthFragment
 import org.ole.planet.myplanet.ui.mymeetup.MyMeetupDetailFragment
-import org.ole.planet.myplanet.ui.mypersonals.MyPersonalsFragment
-import org.ole.planet.myplanet.ui.references.ReferenceFragment
-import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
-import org.ole.planet.myplanet.ui.team.TeamDetailFragment
-import org.ole.planet.myplanet.ui.userprofile.AchievementFragment
+import org.ole.planet.myplanet.ui.navigation.DashboardDestination
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utilities.Utilities
 
 open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
-    fun handleClick(id: String?, title: String?, f: Fragment, v: TextView) {
+    fun handleClick(title: String?, v: TextView, destinationProvider: () -> DashboardDestination) {
         v.text = title
         v.setOnClickListener {
-            if (homeItemClickListener != null) {
-                if (f is TeamDetailFragment) {
-                    val teamObject = mRealm.where(RealmMyTeam::class.java)?.equalTo("_id", id)?.findFirst()
-                    val optimizedFragment = TeamDetailFragment.newInstance(
-                        teamId = id ?: "",
-                        teamName = title ?: "",
-                        teamType = teamObject?.type ?: "",
-                        isMyTeam = true
-                    )
-                    prefData.setTeamName(title)
-                    homeItemClickListener?.openCallFragment(optimizedFragment)
-                } else {
-                    val b = Bundle()
-                    b.putString("id", id)
-                    f.arguments = b
-                    prefData.setTeamName(title)
-                    homeItemClickListener?.openCallFragment(f)
-                }
+            homeItemClickListener?.let { listener ->
+                prefData.setTeamName(title)
+                listener.openCallFragment(destinationProvider())
             }
         }
     }
@@ -59,13 +36,13 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         v.setOnClickListener {
             homeItemClickListener?.let { listener ->
                 when (title) {
-                    "mySubmissions" -> openIfLoggedIn { listener.openCallFragment(MySubmissionFragment()) }
-                    "References" -> listener.openCallFragment(ReferenceFragment())
-                    "Calendar" -> listener.openCallFragment(CalendarFragment())
-                    "mySurveys" -> openIfLoggedIn { listener.openCallFragment(MySubmissionFragment.newInstance("survey")) }
-                    "myAchievements" -> openIfLoggedIn { listener.openCallFragment(AchievementFragment()) }
-                    "myPersonals" -> openIfLoggedIn { listener.openCallFragment(MyPersonalsFragment()) }
-                    "myHealth" -> openIfLoggedIn { listener.openCallFragment(MyHealthFragment()) }
+                    "mySubmissions" -> openIfLoggedIn { listener.openCallFragment(DashboardDestination.MySubmission()) }
+                    "References" -> listener.openCallFragment(DashboardDestination.References)
+                    "Calendar" -> listener.openCallFragment(DashboardDestination.Calendar)
+                    "mySurveys" -> openIfLoggedIn { listener.openCallFragment(DashboardDestination.MySubmission("survey")) }
+                    "myAchievements" -> openIfLoggedIn { listener.openCallFragment(DashboardDestination.Achievements) }
+                    "myPersonals" -> openIfLoggedIn { listener.openCallFragment(DashboardDestination.MyPersonals) }
+                    "myHealth" -> openIfLoggedIn { listener.openCallFragment(DashboardDestination.MyHealth) }
                     else -> Utilities.toast(activity, getString(R.string.feature_not_available))
                 }
             }
@@ -90,13 +67,24 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
                 textViewArray[itemCnt]?.text = obj.title
             }
             is RealmMyCourse -> {
-                textViewArray[itemCnt]?.let {
-                    handleClick(obj.courseId, obj.courseTitle, TakeCourseFragment(), it)
+                textViewArray[itemCnt]?.let { view ->
+                    handleClick(obj.courseTitle, view) {
+                        DashboardDestination.TakeCourse(obj.courseId)
+                    }
                 }
             }
             is RealmMeetup -> {
-                textViewArray[itemCnt]?.let {
-                    handleClick(obj.meetupId, obj.title, MyMeetupDetailFragment(), it)
+                textViewArray[itemCnt]?.let { view ->
+                    handleClick(obj.title, view) {
+                        DashboardDestination.Custom(
+                            fragmentFactory = {
+                                MyMeetupDetailFragment().apply {
+                                    arguments = Bundle().apply { putString("id", obj.meetupId) }
+                                }
+                            },
+                            stableTag = "MyMeetup_${obj.meetupId}"
+                        )
+                    }
                 }
             }
         }

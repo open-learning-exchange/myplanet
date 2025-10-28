@@ -43,6 +43,7 @@ import org.ole.planet.myplanet.service.TransactionSyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_LOGIN
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
 import org.ole.planet.myplanet.ui.myhealth.UserListArrayAdapter
+import org.ole.planet.myplanet.ui.navigation.DashboardDestination
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.ui.userprofile.UserProfileFragment
@@ -215,7 +216,22 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             if ((ob as RealmMyTeam).teamType == "sync") {
                 name.setTypeface(null, Typeface.BOLD)
             }
-            handleClick(ob._id, ob.name, TeamDetailFragment(), name)
+            val team = ob as RealmMyTeam
+            handleClick(team.name, name) {
+                val teamObject = mRealm.where(RealmMyTeam::class.java)?.equalTo("_id", team._id)?.findFirst()
+                DashboardDestination.Custom(
+                    fragmentFactory = {
+                        TeamDetailFragment.newInstance(
+                            teamId = team._id ?: "",
+                            teamName = team.name ?: "",
+                            teamType = teamObject?.type ?: "",
+                            isMyTeam = true
+                        )
+                    },
+                    stableTag = "TeamDetail_${team._id}",
+                    customSelection = DashboardDestination.Selection(drawerItemIdentifier = 5L)
+                )
+            }
             showNotificationIcons(ob, v, userId)
             name.text = ob.name
             flexboxLayout.addView(v, params)

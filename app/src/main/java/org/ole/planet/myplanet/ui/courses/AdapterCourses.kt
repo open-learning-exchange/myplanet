@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.courses
 
 import android.content.Context
-import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -10,7 +9,6 @@ import android.widget.CheckBox
 import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
 import android.widget.TextView
-import androidx.fragment.app.Fragment
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
@@ -34,6 +32,7 @@ import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getInt
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
+import org.ole.planet.myplanet.ui.navigation.DashboardDestination
 import org.ole.planet.myplanet.utilities.SelectionUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
@@ -208,12 +207,9 @@ class AdapterCourses(
             setMarkdownText(this, markdownContentWithLocalPaths)
 
             setOnClickListener {
-                homeItemClickListener?.openCallFragment(TakeCourseFragment().apply {
-                    arguments = Bundle().apply {
-                        putString("id", course.courseId)
-                        putInt("position", position)
-                    }
-                })
+                homeItemClickListener?.openCallFragment(
+                    DashboardDestination.TakeCourse(course.courseId, position)
+                )
             }
         }
     }
@@ -407,12 +403,9 @@ class AdapterCourses(
 
     private fun openCourse(realmMyCourses: RealmMyCourse?, step: Int) {
         if (homeItemClickListener != null) {
-            val f: Fragment = TakeCourseFragment()
-            val b = Bundle()
-            b.putString("id", realmMyCourses?.courseId)
-            b.putInt("position", step)
-            f.arguments = b
-            homeItemClickListener?.openCallFragment(f)
+            homeItemClickListener?.openCallFragment(
+                DashboardDestination.TakeCourse(realmMyCourses?.courseId, step)
+            )
         }
     }
 
