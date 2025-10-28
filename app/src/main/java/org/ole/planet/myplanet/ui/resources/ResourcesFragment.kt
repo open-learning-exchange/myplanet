@@ -5,6 +5,8 @@ import android.content.Context
 import android.content.Context.MODE_PRIVATE
 import android.content.DialogInterface
 import android.os.Bundle
+import android.os.StrictMode
+import android.os.SystemClock
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.LayoutInflater
@@ -27,6 +29,8 @@ import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.concurrent.TimeUnit
+import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
@@ -92,8 +96,22 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private val serverUrlMapper = ServerUrlMapper()
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
-    
+
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
+
+    private data class ResourceData(
+        val ratings: HashMap<String?, JsonObject>,
+        val libraryList: List<RealmMyLibrary?>
+    )
+
+    private data class CachedResourceData(
+        val timestamp: Long,
+        val ratings: HashMap<String?, JsonObject>,
+        val libraryList: List<RealmMyLibrary?>
+    )
+
+    private var cachedResourceData: CachedResourceData? = null
+    private val cacheDurationMillis = TimeUnit.MINUTES.toMillis(1)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -146,7 +164,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                     if (isAdded) {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
-                        refreshResourcesData()
+                        refreshResourcesData(forceReload = true)
                         prefManager.setResourcesSynced(true)
                     }
                 }
@@ -174,38 +192,80 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
     }
 
-    private fun refreshResourcesData() {
+    private fun refreshResourcesData(forceReload: Boolean = false) {
         if (!isAdded || requireActivity().isFinishing) return
 
-        try {
-            map = getRatings(mRealm, "resource", model?.id)
-            val libraryList: List<RealmMyLibrary?> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary?>()
-            adapterLibrary.setLibraryList(libraryList)
-            adapterLibrary.setRatingMap(map!!)
-            adapterLibrary.notifyDataSetChanged()
-            checkList()
-            showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val resourceData = loadResourceData(forceReload)
+                if (!isAdded || requireActivity().isFinishing) {
+                    return@launch
+                }
+                val ratingCopy = HashMap(resourceData.ratings)
+                map = ratingCopy
+                adapterLibrary.setLibraryList(resourceData.libraryList)
+                adapterLibrary.setRatingMap(ratingCopy)
+                checkList()
+                showNoData(tvMessage, adapterLibrary.itemCount, "resources")
 
-            if (searchTags.isNotEmpty() || etSearch.text?.isNotEmpty() == true) {
-                adapterLibrary.setLibraryList(
-                    applyFilter(
-                        filterLibraryByTag(
-                            etSearch.text.toString().trim(), searchTags
+                if (searchTags.isNotEmpty() || etSearch.text?.isNotEmpty() == true) {
+                    adapterLibrary.setLibraryList(
+                        applyFilter(
+                            filterLibraryByTag(
+                                etSearch.text.toString().trim(), searchTags
+                            )
                         )
                     )
-                )
-                showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+                    showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
     }
 
+    private suspend fun loadResourceData(forceReload: Boolean): ResourceData =
+        withContext(Dispatchers.IO) {
+            val now = SystemClock.elapsedRealtime()
+            val cached = cachedResourceData
+            val shouldUseCache = !forceReload && cached != null && now - cached.timestamp < cacheDurationMillis
+
+            if (shouldUseCache) {
+                return@withContext ResourceData(
+                    ratings = HashMap(cached!!.ratings),
+                    libraryList = cached.libraryList
+                )
+            }
+
+            val ratings = getRatings(mRealm, "resource", model?.id)
+            val libraryList: List<RealmMyLibrary?> =
+                getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary?>()
+
+            val freshCache = CachedResourceData(
+                timestamp = now,
+                ratings = HashMap(ratings),
+                libraryList = libraryList
+            )
+            cachedResourceData = freshCache
+
+            ResourceData(
+                ratings = HashMap(ratings),
+                libraryList = libraryList
+            )
+        }
+
     override fun getAdapter(): RecyclerView.Adapter<*> {
-        map = getRatings(mRealm, "resource", model?.id)
-        val libraryList: List<RealmMyLibrary?> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary?>()
-        adapterLibrary = AdapterResource(requireActivity(), libraryList, map!!, tagRepository, profileDbHandler?.userModel)
+        val cachedData = cachedResourceData
+        val initialRatings = cachedData?.ratings?.let { HashMap(it) } ?: hashMapOf()
+        val initialLibraryList = cachedData?.libraryList ?: emptyList()
+        map = HashMap(initialRatings)
+        adapterLibrary = AdapterResource(
+            requireActivity(),
+            initialLibraryList,
+            initialRatings,
+            tagRepository,
+            profileDbHandler?.userModel
+        )
         adapterLibrary.setRatingChangeListener(this)
         adapterLibrary.setListener(this)
         return adapterLibrary
@@ -213,6 +273,14 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        if (BuildConfig.DEBUG) {
+            StrictMode.setThreadPolicy(
+                StrictMode.ThreadPolicy.Builder()
+                    .detectAll()
+                    .penaltyLog()
+                    .build()
+            )
+        }
         isMyCourseLib = arguments?.getBoolean("isMyCourseLib", false) ?: false
         userModel = profileDbHandler?.userModel
         searchTags = ArrayList()
@@ -648,7 +716,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     
     override fun onDataUpdated(table: String, update: TableDataUpdate) {
         if (table == "resources" && update.shouldRefreshUI) {
-            refreshResourcesData()
+            refreshResourcesData(forceReload = true)
         }
     }
     
