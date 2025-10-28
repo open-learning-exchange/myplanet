@@ -97,6 +97,17 @@ class SubmissionRepositoryImpl @Inject constructor(
         return findByField(RealmStepExam::class.java, "stepId", stepId)?.noOfQuestions ?: 0
     }
 
+    override suspend fun getCourseSurveys(courseId: String?): List<RealmStepExam> {
+        if (courseId.isNullOrBlank()) {
+            return emptyList()
+        }
+
+        return queryList(RealmStepExam::class.java) {
+            equalTo("courseId", courseId)
+            equalTo("type", "surveys")
+        }
+    }
+
     override suspend fun getSubmissionById(id: String): RealmSubmission? {
         return findByField(RealmSubmission::class.java, "id", id)
     }
