@@ -151,8 +151,9 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
 
     private fun createOrUpdateTask(task: String, desc: String, teamTask: RealmTeamTask?) {
         val isCreate = teamTask == null
-        val realmTeamTask = teamTask?.let { mRealm.copyFromRealm(it) } ?: RealmTeamTask().apply {
+        val realmTeamTask = teamTask?.toDetachedCopy() ?: RealmTeamTask().apply {
             id = UUID.randomUUID().toString()
+            teamId = this@TeamTaskFragment.teamId
         }
         realmTeamTask.title = task
         realmTeamTask.description = desc
@@ -328,6 +329,26 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
                     setAdapter(forceRefresh = true)
                 }
             }.show()
+    }
+
+    private fun RealmTeamTask.toDetachedCopy(): RealmTeamTask {
+        return RealmTeamTask().also { detached ->
+            detached.id = id
+            detached._id = _id
+            detached._rev = _rev
+            detached.title = title
+            detached.description = description
+            detached.link = link
+            detached.sync = sync
+            detached.teamId = teamId
+            detached.isUpdated = isUpdated
+            detached.assignee = assignee
+            detached.deadline = deadline
+            detached.completedTime = completedTime
+            detached.status = status
+            detached.completed = completed
+            detached.isNotified = isNotified
+        }
     }
 
     override fun onDestroyView() {
