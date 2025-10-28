@@ -17,14 +17,11 @@ import java.util.Date
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Semaphore
@@ -75,8 +72,6 @@ class SyncManager @Inject constructor(
     private val stringArray = arrayOfNulls<String>(4)
     private var listener: SyncListener? = null
     private var backgroundSync: Job? = null
-    private val syncScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    private var betaSync = false
     private val improvedSyncInitialized = AtomicBoolean(false)
 
     fun start(listener: SyncListener?, type: String, syncTables: List<String>? = null) {
@@ -112,24 +107,16 @@ class SyncManager @Inject constructor(
     }
 
     private fun destroy() {
-        if (betaSync) {
-            syncScope.cancel()
-            ThreadSafeRealmHelper.closeThreadRealm()
-        }
         cancelBackgroundSync()
         cancel(context, 111)
         isSyncing = false
         settings.edit { putLong("LastSync", Date().time) }
         listener?.onSyncComplete()
         try {
-            if (!betaSync) {
-                if (::mRealm.isInitialized && !mRealm.isClosed) {
-                    mRealm.close()
-                    td?.interrupt()
-                }
-            } else {
-                td?.interrupt()
+            if (::mRealm.isInitialized && !mRealm.isClosed) {
+                mRealm.close()
             }
+            td?.interrupt()
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -467,18 +454,14 @@ class SyncManager @Inject constructor(
     private fun cleanupMainSync() {
         cancel(context, 111)
         isSyncing = false
-        if (!betaSync) {
-            try {
-                if (::mRealm.isInitialized) {
-                    mRealm.close()
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
+        try {
+            if (::mRealm.isInitialized) {
+                mRealm.close()
             }
-            td?.interrupt()
-        } else {
-            td?.interrupt()
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
+        td?.interrupt()
     }
 
     private fun initializeSync() {
