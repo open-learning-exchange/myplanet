@@ -72,6 +72,7 @@ import org.ole.planet.myplanet.ui.chat.ChatHistoryListFragment
 import org.ole.planet.myplanet.ui.dashboard.notification.NotificationListener
 import org.ole.planet.myplanet.ui.dashboard.notification.NotificationsFragment
 import org.ole.planet.myplanet.ui.navigation.DashboardDestination
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.ui.survey.SendSurveyFragment
 import org.ole.planet.myplanet.ui.survey.SurveyFragment

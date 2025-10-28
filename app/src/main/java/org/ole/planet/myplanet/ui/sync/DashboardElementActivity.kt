@@ -227,10 +227,6 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
     }
 
     fun openEnterpriseFragment() {
-        val fragment: Fragment = TeamFragment()
-        val b = Bundle()
-        b.putString("type", "enterprise")
-        fragment.arguments = b
         openCallFragment(DashboardDestination.Team(type = "enterprise"))
     }
 }

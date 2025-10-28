@@ -11,7 +11,7 @@ import org.ole.planet.myplanet.ui.dashboard.BellDashboardFragment
 import org.ole.planet.myplanet.ui.dashboard.DisclaimerFragment
 import org.ole.planet.myplanet.ui.dashboard.InactiveDashboardFragment
 import org.ole.planet.myplanet.ui.dashboard.MyActivityFragment
-import org.ole.planet.myplanet.ui.dashboard.SurveyFragment
+import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.ui.dashboard.notification.NotificationsFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
@@ -26,8 +26,9 @@ import org.ole.planet.myplanet.ui.calendar.CalendarFragment
 import org.ole.planet.myplanet.ui.references.ReferenceFragment
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment
 import org.ole.planet.myplanet.ui.userprofile.EditAchievementFragment
-import org.ole.planet.myplanet.ui.userprofile.MyPersonalsFragment
-import org.ole.planet.myplanet.ui.userprofile.MyHealthFragment
+import org.ole.planet.myplanet.ui.mypersonals.MyPersonalsFragment
+import org.ole.planet.myplanet.ui.myhealth.MyHealthFragment
+import org.ole.planet.myplanet.ui.userprofile.UserProfileFragment
 import org.ole.planet.myplanet.ui.submission.SubmissionDetailFragment
 
 /**
@@ -178,6 +179,10 @@ sealed class DashboardDestination(
         tag = "MyActivityFragment"
     ) {
         override fun createFragment(): Fragment = MyActivityFragment()
+    }
+
+    object UserProfile : DashboardDestination(tag = "UserProfileFragment") {
+        override fun createFragment(): Fragment = UserProfileFragment()
     }
 
     object Life : DashboardDestination(

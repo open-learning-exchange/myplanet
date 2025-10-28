@@ -46,7 +46,6 @@ import org.ole.planet.myplanet.ui.myhealth.UserListArrayAdapter
 import org.ole.planet.myplanet.ui.navigation.DashboardDestination
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
-import org.ole.planet.myplanet.ui.userprofile.UserProfileFragment
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DownloadUtils
@@ -337,10 +336,10 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
     fun initView(view: View) {
         view.findViewById<View>(R.id.imageView).setOnClickListener {
-            homeItemClickListener?.openCallFragment(UserProfileFragment())
+            homeItemClickListener?.openCallFragment(DashboardDestination.UserProfile)
         }
         view.findViewById<View>(R.id.txtFullName).setOnClickListener {
-            homeItemClickListener?.openCallFragment(UserProfileFragment())
+            homeItemClickListener?.openCallFragment(DashboardDestination.UserProfile)
         }
         myLibraryDiv(view)
         initializeFlexBoxView(view, R.id.flexboxLayoutCourse, RealmMyCourse::class.java)
