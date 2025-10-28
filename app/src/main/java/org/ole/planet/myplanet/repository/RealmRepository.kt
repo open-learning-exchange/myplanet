@@ -63,18 +63,26 @@ open class RealmRepository(private val databaseService: DatabaseService) {
         clazz: Class<T>,
         value: V,
         vararg fieldNames: String,
+    ): T? = findFirstByFields(clazz, value, fieldNames.asList())
+
+    protected suspend fun <T : RealmObject, V : Any> findFirstByFields(
+        clazz: Class<T>,
+        value: V,
+        fieldNames: Collection<String>,
     ): T? {
         require(fieldNames.isNotEmpty()) { "At least one field name must be provided" }
         return databaseService.withRealmAsync { realm ->
-            fieldNames.forEach { fieldName ->
-                if (fieldName.isNotBlank()) {
-                    val result = realm.findCopyByField(clazz, fieldName, value)
-                    if (result != null) {
-                        return@withRealmAsync result
-                    }
+            var match: T? = null
+            for (fieldName in fieldNames) {
+                if (fieldName.isBlank()) continue
+
+                val result = realm.findCopyByField(clazz, fieldName, value)
+                if (result != null) {
+                    match = result
+                    break
                 }
             }
-            null
+            match
         }
     }
 
