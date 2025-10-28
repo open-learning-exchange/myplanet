@@ -14,9 +14,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Case
 import io.realm.Realm
-import io.realm.RealmQuery
 import io.realm.RealmResults
 import javax.inject.Inject
 import kotlinx.coroutines.delay
@@ -231,41 +229,18 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
                     updatedTeamList()
                     return
                 }
-                var list: List<RealmMyTeam>
-                var conditionApplied = false
-                if(fromDashboard){
-                    list = teamList?.filter {
-                        it.name?.contains(charSequence.toString(), ignoreCase = true) == true
+                val searchQuery = charSequence.toString()
+                if (fromDashboard) {
+                    val list = teamList?.filter {
+                        it.name?.contains(searchQuery, ignoreCase = true) == true
                     } ?: emptyList()
+                    updateSearchResults(searchQuery, list, conditionApplied)
                 } else {
-                    val query = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId")
-                        .notEqualTo("status", "archived")
-                        .contains("name", charSequence.toString(), Case.INSENSITIVE)
-                    val result = getList(query)
-                    list = result.first
-                    conditionApplied = result.second
-                }
-
-                if (list.isEmpty()) {
-                    showNoResultsMessage(true, charSequence.toString())
-                    binding.rvTeamList.adapter = null
-                } else {
-                    showNoResultsMessage(false)
-                    val sortedList = list.sortedWith(compareByDescending<RealmMyTeam> {
-                        it.name?.startsWith(charSequence.toString(), ignoreCase = true)
-                    }.thenBy { it.name })
-
-                    val adapterTeamList = AdapterTeamList(
-                        activity as Context,
-                        sortedList,
-                        childFragmentManager,
-                        teamRepository,
-                        user,
-                    )
-                    adapterTeamList.setTeamListener(this@TeamFragment)
-                    adapterTeamList.setUpdateCompleteListener(this@TeamFragment)
-                    binding.rvTeamList.adapter = adapterTeamList
-                    listContentDescription(conditionApplied)
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        val isTypeFilterApplied = !(TextUtils.isEmpty(type) || type == "team")
+                        val list = teamRepository.searchTeamsByName(type, searchQuery)
+                        updateSearchResults(searchQuery, list, isTypeFilterApplied)
+                    }
                 }
             }
 
@@ -273,18 +248,33 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
         })
     }
 
-    private fun getList(query: RealmQuery<RealmMyTeam>): Pair<List<RealmMyTeam>, Boolean> {
-        var queried = query
-        val conditionApplied: Boolean
-        queried = if (TextUtils.isEmpty(type) || type == "team") {
-            conditionApplied = false
-            queried.notEqualTo("type", "enterprise")
+    private fun updateSearchResults(
+        searchQuery: String,
+        list: List<RealmMyTeam>,
+        isConditionApplied: Boolean,
+    ) {
+        conditionApplied = isConditionApplied
+        if (list.isEmpty()) {
+            showNoResultsMessage(true, searchQuery)
+            binding.rvTeamList.adapter = null
         } else {
-            conditionApplied = true
-            queried.equalTo("type", "enterprise")
-        }
+            showNoResultsMessage(false)
+            val sortedList = list.sortedWith(compareByDescending<RealmMyTeam> {
+                it.name?.startsWith(searchQuery, ignoreCase = true)
+            }.thenBy { it.name })
 
-        return Pair(queried.findAll(), conditionApplied)
+            val adapterTeamList = AdapterTeamList(
+                activity as Context,
+                sortedList,
+                childFragmentManager,
+                teamRepository,
+                user,
+            )
+            adapterTeamList.setTeamListener(this@TeamFragment)
+            adapterTeamList.setUpdateCompleteListener(this@TeamFragment)
+            binding.rvTeamList.adapter = adapterTeamList
+            listContentDescription(conditionApplied)
+        }
     }
 
     private fun setTeamList() {

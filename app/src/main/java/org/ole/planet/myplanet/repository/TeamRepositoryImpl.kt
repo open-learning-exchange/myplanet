@@ -4,6 +4,7 @@ import android.content.SharedPreferences
 import androidx.core.net.toUri
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import io.realm.Case
 import io.realm.RealmChangeListener
 import io.realm.RealmResults
 import io.realm.Sort
@@ -82,6 +83,21 @@ class TeamRepositoryImpl @Inject constructor(
     override suspend fun getTeamById(teamId: String): RealmMyTeam? {
         if (teamId.isBlank()) return null
         return findByField(RealmMyTeam::class.java, "_id", teamId)
+    }
+
+    override suspend fun searchTeamsByName(type: String?, query: String): List<RealmMyTeam> {
+        if (query.isBlank()) return emptyList()
+
+        return queryList(RealmMyTeam::class.java) {
+            isEmpty("teamId")
+            notEqualTo("status", "archived")
+            contains("name", query, Case.INSENSITIVE)
+            if (type.isNullOrEmpty() || type == "team") {
+                notEqualTo("type", "enterprise")
+            } else {
+                equalTo("type", "enterprise")
+            }
+        }
     }
 
     override fun getTeamTransactions(
