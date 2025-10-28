@@ -268,7 +268,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 if (result != null && result?.isDrawerOpen == true) {
                     result?.closeDrawer()
                 } else {
-                    if (supportFragmentManager.backStackEntryCount > 1) {
+                    if (supportFragmentManager.backStackEntryCount > 0) {
                         NavigationHelper.popBackStack(supportFragmentManager)
                     } else {
                         if (!doubleBackToExitPressedOnce) {
