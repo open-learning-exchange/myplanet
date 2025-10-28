@@ -67,6 +67,7 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.chat.ChatHistoryListFragment
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
@@ -109,6 +110,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private val dashboardViewModel: DashboardViewModel by viewModels()
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
+    @Inject
+    lateinit var submissionRepository: SubmissionRepository
     private lateinit var challengeHelper: ChallengeHelper
     private lateinit var notificationManager: NotificationUtils.NotificationManager
     private var notificationsShownThisSession = false
@@ -139,8 +142,18 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         setupSystemNotificationReceiver()
         checkIfShouldShowNotifications()
         addBackPressCallback()
-        challengeHelper = ChallengeHelper(this, mRealm, user, settings, editor, dashboardViewModel)
-        challengeHelper.evaluateChallengeDialog()
+        challengeHelper = ChallengeHelper(
+            this,
+            mRealm,
+            user,
+            settings,
+            editor,
+            dashboardViewModel,
+            submissionRepository,
+        )
+        lifecycleScope.launch {
+            challengeHelper.evaluateChallengeDialog()
+        }
         handleNotificationIntent(intent)
     }
 

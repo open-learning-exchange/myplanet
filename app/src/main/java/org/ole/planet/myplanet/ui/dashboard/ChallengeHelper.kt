@@ -13,12 +13,13 @@ import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.ui.courses.MyProgressFragment
-import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.utilities.MarkdownDialog
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class ChallengeHelper(
     private val activity: DashboardActivity,
@@ -26,12 +27,13 @@ class ChallengeHelper(
     private val user: RealmUserModel?,
     private val settings: SharedPreferences,
     private val editor: SharedPreferences.Editor,
-    private val viewModel: DashboardViewModel
+    private val viewModel: DashboardViewModel,
+    private val submissionRepository: SubmissionRepository
 ) {
     private val fragmentManager: FragmentManager
         get() = activity.supportFragmentManager
 
-    fun evaluateChallengeDialog() {
+    suspend fun evaluateChallengeDialog() {
         val startTime = 1730419200000
         val endTime = 1734307200000
 
@@ -96,12 +98,24 @@ class ChallengeHelper(
         return dateFormat.format(Date(timestamp))
     }
 
-    private fun hasPendingSurvey(courseId: String): Boolean {
-        return realm.where(RealmStepExam::class.java)
-            .equalTo("courseId", courseId)
-            .equalTo("type", "survey")
-            .findAll()
-            .any { survey -> !TakeCourseFragment.existsSubmission(realm, survey.id, "survey") }
+    private suspend fun hasPendingSurvey(courseId: String): Boolean {
+        if (courseId.isBlank()) {
+            return false
+        }
+
+        val userId = user?.id ?: return false
+
+        return withContext(Dispatchers.IO) {
+            val surveys = submissionRepository.getCourseSurveys(courseId)
+            surveys.any { survey ->
+                !submissionRepository.hasSubmission(
+                    survey.id,
+                    courseId,
+                    userId,
+                    "survey",
+                )
+            }
+        }
     }
 
     private fun getCourseStatus(progress: JsonObject?, courseName: String?): String {
