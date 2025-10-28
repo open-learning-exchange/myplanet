@@ -13,12 +13,11 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getString
 
 class AdapterOtherInfo(private val context: Context, private val list: RealmList<String>) :
     RecyclerView.Adapter<ViewHolderOtherInfo>() {
-    private lateinit var rowOtherInfoBinding: RowOtherInfoBinding
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderOtherInfo {
-        rowOtherInfoBinding = RowOtherInfoBinding.inflate(
-            LayoutInflater.from(context), parent, false
+        val binding = RowOtherInfoBinding.inflate(
+            LayoutInflater.from(parent.context), parent, false
         )
-        return ViewHolderOtherInfo(rowOtherInfoBinding)
+        return ViewHolderOtherInfo(binding)
     }
 
     override fun onBindViewHolder(holder: ViewHolderOtherInfo, position: Int) {
