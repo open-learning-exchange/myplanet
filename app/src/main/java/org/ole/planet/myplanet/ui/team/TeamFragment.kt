@@ -226,6 +226,11 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
             override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {
                 if (TextUtils.isEmpty(charSequence)) {
                     showNoResultsMessage(false)
+                    val isTypeFilterApplied = !(TextUtils.isEmpty(type) || type == "team")
+                    conditionApplied = isTypeFilterApplied
+                    if (::adapterTeamList.isInitialized && binding.rvTeamList.adapter !== adapterTeamList) {
+                        binding.rvTeamList.adapter = adapterTeamList
+                    }
                     updatedTeamList()
                     return
                 }
@@ -263,16 +268,16 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
                 it.name?.startsWith(searchQuery, ignoreCase = true)
             }.thenBy { it.name })
 
-            val adapterTeamList = AdapterTeamList(
+            val searchAdapter = AdapterTeamList(
                 activity as Context,
                 sortedList,
                 childFragmentManager,
                 teamRepository,
                 user,
             )
-            adapterTeamList.setTeamListener(this@TeamFragment)
-            adapterTeamList.setUpdateCompleteListener(this@TeamFragment)
-            binding.rvTeamList.adapter = adapterTeamList
+            searchAdapter.setTeamListener(this@TeamFragment)
+            searchAdapter.setUpdateCompleteListener(this@TeamFragment)
+            binding.rvTeamList.adapter = searchAdapter
             listContentDescription(conditionApplied)
         }
     }
@@ -340,6 +345,9 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
 
     private fun updatedTeamList() {
         viewLifecycleOwner.lifecycleScope.launch {
+            if (::adapterTeamList.isInitialized && binding.rvTeamList.adapter !== adapterTeamList) {
+                binding.rvTeamList.adapter = adapterTeamList
+            }
             if (!::adapterTeamList.isInitialized || binding.rvTeamList.adapter == null) {
                 setTeamList()
             } else {
