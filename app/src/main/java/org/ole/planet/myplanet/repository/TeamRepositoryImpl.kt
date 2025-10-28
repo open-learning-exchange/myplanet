@@ -4,9 +4,6 @@ import android.content.SharedPreferences
 import androidx.core.net.toUri
 import com.google.gson.Gson
 import com.google.gson.JsonObject
-import io.realm.RealmChangeListener
-import io.realm.RealmResults
-import io.realm.Sort
 import java.util.Calendar
 import java.util.Date
 import java.util.UUID
@@ -14,6 +11,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.datamanager.ApiClient.client
@@ -90,32 +88,18 @@ class TeamRepositoryImpl @Inject constructor(
         endDate: Long?,
         sortAscending: Boolean,
     ): Flow<List<RealmMyTeam>> {
-        val sortOrder = if (sortAscending) Sort.ASCENDING else Sort.DESCENDING
-        return withRealmFlow { realm, scope ->
-            val query = realm.where(RealmMyTeam::class.java)
-                .equalTo("teamId", teamId)
-                .equalTo("docType", "transaction")
-                .notEqualTo("status", "archived")
-
-            startDate?.let { query.greaterThanOrEqualTo("date", it) }
-            endDate?.let { query.lessThanOrEqualTo("date", it) }
-
-            val results = query.findAllAsync().sort("date", sortOrder)
-            val listener = RealmChangeListener<RealmResults<RealmMyTeam>> { updatedResults ->
-                if (updatedResults.isLoaded && updatedResults.isValid) {
-                    scope.trySend(realm.copyFromRealm(updatedResults))
-                } else {
-                    scope.trySend(emptyList())
-                }
-            }
-            results.addChangeListener(listener)
-            if (results.isLoaded && results.isValid) {
-                scope.trySend(realm.copyFromRealm(results))
+        return queryListFlow(RealmMyTeam::class.java) {
+            equalTo("teamId", teamId)
+            equalTo("docType", "transaction")
+            notEqualTo("status", "archived")
+            startDate?.let { greaterThanOrEqualTo("date", it) }
+            endDate?.let { lessThanOrEqualTo("date", it) }
+        }.map { transactions ->
+            if (sortAscending) {
+                transactions.sortedBy { it.date }
             } else {
-                scope.trySend(emptyList())
+                transactions.sortedByDescending { it.date }
             }
-
-            return@withRealmFlow { results.removeChangeListener(listener) }
         }
     }
 
