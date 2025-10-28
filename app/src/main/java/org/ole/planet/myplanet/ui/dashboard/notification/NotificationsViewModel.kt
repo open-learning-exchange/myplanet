@@ -2,12 +2,10 @@ package org.ole.planet.myplanet.ui.dashboard.notification
 
 import android.content.Context
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Realm
 import io.realm.Sort
-import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,11 +20,12 @@ import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
 import java.util.regex.Pattern
 
-@HiltViewModel
-class NotificationsViewModel @Inject constructor(
+class NotificationsViewModel(
     private val databaseService: DatabaseService,
-    @ApplicationContext private val appContext: Context,
+    appContext: Context,
 ) : ViewModel() {
+
+    private val appContext = appContext.applicationContext
 
     private val _notificationItems = MutableStateFlow<List<NotificationDisplayItem>>(emptyList())
     val notificationItems: StateFlow<List<NotificationDisplayItem>> = _notificationItems.asStateFlow()
@@ -212,6 +211,22 @@ class NotificationsViewModel @Inject constructor(
     companion object {
         private val DATE_PATTERN: Pattern =
             Pattern.compile("\\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\\s\\d{1,2},\\s\\w+\\s\\d{4}\\b")
+
+        fun provideFactory(
+            databaseService: DatabaseService,
+            appContext: Context,
+        ): ViewModelProvider.Factory {
+            val applicationContext = appContext.applicationContext
+            return object : ViewModelProvider.Factory {
+                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                    if (modelClass.isAssignableFrom(NotificationsViewModel::class.java)) {
+                        @Suppress("UNCHECKED_CAST")
+                        return NotificationsViewModel(databaseService, applicationContext) as T
+                    }
+                    throw IllegalArgumentException("Unknown ViewModel class: ${'$'}modelClass")
+                }
+            }
+        }
     }
 }
 

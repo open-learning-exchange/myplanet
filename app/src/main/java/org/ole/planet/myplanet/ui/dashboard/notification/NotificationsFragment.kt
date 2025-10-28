@@ -49,7 +49,9 @@ class NotificationsFragment : Fragment() {
     lateinit var databaseService: DatabaseService
     @Inject
     lateinit var notificationRepository: NotificationRepository
-    private val viewModel: NotificationsViewModel by viewModels()
+    private val viewModel: NotificationsViewModel by viewModels {
+        NotificationsViewModel.provideFactory(databaseService, requireContext())
+    }
     private lateinit var adapter: AdapterNotification
     private lateinit var userId: String
     private var notificationUpdateListener: NotificationListener? = null
