@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.viewer
 
-import android.app.Activity
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -24,13 +23,8 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
-import dagger.Module
-import dagger.Provides
-import dagger.hilt.InstallIn
 import dagger.hilt.android.AndroidEntryPoint
-import dagger.hilt.android.components.ActivityComponent
 import javax.inject.Inject
-import javax.inject.Provider
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityExoPlayerVideoBinding
 import org.ole.planet.myplanet.datamanager.auth.AuthSessionUpdater
@@ -50,7 +44,7 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
     private var currentPosition = 0L
     private var isActivityVisible = false
     @Inject
-    lateinit var authSessionUpdaterProvider: Provider<AuthSessionUpdater>
+    lateinit var authSessionUpdaterFactory: AuthSessionUpdater.Factory
     private var authSessionUpdater: AuthSessionUpdater? = null
 
     private val audioBecomingNoisyReceiver = object : BroadcastReceiver() {
@@ -77,7 +71,7 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
         when (videoType) {
             "offline" -> prepareExoPlayerFromFileUri(videoURL)
             "online" -> {
-                authSessionUpdater = authSessionUpdaterProvider.get()
+                authSessionUpdater = authSessionUpdaterFactory.create(this)
             }
         }
 
@@ -258,14 +252,5 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
             e.printStackTrace()
         }
         super.onDestroy()
-    }
-}
-
-@Module
-@InstallIn(ActivityComponent::class)
-object VideoPlayerActivityModule {
-    @Provides
-    fun provideAuthCallback(activity: Activity): AuthSessionUpdater.AuthCallback {
-        return activity as AuthSessionUpdater.AuthCallback
     }
 }

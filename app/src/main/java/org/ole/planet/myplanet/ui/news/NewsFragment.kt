@@ -54,6 +54,7 @@ class NewsFragment : BaseNewsFragment() {
     private val gson = Gson()
     private lateinit var etSearch: EditText
     private var selectedLabel: String = "All"
+    private val labelDisplayToValue = mutableMapOf<String, String>()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentNewsBinding.inflate(inflater, container, false)
@@ -367,11 +368,14 @@ class NewsFragment : BaseNewsFragment() {
     }
     
     private fun collectAllLabels(list: List<RealmNews?>): List<String> {
+        labelDisplayToValue.clear()
+
         val allLabels = mutableSetOf<String>()
         allLabels.add("All")
 
-        Constants.LABELS.keys.forEach { labelName ->
+        Constants.LABELS.forEach { (labelName, labelValue) ->
             allLabels.add(labelName)
+            labelDisplayToValue[labelName] = labelValue
         }
 
         allLabels.add("Shared Chat")
@@ -395,12 +399,13 @@ class NewsFragment : BaseNewsFragment() {
             }
 
             news?.labels?.forEach { label ->
-                Constants.LABELS.entries.find { it.value == label }?.key?.let { labelName ->
-                    allLabels.add(labelName)
-                }
+                val labelName = Constants.LABELS.entries.find { it.value == label }?.key
+                    ?: NewsLabelManager.formatLabelValue(label)
+                allLabels.add(labelName)
+                labelDisplayToValue.putIfAbsent(labelName, label)
             }
         }
-        
+
         return allLabels.sorted()
     }
     
@@ -414,8 +419,8 @@ class NewsFragment : BaseNewsFragment() {
                 selectedLabel == "Shared Chat" -> {
                     news?.chat == true || news?.viewableBy.equals("community", ignoreCase = true)
                 }
-                Constants.LABELS.containsKey(selectedLabel) -> {
-                    val labelValue = Constants.LABELS[selectedLabel]
+                labelDisplayToValue.containsKey(selectedLabel) -> {
+                    val labelValue = labelDisplayToValue[selectedLabel]
                     news?.labels?.contains(labelValue) == true
                 }
                 else -> {
