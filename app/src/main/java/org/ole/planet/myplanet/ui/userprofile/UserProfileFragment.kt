@@ -10,6 +10,7 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
+import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -17,12 +18,14 @@ import android.os.Environment
 import android.provider.MediaStore
 import android.provider.Settings
 import android.text.TextUtils
+import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.TextView
+import android.widget.LinearLayout
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -54,7 +57,6 @@ import org.ole.planet.myplanet.R.array.language
 import org.ole.planet.myplanet.R.array.subject_level
 import org.ole.planet.myplanet.databinding.EditProfileDialogBinding
 import org.ole.planet.myplanet.databinding.FragmentUserProfileBinding
-import org.ole.planet.myplanet.databinding.RowStatBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -66,7 +68,6 @@ import org.ole.planet.myplanet.utilities.Utilities
 class UserProfileFragment : Fragment() {
     private var _binding: FragmentUserProfileBinding? = null
     private val binding get() = _binding!!
-    private lateinit var rowStatBinding: RowStatBinding
     private lateinit var settings: SharedPreferences
     @Inject
     lateinit var databaseService: DatabaseService
@@ -417,27 +418,62 @@ class UserProfileFragment : Fragment() {
         val keys = LinkedList(map.keys)
         binding.rvStat.adapter = object : RecyclerView.Adapter<ViewHolderRowStat>() {
             override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderRowStat {
-                rowStatBinding = RowStatBinding.inflate(LayoutInflater.from(activity), parent, false)
-                return ViewHolderRowStat(rowStatBinding)
+                val context = parent.context
+                val container = LinearLayout(context).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    layoutParams = RecyclerView.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT
+                    )
+                    val padding = TypedValue.applyDimension(
+                        TypedValue.COMPLEX_UNIT_DIP,
+                        8f,
+                        resources.displayMetrics
+                    ).toInt()
+                    setPadding(padding, padding, padding, padding)
+                }
+
+                val textPadding = TypedValue.applyDimension(
+                    TypedValue.COMPLEX_UNIT_DIP,
+                    4f,
+                    resources.displayMetrics
+                ).toInt()
+
+                val titleView = TextView(context).apply {
+                    layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                    setPadding(textPadding, textPadding, textPadding, textPadding)
+                    setTextColor(ContextCompat.getColor(context, R.color.user_profile_label))
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f)
+                }
+
+                val descriptionView = TextView(context).apply {
+                    layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                    setPadding(textPadding, textPadding, textPadding, textPadding)
+                    setTextColor(ContextCompat.getColor(context, R.color.user_profile_description))
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f)
+                }
+
+                container.addView(titleView)
+                container.addView(descriptionView)
+
+                return ViewHolderRowStat(container, titleView, descriptionView)
             }
 
             override fun onBindViewHolder(holder: ViewHolderRowStat, position: Int) {
-                rowStatBinding.tvTitle.text = keys[position]
-                rowStatBinding.tvTitle.visibility = View.VISIBLE
-                rowStatBinding.tvDescription.text = map[keys[position]]
+                val key = keys[position]
+                holder.titleView.text = key
+                holder.titleView.visibility = View.VISIBLE
+                holder.descriptionView.text = map[key]
                 if (position % 2 == 0) {
-                    rowStatBinding.root.setBackgroundColor(
-                        ContextCompat.getColor(
-                            requireContext(),
-                            R.color.user_profile_background
-                        )
+                    holder.container.setBackgroundColor(
+                        ContextCompat.getColor(requireContext(), R.color.user_profile_background)
                     )
+                } else {
+                    holder.container.setBackgroundColor(Color.TRANSPARENT)
                 }
             }
 
-            override fun getItemCount(): Int {
-                return keys.size
-            }
+            override fun getItemCount(): Int = keys.size
         }
     }
 
@@ -470,7 +506,8 @@ class UserProfileFragment : Fragment() {
 
     private fun takePhoto() {
         if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA)
-            != PackageManager.PERMISSION_GRANTED){
+            != PackageManager.PERMISSION_GRANTED
+        ) {
             requestCameraLauncher.launch(Manifest.permission.CAMERA)
             return
         }
@@ -486,8 +523,7 @@ class UserProfileFragment : Fragment() {
     }
 
     private fun startIntent(uri: Uri?) {
-        var path: String? = null
-        path = uri?.toString()
+        val path = uri?.toString()
 
         mRealm.let {
             if (!it.isInTransaction) {
@@ -512,7 +548,11 @@ class UserProfileFragment : Fragment() {
         }
     }
 
-    inner class ViewHolderRowStat(rowStatBinding: RowStatBinding) : RecyclerView.ViewHolder(rowStatBinding.root)
+    inner class ViewHolderRowStat(
+        val container: LinearLayout,
+        val titleView: TextView,
+        val descriptionView: TextView
+    ) : RecyclerView.ViewHolder(container)
 
     override fun onDestroyView() {
         _binding = null
