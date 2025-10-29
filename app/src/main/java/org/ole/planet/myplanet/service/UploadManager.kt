@@ -67,10 +67,9 @@ private inline fun <T> Iterable<T>.processInBatches(action: (T) -> Unit) {
 class UploadManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val databaseService: DatabaseService,
-    @AppPreferences private val pref: SharedPreferences
+    @AppPreferences private val pref: SharedPreferences,
+    private val gson: Gson
 ) : FileUploadService() {
-
-    private val gson = Gson()
 
     private fun uploadNewsActivities() {
         val apiInterface = client?.create(ApiInterface::class.java)

@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.di
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.google.gson.Gson
 import dagger.Lazy
 import dagger.Module
 import dagger.Provides
@@ -52,9 +53,10 @@ object ServiceModule {
     fun provideUploadManager(
         @ApplicationContext context: Context,
         databaseService: DatabaseService,
-        @AppPreferences preferences: SharedPreferences
+        @AppPreferences preferences: SharedPreferences,
+        gson: Gson
     ): UploadManager {
-        return UploadManager(context, databaseService, preferences)
+        return UploadManager(context, databaseService, preferences, gson)
     }
 
     @Provides
