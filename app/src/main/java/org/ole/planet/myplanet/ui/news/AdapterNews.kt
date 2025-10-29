@@ -229,6 +229,8 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
             imgDelete.visibility = View.GONE
             btnReply.visibility = View.GONE
             imgNews.visibility = View.GONE
+            hsvImages.visibility = View.GONE
+            llNewsImages.removeAllViews()
             recyclerGchat.visibility = View.GONE
             sharedChat.visibility = View.GONE
         }
@@ -604,23 +606,24 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     }
 
     private fun loadImage(binding: RowNewsBinding, news: RealmNews?) {
+        binding.imgNews.visibility = View.GONE
+        binding.hsvImages.visibility = View.GONE
+        binding.llNewsImages.removeAllViews()
+
         val imageUrls = news?.imageUrls
         if (!imageUrls.isNullOrEmpty()) {
             try {
-                val imgObject = gson.fromJson(imageUrls[0], JsonObject::class.java)
-                val path = JsonUtils.getString("imageUrl", imgObject)
-                val request = Glide.with(binding.imgNews.context)
-                val target = if (path.lowercase(Locale.getDefault()).endsWith(".gif")) {
-                    request.asGif().load(if (File(path).exists()) File(path) else path)
+                if (imageUrls.size == 1) {
+                    val imgObject = gson.fromJson(imageUrls[0], JsonObject::class.java)
+                    val path = JsonUtils.getString("imageUrl", imgObject)
+                    loadSingleImage(binding, path)
                 } else {
-                    request.load(if (File(path).exists()) File(path) else path)
-                }
-                target.placeholder(R.drawable.ic_loading)
-                    .error(R.drawable.ic_loading)
-                    .into(binding.imgNews)
-                binding.imgNews.visibility = View.VISIBLE
-                binding.imgNews.setOnClickListener {
-                    showZoomableImage(it.context, path)
+                    binding.hsvImages.visibility = View.VISIBLE
+                    for (imageUrl in imageUrls) {
+                        val imgObject = gson.fromJson(imageUrl, JsonObject::class.java)
+                        val path = JsonUtils.getString("imageUrl", imgObject)
+                        addImageToContainer(binding, path)
+                    }
                 }
                 return
             } catch (_: Exception) {
@@ -629,36 +632,128 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
 
         news?.imagesArray?.let { imagesArray ->
             if (imagesArray.size() > 0) {
-                val ob = imagesArray[0]?.asJsonObject
-                val resourceId = JsonUtils.getString("resourceId", ob)
-                val library = mRealm.where(RealmMyLibrary::class.java)
-                    .equalTo("_id", resourceId)
-                    .findFirst()
-
-                val basePath = context.getExternalFilesDir(null)
-                if (library != null && basePath != null) {
-                    val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
-                    if (imageFile.exists()) {
-                        val request = Glide.with(binding.imgNews.context)
-                        val isGif = library.resourceLocalAddress?.lowercase(Locale.getDefault())?.endsWith(".gif") == true
-                        val target = if (isGif) {
-                            request.asGif().load(imageFile)
-                        } else {
-                            request.load(imageFile)
-                        }
-                        target.placeholder(R.drawable.ic_loading)
-                            .error(R.drawable.ic_loading)
-                            .into(binding.imgNews)
-                        binding.imgNews.visibility = View.VISIBLE
-                        binding.imgNews.setOnClickListener {
-                            showZoomableImage(it.context, imageFile.toString())
-                        }
-                        return
+                if (imagesArray.size() == 1) {
+                    val ob = imagesArray[0]?.asJsonObject
+                    val resourceId = JsonUtils.getString("resourceId", ob)
+                    loadLibraryImage(binding, resourceId)
+                } else {
+                    binding.hsvImages.visibility = View.VISIBLE
+                    for (i in 0 until imagesArray.size()) {
+                        val ob = imagesArray[i]?.asJsonObject
+                        val resourceId = JsonUtils.getString("resourceId", ob)
+                        addLibraryImageToContainer(binding, resourceId)
                     }
                 }
             }
         }
-        binding.imgNews.visibility = View.GONE
+    }
+
+    private fun loadSingleImage(binding: RowNewsBinding, path: String?) {
+        if (path == null) return
+        val request = Glide.with(binding.imgNews.context)
+        val target = if (path.lowercase(Locale.getDefault()).endsWith(".gif")) {
+            request.asGif().load(if (File(path).exists()) File(path) else path)
+        } else {
+            request.load(if (File(path).exists()) File(path) else path)
+        }
+        target.placeholder(R.drawable.ic_loading)
+            .error(R.drawable.ic_loading)
+            .into(binding.imgNews)
+        binding.imgNews.visibility = View.VISIBLE
+        binding.imgNews.setOnClickListener {
+            showZoomableImage(it.context, path)
+        }
+    }
+
+    private fun addImageToContainer(binding: RowNewsBinding, path: String?) {
+        if (path == null) return
+        val imageView = ImageView(context)
+        val size = (120 * context.resources.displayMetrics.density).toInt()
+        val params = LinearLayout.LayoutParams(size, size)
+        params.setMargins(8, 0, 8, 0)
+        imageView.layoutParams = params
+        imageView.scaleType = ImageView.ScaleType.CENTER_CROP
+
+        val request = Glide.with(context)
+        val target = if (path.lowercase(Locale.getDefault()).endsWith(".gif")) {
+            request.asGif().load(if (File(path).exists()) File(path) else path)
+        } else {
+            request.load(if (File(path).exists()) File(path) else path)
+        }
+        target.placeholder(R.drawable.ic_loading)
+            .error(R.drawable.ic_loading)
+            .into(imageView)
+
+        imageView.setOnClickListener {
+            showZoomableImage(context, path)
+        }
+
+        binding.llNewsImages.addView(imageView)
+    }
+
+    private fun loadLibraryImage(binding: RowNewsBinding, resourceId: String?) {
+        if (resourceId == null) return
+        val library = mRealm.where(RealmMyLibrary::class.java)
+            .equalTo("_id", resourceId)
+            .findFirst()
+
+        val basePath = context.getExternalFilesDir(null)
+        if (library != null && basePath != null) {
+            val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
+            if (imageFile.exists()) {
+                val request = Glide.with(binding.imgNews.context)
+                val isGif = library.resourceLocalAddress?.lowercase(Locale.getDefault())?.endsWith(".gif") == true
+                val target = if (isGif) {
+                    request.asGif().load(imageFile)
+                } else {
+                    request.load(imageFile)
+                }
+                target.placeholder(R.drawable.ic_loading)
+                    .error(R.drawable.ic_loading)
+                    .into(binding.imgNews)
+                binding.imgNews.visibility = View.VISIBLE
+                binding.imgNews.setOnClickListener {
+                    showZoomableImage(it.context, imageFile.toString())
+                }
+            }
+        }
+    }
+
+    private fun addLibraryImageToContainer(binding: RowNewsBinding, resourceId: String?) {
+        if (resourceId == null) return
+        val library = mRealm.where(RealmMyLibrary::class.java)
+            .equalTo("_id", resourceId)
+            .findFirst()
+
+        val basePath = context.getExternalFilesDir(null)
+        if (library != null && basePath != null) {
+            val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
+            if (imageFile.exists()) {
+                val imageView = ImageView(context)
+                val size = (120 * context.resources.displayMetrics.density).toInt()
+                val params = LinearLayout.LayoutParams(size, size)
+                params.setMargins(8, 0, 8, 0)
+                imageView.layoutParams = params
+                imageView.scaleType = ImageView.ScaleType.CENTER_CROP
+
+                val request = Glide.with(context)
+                val isGif = library.resourceLocalAddress?.lowercase(Locale.getDefault())?.endsWith(".gif") == true
+                val target = if (isGif) {
+                    request.asGif().load(imageFile)
+                } else {
+                    request.load(imageFile)
+                }
+                target.placeholder(R.drawable.ic_loading)
+                    .error(R.drawable.ic_loading)
+                    .into(imageView)
+
+                imageView.setOnClickListener {
+                    showZoomableImage(context, imageFile.toString())
+                }
+
+                binding.llNewsImages.addView(imageView)
+            }
+        }
     }
 
     private fun showZoomableImage(context: Context, imageUrl: String) {
