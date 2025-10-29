@@ -897,7 +897,7 @@
     <string name="please_enter_a_name">Please enter a name</string>
     <string name="name_is_required">Name is required</string>
     <string name="team_created">Team Created</string>
-    <string name="team_creation_missing_user">We couldn&#39;t find your profile details. Please sign in again.</string>
+    <string name="team_creation_missing_user">We could not find your profile details. Please sign in again.</string>
     <string name="team_creation_missing_user_id">Your account is missing an identifier. Please sync your profile or contact support.</string>
     <string name="team_creation_missing_user_name">Your profile name is missing. Update your profile before creating a team.</string>
     <string name="please_select_gender">Please select gender</string>
