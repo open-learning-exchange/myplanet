@@ -57,10 +57,6 @@ object UrlUtils {
         return if (base.endsWith("/db")) base else "$base/db"
     }
 
-    fun baseUrl(url: String): String {
-        return if (url.endsWith("/db")) url.removeSuffix("/db") else url
-    }
-
     fun dbUrl(url: String): String {
         return if (url.endsWith("/db")) url else "$url/db"
     }
