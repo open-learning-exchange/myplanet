@@ -72,7 +72,7 @@
             android:layout_weight="1"
             android:text="@string/loading_user_profile"
             android:textColor="@color/daynight_textColor"
-            android:textSize="@dimen/text_size_medium" />
+            android:textSize="@dimen/text_size_mid" />
     </LinearLayout>
 
     <LinearLayout
