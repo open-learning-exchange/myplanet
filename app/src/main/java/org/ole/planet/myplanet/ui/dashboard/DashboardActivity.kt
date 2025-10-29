@@ -88,6 +88,7 @@ import org.ole.planet.myplanet.ui.team.TeamPageConfig.TasksPage
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.utilities.Constants.isBetaWifiFeatureEnabled
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.LocaleHelper
@@ -125,7 +126,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         checkUser()
         initViews()
         updateAppTitle()
@@ -147,6 +147,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun initViews() {
         binding = ActivityDashboardBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
         setupUI(binding.activityDashboardParentLayout, this@DashboardActivity)
         setSupportActionBar(binding.myToolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(false)
@@ -203,9 +204,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun setupNavigation() {
-        // Defer drawer creation to avoid blocking main thread
         lifecycleScope.launch {
-            delay(50) // Small delay to let dashboard render first
+            delay(50)
             headerResult = accountHeader
             createDrawer()
             supportFragmentManager.addOnBackStackChangedListener {

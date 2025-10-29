@@ -654,7 +654,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     fun onLogin() {
-        // Start offline activity logging in background (non-blocking)
         profileDbHandler.onLoginAsync(
             callback = {},
             onError = { error ->
@@ -662,7 +661,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             }
         )
 
-        // Proceed immediately without waiting for the Realm transaction
         editor.putBoolean(Constants.KEY_LOGIN, true).commit()
         openDashboard()
         isNetworkConnectedFlow.onEach { isConnected ->
