@@ -7,5 +7,9 @@ import org.ole.planet.myplanet.model.RealmUserModel
 interface NewsRepository {
     suspend fun getNewsWithReplies(newsId: String): Pair<RealmNews?, List<RealmNews>>
     suspend fun getCommunityVisibleNews(userIdentifier: String): List<RealmNews>
-    suspend fun createNews(map: HashMap<String?, String>, user: RealmUserModel?): RealmNews
+    suspend fun createNews(
+        map: HashMap<String?, String>,
+        user: RealmUserModel?,
+        imageUrls: List<String>? = null,
+    ): RealmNews
 }

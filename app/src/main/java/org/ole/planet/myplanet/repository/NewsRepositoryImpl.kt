@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.repository
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import io.realm.Case
+import io.realm.RealmList
 import io.realm.Sort
 import java.util.HashMap
 import javax.inject.Inject
@@ -40,9 +41,16 @@ class NewsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun createNews(map: HashMap<String?, String>, user: RealmUserModel?): RealmNews {
+    override suspend fun createNews(
+        map: HashMap<String?, String>,
+        user: RealmUserModel?,
+        imageUrls: List<String>?,
+    ): RealmNews {
         return withRealmAsync { realm ->
-            val managedNews = createNews(map, realm, user, null)
+            val realmImages = imageUrls?.let { urls ->
+                RealmList<String>().apply { addAll(urls) }
+            }
+            val managedNews = createNews(map, realm, user, realmImages)
             realm.copyFromRealm(managedNews)
         }
     }

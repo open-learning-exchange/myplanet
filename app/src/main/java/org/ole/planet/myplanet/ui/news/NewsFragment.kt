@@ -19,8 +19,11 @@ import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Case
 import io.realm.RealmResults
 import io.realm.Sort
+import java.util.HashMap
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -28,7 +31,6 @@ import org.ole.planet.myplanet.base.BaseNewsFragment
 import org.ole.planet.myplanet.databinding.FragmentNewsBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.NewsRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -161,7 +163,8 @@ class NewsFragment : BaseNewsFragment() {
                 binding.tlMessage.error = getString(R.string.please_enter_message)
                 return@setOnClickListener
             }
-            binding.etMessage.setText(R.string.empty_text)
+            binding.tlMessage.error = null
+
             val map = HashMap<String?, String>()
             map["message"] = message
             map["viewInId"] = "${user?.planetCode ?: ""}@${user?.parentCode ?: ""}"
@@ -169,15 +172,36 @@ class NewsFragment : BaseNewsFragment() {
             map["messageType"] = "sync"
             map["messagePlanetCode"] = user?.planetCode ?: ""
 
-            val n = user?.let { it1 -> createNews(map, mRealm, it1, imageList) }
-            imageList.clear()
-            llImage?.removeAllViews()
-            adapterNews?.addItem(n)
-            filteredNewsList = filterNewsList(updatedNewsList!!)
-            labelFilteredList = applyLabelFilter(filteredNewsList)
-            searchFilteredList = applySearchFilter(labelFilteredList)
-            setData(searchFilteredList)
-            scrollToTop()
+            val attachments = imageList.toList()
+
+            viewLifecycleOwner.lifecycleScope.launch {
+                setSubmitInProgress(true)
+                try {
+                    val createdNews = withContext(Dispatchers.IO) {
+                        newsRepository.createNews(map, user, attachments)
+                    }
+                    if (_binding == null) return@launch
+                    binding.etMessage.setText(R.string.empty_text)
+                    adapterNews?.addItem(createdNews)
+                    updatedNewsList?.let {
+                        filteredNewsList = filterNewsList(it)
+                        labelFilteredList = applyLabelFilter(filteredNewsList)
+                        searchFilteredList = applySearchFilter(labelFilteredList)
+                        setData(searchFilteredList)
+                    }
+                    scrollToTop()
+                } catch (cancellationException: CancellationException) {
+                    throw cancellationException
+                } catch (throwable: Throwable) {
+                    if (_binding == null) return@launch
+                    binding.tlMessage.error = getString(R.string.error_creating_voice)
+                } finally {
+                    withContext(NonCancellable) {
+                        clearImages()
+                        setSubmitInProgress(false)
+                    }
+                }
+            }
         }
 
         binding.addNewsImage.setOnClickListener {
@@ -295,6 +319,12 @@ class NewsFragment : BaseNewsFragment() {
         binding.rvNews.post {
             binding.rvNews.scrollToPosition(0)
         }
+    }
+
+    private fun setSubmitInProgress(inProgress: Boolean) {
+        val binding = _binding ?: return
+        binding.btnSubmit.isEnabled = !inProgress
+        binding.submitProgress.isVisible = inProgress
     }
 
     private val observer: AdapterDataObserver = object : AdapterDataObserver() {

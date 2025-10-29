@@ -104,6 +104,15 @@
                         android:minWidth="@dimen/user_image_size"
                         android:text="@string/button_submit"
                         android:theme="@style/PrimaryButton" />
+                    <ProgressBar
+                        android:id="@+id/submit_progress"
+                        style="?android:attr/progressBarStyleSmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:layout_marginStart="8dp"
+                        android:indeterminate="true"
+                        android:visibility="gone" />
                     <Button
                         android:id="@+id/add_news_image"
                         android:layout_width="wrap_content"
