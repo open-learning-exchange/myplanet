@@ -300,7 +300,7 @@
     </LinearLayout>
     <ProgressBar
         android:id="@+id/progress_submission"
-        style="@style/Widget.AppCompat.ProgressBar.Large"
+        style="?attr/progressBarStyleLarge"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
