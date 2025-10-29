@@ -63,7 +63,11 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
         personalAdapter?.setListener(this)
         binding.rvMypersonal.adapter = personalAdapter
         viewLifecycleOwner.lifecycleScope.launch {
-            myPersonalRepository.getPersonalResources(model?.id).collectLatest { realmMyPersonals ->
+            myPersonalRepository.getPersonalResources(
+                model?.id,
+                model?._id,
+                model?.name,
+            ).collectLatest { realmMyPersonals ->
                 personalAdapter?.updateList(realmMyPersonals)
                 showNodata()
             }

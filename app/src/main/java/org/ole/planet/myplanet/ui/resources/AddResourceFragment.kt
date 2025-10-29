@@ -261,7 +261,14 @@ class AddResourceFragment : BottomSheetDialogFragment() {
             startActivity(Intent(activity, AddResourceActivity::class.java).putExtra("resource_local_url", path))
         } else {
             val userModel = userProfileDbHandler.userModel ?: return
-            showAlert(requireContext(), path, myPersonalRepository, userModel.id, userModel.name)
+            showAlert(
+                requireContext(),
+                path,
+                myPersonalRepository,
+                userModel.id,
+                userModel._id,
+                userModel.name,
+            )
         }
     }
 
@@ -275,7 +282,8 @@ class AddResourceFragment : BottomSheetDialogFragment() {
             path: String?,
             repository: MyPersonalRepository,
             userId: String?,
-            userName: String?
+            userIdentifier: String?,
+            userName: String?,
         ) {
             val v = LayoutInflater.from(context).inflate(R.layout.alert_my_personal, null)
             val etTitle = v.findViewById<EditText>(R.id.et_title)
@@ -291,7 +299,14 @@ class AddResourceFragment : BottomSheetDialogFragment() {
                     }
                     val desc = etDesc.text.toString().trim { it <= ' ' }
                     CoroutineScope(Dispatchers.IO).launch {
-                        repository.savePersonalResource(title, userId, userName, path, desc)
+                        repository.savePersonalResource(
+                            title,
+                            userId,
+                            userIdentifier,
+                            userName,
+                            path,
+                            desc,
+                        )
                         withContext(Dispatchers.Main) {
                             Utilities.toast(context, context.getString(R.string.resource_saved_to_my_personal))
                         }

@@ -7,12 +7,17 @@ interface MyPersonalRepository {
     suspend fun savePersonalResource(
         title: String,
         userId: String?,
+        userIdentifier: String?,
         userName: String?,
         path: String?,
         description: String?
     )
 
-    fun getPersonalResources(userId: String?): Flow<List<RealmMyPersonal>>
+    fun getPersonalResources(
+        userId: String?,
+        userIdentifier: String? = null,
+        userName: String? = null
+    ): Flow<List<RealmMyPersonal>>
 
     suspend fun deletePersonalResource(id: String)
 
