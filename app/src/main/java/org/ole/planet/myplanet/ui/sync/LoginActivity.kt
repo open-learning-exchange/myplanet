@@ -434,7 +434,9 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
 
     }
     override fun onItemClick(user: User) {
+        android.util.Log.d("LOGIN_TIMING", "=== USER CLICKED: ${user.name} at ${System.currentTimeMillis()}")
         if (user.password?.isEmpty() == true && user.source != "guest") {
+            android.util.Log.d("LOGIN_TIMING", "User has no password, populating fields only")
             Glide.with(this)
                 .load(user.image)
                 .placeholder(R.drawable.profile)
@@ -444,14 +446,18 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             binding.inputName.setText(user.name)
         } else {
             if (user.source == "guest"){
+                android.util.Log.d("LOGIN_TIMING", "Guest user login started")
                 val model = RealmUserModel.createGuestUser(user.name, mRealm, settings)?.let { mRealm.copyFromRealm(it) }
                 if (model == null) {
                     toast(this, getString(R.string.unable_to_login))
                 } else {
+                    android.util.Log.d("LOGIN_TIMING", "Guest user created, calling saveUserInfoPref")
                     saveUserInfoPref(settings, "", model)
+                    android.util.Log.d("LOGIN_TIMING", "Calling onLogin() at ${System.currentTimeMillis()}")
                     onLogin()
                 }
             } else {
+                android.util.Log.d("LOGIN_TIMING", "Member user login, calling submitForm at ${System.currentTimeMillis()}")
                 submitForm(user.name, user.password)
             }
         }

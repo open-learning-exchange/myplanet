@@ -654,20 +654,27 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     fun onLogin() {
+        android.util.Log.d("LOGIN_TIMING", "SyncActivity.onLogin() called at ${System.currentTimeMillis()}")
+
+        // Start offline activity logging in background (non-blocking)
+        android.util.Log.d("LOGIN_TIMING", "Starting profileDbHandler.onLoginAsync() in background")
         profileDbHandler.onLoginAsync(
             callback = {
-                runOnUiThread {
-                    editor.putBoolean(Constants.KEY_LOGIN, true).commit()
-                    openDashboard()
-                }
+                android.util.Log.d("LOGIN_TIMING", "profileDbHandler.onLoginAsync() callback invoked at ${System.currentTimeMillis()}")
             },
             onError = { error ->
-                runOnUiThread {
-                    Utilities.toast(this, "Login failed: ${error.message}")
-                }
+                android.util.Log.d("LOGIN_TIMING", "profileDbHandler.onLoginAsync() ERROR: ${error.message}")
+                error.printStackTrace()
             }
         )
 
+        // Proceed immediately without waiting for the Realm transaction
+        android.util.Log.d("LOGIN_TIMING", "Setting KEY_LOGIN and proceeding to dashboard")
+        editor.putBoolean(Constants.KEY_LOGIN, true).commit()
+        android.util.Log.d("LOGIN_TIMING", "Calling openDashboard() at ${System.currentTimeMillis()}")
+        openDashboard()
+
+        android.util.Log.d("LOGIN_TIMING", "Setting up network flow listener (async)")
         isNetworkConnectedFlow.onEach { isConnected ->
             if (isConnected) {
                 val serverUrl = settings.getString("serverURL", "")

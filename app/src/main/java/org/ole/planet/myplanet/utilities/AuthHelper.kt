@@ -47,30 +47,39 @@ object AuthHelper {
     }
 
     fun login(activity: LoginActivity, name: String?, password: String?) {
+        android.util.Log.d("LOGIN_TIMING", "AuthHelper.login() called at ${System.currentTimeMillis()}")
         if (activity.forceSyncTrigger()) return
 
         val settings = activity.settings
+        android.util.Log.d("LOGIN_TIMING", "Saving credentials")
         SecurePrefs.saveCredentials(activity, settings, name, password)
 
+        android.util.Log.d("LOGIN_TIMING", "Calling authenticateUser at ${System.currentTimeMillis()}")
         val isLoggedIn = activity.authenticateUser(settings, name, password, false)
+        android.util.Log.d("LOGIN_TIMING", "authenticateUser returned: $isLoggedIn at ${System.currentTimeMillis()}")
         if (isLoggedIn) {
             Toast.makeText(activity, activity.getString(R.string.welcome, name), Toast.LENGTH_SHORT).show()
+            android.util.Log.d("LOGIN_TIMING", "Local auth success, calling onLogin() at ${System.currentTimeMillis()}")
             activity.onLogin()
             activity.saveUsers(name, password, "member")
             return
         }
 
+        android.util.Log.d("LOGIN_TIMING", "Local auth failed, trying server auth")
         ManagerSync.instance.login(name, password, object : SyncListener {
             override fun onSyncStarted() {
+                android.util.Log.d("LOGIN_TIMING", "Server sync started")
                 activity.customProgressDialog.setText(activity.getString(R.string.please_wait))
                 activity.customProgressDialog.show()
             }
 
             override fun onSyncComplete() {
+                android.util.Log.d("LOGIN_TIMING", "Server sync complete")
                 activity.customProgressDialog.dismiss()
                 val log = activity.authenticateUser(activity.settings, name, password, true)
                 if (log) {
                     Toast.makeText(activity.applicationContext, activity.getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
+                    android.util.Log.d("LOGIN_TIMING", "Server auth success, calling onLogin() at ${System.currentTimeMillis()}")
                     activity.onLogin()
                     activity.saveUsers(name, password, "member")
                 } else {
@@ -81,6 +90,7 @@ object AuthHelper {
             }
 
             override fun onSyncFailed(msg: String?) {
+                android.util.Log.d("LOGIN_TIMING", "Server sync failed: $msg")
                 Toast.makeText(activity, msg, Toast.LENGTH_LONG).show()
                 activity.customProgressDialog.dismiss()
                 activity.syncIconDrawable.stop()

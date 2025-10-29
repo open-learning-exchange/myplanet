@@ -125,29 +125,55 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        android.util.Log.d("LOGIN_TIMING", "=== DashboardActivity.onCreate() START at ${System.currentTimeMillis()}")
         super.onCreate(savedInstanceState)
+
+        // Set status bar color immediately to prevent white flash
+        window.statusBarColor = ContextCompat.getColor(this, R.color.colorPrimary)
+
+        android.util.Log.d("LOGIN_TIMING", "Calling checkUser()")
         checkUser()
+        android.util.Log.d("LOGIN_TIMING", "Calling initViews() at ${System.currentTimeMillis()}")
         initViews()
+        android.util.Log.d("LOGIN_TIMING", "initViews() complete, calling updateAppTitle()")
         updateAppTitle()
+        android.util.Log.d("LOGIN_TIMING", "Getting NotificationManager instance")
         notificationManager = NotificationUtils.getInstance(this)
+        android.util.Log.d("LOGIN_TIMING", "Checking guest access")
         if (handleGuestAccess()) return
+        android.util.Log.d("LOGIN_TIMING", "Calling setupNavigation() at ${System.currentTimeMillis()}")
         setupNavigation()
+        android.util.Log.d("LOGIN_TIMING", "setupNavigation() complete, calling handleInitialFragment()")
         handleInitialFragment()
+        android.util.Log.d("LOGIN_TIMING", "Calling setupToolbarActions()")
         setupToolbarActions()
+        android.util.Log.d("LOGIN_TIMING", "Calling hideWifi()")
         hideWifi()
+        android.util.Log.d("LOGIN_TIMING", "Calling setupRealmListeners() at ${System.currentTimeMillis()}")
         setupRealmListeners()
+        android.util.Log.d("LOGIN_TIMING", "Calling setupSystemNotificationReceiver()")
         setupSystemNotificationReceiver()
+        android.util.Log.d("LOGIN_TIMING", "Calling checkIfShouldShowNotifications()")
         checkIfShouldShowNotifications()
+        android.util.Log.d("LOGIN_TIMING", "Calling addBackPressCallback()")
         addBackPressCallback()
+        android.util.Log.d("LOGIN_TIMING", "Creating and evaluating ChallengeHelper at ${System.currentTimeMillis()}")
         challengeHelper = ChallengeHelper(this, mRealm, user, settings, editor, dashboardViewModel)
         challengeHelper.evaluateChallengeDialog()
+        android.util.Log.d("LOGIN_TIMING", "Calling handleNotificationIntent()")
         handleNotificationIntent(intent)
+        android.util.Log.d("LOGIN_TIMING", "=== DashboardActivity.onCreate() COMPLETE at ${System.currentTimeMillis()}")
     }
 
     private fun initViews() {
+        android.util.Log.d("LOGIN_TIMING", "initViews START at ${System.currentTimeMillis()}")
         binding = ActivityDashboardBinding.inflate(layoutInflater)
+        android.util.Log.d("LOGIN_TIMING", "Binding inflated, calling setContentView")
         setContentView(binding.root)
-        EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
+        android.util.Log.d("LOGIN_TIMING", "setContentView complete at ${System.currentTimeMillis()}")
+
+        // Use dark icons on status bar to prevent white-on-white issue
+        EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root, lightStatusBar = false, lightNavigationBar = false)
         setupUI(binding.activityDashboardParentLayout, this@DashboardActivity)
         setSupportActionBar(binding.myToolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(false)
@@ -163,6 +189,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         binding.appBarBell.ivSetting.setOnClickListener {
             startActivity(Intent(this, SettingActivity::class.java))
         }
+        android.util.Log.d("LOGIN_TIMING", "initViews COMPLETE at ${System.currentTimeMillis()}")
     }
 
     private fun updateAppTitle() {
@@ -204,51 +231,58 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun setupNavigation() {
-        headerResult = accountHeader
-        createDrawer()
-        supportFragmentManager.addOnBackStackChangedListener {
-            val frag = supportFragmentManager.findFragmentById(R.id.fragment_container)
-            val idToSelect = when (frag) {
-                is BellDashboardFragment -> 0L
-                is ResourcesFragment -> {
-                    val isMy = frag.arguments?.getBoolean("isMyCourseLib", false) == true
-                    if (isMy) 1L else 3L
+        // Defer drawer creation to avoid blocking main thread
+        lifecycleScope.launch {
+            delay(50) // Small delay to let dashboard render first
+            headerResult = accountHeader
+            createDrawer()
+            supportFragmentManager.addOnBackStackChangedListener {
+                val frag = supportFragmentManager.findFragmentById(R.id.fragment_container)
+                val idToSelect = when (frag) {
+                    is BellDashboardFragment -> 0L
+                    is ResourcesFragment -> {
+                        val isMy = frag.arguments?.getBoolean("isMyCourseLib", false) == true
+                        if (isMy) 1L else 3L
+                    }
+                    is CoursesFragment -> {
+                        val isMy = frag.arguments?.getBoolean("isMyCourseLib", false) == true
+                        if (isMy) 2L else 4L
+                    }
+                    is TeamFragment -> {
+                        val isDashboard = frag.arguments?.getBoolean("fromDashboard", false) == true
+                        val isEnterprise = frag.arguments?.getString("type") == "enterprise"
+                        if (isDashboard) 0L else if (isEnterprise) 6L else 5L
+                    }
+                    is CommunityTabFragment -> 7L
+                    is SurveyFragment -> 8L
+                    else -> null
                 }
-                is CoursesFragment -> {
-                    val isMy = frag.arguments?.getBoolean("isMyCourseLib", false) == true
-                    if (isMy) 2L else 4L
-                }
-                is TeamFragment -> {
-                    val isDashboard = frag.arguments?.getBoolean("fromDashboard", false) == true
-                    val isEnterprise = frag.arguments?.getString("type") == "enterprise"
-                    if (isDashboard) 0L else if (isEnterprise) 6L else 5L
-                }
-                is CommunityTabFragment -> 7L
-                is SurveyFragment -> 8L
-                else -> null
+                idToSelect?.let { result?.setSelection(it, false) }
             }
-            idToSelect?.let { result?.setSelection(it, false) }
+            if (!(user?.id?.startsWith("guest") == true && profileDbHandler.offlineVisits >= 3) &&
+                resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
+            ) {
+                result?.openDrawer()
+            }
+            result?.actionBarDrawerToggle?.isDrawerIndicatorEnabled = true
+            dl = result?.drawerLayout
+            topbarSetting()
         }
-        if (!(user?.id?.startsWith("guest") == true && profileDbHandler.offlineVisits >= 3) &&
-            resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
-        ) {
-            result?.openDrawer()
-        }
-        result?.actionBarDrawerToggle?.isDrawerIndicatorEnabled = true
-        dl = result?.drawerLayout
-        topbarSetting()
     }
 
     private fun handleInitialFragment() {
+        android.util.Log.d("LOGIN_TIMING", "handleInitialFragment START at ${System.currentTimeMillis()}")
         if (intent != null && intent.hasExtra("fragmentToOpen")) {
             val fragmentToOpen = intent.getStringExtra("fragmentToOpen")
             if ("feedbackList" == fragmentToOpen) {
                 openMyFragment(FeedbackListFragment())
             }
         } else {
+            android.util.Log.d("LOGIN_TIMING", "Opening BellDashboardFragment")
             openCallFragment(BellDashboardFragment())
             binding.appBarBell.bellToolbar.visibility = View.VISIBLE
         }
+        android.util.Log.d("LOGIN_TIMING", "handleInitialFragment COMPLETE at ${System.currentTimeMillis()}")
     }
 
     private fun setupToolbarActions() {
