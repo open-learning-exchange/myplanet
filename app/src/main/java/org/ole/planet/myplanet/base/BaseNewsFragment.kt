@@ -53,29 +53,18 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
         openFolderLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
             if (result.resultCode == Activity.RESULT_OK) {
                 val data = result.data
-                var path: String?
-                val url: Uri? = data?.data
-                path = getRealPathFromURI(requireActivity(), url)
-                if (TextUtils.isEmpty(path)) {
-                    path = FileUtils.getPathFromURI(requireActivity(), url)
-                }
-                val `object` = JsonObject()
-                `object`.addProperty("imageUrl", path)
-                `object`.addProperty("fileName", getFileNameFromUrl(path))
-                imageList.add(Gson().toJson(`object`))
-                try {
-                    llImage?.visibility = View.VISIBLE
-                    val imageBinding = ImageThumbBinding.inflate(LayoutInflater.from(activity), llImage, false)
-                    Glide.with(requireActivity())
-                        .load(File(path))
-                        .into(imageBinding.thumb)
-                    llImage?.addView(imageBinding.root)
-                    if (result.resultCode == 102) adapterNews?.setImageList(imageList)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
+                val clipData = data?.clipData
+                if (clipData != null) {
+                    for (i in 0 until clipData.itemCount) {
+                        val uri = clipData.getItemAt(i).uri
+                        processImageUri(uri, result.resultCode)
+                    }
+                } else {
+                    val uri = data?.data
+                    processImageUri(uri, result.resultCode)
                 }
             }
+        }
         replyActivityLauncher = registerForActivityResult(
             ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
             if (result.resultCode == Activity.RESULT_OK) {
@@ -140,5 +129,33 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
 
     override fun getCurrentImageList(): RealmList<String>? {
         return if (::imageList.isInitialized) imageList else null
+    }
+
+    private fun processImageUri(uri: Uri?, resultCode: Int) {
+        if (uri == null) return
+
+        var path: String? = getRealPathFromURI(requireActivity(), uri)
+        if (TextUtils.isEmpty(path)) {
+            path = FileUtils.getPathFromURI(requireActivity(), uri)
+        }
+
+        if (path.isNullOrEmpty()) return
+
+        val `object` = JsonObject()
+        `object`.addProperty("imageUrl", path)
+        `object`.addProperty("fileName", getFileNameFromUrl(path))
+        imageList.add(Gson().toJson(`object`))
+
+        try {
+            llImage?.visibility = View.VISIBLE
+            val imageBinding = ImageThumbBinding.inflate(LayoutInflater.from(activity), llImage, false)
+            Glide.with(requireActivity())
+                .load(File(path))
+                .into(imageBinding.thumb)
+            llImage?.addView(imageBinding.root)
+            if (resultCode == 102) adapterNews?.setImageList(imageList)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 }
