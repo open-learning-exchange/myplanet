@@ -11,6 +11,7 @@ import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.graphics.toColorInt
+import androidx.core.view.isVisible
 import androidx.fragment.app.FragmentManager
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.Dispatchers
@@ -19,6 +20,7 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
@@ -46,8 +48,10 @@ class AdapterTeamList(
     private lateinit var prefData: SharedPrefManager
     private val scope = MainScope()
     private val teamStatusCache = mutableMapOf<String, TeamStatus>()
+    private val pendingJoinOperations = mutableSetOf<String>()
     private var visitCounts: Map<String, Long> = emptyMap()
     private var updateListJob: Job? = null
+    private var debouncedUpdateJob: Job? = null
 
     data class TeamStatus(
         val isMember: Boolean,
@@ -102,7 +106,16 @@ class AdapterTeamList(
                 hasPendingRequest = false
             )
 
-            showActionButton(teamStatus.isMember, teamStatus.isLeader, teamStatus.hasPendingRequest, team, user)
+            val isJoiningInProgress = pendingJoinOperations.contains(cacheKey)
+
+            showActionButton(
+                teamStatus.isMember,
+                teamStatus.isLeader,
+                teamStatus.hasPendingRequest,
+                isJoiningInProgress,
+                team,
+                user
+            )
 
             root.setOnClickListener {
                 val activity = context as? AppCompatActivity ?: return@setOnClickListener
@@ -138,6 +151,7 @@ class AdapterTeamList(
         isMyTeam: Boolean,
         isTeamLeader: Boolean,
         hasPendingRequest: Boolean,
+        isJoiningInProgress: Boolean,
         team: RealmMyTeam,
         user: RealmUserModel?,
     ) {
@@ -190,6 +204,12 @@ class AdapterTeamList(
             }
 
             else -> joinLeave.visibility = View.GONE
+        }
+
+        joinProgress.isVisible = isJoiningInProgress
+        joinLeave.alpha = if (isJoiningInProgress) 0.6f else 1f
+        if (isJoiningInProgress) {
+            joinLeave.isEnabled = false
         }
     }
 
@@ -309,13 +329,39 @@ class AdapterTeamList(
         val userPlanetCode = user?.planetCode
         val cacheKey = "${teamId}_${userId}"
 
-        teamStatusCache.remove(cacheKey)
+        val existingStatus = teamStatusCache[cacheKey]
+        val updatedStatus = TeamStatus(
+            isMember = existingStatus?.isMember ?: false,
+            isLeader = existingStatus?.isLeader ?: false,
+            hasPendingRequest = true
+        )
+        teamStatusCache[cacheKey] = updatedStatus
+        pendingJoinOperations += cacheKey
+
+        val position = filteredList.indexOfFirst { it._id == teamId }
+        if (position != -1) {
+            notifyItemChanged(position)
+        } else {
+            notifyDataSetChanged()
+        }
 
         scope.launch(Dispatchers.IO) {
-            teamRepository.requestToJoin(teamId, userId, userPlanetCode, teamType)
-            withContext(Dispatchers.Main) {
-                updateList()
+            try {
+                teamRepository.requestToJoin(teamId, userId, userPlanetCode, teamType)
+            } finally {
+                withContext(Dispatchers.Main) {
+                    pendingJoinOperations.remove(cacheKey)
+                    scheduleUpdateListDebounced()
+                }
             }
+        }
+    }
+
+    private fun scheduleUpdateListDebounced(delayMillis: Long = 300L) {
+        debouncedUpdateJob?.cancel()
+        debouncedUpdateJob = scope.launch {
+            delay(delayMillis)
+            updateList()
         }
     }
 
@@ -354,6 +400,8 @@ class AdapterTeamList(
     fun cleanup() {
         scope.cancel()
         teamStatusCache.clear()
+        pendingJoinOperations.clear()
+        debouncedUpdateJob?.cancel()
     }
 
     override fun getItemCount(): Int = filteredList.size

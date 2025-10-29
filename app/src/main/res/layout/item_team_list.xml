@@ -52,9 +52,20 @@
         android:background="?attr/selectableItemBackground"
         android:padding="8dp"
         android:src="@drawable/ic_join_request"
-        app:layout_constraintEnd_toStartOf="@id/btn_feedback"
+        app:layout_constraintEnd_toStartOf="@id/join_progress"
         app:layout_constraintTop_toTopOf="parent"
         app:tint="@color/daynight_textColor" />
+
+    <ProgressBar
+        android:id="@+id/join_progress"
+        style="?android:attr/progressBarStyleSmall"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_marginEnd="8dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@id/join_leave"
+        app:layout_constraintEnd_toStartOf="@id/btn_feedback"
+        app:layout_constraintTop_toTopOf="@id/join_leave" />
     <ImageView
         android:id="@+id/btn_feedback"
         android:layout_width="40dp"
