@@ -373,14 +373,14 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
             diagnosis = diagnosisValue
             medications = medicationsValue
         }
-        val key = localUser.key!!
-        val iv = localUser.iv!!
-        val encryptedSign = runCatching { encrypt(gson.toJson(sign), key, iv) }.getOrElse {
+        val encryptionKey = localUser.key!!
+        val encryptionIv = localUser.iv!!
+        val encryptedSign = runCatching { encrypt(gson.toJson(sign), encryptionKey, encryptionIv) }.getOrElse {
             it.printStackTrace()
             Utilities.toast(this, getString(R.string.unable_to_add_health_record))
             return
         }
-        val encryptedHealth = runCatching { encrypt(gson.toJson(localHealth), key, iv) }.getOrElse {
+        val encryptedHealth = runCatching { encrypt(gson.toJson(localHealth), encryptionKey, encryptionIv) }.getOrElse {
             it.printStackTrace()
             Utilities.toast(this, getString(R.string.unable_to_add_health_record))
             return
@@ -403,11 +403,11 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
                         realm.where(RealmUserModel::class.java).equalTo("id", it).findFirst()
                     }
                     realmUser?.apply {
-                        if (key.isNullOrEmpty()) {
-                            key = localUser.key
+                        if (this.key.isNullOrEmpty()) {
+                            this.key = localUser.key
                         }
-                        if (iv.isNullOrEmpty()) {
-                            iv = localUser.iv
+                        if (this.iv.isNullOrEmpty()) {
+                            this.iv = localUser.iv
                         }
                     }
 
