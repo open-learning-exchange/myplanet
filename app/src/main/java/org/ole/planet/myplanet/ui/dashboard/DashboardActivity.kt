@@ -1022,6 +1022,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     false
                 }.withDrawerWidthDp(200).build()
         }
+        result?.stickyFooter?.setBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimary))
     }
 
     private fun menuAction(selectedMenuId: Int) {
