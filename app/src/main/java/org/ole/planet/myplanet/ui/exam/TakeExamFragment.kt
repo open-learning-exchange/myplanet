@@ -18,11 +18,8 @@ import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
-import io.realm.RealmList
 import io.realm.RealmQuery
 import io.realm.Sort
-import java.util.Date
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -32,9 +29,8 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentTakeExamBinding
 import org.ole.planet.myplanet.model.RealmCertification.Companion.isCourseCertified
 import org.ole.planet.myplanet.model.RealmExamQuestion
-import org.ole.planet.myplanet.model.RealmMembershipDoc
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
+import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
@@ -55,6 +51,9 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
+
+    @Inject
+    lateinit var submissionRepository: SubmissionRepository
 
     data class AnswerData(
         var singleAnswer: String = "",
@@ -90,9 +89,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
         if ((questions?.size ?: 0) > 0) {
             clearAllExistingAnswers()
-            createSubmission()
-            startExam(questions?.get(currentIndex))
-            updateNavButtons()
+            createSubmissionAndStartExam()
         } else {
             binding.container.visibility = View.GONE
             binding.btnSubmit.visibility = View.GONE
@@ -226,67 +223,95 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         }
     }
 
-    private fun createSubmission() {
-        mRealm.beginTransaction()
-        try {
-            sub = createSubmission(null, mRealm)
-            setParentId()
-            sub?.userId = user?.id
-            sub?.status = "pending"
-            sub?.type = type
-            sub?.startTime = Date().time
-            sub?.lastUpdateTime = Date().time
-            if (sub?.answers == null) {
-                sub?.answers = RealmList()
+    private fun createSubmissionAndStartExam() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            showSubmissionCreationProgress(true)
+            try {
+                val parentId = resolveParentId()
+                val teamUserJson = if (isTeam && teamId != null) {
+                    buildTeamUserJson()
+                } else {
+                    null
+                }
+                val submissionCopy = submissionRepository.createExamSubmission(
+                    parentId = parentId,
+                    userId = user?.id,
+                    type = type ?: "exam",
+                    teamId = if (isTeam) teamId else null,
+                    userJson = teamUserJson,
+                )
+                val submissionId = submissionCopy.id
+                if (submissionId.isNullOrEmpty()) {
+                    throw IllegalStateException("Missing submission id")
+                }
+                sub = mRealm.where(RealmSubmission::class.java)
+                    .equalTo("id", submissionId)
+                    .findFirst()
+                currentIndex = 0
+                startExam(questions?.get(currentIndex))
+                updateNavButtons()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                binding.container.visibility = View.GONE
+                binding.btnSubmit.visibility = View.GONE
+                Snackbar.make(
+                    binding.root,
+                    R.string.unable_to_create_submission,
+                    Snackbar.LENGTH_LONG,
+                ).show()
+            } finally {
+                showSubmissionCreationProgress(false)
             }
-
-            currentIndex = 0
-            if (isTeam && teamId != null) {
-                addTeamInformation(mRealm)
-            }
-            mRealm.commitTransaction()
-        } catch (e: Exception) {
-            mRealm.cancelTransaction()
-            throw e
         }
     }
 
-    private fun setParentId() {
-        sub?.parentId = when {
-            !TextUtils.isEmpty(exam?.id) -> if (!TextUtils.isEmpty(exam?.courseId)) {
-                "${exam?.id}@${exam?.courseId}"
-            } else {
-                exam?.id
+    private fun resolveParentId(): String? {
+        return when {
+            !exam?.id.isNullOrEmpty() -> {
+                if (!exam?.courseId.isNullOrEmpty()) {
+                    "${exam?.id}@${exam?.courseId}"
+                } else {
+                    exam?.id
+                }
             }
-            !TextUtils.isEmpty(id) -> if (!TextUtils.isEmpty(exam?.courseId)) {
-                "$id@${exam?.courseId}"
-            } else {
-                id
+            !id.isNullOrEmpty() -> {
+                if (!exam?.courseId.isNullOrEmpty()) {
+                    "$id@${exam?.courseId}"
+                } else {
+                    id
+                }
             }
-            else -> sub?.parentId
+            else -> null
         }
     }
 
-    private fun addTeamInformation(realm: Realm) {
-        sub?.team = teamId
-        val membershipDoc = realm.createObject(RealmMembershipDoc::class.java)
-        membershipDoc.teamId = teamId
-        sub?.membershipDoc = membershipDoc
-
+    private fun buildTeamUserJson(): String? {
         val userModel = userProfileDbHandler.userModel
-
-        try {
+        return try {
             val userJson = JSONObject()
             userJson.put("age", userModel?.dob ?: "")
             userJson.put("gender", userModel?.gender ?: "")
             val membershipJson = JSONObject()
             membershipJson.put("teamId", teamId)
             userJson.put("membershipDoc", membershipJson)
-
-            sub?.user = userJson.toString()
+            userJson.toString()
         } catch (e: Exception) {
             e.printStackTrace()
+            null
         }
+    }
+
+    private fun showSubmissionCreationProgress(show: Boolean) {
+        binding.progressSubmission.isVisible = show
+        if (show) {
+            binding.container.isVisible = false
+        } else if (sub != null) {
+            binding.container.isVisible = true
+            binding.btnSubmit.visibility = View.VISIBLE
+        }
+        binding.btnSubmit.isEnabled = !show
+        binding.btnNext.isEnabled = !show
+        binding.btnBack.isEnabled = !show
     }
 
     override fun startExam(question: RealmExamQuestion?) {

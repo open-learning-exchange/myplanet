@@ -1,11 +1,13 @@
 package org.ole.planet.myplanet.repository
 
 import io.realm.Case
+import io.realm.RealmList
 import io.realm.Sort
 import java.util.Date
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmExamQuestion
+import org.ole.planet.myplanet.model.RealmMembershipDoc
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
@@ -185,6 +187,48 @@ class SubmissionRepositoryImpl @Inject constructor(
             sub.type = "survey"
             sub.status = "pending"
             sub.startTime = Date().time
+        }
+    }
+
+    override suspend fun createExamSubmission(
+        parentId: String?,
+        userId: String?,
+        type: String?,
+        teamId: String?,
+        userJson: String?,
+    ): RealmSubmission {
+        return withRealmAsync { realm ->
+            var submissionId: String? = null
+            realm.executeTransaction { transactionRealm ->
+                val submission = createSubmission(null, transactionRealm)
+                submission.parentId = parentId
+                submission.userId = userId
+                submission.type = type
+                submission.status = "pending"
+                val now = Date().time
+                submission.startTime = now
+                submission.lastUpdateTime = now
+                if (submission.answers == null) {
+                    submission.answers = RealmList()
+                }
+                if (!teamId.isNullOrEmpty()) {
+                    submission.team = teamId
+                    val membershipDoc = transactionRealm.createObject(RealmMembershipDoc::class.java)
+                    membershipDoc.teamId = teamId
+                    submission.membershipDoc = membershipDoc
+                    if (!userJson.isNullOrEmpty()) {
+                        submission.user = userJson
+                    }
+                }
+                submissionId = submission.id
+            }
+
+            val managedSubmission = submissionId?.let { id ->
+                realm.where(RealmSubmission::class.java)
+                    .equalTo("id", id)
+                    .findFirst()
+            } ?: throw IllegalStateException("Failed to create submission")
+            realm.copyFromRealm(managedSubmission)
         }
     }
 
