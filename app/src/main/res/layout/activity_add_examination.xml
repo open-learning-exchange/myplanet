@@ -362,4 +362,12 @@
                 android:theme="@style/PrimaryButton" />
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
+
+    <ProgressBar
+        android:id="@+id/loadingIndicator"
+        style="?android:attr/progressBarStyleLarge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:visibility="gone" />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
