@@ -155,7 +155,10 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     }
 
     private fun setupDownloadButton() {
-        binding.btnDownload.visibility = if (TextUtils.isEmpty(library.resourceLocalAddress)) View.GONE else View.VISIBLE
+        val isHtmlResource = library.mediaType == "HTML"
+        val shouldShowButton = isHtmlResource || !TextUtils.isEmpty(library.resourceLocalAddress)
+
+        binding.btnDownload.visibility = if (shouldShowButton) View.VISIBLE else View.GONE
         binding.btnDownload.setImageResource(
             if (!library.resourceOffline || library.isResourceOffline()) {
                 R.drawable.ic_eye
@@ -184,7 +187,8 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
 
     private fun setClickListeners() {
         binding.btnDownload.setOnClickListener {
-            if (TextUtils.isEmpty(library.resourceLocalAddress)) {
+            val isHtmlResource = library.mediaType == "HTML"
+            if (!isHtmlResource && TextUtils.isEmpty(library.resourceLocalAddress)) {
                 Toast.makeText(activity, getString(R.string.link_not_available), Toast.LENGTH_LONG).show()
                 return@setOnClickListener
             }

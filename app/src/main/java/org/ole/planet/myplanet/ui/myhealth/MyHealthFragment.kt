@@ -49,6 +49,7 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmMyHealthPojo
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
@@ -66,11 +67,13 @@ class MyHealthFragment : Fragment() {
     
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
-    
+
     @Inject
     lateinit var syncManager: SyncManager
     @Inject
     lateinit var databaseService: DatabaseService
+    @Inject
+    lateinit var userRepository: UserRepository
     private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
     private lateinit var realtimeSyncListener: BaseRealtimeSyncListener
     private var _binding: FragmentVitalSignBinding? = null
@@ -249,25 +252,29 @@ class MyHealthFragment : Fragment() {
     }
 
     private fun getHealthRecords(memberId: String?) {
-        val normalizedId = memberId?.trim()
-        userId = normalizedId
-        userModel = if (normalizedId.isNullOrEmpty()) {
-            null
-        } else {
-            mRealm.where(RealmUserModel::class.java)
-                .equalTo("id", normalizedId)
-                .or()
-                .equalTo("_id", normalizedId)
-                .findFirst()
+        viewLifecycleOwner.lifecycleScope.launch {
+            val normalizedId = memberId?.trim()
+            userId = normalizedId
+            val fetchedUser = if (normalizedId.isNullOrEmpty()) {
+                null
+            } else {
+                withContext(Dispatchers.IO) {
+                    userRepository.getUserByAnyId(normalizedId)
+                }
+            }
+            if (!isAdded || _binding == null) {
+                return@launch
+            }
+            userModel = fetchedUser
+            binding.lblHealthName.text = userModel?.getFullName() ?: getString(R.string.empty_text)
+            binding.addNewRecord.setOnClickListener {
+                startActivity(Intent(activity, AddExaminationActivity::class.java).putExtra("userId", userId))
+            }
+            binding.updateHealth.setOnClickListener {
+                startActivity(Intent(activity, AddMyHealthActivity::class.java).putExtra("userId", userId))
+            }
+            showRecords()
         }
-        binding.lblHealthName.text = userModel?.getFullName() ?: getString(R.string.empty_text)
-        binding.addNewRecord.setOnClickListener {
-            startActivity(Intent(activity, AddExaminationActivity::class.java).putExtra("userId", userId))
-        }
-        binding.updateHealth.setOnClickListener {
-            startActivity(Intent(activity, AddMyHealthActivity::class.java).putExtra("userId", userId))
-        }
-        showRecords()
     }
 
     private fun selectPatient() {

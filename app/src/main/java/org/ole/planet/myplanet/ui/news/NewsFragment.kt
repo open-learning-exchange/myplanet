@@ -20,7 +20,9 @@ import io.realm.Case
 import io.realm.RealmResults
 import io.realm.Sort
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseNewsFragment
 import org.ole.planet.myplanet.databinding.FragmentNewsBinding
@@ -54,15 +56,17 @@ class NewsFragment : BaseNewsFragment() {
     private val gson = Gson()
     private lateinit var etSearch: EditText
     private var selectedLabel: String = "All"
+    private val labelDisplayToValue = mutableMapOf<String, String>()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentNewsBinding.inflate(inflater, container, false)
         llImage = binding.llImages
-        user = userProfileDbHandler.userModel
+        user = userProfileDbHandler.getUserModelCopy()
         setupUI(binding.newsFragmentParentLayout, requireActivity())
         if (user?.id?.startsWith("guest") == true) {
             binding.btnNewVoice.visibility = View.GONE
         }
+        etSearch = binding.root.findViewById(R.id.et_search)
         binding.btnNewVoice.setOnClickListener {
             binding.llAddNews.visibility = if (binding.llAddNews.isVisible) {
                 binding.etMessage.setText("")
@@ -97,22 +101,32 @@ class NewsFragment : BaseNewsFragment() {
 
         updatedNewsList?.addChangeListener { results ->
             if (_binding == null) return@addChangeListener
-            filteredNewsList = filterNewsList(results)
-            updateLabelSpinner()
-            labelFilteredList = applyLabelFilter(filteredNewsList)
-            searchFilteredList = applySearchFilter(labelFilteredList)
-            setData(searchFilteredList)
-            scrollToTop()
+            val searchQuery = etSearch.text.toString().trim()
+            val detachedResults = mRealm.copyFromRealm(results)
+            viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Default) {
+                val filtered = filterNewsList(detachedResults)
+                val labels = collectAllLabels(filtered)
+                val labelFiltered = applyLabelFilter(filtered)
+                val searchFiltered = applySearchFilter(labelFiltered, searchQuery)
+                withContext(Dispatchers.Main) {
+                    if (_binding == null) return@withContext
+                    filteredNewsList = filtered
+                    labelFilteredList = labelFiltered
+                    searchFilteredList = searchFiltered
+                    updateLabelSpinner(labels)
+                    setData(searchFilteredList)
+                    scrollToTop()
+                }
+            }
         }
         
-        etSearch = binding.root.findViewById(R.id.et_search)
         setupSearchTextListener()
         setupLabelFilter()
-        
+
         return binding.root
     }
 
-    private fun filterNewsList(results: RealmResults<RealmNews>): List<RealmNews?> {
+    private fun filterNewsList(results: Iterable<RealmNews>): List<RealmNews?> {
         val filteredList: MutableList<RealmNews?> = ArrayList()
         for (news in results) {
             if (news.viewableBy.equals("community", ignoreCase = true)) {
@@ -174,13 +188,21 @@ class NewsFragment : BaseNewsFragment() {
     }
 
     private fun loadCommunityNews() {
-        viewLifecycleOwner.lifecycleScope.launch {
+        val searchQuery = etSearch.text.toString().trim()
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Default) {
             val news = newsRepository.getCommunityVisibleNews(getUserIdentifier())
-            filteredNewsList = news.map { it as RealmNews? }
-            setupLabelFilter()
-            labelFilteredList = applyLabelFilter(filteredNewsList)
-            searchFilteredList = applySearchFilter(labelFilteredList)
-            setData(searchFilteredList)
+            val filtered = news.map { it as RealmNews? }
+            val labels = collectAllLabels(filtered)
+            val labelFiltered = applyLabelFilter(filtered)
+            val searchFiltered = applySearchFilter(labelFiltered, searchQuery)
+            withContext(Dispatchers.Main) {
+                if (_binding == null) return@withContext
+                filteredNewsList = filtered
+                labelFilteredList = labelFiltered
+                searchFilteredList = searchFiltered
+                setupLabelFilter(labels)
+                setData(searchFilteredList)
+            }
         }
     }
 
@@ -318,8 +340,8 @@ class NewsFragment : BaseNewsFragment() {
         })
     }
     
-    private fun applySearchFilter(list: List<RealmNews?>): List<RealmNews?> {
-        val query = etSearch.text.toString().trim()
+    private fun applySearchFilter(list: List<RealmNews?>, queryParam: String? = null): List<RealmNews?> {
+        val query = queryParam ?: etSearch.text.toString().trim()
         
         if (query.isEmpty()) {
             return list
@@ -333,8 +355,8 @@ class NewsFragment : BaseNewsFragment() {
         return filtered
     }
     
-    private fun setupLabelFilter() {
-        updateLabelSpinner()
+    private fun setupLabelFilter(precomputedLabels: List<String>? = null) {
+        updateLabelSpinner(precomputedLabels)
 
         binding.filterByLabel.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
@@ -349,9 +371,9 @@ class NewsFragment : BaseNewsFragment() {
         }
     }
     
-    private fun updateLabelSpinner() {
+    private fun updateLabelSpinner(precomputedLabels: List<String>? = null) {
         val binding = _binding ?: return
-        val labels = collectAllLabels(filteredNewsList)
+        val labels = precomputedLabels ?: collectAllLabels(filteredNewsList)
         val themedContext = androidx.appcompat.view.ContextThemeWrapper(requireContext(), R.style.ResourcePopupMenu)
         val adapter = ArrayAdapter(themedContext, android.R.layout.simple_spinner_item, labels)
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
@@ -367,11 +389,14 @@ class NewsFragment : BaseNewsFragment() {
     }
     
     private fun collectAllLabels(list: List<RealmNews?>): List<String> {
+        labelDisplayToValue.clear()
+
         val allLabels = mutableSetOf<String>()
         allLabels.add("All")
 
-        Constants.LABELS.keys.forEach { labelName ->
+        Constants.LABELS.forEach { (labelName, labelValue) ->
             allLabels.add(labelName)
+            labelDisplayToValue[labelName] = labelValue
         }
 
         allLabels.add("Shared Chat")
@@ -395,12 +420,13 @@ class NewsFragment : BaseNewsFragment() {
             }
 
             news?.labels?.forEach { label ->
-                Constants.LABELS.entries.find { it.value == label }?.key?.let { labelName ->
-                    allLabels.add(labelName)
-                }
+                val labelName = Constants.LABELS.entries.find { it.value == label }?.key
+                    ?: NewsLabelManager.formatLabelValue(label)
+                allLabels.add(labelName)
+                labelDisplayToValue.putIfAbsent(labelName, label)
             }
         }
-        
+
         return allLabels.sorted()
     }
     
@@ -414,8 +440,8 @@ class NewsFragment : BaseNewsFragment() {
                 selectedLabel == "Shared Chat" -> {
                     news?.chat == true || news?.viewableBy.equals("community", ignoreCase = true)
                 }
-                Constants.LABELS.containsKey(selectedLabel) -> {
-                    val labelValue = Constants.LABELS[selectedLabel]
+                labelDisplayToValue.containsKey(selectedLabel) -> {
+                    val labelValue = labelDisplayToValue[selectedLabel]
                     news?.labels?.contains(labelValue) == true
                 }
                 else -> {

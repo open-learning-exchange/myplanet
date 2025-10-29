@@ -151,7 +151,6 @@
     <string name="courses">Koorsooyin</string>
     <string name="enter_message_here">halkan ku gali fariinta</string>
     <string name="what_would">maxaad jeceshahay inaad wadaagto?</string>
-    <string name="our_news">Wararkayaga</string>
     <string name="delete_record">Ma hubtaa inaad rabto inaad tirtirto kuwa soo socda?</string>
     <string name="edit_post">wax ka beddel boostada</string>
     <string name="search_user">raadiye isticmaale</string>
@@ -1378,5 +1377,8 @@
     <string name="please_enter_a_valid_year_of_birth">fadlan geli sannad dhalasho oo sax ah</string>
     <string name="please_enter_a_valid_year_between_1900_and">fadlan geli sannad sax ah oo u dhexeeya 1900 iyo %1$d</string>
     <string name="redo_survey">Dib u samee sahanka</string>
+    <string name="resource_not_found_in_database">Kheyraadka laguma helin kaydka xogta</string>
+    <string name="resource_has_no_attachments">Kheyraadka ma laha faylal la soo dejisan karo</string>
+    <string name="unable_to_download_resource">Lama soo dejin karo kheyraadka</string>
 
 </resources>

@@ -100,20 +100,35 @@
             <LinearLayout
                 android:id="@+id/linearLayout51"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <HorizontalScrollView
+                    android:id="@+id/hsv_images"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone">
+
+                    <LinearLayout
+                        android:id="@+id/ll_news_images"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:padding="@dimen/padding_small" />
+                </HorizontalScrollView>
 
                 <ImageView
                     android:id="@+id/img_news"
                     android:layout_width="120dp"
                     android:layout_height="120dp"
                     android:layout_gravity="center"
-                    android:padding="@dimen/padding_small" />
+                    android:padding="@dimen/padding_small"
+                    android:visibility="gone" />
                 <TextView
                     android:id="@+id/tv_message"
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
-                    android:layout_weight="3"
                     android:ellipsize="end"
                     android:maxLines="6"
                     android:padding="@dimen/padding_normal"
