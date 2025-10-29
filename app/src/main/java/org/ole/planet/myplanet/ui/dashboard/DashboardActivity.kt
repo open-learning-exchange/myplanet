@@ -125,52 +125,32 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        android.util.Log.d("LOGIN_TIMING", "=== DashboardActivity.onCreate() START at ${System.currentTimeMillis()}")
         super.onCreate(savedInstanceState)
 
         // Set status bar color immediately to prevent white flash
         window.statusBarColor = ContextCompat.getColor(this, R.color.colorPrimary)
 
-        android.util.Log.d("LOGIN_TIMING", "Calling checkUser()")
         checkUser()
-        android.util.Log.d("LOGIN_TIMING", "Calling initViews() at ${System.currentTimeMillis()}")
         initViews()
-        android.util.Log.d("LOGIN_TIMING", "initViews() complete, calling updateAppTitle()")
         updateAppTitle()
-        android.util.Log.d("LOGIN_TIMING", "Getting NotificationManager instance")
         notificationManager = NotificationUtils.getInstance(this)
-        android.util.Log.d("LOGIN_TIMING", "Checking guest access")
         if (handleGuestAccess()) return
-        android.util.Log.d("LOGIN_TIMING", "Calling setupNavigation() at ${System.currentTimeMillis()}")
         setupNavigation()
-        android.util.Log.d("LOGIN_TIMING", "setupNavigation() complete, calling handleInitialFragment()")
         handleInitialFragment()
-        android.util.Log.d("LOGIN_TIMING", "Calling setupToolbarActions()")
         setupToolbarActions()
-        android.util.Log.d("LOGIN_TIMING", "Calling hideWifi()")
         hideWifi()
-        android.util.Log.d("LOGIN_TIMING", "Calling setupRealmListeners() at ${System.currentTimeMillis()}")
         setupRealmListeners()
-        android.util.Log.d("LOGIN_TIMING", "Calling setupSystemNotificationReceiver()")
         setupSystemNotificationReceiver()
-        android.util.Log.d("LOGIN_TIMING", "Calling checkIfShouldShowNotifications()")
         checkIfShouldShowNotifications()
-        android.util.Log.d("LOGIN_TIMING", "Calling addBackPressCallback()")
         addBackPressCallback()
-        android.util.Log.d("LOGIN_TIMING", "Creating and evaluating ChallengeHelper at ${System.currentTimeMillis()}")
         challengeHelper = ChallengeHelper(this, mRealm, user, settings, editor, dashboardViewModel)
         challengeHelper.evaluateChallengeDialog()
-        android.util.Log.d("LOGIN_TIMING", "Calling handleNotificationIntent()")
         handleNotificationIntent(intent)
-        android.util.Log.d("LOGIN_TIMING", "=== DashboardActivity.onCreate() COMPLETE at ${System.currentTimeMillis()}")
     }
 
     private fun initViews() {
-        android.util.Log.d("LOGIN_TIMING", "initViews START at ${System.currentTimeMillis()}")
         binding = ActivityDashboardBinding.inflate(layoutInflater)
-        android.util.Log.d("LOGIN_TIMING", "Binding inflated, calling setContentView")
         setContentView(binding.root)
-        android.util.Log.d("LOGIN_TIMING", "setContentView complete at ${System.currentTimeMillis()}")
 
         // Use dark icons on status bar to prevent white-on-white issue
         EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root, lightStatusBar = false, lightNavigationBar = false)
@@ -189,7 +169,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         binding.appBarBell.ivSetting.setOnClickListener {
             startActivity(Intent(this, SettingActivity::class.java))
         }
-        android.util.Log.d("LOGIN_TIMING", "initViews COMPLETE at ${System.currentTimeMillis()}")
     }
 
     private fun updateAppTitle() {
@@ -271,18 +250,15 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun handleInitialFragment() {
-        android.util.Log.d("LOGIN_TIMING", "handleInitialFragment START at ${System.currentTimeMillis()}")
         if (intent != null && intent.hasExtra("fragmentToOpen")) {
             val fragmentToOpen = intent.getStringExtra("fragmentToOpen")
             if ("feedbackList" == fragmentToOpen) {
                 openMyFragment(FeedbackListFragment())
             }
         } else {
-            android.util.Log.d("LOGIN_TIMING", "Opening BellDashboardFragment")
             openCallFragment(BellDashboardFragment())
             binding.appBarBell.bellToolbar.visibility = View.VISIBLE
         }
-        android.util.Log.d("LOGIN_TIMING", "handleInitialFragment COMPLETE at ${System.currentTimeMillis()}")
     }
 
     private fun setupToolbarActions() {

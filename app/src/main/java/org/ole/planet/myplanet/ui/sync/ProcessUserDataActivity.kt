@@ -119,16 +119,11 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
     }
 
     fun openDashboard() {
-        android.util.Log.d("LOGIN_TIMING", "openDashboard() called at ${System.currentTimeMillis()}")
-        android.util.Log.d("LOGIN_TIMING", "Creating intent for DashboardActivity")
         val dashboard = Intent(applicationContext, DashboardActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
             .putExtra("from_login", true)
-        android.util.Log.d("LOGIN_TIMING", "Calling startActivity(dashboard) at ${System.currentTimeMillis()}")
         startActivity(dashboard)
-        android.util.Log.d("LOGIN_TIMING", "startActivity returned, calling finish()")
         finish()
-        android.util.Log.d("LOGIN_TIMING", "=== openDashboard() complete at ${System.currentTimeMillis()}")
     }
 
     fun changeLogoColor() {

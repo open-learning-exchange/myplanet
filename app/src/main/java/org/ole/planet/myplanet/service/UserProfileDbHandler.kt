@@ -68,9 +68,7 @@ class UserProfileDbHandler @Inject constructor(
     }
 
     fun onLoginAsync(callback: (() -> Unit)? = null, onError: ((Throwable) -> Unit)? = null) {
-        android.util.Log.d("LOGIN_TIMING", "UserProfileDbHandler.onLoginAsync() called at ${System.currentTimeMillis()}")
         if (mRealm.isClosed) {
-            android.util.Log.d("LOGIN_TIMING", "Realm was closed, reopening")
             mRealm = realmService.realmInstance
         }
 
@@ -80,10 +78,8 @@ class UserProfileDbHandler @Inject constructor(
         val parentCode = model?.parentCode
         val planetCode = model?.planetCode
 
-        android.util.Log.d("LOGIN_TIMING", "Executing Realm async transaction for user: $userName")
         mRealm.executeTransactionAsync(
             { realm ->
-                android.util.Log.d("LOGIN_TIMING", "Inside Realm transaction, creating offline activity")
                 val offlineActivities = realm.createObject(RealmOfflineActivity::class.java, UUID.randomUUID().toString())
                 offlineActivities.userId = userId
                 offlineActivities.userName = userName
@@ -94,19 +90,15 @@ class UserProfileDbHandler @Inject constructor(
                 offlineActivities._id = null
                 offlineActivities.description = "Member login on offline application"
                 offlineActivities.loginTime = Date().time
-                android.util.Log.d("LOGIN_TIMING", "Offline activity created")
             },
             {
-                android.util.Log.d("LOGIN_TIMING", "Realm transaction SUCCESS at ${System.currentTimeMillis()}")
                 callback?.invoke()
             },
             { error ->
-                android.util.Log.d("LOGIN_TIMING", "Realm transaction FAILED: ${error.message}")
                 error.printStackTrace()
                 onError?.invoke(error)
             }
         )
-        android.util.Log.d("LOGIN_TIMING", "onLoginAsync() setup complete, transaction running in background")
     }
 
     fun logoutAsync() {
