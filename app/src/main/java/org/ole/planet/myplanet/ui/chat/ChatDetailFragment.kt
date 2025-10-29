@@ -31,6 +31,7 @@ import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -505,8 +506,9 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun saveNewChat(query: String, chatResponse: String, responseBody: ChatModel) {
-        val jsonObject = buildChatHistoryObject(query, chatResponse, responseBody)
         viewLifecycleOwner.lifecycleScope.launch {
+            awaitUserLoad()
+            val jsonObject = buildChatHistoryObject(query, chatResponse, responseBody)
             try {
                 databaseService.executeTransactionAsync { realm ->
                     RealmChatHistory.insert(realm, jsonObject)
@@ -536,6 +538,7 @@ class ChatDetailFragment : Fragment() {
             addProperty("_id", responseBody.couchDBResponse?.id ?: "")
             addProperty("aiProvider", aiName)
             addProperty("user", user?.name)
+            addProperty("ownerId", getOwnerId())
             addProperty("title", query)
             addProperty("createdTime", Date().time)
             addProperty("updatedDate", "")
@@ -560,9 +563,17 @@ class ChatDetailFragment : Fragment() {
         if (query.isBlank() && chatResponse.isBlank()) return
 
         viewLifecycleOwner.lifecycleScope.launch {
+            awaitUserLoad()
             try {
                 databaseService.executeTransactionAsync { realm ->
-                    addConversationToChatHistory(realm, realmChatId, query, chatResponse, _rev)
+                    addConversationToChatHistory(
+                        realm,
+                        realmChatId,
+                        query,
+                        chatResponse,
+                        _rev,
+                        getOwnerId(),
+                    )
                 }
                 withContext(Dispatchers.Main) {
                     if (isAdded && activity is DashboardActivity) {
@@ -578,6 +589,16 @@ class ChatDetailFragment : Fragment() {
             }
         }
     }
+
+    private suspend fun awaitUserLoad() {
+        if (isUserLoaded) return
+        while (!isUserLoaded) {
+            delay(50)
+        }
+    }
+
+    private fun getOwnerId(): String =
+        user?.id ?: user?._id ?: settings.getString("userId", "") ?: ""
 
     private fun clearChatDetail() {
         if (newsId == null && sharedViewModel.selectedChatHistory.value.isNullOrEmpty()) {

@@ -16,6 +16,7 @@ open class RealmChatHistory : RealmObject() {
     var _id: String? = null
     var _rev: String? = null
     var user: String? = null
+    var ownerId: String? = null
     var aiProvider: String? = null
     var title: String? = null
     var createdDate: String? = null
@@ -35,6 +36,8 @@ open class RealmChatHistory : RealmObject() {
             chatHistory.createdDate = JsonUtils.getString("createdDate", act)
             chatHistory.updatedDate = JsonUtils.getString("updatedDate", act)
             chatHistory.user = JsonUtils.getString("user", act)
+            val ownerIdValue = JsonUtils.getString("ownerId", act)
+            chatHistory.ownerId = ownerIdValue?.takeIf { it.isNotBlank() }
             chatHistory.aiProvider = JsonUtils.getString("aiProvider", act)
             chatHistory.conversations = parseConversations(mRealm, JsonUtils.getJsonArray("conversations", act))
             chatHistory.lastUsed = Date().time
@@ -50,7 +53,14 @@ open class RealmChatHistory : RealmObject() {
             return conversations
         }
 
-        fun addConversationToChatHistory(mRealm: Realm, chatHistoryId: String?, query: String?, response: String?, newRev: String?) {
+        fun addConversationToChatHistory(
+            mRealm: Realm,
+            chatHistoryId: String?,
+            query: String?,
+            response: String?,
+            newRev: String?,
+            ownerId: String?,
+        ) {
             val chatHistory = mRealm.where(RealmChatHistory::class.java).equalTo("_id", chatHistoryId).findFirst()
             if (chatHistory != null) {
                 if (chatHistory.conversations == null) {
@@ -61,6 +71,9 @@ open class RealmChatHistory : RealmObject() {
                 conversation.response = response
                 chatHistory.conversations?.add(conversation)
                 chatHistory.lastUsed = Date().time
+                if (chatHistory.ownerId.isNullOrEmpty()) {
+                    chatHistory.ownerId = ownerId ?: chatHistory.user
+                }
                 if (!newRev.isNullOrEmpty()) {
                     chatHistory._rev = newRev
                 }

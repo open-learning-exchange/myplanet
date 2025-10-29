@@ -248,7 +248,8 @@ class ChatHistoryListFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             val currentUser = loadCurrentUser()
             sharedNewsMessages = chatRepository.getPlanetNewsMessages(currentUser?.planetCode)
-            val list = chatRepository.getChatHistoryForUser(currentUser?.name)
+            val ownerId = currentUser?.id ?: currentUser?._id ?: settings.getString("userId", "")
+            val list = chatRepository.getChatHistoryForUser(ownerId, currentUser?.name)
             shareTargets = loadShareTargets()
 
             val adapter = binding.recyclerView.adapter as? ChatHistoryListAdapter

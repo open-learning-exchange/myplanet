@@ -11,12 +11,25 @@ class ChatRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
 ) : RealmRepository(databaseService), ChatRepository {
 
-    override suspend fun getChatHistoryForUser(userName: String?): List<RealmChatHistory> {
-        if (userName.isNullOrEmpty()) {
+    override suspend fun getChatHistoryForUser(ownerId: String?, userName: String?): List<RealmChatHistory> {
+        if (ownerId.isNullOrEmpty() && userName.isNullOrEmpty()) {
             return emptyList()
         }
         return queryList(RealmChatHistory::class.java) {
-            equalTo("user", userName)
+            when {
+                !ownerId.isNullOrEmpty() -> {
+                    beginGroup()
+                    equalTo("ownerId", ownerId)
+                    if (!userName.isNullOrEmpty()) {
+                        or()
+                        equalTo("user", userName)
+                    }
+                    endGroup()
+                }
+                !userName.isNullOrEmpty() -> {
+                    equalTo("user", userName)
+                }
+            }
             sort("id", Sort.DESCENDING)
         }
     }
