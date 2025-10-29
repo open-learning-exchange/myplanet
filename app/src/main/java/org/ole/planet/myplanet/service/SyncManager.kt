@@ -10,7 +10,6 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import dagger.Lazy
-import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Realm
 import java.util.Date
@@ -37,9 +36,7 @@ import org.ole.planet.myplanet.datamanager.ApiClient
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.ManagerSync
-import org.ole.planet.myplanet.di.ApiInterfaceEntryPoint
 import org.ole.planet.myplanet.di.AppPreferences
-import org.ole.planet.myplanet.di.ImprovedSyncEntryPoint
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.insert
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.insertMyCourses
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
@@ -885,29 +882,6 @@ class SyncManager @Inject constructor(
     private fun <T> safeRealmOperation(operation: (Realm) -> T): T? {
         return ThreadSafeRealmHelper.withRealm(databaseService, operation)
     }
-
-    // Backward compatibility constructor for code that still uses singleton pattern
-    constructor(context: Context) : this(
-        context,
-        DatabaseService(context),
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-        EntryPointAccessors.fromApplication(
-            context.applicationContext,
-            ApiInterfaceEntryPoint::class.java
-        ).apiInterface(),
-        object : Lazy<ImprovedSyncManager> {
-            private val appContext = context.applicationContext
-            private val entryPoint by lazy {
-                EntryPointAccessors.fromApplication(
-                    appContext,
-                    ImprovedSyncEntryPoint::class.java
-                )
-            }
-            private val cached by lazy { entryPoint.improvedSyncManager() }
-
-            override fun get(): ImprovedSyncManager = cached
-        }
-    )
 
 }
 
