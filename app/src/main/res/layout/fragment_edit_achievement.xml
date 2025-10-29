@@ -274,7 +274,7 @@
 
                         <ProgressBar
                             android:id="@+id/progress_saving"
-                            style="@style/Widget.AppCompat.ProgressBar.Small"
+                            style="?android:attr/progressBarStyleSmall"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginEnd="@dimen/padding_small"

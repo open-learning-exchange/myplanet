@@ -89,8 +89,8 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
                 val goals = binding.etGoals.text.toString().trim { it <= ' ' }
                 val purpose = binding.etPurpose.text.toString().trim { it <= ' ' }
                 val sendToNation = binding.cbSendToNation.isChecked.toString()
-                val achievements = achievementArray ?: JsonArray()
-                val references = referenceArray
+                val achievements = (achievementArray ?: JsonArray()).deepCopy()
+                val references = referenceArray?.deepCopy()
 
                 try {
                     databaseService.executeTransactionAsync { realm ->
@@ -106,13 +106,11 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
                         achievement.setAchievements(achievements)
                         achievement.setReferences(references)
                     }
-                    binding.setSavingInProgress(false)
                     if (!isAdded) {
                         return@launch
                     }
                     NavigationHelper.popBackStack(parentFragmentManager)
                 } catch (e: Exception) {
-                    binding.setSavingInProgress(false)
                     if (!isAdded) {
                         return@launch
                     }
@@ -121,6 +119,8 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
                         e.localizedMessage ?: getString(R.string.achievement_update_failed),
                         Toast.LENGTH_SHORT
                     ).show()
+                } finally {
+                    binding.setSavingInProgress(false)
                 }
             }
         }
