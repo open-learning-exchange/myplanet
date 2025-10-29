@@ -127,14 +127,6 @@
                         android:layout_height="wrap_content"
                         android:orientation="horizontal" />
                 </HorizontalScrollView>
-                <Button
-                    android:id="@+id/fab_feedback"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/menu_feedback"
-                    android:theme="@style/PrimaryButton"
-                    android:visibility="gone"
-                    app:srcCompat="@drawable/feedback" />
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>
