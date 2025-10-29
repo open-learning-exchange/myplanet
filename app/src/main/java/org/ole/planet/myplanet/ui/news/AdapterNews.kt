@@ -610,6 +610,8 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         binding.hsvImages.visibility = View.GONE
         binding.llNewsImages.removeAllViews()
 
+        var hasImages = false
+
         val imageUrls = news?.imageUrls
         if (!imageUrls.isNullOrEmpty()) {
             try {
@@ -617,35 +619,43 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
                     val imgObject = gson.fromJson(imageUrls[0], JsonObject::class.java)
                     val path = JsonUtils.getString("imageUrl", imgObject)
                     loadSingleImage(binding, path)
+                    hasImages = binding.imgNews.visibility == View.VISIBLE
                 } else {
                     binding.hsvImages.visibility = View.VISIBLE
                     for (imageUrl in imageUrls) {
                         val imgObject = gson.fromJson(imageUrl, JsonObject::class.java)
                         val path = JsonUtils.getString("imageUrl", imgObject)
                         addImageToContainer(binding, path)
+                        hasImages = true
                     }
                 }
-                return
             } catch (_: Exception) {
+                hasImages = false
             }
         }
 
-        news?.imagesArray?.let { imagesArray ->
-            if (imagesArray.size() > 0) {
-                if (imagesArray.size() == 1) {
-                    val ob = imagesArray[0]?.asJsonObject
-                    val resourceId = JsonUtils.getString("resourceId", ob)
-                    loadLibraryImage(binding, resourceId)
-                } else {
-                    binding.hsvImages.visibility = View.VISIBLE
-                    for (i in 0 until imagesArray.size()) {
-                        val ob = imagesArray[i]?.asJsonObject
+        if (!hasImages) {
+            news?.imagesArray?.let { imagesArray ->
+                if (imagesArray.size() > 0) {
+                    if (imagesArray.size() == 1) {
+                        val ob = imagesArray[0]?.asJsonObject
                         val resourceId = JsonUtils.getString("resourceId", ob)
-                        addLibraryImageToContainer(binding, resourceId)
+                        loadLibraryImage(binding, resourceId)
+                        hasImages = binding.imgNews.visibility == View.VISIBLE
+                    } else {
+                        binding.hsvImages.visibility = View.VISIBLE
+                        for (i in 0 until imagesArray.size()) {
+                            val ob = imagesArray[i]?.asJsonObject
+                            val resourceId = JsonUtils.getString("resourceId", ob)
+                            addLibraryImageToContainer(binding, resourceId)
+                            hasImages = true
+                        }
                     }
                 }
             }
         }
+
+        updateMessageSpacing(binding, hasImages)
     }
 
     private fun loadSingleImage(binding: RowNewsBinding, path: String?) {
@@ -753,6 +763,19 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
 
                 binding.llNewsImages.addView(imageView)
             }
+        }
+    }
+
+    private fun updateMessageSpacing(binding: RowNewsBinding, hasImages: Boolean) {
+        val params = binding.tvMessage.layoutParams as? ViewGroup.MarginLayoutParams ?: return
+        val desiredMargin = if (hasImages) {
+            binding.root.resources.getDimensionPixelSize(R.dimen.padding_normal)
+        } else {
+            0
+        }
+        if (params.topMargin != desiredMargin) {
+            params.topMargin = desiredMargin
+            binding.tvMessage.layoutParams = params
         }
     }
 
