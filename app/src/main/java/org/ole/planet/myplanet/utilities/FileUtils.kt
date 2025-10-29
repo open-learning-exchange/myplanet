@@ -199,6 +199,7 @@ object FileUtils {
         val intent = Intent(Intent.ACTION_GET_CONTENT)
         val uri = getOlePath(context).toUri()
         intent.setDataAndType(uri, "*/*")
+        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
         return Intent.createChooser(intent, "Open folder")
     }
 
