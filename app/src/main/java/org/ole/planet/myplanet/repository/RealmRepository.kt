@@ -70,16 +70,18 @@ open class RealmRepository(private val databaseService: DatabaseService) {
         value: V,
         fieldNames: Collection<String>,
     ): T? {
-        require(fieldNames.isNotEmpty()) { "At least one field name must be provided" }
-        for (fieldName in fieldNames) {
-            if (fieldName.isBlank()) continue
+        val searchFields = fieldNames.mapNotNull { it.takeIf { name -> name.isNotBlank() } }
+        require(searchFields.isNotEmpty()) { "At least one field name must be provided" }
 
-            val match = findByField(clazz, fieldName, value)
-            if (match != null) {
-                return match
+        return databaseService.withRealmAsync { realm ->
+            for (fieldName in searchFields) {
+                val match = realm.findCopyByField(clazz, fieldName, value)
+                if (match != null) {
+                    return@withRealmAsync match
+                }
             }
+            null
         }
-        return null
     }
 
     protected suspend fun <T : RealmObject> save(item: T) {
