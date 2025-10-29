@@ -38,13 +38,23 @@ class DashboardNavigator(
         val tag = destination.tag
         destinationsByTag[tag] = destination
 
+        if (!destination.addToBackStack && fragmentManager.backStackEntryCount > 0) {
+            NavigationHelper.popBackStack(
+                fragmentManager,
+                tag = null,
+                flags = FragmentManager.POP_BACK_STACK_INCLUSIVE
+            )
+        }
+
         val existingFragment = fragmentManager.findFragmentByTag(tag)
         if (existingFragment != null) {
             if (existingFragment.isVisible) {
                 applySelection(destination)
                 return
             }
-            NavigationHelper.popBackStack(fragmentManager, tag, 0)
+            if (destination.addToBackStack) {
+                NavigationHelper.popBackStack(fragmentManager, tag, 0)
+            }
             applySelection(destination)
             return
         }
