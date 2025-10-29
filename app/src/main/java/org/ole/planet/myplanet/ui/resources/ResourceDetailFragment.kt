@@ -9,10 +9,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -34,8 +31,6 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private var libraryId: String? = null
     private lateinit var library: RealmMyLibrary
     var userModel: RealmUserModel? = null
-    private val fragmentScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
-
     private suspend fun fetchLibrary(libraryId: String): RealmMyLibrary? {
         return libraryRepository.getLibraryItemById(libraryId)
             ?: libraryRepository.getLibraryItemByResourceId(libraryId)
@@ -52,7 +47,11 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         if (!::library.isInitialized) {
             return
         }
-        fragmentScope.launch {
+        val binding = _binding ?: return
+        viewLifecycleOwner.lifecycleScope.launch {
+            if (!isAdded) {
+                return@launch
+            }
             val userId = profileDbHandler.userModel?.id
             try {
                 val updatedLibrary = withContext(Dispatchers.IO) {
@@ -136,7 +135,10 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             setTextViewVisibility(tvResource, llResource, listToString(library.resourceFor))
             setTextViewVisibility(tvType, llType, library.resourceType)
         }
-        fragmentScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
+            if (!isAdded) {
+                return@launch
+            }
             try {
                 withContext(Dispatchers.IO) {
                     profileDbHandler.setResourceOpenCount(library)
@@ -215,7 +217,10 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         }
         binding.btnRemove.setOnClickListener {
             val userId = profileDbHandler.userModel?.id
-            fragmentScope.launch {
+            viewLifecycleOwner.lifecycleScope.launch {
+                if (!isAdded) {
+                    return@launch
+                }
                 val updatedLibrary = withContext(Dispatchers.IO) {
                     try {
                         if (userId != null) {
@@ -258,7 +263,6 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         setRatings(`object`)
     }
     override fun onDestroy() {
-        fragmentScope.cancel()
         try {
             if (!mRealm.isClosed) {
                 mRealm.close()
