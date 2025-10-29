@@ -125,6 +125,7 @@ class PDFReaderActivity : AppCompatActivity(), AudioRecordListener {
                 outputFile,
                 myPersonalRepository,
                 userModel.id,
+                userModel._id,
                 userModel.name
             )
         }
