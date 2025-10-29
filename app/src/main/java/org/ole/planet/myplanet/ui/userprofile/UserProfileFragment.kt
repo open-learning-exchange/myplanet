@@ -500,14 +500,15 @@ class UserProfileFragment : Fragment() {
     }
 
     private fun updateUIWithUserData(model: RealmUserModel?) {
+        val currentBinding = _binding ?: return
         model?.let {
-            binding.txtName.text = String.format("%s %s %s", it.firstName, it.middleName, it.lastName)
-            binding.txtEmail.text = getString(R.string.two_strings, getString(R.string.email_colon), Utilities.checkNA(it.email))
+            currentBinding.txtName.text = String.format("%s %s %s", it.firstName, it.middleName, it.lastName)
+            currentBinding.txtEmail.text = getString(R.string.two_strings, getString(R.string.email_colon), Utilities.checkNA(it.email))
             val dob = if (TextUtils.isEmpty(it.dob)) "N/A" else TimeUtils.getFormattedDate(it.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
-            binding.txtDob.text = getString(R.string.two_strings, getString(R.string.date_of_birth), dob)
-            binding.txtGender.text = getString(R.string.gender_colon, Utilities.checkNA(it.gender))
-            binding.txtLanguage.text = getString(R.string.two_strings, getString(R.string.language_colon), Utilities.checkNA(it.language))
-            binding.txtLevel.text = getString(R.string.level_colon, Utilities.checkNA(it.level))
+            currentBinding.txtDob.text = getString(R.string.two_strings, getString(R.string.date_of_birth), dob)
+            currentBinding.txtGender.text = getString(R.string.gender_colon, Utilities.checkNA(it.gender))
+            currentBinding.txtLanguage.text = getString(R.string.two_strings, getString(R.string.language_colon), Utilities.checkNA(it.language))
+            currentBinding.txtLevel.text = getString(R.string.level_colon, Utilities.checkNA(it.level))
         }
     }
 

@@ -204,13 +204,4 @@ class ImprovedSyncManager @Inject constructor(
         }
     }
 
-    // Compatibility methods for existing code
-    fun start(listener: SyncListener?, type: String, syncTables: List<String>? = null) {
-        val syncMode = when {
-            type == "upload" -> SyncMode.Standard
-            settings.getBoolean("fastSync", false) -> SyncMode.Optimized
-            else -> SyncMode.Standard
-        }
-        start(listener, syncMode, syncTables)
-    }
 }

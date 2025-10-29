@@ -151,7 +151,6 @@
     <string name="courses">Cursos</string>
     <string name="enter_message_here">Ingresa el mensaje aquí</string>
     <string name="what_would">¿Qué te gustaría compartir?</string>
-    <string name="our_news">Nuestras noticias</string>
     <string name="delete_record">¿Estás seguro de que quieres eliminar lo siguiente?</string>
     <string name="edit_post">Editar publicación</string>
     <string name="search_user">Buscar usuario</string>
@@ -1378,5 +1377,8 @@
     <string name="please_enter_a_valid_year_of_birth">por favor ingrese un año de nacimiento válido</string>
     <string name="please_enter_a_valid_year_between_1900_and">por favor ingrese un año válido entre 1900 y %1$d</string>
     <string name="redo_survey">volver a hacer la encuesta</string>
+    <string name="resource_not_found_in_database">Recurso no encontrado en la base de datos</string>
+    <string name="resource_has_no_attachments">El recurso no tiene archivos descargables</string>
+    <string name="unable_to_download_resource">No se puede descargar el recurso</string>
 
 </resources>

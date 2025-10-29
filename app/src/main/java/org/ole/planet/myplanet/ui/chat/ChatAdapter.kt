@@ -26,8 +26,6 @@ class ChatAdapter(val context: Context, private val recyclerView: RecyclerView) 
             { old, new -> old == new }
         )
     ) {
-    private lateinit var textUserMessageBinding: ItemUserMessageBinding
-    private lateinit var textAiMessageBinding: ItemAiResponseMessageBinding
     var responseSource: Int = RESPONSE_SOURCE_UNKNOWN
     private val viewTypeQuery = 1
     private val viewTypeResponse = 2
@@ -148,12 +146,12 @@ class ChatAdapter(val context: Context, private val recyclerView: RecyclerView) 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         return when (viewType) {
             viewTypeQuery -> {
-                textUserMessageBinding = ItemUserMessageBinding.inflate(LayoutInflater.from(context), parent, false)
-                QueryViewHolder(textUserMessageBinding, this::copyToClipboard)
+                val userMessageBinding = ItemUserMessageBinding.inflate(LayoutInflater.from(context), parent, false)
+                QueryViewHolder(userMessageBinding, this::copyToClipboard)
             }
             viewTypeResponse -> {
-                textAiMessageBinding = ItemAiResponseMessageBinding.inflate(LayoutInflater.from(context), parent, false)
-                ResponseViewHolder(textAiMessageBinding, this::copyToClipboard, context, recyclerView,coroutineScope)
+                val aiMessageBinding = ItemAiResponseMessageBinding.inflate(LayoutInflater.from(context), parent, false)
+                ResponseViewHolder(aiMessageBinding, this::copyToClipboard, context, recyclerView, coroutineScope)
             }
             else -> throw IllegalArgumentException("Invalid view type")
         }

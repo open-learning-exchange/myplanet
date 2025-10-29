@@ -224,71 +224,65 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     }
 
     private fun declareMoreElements() {
-        try {
-            syncIcon.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.login_file_upload_animation))
-            syncIcon.scaleType
-            syncIconDrawable = syncIcon.drawable as AnimationDrawable
-            syncIcon.setOnClickListener {
-                if (getUrl() != "/db") {
-                    val protocol = settings.getString("serverProtocol", "")
-                    val serverUrl = "${settings.getString("serverURL", "")}"
-                    val serverPin = "${settings.getString("serverPin", "")}"
+        syncIcon.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.login_file_upload_animation))
+        syncIcon.scaleType
+        syncIconDrawable = syncIcon.drawable as AnimationDrawable
+        syncIcon.setOnClickListener {
+            if (getUrl() != "/db") {
+                val protocol = settings.getString("serverProtocol", "")
+                val serverUrl = "${settings.getString("serverURL", "")}"
+                val serverPin = "${settings.getString("serverPin", "")}"
 
-                    val url = if (serverUrl.startsWith("http://") || serverUrl.startsWith("https://")) {
-                        serverUrl
-                    } else {
-                        "$protocol$serverUrl"
-                    }
-                    syncIconDrawable.start()
-
-                    val dialogServerUrlBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this))
-                    val contextWrapper = ContextThemeWrapper(this, R.style.AlertDialogTheme)
-                    val builder = MaterialDialog.Builder(contextWrapper).customView(dialogServerUrlBinding.root, true)
-                    val dialog = builder.build()
-                    currentDialog = dialog
-                    service.getMinApk(this, url, serverPin, this, "LoginActivity")
+                val url = if (serverUrl.startsWith("http://") || serverUrl.startsWith("https://")) {
+                    serverUrl
                 } else {
-                    toast(this, getString(R.string.please_enter_server_url_first))
-                    settingDialog()
+                    "$protocol$serverUrl"
                 }
-            }
-            declareHideKeyboardElements()
-            binding.lblVersion.text = getString(R.string.version, resources.getText(R.string.app_version))
-            binding.inputName.addTextChangedListener(MyTextWatcher(binding.inputName))
-            binding.inputPassword.addTextChangedListener(MyTextWatcher(binding.inputPassword))
-            binding.inputPassword.setOnEditorActionListener { _: TextView?, actionId: Int, event: KeyEvent? ->
-                if (actionId == EditorInfo.IME_ACTION_DONE || event != null && event.action == KeyEvent.ACTION_DOWN && event.keyCode == KeyEvent.KEYCODE_ENTER) {
-                    btnSignIn.performClick()
-                    return@setOnEditorActionListener true
-                }
-                false
-            }
-            setUpLanguageButton()
-            if (NetworkUtils.isNetworkConnected) {
-                service.syncPlanetServers { success: String? ->
-                    toast(this, success)
-                }
-            }
-            binding.inputName.addTextChangedListener(object : TextWatcher {
-                override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
+                syncIconDrawable.start()
 
-                override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-                    val lowercaseText = s.toString().lowercase()
-                    if (s.toString() != lowercaseText) {
-                        binding.inputName.setText(lowercaseText)
-                        binding.inputName.setSelection(lowercaseText.length)
-                    }
-                }
+                val dialogServerUrlBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this))
+                val contextWrapper = ContextThemeWrapper(this, R.style.AlertDialogTheme)
+                val builder = MaterialDialog.Builder(contextWrapper).customView(dialogServerUrlBinding.root, true)
+                val dialog = builder.build()
+                currentDialog = dialog
+                service.getMinApk(this, url, serverPin, this, "LoginActivity")
+            } else {
+                toast(this, getString(R.string.please_enter_server_url_first))
+                settingDialog()
+            }
+        }
+        declareHideKeyboardElements()
+        binding.lblVersion.text = getString(R.string.version, resources.getText(R.string.app_version))
+        binding.inputName.addTextChangedListener(MyTextWatcher(binding.inputName))
+        binding.inputPassword.addTextChangedListener(MyTextWatcher(binding.inputPassword))
+        binding.inputPassword.setOnEditorActionListener { _: TextView?, actionId: Int, event: KeyEvent? ->
+            if (actionId == EditorInfo.IME_ACTION_DONE || event != null && event.action == KeyEvent.ACTION_DOWN && event.keyCode == KeyEvent.KEYCODE_ENTER) {
+                btnSignIn.performClick()
+                return@setOnEditorActionListener true
+            }
+            false
+        }
+        setUpLanguageButton()
+        if (NetworkUtils.isNetworkConnected) {
+            service.syncPlanetServers { success: String? ->
+                toast(this, success)
+            }
+        }
+        binding.inputName.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
 
-                override fun afterTextChanged(s: Editable) {}
-            })
-            if(getUrl().isNotEmpty()){
-                updateTeamDropdown()
+            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
+                val lowercaseText = s.toString().lowercase()
+                if (s.toString() != lowercaseText) {
+                    binding.inputName.setText(lowercaseText)
+                    binding.inputName.setSelection(lowercaseText.length)
+                }
             }
-        } finally {
-            if (!mRealm.isClosed) {
-                mRealm.close()
-            }
+
+            override fun afterTextChanged(s: Editable) {}
+        })
+        if (getUrl().isNotEmpty()) {
+            updateTeamDropdown()
         }
     }
 
