@@ -32,6 +32,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.DialogUtils
+import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
@@ -154,7 +155,22 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
                     } else -> {
                         val failureMessage = getString(R.string.request_failed_please_retry)
                         val userModel = currentUser ?: run {
-                            Utilities.toast(activity, failureMessage)
+                            Utilities.toast(activity, getString(R.string.team_creation_missing_user))
+                            return@setOnClickListener
+                        }
+                        val userIdentifier = userModel.id?.takeIf { it.isNotBlank() }
+                            ?: userModel._id?.takeIf { it.isNotBlank() }
+                        if (userIdentifier == null) {
+                            Utilities.toast(activity, getString(R.string.team_creation_missing_user_id))
+                            return@setOnClickListener
+                        }
+                        val userName = userModel.name?.takeIf { it.isNotBlank() }
+                        if (userName == null) {
+                            Utilities.toast(activity, getString(R.string.team_creation_missing_user_name))
+                            return@setOnClickListener
+                        }
+                        if (!NetworkUtils.isNetworkConnected) {
+                            Utilities.toast(activity, getString(R.string.device_not_connected_to_planet))
                             return@setOnClickListener
                         }
                         viewLifecycleOwner.lifecycleScope.launch {
@@ -174,8 +190,9 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
                                     Utilities.toast(activity, getString(R.string.team_created))
                                     refreshTeamList()
                                     dialog.dismiss()
-                                }.onFailure {
-                                    Utilities.toast(activity, failureMessage)
+                                }.onFailure { error ->
+                                    val message = error.message?.takeIf { it.isNotBlank() } ?: failureMessage
+                                    Utilities.toast(activity, message)
                                 }
                             } else {
                                 val targetTeamId = team._id ?: team.teamId

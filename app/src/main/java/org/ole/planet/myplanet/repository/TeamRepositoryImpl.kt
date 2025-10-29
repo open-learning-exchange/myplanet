@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
+import org.ole.planet.myplanet.utilities.Utilities
 
 class TeamRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
@@ -392,6 +393,13 @@ class TeamRepositoryImpl @Inject constructor(
         user: RealmUserModel,
     ): Result<String> {
         return runCatching {
+            val creatorId = user.id?.takeIf { it.isNotBlank() }
+                ?: user._id?.takeIf { it.isNotBlank() }
+                ?: throw IllegalStateException("User identifier is required to create a team.")
+            val creatorName = user.name?.takeIf { it.isNotBlank() }
+                ?: throw IllegalStateException("User name is required to create a team.")
+            val categoryLabel = category ?: "team"
+            Utilities.log("TeamRepositoryImpl.createTeam: creatorId=$creatorId creatorName=$creatorName category=$categoryLabel")
             val teamId = AndroidDecrypter.generateIv()
             executeTransaction { realm ->
                 val team = realm.createObject(RealmMyTeam::class.java, teamId)
@@ -407,17 +415,17 @@ class TeamRepositoryImpl @Inject constructor(
                 }
                 team.name = name
                 team.description = description
-                team.createdBy = user._id
+                team.createdBy = creatorId
                 team.teamId = ""
                 team.isPublic = isPublic
-                team.userId = user.id
+                team.userId = creatorId
                 team.parentCode = user.parentCode
                 team.teamPlanetCode = user.planetCode
                 team.updated = true
 
                 val membershipId = AndroidDecrypter.generateIv()
                 val membership = realm.createObject(RealmMyTeam::class.java, membershipId)
-                membership.userId = user._id
+                membership.userId = creatorId
                 membership.teamId = teamId
                 membership.teamPlanetCode = user.planetCode
                 membership.userPlanetCode = user.planetCode
