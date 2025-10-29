@@ -326,6 +326,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private fun checkSurveyCompletion() {
+        val userId = userModel?.id
         viewLifecycleOwner.lifecycleScope.launch {
             val hasUnfinishedSurvey = withContext(Dispatchers.IO) {
                 val surveys = submissionRepository.getCourseSurveys(courseId)
@@ -333,7 +334,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                     !submissionRepository.hasSubmission(
                         survey.id,
                         courseId,
-                        userModel?.id,
+                        userId,
                         "survey",
                     )
                 }
