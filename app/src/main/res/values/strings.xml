@@ -72,6 +72,7 @@
     <string name="bug">Bug</string>
     <string name="your_feedback">Your Feedback *</string>
     <string name="button_update">Update</string>
+    <string name="achievement_update_failed">Unable to update achievement. Please try again.</string>
     <string name="level">level</string>
     <string name="select_level">Select Level</string>
     <string name="male">male</string>

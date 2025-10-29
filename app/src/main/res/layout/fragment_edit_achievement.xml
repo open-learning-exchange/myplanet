@@ -268,8 +268,17 @@
                     <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_gravity="right">
+                        android:layout_gravity="right"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
 
+                        <ProgressBar
+                            android:id="@+id/progress_saving"
+                            style="@style/Widget.AppCompat.ProgressBar.Small"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="@dimen/padding_small"
+                            android:visibility="gone" />
                         <Button
                             android:id="@+id/btn_update"
                             android:layout_width="wrap_content"
