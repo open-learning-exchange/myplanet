@@ -45,7 +45,7 @@
     <string name="txt_myMeetups">myMeetups</string>
     <string name="txt_myTeams">myTeams</string>
     <string name="button_submit">Submit</string>
-    <string name="error_creating_voice">We couldn&#39;t post your voice. Please try again.</string>
+    <string name="error_creating_voice">We couldn\'t post your voice. Please try again.</string>
     <string name="button_cancel">Cancel</string>
     <string name="download_suggestion">The following files are not downloaded. Do you want to download them for offline use?</string>
     <string name="download_selected">Download Selected</string>
