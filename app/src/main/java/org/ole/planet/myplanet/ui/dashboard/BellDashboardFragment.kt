@@ -34,7 +34,6 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
-import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
 import org.ole.planet.myplanet.ui.mylife.LifeFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
@@ -412,7 +411,6 @@ class BellDashboardFragment : BaseDashboardFragment() {
             }
         }
         binding.fabMyActivity.setOnClickListener { openHelperFragment(MyActivityFragment()) }
-        binding.cardProfileBell.fabFeedback.setOnClickListener { openHelperFragment(FeedbackListFragment()) }
         binding.homeCardMyLife.myLifeImageButton.setOnClickListener { homeItemClickListener?.openCallFragment(LifeFragment()) }
     }
 
