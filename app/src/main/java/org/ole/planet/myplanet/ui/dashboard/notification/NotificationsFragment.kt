@@ -66,13 +66,10 @@ class NotificationsFragment : Fragment() {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        android.util.Log.d("NotificationFlow", "NotificationsFragment.onCreateView() - START")
         _binding = FragmentNotificationsBinding.inflate(inflater, container, false)
         userId = arguments?.getString("userId") ?: ""
-        android.util.Log.d("NotificationFlow", "NotificationsFragment.onCreateView() - userId=$userId")
 
         val notifications = loadNotifications(userId, "all")
-        android.util.Log.d("NotificationFlow", "NotificationsFragment.onCreateView() - Loaded ${notifications.size} notifications")
 
         val options = resources.getStringArray(status_options)
         val optionsList: MutableList<String?> = ArrayList(listOf(*options))
@@ -203,9 +200,7 @@ class NotificationsFragment : Fragment() {
     }
 
     private fun loadNotifications(userId: String, filter: String): List<RealmNotification> {
-        android.util.Log.d("NotificationFlow", "NotificationsFragment.loadNotifications() - userId=$userId, filter=$filter")
-        val startTime = System.currentTimeMillis()
-        val result = databaseService.withRealm { realm ->
+        return databaseService.withRealm { realm ->
             val query = realm.where(RealmNotification::class.java)
                 .equalTo("userId", userId)
 
@@ -222,8 +217,6 @@ class NotificationsFragment : Fragment() {
                 it.message.isNotEmpty() && it.message != "INVALID"
             }
         }
-        android.util.Log.d("NotificationFlow", "NotificationsFragment.loadNotifications() - Loaded ${result.size} notifications in ${System.currentTimeMillis() - startTime}ms")
-        return result
     }
 
     private fun markAsReadById(notificationId: String) {
@@ -246,27 +239,20 @@ class NotificationsFragment : Fragment() {
     }
 
     private fun getUnreadNotificationsSize(): Int {
-        android.util.Log.d("NotificationFlow", "NotificationsFragment.getUnreadNotificationsSize() - START - userId=$userId")
-        val startTime = System.currentTimeMillis()
-        val count = databaseService.withRealm { realm ->
+        return databaseService.withRealm { realm ->
             realm.where(RealmNotification::class.java)
                 .equalTo("userId", userId)
                 .equalTo("isRead", false)
                 .count()
                 .toInt()
         }
-        android.util.Log.d("NotificationFlow", "NotificationsFragment.getUnreadNotificationsSize() - Result: count=$count in ${System.currentTimeMillis() - startTime}ms")
-        return count
     }
 
     private fun updateUnreadCount() {
-        android.util.Log.d("NotificationFlow", "NotificationsFragment.updateUnreadCount() - Notifying listener with count=$unreadCountCache")
         notificationUpdateListener?.onNotificationCountUpdated(unreadCountCache)
-        android.util.Log.d("NotificationFlow", "NotificationsFragment.updateUnreadCount() - Listener notified")
     }
 
     fun refreshNotificationsList() {
-        android.util.Log.d("NotificationFlow", "NotificationsFragment.refreshNotificationsList() - START")
         if (::adapter.isInitialized && _binding != null) {
             val selectedFilter = binding.status.selectedItem.toString().lowercase()
             val notifications = loadNotifications(userId, selectedFilter)
@@ -276,16 +262,11 @@ class NotificationsFragment : Fragment() {
             updateUnreadCount()
 
             binding.emptyData.visibility = if (notifications.isEmpty()) View.VISIBLE else View.GONE
-            android.util.Log.d("NotificationFlow", "NotificationsFragment.refreshNotificationsList() - COMPLETED - ${notifications.size} notifications displayed")
-        } else {
-            android.util.Log.d("NotificationFlow", "NotificationsFragment.refreshNotificationsList() - Skipped (adapter or binding not initialized)")
         }
     }
 
     private fun refreshUnreadCountCache() {
-        android.util.Log.d("NotificationFlow", "NotificationsFragment.refreshUnreadCountCache() - START - previous count=$unreadCountCache")
         unreadCountCache = getUnreadNotificationsSize()
-        android.util.Log.d("NotificationFlow", "NotificationsFragment.refreshUnreadCountCache() - COMPLETED - new count=$unreadCountCache")
     }
 
     private fun markNotificationsAsRead(

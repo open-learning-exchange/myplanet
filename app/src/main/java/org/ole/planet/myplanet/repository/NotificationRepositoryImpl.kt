@@ -56,13 +56,9 @@ class NotificationRepositoryImpl @Inject constructor(
     ) {
         if (notifications.isEmpty() || userId == null) return
 
-        android.util.Log.d("NotificationFlow", "NotificationRepository.createNotificationsBatch() - Creating ${notifications.size} notifications in single transaction")
-        val startTime = System.currentTimeMillis()
-
         val actualUserId = userId
 
         // Pre-fetch all existing notifications for this user in a single query
-        val preFetchStartTime = System.currentTimeMillis()
         val existingNotifications = withRealmAsync { realm ->
             realm.where(RealmNotification::class.java)
                 .equalTo("userId", actualUserId)
@@ -74,19 +70,15 @@ class NotificationRepositoryImpl @Inject constructor(
                 }
                 .toMap()
         }
-        android.util.Log.d("NotificationFlow", "NotificationRepository.createNotificationsBatch() - Pre-fetched ${existingNotifications.size} existing notifications in ${System.currentTimeMillis() - preFetchStartTime}ms")
 
         // Filter out notifications that already exist
-        val filterStartTime = System.currentTimeMillis()
         val notificationsToCreate = notifications.filter { notif ->
             val key = "${notif.type}:${notif.relatedId ?: "null"}"
             !existingNotifications.containsKey(key)
         }
-        android.util.Log.d("NotificationFlow", "NotificationRepository.createNotificationsBatch() - Filtered to ${notificationsToCreate.size} new notifications in ${System.currentTimeMillis() - filterStartTime}ms")
 
         // Create only the new notifications in a single transaction
         if (notificationsToCreate.isNotEmpty()) {
-            val createStartTime = System.currentTimeMillis()
             executeTransaction { realm ->
                 notificationsToCreate.forEach { notif ->
                     realm.createObject(RealmNotification::class.java, UUID.randomUUID().toString()).apply {
@@ -98,19 +90,11 @@ class NotificationRepositoryImpl @Inject constructor(
                     }
                 }
             }
-            android.util.Log.d("NotificationFlow", "NotificationRepository.createNotificationsBatch() - Created ${notificationsToCreate.size} new notifications in transaction in ${System.currentTimeMillis() - createStartTime}ms")
-        } else {
-            android.util.Log.d("NotificationFlow", "NotificationRepository.createNotificationsBatch() - No new notifications to create (all already exist)")
         }
-
-        android.util.Log.d("NotificationFlow", "NotificationRepository.createNotificationsBatch() - COMPLETED in ${System.currentTimeMillis() - startTime}ms")
     }
 
     override suspend fun updateResourceNotification(userId: String?, resourceCount: Int) {
         userId ?: return
-
-        android.util.Log.d("NotificationFlow", "NotificationRepository.updateResourceNotification() - START - count=$resourceCount")
-        val startTime = System.currentTimeMillis()
 
         val notificationId = "$userId:resource:count"
 
@@ -143,8 +127,6 @@ class NotificationRepositoryImpl @Inject constructor(
                 existingNotification?.deleteFromRealm()
             }
         }
-
-        android.util.Log.d("NotificationFlow", "NotificationRepository.updateResourceNotification() - COMPLETED in ${System.currentTimeMillis() - startTime}ms")
     }
 
     override suspend fun markNotificationsAsRead(notificationIds: Set<String>): Set<String> {
@@ -185,9 +167,6 @@ class NotificationRepositoryImpl @Inject constructor(
     override suspend fun cleanupDuplicateNotifications(userId: String?) {
         if (userId == null) return
 
-        android.util.Log.d("NotificationFlow", "NotificationRepository.cleanupDuplicateNotifications() - START - userId=$userId")
-        val startTime = System.currentTimeMillis()
-
         // Get all notifications for this user
         val allNotifications = withRealmAsync { realm ->
             realm.where(RealmNotification::class.java)
@@ -195,8 +174,6 @@ class NotificationRepositoryImpl @Inject constructor(
                 .findAll()
                 .let { realm.copyFromRealm(it) }
         }
-
-        android.util.Log.d("NotificationFlow", "NotificationRepository.cleanupDuplicateNotifications() - Found ${allNotifications.size} total notifications")
 
         // Group by type+relatedId, keep only the most recent one
         val notificationsToKeep = allNotifications
@@ -211,8 +188,6 @@ class NotificationRepositoryImpl @Inject constructor(
         val idsToKeep = notificationsToKeep.map { it.id }.toSet()
         val idsToDelete = allNotifications.map { it.id }.filter { !idsToKeep.contains(it) }
 
-        android.util.Log.d("NotificationFlow", "NotificationRepository.cleanupDuplicateNotifications() - Keeping ${notificationsToKeep.size} unique notifications, deleting ${idsToDelete.size} duplicates")
-
         if (idsToDelete.isNotEmpty()) {
             executeTransaction { realm ->
                 idsToDelete.forEach { idToDelete ->
@@ -223,8 +198,6 @@ class NotificationRepositoryImpl @Inject constructor(
                 }
             }
         }
-
-        android.util.Log.d("NotificationFlow", "NotificationRepository.cleanupDuplicateNotifications() - COMPLETED in ${System.currentTimeMillis() - startTime}ms")
     }
 }
 
