@@ -80,22 +80,6 @@
                             android:layout_height="wrap_content"
                             android:background="@color/colorPrimaryDark" />
                         <TextView
-                            android:id="@+id/txt_date"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="center_vertical"
-                            android:gravity="center"
-                            android:padding="@dimen/padding_normal"
-                            android:textColor="@color/daynight_textColor"
-                            android:textSize="16sp"
-                            android:textStyle="bold"
-                            android:visibility="gone" />
-                        <View
-                            android:layout_width="@dimen/_1dp"
-                            android:layout_height="wrap_content"
-                            android:background="@color/colorPrimaryDark"
-                            android:visibility="gone" />
-                        <TextView
                             android:id="@+id/txt_community_name"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -127,14 +111,6 @@
                         android:layout_height="wrap_content"
                         android:orientation="horizontal" />
                 </HorizontalScrollView>
-                <Button
-                    android:id="@+id/fab_feedback"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/menu_feedback"
-                    android:theme="@style/PrimaryButton"
-                    android:visibility="gone"
-                    app:srcCompat="@drawable/feedback" />
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>
