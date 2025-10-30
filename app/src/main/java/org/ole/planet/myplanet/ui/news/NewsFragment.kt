@@ -182,13 +182,13 @@ class NewsFragment : BaseNewsFragment() {
                     }
                     if (_binding == null) return@launch
                     binding.etMessage.setText(R.string.empty_text)
+                    binding.tlMessage.error = null
                     adapterNews?.addItem(createdNews)
-                    updatedNewsList?.let {
-                        filteredNewsList = filterNewsList(it)
-                        labelFilteredList = applyLabelFilter(filteredNewsList)
-                        searchFilteredList = applySearchFilter(labelFilteredList)
-                        setData(searchFilteredList)
-                    }
+                    filteredNewsList = listOf(createdNews) + filteredNewsList
+                    labelFilteredList = applyLabelFilter(filteredNewsList)
+                    searchFilteredList = applySearchFilter(labelFilteredList)
+                    updateLabelSpinner(collectAllLabels(filteredNewsList))
+                    setData(searchFilteredList)
                     scrollToTop()
                 } catch (cancellationException: CancellationException) {
                     throw cancellationException
@@ -197,8 +197,8 @@ class NewsFragment : BaseNewsFragment() {
                     binding.tlMessage.error = getString(R.string.error_creating_voice)
                 } finally {
                     withContext(NonCancellable) {
-                        clearImages()
                         setSubmitInProgress(false)
+                        clearImages()
                     }
                 }
             }
