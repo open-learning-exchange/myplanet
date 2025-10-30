@@ -35,14 +35,25 @@ class ChatRepositoryImpl @Inject constructor(
         if (chatId.isBlank()) {
             return null
         }
-        return queryList(RealmChatHistory::class.java) {
-            equalTo("_id", chatId)
-        }.maxByOrNull { history ->
-            history._rev?.substringBefore("-")?.toIntOrNull() ?: 0
-        }?._rev
+        return withRealmAsync { realm ->
+            realm.refresh()
+            realm.where(RealmChatHistory::class.java)
+                .equalTo("_id", chatId)
+                .findAll()
+                .maxByOrNull { history ->
+                    history._rev?.substringBefore("-")?.toIntOrNull() ?: 0
+                }
+                ?._rev
+        }
     }
 
     override suspend fun insertChatHistory(chatHistory: JsonObject) {
+        val chatId = chatHistory.get("_id")?.takeIf { element ->
+            element.isJsonPrimitive && element.asString.isNotBlank()
+        }?.asString
+        if (chatId.isNullOrBlank()) {
+            return
+        }
         executeTransaction { realm ->
             RealmChatHistory.insert(realm, chatHistory)
         }
