@@ -170,7 +170,6 @@ class RatingFragment : DialogFragment() {
         binding.submitProgress.isVisible = isSubmitting
     }
 
-
     companion object {
         @JvmStatic
         fun newInstance(type: String?, id: String?, title: String?): RatingFragment {
