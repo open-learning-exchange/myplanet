@@ -133,14 +133,30 @@ class TeamRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun addReport(report: JsonObject) {
+    override suspend fun addReport(report: TeamReportDraft) {
         executeTransaction { realm ->
-            val reportId = JsonUtils.getString("_id", report)
             val reportEntry = realm.where(RealmMyTeam::class.java)
-                .equalTo("_id", reportId)
+                .equalTo("_id", report.id)
                 .findFirst()
-                ?: realm.createObject(RealmMyTeam::class.java, reportId)
-            RealmMyTeam.populateTeamFields(report, reportEntry)
+                ?: realm.createObject(RealmMyTeam::class.java, report.id)
+
+            reportEntry.apply {
+                createdDate = report.createdDate
+                description = report.description
+                beginningBalance = report.beginningBalance
+                sales = report.sales
+                otherIncome = report.otherIncome
+                wages = report.wages
+                otherExpenses = report.otherExpenses
+                startDate = report.startDate
+                endDate = report.endDate
+                updatedDate = report.updatedDate
+                teamId = report.teamId
+                teamType = report.teamType
+                teamPlanetCode = report.teamPlanetCode
+                docType = report.docType
+                updated = report.updated
+            }
         }
     }
 

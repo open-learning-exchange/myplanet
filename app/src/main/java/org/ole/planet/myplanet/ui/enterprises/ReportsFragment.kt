@@ -16,7 +16,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.google.gson.JsonObject
 import io.realm.RealmResults
 import io.realm.Sort
 import java.io.IOException
@@ -33,6 +32,7 @@ import org.ole.planet.myplanet.databinding.DialogAddReportBinding
 import org.ole.planet.myplanet.databinding.FragmentReportsBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.repository.TeamReportDraft
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
@@ -128,26 +128,25 @@ class ReportsFragment : BaseTeamFragment() {
                 } else if (TextUtils.isEmpty("${dialogAddReportBinding.nonPersonnel.text}")) {
                     dialogAddReportBinding.nonPersonnel.error = "non-personnel is required"
                 } else {
-                    val doc = JsonObject().apply {
-                        addProperty("_id", UUID.randomUUID().toString())
-                        addProperty("createdDate", System.currentTimeMillis())
-                        addProperty("description", "${dialogAddReportBinding.summary.text}")
-                        addProperty("beginningBalance", dialogAddReportBinding.beginningBalance.text.toString().toIntOrNull() ?: 0)
-                        addProperty("sales", dialogAddReportBinding.sales.text.toString().toIntOrNull() ?: 0)
-                        addProperty("otherIncome", dialogAddReportBinding.otherIncome.text.toString().toIntOrNull() ?: 0)
-                        addProperty("wages", dialogAddReportBinding.personnel.text.toString().toIntOrNull() ?: 0)
-                        addProperty("otherExpenses", dialogAddReportBinding.nonPersonnel.text.toString().toIntOrNull() ?: 0)
-                        addProperty("startDate", startTimeStamp?.toLongOrNull() ?: 0L)
-                        addProperty("endDate", endTimeStamp?.toLongOrNull() ?: 0L)
-                        addProperty("updatedDate", System.currentTimeMillis())
-                        addProperty("teamId", teamId)
-                        addProperty("teamType", team?.teamType)
-                        addProperty("teamPlanetCode", team?.teamPlanetCode)
-                        addProperty("docType", "report")
-                        addProperty("updated", true)
-                    }
+                    val currentTime = System.currentTimeMillis()
+                    val report = TeamReportDraft(
+                        id = UUID.randomUUID().toString(),
+                        createdDate = currentTime,
+                        description = dialogAddReportBinding.summary.text.toString(),
+                        beginningBalance = dialogAddReportBinding.beginningBalance.text.toString().toIntOrNull() ?: 0,
+                        sales = dialogAddReportBinding.sales.text.toString().toIntOrNull() ?: 0,
+                        otherIncome = dialogAddReportBinding.otherIncome.text.toString().toIntOrNull() ?: 0,
+                        wages = dialogAddReportBinding.personnel.text.toString().toIntOrNull() ?: 0,
+                        otherExpenses = dialogAddReportBinding.nonPersonnel.text.toString().toIntOrNull() ?: 0,
+                        startDate = startTimeStamp?.toLongOrNull() ?: 0L,
+                        endDate = endTimeStamp?.toLongOrNull() ?: 0L,
+                        updatedDate = currentTime,
+                        teamId = teamId,
+                        teamType = team?.teamType,
+                        teamPlanetCode = team?.teamPlanetCode,
+                    )
                     viewLifecycleOwner.lifecycleScope.launch {
-                        teamRepository.addReport(doc)
+                        teamRepository.addReport(report)
                     }
                     dialog.dismiss()
                 }
