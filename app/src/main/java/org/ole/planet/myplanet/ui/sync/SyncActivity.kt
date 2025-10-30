@@ -655,19 +655,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     fun onLogin() {
         profileDbHandler.onLoginAsync(
-            callback = {
-                runOnUiThread {
-                    editor.putBoolean(Constants.KEY_LOGIN, true).commit()
-                    openDashboard()
-                }
-            },
+            callback = {},
             onError = { error ->
-                runOnUiThread {
-                    Utilities.toast(this, "Login failed: ${error.message}")
-                }
+                error.printStackTrace()
             }
         )
 
+        editor.putBoolean(Constants.KEY_LOGIN, true).commit()
+        openDashboard()
         isNetworkConnectedFlow.onEach { isConnected ->
             if (isConnected) {
                 val serverUrl = settings.getString("serverURL", "")
