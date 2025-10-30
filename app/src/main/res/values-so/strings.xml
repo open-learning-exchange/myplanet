@@ -95,6 +95,7 @@
     <string name="type">Nooca:</string>
     <string name="resource_colon">Ilaha:</string>
     <string name="your_rating">qiimayntaada</string>
+    <string name="loading_user_profile">Diyaarinayaa astaantaada…</string>
     <string name="your_comment">ka tag faallooyinkaaga</string>
     <string name="show_top_nav">Show sare navigation Bar gudaha Dashboard</string>
     <string name="sync_now">isku-dar hadda</string>

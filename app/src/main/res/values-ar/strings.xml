@@ -95,6 +95,7 @@
     <string name="type">النوع:</string>
     <string name="resource_colon">المصدر:</string>
     <string name="your_rating">تقييمك</string>
+    <string name="loading_user_profile">جارٍ تجهيز ملفك الشخصي…</string>
     <string name="your_comment">اترك تعليقك</string>
     <string name="show_top_nav">عرض شريط التنقل العلوي في لوحة التحكم</string>
     <string name="sync_now">مزامنة الآن</string>
