@@ -50,6 +50,7 @@ class AdapterResource(
 
     companion object {
         private const val TAGS_PAYLOAD = "payload_tags"
+        private const val RATING_PAYLOAD = "payload_rating"
     }
 
     init {
@@ -123,22 +124,7 @@ class AdapterResource(
                 } else {
                     context.getString(R.string.download)
                 }
-            if (ratingMap.containsKey(library.resourceId)) {
-                val ratingData = ratingMap[library.resourceId]
-                CourseRatingUtils.showRating(
-                    context,
-                    ratingData,
-                    holder.rowLibraryBinding.rating,
-                    holder.rowLibraryBinding.timesRated,
-                    holder.rowLibraryBinding.ratingBar
-                )
-            } else {
-                val averageRating = library.averageRating?.toFloatOrNull() ?: 0f
-                holder.rowLibraryBinding.rating.text = String.format(Locale.getDefault(), "%.2f", averageRating)
-                holder.rowLibraryBinding.timesRated.text =
-                    context.getString(R.string.rating_count_format, library.timesRated ?: 0)
-                holder.rowLibraryBinding.ratingBar.rating = averageRating
-            }
+            bindRating(holder, library)
 
             if (userModel?.isGuest() == false) {
                 holder.rowLibraryBinding.checkbox.setOnClickListener { view: View ->
@@ -191,10 +177,24 @@ class AdapterResource(
         position: Int,
         payloads: MutableList<Any>
     ) {
-        if (holder is ViewHolderLibrary && payloads.contains(TAGS_PAYLOAD)) {
-            val resourceId = libraryList.getOrNull(position)?.id ?: return
-            val tags = tagCache[resourceId].orEmpty()
-            renderTagCloud(holder.rowLibraryBinding.flexboxDrawable, tags)
+        if (holder is ViewHolderLibrary && payloads.isNotEmpty()) {
+            val library = libraryList.getOrNull(position) ?: return
+            var handled = false
+            if (payloads.contains(TAGS_PAYLOAD)) {
+                val resourceId = library.id
+                if (resourceId != null) {
+                    val tags = tagCache[resourceId].orEmpty()
+                    renderTagCloud(holder.rowLibraryBinding.flexboxDrawable, tags)
+                    handled = true
+                }
+            }
+            if (payloads.contains(RATING_PAYLOAD)) {
+                bindRating(holder, library)
+                handled = true
+            }
+            if (!handled) {
+                super.onBindViewHolder(holder, position, payloads)
+            }
         } else {
             super.onBindViewHolder(holder, position, payloads)
         }
@@ -312,9 +312,49 @@ class AdapterResource(
     }
 
     fun setRatingMap(newRatingMap: HashMap<String?, JsonObject>) {
-        this.ratingMap.clear()
-        this.ratingMap.putAll(newRatingMap)
-        notifyDataSetChanged()
+        val updatedResourceIds = mutableSetOf<String?>()
+
+        newRatingMap.forEach { (resourceId, newRating) ->
+            if (ratingMap[resourceId] != newRating) {
+                updatedResourceIds.add(resourceId)
+            }
+        }
+
+        ratingMap.keys.filterNot { newRatingMap.containsKey(it) }.forEach { removedKey ->
+            updatedResourceIds.add(removedKey)
+        }
+
+        ratingMap.clear()
+        ratingMap.putAll(newRatingMap)
+
+        updatedResourceIds.forEach { resourceId ->
+            if (resourceId.isNullOrEmpty()) {
+                return@forEach
+            }
+            val index = libraryList.indexOfFirst { it?.resourceId == resourceId }
+            if (index != -1) {
+                notifyItemChanged(index, RATING_PAYLOAD)
+            }
+        }
+    }
+
+    private fun bindRating(holder: ViewHolderLibrary, library: RealmMyLibrary) {
+        if (ratingMap.containsKey(library.resourceId)) {
+            val ratingData = ratingMap[library.resourceId]
+            CourseRatingUtils.showRating(
+                context,
+                ratingData,
+                holder.rowLibraryBinding.rating,
+                holder.rowLibraryBinding.timesRated,
+                holder.rowLibraryBinding.ratingBar
+            )
+        } else {
+            val averageRating = library.averageRating?.toFloatOrNull() ?: 0f
+            holder.rowLibraryBinding.rating.text = String.format(Locale.getDefault(), "%.2f", averageRating)
+            holder.rowLibraryBinding.timesRated.text =
+                context.getString(R.string.rating_count_format, library.timesRated ?: 0)
+            holder.rowLibraryBinding.ratingBar.rating = averageRating
+        }
     }
 
     internal inner class ViewHolderLibrary(val rowLibraryBinding: RowLibraryBinding) :
