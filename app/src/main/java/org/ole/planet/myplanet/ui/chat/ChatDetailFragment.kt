@@ -39,7 +39,6 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentChatDetailBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatModel
@@ -48,9 +47,8 @@ import org.ole.planet.myplanet.model.ContentData
 import org.ole.planet.myplanet.model.ContinueChatModel
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.Data
-import org.ole.planet.myplanet.model.RealmChatHistory
-import org.ole.planet.myplanet.model.RealmChatHistory.Companion.addConversationToChatHistory
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utilities.DialogUtils
@@ -79,11 +77,11 @@ class ChatDetailFragment : Fragment() {
     lateinit var settings: SharedPreferences
     lateinit var customProgressDialog: DialogUtils.CustomProgressDialog
     @Inject
-    lateinit var databaseService: DatabaseService
-    @Inject
     lateinit var chatApiHelper: ChatApiHelper
     @Inject
     lateinit var userRepository: UserRepository
+    @Inject
+    lateinit var chatRepository: ChatRepository
     private val gson = Gson()
     private val serverUrlMapper = ServerUrlMapper()
     private val jsonMediaType = "application/json".toMediaTypeOrNull()
@@ -151,23 +149,25 @@ class ChatDetailFragment : Fragment() {
             } else {
                 val message = "${binding.editGchatMessage.text}".replace("\n", " ")
                 mAdapter.addQuery(message)
-                when {
-                    _id.isNotEmpty() -> {
-                        val newRev = getLatestRev(_id) ?: _rev
-                        val requestBody = createContinueChatRequest(message, aiProvider, _id, newRev)
-                        launchRequest(requestBody, message, _id)
-                    }
-                    currentID.isNotEmpty() -> {
-                        val requestBody = createContinueChatRequest(message, aiProvider, currentID, _rev)
-                        launchRequest(requestBody, message, currentID)
-                    }
-                    else -> {
-                        val requestBody = createChatRequest(message, aiProvider)
-                        launchRequest(requestBody, message, null)
-                    }
-                }
                 binding.editGchatMessage.text.clear()
                 binding.textGchatIndicator.visibility = View.GONE
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val (requestBody, chatId) = when {
+                        _id.isNotEmpty() -> {
+                            val latestRev = withContext(Dispatchers.IO) {
+                                chatRepository.getLatestRevision(_id)
+                            } ?: _rev
+                            createContinueChatRequest(message, aiProvider, _id, latestRev) to _id
+                        }
+                        currentID.isNotEmpty() -> {
+                            createContinueChatRequest(message, aiProvider, currentID, _rev) to currentID
+                        }
+                        else -> {
+                            createChatRequest(message, aiProvider) to null
+                        }
+                    }
+                    launchRequest(requestBody, message, chatId)
+                }
             }
         }
     }
@@ -437,22 +437,6 @@ class ChatDetailFragment : Fragment() {
         return jsonRequestBody(jsonContent)
     }
 
-    private fun getLatestRev(id: String): String? {
-        return try {
-            databaseService.withRealm { realm ->
-                realm.refresh()
-                realm.where(RealmChatHistory::class.java)
-                    .equalTo("_id", id)
-                    .findAll()
-                    .maxByOrNull { rev -> rev._rev?.split("-")?.get(0)?.toIntOrNull() ?: 0 }
-                    ?._rev
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
-        }
-    }
-
     private fun sendChatRequest(content: RequestBody, query: String, id: String?, newChat: Boolean) {
         viewLifecycleOwner.lifecycleScope.launch {
             chatApiHelper.sendChatRequest(content, object : Callback<ChatModel> {
@@ -508,8 +492,8 @@ class ChatDetailFragment : Fragment() {
         val jsonObject = buildChatHistoryObject(query, chatResponse, responseBody)
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                databaseService.executeTransactionAsync { realm ->
-                    RealmChatHistory.insert(realm, jsonObject)
+                withContext(Dispatchers.IO) {
+                    chatRepository.insertChatHistory(jsonObject)
                 }
                 if (isAdded && activity is DashboardActivity) {
                     (activity as DashboardActivity).refreshChatHistoryList()
@@ -561,19 +545,15 @@ class ChatDetailFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                databaseService.executeTransactionAsync { realm ->
-                    addConversationToChatHistory(realm, realmChatId, query, chatResponse, _rev)
+                withContext(Dispatchers.IO) {
+                    chatRepository.appendConversation(realmChatId, query, chatResponse, _rev)
                 }
-                withContext(Dispatchers.Main) {
-                    if (isAdded && activity is DashboardActivity) {
-                        (activity as DashboardActivity).refreshChatHistoryList()
-                    }
+                if (isAdded && activity is DashboardActivity) {
+                    (activity as DashboardActivity).refreshChatHistoryList()
                 }
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    if (isAdded) {
-                        Snackbar.make(binding.root, getString(R.string.failed_to_save_chat), Snackbar.LENGTH_LONG).show()
-                    }
+                if (isAdded) {
+                    Snackbar.make(binding.root, getString(R.string.failed_to_save_chat), Snackbar.LENGTH_LONG).show()
                 }
             }
         }
