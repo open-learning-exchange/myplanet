@@ -95,6 +95,7 @@
     <string name="type">Type:</string>
     <string name="resource_colon">Ressource:</string>
     <string name="your_rating">Votre évaluation</string>
+    <string name="loading_user_profile">Préparation de votre profil…</string>
     <string name="your_comment">Laissez votre commentaire</string>
     <string name="show_top_nav">Afficher la barre de navigation supérieure dans le tableau de bord</string>
     <string name="sync_now">synchroniser maintenant</string>
