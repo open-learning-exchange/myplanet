@@ -33,6 +33,13 @@ import io.realm.Sort
 import java.io.File
 import java.util.Calendar
 import java.util.Locale
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNewsBinding
 import org.ole.planet.myplanet.model.Conversation
@@ -94,6 +101,8 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     private var nonTeamMember = false
     private var sharedPreferences: SharedPrefManager? = null
     private var recyclerView: RecyclerView? = null
+    private val adapterJob: Job = SupervisorJob()
+    private val adapterScope = CoroutineScope(adapterJob + Dispatchers.Main.immediate)
     var user: RealmUserModel? = null
     private var labelManager: NewsLabelManager? = null
     private val gson = Gson()
@@ -601,65 +610,128 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
         super.onDetachedFromRecyclerView(recyclerView)
         this.recyclerView = null
+        adapterJob.cancelChildren()
     }
 
     private fun loadImage(binding: RowNewsBinding, news: RealmNews?) {
+        Glide.with(binding.imgNews).clear(binding.imgNews)
+        binding.imgNews.visibility = View.GONE
+
         val imageUrls = news?.imageUrls
         if (!imageUrls.isNullOrEmpty()) {
             try {
                 val imgObject = gson.fromJson(imageUrls[0], JsonObject::class.java)
                 val path = JsonUtils.getString("imageUrl", imgObject)
-                val request = Glide.with(binding.imgNews.context)
-                val target = if (path.lowercase(Locale.getDefault()).endsWith(".gif")) {
-                    request.asGif().load(if (File(path).exists()) File(path) else path)
-                } else {
-                    request.load(if (File(path).exists()) File(path) else path)
-                }
-                target.placeholder(R.drawable.ic_loading)
-                    .error(R.drawable.ic_loading)
-                    .into(binding.imgNews)
-                binding.imgNews.visibility = View.VISIBLE
-                binding.imgNews.setOnClickListener {
-                    showZoomableImage(it.context, path)
+                val tagKey = news?.id ?: path
+                val isGif = path.lowercase(Locale.getDefault()).endsWith(".gif")
+                binding.imgNews.tag = tagKey
+
+                adapterScope.launch {
+                    val result = withContext(Dispatchers.IO) {
+                        val file = File(path)
+                        val existingFile = if (file.exists()) file else null
+                        ImageLoadResult(
+                            model = existingFile ?: path,
+                            isGif = isGif,
+                            clickPath = existingFile?.absolutePath ?: path
+                        )
+                    }
+
+                    if (binding.imgNews.tag != tagKey) return@launch
+                    renderImage(binding, result)
                 }
                 return
             } catch (_: Exception) {
             }
         }
 
-        news?.imagesArray?.let { imagesArray ->
-            if (imagesArray.size() > 0) {
-                val ob = imagesArray[0]?.asJsonObject
-                val resourceId = JsonUtils.getString("resourceId", ob)
-                val library = mRealm.where(RealmMyLibrary::class.java)
-                    .equalTo("_id", resourceId)
-                    .findFirst()
-
-                val basePath = context.getExternalFilesDir(null)
-                if (library != null && basePath != null) {
-                    val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
-                    if (imageFile.exists()) {
-                        val request = Glide.with(binding.imgNews.context)
-                        val isGif = library.resourceLocalAddress?.lowercase(Locale.getDefault())?.endsWith(".gif") == true
-                        val target = if (isGif) {
-                            request.asGif().load(imageFile)
-                        } else {
-                            request.load(imageFile)
-                        }
-                        target.placeholder(R.drawable.ic_loading)
-                            .error(R.drawable.ic_loading)
-                            .into(binding.imgNews)
-                        binding.imgNews.visibility = View.VISIBLE
-                        binding.imgNews.setOnClickListener {
-                            showZoomableImage(it.context, imageFile.toString())
-                        }
-                        return
+        val localImage = resolveLocalImageDescriptor(news)
+        if (localImage != null) {
+            binding.imgNews.tag = localImage.tag
+            adapterScope.launch {
+                val result = withContext(Dispatchers.IO) {
+                    val basePath = context.getExternalFilesDir(null)
+                    val imageFile = basePath?.let { File(it, localImage.relativePath) }
+                    val existingFile = if (imageFile?.exists() == true) imageFile else null
+                    existingFile?.let {
+                        ImageLoadResult(
+                            model = it,
+                            isGif = localImage.isGif,
+                            clickPath = it.absolutePath
+                        )
                     }
                 }
+
+                if (binding.imgNews.tag != localImage.tag) return@launch
+
+                if (result != null) {
+                    renderImage(binding, result)
+                } else {
+                    binding.imgNews.visibility = View.GONE
+                }
             }
+            return
         }
+
         binding.imgNews.visibility = View.GONE
     }
+
+    private fun renderImage(binding: RowNewsBinding, image: ImageLoadResult) {
+        val request = Glide.with(binding.imgNews.context)
+        val target = if (image.isGif) {
+            request.asGif().load(image.model)
+        } else {
+            request.load(image.model)
+        }
+        target.placeholder(R.drawable.ic_loading)
+            .error(R.drawable.ic_loading)
+            .into(binding.imgNews)
+        binding.imgNews.visibility = View.VISIBLE
+        val clickPath = image.clickPath
+        if (clickPath != null) {
+            binding.imgNews.setOnClickListener {
+                showZoomableImage(it.context, clickPath)
+            }
+        } else {
+            binding.imgNews.setOnClickListener(null)
+        }
+    }
+
+    private fun resolveLocalImageDescriptor(news: RealmNews?): LocalImageDescriptor? {
+        val imagesArray = news?.imagesArray ?: return null
+        if (imagesArray.size() == 0) return null
+
+        val ob = imagesArray[0]?.asJsonObject ?: return null
+        val resourceId = JsonUtils.getString("resourceId", ob)
+        if (resourceId.isNullOrEmpty()) return null
+
+        val library = mRealm.where(RealmMyLibrary::class.java)
+            .equalTo("_id", resourceId)
+            .findFirst()
+            ?: return null
+
+        val localAddress = library.resourceLocalAddress ?: return null
+        val relativePath = "ole/${library.id}/$localAddress"
+        val isGif = localAddress.lowercase(Locale.getDefault()).endsWith(".gif")
+
+        return LocalImageDescriptor(
+            relativePath = relativePath,
+            isGif = isGif,
+            tag = "${library.id}_$localAddress"
+        )
+    }
+
+    private data class ImageLoadResult(
+        val model: Any,
+        val isGif: Boolean,
+        val clickPath: String?
+    )
+
+    private data class LocalImageDescriptor(
+        val relativePath: String,
+        val isGif: Boolean,
+        val tag: String
+    )
 
     private fun showZoomableImage(context: Context, imageUrl: String) {
         val dialog = Dialog(context, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
