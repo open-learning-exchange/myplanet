@@ -1,11 +1,32 @@
 package org.ole.planet.myplanet.repository
 
-import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
+
+/**
+ * Represents the user input required to create or update a team report entry.
+ */
+data class TeamReportDraft(
+    val id: String,
+    val createdDate: Long,
+    val description: String,
+    val beginningBalance: Int,
+    val sales: Int,
+    val otherIncome: Int,
+    val wages: Int,
+    val otherExpenses: Int,
+    val startDate: Long,
+    val endDate: Long,
+    val updatedDate: Long,
+    val teamId: String,
+    val teamType: String?,
+    val teamPlanetCode: String?,
+    val docType: String = "report",
+    val updated: Boolean = true,
+)
 
 interface TeamRepository {
     suspend fun getShareableTeams(): List<RealmMyTeam>
@@ -29,7 +50,7 @@ interface TeamRepository {
     suspend fun setTaskCompletion(taskId: String, completed: Boolean)
     suspend fun getPendingTasksForUser(userId: String, start: Long, end: Long): List<RealmTeamTask>
     suspend fun markTasksNotified(taskIds: Collection<String>)
-    suspend fun addReport(report: JsonObject)
+    suspend fun addReport(report: TeamReportDraft)
     suspend fun logTeamVisit(
         teamId: String,
         userName: String?,
