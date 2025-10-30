@@ -160,11 +160,8 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
                 mRealm.refresh()
             }
 
-            if (binding.rvTask.adapter != null) {
-                binding.rvTask.adapter?.notifyDataSetChanged()
-                showNoData(binding.tvNodata, binding.rvTask.adapter?.itemCount, "tasks")
-            }
             setAdapter()
+            showNoData(binding.tvNodata, binding.rvTask.adapter?.itemCount, "tasks")
             Utilities.toast(
                 activity,
                 String.format(
@@ -339,7 +336,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
             adapterTask = AdapterTask(requireContext(), mRealm, updatedList, !isMemberFlow.value)
             adapterTask.setListener(this@TeamTaskFragment)
             binding.rvTask.adapter = adapterTask
-            adapterTask.notifyDataSetChanged()
+            showNoData(binding.tvNodata, updatedList.size, "tasks")
         }
     }
 
