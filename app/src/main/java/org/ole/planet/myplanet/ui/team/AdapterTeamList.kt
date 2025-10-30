@@ -12,6 +12,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.graphics.toColorInt
 import androidx.fragment.app.FragmentManager
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -227,9 +228,17 @@ class AdapterTeamList(
             val validTeams = list.filter { it.status?.isNotEmpty() == true }
             if (validTeams.isEmpty()) {
                 withContext(Dispatchers.Main) {
-                    visitCounts = emptyMap()
-                    filteredList = emptyList()
-                    notifyDataSetChanged()
+                    val oldList = filteredList
+                    val oldVisitCounts = visitCounts
+                    val newVisitCounts = emptyMap<String, Long>()
+                    val newList = emptyList<RealmMyTeam>()
+                    val diffResult = DiffUtil.calculateDiff(
+                        TeamDiffCallback(oldList, newList, oldVisitCounts, newVisitCounts)
+                    )
+
+                    visitCounts = newVisitCounts
+                    filteredList = newList
+                    diffResult.dispatchUpdatesTo(this@AdapterTeamList)
                     updateCompleteListener?.onUpdateComplete(filteredList.size)
                 }
                 return@launch
@@ -293,11 +302,52 @@ class AdapterTeamList(
             )
 
             withContext(Dispatchers.Main) {
-                this@AdapterTeamList.visitCounts = visitCounts
-                filteredList = sortedTeams
-                notifyDataSetChanged()
+                val oldList = filteredList
+                val oldVisitCounts = this@AdapterTeamList.visitCounts
+                val newList = sortedTeams
+                val newVisitCounts = visitCounts
+                val diffResult = DiffUtil.calculateDiff(
+                    TeamDiffCallback(oldList, newList, oldVisitCounts, newVisitCounts)
+                )
+
+                this@AdapterTeamList.visitCounts = newVisitCounts
+                filteredList = newList
+                diffResult.dispatchUpdatesTo(this@AdapterTeamList)
                 updateCompleteListener?.onUpdateComplete(filteredList.size)
             }
+        }
+    }
+
+    private class TeamDiffCallback(
+        private val oldList: List<RealmMyTeam>,
+        private val newList: List<RealmMyTeam>,
+        private val oldVisitCounts: Map<String, Long>,
+        private val newVisitCounts: Map<String, Long>,
+    ) : DiffUtil.Callback() {
+        override fun getOldListSize(): Int = oldList.size
+
+        override fun getNewListSize(): Int = newList.size
+
+        override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+            val oldItem = oldList[oldItemPosition]
+            val newItem = newList[newItemPosition]
+            return oldItem._id == newItem._id
+        }
+
+        override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+            val oldItem = oldList[oldItemPosition]
+            val newItem = newList[newItemPosition]
+            val oldId = oldItem._id.orEmpty()
+            val newId = newItem._id.orEmpty()
+            val oldVisitCount = oldVisitCounts[oldId] ?: 0L
+            val newVisitCount = newVisitCounts[newId] ?: 0L
+
+            return oldItem.name == newItem.name &&
+                oldItem.teamType == newItem.teamType &&
+                oldItem.createdDate == newItem.createdDate &&
+                oldItem.type == newItem.type &&
+                oldItem.status == newItem.status &&
+                oldVisitCount == newVisitCount
         }
     }
 
