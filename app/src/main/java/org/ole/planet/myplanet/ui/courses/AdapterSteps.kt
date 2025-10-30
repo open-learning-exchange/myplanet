@@ -117,8 +117,4 @@ class AdapterSteps(
         super.onDetachedFromRecyclerView(recyclerView)
         job.cancelChildren()
     }
-
-    fun clearExamQuestionCountCache() {
-        examQuestionCountCache.clear()
-    }
 }
