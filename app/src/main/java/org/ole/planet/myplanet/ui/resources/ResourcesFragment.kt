@@ -182,7 +182,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             val libraryList: List<RealmMyLibrary?> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary?>()
             adapterLibrary.setLibraryList(libraryList)
             adapterLibrary.setRatingMap(map!!)
-            adapterLibrary.notifyDataSetChanged()
             checkList()
             showNoData(tvMessage, adapterLibrary.itemCount, "resources")
 
