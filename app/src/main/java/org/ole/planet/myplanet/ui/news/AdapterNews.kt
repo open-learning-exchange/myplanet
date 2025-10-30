@@ -628,6 +628,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
                         addImageToContainer(binding, path)
                         hasImages = true
                     }
+                    resetImageStripPosition(binding)
                 }
             } catch (_: Exception) {
                 hasImages = false
@@ -650,12 +651,19 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
                             addLibraryImageToContainer(binding, resourceId)
                             hasImages = true
                         }
+                        resetImageStripPosition(binding)
                     }
                 }
             }
         }
 
         updateMessageSpacing(binding, hasImages)
+    }
+
+    private fun resetImageStripPosition(binding: RowNewsBinding) {
+        binding.hsvImages.post {
+            binding.hsvImages.scrollTo(0, 0)
+        }
     }
 
     private fun loadSingleImage(binding: RowNewsBinding, path: String?) {
