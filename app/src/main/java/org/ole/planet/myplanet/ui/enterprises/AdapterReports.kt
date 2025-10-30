@@ -33,6 +33,11 @@ class AdapterReports(
     lateinit var prefData: SharedPrefManager
     private var nonTeamMember = false
 
+    fun updateData(newList: RealmResults<RealmMyTeam>) {
+        list = newList
+        notifyDataSetChanged()
+    }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderReports {
         val binding = ReportListItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         prefData = SharedPrefManager(context)

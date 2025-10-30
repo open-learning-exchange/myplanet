@@ -253,10 +253,15 @@ class ReportsFragment : BaseTeamFragment() {
         if (_binding == null) return
 
         viewLifecycleOwner.lifecycleScope.launch {
-            adapterReports = AdapterReports(requireContext(), databaseService, results)
-            adapterReports.setNonTeamMember(!isMemberFlow.value)
-            binding.rvReports.layoutManager = LinearLayoutManager(activity)
-            binding.rvReports.adapter = adapterReports
+            if (!this@ReportsFragment::adapterReports.isInitialized) {
+                adapterReports = AdapterReports(requireContext(), databaseService, results)
+                adapterReports.setNonTeamMember(!isMemberFlow.value)
+                binding.rvReports.layoutManager = LinearLayoutManager(activity)
+                binding.rvReports.adapter = adapterReports
+            } else {
+                adapterReports.updateData(results)
+                adapterReports.setNonTeamMember(!isMemberFlow.value)
+            }
 
             if (results.isEmpty()) {
                 binding.exportCSV.visibility = View.GONE
