@@ -90,8 +90,10 @@ class MyPersonalRepositoryImpl @Inject constructor(
             return
         }
 
+        val settingsUserId = preferences.getString("userId", null)
+
         Realm.getDefaultInstance().use { realm ->
-            realm.executeTransaction { transactionRealm ->
+            realm.executeTransactionAsync { transactionRealm ->
                 val records = transactionRealm.where(RealmMyPersonal::class.java)
                     .isNull("userId")
                     .or()
@@ -99,10 +101,9 @@ class MyPersonalRepositoryImpl @Inject constructor(
                     .findAll()
 
                 if (records.isEmpty()) {
-                    return@executeTransaction
+                    return@executeTransactionAsync
                 }
 
-                val settingsUserId = preferences.getString("userId", null)
                 records.forEach { personal ->
                     val updatedIdentifier = resolveUserIdentifier(
                         personal.userId,
