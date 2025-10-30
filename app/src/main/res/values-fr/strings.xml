@@ -697,7 +697,6 @@
     <string name="retake_test">Repasser le test [%d]</string>
     <string name="do_you_want_to_join_this_course">Voulez-vous rejoindre ce cours ?</string>
     <string name="join_this_course">Rejoindre ce cours</string>
-    <string name="download_dictionary">Télécharger le dictionnaire.</string>
     <string name="resource_not_downloaded">Ressource non téléchargée.</string>
     <string name="bulk_resource_download">Téléchargement groupé de ressources.</string>
     <string name="pending_survey">Enquête en attente.</string>

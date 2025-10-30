@@ -6,7 +6,6 @@ import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import kotlin.math.roundToInt
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -44,7 +43,7 @@ object SyncTimeLogger {
             val serverUrlMapper = ServerUrlMapper()
             val mapping = serverUrlMapper.processUrl(updateUrl)
 
-            CoroutineScope(Dispatchers.IO).launch {
+            MainApplication.applicationScope.launch(Dispatchers.IO) {
                 val primaryAvailable = MainApplication.isServerReachable(mapping.primaryUrl)
                 val alternativeAvailable =
                     mapping.alternativeUrl?.let { MainApplication.isServerReachable(it) } == true
