@@ -697,7 +697,6 @@
     <string name="retake_test">إعادة الاختبار [%d]</string>
     <string name="do_you_want_to_join_this_course">هل ترغب في الانضمام إلى هذه الدورة؟</string>
     <string name="join_this_course">انضم إلى هذه الدورة</string>
-    <string name="download_dictionary">تنزيل القاموس.</string>
     <string name="resource_not_downloaded">لم يتم تنزيل المصدر.</string>
     <string name="bulk_resource_download">تنزيل مجمع للمصادر.</string>
     <string name="pending_survey">استبيان معلق.</string>
