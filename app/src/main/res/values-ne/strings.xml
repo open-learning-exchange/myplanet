@@ -697,7 +697,6 @@
     <string name="retake_test">पुन: टेस्ट दिनुहोस् [%d]</string>
     <string name="do_you_want_to_join_this_course">के तपाइँ यो पाठ्यक्रममा सामिल हुन चाहनुहुन्छ?</string>
     <string name="join_this_course">यो पाठ्यक्रममा सामिल होइनुहोस्</string>
-    <string name="download_dictionary">डिक्शनरी डाउनलोड गर्नुहोस्।</string>
     <string name="resource_not_downloaded">स्रोत डाउनलोड गरिएन।</string>
     <string name="bulk_resource_download">बल्क स्रोत डाउनलोड।</string>
     <string name="pending_survey">पेन्डिङ सर्वेक्षण।</string>
