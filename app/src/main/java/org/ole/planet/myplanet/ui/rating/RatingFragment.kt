@@ -8,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.RatingBar
 import android.widget.RatingBar.OnRatingBarChangeListener
+import androidx.core.view.isVisible
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -18,7 +19,6 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.FragmentRatingBinding
-import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -28,12 +28,13 @@ class RatingFragment : DialogFragment() {
     private val binding get() = _binding!!
     @Inject
     lateinit var viewModel: RatingViewModel
-    private var currentUser: RealmUserModel? = null
     var id: String? = ""
     var type: String? = ""
     var title: String? = ""
     lateinit var settings: SharedPreferences
     private var ratingListener: OnRatingChangeListener? = null
+    private var isUserReady = false
+    private var currentSubmitState: RatingViewModel.SubmitState = RatingViewModel.SubmitState.Idle
     fun setListener(listener: OnRatingChangeListener?) {
         this.ratingListener = listener
     }
@@ -69,6 +70,9 @@ class RatingFragment : DialogFragment() {
                 }
             }
         binding.btnCancel.setOnClickListener { dismiss() }
+        binding.userStatusText.text = getString(R.string.loading_user_profile)
+        binding.userStatusContainer.isVisible = true
+        updateSubmitButtonState()
         binding.btnSubmit.setOnClickListener {
             if (binding.ratingBar.rating.toDouble() == 0.0) {
                 binding.ratingError.visibility = View.VISIBLE
@@ -102,7 +106,9 @@ class RatingFragment : DialogFragment() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.userState.collect { user ->
-                    currentUser = user
+                    isUserReady = user != null
+                    binding.userStatusContainer.isVisible = !isUserReady
+                    updateSubmitButtonState()
                 }
             }
         }
@@ -110,24 +116,20 @@ class RatingFragment : DialogFragment() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.submitState.collect { state ->
+                    currentSubmitState = state
                     when (state) {
-                        is RatingViewModel.SubmitState.Submitting -> {
-                            binding.btnSubmit.isEnabled = false
-                        }
                         is RatingViewModel.SubmitState.Success -> {
-                            binding.btnSubmit.isEnabled = true
                             Utilities.toast(activity, "Thank you, your rating is submitted.")
                             ratingListener?.onRatingChanged()
                             dismiss()
                         }
                         is RatingViewModel.SubmitState.Error -> {
-                            binding.btnSubmit.isEnabled = true
                             Utilities.toast(activity, state.message)
                         }
-                        RatingViewModel.SubmitState.Idle -> {
-                            binding.btnSubmit.isEnabled = true
-                        }
+                        RatingViewModel.SubmitState.Submitting,
+                        RatingViewModel.SubmitState.Idle -> Unit
                     }
+                    updateSubmitButtonState()
                 }
             }
         }
@@ -149,8 +151,8 @@ class RatingFragment : DialogFragment() {
         val comment = binding.etComment.text.toString()
         val rating = binding.ratingBar.rating
         val userId = settings.getString("userId", "") ?: ""
-        
-        if (type != null && id != null && title != null && currentUser != null && userId.isNotEmpty()) {
+
+        if (type != null && id != null && title != null && userId.isNotEmpty()) {
             viewModel.submitRating(
                 type = type!!,
                 itemId = id!!,
@@ -162,6 +164,11 @@ class RatingFragment : DialogFragment() {
         }
     }
 
+    private fun updateSubmitButtonState() {
+        val isSubmitting = currentSubmitState is RatingViewModel.SubmitState.Submitting
+        binding.btnSubmit.isEnabled = isUserReady && !isSubmitting
+        binding.submitProgress.isVisible = isSubmitting
+    }
 
     companion object {
         @JvmStatic
