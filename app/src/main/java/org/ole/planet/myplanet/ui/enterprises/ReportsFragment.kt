@@ -257,7 +257,6 @@ class ReportsFragment : BaseTeamFragment() {
             adapterReports.setNonTeamMember(!isMemberFlow.value)
             binding.rvReports.layoutManager = LinearLayoutManager(activity)
             binding.rvReports.adapter = adapterReports
-            adapterReports.notifyDataSetChanged()
 
             if (results.isEmpty()) {
                 binding.exportCSV.visibility = View.GONE
