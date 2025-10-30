@@ -56,27 +56,40 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     }
 
     private fun saveCourseProgress() {
-        databaseService.withRealm { realm ->
-            if (!realm.isInTransaction) realm.beginTransaction()
-            var courseProgress = realm.where(RealmCourseProgress::class.java)
-                .equalTo("courseId", step.courseId)
-                .equalTo("userId", user?.id)
-                .equalTo("stepNum", stepNumber)
-                .findFirst()
-            if (courseProgress == null) {
-                courseProgress = realm.createObject(RealmCourseProgress::class.java, UUID.randomUUID().toString())
-                courseProgress.createdDate = Date().time
+        val courseId = step.courseId
+        val userId = user?.id
+        val userParentCode = user?.parentCode
+        val userPlanetCode = user?.planetCode
+        val shouldMarkPassed = stepExams.isEmpty()
+        val currentStepNumber = stepNumber
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            databaseService.executeTransactionAsync { realm ->
+                val now = Date().time
+                var courseProgress = realm.where(RealmCourseProgress::class.java)
+                    .equalTo("courseId", courseId)
+                    .equalTo("userId", userId)
+                    .equalTo("stepNum", currentStepNumber)
+                    .findFirst()
+                if (courseProgress == null) {
+                    courseProgress = realm.createObject(
+                        RealmCourseProgress::class.java,
+                        UUID.randomUUID().toString(),
+                    )
+                    courseProgress?.createdDate = now
+                }
+                courseProgress?.apply {
+                    this.courseId = courseId
+                    stepNum = currentStepNumber
+                    if (shouldMarkPassed) {
+                        passed = true
+                    }
+                    createdOn = userPlanetCode
+                    updatedDate = now
+                    parentCode = userParentCode
+                    this.userId = userId
+                }
             }
-            courseProgress?.courseId = step.courseId
-            courseProgress?.stepNum = stepNumber
-            if (stepExams.isEmpty()) {
-                courseProgress?.passed = true
-            }
-            courseProgress?.createdOn = user?.planetCode
-            courseProgress?.updatedDate = Date().time
-            courseProgress?.parentCode = user?.parentCode
-            courseProgress?.userId = user?.id
-            realm.commitTransaction()
         }
     }
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
