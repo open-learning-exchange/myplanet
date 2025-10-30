@@ -18,14 +18,14 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.DialogAddReportBinding
 import org.ole.planet.myplanet.databinding.ReportListItemBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils
 
 class AdapterReports(
     private val context: Context,
-    private val databaseService: DatabaseService,
+    private val teamRepository: TeamRepository,
     private var list: RealmResults<RealmMyTeam>
 ) : RecyclerView.Adapter<AdapterReports.ViewHolderReports>() {
     private var startTimeStamp: String? = null
@@ -154,24 +154,50 @@ class AdapterReports(
                 } else if (TextUtils.isEmpty("${dialogAddReportBinding.nonPersonnel.text}")) {
                     dialogAddReportBinding.nonPersonnel.error = "non-personnel is required"
                 } else {
+                    val reportId = currentReport._id
+                    if (reportId.isNullOrBlank()) {
+                        Snackbar.make(
+                            binding.root,
+                            "Failed to update report. Please try again.",
+                            Snackbar.LENGTH_LONG,
+                        ).show()
+                        return@setOnClickListener
+                    }
                     val doc = JsonObject().apply {
-                        addProperty("_id", currentReport._id)
-                        addProperty("description", "${dialogAddReportBinding.summary.text}")
-                        addProperty("beginningBalance", "${dialogAddReportBinding.beginningBalance.text}")
-                        addProperty("sales", "${dialogAddReportBinding.sales.text}")
-                        addProperty("otherIncome", "${dialogAddReportBinding.otherIncome.text}")
-                        addProperty("wages", "${dialogAddReportBinding.personnel.text}")
-                        addProperty("otherExpenses", "${dialogAddReportBinding.nonPersonnel.text}")
-                        addProperty("startDate", startTimeStamp)
-                        addProperty("endDate", endTimeStamp)
+                        addProperty("description", dialogAddReportBinding.summary.text.toString())
+                        addProperty(
+                            "beginningBalance",
+                            dialogAddReportBinding.beginningBalance.text.toString().toIntOrNull()
+                                ?: currentReport.beginningBalance,
+                        )
+                        addProperty(
+                            "sales",
+                            dialogAddReportBinding.sales.text.toString().toIntOrNull()
+                                ?: currentReport.sales,
+                        )
+                        addProperty(
+                            "otherIncome",
+                            dialogAddReportBinding.otherIncome.text.toString().toIntOrNull()
+                                ?: currentReport.otherIncome,
+                        )
+                        addProperty(
+                            "wages",
+                            dialogAddReportBinding.personnel.text.toString().toIntOrNull()
+                                ?: currentReport.wages,
+                        )
+                        addProperty(
+                            "otherExpenses",
+                            dialogAddReportBinding.nonPersonnel.text.toString().toIntOrNull()
+                                ?: currentReport.otherExpenses,
+                        )
+                        addProperty("startDate", startTimeStamp?.toLongOrNull() ?: currentReport.startDate)
+                        addProperty("endDate", endTimeStamp?.toLongOrNull() ?: currentReport.endDate)
                         addProperty("updatedDate", System.currentTimeMillis())
                         addProperty("updated", true)
                     }
                     CoroutineScope(Dispatchers.Main).launch {
                         try {
-                            databaseService.executeTransactionAsync { realm ->
-                                RealmMyTeam.updateReports(doc, realm)
-                            }
+                            teamRepository.updateReport(reportId, doc)
                             dialog.dismiss()
                         } catch (e: Exception) {
                             Snackbar.make(binding.root, "Failed to update report. Please try again.", Snackbar.LENGTH_LONG).show()
@@ -194,15 +220,7 @@ class AdapterReports(
                     .setPositiveButton(R.string.ok) { _, _ ->
                         CoroutineScope(Dispatchers.Main).launch {
                             try {
-                                databaseService.executeTransactionAsync { realm ->
-                                    realm.where(RealmMyTeam::class.java)
-                                        .equalTo("_id", reportId)
-                                        .findFirst()?.apply {
-                                            status = "archived"
-                                            updated = true
-                                        }
-                                }
-                                notifyDataSetChanged()
+                                teamRepository.archiveReport(reportId)
                             } catch (e: Exception) {
                                 binding.root.let { view ->
                                     Snackbar.make(view, context.getString(R.string.failed_to_delete_report), Snackbar.LENGTH_LONG).show()

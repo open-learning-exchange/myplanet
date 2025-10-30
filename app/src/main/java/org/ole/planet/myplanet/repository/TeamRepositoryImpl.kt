@@ -144,6 +144,33 @@ class TeamRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun updateReport(reportId: String, payload: JsonObject) {
+        if (reportId.isBlank()) return
+        executeTransaction { realm ->
+            val report = realm.where(RealmMyTeam::class.java)
+                .equalTo("_id", reportId)
+                .findFirst()
+                ?: return@executeTransaction
+            RealmMyTeam.populateReportFields(payload, report)
+            report.updated = true
+            if (report.updatedDate == 0L) {
+                report.updatedDate = System.currentTimeMillis()
+            }
+        }
+    }
+
+    override suspend fun archiveReport(reportId: String) {
+        if (reportId.isBlank()) return
+        executeTransaction { realm ->
+            realm.where(RealmMyTeam::class.java)
+                .equalTo("_id", reportId)
+                .findFirst()?.apply {
+                    status = "archived"
+                    updated = true
+                }
+        }
+    }
+
     override suspend fun isMember(userId: String?, teamId: String): Boolean {
         userId ?: return false
         return count(RealmMyTeam::class.java) {
