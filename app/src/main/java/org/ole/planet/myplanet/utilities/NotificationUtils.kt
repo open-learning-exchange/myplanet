@@ -158,28 +158,36 @@ object NotificationUtils {
         }
 
         fun showNotification(config: NotificationConfig): Boolean {
+            android.util.Log.d("NotificationFlow", "NotificationManager.showNotification() - id=${config.id}, type=${config.type}, title=${config.title}")
+
             if (!canShowNotification(config.type)) {
+                android.util.Log.d("NotificationFlow", "NotificationManager.showNotification() - Cannot show notification: type not enabled or system notifications disabled")
                 return false
             }
 
             if (sessionShownNotifications.contains(config.id)) {
+                android.util.Log.d("NotificationFlow", "NotificationManager.showNotification() - Already shown in this session: ${config.id}")
                 return false
             }
 
             val notificationId = config.id.hashCode()
             val activeNotifications = notificationManager.activeNotifications
             val isAlreadyShowing = activeNotifications.any { it.id == notificationId }
-            
+
             if (isAlreadyShowing) {
+                android.util.Log.d("NotificationFlow", "NotificationManager.showNotification() - Already showing in system: ${config.id}")
                 return false
             }
 
             try {
+                android.util.Log.d("NotificationFlow", "NotificationManager.showNotification() - Building and displaying notification: ${config.id}")
                 val notification = buildNotification(config)
                 notificationManager.notify(notificationId, notification)
                 markNotificationAsShown(config.id)
+                android.util.Log.d("NotificationFlow", "NotificationManager.showNotification() - Successfully shown: ${config.id}")
                 return true
             } catch (e: Exception) {
+                android.util.Log.e("NotificationFlow", "NotificationManager.showNotification() - ERROR showing notification: ${config.id}", e)
                 e.printStackTrace()
                 return false
             }
@@ -364,12 +372,14 @@ object NotificationUtils {
         }
 
         private fun markNotificationAsShown(notificationId: String) {
+            android.util.Log.d("NotificationFlow", "NotificationManager.markNotificationAsShown() - Marking as shown: $notificationId")
             activeNotifications.add(notificationId)
             sessionShownNotifications.add(notificationId)
             saveActiveNotifications()
         }
 
         fun clearNotification(notificationId: String) {
+            android.util.Log.d("NotificationFlow", "NotificationManager.clearNotification() - Clearing notification: $notificationId")
             notificationManager.cancel(notificationId.hashCode())
             activeNotifications.remove(notificationId)
             saveActiveNotifications()
@@ -385,6 +395,7 @@ object NotificationUtils {
         }
 
         fun createSurveyNotification(surveyId: String, surveyTitle: String): NotificationConfig {
+            android.util.Log.d("NotificationFlow", "NotificationManager.createSurveyNotification() - surveyId=$surveyId, title=$surveyTitle")
             return NotificationConfig(
                 id = surveyId,
                 type = TYPE_SURVEY,
@@ -399,6 +410,7 @@ object NotificationUtils {
         }
 
         fun createTaskNotification(taskId: String, taskTitle: String, deadline: String): NotificationConfig {
+            android.util.Log.d("NotificationFlow", "NotificationManager.createTaskNotification() - taskId=$taskId, title=$taskTitle, deadline=$deadline")
             val priority = if (isTaskUrgent(deadline)) {
                 NotificationCompat.PRIORITY_HIGH
             } else {
@@ -419,6 +431,7 @@ object NotificationUtils {
         }
 
         fun createJoinRequestNotification(requestId: String, requesterName: String, teamName: String): NotificationConfig {
+            android.util.Log.d("NotificationFlow", "NotificationManager.createJoinRequestNotification() - requestId=$requestId, requester=$requesterName, team=$teamName")
             return NotificationConfig(
                 id = requestId,
                 type = TYPE_JOIN_REQUEST,
@@ -433,6 +446,7 @@ object NotificationUtils {
         }
 
         fun createStorageWarningNotification(storagePercentage: Int, customId: String): NotificationConfig {
+            android.util.Log.d("NotificationFlow", "NotificationManager.createStorageWarningNotification() - storage=$storagePercentage%, id=$customId")
             val priority = if (storagePercentage > 95) {
                 NotificationCompat.PRIORITY_HIGH
             } else {
@@ -452,6 +466,7 @@ object NotificationUtils {
         }
 
         fun createResourceNotification(notificationId: String, resourceCount: Int): NotificationConfig {
+            android.util.Log.d("NotificationFlow", "NotificationManager.createResourceNotification() - id=$notificationId, count=$resourceCount")
             return NotificationConfig(
                 id = notificationId,
                 type = TYPE_RESOURCE,

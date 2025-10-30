@@ -41,8 +41,12 @@ class DashboardViewModel @Inject constructor(
     }
 
     suspend fun updateResourceNotification(userId: String?) {
+        android.util.Log.d("NotificationFlow", "DashboardViewModel.updateResourceNotification() - START - userId=$userId")
+        val startTime = System.currentTimeMillis()
         val resourceCount = libraryRepository.countLibrariesNeedingUpdate(userId)
+        android.util.Log.d("NotificationFlow", "DashboardViewModel.updateResourceNotification() - Found $resourceCount resources needing update")
         notificationRepository.updateResourceNotification(userId, resourceCount)
+        android.util.Log.d("NotificationFlow", "DashboardViewModel.updateResourceNotification() - COMPLETED in ${System.currentTimeMillis() - startTime}ms")
     }
 
     suspend fun createNotificationIfMissing(
@@ -51,18 +55,42 @@ class DashboardViewModel @Inject constructor(
         relatedId: String?,
         userId: String?,
     ) {
+        android.util.Log.d("NotificationFlow", "DashboardViewModel.createNotificationIfMissing() - type=$type, relatedId=$relatedId, userId=$userId")
+        val startTime = System.currentTimeMillis()
         notificationRepository.createNotificationIfMissing(type, message, relatedId, userId)
+        android.util.Log.d("NotificationFlow", "DashboardViewModel.createNotificationIfMissing() - COMPLETED in ${System.currentTimeMillis() - startTime}ms")
+    }
+
+    suspend fun createNotificationsBatch(
+        notifications: List<org.ole.planet.myplanet.repository.NotificationData>,
+        userId: String?
+    ) {
+        android.util.Log.d("NotificationFlow", "DashboardViewModel.createNotificationsBatch() - Creating ${notifications.size} notifications")
+        val startTime = System.currentTimeMillis()
+        notificationRepository.createNotificationsBatch(notifications, userId)
+        android.util.Log.d("NotificationFlow", "DashboardViewModel.createNotificationsBatch() - COMPLETED in ${System.currentTimeMillis() - startTime}ms")
     }
 
     suspend fun getPendingSurveys(userId: String?): List<RealmSubmission> {
+        android.util.Log.d("NotificationFlow", "DashboardViewModel.getPendingSurveys() - userId=$userId")
         return submissionRepository.getPendingSurveys(userId)
     }
 
     suspend fun getSurveyTitlesFromSubmissions(submissions: List<RealmSubmission>): List<String> {
+        android.util.Log.d("NotificationFlow", "DashboardViewModel.getSurveyTitlesFromSubmissions() - submissions count=${submissions.size}")
         return submissionRepository.getSurveyTitlesFromSubmissions(submissions)
     }
 
     suspend fun getUnreadNotificationsSize(userId: String?): Int {
-        return notificationRepository.getUnreadCount(userId)
+        android.util.Log.d("NotificationFlow", "DashboardViewModel.getUnreadNotificationsSize() - START - userId=$userId")
+        val startTime = System.currentTimeMillis()
+        val count = notificationRepository.getUnreadCount(userId)
+        android.util.Log.d("NotificationFlow", "DashboardViewModel.getUnreadNotificationsSize() - Result: count=$count in ${System.currentTimeMillis() - startTime}ms")
+        return count
+    }
+
+    suspend fun cleanupDuplicateNotifications(userId: String?) {
+        android.util.Log.d("NotificationFlow", "DashboardViewModel.cleanupDuplicateNotifications() - Cleaning up duplicates for userId=$userId")
+        notificationRepository.cleanupDuplicateNotifications(userId)
     }
 }

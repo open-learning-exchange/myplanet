@@ -115,6 +115,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private var lastNotificationCheckTime = 0L
     private val notificationCheckThrottleMs = 5000L
     private var systemNotificationReceiver: BroadcastReceiver? = null
+    @Volatile
+    private var isCreatingNotifications = false
 
     private interface RealmListener {
         fun removeListener()
@@ -126,10 +128,12 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        android.util.Log.d("NotificationFlow", "DashboardActivity.onCreate() - Dashboard starting, userId=${user?.id}")
         checkUser()
         initViews()
         updateAppTitle()
         notificationManager = NotificationUtils.getInstance(this)
+        android.util.Log.d("NotificationFlow", "DashboardActivity.onCreate() - NotificationManager initialized")
         if (handleGuestAccess()) return
         setupNavigation()
         handleInitialFragment()
@@ -557,57 +561,100 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun checkIfShouldShowNotifications() {
         val fromLogin = intent.getBooleanExtra("from_login", false)
+        android.util.Log.d("NotificationFlow", "checkIfShouldShowNotifications() - fromLogin=$fromLogin, notificationsShownThisSession=$notificationsShownThisSession")
         if (fromLogin || !notificationsShownThisSession) {
             notificationsShownThisSession = true
+            android.util.Log.d("NotificationFlow", "checkIfShouldShowNotifications() - Scheduling notification check in 1 second")
             lifecycleScope.launch {
                 kotlinx.coroutines.delay(1000)
+                android.util.Log.d("NotificationFlow", "checkIfShouldShowNotifications() - 1 second delay completed, calling checkAndCreateNewNotifications()")
                 checkAndCreateNewNotifications()
             }
+        } else {
+            android.util.Log.d("NotificationFlow", "checkIfShouldShowNotifications() - Skipping notification check (already shown this session)")
         }
     }
 
     private fun checkAndCreateNewNotifications() {
         val userId = user?.id
+        android.util.Log.d("NotificationFlow", "checkAndCreateNewNotifications() - START - userId=$userId, timestamp=${System.currentTimeMillis()}, isCreatingNotifications=$isCreatingNotifications")
+
+        // Prevent duplicate concurrent executions
+        if (isCreatingNotifications) {
+            android.util.Log.d("NotificationFlow", "checkAndCreateNewNotifications() - SKIPPED - Already in progress")
+            return
+        }
+
+        isCreatingNotifications = true
 
         lifecycleScope.launch(Dispatchers.IO) {
-            var unreadCount = 0
-            val newNotifications = mutableListOf<NotificationUtils.NotificationConfig>()
-
             try {
-                dashboardViewModel.updateResourceNotification(userId)
-                databaseService.realmInstance.use { backgroundRealm ->
-                    val createdNotifications = createNotifications(backgroundRealm, userId)
-                    newNotifications.addAll(createdNotifications)
+                android.util.Log.d("NotificationFlow", "checkAndCreateNewNotifications() - Running on IO dispatcher")
+                var unreadCount = 0
+                val newNotifications = mutableListOf<NotificationUtils.NotificationConfig>()
 
-                    unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-
-            withContext(Dispatchers.Main) {
                 try {
-                    updateNotificationBadge(unreadCount) {
-                        openNotificationsList(userId ?: "")
-                    }
+                    android.util.Log.d("NotificationFlow", "checkAndCreateNewNotifications() - Calling updateResourceNotification()")
+                    val updateStartTime = System.currentTimeMillis()
+                    dashboardViewModel.updateResourceNotification(userId)
+                    android.util.Log.d("NotificationFlow", "checkAndCreateNewNotifications() - updateResourceNotification() completed in ${System.currentTimeMillis() - updateStartTime}ms")
 
-                    val groupedNotifications = newNotifications.groupBy { it.type }
-                    
-                    groupedNotifications.forEach { (type, notifications) ->
-                        when {
-                            notifications.size == 1 -> {
-                                notificationManager.showNotification(notifications.first())
-                            }
-                            notifications.size > 1 -> {
-                                val summaryConfig = createSummaryNotification(type, notifications.size)
-                                notificationManager.showNotification(summaryConfig)
-                            }
-                        }
-                    }
+                    android.util.Log.d("NotificationFlow", "checkAndCreateNewNotifications() - Cleaning up duplicate notifications")
+                    val cleanupStartTime = System.currentTimeMillis()
+                    dashboardViewModel.cleanupDuplicateNotifications(userId)
+                    android.util.Log.d("NotificationFlow", "checkAndCreateNewNotifications() - Cleanup completed in ${System.currentTimeMillis() - cleanupStartTime}ms")
 
+                    android.util.Log.d("NotificationFlow", "checkAndCreateNewNotifications() - Creating database notifications")
+                    val createStartTime = System.currentTimeMillis()
+                    databaseService.realmInstance.use { backgroundRealm ->
+                        val createdNotifications = createNotifications(backgroundRealm, userId)
+                        newNotifications.addAll(createdNotifications)
+                        android.util.Log.d("NotificationFlow", "checkAndCreateNewNotifications() - Created ${createdNotifications.size} notifications in ${System.currentTimeMillis() - createStartTime}ms")
+
+                        android.util.Log.d("NotificationFlow", "checkAndCreateNewNotifications() - Querying unread count")
+                        val countStartTime = System.currentTimeMillis()
+                        unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
+                        android.util.Log.d("NotificationFlow", "checkAndCreateNewNotifications() - Unread count query completed: count=$unreadCount in ${System.currentTimeMillis() - countStartTime}ms")
+                    }
                 } catch (e: Exception) {
+                    android.util.Log.e("NotificationFlow", "checkAndCreateNewNotifications() - ERROR in IO operation", e)
                     e.printStackTrace()
                 }
+
+                android.util.Log.d("NotificationFlow", "checkAndCreateNewNotifications() - Switching to Main dispatcher, unreadCount=$unreadCount")
+                withContext(Dispatchers.Main) {
+                    try {
+                        android.util.Log.d("NotificationFlow", "checkAndCreateNewNotifications() - Updating badge with count=$unreadCount")
+                        updateNotificationBadge(unreadCount) {
+                            openNotificationsList(userId ?: "")
+                        }
+
+                        val groupedNotifications = newNotifications.groupBy { it.type }
+                        android.util.Log.d("NotificationFlow", "checkAndCreateNewNotifications() - Showing ${newNotifications.size} notifications grouped by ${groupedNotifications.size} types")
+
+                        groupedNotifications.forEach { (type, notifications) ->
+                            when {
+                                notifications.size == 1 -> {
+                                    android.util.Log.d("NotificationFlow", "checkAndCreateNewNotifications() - Showing single notification: type=$type")
+                                    notificationManager.showNotification(notifications.first())
+                                }
+                                notifications.size > 1 -> {
+                                    android.util.Log.d("NotificationFlow", "checkAndCreateNewNotifications() - Showing summary notification: type=$type, count=${notifications.size}")
+                                    val summaryConfig = createSummaryNotification(type, notifications.size)
+                                    notificationManager.showNotification(summaryConfig)
+                                }
+                            }
+                        }
+                        android.util.Log.d("NotificationFlow", "checkAndCreateNewNotifications() - COMPLETED successfully, timestamp=${System.currentTimeMillis()}")
+
+                    } catch (e: Exception) {
+                        android.util.Log.e("NotificationFlow", "checkAndCreateNewNotifications() - ERROR in Main operation", e)
+                        e.printStackTrace()
+                    }
+                }
+            } finally {
+                isCreatingNotifications = false
+                android.util.Log.d("NotificationFlow", "checkAndCreateNewNotifications() - Flag reset, isCreatingNotifications=$isCreatingNotifications")
             }
         }
     }
@@ -698,10 +745,18 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         userId: String?,
     ): List<NotificationUtils.NotificationConfig> {
         val newNotifications = mutableListOf<NotificationUtils.NotificationConfig>()
-        createSurveyDatabaseNotifications(realm, userId)
-        createTaskDatabaseNotifications(realm, userId)
-        createStorageDatabaseNotifications(realm, userId)
-        createJoinRequestDatabaseNotifications(realm, userId)
+
+        // Collect all notifications to create in batch
+        val notificationsToCreate = mutableListOf<org.ole.planet.myplanet.repository.NotificationData>()
+
+        notificationsToCreate.addAll(collectSurveyNotifications(realm, userId))
+        notificationsToCreate.addAll(collectTaskNotifications(realm, userId))
+        notificationsToCreate.addAll(collectStorageNotifications(realm, userId))
+        notificationsToCreate.addAll(collectJoinRequestNotifications(realm, userId))
+
+        // Create all notifications in a single batch transaction
+        android.util.Log.d("NotificationFlow", "createNotifications() - Creating ${notificationsToCreate.size} notifications in batch")
+        dashboardViewModel.createNotificationsBatch(notificationsToCreate, userId)
 
         val unreadNotifications = realm.where(RealmNotification::class.java)
             .equalTo("userId", userId)
@@ -752,56 +807,85 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    private suspend fun createSurveyDatabaseNotifications(realm: Realm, userId: String?) {
+    private fun collectSurveyNotifications(realm: Realm, userId: String?): List<org.ole.planet.myplanet.repository.NotificationData> {
+        android.util.Log.d("NotificationFlow", "collectSurveyNotifications() - START - userId=$userId")
         val pendingSurveys = realm.where(RealmSubmission::class.java)
             .equalTo("userId", userId)
             .equalTo("status", "pending")
             .equalTo("type", "survey")
             .findAll()
 
-        pendingSurveys.mapNotNull { submission ->
+        android.util.Log.d("NotificationFlow", "collectSurveyNotifications() - Found ${pendingSurveys.size} pending survey submissions")
+
+        // Get unique survey titles (deduplicate multiple submissions for same survey)
+        val uniqueSurveyTitles = pendingSurveys.mapNotNull { submission ->
             val examId = submission.parentId?.split("@")?.firstOrNull() ?: ""
             realm.where(RealmStepExam::class.java)
                 .equalTo("id", examId)
                 .findFirst()
                 ?.name
-        }.forEach { title ->
-            dashboardViewModel.createNotificationIfMissing("survey", title, title, userId)
+        }.distinct()
+
+        android.util.Log.d("NotificationFlow", "collectSurveyNotifications() - Found ${uniqueSurveyTitles.size} unique surveys")
+
+        val notifications = uniqueSurveyTitles.map { title ->
+            org.ole.planet.myplanet.repository.NotificationData("survey", title, title)
         }
+
+        android.util.Log.d("NotificationFlow", "collectSurveyNotifications() - COMPLETED - collected ${notifications.size} survey notifications")
+        return notifications
     }
 
-    private suspend fun createTaskDatabaseNotifications(realm: Realm, userId: String?) {
+    private fun collectTaskNotifications(realm: Realm, userId: String?): List<org.ole.planet.myplanet.repository.NotificationData> {
+        android.util.Log.d("NotificationFlow", "collectTaskNotifications() - START - userId=$userId")
         val tasks = realm.where(RealmTeamTask::class.java)
             .notEqualTo("status", "archived")
             .equalTo("completed", false)
             .equalTo("assignee", userId)
             .findAll()
 
-        tasks.forEach { task ->
-            dashboardViewModel.createNotificationIfMissing(
+        android.util.Log.d("NotificationFlow", "collectTaskNotifications() - Found ${tasks.size} incomplete tasks")
+
+        val notifications = tasks.map { task ->
+            org.ole.planet.myplanet.repository.NotificationData(
                 "task",
                 "${task.title} ${formatDate(task.deadline)}",
-                task.id,
-                userId
+                task.id
             )
         }
+
+        android.util.Log.d("NotificationFlow", "collectTaskNotifications() - COMPLETED - collected ${notifications.size} task notifications")
+        return notifications
     }
 
-    private suspend fun createStorageDatabaseNotifications(realm: Realm, userId: String?) {
+    private fun collectStorageNotifications(realm: Realm, userId: String?): List<org.ole.planet.myplanet.repository.NotificationData> {
+        android.util.Log.d("NotificationFlow", "collectStorageNotifications() - START - userId=$userId")
+        val notifications = mutableListOf<org.ole.planet.myplanet.repository.NotificationData>()
+
         val storageRatio = FileUtils.totalAvailableMemoryRatio(this)
+        android.util.Log.d("NotificationFlow", "collectStorageNotifications() - Storage ratio: $storageRatio%")
         if (storageRatio > 85) {
-            dashboardViewModel.createNotificationIfMissing("storage", "$storageRatio%", "storage", userId)
+            android.util.Log.d("NotificationFlow", "collectStorageNotifications() - Adding storage warning notification")
+            notifications.add(org.ole.planet.myplanet.repository.NotificationData("storage", "$storageRatio%", "storage"))
         }
 
-        dashboardViewModel.createNotificationIfMissing("storage", "90%", "storage_test", userId)
+        notifications.add(org.ole.planet.myplanet.repository.NotificationData("storage", "90%", "storage_test"))
+
+        android.util.Log.d("NotificationFlow", "collectStorageNotifications() - COMPLETED - collected ${notifications.size} storage notifications")
+        return notifications
     }
 
-    private suspend fun createJoinRequestDatabaseNotifications(realm: Realm, userId: String?) {
+    private fun collectJoinRequestNotifications(realm: Realm, userId: String?): List<org.ole.planet.myplanet.repository.NotificationData> {
+        android.util.Log.d("NotificationFlow", "collectJoinRequestNotifications() - START - userId=$userId")
+        val allJoinRequests = mutableListOf<Triple<String, String, String>>() // requestId, requesterUserId, teamId
+
         val teamLeaderMemberships = realm.where(RealmMyTeam::class.java)
             .equalTo("userId", userId)
             .equalTo("docType", "membership")
             .equalTo("isLeader", true)
             .findAll()
+
+        android.util.Log.d("NotificationFlow", "collectJoinRequestNotifications() - User leads ${teamLeaderMemberships.size} teams")
 
         teamLeaderMemberships.forEach { leadership ->
             val pendingJoinRequests = realm.where(RealmMyTeam::class.java)
@@ -809,27 +893,47 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 .equalTo("docType", "request")
                 .findAll()
 
+            android.util.Log.d("NotificationFlow", "collectJoinRequestNotifications() - Team ${leadership.teamId} has ${pendingJoinRequests.size} pending requests")
+
             pendingJoinRequests.forEach { joinRequest ->
-                val team = realm.where(RealmMyTeam::class.java)
-                    .equalTo("_id", leadership.teamId)
-                    .findFirst()
+                val requestId = joinRequest._id ?: return@forEach
+                val requesterUserId = joinRequest.userId ?: return@forEach
+                val teamId = leadership.teamId ?: return@forEach
 
-                val requester = realm.where(RealmUserModel::class.java)
-                    .equalTo("id", joinRequest.userId)
-                    .findFirst()
-
-                val requesterName = requester?.name ?: "Unknown User"
-                val teamName = team?.name ?: "Unknown Team"
-                val message = getString(R.string.user_requested_to_join_team, requesterName, teamName)
-
-                dashboardViewModel.createNotificationIfMissing(
-                    "join_request",
-                    message,
-                    joinRequest._id,
-                    userId
-                )
+                allJoinRequests.add(Triple(requestId, requesterUserId, teamId))
             }
         }
+
+        // Group by requester+team to find duplicates
+        val uniqueRequests = allJoinRequests
+            .groupBy { (_, requesterUserId, teamId) -> "$requesterUserId:$teamId" }
+            .mapValues { (_, requests) -> requests.first() } // Keep only the first request per user+team combo
+            .values
+
+        android.util.Log.d("NotificationFlow", "collectJoinRequestNotifications() - Found ${allJoinRequests.size} total requests, ${uniqueRequests.size} unique user+team combinations")
+
+        val notifications = uniqueRequests.map { (requestId, requesterUserId, teamId) ->
+            val team = realm.where(RealmMyTeam::class.java)
+                .equalTo("_id", teamId)
+                .findFirst()
+
+            val requester = realm.where(RealmUserModel::class.java)
+                .equalTo("id", requesterUserId)
+                .findFirst()
+
+            val requesterName = requester?.name ?: "Unknown User"
+            val teamName = team?.name ?: "Unknown Team"
+            val message = getString(R.string.user_requested_to_join_team, requesterName, teamName)
+
+            org.ole.planet.myplanet.repository.NotificationData(
+                "join_request",
+                message,
+                requestId
+            )
+        }
+
+        android.util.Log.d("NotificationFlow", "collectJoinRequestNotifications() - COMPLETED - collected ${notifications.size} unique join request notifications")
+        return notifications
     }
 
     private fun openNotificationsList(userId: String) {
@@ -843,18 +947,21 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     override fun onNotificationCountUpdated(unreadCount: Int) {
+        android.util.Log.d("NotificationFlow", "onNotificationCountUpdated() - Callback received with unreadCount=$unreadCount")
         updateNotificationBadge(unreadCount) {
             openNotificationsList(user?.id ?: "")
         }
     }
 
     private fun updateNotificationBadge(count: Int, onClickListener: View.OnClickListener) {
+        android.util.Log.d("NotificationFlow", "updateNotificationBadge() - Updating badge UI with count=$count, visible=${count > 0}")
         val menuItem = binding.appBarBell.bellToolbar.menu.findItem(R.id.action_notifications)
         val actionView = MenuItemCompat.getActionView(menuItem)
         val smsCountTxt = actionView.findViewById<TextView>(R.id.notification_badge)
         smsCountTxt.text = "$count"
         smsCountTxt.visibility = if (count > 0) View.VISIBLE else View.GONE
         actionView.setOnClickListener(onClickListener)
+        android.util.Log.d("NotificationFlow", "updateNotificationBadge() - Badge UI updated successfully")
     }
 
     fun refreshChatHistoryList() {
