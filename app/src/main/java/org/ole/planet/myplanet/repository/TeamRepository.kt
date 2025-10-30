@@ -30,6 +30,8 @@ interface TeamRepository {
     suspend fun getPendingTasksForUser(userId: String, start: Long, end: Long): List<RealmTeamTask>
     suspend fun markTasksNotified(taskIds: Collection<String>)
     suspend fun addReport(report: JsonObject)
+    suspend fun updateReport(reportId: String, payload: JsonObject)
+    suspend fun archiveReport(reportId: String)
     suspend fun logTeamVisit(
         teamId: String,
         userName: String?,
