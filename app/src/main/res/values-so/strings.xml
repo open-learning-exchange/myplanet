@@ -697,7 +697,6 @@
     <string name="retake_test">Dib u habayn Imtixaanka [%d]</string>
     <string name="do_you_want_to_join_this_course">Ma rabtaa inaad ka qaadato kursigaan?</string>
     <string name="join_this_course">Ka qaad kursigaan</string>
-    <string name="download_dictionary">Soo deg Qaamuus.</string>
     <string name="resource_not_downloaded">Xogta ma la diyaariyay.</string>
     <string name="bulk_resource_download">Soo deg diyaarinta xogta oo dhan.</string>
     <string name="pending_survey">Raadinta hadda la kordhin</string>
