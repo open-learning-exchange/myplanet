@@ -18,8 +18,6 @@ class NetworkMonitorWorker(
     companion object {
         private const val WORK_TAG = "network_monitor_work"
         private const val SERVER_REACHABILITY_WORK_TAG = "server_reachability_work"
-        // Delay in seconds before starting uploads after network reconnection
-        // This gives users time to complete UI operations without blocking
         private const val UPLOAD_DELAY_SECONDS = 30L
 
         fun start(context: Context) {
