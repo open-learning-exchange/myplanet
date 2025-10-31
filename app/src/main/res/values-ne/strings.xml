@@ -28,7 +28,6 @@
     <string name="err_msg_login">प्रयोगकर्तानाम र/वा पासवर्ड मेल खान्छैन</string>
     <string name="hint_serverURL">planet आईपि</string>
     <string name="hint_serverPin">सर्भर पिन</string>
-    <string name="radio_protocol">प्रोटोकल:</string>
     <string name="radio_http">http</string>
     <string name="radio_https">https</string>
     <string name="title_activity_dashboard">ड्यासबोर्ड</string>
