@@ -149,15 +149,6 @@
         <item name="android:layout_height">wrap_content</item>
     </style>
 
-    <style name="MyMaterialTheme.NoActionBar">
-        <item name="windowActionBar">false</item>
-        <item name="windowNoTitle">true</item>
-    </style>
-
-    <style name="MyMaterialTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
-
-    <style name="MyMaterialTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
-
     <style name="CustomAlertDialog" parent="ThemeOverlay.MaterialComponents.Dialog.Alert">
         <item name="android:background">@color/daynight_grey</item>
         <item name="android:textColorPrimary">@color/daynight_textColor</item>
