@@ -59,6 +59,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
     private lateinit var captureVideoLauncher: ActivityResultLauncher<Uri>
     private lateinit var openFolderLauncher: ActivityResultLauncher<String>
     private lateinit var requestCameraLauncher: ActivityResultLauncher<String>
+    private var type: Int = 0
     @Inject
     lateinit var myPersonalRepository: MyPersonalRepository
     @Inject
@@ -261,7 +262,9 @@ class AddResourceFragment : BottomSheetDialogFragment() {
             startActivity(Intent(activity, AddResourceActivity::class.java).putExtra("resource_local_url", path))
         } else {
             val userModel = userProfileDbHandler.userModel ?: return
-            showAlert(requireContext(), path, myPersonalRepository, userModel.id, userModel.name)
+            showAlert(requireContext(), path, myPersonalRepository, userModel.id, userModel.name) {
+                dismiss()
+            }
         }
     }
 
@@ -269,13 +272,13 @@ class AddResourceFragment : BottomSheetDialogFragment() {
         const val REQUEST_VIDEO_CAPTURE = 1
         const val REQUEST_CAPTURE_PICTURE = 2
         const val REQUEST_FILE_SELECTION = 3
-        var type = 0
         fun showAlert(
             context: Context,
             path: String?,
             repository: MyPersonalRepository,
             userId: String?,
-            userName: String?
+            userName: String?,
+            onDismiss: (() -> Unit)? = null
         ) {
             val v = LayoutInflater.from(context).inflate(R.layout.alert_my_personal, null)
             val etTitle = v.findViewById<EditText>(R.id.et_title)
@@ -294,6 +297,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
                         repository.savePersonalResource(title, userId, userName, path, desc)
                         withContext(Dispatchers.Main) {
                             Utilities.toast(context, context.getString(R.string.resource_saved_to_my_personal))
+                            onDismiss?.invoke()
                         }
                     }
                 }.setNegativeButton(R.string.dismiss, null).show()
