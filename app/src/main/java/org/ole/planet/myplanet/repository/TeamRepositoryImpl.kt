@@ -4,6 +4,7 @@ import android.content.SharedPreferences
 import androidx.core.net.toUri
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import io.realm.Sort
 import java.util.Calendar
 import java.util.Date
 import java.util.UUID
@@ -11,7 +12,6 @@ import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.datamanager.ApiClient.client
@@ -94,12 +94,10 @@ class TeamRepositoryImpl @Inject constructor(
             notEqualTo("status", "archived")
             startDate?.let { greaterThanOrEqualTo("date", it) }
             endDate?.let { lessThanOrEqualTo("date", it) }
-        }.map { transactions ->
-            if (sortAscending) {
-                transactions.sortedBy { it.date }
-            } else {
-                transactions.sortedByDescending { it.date }
-            }
+            sort(
+                "date",
+                if (sortAscending) Sort.ASCENDING else Sort.DESCENDING,
+            )
         }
     }
 
