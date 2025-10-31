@@ -10,17 +10,16 @@ import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Sort
 import java.util.ArrayList
-import java.util.Date
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.R.array.status_options
@@ -31,7 +30,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmTeamTask
-import org.ole.planet.myplanet.repository.NotificationRepository
+import org.ole.planet.myplanet.repository.NotificationFilter
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
@@ -44,15 +43,12 @@ import org.ole.planet.myplanet.utilities.NotificationUtils
 class NotificationsFragment : Fragment() {
     private var _binding: FragmentNotificationsBinding? = null
     private val binding get() = _binding!!
+    private val viewModel: NotificationViewModel by viewModels()
     @Inject
     lateinit var databaseService: DatabaseService
-    @Inject
-    lateinit var notificationRepository: NotificationRepository
     private lateinit var adapter: AdapterNotification
-    private lateinit var userId: String
     private var notificationUpdateListener: NotificationListener? = null
     private lateinit var dashboardActivity: DashboardActivity
-    private var unreadCountCache: Int = 0
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
@@ -67,9 +63,6 @@ class NotificationsFragment : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentNotificationsBinding.inflate(inflater, container, false)
-        userId = arguments?.getString("userId") ?: ""
-
-        val notifications = loadNotifications(userId, "all")
 
         val options = resources.getStringArray(status_options)
         val optionsList: MutableList<String?> = ArrayList(listOf(*options))
@@ -79,24 +72,16 @@ class NotificationsFragment : Fragment() {
         binding.status.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
                 val selectedOption = parent.getItemAtPosition(position).toString().lowercase()
-                val filteredNotifications = loadNotifications(userId, selectedOption)
-                adapter.updateNotifications(filteredNotifications)
-
-                binding.emptyData.visibility = if (filteredNotifications.isEmpty()) View.VISIBLE else View.GONE
+                val filter = NotificationFilter.fromKey(selectedOption)
+                viewModel.setFilter(filter)
             }
 
             override fun onNothingSelected(parent: AdapterView<*>) {}
         }
 
-        if (notifications.isEmpty()) {
-            binding.emptyData.visibility = View.VISIBLE
-        }
-
-        refreshUnreadCountCache()
-
         adapter = AdapterNotification(
             databaseService,
-            notifications,
+            emptyList(),
             onMarkAsReadClick = { notificationId ->
                 markAsReadById(notificationId)
             },
@@ -110,8 +95,31 @@ class NotificationsFragment : Fragment() {
         binding.btnMarkAllAsRead.setOnClickListener {
             markAllAsRead()
         }
-        updateMarkAllAsReadButtonVisibility()
-        updateUnreadCount()
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    viewModel.notifications.collect { notifications ->
+                        adapter.updateNotifications(notifications)
+                        binding.emptyData.visibility = if (notifications.isEmpty()) View.VISIBLE else View.GONE
+                    }
+                }
+                launch {
+                    viewModel.unreadCount.collect { unreadCount ->
+                        updateMarkAllAsReadButtonVisibility(unreadCount)
+                        notificationUpdateListener?.onNotificationCountUpdated(unreadCount)
+                    }
+                }
+                launch {
+                    viewModel.filter.collect { filter ->
+                        val index = optionsList.indexOf(filter.key)
+                        if (index >= 0 && binding.status.selectedItemPosition != index) {
+                            binding.status.setSelection(index)
+                        }
+                    }
+                }
+            }
+        }
         return binding.root
     }
 
@@ -199,171 +207,51 @@ class NotificationsFragment : Fragment() {
         }
     }
 
-    private fun loadNotifications(userId: String, filter: String): List<RealmNotification> {
-        return databaseService.withRealm { realm ->
-            val query = realm.where(RealmNotification::class.java)
-                .equalTo("userId", userId)
-
-            when (filter) {
-                "read" -> query.equalTo("isRead", true)
-                "unread" -> query.equalTo("isRead", false)
-                "all" -> {}
-            }
-
-            val results = query
-                .sort("isRead", Sort.ASCENDING, "createdAt", Sort.DESCENDING)
-                .findAll()
-            realm.copyFromRealm(results).filter {
-                it.message.isNotEmpty() && it.message != "INVALID"
-            }
-        }
-    }
-
     private fun markAsReadById(notificationId: String) {
-        markNotificationsAsRead(setOf(notificationId), isMarkAll = false) {
-            notificationRepository.markNotificationsAsRead(setOf(notificationId))
-        }
+        viewModel.markNotificationsAsRead(
+            setOf(notificationId),
+            onSuccess = { updatedIds ->
+                clearNotifications(updatedIds)
+            },
+            onError = {
+                showMarkAsReadError()
+            }
+        )
     }
 
     private fun markAllAsRead() {
-        val notificationIds = adapter.currentList.map { it.id }.toSet()
-        markNotificationsAsRead(notificationIds, isMarkAll = true) {
-            notificationRepository.markAllUnreadAsRead(userId)
-        }
-    }
-
-    private fun updateMarkAllAsReadButtonVisibility() {
-        _binding?.let { binding ->
-            binding.btnMarkAllAsRead.visibility = if (unreadCountCache > 0) View.VISIBLE else View.GONE
-        }
-    }
-
-    private fun getUnreadNotificationsSize(): Int {
-        return databaseService.withRealm { realm ->
-            realm.where(RealmNotification::class.java)
-                .equalTo("userId", userId)
-                .equalTo("isRead", false)
-                .count()
-                .toInt()
-        }
-    }
-
-    private fun updateUnreadCount() {
-        notificationUpdateListener?.onNotificationCountUpdated(unreadCountCache)
+        viewModel.markAllAsRead(
+            onSuccess = { updatedIds ->
+                clearNotifications(updatedIds)
+            },
+            onError = {
+                showMarkAsReadError()
+            }
+        )
     }
 
     fun refreshNotificationsList() {
-        if (::adapter.isInitialized && _binding != null) {
-            val selectedFilter = binding.status.selectedItem.toString().lowercase()
-            val notifications = loadNotifications(userId, selectedFilter)
-            adapter.updateNotifications(notifications)
-            refreshUnreadCountCache()
-            updateMarkAllAsReadButtonVisibility()
-            updateUnreadCount()
-
-            binding.emptyData.visibility = if (notifications.isEmpty()) View.VISIBLE else View.GONE
-        }
+        viewModel.refresh()
     }
 
-    private fun refreshUnreadCountCache() {
-        unreadCountCache = getUnreadNotificationsSize()
+    private fun updateMarkAllAsReadButtonVisibility(unreadCount: Int) {
+        _binding?.btnMarkAllAsRead?.visibility = if (unreadCount > 0) View.VISIBLE else View.GONE
     }
 
-    private fun markNotificationsAsRead(
-        notificationIdsForUi: Set<String>,
-        isMarkAll: Boolean,
-        backgroundAction: suspend () -> Set<String>,
-    ) {
-        viewLifecycleOwner.lifecycleScope.launch {
-            val binding = _binding ?: return@launch
-            val selectedFilter = binding.status.selectedItem.toString().lowercase()
-            val previousList = adapter.currentList.toList()
-            val previousUnreadCount = unreadCountCache
-            val appContext = requireContext().applicationContext
-
-            val updatedList = if (notificationIdsForUi.isNotEmpty()) {
-                getUpdatedListAfterMarkingRead(previousList, notificationIdsForUi, selectedFilter)
-            } else {
-                previousList
-            }
-
-            if (notificationIdsForUi.isNotEmpty()) {
-                adapter.submitList(updatedList)
-                binding.emptyData.visibility = if (updatedList.isEmpty()) View.VISIBLE else View.GONE
-            }
-
-            val unreadMarkedCount = if (isMarkAll) {
-                previousUnreadCount
-            } else {
-                previousList.count { notificationIdsForUi.contains(it.id) && !it.isRead }
-            }
-
-            unreadCountCache = if (isMarkAll) {
-                0
-            } else {
-                (previousUnreadCount - unreadMarkedCount).coerceAtLeast(0)
-            }
-            updateMarkAllAsReadButtonVisibility()
-            updateUnreadCount()
-
-            try {
-                withContext(Dispatchers.IO) {
-                    val idsToClear = backgroundAction()
-                    val notificationManager = NotificationUtils.getInstance(appContext)
-                    idsToClear.forEach { notificationManager.clearNotification(it) }
-                }
-            } catch (e: Exception) {
-                unreadCountCache = previousUnreadCount
-                val bindingOrNull = _binding
-
-                if (notificationIdsForUi.isNotEmpty()) {
-                    adapter.submitList(previousList)
-                    bindingOrNull?.emptyData?.visibility =
-                        if (previousList.isEmpty()) View.VISIBLE else View.GONE
-                }
-
-                updateMarkAllAsReadButtonVisibility()
-                updateUnreadCount()
-
-                bindingOrNull?.let { currentBinding ->
-                    Snackbar.make(
-                        currentBinding.root,
-                        getString(R.string.failed_to_mark_as_read),
-                        Snackbar.LENGTH_LONG,
-                    ).show()
-                }
-            }
-        }
+    private fun clearNotifications(notificationIds: Set<String>) {
+        if (notificationIds.isEmpty()) return
+        val appContext = requireContext().applicationContext
+        val notificationManager = NotificationUtils.getInstance(appContext)
+        notificationIds.forEach { notificationManager.clearNotification(it) }
     }
 
-    private fun getUpdatedListAfterMarkingRead(
-        currentList: List<RealmNotification>,
-        notificationIds: Set<String>,
-        selectedFilter: String,
-    ): List<RealmNotification> {
-        return if (selectedFilter == "unread") {
-            currentList.filterNot { notificationIds.contains(it.id) }
-        } else {
-            currentList.map { notification ->
-                if (notificationIds.contains(notification.id) && !notification.isRead) {
-                    notification.asReadCopy()
-                } else {
-                    notification
-                }
-            }.sortedWith(compareBy<RealmNotification> { it.isRead }.thenByDescending { it.createdAt })
-        }
-    }
-
-    private fun RealmNotification.asReadCopy(): RealmNotification {
-        return RealmNotification().also { copy ->
-            copy.id = id
-            copy.userId = userId
-            copy.message = message
-            copy.isRead = true
-            copy.createdAt = Date()
-            copy.type = type
-            copy.relatedId = relatedId
-            copy.title = title
+    private fun showMarkAsReadError() {
+        _binding?.let { currentBinding ->
+            Snackbar.make(
+                currentBinding.root,
+                getString(R.string.failed_to_mark_as_read),
+                Snackbar.LENGTH_LONG,
+            ).show()
         }
     }
 
