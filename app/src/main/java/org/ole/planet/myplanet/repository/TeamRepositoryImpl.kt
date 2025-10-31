@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.SharedPreferences
-import android.util.Log
 import androidx.core.net.toUri
 import com.google.gson.Gson
 import com.google.gson.JsonObject
@@ -419,32 +418,17 @@ class TeamRepositoryImpl @Inject constructor(
         isPublic: Boolean,
         user: RealmUserModel,
     ): Result<String> {
-        val startTime = System.currentTimeMillis()
-        Log.d("TeamRepositoryImpl", "[${startTime}ms] createTeam() called - category: $category, name: $name, teamType: $teamType, isPublic: $isPublic, userId: ${user._id}")
         return runCatching {
-            val idGenTime = System.currentTimeMillis()
-            Log.d("TeamRepositoryImpl", "[${idGenTime}ms] (+${idGenTime - startTime}ms) Generating team ID...")
             val teamId = AndroidDecrypter.generateIv()
-            val afterIdTime = System.currentTimeMillis()
-            Log.d("TeamRepositoryImpl", "[${afterIdTime}ms] (+${afterIdTime - idGenTime}ms) Generated team ID: $teamId")
-
-            val preTransactionTime = System.currentTimeMillis()
-            Log.d("TeamRepositoryImpl", "[${preTransactionTime}ms] (+${preTransactionTime - afterIdTime}ms) Starting Realm transaction to create team...")
             executeTransaction { realm ->
-                val insideTransTime = System.currentTimeMillis()
-                Log.d("TeamRepositoryImpl", "[${insideTransTime}ms] (+${insideTransTime - preTransactionTime}ms) Inside Realm transaction - creating team object")
                 val team = realm.createObject(RealmMyTeam::class.java, teamId)
-                val afterCreateTime = System.currentTimeMillis()
-                Log.d("TeamRepositoryImpl", "[${afterCreateTime}ms] (+${afterCreateTime - insideTransTime}ms) Team object created, setting properties...")
                 team.status = "active"
                 team.createdDate = Date().time
                 if (category == "enterprise") {
-                    Log.d("TeamRepositoryImpl", "Setting team as enterprise type")
                     team.type = "enterprise"
                     team.services = services
                     team.rules = rules
                 } else {
-                    Log.d("TeamRepositoryImpl", "Setting team as regular team type")
                     team.type = "team"
                     team.teamType = teamType
                 }
@@ -457,11 +441,7 @@ class TeamRepositoryImpl @Inject constructor(
                 team.parentCode = user.parentCode
                 team.teamPlanetCode = user.planetCode
                 team.updated = true
-                val afterPropsTime = System.currentTimeMillis()
-                Log.d("TeamRepositoryImpl", "[${afterPropsTime}ms] (+${afterPropsTime - afterCreateTime}ms) Team object populated")
 
-                val preMembershipTime = System.currentTimeMillis()
-                Log.d("TeamRepositoryImpl", "[${preMembershipTime}ms] (+${preMembershipTime - afterPropsTime}ms) Creating membership for creator...")
                 val membershipId = AndroidDecrypter.generateIv()
                 val membership = realm.createObject(RealmMyTeam::class.java, membershipId)
                 membership.userId = user._id
@@ -472,17 +452,8 @@ class TeamRepositoryImpl @Inject constructor(
                 membership.isLeader = true
                 membership.teamType = teamType
                 membership.updated = true
-                val afterMembershipTime = System.currentTimeMillis()
-                Log.d("TeamRepositoryImpl", "[${afterMembershipTime}ms] (+${afterMembershipTime - preMembershipTime}ms) Membership created with ID: $membershipId")
             }
-            val postTransactionTime = System.currentTimeMillis()
-            Log.d("TeamRepositoryImpl", "[${postTransactionTime}ms] (+${postTransactionTime - preTransactionTime}ms) Realm transaction completed successfully")
             teamId
-        }.onSuccess {
-            val successTime = System.currentTimeMillis()
-            Log.d("TeamRepositoryImpl", "[${successTime}ms] (+${successTime - startTime}ms total) createTeam() succeeded - returning team ID: $it")
-        }.onFailure { exception ->
-            Log.e("TeamRepositoryImpl", "createTeam() failed with exception", exception)
         }
     }
 
@@ -494,42 +465,27 @@ class TeamRepositoryImpl @Inject constructor(
         rules: String,
         updatedBy: String?,
     ): Result<Boolean> {
-        Log.d("TeamRepositoryImpl", "updateTeam() called - teamId: $teamId, name: $name, updatedBy: $updatedBy")
         return runCatching {
             var updated = false
-            Log.d("TeamRepositoryImpl", "Starting Realm transaction to update team...")
             executeTransaction { realm ->
-                Log.d("TeamRepositoryImpl", "Searching for team by _id: $teamId")
                 val teamToUpdate = realm.where(RealmMyTeam::class.java)
                     .equalTo("_id", teamId)
                     .findFirst()
-                    ?: run {
-                        Log.d("TeamRepositoryImpl", "Team not found by _id, searching by teamId: $teamId")
-                        realm.where(RealmMyTeam::class.java)
-                            .equalTo("teamId", teamId)
-                            .findFirst()
-                    }
-                if (teamToUpdate != null) {
-                    Log.d("TeamRepositoryImpl", "Team found, updating fields...")
-                    teamToUpdate.name = name
-                    teamToUpdate.services = services
-                    teamToUpdate.rules = rules
-                    teamToUpdate.description = description
-                    updatedBy?.let { teamToUpdate.createdBy = it }
-                    teamToUpdate.limit = 12
-                    teamToUpdate.updated = true
+                    ?: realm.where(RealmMyTeam::class.java)
+                        .equalTo("teamId", teamId)
+                        .findFirst()
+                teamToUpdate?.let { team ->
+                    team.name = name
+                    team.services = services
+                    team.rules = rules
+                    team.description = description
+                    updatedBy?.let { team.createdBy = it }
+                    team.limit = 12
+                    team.updated = true
                     updated = true
-                    Log.d("TeamRepositoryImpl", "Team updated successfully")
-                } else {
-                    Log.w("TeamRepositoryImpl", "Team not found with id: $teamId")
                 }
             }
-            Log.d("TeamRepositoryImpl", "Realm transaction completed - updated: $updated")
             updated
-        }.onSuccess {
-            Log.d("TeamRepositoryImpl", "updateTeam() succeeded - result: $it")
-        }.onFailure { exception ->
-            Log.e("TeamRepositoryImpl", "updateTeam() failed with exception", exception)
         }
     }
 

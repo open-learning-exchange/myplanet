@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.service
 
 import android.content.Context
-import android.util.Log
 import androidx.work.CoroutineWorker
 import androidx.work.Data
 import androidx.work.ExistingWorkPolicy
@@ -50,8 +49,6 @@ class NetworkMonitorWorker(
     }
     
     private fun scheduleServerReachabilityCheck() {
-        Log.d("NetworkMonitorWorker", "Network reconnected - scheduling upload with ${UPLOAD_DELAY_SECONDS}s delay")
-
         val inputData = Data.Builder()
             .putBoolean("network_reconnection_trigger", true)
             .build()
@@ -68,7 +65,5 @@ class NetworkMonitorWorker(
                 ExistingWorkPolicy.REPLACE,
                 workRequest
             )
-
-        Log.d("NetworkMonitorWorker", "Background upload scheduled to start in ${UPLOAD_DELAY_SECONDS}s")
     }
 }
