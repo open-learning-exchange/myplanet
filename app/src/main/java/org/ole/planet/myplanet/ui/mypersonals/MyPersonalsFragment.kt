@@ -111,8 +111,8 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
             .setIcon(R.drawable.ic_edit)
             .setView(alertMyPersonalBinding.root)
             .setPositiveButton(R.string.button_submit) { _, _ ->
-                val title = alertMyPersonalBinding.etDescription.text.toString().trim { it <= ' ' }
-                val desc = alertMyPersonalBinding.etTitle.text.toString().trim { it <= ' ' }
+                val title = alertMyPersonalBinding.etTitle.text.toString().trim { it <= ' ' }
+                val desc = alertMyPersonalBinding.etDescription.text.toString().trim { it <= ' ' }
                 if (title.isEmpty()) {
                     Utilities.toast(requireContext(), getString(R.string.please_enter_title))
                     return@setPositiveButton
