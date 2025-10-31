@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import android.util.Log
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
@@ -19,6 +20,9 @@ class MyPersonalRepositoryImpl @Inject constructor(
         path: String?,
         description: String?
     ) {
+        val startTime = System.currentTimeMillis()
+        Log.d("MyPersonalTiming", "[${startTime}] savePersonalResource started - title: $title")
+
         val personal = RealmMyPersonal().apply {
             id = UUID.randomUUID().toString()
             _id = id
@@ -29,7 +33,14 @@ class MyPersonalRepositoryImpl @Inject constructor(
             this.date = Date().time
             this.description = description
         }
+
+        val beforeSave = System.currentTimeMillis()
+        Log.d("MyPersonalTiming", "[${beforeSave}] Object created (+${beforeSave - startTime}ms), calling save()")
+
         save(personal)
+
+        val afterSave = System.currentTimeMillis()
+        Log.d("MyPersonalTiming", "[${afterSave}] save() completed (+${afterSave - beforeSave}ms, total: ${afterSave - startTime}ms)")
     }
 
     override fun getPersonalResources(userId: String?): Flow<List<RealmMyPersonal>> {
