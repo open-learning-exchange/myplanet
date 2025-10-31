@@ -19,25 +19,33 @@ class RatingRepositoryImpl @Inject constructor(
         itemId: String,
         userId: String,
     ): RatingSummary {
-        val ratings = queryList(RealmRating::class.java) {
-            equalTo("type", type)
-            equalTo("item", itemId)
-        }
-        val existingRating = ratings.firstOrNull { it.userId == userId }
+        return withRealmAsync { realm ->
+            val results =
+                realm.where(RealmRating::class.java)
+                    .equalTo("type", type)
+                    .equalTo("item", itemId)
+                    .findAll()
 
-        val totalRatings = ratings.size
-        val averageRating = if (totalRatings > 0) {
-            ratings.sumOf { it.rate }.toFloat() / totalRatings
-        } else {
-            0f
-        }
+            val totalRatings = results.size
+            val averageRating =
+                if (totalRatings > 0) {
+                    results.averageDouble("rate")?.toFloat() ?: 0f
+                } else {
+                    0f
+                }
 
-        return RatingSummary(
-            existingRating = existingRating?.toRatingEntry(),
-            averageRating = averageRating,
-            totalRatings = totalRatings,
-            userRating = existingRating?.rate,
-        )
+            val existingRating =
+                results.where()
+                    .equalTo("userId", userId)
+                    .findFirst()
+
+            RatingSummary(
+                existingRating = existingRating?.toRatingEntry(),
+                averageRating = averageRating,
+                totalRatings = totalRatings,
+                userRating = existingRating?.rate,
+            )
+        }
     }
 
     override suspend fun submitRating(
