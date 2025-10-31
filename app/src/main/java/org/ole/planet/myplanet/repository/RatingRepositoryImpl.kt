@@ -29,7 +29,7 @@ class RatingRepositoryImpl @Inject constructor(
             val totalRatings = results.size
             val averageRating =
                 if (totalRatings > 0) {
-                    results.averageDouble("rate")?.toFloat() ?: 0f
+                    results.average("rate")?.toFloat() ?: 0f
                 } else {
                     0f
                 }
