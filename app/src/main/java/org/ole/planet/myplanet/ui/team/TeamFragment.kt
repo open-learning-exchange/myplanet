@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -136,6 +137,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
         dialog.setOnShowListener {
             val okButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
             okButton.setOnClickListener {
+                Log.d("TeamFragment", "Save button clicked")
                 val name = alertCreateTeamBinding.etName.text.toString().trim()
                 val description = alertCreateTeamBinding.etDescription.text.toString()
                 val services = alertCreateTeamBinding.etServices.text.toString()
@@ -147,60 +149,83 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
                         "sync"
                     }
                 val currentUser = user
+                Log.d("TeamFragment", "Form values - name: '$name', description: '$description', type: $type, teamType: $selectedTeamType")
                 when {
                     name.isEmpty() -> {
+                        Log.w("TeamFragment", "Team name is empty, showing validation error")
                         Utilities.toast(activity, getString(R.string.name_is_required))
                         alertCreateTeamBinding.etName.error = getString(R.string.please_enter_a_name)
                     } else -> {
                         val failureMessage = getString(R.string.request_failed_please_retry)
                         val userModel = currentUser ?: run {
+                            Log.e("TeamFragment", "User model is null, cannot create team")
                             Utilities.toast(activity, failureMessage)
                             return@setOnClickListener
                         }
+                        Log.d("TeamFragment", "User model available: userId=${userModel._id}, launching coroutine")
                         viewLifecycleOwner.lifecycleScope.launch {
                             if (team == null) {
-                                teamRepository.createTeam(
-                                    category = type,
-                                    name = name,
-                                    description = description,
-                                    services = services,
-                                    rules = rules,
-                                    teamType = selectedTeamType,
-                                    isPublic = alertCreateTeamBinding.switchPublic.isChecked,
-                                    user = userModel,
-                                ).onSuccess {
-                                    binding.etSearch.visibility = View.VISIBLE
-                                    binding.tableTitle.visibility = View.VISIBLE
-                                    Utilities.toast(activity, getString(R.string.team_created))
-                                    refreshTeamList()
-                                    dialog.dismiss()
-                                }.onFailure {
-                                    Utilities.toast(activity, failureMessage)
-                                }
-                            } else {
-                                val targetTeamId = team._id ?: team.teamId
-                                if (targetTeamId.isNullOrBlank()) {
-                                    Utilities.toast(activity, failureMessage)
-                                    return@launch
-                                }
-                                teamRepository.updateTeam(
-                                    teamId = targetTeamId,
-                                    name = name,
-                                    description = description,
-                                    services = services,
-                                    rules = rules,
-                                    updatedBy = userModel._id,
-                                ).onSuccess { updated ->
-                                    if (updated) {
+                                Log.d("TeamFragment", "Creating new team - calling teamRepository.createTeam()")
+                                try {
+                                    teamRepository.createTeam(
+                                        category = type,
+                                        name = name,
+                                        description = description,
+                                        services = services,
+                                        rules = rules,
+                                        teamType = selectedTeamType,
+                                        isPublic = alertCreateTeamBinding.switchPublic.isChecked,
+                                        user = userModel,
+                                    ).onSuccess { teamId ->
+                                        Log.d("TeamFragment", "Team created successfully with ID: $teamId")
                                         binding.etSearch.visibility = View.VISIBLE
                                         binding.tableTitle.visibility = View.VISIBLE
                                         Utilities.toast(activity, getString(R.string.team_created))
                                         refreshTeamList()
                                         dialog.dismiss()
-                                    } else {
+                                    }.onFailure { exception ->
+                                        Log.e("TeamFragment", "Failed to create team", exception)
                                         Utilities.toast(activity, failureMessage)
                                     }
-                                }.onFailure {
+                                } catch (e: Exception) {
+                                    Log.e("TeamFragment", "Exception during createTeam call", e)
+                                    Utilities.toast(activity, failureMessage)
+                                }
+                            } else {
+                                Log.d("TeamFragment", "Updating existing team")
+                                val targetTeamId = team._id ?: team.teamId
+                                if (targetTeamId.isNullOrBlank()) {
+                                    Log.e("TeamFragment", "Team ID is null or blank, cannot update")
+                                    Utilities.toast(activity, failureMessage)
+                                    return@launch
+                                }
+                                Log.d("TeamFragment", "Calling teamRepository.updateTeam() for teamId: $targetTeamId")
+                                try {
+                                    teamRepository.updateTeam(
+                                        teamId = targetTeamId,
+                                        name = name,
+                                        description = description,
+                                        services = services,
+                                        rules = rules,
+                                        updatedBy = userModel._id,
+                                    ).onSuccess { updated ->
+                                        if (updated) {
+                                            Log.d("TeamFragment", "Team updated successfully")
+                                            binding.etSearch.visibility = View.VISIBLE
+                                            binding.tableTitle.visibility = View.VISIBLE
+                                            Utilities.toast(activity, getString(R.string.team_created))
+                                            refreshTeamList()
+                                            dialog.dismiss()
+                                        } else {
+                                            Log.w("TeamFragment", "Team update returned false")
+                                            Utilities.toast(activity, failureMessage)
+                                        }
+                                    }.onFailure { exception ->
+                                        Log.e("TeamFragment", "Failed to update team", exception)
+                                        Utilities.toast(activity, failureMessage)
+                                    }
+                                } catch (e: Exception) {
+                                    Log.e("TeamFragment", "Exception during updateTeam call", e)
                                     Utilities.toast(activity, failureMessage)
                                 }
                             }

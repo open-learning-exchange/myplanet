@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.datamanager
 
 import android.content.Context
+import android.util.Log
 import io.realm.Realm
 import io.realm.RealmConfiguration
 import io.realm.RealmModel
@@ -45,22 +46,49 @@ class DatabaseService(context: Context) {
     }
 
     suspend fun executeTransactionAsync(transaction: (Realm) -> Unit) {
+        val startTime = System.currentTimeMillis()
+        Log.d("DatabaseService", "[${startTime}ms] executeTransactionAsync() called, switching to IO dispatcher")
         withContext(Dispatchers.IO) {
+            val ioTime = System.currentTimeMillis()
+            Log.d("DatabaseService", "[${ioTime}ms] (+${ioTime - startTime}ms) On IO dispatcher, getting Realm instance...")
             withRealmInstance { realm ->
+                val realmTime = System.currentTimeMillis()
+                Log.d("DatabaseService", "[${realmTime}ms] (+${realmTime - ioTime}ms) Realm instance obtained, checking if closed...")
                 try {
                     if (realm.isClosed) {
+                        Log.w("DatabaseService", "Realm instance is CLOSED, aborting transaction")
                         return@withRealmInstance
                     }
-                    realm.executeTransaction { transaction(it) }
+                    val preExecTime = System.currentTimeMillis()
+                    Log.d("DatabaseService", "[${preExecTime}ms] (+${preExecTime - realmTime}ms) Realm is open, executing transaction...")
+                    realm.executeTransaction {
+                        val insideTransactionTime = System.currentTimeMillis()
+                        Log.d("DatabaseService", "[${insideTransactionTime}ms] (+${insideTransactionTime - preExecTime}ms) Inside Realm.executeTransaction block, calling user transaction")
+                        transaction(it)
+                        val afterUserTransactionTime = System.currentTimeMillis()
+                        Log.d("DatabaseService", "[${afterUserTransactionTime}ms] (+${afterUserTransactionTime - insideTransactionTime}ms) User transaction completed")
+                    }
+                    val postExecTime = System.currentTimeMillis()
+                    Log.d("DatabaseService", "[${postExecTime}ms] (+${postExecTime - preExecTime}ms) Realm.executeTransaction completed successfully")
                 } catch (e: IllegalStateException) {
+                    Log.e("DatabaseService", "IllegalStateException caught: ${e.message}", e)
                     if (e.message?.contains("non-existing write transaction") == true ||
                         e.message?.contains("not currently in a transaction") == true) {
+                        Log.w("DatabaseService", "Swallowing transaction-related IllegalStateException, returning")
                         return@withRealmInstance
                     }
+                    Log.e("DatabaseService", "Re-throwing IllegalStateException")
+                    throw e
+                } catch (e: Exception) {
+                    Log.e("DatabaseService", "Unexpected exception during transaction", e)
                     throw e
                 }
             }
+            val endTime = System.currentTimeMillis()
+            Log.d("DatabaseService", "[${endTime}ms] (+${endTime - startTime}ms total) withRealmInstance block completed")
         }
+        val completeTime = System.currentTimeMillis()
+        Log.d("DatabaseService", "[${completeTime}ms] (+${completeTime - startTime}ms total) executeTransactionAsync() completed")
     }
 
 }
