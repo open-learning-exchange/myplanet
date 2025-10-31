@@ -9,6 +9,7 @@ import java.util.Date
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
+import javax.inject.Provider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -31,7 +32,7 @@ import org.ole.planet.myplanet.utilities.ServerUrlMapper
 
 class TeamRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
-    private val userProfileDbHandler: UserProfileDbHandler,
+    private val userProfileDbHandlerProvider: Provider<UserProfileDbHandler>,
     private val uploadManager: UploadManager,
     private val gson: Gson,
     @AppPreferences private val preferences: SharedPreferences,
@@ -364,9 +365,16 @@ class TeamRepositoryImpl @Inject constructor(
             task.link = gson.toJson(linkObj)
         }
         if (task.sync.isNullOrBlank()) {
+            val planetCode = userProfileDbHandlerProvider.get().let { handler ->
+                try {
+                    handler.getUserModelCopy()?.planetCode
+                } finally {
+                    handler.onDestroy()
+                }
+            }
             val syncObj = JsonObject().apply {
                 addProperty("type", "local")
-                addProperty("planetCode", userProfileDbHandler.userModel?.planetCode)
+                addProperty("planetCode", planetCode)
             }
             task.sync = gson.toJson(syncObj)
         }
