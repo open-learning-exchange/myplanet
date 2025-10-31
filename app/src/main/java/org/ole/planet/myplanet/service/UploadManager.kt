@@ -436,25 +436,32 @@ class UploadManager @Inject constructor(
                 override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
                     val `object` = response.body()
                     if (`object` != null) {
-                        try {
-                            val rev = getString("rev", `object`)
-                            val id = getString("id", `object`)
-                            databaseService.withRealm { updateRealm ->
-                                updateRealm.executeTransaction { transactionRealm ->
+                        val rev = getString("rev", `object`)
+                        val id = getString("id", `object`)
+                        databaseService.withRealm { updateRealm ->
+                            updateRealm.executeTransactionAsync({ transactionRealm ->
+                                val managedPersonal = personal.id?.takeIf { it.isNotEmpty() }?.let { personalId ->
                                     transactionRealm.where(RealmMyPersonal::class.java)
-                                        .equalTo("id", personal.id)
+                                        .equalTo("id", personalId)
                                         .findFirst()
-                                        ?.let { managedPersonal ->
-                                            managedPersonal.isUploaded = true
-                                            managedPersonal._rev = rev
-                                            managedPersonal._id = id
-                                        }
+                                } ?: personal._id?.takeIf { it.isNotEmpty() }?.let { existingId ->
+                                    transactionRealm.where(RealmMyPersonal::class.java)
+                                        .equalTo("_id", existingId)
+                                        .findFirst()
                                 }
-                            }
 
-                            uploadAttachment(id, rev, personal, listener)
-                        } catch (e: Exception) {
-                            listener.onSuccess("Error updating personal resource: ${e.message}")
+                                managedPersonal?.let { realmPersonal ->
+                                    realmPersonal.isUploaded = true
+                                    realmPersonal._rev = rev
+                                    realmPersonal._id = id
+                                } ?: throw IllegalStateException("Personal resource not found")
+                            }, {
+                                uploadAttachment(id, rev, personal, listener)
+                            }) { error ->
+                                listener.onSuccess(
+                                    "Error updating personal resource: ${error.message ?: "Unknown error"}"
+                                )
+                            }
                         }
                     } else {
                         listener.onSuccess("Failed to upload personal resource: No response")
