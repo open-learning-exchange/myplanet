@@ -60,6 +60,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
     private lateinit var captureVideoLauncher: ActivityResultLauncher<Uri>
     private lateinit var openFolderLauncher: ActivityResultLauncher<String>
     private lateinit var requestCameraLauncher: ActivityResultLauncher<String>
+    private var type: Int = 0
     @Inject
     lateinit var myPersonalRepository: MyPersonalRepository
     @Inject
@@ -272,7 +273,6 @@ class AddResourceFragment : BottomSheetDialogFragment() {
         const val REQUEST_VIDEO_CAPTURE = 1
         const val REQUEST_CAPTURE_PICTURE = 2
         const val REQUEST_FILE_SELECTION = 3
-        var type = 0
         fun showAlert(
             context: Context,
             path: String?,
