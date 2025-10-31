@@ -54,6 +54,13 @@ class DashboardViewModel @Inject constructor(
         notificationRepository.createNotificationIfMissing(type, message, relatedId, userId)
     }
 
+    suspend fun createNotificationsBatch(
+        notifications: List<org.ole.planet.myplanet.repository.NotificationData>,
+        userId: String?
+    ) {
+        notificationRepository.createNotificationsBatch(notifications, userId)
+    }
+
     suspend fun getPendingSurveys(userId: String?): List<RealmSubmission> {
         return submissionRepository.getPendingSurveys(userId)
     }
@@ -64,5 +71,9 @@ class DashboardViewModel @Inject constructor(
 
     suspend fun getUnreadNotificationsSize(userId: String?): Int {
         return notificationRepository.getUnreadCount(userId)
+    }
+
+    suspend fun cleanupDuplicateNotifications(userId: String?) {
+        notificationRepository.cleanupDuplicateNotifications(userId)
     }
 }

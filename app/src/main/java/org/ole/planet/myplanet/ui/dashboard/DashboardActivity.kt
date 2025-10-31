@@ -115,6 +115,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private var lastNotificationCheckTime = 0L
     private val notificationCheckThrottleMs = 5000L
     private var systemNotificationReceiver: BroadcastReceiver? = null
+    @Volatile
+    private var isCreatingNotifications = false
 
     private interface RealmListener {
         fun removeListener()
@@ -569,45 +571,56 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun checkAndCreateNewNotifications() {
         val userId = user?.id
 
+        // Prevent duplicate concurrent executions
+        if (isCreatingNotifications) {
+            return
+        }
+
+        isCreatingNotifications = true
+
         lifecycleScope.launch(Dispatchers.IO) {
-            var unreadCount = 0
-            val newNotifications = mutableListOf<NotificationUtils.NotificationConfig>()
-
             try {
-                dashboardViewModel.updateResourceNotification(userId)
-                databaseService.realmInstance.use { backgroundRealm ->
-                    val createdNotifications = createNotifications(backgroundRealm, userId)
-                    newNotifications.addAll(createdNotifications)
+                var unreadCount = 0
+                val newNotifications = mutableListOf<NotificationUtils.NotificationConfig>()
 
-                    unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-
-            withContext(Dispatchers.Main) {
                 try {
-                    updateNotificationBadge(unreadCount) {
-                        openNotificationsList(userId ?: "")
-                    }
+                    dashboardViewModel.updateResourceNotification(userId)
+                    dashboardViewModel.cleanupDuplicateNotifications(userId)
 
-                    val groupedNotifications = newNotifications.groupBy { it.type }
-                    
-                    groupedNotifications.forEach { (type, notifications) ->
-                        when {
-                            notifications.size == 1 -> {
-                                notificationManager.showNotification(notifications.first())
-                            }
-                            notifications.size > 1 -> {
-                                val summaryConfig = createSummaryNotification(type, notifications.size)
-                                notificationManager.showNotification(summaryConfig)
-                            }
-                        }
+                    databaseService.realmInstance.use { backgroundRealm ->
+                        val createdNotifications = createNotifications(backgroundRealm, userId)
+                        newNotifications.addAll(createdNotifications)
+                        unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
                     }
-
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
+
+                withContext(Dispatchers.Main) {
+                    try {
+                        updateNotificationBadge(unreadCount) {
+                            openNotificationsList(userId ?: "")
+                        }
+
+                        val groupedNotifications = newNotifications.groupBy { it.type }
+
+                        groupedNotifications.forEach { (type, notifications) ->
+                            when {
+                                notifications.size == 1 -> {
+                                    notificationManager.showNotification(notifications.first())
+                                }
+                                notifications.size > 1 -> {
+                                    val summaryConfig = createSummaryNotification(type, notifications.size)
+                                    notificationManager.showNotification(summaryConfig)
+                                }
+                            }
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            } finally {
+                isCreatingNotifications = false
             }
         }
     }
@@ -698,10 +711,17 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         userId: String?,
     ): List<NotificationUtils.NotificationConfig> {
         val newNotifications = mutableListOf<NotificationUtils.NotificationConfig>()
-        createSurveyDatabaseNotifications(realm, userId)
-        createTaskDatabaseNotifications(realm, userId)
-        createStorageDatabaseNotifications(realm, userId)
-        createJoinRequestDatabaseNotifications(realm, userId)
+
+        // Collect all notifications to create in batch
+        val notificationsToCreate = mutableListOf<org.ole.planet.myplanet.repository.NotificationData>()
+
+        notificationsToCreate.addAll(collectSurveyNotifications(realm, userId))
+        notificationsToCreate.addAll(collectTaskNotifications(realm, userId))
+        notificationsToCreate.addAll(collectStorageNotifications(realm, userId))
+        notificationsToCreate.addAll(collectJoinRequestNotifications(realm, userId))
+
+        // Create all notifications in a single batch transaction
+        dashboardViewModel.createNotificationsBatch(notificationsToCreate, userId)
 
         val unreadNotifications = realm.where(RealmNotification::class.java)
             .equalTo("userId", userId)
@@ -752,51 +772,59 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    private suspend fun createSurveyDatabaseNotifications(realm: Realm, userId: String?) {
+    private fun collectSurveyNotifications(realm: Realm, userId: String?): List<org.ole.planet.myplanet.repository.NotificationData> {
         val pendingSurveys = realm.where(RealmSubmission::class.java)
             .equalTo("userId", userId)
             .equalTo("status", "pending")
             .equalTo("type", "survey")
             .findAll()
 
-        pendingSurveys.mapNotNull { submission ->
+        // Get unique survey titles (deduplicate multiple submissions for same survey)
+        val uniqueSurveyTitles = pendingSurveys.mapNotNull { submission ->
             val examId = submission.parentId?.split("@")?.firstOrNull() ?: ""
             realm.where(RealmStepExam::class.java)
                 .equalTo("id", examId)
                 .findFirst()
                 ?.name
-        }.forEach { title ->
-            dashboardViewModel.createNotificationIfMissing("survey", title, title, userId)
+        }.distinct()
+
+        return uniqueSurveyTitles.map { title ->
+            org.ole.planet.myplanet.repository.NotificationData("survey", title, title)
         }
     }
 
-    private suspend fun createTaskDatabaseNotifications(realm: Realm, userId: String?) {
+    private fun collectTaskNotifications(realm: Realm, userId: String?): List<org.ole.planet.myplanet.repository.NotificationData> {
         val tasks = realm.where(RealmTeamTask::class.java)
             .notEqualTo("status", "archived")
             .equalTo("completed", false)
             .equalTo("assignee", userId)
             .findAll()
 
-        tasks.forEach { task ->
-            dashboardViewModel.createNotificationIfMissing(
+        return tasks.map { task ->
+            org.ole.planet.myplanet.repository.NotificationData(
                 "task",
                 "${task.title} ${formatDate(task.deadline)}",
-                task.id,
-                userId
+                task.id
             )
         }
     }
 
-    private suspend fun createStorageDatabaseNotifications(realm: Realm, userId: String?) {
+    private fun collectStorageNotifications(realm: Realm, userId: String?): List<org.ole.planet.myplanet.repository.NotificationData> {
+        val notifications = mutableListOf<org.ole.planet.myplanet.repository.NotificationData>()
+
         val storageRatio = FileUtils.totalAvailableMemoryRatio(this)
         if (storageRatio > 85) {
-            dashboardViewModel.createNotificationIfMissing("storage", "$storageRatio%", "storage", userId)
+            notifications.add(org.ole.planet.myplanet.repository.NotificationData("storage", "$storageRatio%", "storage"))
         }
 
-        dashboardViewModel.createNotificationIfMissing("storage", "90%", "storage_test", userId)
+        notifications.add(org.ole.planet.myplanet.repository.NotificationData("storage", "90%", "storage_test"))
+
+        return notifications
     }
 
-    private suspend fun createJoinRequestDatabaseNotifications(realm: Realm, userId: String?) {
+    private fun collectJoinRequestNotifications(realm: Realm, userId: String?): List<org.ole.planet.myplanet.repository.NotificationData> {
+        val allJoinRequests = mutableListOf<Triple<String, String, String>>() // requestId, requesterUserId, teamId
+
         val teamLeaderMemberships = realm.where(RealmMyTeam::class.java)
             .equalTo("userId", userId)
             .equalTo("docType", "membership")
@@ -810,25 +838,38 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 .findAll()
 
             pendingJoinRequests.forEach { joinRequest ->
-                val team = realm.where(RealmMyTeam::class.java)
-                    .equalTo("_id", leadership.teamId)
-                    .findFirst()
+                val requestId = joinRequest._id ?: return@forEach
+                val requesterUserId = joinRequest.userId ?: return@forEach
+                val teamId = leadership.teamId ?: return@forEach
 
-                val requester = realm.where(RealmUserModel::class.java)
-                    .equalTo("id", joinRequest.userId)
-                    .findFirst()
-
-                val requesterName = requester?.name ?: "Unknown User"
-                val teamName = team?.name ?: "Unknown Team"
-                val message = getString(R.string.user_requested_to_join_team, requesterName, teamName)
-
-                dashboardViewModel.createNotificationIfMissing(
-                    "join_request",
-                    message,
-                    joinRequest._id,
-                    userId
-                )
+                allJoinRequests.add(Triple(requestId, requesterUserId, teamId))
             }
+        }
+
+        // Group by requester+team to find duplicates
+        val uniqueRequests = allJoinRequests
+            .groupBy { (_, requesterUserId, teamId) -> "$requesterUserId:$teamId" }
+            .mapValues { (_, requests) -> requests.first() } // Keep only the first request per user+team combo
+            .values
+
+        return uniqueRequests.map { (requestId, requesterUserId, teamId) ->
+            val team = realm.where(RealmMyTeam::class.java)
+                .equalTo("_id", teamId)
+                .findFirst()
+
+            val requester = realm.where(RealmUserModel::class.java)
+                .equalTo("id", requesterUserId)
+                .findFirst()
+
+            val requesterName = requester?.name ?: "Unknown User"
+            val teamName = team?.name ?: "Unknown Team"
+            val message = getString(R.string.user_requested_to_join_team, requesterName, teamName)
+
+            org.ole.planet.myplanet.repository.NotificationData(
+                "join_request",
+                message,
+                requestId
+            )
         }
     }
 

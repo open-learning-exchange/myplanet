@@ -169,7 +169,7 @@ object NotificationUtils {
             val notificationId = config.id.hashCode()
             val activeNotifications = notificationManager.activeNotifications
             val isAlreadyShowing = activeNotifications.any { it.id == notificationId }
-            
+
             if (isAlreadyShowing) {
                 return false
             }
