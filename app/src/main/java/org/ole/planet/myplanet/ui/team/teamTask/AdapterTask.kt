@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.team.teamTask
 
 import android.app.AlertDialog
 import android.content.Context
-import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -23,6 +22,12 @@ class AdapterTask(
     private val nonTeamMember: Boolean
 ) : RecyclerView.Adapter<ViewHolderTask>() {
     private var listener: OnCompletedListener? = null
+    private val assigneeNameCache: MutableMap<String, String> = mutableMapOf()
+
+    fun clearAssigneeCache() {
+        assigneeNameCache.clear()
+    }
+
     fun setListener(listener: OnCompletedListener?) {
         this.listener = listener
     }
@@ -83,12 +88,26 @@ class AdapterTask(
     }
 
     private fun showAssignee(binding: RowTaskBinding, realmTeamTask: RealmTeamTask) {
-        if (!TextUtils.isEmpty(realmTeamTask.assignee)) {
-            val model = realm.where(RealmUserModel::class.java).equalTo("id", realmTeamTask.assignee).findFirst()
-            if (model != null) {
-                binding.assignee.text = context.getString(R.string.assigned_to_colon, model.name)
+        val assigneeId = realmTeamTask.assignee
+        if (!assigneeId.isNullOrEmpty()) {
+            val cachedName = assigneeNameCache[assigneeId]
+            if (cachedName != null) {
+                if (cachedName.isNotEmpty()) {
+                    binding.assignee.text = context.getString(R.string.assigned_to_colon, cachedName)
+                } else {
+                    binding.assignee.setText(R.string.no_assignee)
+                }
                 return
             }
+
+            val model = realm.where(RealmUserModel::class.java).equalTo("id", assigneeId).findFirst()
+            val name = model?.name
+            if (!name.isNullOrEmpty()) {
+                assigneeNameCache[assigneeId] = name
+                binding.assignee.text = context.getString(R.string.assigned_to_colon, name)
+                return
+            }
+            assigneeNameCache[assigneeId] = ""
         }
         binding.assignee.setText(R.string.no_assignee)
     }
