@@ -166,7 +166,6 @@ class UploadManager @Inject constructor(
         val apiInterface = client.create(ApiInterface::class.java)
 
         try {
-            // Step 1: Read submissions and serialize them WITHOUT holding a write lock
             data class SubmissionData(val id: String?, val serialized: JsonObject, val _id: String?, val _rev: String?)
 
             val submissionsToUpload = databaseService.withRealm { realm ->
@@ -185,7 +184,6 @@ class UploadManager @Inject constructor(
             var processedCount = 0
             var errorCount = 0
 
-            // Step 2: Make network calls WITHOUT holding any Realm lock
             submissionsToUpload.processInBatches { data ->
                 try {
                     val response: JsonObject? = if (TextUtils.isEmpty(data._id)) {
@@ -194,7 +192,6 @@ class UploadManager @Inject constructor(
                         apiInterface?.putDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/submissions/${data._id}", data.serialized)?.execute()?.body()
                     }
 
-                    // Step 3: Update Realm in a QUICK separate transaction
                     if (response != null && data.id != null) {
                         databaseService.withRealm { realm ->
                             realm.executeTransaction { transactionRealm ->
