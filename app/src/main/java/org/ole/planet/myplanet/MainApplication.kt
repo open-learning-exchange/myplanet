@@ -38,6 +38,7 @@ import org.ole.planet.myplanet.di.ApiClientEntryPoint
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.di.WorkerDependenciesEntryPoint
+import org.ole.planet.myplanet.di.withUserProfileDbHandler
 import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.service.AutoSyncWorker
 import org.ole.planet.myplanet.service.NetworkMonitorWorker
@@ -97,15 +98,16 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                     context,
                     WorkerDependenciesEntryPoint::class.java
                 )
-                val userProfileDbHandler = entryPoint.userProfileDbHandler()
                 val settings = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                val userId = entryPoint.withUserProfileDbHandler { handler ->
+                    handler.userModel?.id
+                }
                 service.withRealm { realm ->
                     realm.executeTransaction { r ->
                         val log = r.createObject(RealmApkLog::class.java, "${UUID.randomUUID()}")
-                        val model = userProfileDbHandler.userModel
                         log.parentCode = settings.getString("parentCode", "")
                         log.createdOn = settings.getString("planetCode", "")
-                        model?.let { log.userId = it.id }
+                        userId?.let { log.userId = it }
                         log.time = "${Date().time}"
                         log.page = ""
                         log.version = getVersionName(context)
