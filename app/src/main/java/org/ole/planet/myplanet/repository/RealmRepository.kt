@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.util.Log
 import io.realm.Realm
 import io.realm.RealmChangeListener
 import io.realm.RealmObject
@@ -37,28 +36,15 @@ open class RealmRepository(private val databaseService: DatabaseService) {
         builder: RealmQuery<T>.() -> Unit = {},
     ): Flow<List<T>> =
         withRealmFlow { realm, scope ->
-            val flowStartTime = System.currentTimeMillis()
-            Log.d("MyPersonalTiming", "[${flowStartTime}] queryListFlow setup starting for ${clazz.simpleName}")
-
             val results = realm.where(clazz).apply(builder).findAllAsync()
             val listener =
                 RealmChangeListener<RealmResults<T>> { updatedResults ->
-                    val listenerTime = System.currentTimeMillis()
-                    Log.d("MyPersonalTiming", "[${listenerTime}] Realm change listener triggered for ${clazz.simpleName}, loaded=${updatedResults.isLoaded}, valid=${updatedResults.isValid}, count=${updatedResults.size}")
                     if (updatedResults.isLoaded && updatedResults.isValid) {
-                        val beforeCopy = System.currentTimeMillis()
-                        val copied = realm.copyFromRealm(updatedResults)
-                        val afterCopy = System.currentTimeMillis()
-                        Log.d("MyPersonalTiming", "[${afterCopy}] Copied ${copied.size} items (+${afterCopy - beforeCopy}ms)")
-                        scope.trySend(copied)
-                        val afterSend = System.currentTimeMillis()
-                        Log.d("MyPersonalTiming", "[${afterSend}] Sent to flow (+${afterSend - afterCopy}ms)")
+                        scope.trySend(realm.copyFromRealm(updatedResults))
                     }
                 }
             results.addChangeListener(listener)
             if (results.isLoaded && results.isValid) {
-                val initialTime = System.currentTimeMillis()
-                Log.d("MyPersonalTiming", "[${initialTime}] Initial data loaded, sending ${results.size} items (+${initialTime - flowStartTime}ms)")
                 scope.trySend(realm.copyFromRealm(results))
             }
             return@withRealmFlow { results.removeChangeListener(listener) }
@@ -74,15 +60,9 @@ open class RealmRepository(private val databaseService: DatabaseService) {
         }
 
     protected suspend fun <T : RealmObject> save(item: T) {
-        val startTime = System.currentTimeMillis()
-        Log.d("MyPersonalTiming", "[${startTime}] RealmRepository.save() starting async transaction")
-
         executeTransaction { realm ->
             realm.copyToRealmOrUpdate(item)
         }
-
-        val endTime = System.currentTimeMillis()
-        Log.d("MyPersonalTiming", "[${endTime}] RealmRepository.save() async transaction completed (+${endTime - startTime}ms)")
     }
 
     protected suspend fun <T : RealmObject, V : Any> update(

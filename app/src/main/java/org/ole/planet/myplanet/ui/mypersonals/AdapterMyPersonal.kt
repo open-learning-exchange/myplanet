@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
@@ -28,12 +27,7 @@ class AdapterMyPersonal(private val context: Context, private var list: MutableL
     }
 
     fun updateList(newList: List<RealmMyPersonal>) {
-        val startTime = System.currentTimeMillis()
-        Log.d("MyPersonalTiming", "[${startTime}] AdapterMyPersonal.updateList() called with ${newList.size} items (current: ${list.size})")
-
         val previousItems = list.toList()
-        val beforeDiff = System.currentTimeMillis()
-
         val diffResult = DiffUtils.calculateDiff(
             previousItems,
             newList,
@@ -45,15 +39,8 @@ class AdapterMyPersonal(private val context: Context, private var list: MutableL
                     old.path == new.path
             }
         )
-
-        val afterDiff = System.currentTimeMillis()
-        Log.d("MyPersonalTiming", "[${afterDiff}] DiffUtils calculation completed (+${afterDiff - beforeDiff}ms)")
-
         list = newList.toMutableList()
         diffResult.dispatchUpdatesTo(this)
-
-        val endTime = System.currentTimeMillis()
-        Log.d("MyPersonalTiming", "[${endTime}] Adapter updated, UI refresh dispatched (+${endTime - afterDiff}ms, total: ${endTime - startTime}ms)")
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderMyPersonal {

@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.mypersonals
 
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -65,18 +64,8 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
         binding.rvMypersonal.adapter = personalAdapter
         viewLifecycleOwner.lifecycleScope.launch {
             myPersonalRepository.getPersonalResources(model?.id).collectLatest { realmMyPersonals ->
-                val flowReceived = System.currentTimeMillis()
-                Log.d("MyPersonalTiming", "[${flowReceived}] MyPersonalsFragment received flow emission with ${realmMyPersonals.size} items")
-
                 personalAdapter?.updateList(realmMyPersonals)
-
-                val afterUpdate = System.currentTimeMillis()
-                Log.d("MyPersonalTiming", "[${afterUpdate}] updateList() called (+${afterUpdate - flowReceived}ms)")
-
                 showNodata()
-
-                val afterNoData = System.currentTimeMillis()
-                Log.d("MyPersonalTiming", "[${afterNoData}] showNodata() completed (+${afterNoData - afterUpdate}ms)")
             }
         }
         showNodata()

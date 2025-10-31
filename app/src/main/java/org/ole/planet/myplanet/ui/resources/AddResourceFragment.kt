@@ -13,7 +13,6 @@ import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
 import android.provider.Settings
-import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
@@ -288,38 +287,17 @@ class AddResourceFragment : BottomSheetDialogFragment() {
                 .setTitle(R.string.enter_resource_detail)
                 .setView(v)
                 .setPositiveButton("Save") { _: DialogInterface?, _: Int ->
-                    val clickTime = System.currentTimeMillis()
-                    Log.d("MyPersonalTiming", "[${clickTime}] ===== SAVE BUTTON CLICKED =====")
-
                     val title = etTitle.text.toString().trim { it <= ' ' }
                     if (title.isEmpty()) {
                         Utilities.toast(context, context.getString(R.string.title_is_required))
                         return@setPositiveButton
                     }
                     val desc = etDesc.text.toString().trim { it <= ' ' }
-
-                    val beforeLaunch = System.currentTimeMillis()
-                    Log.d("MyPersonalTiming", "[${beforeLaunch}] Launching coroutine to save resource (+${beforeLaunch - clickTime}ms)")
-
                     CoroutineScope(Dispatchers.IO).launch {
-                        val saveStartTime = System.currentTimeMillis()
-                        Log.d("MyPersonalTiming", "[${saveStartTime}] Coroutine started, calling savePersonalResource (+${saveStartTime - beforeLaunch}ms)")
-
                         repository.savePersonalResource(title, userId, userName, path, desc)
-
-                        val afterSave = System.currentTimeMillis()
-                        Log.d("MyPersonalTiming", "[${afterSave}] savePersonalResource returned (+${afterSave - saveStartTime}ms)")
-
                         withContext(Dispatchers.Main) {
-                            val onMainThread = System.currentTimeMillis()
-                            Log.d("MyPersonalTiming", "[${onMainThread}] Back on Main thread (+${onMainThread - afterSave}ms)")
-
                             Utilities.toast(context, context.getString(R.string.resource_saved_to_my_personal))
-
-                            val beforeDismiss = System.currentTimeMillis()
                             onDismiss?.invoke()
-                            val afterDismiss = System.currentTimeMillis()
-                            Log.d("MyPersonalTiming", "[${afterDismiss}] Dialog dismissed (+${afterDismiss - beforeDismiss}ms, TOTAL FROM CLICK: ${afterDismiss - clickTime}ms)")
                         }
                     }
                 }.setNegativeButton(R.string.dismiss, null).show()
