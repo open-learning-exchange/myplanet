@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import io.realm.Sort
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
@@ -9,6 +10,29 @@ import org.ole.planet.myplanet.model.RealmNotification
 class NotificationRepositoryImpl @Inject constructor(
         databaseService: DatabaseService,
     ) : RealmRepository(databaseService), NotificationRepository {
+
+    override suspend fun getNotifications(userId: String, filter: NotificationFilter): List<RealmNotification> {
+        return withRealmAsync { realm ->
+            val query = realm.where(RealmNotification::class.java)
+                .equalTo("userId", userId)
+
+            when (filter) {
+                NotificationFilter.READ -> query.equalTo("isRead", true)
+                NotificationFilter.UNREAD -> query.equalTo("isRead", false)
+                NotificationFilter.ALL -> {
+                    // no additional filter
+                }
+            }
+
+            val results = query
+                .sort(arrayOf("isRead", "createdAt"), arrayOf(Sort.ASCENDING, Sort.DESCENDING))
+                .findAll()
+
+            realm.copyFromRealm(results).filter {
+                it.message.isNotEmpty() && it.message != "INVALID"
+            }
+        }
+    }
 
     override suspend fun createNotificationIfMissing(
         type: String,

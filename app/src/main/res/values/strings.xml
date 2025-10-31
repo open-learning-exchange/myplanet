@@ -1364,6 +1364,7 @@
     <string name="is_available">%1$s is available. Tap to continue learning</string>
     <string name="failed_to_add_please_retry">Failed to add. Please retry</string>
     <string name="failed_to_mark_as_read">Failed to mark as read. Please retry</string>
+    <string name="failed_to_load_notifications">Failed to load notifications. Please try again.</string>
     <string name="failed_to_remove_resource">Failed to remove resource. Please retry</string>
     <string name="failed_to_adopt_survey">Failed to adopt survey. Please retry</string>
     <string name="failed_to_save_chat">Failed to save chat. Please retry.</string>
