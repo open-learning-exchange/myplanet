@@ -78,7 +78,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private var isUpdatingSelectAllState = false
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     lateinit var prefManager: SharedPrefManager
-    private val serverUrlMapper = ServerUrlMapper()
+
+    @Inject
+    lateinit var serverUrlMapper: ServerUrlMapper
 
     @Inject
     lateinit var syncManager: SyncManager
