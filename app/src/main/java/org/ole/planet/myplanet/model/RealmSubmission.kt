@@ -136,7 +136,8 @@ open class RealmSubmission : RealmObject() {
             }
         }
 
-        private fun serializeExamResult(mRealm: Realm, sub: RealmSubmission, context: Context): JsonObject {
+        @JvmStatic
+        fun serializeExamResult(mRealm: Realm, sub: RealmSubmission, context: Context): JsonObject {
             val `object` = JsonObject()
             val user = mRealm.where(RealmUserModel::class.java).equalTo("id", sub.userId).findFirst()
             var examId = sub.parentId
