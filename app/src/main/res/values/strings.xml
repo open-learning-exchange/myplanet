@@ -28,7 +28,6 @@
     <string name="err_msg_login">Username and/or password do not match</string>
     <string name="hint_serverURL">planet ip</string>
     <string name="hint_serverPin">server pin</string>
-    <string name="radio_protocol">Protocol:</string>
     <string name="radio_http">http</string>
     <string name="radio_https">https</string>
     <string name="title_activity_dashboard">Dashboard</string>
@@ -51,7 +50,6 @@
     <string name="txt_cancel">Cancel</string>
     <string name="download_all">Download All</string>
     <string name="hello_blank_fragment">Hello blank fragment</string>
-    <string name="add_to_mycourse">Add to my courses</string>
     <string name="join_selected">Join Selected</string>
     <string name="join">Join</string>
     <string name="add_to_mylib">Add To myLibrary</string>
@@ -97,21 +95,16 @@
     <string name="your_rating">Your Rating</string>
     <string name="loading_user_profile">Preparing your profile…</string>
     <string name="your_comment">Leave your comment</string>
-    <string name="show_top_nav">Show Top Navigation Bar in Dashboard</string>
     <string name="sync_now">sync now</string>
     <string name="logout">logout</string>
     <string name="settings">Settings</string>
-    <string name="change_password">Change Password</string>
     <string name="edit_profile">Edit Profile</string>
-    <string name="view_profile">View Profile</string>
-    <string name="alerts">Alerts</string>
     <string name="profile">Profile</string>
     <string name="user">User</string>
     <string name="remove_selected">Remove Selected</string>
     <string name="stop_download">Stop Download</string>
     <string name="downloading_file">Downloading file…</string>
     <string name="cancel">cancel</string>
-    <string name="add_to_mycourses">Add To My Courses</string>
     <string name="added_to">added to</string>
     <string name="removed_from">removed from</string>
     <string name="my_courses">My Courses</string>
@@ -121,8 +114,6 @@
     <string name="filter_by_category">Filter By Category</string>
     <string name="ok">OK</string>
     <string name="inactive_message">User not activated, please contact administrator or manager to activate your account.</string>
-    <string name="archive_mycourse">Archive myCourse</string>
-    <string name="menu_achievement">Achievements</string>
     <string name="edit_achievement">Edit Achievements</string>
     <string name="add_resources">Add Resources</string>
     <string name="description">Description *</string>
@@ -134,7 +125,6 @@
     <string name="clear_tags">Clear</string>
     <string name="add_an_achievement">Add an Achievement</string>
     <string name="add_a_reference">Add a Reference</string>
-    <string name="learner">Learner</string>
     <string name="show_filter">Show Filter</string>
     <string name="subjects">Subjects</string>
     <string name="mediums">Mediums</string>
@@ -210,15 +200,6 @@
     <string name="nepali">नेपाली</string>
     <string name="arabic">عربى</string>
     <string name="french">français</string>
-
-    <string-array name="language_keys">
-        <item>en</item>
-        <item>ne</item>
-        <item>fr</item>
-        <item>es</item>
-        <item>ar</item>
-        <item>so</item>
-    </string-array>
 
     <string-array name="info_type">
         <item>Languages</item>
