@@ -7,6 +7,7 @@ import dagger.hilt.android.EntryPointAccessors
 import java.util.Calendar
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.di.WorkerDependenciesEntryPoint
+import org.ole.planet.myplanet.di.withUserProfileDbHandler
 import org.ole.planet.myplanet.utilities.NotificationUtils.create
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
@@ -22,11 +23,11 @@ class TaskNotificationWorker(appContext: Context, workerParams: WorkerParameters
             applicationContext,
             WorkerDependenciesEntryPoint::class.java
         )
-        val userProfileDbHandler = entryPoint.userProfileDbHandler()
         val teamRepository = entryPoint.teamRepository()
 
-        val user = userProfileDbHandler.userModel
-        val userId = user?.id
+        val userId = entryPoint.withUserProfileDbHandler { handler ->
+            handler.userModel?.id
+        }
         if (!userId.isNullOrBlank()) {
             val tasks = runCatching {
                 teamRepository.getPendingTasksForUser(userId, current, tomorrow.timeInMillis)

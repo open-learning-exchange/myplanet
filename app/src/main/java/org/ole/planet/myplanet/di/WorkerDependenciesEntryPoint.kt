@@ -18,3 +18,14 @@ interface WorkerDependenciesEntryPoint {
     fun teamRepository(): TeamRepository
     fun submissionRepository(): SubmissionRepository
 }
+
+inline fun <R> WorkerDependenciesEntryPoint.withUserProfileDbHandler(
+    block: (UserProfileDbHandler) -> R
+): R {
+    val handler = userProfileDbHandler()
+    return try {
+        block(handler)
+    } finally {
+        handler.onDestroy()
+    }
+}
