@@ -28,7 +28,6 @@
     <string name="err_msg_login">El nombre de usuario y/o la contraseña no coinciden</string>
     <string name="hint_serverURL">planet ipag</string>
     <string name="hint_serverPin">pin del servidor</string>
-    <string name="radio_protocol">Protocolo:</string>
     <string name="radio_http">http</string>
     <string name="radio_https">https</string>
     <string name="title_activity_dashboard">Panel de control</string>
