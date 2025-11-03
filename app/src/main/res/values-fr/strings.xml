@@ -28,7 +28,6 @@
     <string name="err_msg_login">Le nom d\'utilisateur et/ou le mot de passe ne correspondent pas</string>
     <string name="hint_serverURL">planet adresse IP</string>
     <string name="hint_serverPin">code serveur</string>
-    <string name="radio_protocol">Protocole:</string>
     <string name="radio_http">http</string>
     <string name="radio_https">https</string>
     <string name="title_activity_dashboard">Tableau de bord</string>
@@ -51,7 +50,6 @@
     <string name="txt_cancel">Annuler</string>
     <string name="download_all">Tout télécharger</string>
     <string name="hello_blank_fragment">Bonjour fragment vide</string>
-    <string name="add_to_mycourse">Ajouter à mes cours</string>
     <string name="join_selected">Rejoindre la\nsélection</string>
     <string name="join">Rejoindre</string>
     <string name="add_to_mylib">Ajouter à ma bibliothèque</string>
@@ -97,21 +95,16 @@
     <string name="your_rating">Votre évaluation</string>
     <string name="loading_user_profile">Préparation de votre profil…</string>
     <string name="your_comment">Laissez votre commentaire</string>
-    <string name="show_top_nav">Afficher la barre de navigation supérieure dans le tableau de bord</string>
     <string name="sync_now">synchroniser maintenant</string>
     <string name="logout">déconnexion</string>
     <string name="settings">Paramètres</string>
-    <string name="change_password">Changer de mot de passe</string>
     <string name="edit_profile">Modifier le profil</string>
-    <string name="view_profile">Voir le profil</string>
-    <string name="alerts">Alertes</string>
     <string name="profile">Profil</string>
     <string name="user">Utilisateur</string>
     <string name="remove_selected">Supprimer\nla sélection</string>
     <string name="stop_download">Arrêter le téléchargement</string>
     <string name="downloading_file">Téléchargement du fichier en cours…</string>
     <string name="cancel">Annuler</string>
-    <string name="add_to_mycourses">Ajouter à mesCours</string>
     <string name="added_to">ajouté à</string>
     <string name="removed_from">supprimé de</string>
     <string name="my_courses">Mes cours</string>
@@ -121,8 +114,6 @@
     <string name="filter_by_category">Filtrer par catégorie</string>
     <string name="ok">OK</string>
     <string name="inactive_message">Utilisateur non activé, veuillez contacter l\'administrateur ou le responsable pour activer votre compte.</string>
-    <string name="archive_mycourse">Archiver monCours</string>
-    <string name="menu_achievement">Réalisations</string>
     <string name="edit_achievement">Modifier les réalisations</string>
     <string name="add_resources">Ajouter des ressources</string>
     <string name="description">Description *</string>
@@ -134,7 +125,6 @@
     <string name="clear_tags">Effacer</string>
     <string name="add_an_achievement">Ajouter une réalisation</string>
     <string name="add_a_reference">Ajouter une référence</string>
-    <string name="learner">Apprenant</string>
     <string name="show_filter">Afficher le filtre</string>
     <string name="subjects">Sujets</string>
     <string name="mediums">Moyens</string>
@@ -210,15 +200,6 @@
     <string name="nepali">नेपाली</string>
     <string name="arabic">عربى</string>
     <string name="french">français</string>
-
-    <string-array name="language_keys">
-        <item>en</item>
-        <item>ne</item>
-        <item>fr</item>
-        <item>es</item>
-        <item>ar</item>
-        <item>so</item>
-    </string-array>
 
     <string-array name="info_type">
         <item>Langues</item>
@@ -413,11 +394,6 @@
     <string-array name="contact_type">
         <item>Téléphone</item>
         <item>Email</item>
-    </string-array>
-
-    <string-array name="add_link_options">
-        <item>Équipes</item>
-        <item>Entreprises</item>
     </string-array>
 
     <string-array name="transaction_type">

@@ -24,7 +24,6 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.LibraryRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.CheckboxListView
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.LocaleHelper
@@ -96,30 +95,7 @@ class AddResourceActivity : AppCompatActivity() {
             libraryRepository.saveLibraryItem(resource)
             libraryRepository.markResourceAdded(userModel?.id, id)
             toast(this@AddResourceActivity, getString(R.string.added_to_my_library))
-            navigateToResourceDetail(id)
-        }
-    }
-
-    private fun navigateToResourceDetail(libraryId: String?) {
-        val existingFragment = supportFragmentManager.findFragmentById(R.id.fragment_container) as? ResourceDetailFragment
-        if (existingFragment == null) {
-            val fragment = ResourceDetailFragment().apply {
-                arguments = Bundle().apply {
-                    putString("libraryId", libraryId)
-                }
-            }
-
-            NavigationHelper.replaceFragment(
-                supportFragmentManager,
-                R.id.fragment_container,
-                fragment,
-                addToBackStack = true,
-                allowStateLoss = true
-            )
-        } else {
-            existingFragment.arguments = Bundle().apply {
-                putString("libraryId", libraryId)
-            }
+            finish()
         }
     }
 

@@ -8,8 +8,6 @@
     <dimen name="text_size_mid">16sp</dimen>
     <dimen name="text_size_small">14sp</dimen>
     <dimen name="icon_size_mid">36dp</dimen>
-    <dimen name="profile_card">150dp</dimen>
-    <dimen name="profile_card_bell">100dp</dimen>
     <dimen name="padding_small">4dp</dimen>
     <dimen name="image_size_home_card">40dp</dimen>
     <dimen name="dashboard_card_title">90dp</dimen>
@@ -22,16 +20,9 @@
     <dimen name="_4dp">4dp</dimen>
     <dimen name="_2dp">2dp</dimen>
     <dimen name="_1dp">1dp</dimen>
-    <dimen name="calendar_width">320dp</dimen>
     <dimen name="_200dp">200dp</dimen>
-    <dimen name="app_bar_height">180dp</dimen>
-    <dimen name="fab_margin">16dp</dimen>
-    <dimen name="text_margin">16dp</dimen>
-    <dimen name="layout_height">30dp</dimen>
-    <dimen name="_16dp">16dp</dimen>
     <dimen name="_30dp">30dp</dimen>
     <dimen name="_50dp">50dp</dimen>
-    <dimen name="_1000dp">1000dp</dimen>
     <dimen name="dialog_min_width_major">65%</dimen>
     <dimen name="dialog_min_width_minor">95%</dimen>
     <dimen name="survey_radio_text_size">12sp</dimen>
