@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.dashboard.notification
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -16,10 +15,8 @@ import org.ole.planet.myplanet.repository.NotificationRepository
 @HiltViewModel
 class NotificationViewModel @Inject constructor(
     private val notificationRepository: NotificationRepository,
-    savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
-
-    private val userId: String? = savedStateHandle.get<String>("userId")?.takeIf { it.isNotBlank() }
+    private val _userId = MutableStateFlow<String?>(null)
 
     private val _filter = MutableStateFlow(NotificationFilter.ALL)
     val filter: StateFlow<NotificationFilter> = _filter.asStateFlow()
@@ -30,7 +27,17 @@ class NotificationViewModel @Inject constructor(
     private val _unreadCount = MutableStateFlow(0)
     val unreadCount: StateFlow<Int> = _unreadCount.asStateFlow()
 
-    init {
+    fun initialize(userId: String?) {
+        val sanitizedUserId = userId?.takeIf { it.isNotBlank() }
+        if (_userId.value == sanitizedUserId) {
+            return
+        }
+        _userId.value = sanitizedUserId
+        if (sanitizedUserId == null) {
+            _notifications.value = emptyList()
+            _unreadCount.value = 0
+            return
+        }
         refresh()
     }
 
@@ -41,16 +48,17 @@ class NotificationViewModel @Inject constructor(
     }
 
     fun refresh() {
+        if (_userId.value == null) {
+            _notifications.value = emptyList()
+            _unreadCount.value = 0
+            return
+        }
         refreshNotifications()
         refreshUnreadCount()
     }
 
     private fun refreshNotifications() {
-        val targetUserId = userId
-        if (targetUserId == null) {
-            _notifications.value = emptyList()
-            return
-        }
+        val targetUserId = _userId.value ?: return
         viewModelScope.launch {
             runCatching {
                 notificationRepository.getNotifications(targetUserId, _filter.value)
@@ -63,7 +71,7 @@ class NotificationViewModel @Inject constructor(
     }
 
     private fun refreshUnreadCount() {
-        val targetUserId = userId
+        val targetUserId = _userId.value
         if (targetUserId == null) {
             _unreadCount.value = 0
             return
@@ -104,7 +112,7 @@ class NotificationViewModel @Inject constructor(
         onSuccess: (Set<String>) -> Unit = {},
         onError: (Throwable) -> Unit = {},
     ) {
-        val targetUserId = userId
+        val targetUserId = _userId.value
         if (targetUserId == null) {
             onSuccess(emptySet())
             return
