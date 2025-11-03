@@ -10,9 +10,7 @@ import java.util.Date
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.datamanager.ApiClient.client
@@ -99,7 +97,7 @@ class TeamRepositoryImpl @Inject constructor(
                 "date",
                 if (sortAscending) Sort.ASCENDING else Sort.DESCENDING,
             )
-        }.flowOn(Dispatchers.IO)
+        }
     }
 
     override suspend fun createTransaction(
