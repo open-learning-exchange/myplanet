@@ -8,14 +8,12 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.os.SystemClock
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.graphics.toColorInt
 import androidx.fragment.app.FragmentManager
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
-import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
@@ -42,7 +40,6 @@ class AdapterTeamList(
     private val teamRepository: TeamRepository,
     private val currentUser: RealmUserModel?,
 ) : RecyclerView.Adapter<AdapterTeamList.ViewHolderTeam>() {
-    private val TAG = "TeamJoinTiming"
     private var type: String? = ""
     private var teamListener: OnClickTeamItem? = null
     private var updateCompleteListener: OnUpdateCompleteListener? = null
@@ -52,10 +49,6 @@ class AdapterTeamList(
     private val teamStatusCache = mutableMapOf<String, TeamStatus>()
     private var visitCounts: Map<String, Long> = emptyMap()
     private var updateListJob: Job? = null
-    // Timing helpers
-    private val joinTimingStart = mutableMapOf<String, Long>() // key = "teamId_userId" -> click time
-    private val inFlightJoinKeys = mutableSetOf<String>()
-    private val updateStartTime = mutableMapOf<String, Long>()
 
     data class TeamStatus(
         val isMember: Boolean,
@@ -137,13 +130,6 @@ class AdapterTeamList(
             }
 
             joinLeave.setOnClickListener {
-                val teamIdClick = team._id.orEmpty()
-                val userIdClick = user?.id
-                val key = "${teamIdClick}_${userIdClick}"
-                val now = SystemClock.elapsedRealtime()
-                joinTimingStart[key] = now
-                inFlightJoinKeys += key
-                Log.d(TAG, "T0 click joinLeave team=$teamIdClick user=$userIdClick at=$now")
                 handleJoinLeaveClick(team, user)
             }
         }
@@ -192,19 +178,6 @@ class AdapterTeamList(
                     setImageResource(R.drawable.baseline_hourglass_top_24)
                     setColorFilter("#9fa0a4".toColorInt(), PorterDuff.Mode.SRC_IN)
                 }
-                val teamIdHour = team._id.orEmpty()
-                val userIdHour = user?.id
-                val key = "${teamIdHour}_${userIdHour}"
-                val start = joinTimingStart[key]
-                if (start != null) {
-                    val now = SystemClock.elapsedRealtime()
-                    val updateStart = updateStartTime[key]
-                    Log.d(TAG, "T4 UI updated to hourglass team=$teamIdHour user=$userIdHour total=${now - start}ms sinceUpdate=${if (updateStart != null) now - updateStart else -1}ms")
-                    // Clear timing for this flow to avoid duplicate logs
-                    joinTimingStart.remove(key)
-                    updateStartTime.remove(key)
-                    inFlightJoinKeys.remove(key)
-                }
             }
 
             !isMyTeam -> {
@@ -233,17 +206,14 @@ class AdapterTeamList(
 
         if (teamStatus.isMember) {
             if (teamStatus.isLeader) {
-                Log.d(TAG, "Click resolved: editing team (leader). team=$teamId user=$userId elapsed=${(SystemClock.elapsedRealtime() - (joinTimingStart[cacheKey] ?: SystemClock.elapsedRealtime()))}ms")
                 teamListener?.onEditTeam(team)
             } else {
                 AlertDialog.Builder(context, R.style.CustomAlertDialog).setMessage(R.string.confirm_exit)
                     .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                        Log.d(TAG, "Leaving team confirmed. team=$teamId user=$userId elapsed=${(SystemClock.elapsedRealtime() - (joinTimingStart[cacheKey] ?: SystemClock.elapsedRealtime()))}ms")
                         leaveTeam(team, userId)
                     }.setNegativeButton(R.string.no, null).show()
             }
         } else {
-            Log.d(TAG, "Requesting to join. team=$teamId user=$userId elapsed=${(SystemClock.elapsedRealtime() - (joinTimingStart[cacheKey] ?: SystemClock.elapsedRealtime()))}ms")
             requestToJoin(team, user)
         }
         syncTeamActivities()
@@ -255,17 +225,9 @@ class AdapterTeamList(
 
         updateListJob?.cancel()
         updateListJob = scope.launch {
-            val tUpdateEnter = SystemClock.elapsedRealtime()
             // Capture old status cache at the start, before any updates
             val oldStatusCache = teamStatusCache.toMap()
 
-            // Log entry for all in-flight keys
-            inFlightJoinKeys.forEach { key ->
-                val start = joinTimingStart[key]
-                if (start != null) {
-                    Log.d(TAG, "T3.1 updateList coroutine start key=$key sinceClick=${tUpdateEnter - start}ms")
-                }
-            }
             val validTeams = list.filter { it.status?.isNotEmpty() == true }
             if (validTeams.isEmpty()) {
                 withContext(Dispatchers.Main) {
@@ -310,7 +272,6 @@ class AdapterTeamList(
             }
 
             if (idsToFetch.isNotEmpty()) {
-                val tStatusStart = SystemClock.elapsedRealtime()
                 idsToFetch.map { teamId ->
                     async(Dispatchers.IO) {
                         val status = TeamStatus(
@@ -324,10 +285,6 @@ class AdapterTeamList(
                     val cacheKey = "${teamId}_${userId}"
                     teamStatusCache[cacheKey] = status
                     statusResults[teamId] = status
-                    if (inFlightJoinKeys.contains(cacheKey)) {
-                        val start = joinTimingStart[cacheKey] ?: tStatusStart
-                        Log.d(TAG, "T3.2 status fetched team=$teamId user=$userId member=${status.isMember} leader=${status.isLeader} pending=${status.hasPendingRequest} sinceClick=${SystemClock.elapsedRealtime() - start}ms sinceUpdate=${SystemClock.elapsedRealtime() - (updateStartTime[cacheKey] ?: tStatusStart)}ms")
-                    }
                 }
             }
 
@@ -361,21 +318,7 @@ class AdapterTeamList(
 
                 this@AdapterTeamList.visitCounts = newVisitCounts
                 filteredList = newList
-                val tUIDispatchStart = SystemClock.elapsedRealtime()
-                inFlightJoinKeys.forEach { key ->
-                    val start = joinTimingStart[key]
-                    if (start != null) {
-                        Log.d(TAG, "T3.3 dispatching updates key=$key sinceClick=${tUIDispatchStart - start}ms")
-                    }
-                }
                 diffResult.dispatchUpdatesTo(this@AdapterTeamList)
-                val tUIDispatchEnd = SystemClock.elapsedRealtime()
-                inFlightJoinKeys.forEach { key ->
-                    val start = joinTimingStart[key]
-                    if (start != null) {
-                        Log.d(TAG, "T3.4 updates dispatched key=$key uiDispatch=${tUIDispatchEnd - tUIDispatchStart}ms total=${tUIDispatchEnd - start}ms")
-                    }
-                }
                 updateCompleteListener?.onUpdateComplete(filteredList.size)
             }
         }
@@ -431,9 +374,6 @@ class AdapterTeamList(
         val userPlanetCode = user?.planetCode
         val cacheKey = "${teamId}_${userId}"
 
-        val clickStart = joinTimingStart[cacheKey] ?: SystemClock.elapsedRealtime().also { joinTimingStart[cacheKey] = it }
-        Log.d(TAG, "T1 requestToJoin start team=$teamId user=$userId dt=${SystemClock.elapsedRealtime() - clickStart}ms")
-
         // Find the position of this team in the current filtered list
         val position = filteredList.indexOfFirst { it._id == teamId }
 
@@ -447,18 +387,11 @@ class AdapterTeamList(
         // Immediately notify this specific item to trigger onBindViewHolder
         if (position >= 0) {
             notifyItemChanged(position)
-            Log.d(TAG, "T1.5 optimistic UI update position=$position team=$teamId user=$userId dt=${SystemClock.elapsedRealtime() - clickStart}ms")
         }
 
         scope.launch(Dispatchers.IO) {
-            val tRepoStart = SystemClock.elapsedRealtime()
             teamRepository.requestToJoin(teamId, userId, userPlanetCode, teamType)
-            val tRepoEnd = SystemClock.elapsedRealtime()
-            Log.d(TAG, "T2 requestToJoin finished team=$teamId user=$userId repo=${tRepoEnd - tRepoStart}ms total=${tRepoEnd - clickStart}ms")
             withContext(Dispatchers.Main) {
-                val tUpdateStart = SystemClock.elapsedRealtime()
-                updateStartTime[cacheKey] = tUpdateStart
-                Log.d(TAG, "T3 updateList() invoked team=$teamId user=$userId sinceClick=${tUpdateStart - clickStart}ms")
                 // Clear cache to force fresh fetch from DB to confirm the request was saved
                 teamStatusCache.remove(cacheKey)
                 updateList()
