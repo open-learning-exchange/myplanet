@@ -28,7 +28,6 @@
     <string name="err_msg_login">प्रयोगकर्तानाम र/वा पासवर्ड मेल खान्छैन</string>
     <string name="hint_serverURL">planet आईपि</string>
     <string name="hint_serverPin">सर्भर पिन</string>
-    <string name="radio_protocol">प्रोटोकल:</string>
     <string name="radio_http">http</string>
     <string name="radio_https">https</string>
     <string name="title_activity_dashboard">ड्यासबोर्ड</string>
@@ -51,7 +50,6 @@
     <string name="txt_cancel">रद्द गर्नुहोस्</string>
     <string name="download_all">सबै डाउनलोड गर्नुहोस्</string>
     <string name="hello_blank_fragment">नमस्ते रिक्त फ्रेमेन्ट</string>
-    <string name="add_to_mycourse">मेरो पाठ्यक्रममा थप्नुहोस्</string>
     <string name="join_selected">चयनितमा\nसामेल हुनुहोस्</string>
     <string name="join">सामेल हुनुहोस्</string>
     <string name="add_to_mylib">मेरो पुस्तकालयमा थप्नुहोस्</string>
@@ -97,21 +95,16 @@
     <string name="your_rating">तपाईंको मत *</string>
     <string name="loading_user_profile">तपाईंको प्रोफाइल तयार गर्दै…</string>
     <string name="your_comment">तपाईंको टिप्पणी छोड्नुहोस्</string>
-    <string name="show_top_nav">ड्यासबोर्डमा शीर्ष नेभिगेशन पट्ट देखाउनुहोस्</string>
     <string name="sync_now">अहिले सिङ्क गर्नुहोस्</string>
     <string name="logout">लगआउट</string>
     <string name="settings">सेटिङ्स</string>
-    <string name="change_password">पासवर्ड परिवर्तन गर्नुहोस्</string>
     <string name="edit_profile">प्रोफाइल सम्पादन गर्नुहोस्</string>
-    <string name="view_profile">प्रोफाइल हेर्नुहोस्</string>
-    <string name="alerts">चेतावनीहरू</string>
     <string name="profile">प्रोफाइल</string>
     <string name="user">प्रयोगकर्ता</string>
     <string name="remove_selected">चयनित\nहटाउनुहोस्</string>
     <string name="stop_download">डाउनलोड रोक्नुहोस्</string>
     <string name="downloading_file">फाइल डाउनलोड गर्दै…</string>
     <string name="cancel">रद्द गर्नुहोस्</string>
-    <string name="add_to_mycourses">मेरो पाठ्यक्रममा थप्नुहोस्</string>
     <string name="added_to">थपिएको</string>
     <string name="removed_from">हटाइएको</string>
     <string name="my_courses">मेरो पाठ्यक्रमहरू</string>
@@ -121,8 +114,6 @@
     <string name="filter_by_category">श्रेणीद्वारा छान्नुहोस्</string>
     <string name="ok">ठिक छ</string>
     <string name="inactive_message">प्रयोगकर्ता सक्रिय गरिएको छैन, कृपया प्रशासक वा प्रबन्धकलाई सम्पर्क गर्नुहोस् तपाईंको खाता सक्रिय गर्नको लागि।</string>
-    <string name="archive_mycourse">मेरो पाठ्यक्रम आर्काइभ गर्नुहोस्</string>
-    <string name="menu_achievement">साधारणता</string>
     <string name="edit_achievement">उपलब्धिहरू सम्पादन गर्नुहोस्</string>
     <string name="add_resources">स्रोतहरू थप्नुहोस्</string>
     <string name="description">वर्णन *</string>
@@ -134,7 +125,6 @@
     <string name="clear_tags">स्पष्ट गर्नुहोस्</string>
     <string name="add_an_achievement">साधारणता थप्नुहोस्</string>
     <string name="add_a_reference">सन्दर्भ थप्नुहोस्</string>
-    <string name="learner">शिक्षार्थी</string>
     <string name="show_filter">फिल्टर देखाउनुहोस्</string>
     <string name="subjects">विषयहरू</string>
     <string name="mediums">माध्यमहरू</string>
@@ -210,15 +200,6 @@
     <string name="nepali">नेपाली</string>
     <string name="arabic">عربى</string>
     <string name="french">français</string>
-
-    <string-array name="language_keys">
-        <item>en</item>
-        <item>ne</item>
-        <item>fr</item>
-        <item>es</item>
-        <item>ar</item>
-        <item>so</item>
-    </string-array>
 
     <string-array name="info_type">
         <item>भाषाहरू</item>
@@ -413,11 +394,6 @@
     <string-array name="contact_type">
         <item>फोन</item>
         <item>इमेल</item>
-    </string-array>
-
-    <string-array name="add_link_options">
-        <item>टिमहरू</item>
-        <item>उद्यमहरू</item>
     </string-array>
 
     <string-array name="transaction_type">
