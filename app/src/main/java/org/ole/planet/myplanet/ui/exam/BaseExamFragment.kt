@@ -139,6 +139,14 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
             showUserInfoDialog()
         } else {
             Log.d("BaseExamFragment", "All questions completed, showing completion dialog")
+            Log.d("BaseExamFragment", "*** FINAL SUBMISSION STATUS CHECK ***")
+            Log.d("BaseExamFragment", "Submission ID: ${sub?.id}")
+            Log.d("BaseExamFragment", "Submission status: ${sub?.status}")
+            Log.d("BaseExamFragment", "Submission parent ID: ${sub?.parentId}")
+            Log.d("BaseExamFragment", "Submission user ID: ${sub?.userId}")
+            Log.d("BaseExamFragment", "Type: $type")
+            Log.d("BaseExamFragment", "*** END STATUS CHECK ***")
+
             saveCourseProgress()
             val titleView = TextView(requireContext()).apply {
                 text = "${getString(R.string.thank_you_for_taking_this)}$type! ${getString(R.string.we_wish_you_all_the_best)}"
@@ -153,8 +161,10 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
             AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
                 .setCustomTitle(titleView)
                 .setPositiveButton(getString(R.string.finish)) { _: DialogInterface?, _: Int ->
-                    Log.d("BaseExamFragment", "Finish button clicked in dialog")
+                    Log.d("BaseExamFragment", "*** Finish button clicked in dialog ***")
+                    Log.d("BaseExamFragment", "About to pop back stack, submission status: ${sub?.status}")
                     NavigationHelper.popBackStack(parentFragmentManager)
+                    Log.d("BaseExamFragment", "Popped back stack - should now show survey list")
                 }.setCancelable(false).show()
             Log.d("BaseExamFragment", "AlertDialog.show() called")
         }

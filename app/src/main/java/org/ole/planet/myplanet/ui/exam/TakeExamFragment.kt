@@ -89,10 +89,13 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             } else {
                 id
             }).sort("startTime", Sort.DESCENDING)
-        if (type == "exam") {
-            q = q.equalTo("status", "pending")
-        }
+
+        // For both exams and surveys, only use "pending" submissions
+        // This allows users to retake surveys by creating new submissions each time
+        q = q.equalTo("status", "pending")
+
         sub = q.findFirst() as RealmSubmission?
+        Log.d("TakeExamFragment", "Queried for pending submission: found=${sub != null}, status=${sub?.status}")
         val courseId = exam?.courseId
         isCertified = isCourseCertified(mRealm, courseId)
 
@@ -198,7 +201,9 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             }
         }
 
-        updateAnsDb()
+        // Don't save to DB here - just save to cache
+        // The DB save will happen in saveAllCachedAnswers() when finish is clicked
+        // This prevents race conditions with async transactions
     }
 
     private fun goToPreviousQuestion() {
@@ -532,15 +537,22 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                         Log.d("TakeExamFragment", "Submission ready after ${waitDuration}ms! sub=$sub, answerCache size=${answerCache.size}")
 
                         if (sub != null) {
-                            Log.d("TakeExamFragment", "Saving all cached answers")
+                            Log.d("TakeExamFragment", "About to save all cached answers. Sub ID: ${sub?.id}, Status: ${sub?.status}")
                             saveAllCachedAnswers()
-                            Log.d("TakeExamFragment", "All cached answers saved")
+                            Log.d("TakeExamFragment", "All cached answers saved. Sub status now: ${sub?.status}")
                         } else {
                             Log.w("TakeExamFragment", "sub is null, skipping saveAllCachedAnswers")
                         }
 
-                        val cont = updateAnsDb()
-                        Log.d("TakeExamFragment", "updateAnsDb returned: $cont")
+                        // Don't call updateAnsDb() again - saveAllCachedAnswers already saved everything
+                        // For surveys, always continue (we don't check answer correctness)
+                        val cont = if (type == "exam") {
+                            // For exams, still need to check the answer
+                            updateAnsDb()
+                        } else {
+                            true
+                        }
+                        Log.d("TakeExamFragment", "Continuing with cont=$cont, sub status=${sub?.status}")
 
                         if (type == "exam" && !cont) {
                             Log.d("TakeExamFragment", "Exam answer incorrect, showing snackbar")
@@ -587,18 +599,39 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
     private suspend fun saveAllCachedAnswers() {
         // Save all cached answers to the database SYNCHRONOUSLY on background thread
-        Log.d("TakeExamFragment", "saveAllCachedAnswers: ${answerCache.size} answers in cache, sub status BEFORE: ${sub?.status}")
+        Log.d("TakeExamFragment", "=== saveAllCachedAnswers START ===")
+        Log.d("TakeExamFragment", "Answers in cache: ${answerCache.size}")
+        Log.d("TakeExamFragment", "Submission ID: ${sub?.id}")
+        Log.d("TakeExamFragment", "Submission status BEFORE transaction: ${sub?.status}")
+        Log.d("TakeExamFragment", "Type: $type")
+        Log.d("TakeExamFragment", "Current index: $currentIndex, Total questions: ${questions?.size}")
 
         if (sub == null) {
-            Log.w("TakeExamFragment", "Cannot save answers - sub is null!")
+            Log.e("TakeExamFragment", "ERROR: Cannot save answers - sub is null!")
             return
         }
 
+        val submissionId = sub?.id
+        val examId = exam?.id
+        val totalQuestions = questions?.size ?: 0
+        Log.d("TakeExamFragment", "About to enter background thread transaction for submission: $submissionId")
+
         // Run transaction on background thread to avoid UI thread blocking
         withContext(Dispatchers.IO) {
-            mRealm.executeTransaction { realm ->
+            Log.d("TakeExamFragment", "Now on IO thread, getting Realm instance for this thread...")
+            // Get a new Realm instance for the background thread (Realm instances are thread-confined)
+            val backgroundRealm = Realm.getDefaultInstance()
+            try {
+                Log.d("TakeExamFragment", "Got background Realm instance, starting transaction...")
+                backgroundRealm.executeTransaction { realm ->
+                Log.d("TakeExamFragment", "Inside transaction block")
+
+                // Query questions on background thread since RealmResults are thread-confined
+                val bgQuestions = realm.where(RealmExamQuestion::class.java).equalTo("examId", examId).findAll()
+                Log.d("TakeExamFragment", "Queried ${bgQuestions.size} questions on background thread")
+
             answerCache.forEach { (questionId, answerData) ->
-                val question = questions?.find { it.id == questionId } ?: return@forEach
+                val question = bgQuestions.find { it.id == questionId } ?: return@forEach
 
                 val currentAns: String
                 val currentListAns: HashMap<String, String>?
@@ -623,14 +656,17 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                 }
 
                 // Find the index of this question
-                val questionIndex = questions?.indexOfFirst { it.id == questionId } ?: -1
+                val questionIndex = bgQuestions.indexOfFirst { it.id == questionId }
                 if (questionIndex >= 0) {
-                    val isFinal = questionIndex == (questions?.size ?: 0) - 1
-                    Log.d("TakeExamFragment", "Saving answer for question index=$questionIndex (total=${questions?.size}), isFinal=$isFinal")
+                    val isFinal = questionIndex == bgQuestions.size - 1
+                    Log.d("TakeExamFragment", "Processing question index=$questionIndex (total=${bgQuestions.size}), isFinal=$isFinal, type=$type")
 
                     // Save answer inline (synchronous, inside transaction)
-                    val realmSubmission = realm.where(RealmSubmission::class.java).equalTo("id", sub?.id).findFirst()
+                    val realmSubmission = realm.where(RealmSubmission::class.java).equalTo("id", submissionId).findFirst()
                     val realmQuestion = realm.where(RealmExamQuestion::class.java).equalTo("id", question.id).findFirst()
+
+                    Log.d("TakeExamFragment", "Found realmSubmission: ${realmSubmission != null}, status=${realmSubmission?.status}")
+                    Log.d("TakeExamFragment", "Found realmQuestion: ${realmQuestion != null}")
 
                     if (realmSubmission != null && realmQuestion != null) {
                         // Create or retrieve answer
@@ -668,16 +704,53 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
                         // Update submission status
                         realmSubmission.lastUpdateTime = Date().time
+                        Log.d("TakeExamFragment", "Updated lastUpdateTime to: ${realmSubmission.lastUpdateTime}")
+
                         if (isFinal && type == "survey") {
+                            val statusBefore = realmSubmission.status
                             realmSubmission.status = "complete"
-                            Log.d("TakeExamFragment", "Set submission status to COMPLETE (final question of survey)")
+                            Log.d("TakeExamFragment", "*** STATUS CHANGE: '$statusBefore' -> 'complete' (final question of survey) ***")
+                            Log.d("TakeExamFragment", "*** Submission ID: ${realmSubmission.id} ***")
+                            Log.d("TakeExamFragment", "*** Parent ID: ${realmSubmission.parentId} ***")
+                            Log.d("TakeExamFragment", "*** User ID: ${realmSubmission.userId} ***")
+                        } else {
+                            Log.d("TakeExamFragment", "Status NOT changed (isFinal=$isFinal, type=$type, current status=${realmSubmission.status})")
                         }
+                    } else {
+                        Log.w("TakeExamFragment", "Skipping answer save: realmSubmission=${realmSubmission != null}, realmQuestion=${realmQuestion != null}")
                     }
+                } else {
+                    Log.w("TakeExamFragment", "Skipping question: questionIndex=$questionIndex")
                 }
+            }
+            Log.d("TakeExamFragment", "Finished processing all ${answerCache.size} answers")
+                }
+                Log.d("TakeExamFragment", "Transaction committed successfully")
+            } finally {
+                // Always close the background Realm instance
+                backgroundRealm.close()
+                Log.d("TakeExamFragment", "Closed background Realm instance")
             }
         }
 
-        Log.d("TakeExamFragment", "saveAllCachedAnswers completed. Final submission status: ${sub?.status}")
+        // Re-query submission after transaction to get latest status
+        withContext(Dispatchers.Main) {
+            // CRITICAL: Refresh the main Realm instance to see changes from the background thread
+            // Realm instances are separate and don't automatically sync
+            mRealm.refresh()
+            Log.d("TakeExamFragment", "Refreshed main Realm instance to see background transaction changes")
+
+            val updatedSubmission = mRealm.where(RealmSubmission::class.java).equalTo("id", submissionId).findFirst()
+            Log.d("TakeExamFragment", "=== saveAllCachedAnswers COMPLETE ===")
+            Log.d("TakeExamFragment", "Updated submission status (from re-query): ${updatedSubmission?.status}")
+            Log.d("TakeExamFragment", "Original sub object status: ${sub?.status}")
+            Log.d("TakeExamFragment", "Are they the same object? ${updatedSubmission == sub}")
+
+            // IMPORTANT: Update the sub reference to the refreshed object
+            // This ensures the main thread sees the status change made on the background thread
+            sub = updatedSubmission
+            Log.d("TakeExamFragment", "Updated sub reference to refreshed object, new status: ${sub?.status}")
+        }
     }
 
     private fun updateAnsDb(): Boolean {
@@ -785,20 +858,31 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         val startTime = System.currentTimeMillis()
         Log.d("TakeExamFragment", "createSubmissionAsync started [T+0ms]")
 
+        // Capture data from main thread before switching
+        val userId = user?.id
+        val examIdValue = exam?.id
+        val examCourseId = exam?.courseId
+        val idValue = id
+        val typeValue = type
+        val isTeamValue = isTeam
+        val teamIdValue = teamId
+
         withContext(Dispatchers.IO) {
+            // Get background Realm instance
+            val backgroundRealm = Realm.getDefaultInstance()
             try {
                 Log.d("TakeExamFragment", "Running transaction on background thread [T+${System.currentTimeMillis() - startTime}ms]")
 
                 // Use synchronous transaction on background thread (more reliable than async)
-                mRealm.executeTransaction { realm ->
+                backgroundRealm.executeTransaction { realm ->
                     val inTxnTime = System.currentTimeMillis()
                     Log.d("TakeExamFragment", "Inside transaction [T+${inTxnTime - startTime}ms]")
 
                     // Create new submission
                     val submission = createSubmission(null, realm)
-                    submission.userId = user?.id
+                    submission.userId = userId
                     submission.status = "pending"
-                    submission.type = type
+                    submission.type = typeValue
                     submission.startTime = Date().time
                     submission.lastUpdateTime = Date().time
 
@@ -808,24 +892,24 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
                     // Set parent ID
                     submission.parentId = when {
-                        !TextUtils.isEmpty(exam?.id) -> if (!TextUtils.isEmpty(exam?.courseId)) {
-                            "${exam?.id}@${exam?.courseId}"
+                        !TextUtils.isEmpty(examIdValue) -> if (!TextUtils.isEmpty(examCourseId)) {
+                            "$examIdValue@$examCourseId"
                         } else {
-                            exam?.id
+                            examIdValue
                         }
-                        !TextUtils.isEmpty(id) -> if (!TextUtils.isEmpty(exam?.courseId)) {
-                            "$id@${exam?.courseId}"
+                        !TextUtils.isEmpty(idValue) -> if (!TextUtils.isEmpty(examCourseId)) {
+                            "$idValue@$examCourseId"
                         } else {
-                            id
+                            idValue
                         }
                         else -> submission.parentId
                     }
 
                     // Add team information if needed
-                    if (isTeam && teamId != null) {
-                        submission.team = teamId
+                    if (isTeamValue && teamIdValue != null) {
+                        submission.team = teamIdValue
                         val membershipDoc = realm.createObject(RealmMembershipDoc::class.java)
-                        membershipDoc.teamId = teamId
+                        membershipDoc.teamId = teamIdValue
                         submission.membershipDoc = membershipDoc
 
                         val userModel = userProfileDbHandler.userModel
@@ -834,7 +918,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                             userJson.put("age", userModel?.dob ?: "")
                             userJson.put("gender", userModel?.gender ?: "")
                             val membershipJson = JSONObject()
-                            membershipJson.put("teamId", teamId)
+                            membershipJson.put("teamId", teamIdValue)
                             userJson.put("membershipDoc", membershipJson)
                             submission.user = userJson.toString()
                         } catch (e: Exception) {
@@ -846,28 +930,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                     Log.d("TakeExamFragment", "Transaction completed in ${txnDuration}ms")
                 }
 
-                // Switch back to main thread to update UI
-                withContext(Dispatchers.Main) {
-                    val successTime = System.currentTimeMillis()
-                    Log.d("TakeExamFragment", "Submission creation SUCCESS [T+${successTime - startTime}ms]")
-
-                    // Re-query the submission from the same Realm instance
-                    val q: RealmQuery<*> = mRealm.where(RealmSubmission::class.java)
-                        .equalTo("userId", user?.id)
-                        .equalTo("parentId", if (!TextUtils.isEmpty(exam?.courseId)) {
-                            id + "@" + exam?.courseId
-                        } else {
-                            id
-                        }).sort("startTime", Sort.DESCENDING)
-                    sub = q.findFirst() as RealmSubmission?
-                    val queryTime = System.currentTimeMillis()
-                    Log.d("TakeExamFragment", "Submission queried in ${queryTime - successTime}ms: sub=$sub, id=${sub?.id}")
-
-                    // Mark submission as ready
-                    submissionReady.complete(Unit)
-                    val completeTime = System.currentTimeMillis()
-                    Log.d("TakeExamFragment", "submissionReady completed [Total: ${completeTime - startTime}ms]")
-                }
+                Log.d("TakeExamFragment", "Transaction committed successfully")
             } catch (e: Exception) {
                 val errorTime = System.currentTimeMillis()
                 Log.e("TakeExamFragment", "Submission creation FAILED after ${errorTime - startTime}ms", e)
@@ -886,28 +949,66 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                     Log.d("TakeExamFragment", "submissionReady completed (on error) [Total: ${System.currentTimeMillis() - startTime}ms]")
                 }
                 throw e
+            } finally {
+                // Always close the background Realm instance
+                backgroundRealm.close()
+                Log.d("TakeExamFragment", "Closed background Realm instance")
             }
+        }
+
+        // Switch back to main thread to update UI
+        withContext(Dispatchers.Main) {
+            val successTime = System.currentTimeMillis()
+            Log.d("TakeExamFragment", "Submission creation SUCCESS [T+${successTime - startTime}ms]")
+
+            // Re-query the submission from the same Realm instance - MUST filter by "pending" status
+            // to get the newly created submission, not an old "complete" one
+            val q: RealmQuery<*> = mRealm.where(RealmSubmission::class.java)
+                .equalTo("userId", userId)
+                .equalTo("parentId", if (!TextUtils.isEmpty(examCourseId)) {
+                    "$idValue@$examCourseId"
+                } else {
+                    idValue
+                })
+                .equalTo("status", "pending")  // CRITICAL: Only get pending submissions
+                .sort("startTime", Sort.DESCENDING)
+            sub = q.findFirst() as RealmSubmission?
+            val queryTime = System.currentTimeMillis()
+            Log.d("TakeExamFragment", "Submission queried in ${queryTime - successTime}ms: sub=$sub, id=${sub?.id}, status=${sub?.status}")
+
+            // Mark submission as ready
+            submissionReady.complete(Unit)
+            val completeTime = System.currentTimeMillis()
+            Log.d("TakeExamFragment", "submissionReady completed [Total: ${completeTime - startTime}ms]")
         }
     }
 
     private fun cleanupOldSubmissions() {
+        // Capture data from main thread before async transaction
+        val examIdValue = exam?.id
+        val examCourseId = exam?.courseId
+        val idValue = id
+        val userId = user?.id
+
         mRealm.executeTransactionAsync { realm ->
             // Delete old submissions in background (fire and forget)
-            val parentIdToSearch = if (!TextUtils.isEmpty(exam?.courseId)) {
-                "${exam?.id ?: id}@${exam?.courseId}"
+            val parentIdToSearch = if (!TextUtils.isEmpty(examCourseId)) {
+                "${examIdValue ?: idValue}@$examCourseId"
             } else {
-                exam?.id ?: id
+                examIdValue ?: idValue
             }
 
             val allSubmissions = realm.where(RealmSubmission::class.java)
-                .equalTo("userId", user?.id)
+                .equalTo("userId", userId)
                 .equalTo("parentId", parentIdToSearch)
                 .sort("startTime", Sort.DESCENDING)
                 .findAll()
 
-            // Keep the newest one (skip first), delete the rest
+            // Keep the newest one (at index 0), delete the rest
+            // Delete from the end backwards to avoid index issues with live RealmResults
             if (allSubmissions.size > 1) {
-                for (i in 1 until allSubmissions.size) {
+                // Delete backwards to avoid modifying indices we haven't processed yet
+                for (i in allSubmissions.size - 1 downTo 1) {
                     allSubmissions[i]?.answers?.deleteAllFromRealm()
                     allSubmissions[i]?.deleteFromRealm()
                 }
@@ -919,10 +1020,8 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         super.onDestroyView()
         saveCurrentAnswer()
 
-        // Save all cached answers if submission is ready
-        if (submissionReady.isCompleted && sub != null) {
-            saveAllCachedAnswers()
-        }
+        // Don't save answers in onDestroyView - they're already saved in onClick when finish is clicked
+        // Saving here could cause issues since we can't use suspend functions in lifecycle callbacks
 
         selectedRatingButton = null
         _binding = null
