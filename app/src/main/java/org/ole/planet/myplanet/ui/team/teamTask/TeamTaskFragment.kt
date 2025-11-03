@@ -327,6 +327,9 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
                 }
                 viewLifecycleOwner.lifecycleScope.launch {
                     teamRepository.assignTask(taskId, user.id)
+                    if (!mRealm.isClosed) {
+                        mRealm.refresh()
+                    }
                     Utilities.toast(activity, getString(R.string.assign_task_to) + " " + user.name)
                     adapter.notifyDataSetChanged()
                     setAdapter()
