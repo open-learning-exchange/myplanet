@@ -50,7 +50,6 @@
     <string name="txt_cancel">إلغاء</string>
     <string name="download_all">تحميل الكل</string>
     <string name="hello_blank_fragment">مرحبًا بك في قطعة فارغة</string>
-    <string name="add_to_mycourse">أضف إلى دوراتي</string>
     <string name="join_selected">الانضمام إلى المحدد</string>
     <string name="join">انضمام</string>
     <string name="add_to_mylib">أضف إلى مكتبتي</string>
@@ -96,21 +95,16 @@
     <string name="your_rating">تقييمك</string>
     <string name="loading_user_profile">جارٍ تجهيز ملفك الشخصي…</string>
     <string name="your_comment">اترك تعليقك</string>
-    <string name="show_top_nav">عرض شريط التنقل العلوي في لوحة التحكم</string>
     <string name="sync_now">مزامنة الآن</string>
     <string name="logout">تسجيل الخروج</string>
     <string name="settings">الإعدادات</string>
-    <string name="change_password">تغيير كلمة المرور</string>
     <string name="edit_profile">تحرير الملف الشخصي</string>
-    <string name="view_profile">عرض الملف الشخصي</string>
-    <string name="alerts">التنبيهات</string>
     <string name="profile">الملف الشخصي</string>
     <string name="user">مستخدم</string>
     <string name="remove_selected">إزالة المحدد</string>
     <string name="stop_download">إيقاف التنزيل</string>
     <string name="downloading_file">جارٍ تنزيل الملف…</string>
     <string name="cancel">إلغاء</string>
-    <string name="add_to_mycourses">إضافة إلى دوراتي</string>
     <string name="added_to">تمت الإضافة إلى</string>
     <string name="removed_from">تمت الإزالة من</string>
     <string name="my_courses">دوراتي</string>
@@ -120,8 +114,6 @@
     <string name="filter_by_category">تصفية حسب الفئة</string>
     <string name="ok">موافق</string>
     <string name="inactive_message">المستخدم غير مفعل، يرجى التواصل مع المسؤول أو المدير لتفعيل حسابك.</string>
-    <string name="archive_mycourse">أرشفة دورتي</string>
-    <string name="menu_achievement">الإنجازات</string>
     <string name="edit_achievement">تحرير الإنجازات</string>
     <string name="add_resources">إضافة موارد</string>
     <string name="description">الوصف *</string>
@@ -133,7 +125,6 @@
     <string name="clear_tags">مسح</string>
     <string name="add_an_achievement">إضافة إنجاز</string>
     <string name="add_a_reference">إضافة مرجع</string>
-    <string name="learner">متعلم</string>
     <string name="show_filter">عرض الفلتر</string>
     <string name="subjects">الموضوعات</string>
     <string name="mediums">وسائط</string>
@@ -209,15 +200,6 @@
     <string name="nepali">नेपाली</string>
     <string name="arabic">عربى</string>
     <string name="french">français</string>
-
-    <string-array name="language_keys">
-        <item>en</item>
-        <item>ne</item>
-        <item>fr</item>
-        <item>es</item>
-        <item>ar</item>
-        <item>so</item>
-    </string-array>
 
     <string-array name="info_type">
         <item>اللغات</item>
