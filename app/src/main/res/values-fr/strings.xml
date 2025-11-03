@@ -28,7 +28,6 @@
     <string name="err_msg_login">Le nom d\'utilisateur et/ou le mot de passe ne correspondent pas</string>
     <string name="hint_serverURL">planet adresse IP</string>
     <string name="hint_serverPin">code serveur</string>
-    <string name="radio_protocol">Protocole:</string>
     <string name="radio_http">http</string>
     <string name="radio_https">https</string>
     <string name="title_activity_dashboard">Tableau de bord</string>

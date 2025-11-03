@@ -28,7 +28,6 @@
     <string name="err_msg_login">Username and/or password do not match</string>
     <string name="hint_serverURL">planet ip</string>
     <string name="hint_serverPin">server pin</string>
-    <string name="radio_protocol">Protocol:</string>
     <string name="radio_http">http</string>
     <string name="radio_https">https</string>
     <string name="title_activity_dashboard">Dashboard</string>
