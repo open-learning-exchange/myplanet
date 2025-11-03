@@ -396,11 +396,6 @@
         <item>इमेल</item>
     </string-array>
 
-    <string-array name="add_link_options">
-        <item>टिमहरू</item>
-        <item>उद्यमहरू</item>
-    </string-array>
-
     <string-array name="transaction_type">
         <item>क्रेडिट</item>
         <item>डेबिट</item>

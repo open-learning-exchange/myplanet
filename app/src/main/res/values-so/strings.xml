@@ -396,11 +396,6 @@
         <item>Email</item>
     </string-array>
 
-    <string-array name="add_link_options">
-        <item>Kooxaha</item>
-        <item>Mashruucyo</item>
-    </string-array>
-
     <string-array name="transaction_type">
         <item>Kaar</item>
         <item>Dhegaysto</item>

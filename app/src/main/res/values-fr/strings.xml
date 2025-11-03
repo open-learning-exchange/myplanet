@@ -396,11 +396,6 @@
         <item>Email</item>
     </string-array>
 
-    <string-array name="add_link_options">
-        <item>Équipes</item>
-        <item>Entreprises</item>
-    </string-array>
-
     <string-array name="transaction_type">
         <item>Crédit</item>
         <item>Débit</item>

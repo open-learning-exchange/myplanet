@@ -396,11 +396,6 @@
         <item>بريد إلكتروني</item>
     </string-array>
 
-    <string-array name="add_link_options">
-        <item>فرق</item>
-        <item>المؤسسات</item>
-    </string-array>
-
     <string-array name="transaction_type">
         <item>ائتمان</item>
         <item>مدين</item>
