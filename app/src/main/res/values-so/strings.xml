@@ -28,7 +28,6 @@
     <string name="err_msg_login">Magaca isticmaalaha iyo/ama erayga sirta ah isma dhigmaan</string>
     <string name="hint_serverURL">planet ip</string>
     <string name="hint_serverPin">pin-ka adeegsiga</string>
-    <string name="radio_protocol">Protokolka:</string>
     <string name="radio_http">http</string>
     <string name="radio_https">https</string>
     <string name="title_activity_dashboard">Bogga Goobta</string>
@@ -51,7 +50,6 @@
     <string name="txt_cancel">burin</string>
     <string name="download_all">Soo deji Dhammaan</string>
     <string name="hello_blank_fragment">Hello jajab maran</string>
-    <string name="add_to_mycourse">ku darso koorsooyinkayga</string>
     <string name="join_selected">Ku biir la\ndoortay</string>
     <string name="join">Ku biir</string>
     <string name="add_to_mylib">Kudar Maktabadayda</string>
@@ -97,21 +95,16 @@
     <string name="your_rating">qiimayntaada</string>
     <string name="loading_user_profile">Diyaarinayaa astaantaada…</string>
     <string name="your_comment">ka tag faallooyinkaaga</string>
-    <string name="show_top_nav">Show sare navigation Bar gudaha Dashboard</string>
     <string name="sync_now">isku-dar hadda</string>
     <string name="logout">ka bax</string>
     <string name="settings">Settings</string>
-    <string name="change_password">Beddel erayga sirta ah</string>
     <string name="edit_profile">wax ka beddel xogta</string>
-    <string name="view_profile">Arag Profile</string>
-    <string name="alerts">digniino</string>
     <string name="profile">Profile</string>
     <string name="user">Isticmaal</string>
     <string name="remove_selected">saar\nla xushay</string>
     <string name="stop_download">jooji soo dejinta</string>
     <string name="downloading_file">soo dejinta faylka…</string>
     <string name="cancel">burin</string>
-    <string name="add_to_mycourses">Ku dar Koorasyadayda</string>
     <string name="added_to">ku daray</string>
     <string name="removed_from">laga saaray</string>
     <string name="my_courses">Korasyadayda</string>
@@ -121,8 +114,6 @@
     <string name="filter_by_category">Sii kala sooc qaybta</string>
     <string name="ok">Sax</string>
     <string name="inactive_message">Isticmalahu ma hawlgelin, fadlan la xidhiidh maamulaha ama maareeyaha si aad u hawlgeliso akoonkaaga.</string>
-    <string name="archive_mycourse">Kaydi myCourse</string>
-    <string name="menu_achievement">Guulaha</string>
     <string name="edit_achievement">Wax ka beddel guulaha</string>
     <string name="add_resources">Kudar Khayraadka</string>
     <string name="description">Sharaxaad *</string>
@@ -134,7 +125,6 @@
     <string name="clear_tags">Nadiifi</string>
     <string name="add_an_achievement">Kudar Guul</string>
     <string name="add_a_reference">Kudar Tixraac</string>
-    <string name="learner">barte</string>
     <string name="show_filter">Show Filter</string>
     <string name="subjects">Mawduucyo</string>
     <string name="mediums">Mediums</string>
@@ -210,15 +200,6 @@
     <string name="nepali">नेपाली</string>
     <string name="arabic">عربى</string>
     <string name="french">français</string>
-
-    <string-array name="language_keys">
-        <item>en</item>
-        <item>ne</item>
-        <item>fr</item>
-        <item>es</item>
-        <item>ar</item>
-        <item>so</item>
-    </string-array>
 
     <string-array name="info_type">
         <item>Afka</item>
@@ -413,11 +394,6 @@
     <string-array name="contact_type">
         <item>Telefoon</item>
         <item>Email</item>
-    </string-array>
-
-    <string-array name="add_link_options">
-        <item>Kooxaha</item>
-        <item>Mashruucyo</item>
     </string-array>
 
     <string-array name="transaction_type">
