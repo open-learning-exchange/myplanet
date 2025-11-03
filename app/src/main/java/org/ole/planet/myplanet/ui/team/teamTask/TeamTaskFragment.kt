@@ -303,7 +303,9 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
     override fun onClickMore(realmTeamTask: RealmTeamTask?) {
         val alertUsersSpinnerBinding = AlertUsersSpinnerBinding.inflate(LayoutInflater.from(requireActivity()))
         val userList: List<RealmUserModel> = getJoinedMember(teamId, mRealm)
-        val filteredUserList = userList.filter { user -> user.getFullName().isNotBlank() }
+        val filteredUserList = userList.filter { user ->
+            user.getFullName().isNotBlank() || !user.name.isNullOrBlank()
+        }
         if (filteredUserList.isEmpty()) {
             Toast.makeText(context, R.string.no_members_task, Toast.LENGTH_SHORT).show()
             return

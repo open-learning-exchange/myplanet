@@ -36,7 +36,13 @@ class UserListArrayAdapter(activity: Activity, val view: Int, var list: List<Rea
         }
 
         val um = getItem(position)
-        holder.tvName?.text = context.getString(R.string.two_strings, um?.getFullName(), "(${um?.name})")
+        val fullName = um?.getFullName()?.trim().orEmpty()
+        val fallbackName = um?.name?.takeIf { !it.isNullOrBlank() } ?: um?.id.orEmpty()
+        val primaryName = fullName.ifBlank { fallbackName }
+        val secondaryName = um?.name?.takeIf { !it.isNullOrBlank() && it != primaryName }
+        holder.tvName?.text = secondaryName?.let {
+            context.getString(R.string.two_strings, primaryName, "(${it})")
+        } ?: primaryName
         if (um != null) {
             holder.joined?.text = context.getString(R.string.joined_colon, TimeUtils.formatDate(um.joinDate))
         }
