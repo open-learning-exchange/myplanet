@@ -41,6 +41,40 @@ object NavigationHelper {
     }
 
     /**
+     * Adds a fragment on top of the existing one while keeping the current view hierarchy alive.
+     *
+     * @param fragmentManager manager used to execute the transaction
+     * @param containerId id of the container where the fragment will be placed
+     * @param fragment fragment instance to display
+     * @param tag optional tag for the fragment and back stack entry
+     * @param allowStateLoss whether to allow committing state loss
+     */
+    fun pushFragment(
+        fragmentManager: FragmentManager,
+        containerId: Int,
+        fragment: Fragment,
+        tag: String? = null,
+        allowStateLoss: Boolean = false
+    ) {
+        fragmentManager.beginTransaction().apply {
+            val current = fragmentManager.findFragmentById(containerId)
+                ?: fragmentManager.primaryNavigationFragment
+            if (current != null) {
+                hide(current)
+            }
+            add(containerId, fragment, tag)
+            setPrimaryNavigationFragment(fragment)
+            addToBackStack(tag)
+            setReorderingAllowed(true)
+            if (allowStateLoss) {
+                commitAllowingStateLoss()
+            } else {
+                commit()
+            }
+        }
+    }
+
+    /**
      * Pops the back stack of the provided [fragmentManager] if there are entries.
      *
      * @param fragmentManager manager whose back stack will be popped

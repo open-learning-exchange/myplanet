@@ -30,6 +30,7 @@ import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createA
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.dashboard.BellDashboardFragment
+import org.ole.planet.myplanet.ui.exam.BaseExamFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.rating.RatingFragment.Companion.newInstance
@@ -75,22 +76,32 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
 
     fun openCallFragment(newFragment: Fragment, tag: String?) {
         val fragmentManager = supportFragmentManager
+        val resolvedTag = tag ?: newFragment::class.java.simpleName
+        if (newFragment is BaseExamFragment) {
+            NavigationHelper.pushFragment(
+                fragmentManager,
+                R.id.fragment_container,
+                newFragment,
+                resolvedTag
+            )
+            return
+        }
         if(c<2){
             c=0
         }
-        val existingFragment = fragmentManager.findFragmentByTag(tag)
-        if (tag == "") {
+        val existingFragment = fragmentManager.findFragmentByTag(resolvedTag)
+        if (resolvedTag == "") {
             c++
             if(c>2){
                 c--
-                NavigationHelper.popBackStack(fragmentManager, tag, 0)
+                NavigationHelper.popBackStack(fragmentManager, resolvedTag, 0)
             }else{
                 NavigationHelper.replaceFragment(
                     fragmentManager,
                     R.id.fragment_container,
                     newFragment,
                     addToBackStack = true,
-                    tag = tag
+                    tag = resolvedTag
                 )
             }
         } else {
@@ -100,18 +111,18 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
                 if(c>0 && c>2){
                     c=0
                 }
-                NavigationHelper.popBackStack(fragmentManager, tag, 0)
+                NavigationHelper.popBackStack(fragmentManager, resolvedTag, 0)
             } else {
                 if(c>0 && c>2){
                     c=0
                 }
-                if(tag!="") {
+                if(resolvedTag!="") {
                     NavigationHelper.replaceFragment(
                         fragmentManager,
                         R.id.fragment_container,
                         newFragment,
                         addToBackStack = true,
-                        tag = tag
+                        tag = resolvedTag
                     )
                 }
             }

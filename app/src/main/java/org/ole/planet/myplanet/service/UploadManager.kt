@@ -14,6 +14,9 @@ import java.io.IOException
 import java.util.Date
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.MainApplication
@@ -163,62 +166,80 @@ class UploadManager @Inject constructor(
     }
 
     fun uploadExamResult(listener: SuccessListener) {
-        val apiInterface = client.create(ApiInterface::class.java)
+        fun performUpload(): String {
+            val apiInterface = client.create(ApiInterface::class.java)
 
-        try {
-            data class SubmissionData(val id: String?, val serialized: JsonObject, val _id: String?, val _rev: String?)
+            return try {
+                data class SubmissionData(val id: String?, val serialized: JsonObject, val _id: String?, val _rev: String?)
 
-            val submissionsToUpload = databaseService.withRealm { realm ->
-                realm.where(RealmSubmission::class.java).findAll()
-                    .filter { (it.answers?.size ?: 0) > 0 && it.userId?.startsWith("guest") != true }
-                    .map { sub ->
-                        val serialized = if (!TextUtils.isEmpty(sub._id)) {
-                            RealmSubmission.serializeExamResult(realm, sub, context)
-                        } else {
-                            RealmSubmission.serializeExamResult(realm, sub, context)
+                val submissionsToUpload = databaseService.withRealm { realm ->
+                    realm.where(RealmSubmission::class.java).findAll()
+                        .filter { (it.answers?.size ?: 0) > 0 && it.userId?.startsWith("guest") != true }
+                        .map { sub ->
+                            val serialized = RealmSubmission.serializeExamResult(realm, sub, context)
+                            SubmissionData(sub.id, serialized, sub._id, sub._rev)
                         }
-                        SubmissionData(sub.id, serialized, sub._id, sub._rev)
-                    }
-            }
+                }
 
-            var processedCount = 0
-            var errorCount = 0
+                var processedCount = 0
+                var errorCount = 0
 
-            submissionsToUpload.processInBatches { data ->
-                try {
-                    val response: JsonObject? = if (TextUtils.isEmpty(data._id)) {
-                        apiInterface?.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/submissions", data.serialized)?.execute()?.body()
-                    } else {
-                        apiInterface?.putDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/submissions/${data._id}", data.serialized)?.execute()?.body()
-                    }
+                submissionsToUpload.processInBatches { data ->
+                    try {
+                        val response: JsonObject? = if (TextUtils.isEmpty(data._id)) {
+                            apiInterface?.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/submissions", data.serialized)?.execute()?.body()
+                        } else {
+                            apiInterface?.putDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/submissions/${data._id}", data.serialized)?.execute()?.body()
+                        }
 
-                    if (response != null && data.id != null) {
-                        databaseService.withRealm { realm ->
-                            realm.executeTransaction { transactionRealm ->
-                                transactionRealm.where(RealmSubmission::class.java).equalTo("id", data.id).findFirst()?.let { sub ->
-                                    sub._id = getString("id", response)
-                                    sub._rev = getString("rev", response)
+                        if (response != null && data.id != null) {
+                            databaseService.withRealm { realm ->
+                                realm.executeTransaction { transactionRealm ->
+                                    transactionRealm.where(RealmSubmission::class.java).equalTo("id", data.id).findFirst()?.let { sub ->
+                                        sub._id = getString("id", response)
+                                        sub._rev = getString("rev", response)
+                                    }
                                 }
                             }
+                            processedCount++
+                        } else {
+                            errorCount++
                         }
-                        processedCount++
-                    } else {
+                    } catch (e: IOException) {
                         errorCount++
+                        e.printStackTrace()
+                    } catch (e: Exception) {
+                        errorCount++
+                        e.printStackTrace()
                     }
-                } catch (e: IOException) {
-                    errorCount++
-                    e.printStackTrace()
-                } catch (e: Exception) {
-                    errorCount++
-                    e.printStackTrace()
+                }
+
+                uploadCourseProgress()
+                "Result sync completed successfully ($processedCount processed, $errorCount errors)"
+            } catch (e: Exception) {
+                e.printStackTrace()
+                "Error during result sync: ${e.message}"
+            }
+        }
+
+        fun notifyListener(message: String?) {
+            try {
+                listener.onSuccess(message)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            MainApplication.applicationScope.launch(Dispatchers.IO) {
+                val message = performUpload()
+                withContext(Dispatchers.Main) {
+                    notifyListener(message)
                 }
             }
-
-            uploadCourseProgress()
-            listener.onSuccess("Result sync completed successfully ($processedCount processed, $errorCount errors)")
-        } catch (e: Exception) {
-            e.printStackTrace()
-            listener.onSuccess("Error during result sync: ${e.message}")
+        } else {
+            val message = performUpload()
+            notifyListener(message)
         }
     }
 

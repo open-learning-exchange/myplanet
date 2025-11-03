@@ -177,6 +177,9 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
     }
 
     private fun renderPlaceholder() {
+        if (binding.viewPager2.adapter != null) {
+            return
+        }
         binding.title.text = directTeamName ?: getString(R.string.loading_teams)
         binding.subtitle.text = directTeamType ?: ""
         binding.btnAddDoc.isEnabled = false
