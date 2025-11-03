@@ -62,7 +62,7 @@ class Service @Inject constructor(
         ).apiInterface()
     )
     private val preferences: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
     private val configurationManager = ConfigurationManager(context, preferences, retrofitInterface)
     private fun getUploadToShelfService(): UploadToShelfService {
@@ -156,11 +156,15 @@ class Service @Inject constructor(
         if (shouldPromptForSettings(settings)) return
 
         serviceScope.launch {
-            callback.onCheckingVersion()
+            withContext(Dispatchers.Main) {
+                callback.onCheckingVersion()
+            }
             try {
                 val planetInfo = fetchVersionInfo(settings)
                 if (planetInfo == null) {
-                    callback.onError(context.getString(R.string.version_not_found), true)
+                    withContext(Dispatchers.Main) {
+                        callback.onError(context.getString(R.string.version_not_found), true)
+                    }
                     return@launch
                 }
 
@@ -173,23 +177,29 @@ class Service @Inject constructor(
                 val rawApkVersion = fetchApkVersionString(settings)
                 val versionStr = Gson().fromJson(rawApkVersion, String::class.java)
                 if (versionStr.isNullOrEmpty()) {
-                    callback.onError(context.getString(R.string.planet_is_up_to_date), false)
+                    withContext(Dispatchers.Main) {
+                        callback.onError(context.getString(R.string.planet_is_up_to_date), false)
+                    }
                     return@launch
                 }
 
                 val apkVersion = parseApkVersionString(versionStr)
                     ?: run {
-                        callback.onError(
-                            context.getString(R.string.new_apk_version_required_but_not_found_on_server),
-                            false
-                        )
+                        withContext(Dispatchers.Main) {
+                            callback.onError(
+                                context.getString(R.string.new_apk_version_required_but_not_found_on_server),
+                                false
+                            )
+                        }
                         return@launch
                     }
 
                 handleVersionEvaluation(planetInfo, apkVersion, callback)
             } catch (e: Exception) {
                 e.printStackTrace()
-                callback.onError(context.getString(R.string.connection_failed), true)
+                withContext(Dispatchers.Main) {
+                    callback.onError(context.getString(R.string.connection_failed), true)
+                }
             }
         }
     }
@@ -235,16 +245,24 @@ class Service @Inject constructor(
                 override fun onResponse(call: Call<ResponseBody?>, response: Response<ResponseBody?>) {
                     val isAvailable = callback != null && response.code() == 200
                     serverAvailabilityCache[updateUrl] = Pair(isAvailable, System.currentTimeMillis())
-                    if (isAvailable) {
-                        callback.isAvailable()
-                    } else {
-                        callback?.notAvailable()
+                    serviceScope.launch {
+                        withContext(Dispatchers.Main) {
+                            if (isAvailable) {
+                                callback.isAvailable()
+                            } else {
+                                callback?.notAvailable()
+                            }
+                        }
                     }
                 }
 
                 override fun onFailure(call: Call<ResponseBody?>, t: Throwable) {
                     serverAvailabilityCache[updateUrl] = Pair(false, System.currentTimeMillis())
-                    callback?.notAvailable()
+                    serviceScope.launch {
+                        withContext(Dispatchers.Main) {
+                            callback?.notAvailable()
+                        }
+                    }
                 }
             })
         }
@@ -433,17 +451,33 @@ class Service @Inject constructor(
     private fun handleVersionEvaluation(info: MyPlanet, apkVersion: Int, callback: CheckVersionCallback) {
         val currentVersion = VersionUtils.getVersionCode(context)
         if (showBetaFeature(KEY_UPGRADE_MAX, context) && info.latestapkcode > currentVersion) {
-            callback.onUpdateAvailable(info, false)
+            serviceScope.launch {
+                withContext(Dispatchers.Main) {
+                    callback.onUpdateAvailable(info, false)
+                }
+            }
             return
         }
         if (apkVersion > currentVersion) {
-            callback.onUpdateAvailable(info, currentVersion >= info.minapkcode)
+            serviceScope.launch {
+                withContext(Dispatchers.Main) {
+                    callback.onUpdateAvailable(info, currentVersion >= info.minapkcode)
+                }
+            }
             return
         }
         if (currentVersion < info.minapkcode && apkVersion < info.minapkcode) {
-            callback.onUpdateAvailable(info, true)
+            serviceScope.launch {
+                withContext(Dispatchers.Main) {
+                    callback.onUpdateAvailable(info, true)
+                }
+            }
         } else {
-            callback.onError(context.getString(R.string.planet_is_up_to_date), false)
+            serviceScope.launch {
+                withContext(Dispatchers.Main) {
+                    callback.onError(context.getString(R.string.planet_is_up_to_date), false)
+                }
+            }
         }
     }
 
