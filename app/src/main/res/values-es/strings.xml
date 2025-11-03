@@ -28,7 +28,6 @@
     <string name="err_msg_login">El nombre de usuario y/o la contraseña no coinciden</string>
     <string name="hint_serverURL">planet ipag</string>
     <string name="hint_serverPin">pin del servidor</string>
-    <string name="radio_protocol">Protocolo:</string>
     <string name="radio_http">http</string>
     <string name="radio_https">https</string>
     <string name="title_activity_dashboard">Panel de control</string>
@@ -51,7 +50,6 @@
     <string name="txt_cancel">Cancelar</string>
     <string name="download_all">Descargar todo</string>
     <string name="hello_blank_fragment">Hola fragmento en blanco</string>
-    <string name="add_to_mycourse">Agregar a misCursos</string>
     <string name="join_selected">Unirse a los\nseleccionados</string>
     <string name="join">Unirse</string>
     <string name="add_to_mylib">Agregar a miBiblioteca</string>
@@ -97,21 +95,16 @@
     <string name="your_rating">Tu calificación</string>
     <string name="loading_user_profile">Preparando tu perfil…</string>
     <string name="your_comment">Deja tu comentario</string>
-    <string name="show_top_nav">Mostrar la barra de navegación superior en el panel de control</string>
     <string name="sync_now">sincronizar ahora</string>
     <string name="logout">cerrar sesión</string>
     <string name="settings">Configuraciones</string>
-    <string name="change_password">Cambiar contraseña</string>
     <string name="edit_profile">Editar perfil</string>
-    <string name="view_profile">Ver perfil</string>
-    <string name="alerts">Alertas</string>
     <string name="profile">Perfil</string>
     <string name="user">Usuario</string>
     <string name="remove_selected">Eliminar\nseleccionados</string>
     <string name="stop_download">Detener descarga</string>
     <string name="downloading_file">Descargando archivo…</string>
     <string name="cancel">Cancelar</string>
-    <string name="add_to_mycourses">Agregar a misCursos</string>
     <string name="added_to">agregado a</string>
     <string name="removed_from">eliminado de</string>
     <string name="my_courses">misCursos</string>
@@ -121,8 +114,6 @@
     <string name="filter_by_category">Filtrar por categoría</string>
     <string name="ok">De acuerdo</string>
     <string name="inactive_message">El usuario no está activado. Por favor, ponte en contacto con el administrador o el responsable para activar tu cuenta.</string>
-    <string name="archive_mycourse">Archivar miCurso</string>
-    <string name="menu_achievement">Logros</string>
     <string name="edit_achievement">Editar logros</string>
     <string name="add_resources">Agregar recursos</string>
     <string name="description">Descripción *</string>
@@ -134,7 +125,6 @@
     <string name="clear_tags">Limpiar</string>
     <string name="add_an_achievement">Agregar un logro</string>
     <string name="add_a_reference">Agregar una referencia</string>
-    <string name="learner">Estudiante</string>
     <string name="show_filter">Mostrar filtro</string>
     <string name="subjects">Asignaturas</string>
     <string name="mediums">Medios</string>
@@ -210,15 +200,6 @@
     <string name="nepali">नेपाली</string>
     <string name="arabic">عربى</string>
     <string name="french">français</string>
-
-    <string-array name="language_keys">
-        <item>en</item>
-        <item>ne</item>
-        <item>fr</item>
-        <item>es</item>
-        <item>ar</item>
-        <item>so</item>
-    </string-array>
 
     <string-array name="info_type">
         <item>Idiomas</item>
