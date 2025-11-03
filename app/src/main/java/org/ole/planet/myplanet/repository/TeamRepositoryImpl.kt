@@ -133,12 +133,13 @@ class TeamRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun addReport(report: TeamReportDraft) {
+    override suspend fun addReport(report: RealmMyTeam) {
         executeTransaction { realm ->
+            val reportId = report._id ?: return@executeTransaction
             val reportEntry = realm.where(RealmMyTeam::class.java)
-                .equalTo("_id", report.id)
+                .equalTo("_id", reportId)
                 .findFirst()
-                ?: realm.createObject(RealmMyTeam::class.java, report.id)
+                ?: realm.createObject(RealmMyTeam::class.java, reportId)
 
             reportEntry.apply {
                 createdDate = report.createdDate

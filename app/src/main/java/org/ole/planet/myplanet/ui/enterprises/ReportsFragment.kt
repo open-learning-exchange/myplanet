@@ -32,7 +32,6 @@ import org.ole.planet.myplanet.databinding.DialogAddReportBinding
 import org.ole.planet.myplanet.databinding.FragmentReportsBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.repository.TeamReportDraft
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
@@ -129,22 +128,24 @@ class ReportsFragment : BaseTeamFragment() {
                     dialogAddReportBinding.nonPersonnel.error = "non-personnel is required"
                 } else {
                     val currentTime = System.currentTimeMillis()
-                    val report = TeamReportDraft(
-                        id = UUID.randomUUID().toString(),
-                        createdDate = currentTime,
-                        description = dialogAddReportBinding.summary.text.toString(),
-                        beginningBalance = dialogAddReportBinding.beginningBalance.text.toString().toIntOrNull() ?: 0,
-                        sales = dialogAddReportBinding.sales.text.toString().toIntOrNull() ?: 0,
-                        otherIncome = dialogAddReportBinding.otherIncome.text.toString().toIntOrNull() ?: 0,
-                        wages = dialogAddReportBinding.personnel.text.toString().toIntOrNull() ?: 0,
-                        otherExpenses = dialogAddReportBinding.nonPersonnel.text.toString().toIntOrNull() ?: 0,
-                        startDate = startTimeStamp?.toLongOrNull() ?: 0L,
-                        endDate = endTimeStamp?.toLongOrNull() ?: 0L,
-                        updatedDate = currentTime,
-                        teamId = teamId,
-                        teamType = team?.teamType,
-                        teamPlanetCode = team?.teamPlanetCode,
-                    )
+                    val report = RealmMyTeam().apply {
+                        _id = UUID.randomUUID().toString()
+                        createdDate = currentTime
+                        description = dialogAddReportBinding.summary.text.toString()
+                        beginningBalance = dialogAddReportBinding.beginningBalance.text.toString().toIntOrNull() ?: 0
+                        sales = dialogAddReportBinding.sales.text.toString().toIntOrNull() ?: 0
+                        otherIncome = dialogAddReportBinding.otherIncome.text.toString().toIntOrNull() ?: 0
+                        wages = dialogAddReportBinding.personnel.text.toString().toIntOrNull() ?: 0
+                        otherExpenses = dialogAddReportBinding.nonPersonnel.text.toString().toIntOrNull() ?: 0
+                        startDate = startTimeStamp?.toLongOrNull() ?: 0L
+                        endDate = endTimeStamp?.toLongOrNull() ?: 0L
+                        updatedDate = currentTime
+                        teamId = teamId
+                        teamType = team?.teamType
+                        teamPlanetCode = team?.teamPlanetCode
+                        docType = "report"
+                        updated = true
+                    }
                     viewLifecycleOwner.lifecycleScope.launch {
                         teamRepository.addReport(report)
                     }
