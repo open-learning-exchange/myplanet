@@ -1,12 +1,12 @@
 package org.ole.planet.myplanet.datamanager.auth
 
 import android.content.SharedPreferences
-import java.io.DataOutputStream
-import java.net.HttpURLConnection
-import java.net.URL
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
+import java.io.DataOutputStream
+import java.net.HttpURLConnection
+import java.net.URL
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
