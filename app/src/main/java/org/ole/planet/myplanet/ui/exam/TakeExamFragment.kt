@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -24,12 +25,18 @@ import io.realm.RealmQuery
 import io.realm.Sort
 import java.util.Date
 import javax.inject.Inject
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentTakeExamBinding
+import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmCertification.Companion.isCourseCertified
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMembershipDoc
@@ -52,6 +59,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     private val gson = Gson()
 
     private val answerCache = mutableMapOf<String, AnswerData>()
+    private var submissionReady = CompletableDeferred<Unit>()
 
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
@@ -89,10 +97,38 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         isCertified = isCourseCertified(mRealm, courseId)
 
         if ((questions?.size ?: 0) > 0) {
-            clearAllExistingAnswers()
-            createSubmission()
+            // Show questions immediately
             startExam(questions?.get(currentIndex))
             updateNavButtons()
+
+            // Check if submission already exists or create new one
+            Log.d("TakeExamFragment", "Checking existing submission: sub=$sub, id=${sub?.id}")
+            if (sub == null) {
+                Log.d("TakeExamFragment", "No existing submission, creating new one in background")
+                // Create submission in background
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val startTime = System.currentTimeMillis()
+                    try {
+                        Log.d("TakeExamFragment", "About to call createSubmissionAsync... [T+0ms]")
+                        createSubmissionAsync()
+                        val submitDuration = System.currentTimeMillis() - startTime
+                        Log.d("TakeExamFragment", "createSubmissionAsync completed in ${submitDuration}ms, calling cleanupOldSubmissions...")
+                        // Clean up old submissions after creation
+                        val cleanupStart = System.currentTimeMillis()
+                        cleanupOldSubmissions()
+                        val cleanupDuration = System.currentTimeMillis() - cleanupStart
+                        Log.d("TakeExamFragment", "cleanupOldSubmissions completed in ${cleanupDuration}ms (total: ${System.currentTimeMillis() - startTime}ms)")
+                    } catch (e: Exception) {
+                        val errorDuration = System.currentTimeMillis() - startTime
+                        Log.e("TakeExamFragment", "Error in onViewCreated submission creation after ${errorDuration}ms", e)
+                        e.printStackTrace()
+                    }
+                }
+            } else {
+                Log.d("TakeExamFragment", "Using existing submission id=${sub?.id}, marking as ready immediately")
+                // Submission already exists, mark as ready immediately
+                submissionReady.complete(Unit)
+            }
         } else {
             binding.container.visibility = View.GONE
             binding.btnSubmit.visibility = View.GONE
@@ -223,69 +259,6 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                 ans.isNotEmpty() || answerData?.singleAnswer?.isNotEmpty() == true
             }
             else -> false
-        }
-    }
-
-    private fun createSubmission() {
-        mRealm.beginTransaction()
-        try {
-            sub = createSubmission(null, mRealm)
-            setParentId()
-            sub?.userId = user?.id
-            sub?.status = "pending"
-            sub?.type = type
-            sub?.startTime = Date().time
-            sub?.lastUpdateTime = Date().time
-            if (sub?.answers == null) {
-                sub?.answers = RealmList()
-            }
-
-            currentIndex = 0
-            if (isTeam && teamId != null) {
-                addTeamInformation(mRealm)
-            }
-            mRealm.commitTransaction()
-        } catch (e: Exception) {
-            mRealm.cancelTransaction()
-            throw e
-        }
-    }
-
-    private fun setParentId() {
-        sub?.parentId = when {
-            !TextUtils.isEmpty(exam?.id) -> if (!TextUtils.isEmpty(exam?.courseId)) {
-                "${exam?.id}@${exam?.courseId}"
-            } else {
-                exam?.id
-            }
-            !TextUtils.isEmpty(id) -> if (!TextUtils.isEmpty(exam?.courseId)) {
-                "$id@${exam?.courseId}"
-            } else {
-                id
-            }
-            else -> sub?.parentId
-        }
-    }
-
-    private fun addTeamInformation(realm: Realm) {
-        sub?.team = teamId
-        val membershipDoc = realm.createObject(RealmMembershipDoc::class.java)
-        membershipDoc.teamId = teamId
-        sub?.membershipDoc = membershipDoc
-
-        val userModel = userProfileDbHandler.userModel
-
-        try {
-            val userJson = JSONObject()
-            userJson.put("age", userModel?.dob ?: "")
-            userJson.put("gender", userModel?.gender ?: "")
-            val membershipJson = JSONObject()
-            membershipJson.put("teamId", teamId)
-            userJson.put("membershipDoc", membershipJson)
-
-            sub?.user = userJson.toString()
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
     }
 
@@ -530,25 +503,73 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     override fun onClick(view: View) {
+        val clickTime = System.currentTimeMillis()
+        Log.d("TakeExamFragment", "onClick triggered at T+${clickTime}ms, view.id=${view.id}, R.id.btn_submit=${R.id.btn_submit}")
         if (view.id == R.id.btn_submit) {
+            Log.d("TakeExamFragment", "Submit button clicked, questions size=${questions?.size}, currentIndex=$currentIndex")
             if (questions != null && currentIndex in 0 until (questions?.size ?: 0)) {
                 saveCurrentAnswer()
+                Log.d("TakeExamFragment", "Current answer saved")
 
                 if (!isQuestionAnswered()) {
+                    Log.d("TakeExamFragment", "Question not answered, showing toast")
                     toast(activity, getString(R.string.please_select_write_your_answer_to_continue), Toast.LENGTH_SHORT)
                     return
                 }
 
-                val cont = updateAnsDb()
+                Log.d("TakeExamFragment", "Launching coroutine for submission [T+${System.currentTimeMillis() - clickTime}ms], submissionReady.isCompleted=${submissionReady.isCompleted}")
+                // On submit, ensure all cached answers are saved to DB
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val launchTime = System.currentTimeMillis()
+                    try {
+                        Log.d("TakeExamFragment", "Waiting for submission to be ready (max 5 seconds)... [T+${launchTime - clickTime}ms]")
+                        // Wait max 5 seconds for submission to be ready
+                        val waitStart = System.currentTimeMillis()
+                        withTimeout(5000) {
+                            submissionReady.await()
+                        }
+                        val waitDuration = System.currentTimeMillis() - waitStart
+                        Log.d("TakeExamFragment", "Submission ready after ${waitDuration}ms! sub=$sub, answerCache size=${answerCache.size}")
 
-                if (this.type == "exam" && !cont) {
-                    Snackbar.make(binding.root, getString(R.string.incorrect_ans), Snackbar.LENGTH_LONG).show()
-                    return
+                        if (sub != null) {
+                            Log.d("TakeExamFragment", "Saving all cached answers")
+                            saveAllCachedAnswers()
+                            Log.d("TakeExamFragment", "All cached answers saved")
+                        } else {
+                            Log.w("TakeExamFragment", "sub is null, skipping saveAllCachedAnswers")
+                        }
+
+                        val cont = updateAnsDb()
+                        Log.d("TakeExamFragment", "updateAnsDb returned: $cont")
+
+                        if (type == "exam" && !cont) {
+                            Log.d("TakeExamFragment", "Exam answer incorrect, showing snackbar")
+                            Snackbar.make(binding.root, getString(R.string.incorrect_ans), Snackbar.LENGTH_LONG).show()
+                            return@launch
+                        }
+
+                        Log.d("TakeExamFragment", "Capturing photo and continuing...")
+                        capturePhoto()
+                        hideSoftKeyboard(requireActivity())
+                        checkAnsAndContinue(cont)
+                        Log.d("TakeExamFragment", "checkAnsAndContinue called")
+                    } catch (e: Exception) {
+                        val errorTime = System.currentTimeMillis()
+                        Log.e("TakeExamFragment", "Error in submit coroutine (or timeout) at T+${errorTime - clickTime}ms", e)
+                        e.printStackTrace()
+                        // If submission failed or timed out, still allow continuing with cached answers
+                        // The answers are in cache and will be saved on next attempt
+                        Log.d("TakeExamFragment", "Continuing despite error/timeout, calling checkAnsAndContinue... [T+${errorTime - clickTime}ms]")
+                        capturePhoto()
+                        hideSoftKeyboard(requireActivity())
+                        val continueStart = System.currentTimeMillis()
+                        checkAnsAndContinue(true)
+                        val continueDuration = System.currentTimeMillis() - continueStart
+                        Log.d("TakeExamFragment", "checkAnsAndContinue returned after ${continueDuration}ms [Total: T+${System.currentTimeMillis() - clickTime}ms]")
+                    }
                 }
-
-                capturePhoto()
-                hideSoftKeyboard(requireActivity())
-                checkAnsAndContinue(cont)
+            } else {
+                Log.w("TakeExamFragment", "Cannot submit: questions=${questions != null}, index in range=${currentIndex in 0 until (questions?.size ?: 0)}")
             }
         }
     }
@@ -564,6 +585,101 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
 
+    private suspend fun saveAllCachedAnswers() {
+        // Save all cached answers to the database SYNCHRONOUSLY on background thread
+        Log.d("TakeExamFragment", "saveAllCachedAnswers: ${answerCache.size} answers in cache, sub status BEFORE: ${sub?.status}")
+
+        if (sub == null) {
+            Log.w("TakeExamFragment", "Cannot save answers - sub is null!")
+            return
+        }
+
+        // Run transaction on background thread to avoid UI thread blocking
+        withContext(Dispatchers.IO) {
+            mRealm.executeTransaction { realm ->
+            answerCache.forEach { (questionId, answerData) ->
+                val question = questions?.find { it.id == questionId } ?: return@forEach
+
+                val currentAns: String
+                val currentListAns: HashMap<String, String>?
+                val currentOtherText: String?
+
+                when (question.type) {
+                    "select", "ratingScale" -> {
+                        currentAns = answerData.singleAnswer
+                        currentListAns = null
+                        currentOtherText = if (answerData.otherText.isNotEmpty()) answerData.otherText else null
+                    }
+                    "selectMultiple" -> {
+                        currentAns = ""
+                        currentListAns = answerData.multipleAnswers
+                        currentOtherText = if (answerData.otherText.isNotEmpty()) answerData.otherText else null
+                    }
+                    else -> { // "input", "textarea"
+                        currentAns = answerData.singleAnswer
+                        currentListAns = null
+                        currentOtherText = null
+                    }
+                }
+
+                // Find the index of this question
+                val questionIndex = questions?.indexOfFirst { it.id == questionId } ?: -1
+                if (questionIndex >= 0) {
+                    val isFinal = questionIndex == (questions?.size ?: 0) - 1
+                    Log.d("TakeExamFragment", "Saving answer for question index=$questionIndex (total=${questions?.size}), isFinal=$isFinal")
+
+                    // Save answer inline (synchronous, inside transaction)
+                    val realmSubmission = realm.where(RealmSubmission::class.java).equalTo("id", sub?.id).findFirst()
+                    val realmQuestion = realm.where(RealmExamQuestion::class.java).equalTo("id", question.id).findFirst()
+
+                    if (realmSubmission != null && realmQuestion != null) {
+                        // Create or retrieve answer
+                        val existingAnswer = realmSubmission.answers?.find { it.questionId == question.id }
+                        val answer = existingAnswer ?: realm.createObject(RealmAnswer::class.java, java.util.UUID.randomUUID().toString())
+                        if (existingAnswer == null) {
+                            realmSubmission.answers?.add(answer)
+                        }
+                        answer.questionId = question.id
+                        answer.submissionId = realmSubmission.id
+
+                        // Populate answer based on type
+                        when (question.type) {
+                            "select", "ratingScale" -> {
+                                answer.value = currentAns
+                                answer.valueChoices = RealmList<String>().apply {
+                                    if (currentAns.isNotEmpty()) {
+                                        add("""{"id":"$currentAns","text":"$currentAns"}""")
+                                    }
+                                }
+                            }
+                            "selectMultiple" -> {
+                                answer.value = ""
+                                answer.valueChoices = RealmList<String>().apply {
+                                    currentListAns?.forEach { (text, id) ->
+                                        add("""{"id":"$id","text":"$text"}""")
+                                    }
+                                }
+                            }
+                            else -> { // input, textarea
+                                answer.value = currentAns
+                                answer.valueChoices = null
+                            }
+                        }
+
+                        // Update submission status
+                        realmSubmission.lastUpdateTime = Date().time
+                        if (isFinal && type == "survey") {
+                            realmSubmission.status = "complete"
+                            Log.d("TakeExamFragment", "Set submission status to COMPLETE (final question of survey)")
+                        }
+                    }
+                }
+            }
+        }
+
+        Log.d("TakeExamFragment", "saveAllCachedAnswers completed. Final submission status: ${sub?.status}")
+    }
+
     private fun updateAnsDb(): Boolean {
         val questionsSize = questions?.size ?: 0
         if (currentIndex < 0 || currentIndex >= questionsSize) return true
@@ -574,6 +690,14 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         } else {
             null
         }
+
+        // Only save to DB if submission is ready, otherwise answer stays in cache
+        if (!submissionReady.isCompleted) {
+            // Submission not ready yet, but answer is already in answerCache
+            // Return true for surveys, as we don't check correctness during navigation
+            return true
+        }
+
         return ExamSubmissionUtils.saveAnswer(
             mRealm,
             sub,
@@ -657,42 +781,135 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         return false
     }
 
-    private fun clearAllExistingAnswers() {
-        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+    private suspend fun createSubmissionAsync() {
+        val startTime = System.currentTimeMillis()
+        Log.d("TakeExamFragment", "createSubmissionAsync started [T+0ms]")
+
+        withContext(Dispatchers.IO) {
             try {
-                databaseService.executeTransactionAsync { realm ->
-                    val parentIdToSearch = if (!TextUtils.isEmpty(exam?.courseId)) {
-                        "${exam?.id ?: id}@${exam?.courseId}"
-                    } else {
-                        exam?.id ?: id
+                Log.d("TakeExamFragment", "Running transaction on background thread [T+${System.currentTimeMillis() - startTime}ms]")
+
+                // Use synchronous transaction on background thread (more reliable than async)
+                mRealm.executeTransaction { realm ->
+                    val inTxnTime = System.currentTimeMillis()
+                    Log.d("TakeExamFragment", "Inside transaction [T+${inTxnTime - startTime}ms]")
+
+                    // Create new submission
+                    val submission = createSubmission(null, realm)
+                    submission.userId = user?.id
+                    submission.status = "pending"
+                    submission.type = type
+                    submission.startTime = Date().time
+                    submission.lastUpdateTime = Date().time
+
+                    if (submission.answers == null) {
+                        submission.answers = RealmList()
                     }
 
-                    val allSubmissions = realm.where(RealmSubmission::class.java)
-                        .equalTo("userId", user?.id)
-                        .equalTo("parentId", parentIdToSearch)
-                        .findAll()
-
-                    allSubmissions.forEach { submission ->
-                        submission.answers?.deleteAllFromRealm()
-                        submission.deleteFromRealm()
+                    // Set parent ID
+                    submission.parentId = when {
+                        !TextUtils.isEmpty(exam?.id) -> if (!TextUtils.isEmpty(exam?.courseId)) {
+                            "${exam?.id}@${exam?.courseId}"
+                        } else {
+                            exam?.id
+                        }
+                        !TextUtils.isEmpty(id) -> if (!TextUtils.isEmpty(exam?.courseId)) {
+                            "$id@${exam?.courseId}"
+                        } else {
+                            id
+                        }
+                        else -> submission.parentId
                     }
+
+                    // Add team information if needed
+                    if (isTeam && teamId != null) {
+                        submission.team = teamId
+                        val membershipDoc = realm.createObject(RealmMembershipDoc::class.java)
+                        membershipDoc.teamId = teamId
+                        submission.membershipDoc = membershipDoc
+
+                        val userModel = userProfileDbHandler.userModel
+                        try {
+                            val userJson = JSONObject()
+                            userJson.put("age", userModel?.dob ?: "")
+                            userJson.put("gender", userModel?.gender ?: "")
+                            val membershipJson = JSONObject()
+                            membershipJson.put("teamId", teamId)
+                            userJson.put("membershipDoc", membershipJson)
+                            submission.user = userJson.toString()
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+
+                    val txnDuration = System.currentTimeMillis() - inTxnTime
+                    Log.d("TakeExamFragment", "Transaction completed in ${txnDuration}ms")
                 }
 
+                // Switch back to main thread to update UI
                 withContext(Dispatchers.Main) {
-                    answerCache.clear()
-                    clearAnswer()
-                    ans = ""
-                    listAns?.clear()
-                    sub = null
+                    val successTime = System.currentTimeMillis()
+                    Log.d("TakeExamFragment", "Submission creation SUCCESS [T+${successTime - startTime}ms]")
+
+                    // Re-query the submission from the same Realm instance
+                    val q: RealmQuery<*> = mRealm.where(RealmSubmission::class.java)
+                        .equalTo("userId", user?.id)
+                        .equalTo("parentId", if (!TextUtils.isEmpty(exam?.courseId)) {
+                            id + "@" + exam?.courseId
+                        } else {
+                            id
+                        }).sort("startTime", Sort.DESCENDING)
+                    sub = q.findFirst() as RealmSubmission?
+                    val queryTime = System.currentTimeMillis()
+                    Log.d("TakeExamFragment", "Submission queried in ${queryTime - successTime}ms: sub=$sub, id=${sub?.id}")
+
+                    // Mark submission as ready
+                    submissionReady.complete(Unit)
+                    val completeTime = System.currentTimeMillis()
+                    Log.d("TakeExamFragment", "submissionReady completed [Total: ${completeTime - startTime}ms]")
                 }
             } catch (e: Exception) {
+                val errorTime = System.currentTimeMillis()
+                Log.e("TakeExamFragment", "Submission creation FAILED after ${errorTime - startTime}ms", e)
                 e.printStackTrace()
+
                 withContext(Dispatchers.Main) {
                     answerCache.clear()
                     clearAnswer()
                     ans = ""
                     listAns?.clear()
                     sub = null
+                    currentIndex = 0
+
+                    // Mark submission as ready even on error, so finish button doesn't hang
+                    submissionReady.complete(Unit)
+                    Log.d("TakeExamFragment", "submissionReady completed (on error) [Total: ${System.currentTimeMillis() - startTime}ms]")
+                }
+                throw e
+            }
+        }
+    }
+
+    private fun cleanupOldSubmissions() {
+        mRealm.executeTransactionAsync { realm ->
+            // Delete old submissions in background (fire and forget)
+            val parentIdToSearch = if (!TextUtils.isEmpty(exam?.courseId)) {
+                "${exam?.id ?: id}@${exam?.courseId}"
+            } else {
+                exam?.id ?: id
+            }
+
+            val allSubmissions = realm.where(RealmSubmission::class.java)
+                .equalTo("userId", user?.id)
+                .equalTo("parentId", parentIdToSearch)
+                .sort("startTime", Sort.DESCENDING)
+                .findAll()
+
+            // Keep the newest one (skip first), delete the rest
+            if (allSubmissions.size > 1) {
+                for (i in 1 until allSubmissions.size) {
+                    allSubmissions[i]?.answers?.deleteAllFromRealm()
+                    allSubmissions[i]?.deleteFromRealm()
                 }
             }
         }
@@ -701,6 +918,12 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     override fun onDestroyView() {
         super.onDestroyView()
         saveCurrentAnswer()
+
+        // Save all cached answers if submission is ready
+        if (submissionReady.isCompleted && sub != null) {
+            saveAllCachedAnswers()
+        }
+
         selectedRatingButton = null
         _binding = null
     }

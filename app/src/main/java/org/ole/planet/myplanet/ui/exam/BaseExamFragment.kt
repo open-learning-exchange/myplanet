@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.exam
 import android.content.DialogInterface
 import android.graphics.Typeface
 import android.os.Bundle
+import android.util.Log
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
@@ -109,12 +110,16 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
 
     var isLastAnsvalid = false
     fun checkAnsAndContinue(cont: Boolean) {
+        Log.d("BaseExamFragment", "checkAnsAndContinue called with cont=$cont, currentIndex=$currentIndex, questions size=${questions?.size}")
         if (cont) {
             isLastAnsvalid = true
             currentIndex += 1
+            Log.d("BaseExamFragment", "Incremented currentIndex to $currentIndex, calling continueExam()")
             continueExam()
+            Log.d("BaseExamFragment", "continueExam() returned")
         } else {
             isLastAnsvalid = false
+            Log.d("BaseExamFragment", "Answer incorrect, showing toast")
             val toast = Toast.makeText(activity, getString(R.string.incorrect_ans), Toast.LENGTH_SHORT)
             toast.show()
             viewLifecycleOwner.lifecycleScope.launch {
@@ -125,11 +130,15 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     }
 
     private fun continueExam() {
+        Log.d("BaseExamFragment", "continueExam: currentIndex=$currentIndex, questions size=${questions?.size}, isTeam=$isTeam, type=$type")
         if (currentIndex < (questions?.size ?: 0)) {
+            Log.d("BaseExamFragment", "More questions remaining, calling startExam for question $currentIndex")
             startExam(questions?.get(currentIndex))
         } else if (isTeam == true && type?.startsWith("survey") == true) {
+            Log.d("BaseExamFragment", "Team survey completed, showing user info dialog")
             showUserInfoDialog()
         } else {
+            Log.d("BaseExamFragment", "All questions completed, showing completion dialog")
             saveCourseProgress()
             val titleView = TextView(requireContext()).apply {
                 text = "${getString(R.string.thank_you_for_taking_this)}$type! ${getString(R.string.we_wish_you_all_the_best)}"
@@ -140,11 +149,14 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
                 setPadding(20, 25, 20, 0)
             }
 
+            Log.d("BaseExamFragment", "Creating and showing AlertDialog")
             AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
                 .setCustomTitle(titleView)
                 .setPositiveButton(getString(R.string.finish)) { _: DialogInterface?, _: Int ->
+                    Log.d("BaseExamFragment", "Finish button clicked in dialog")
                     NavigationHelper.popBackStack(parentFragmentManager)
                 }.setCancelable(false).show()
+            Log.d("BaseExamFragment", "AlertDialog.show() called")
         }
     }
 
