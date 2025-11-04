@@ -45,31 +45,10 @@ class DatabaseService(context: Context) {
     }
 
     suspend fun executeTransactionAsync(transaction: (Realm) -> Unit) {
-        return withContext(Dispatchers.Main) {
-            kotlinx.coroutines.suspendCancellableCoroutine { continuation ->
-                val realm = Realm.getDefaultInstance()
-                realm.executeTransactionAsync(
-                    { transactionRealm ->
-                        try {
-                            transaction(transactionRealm)
-                        } catch (e: Exception) {
-                            throw e
-                        }
-                    },
-                    {
-                        // onSuccess
-                        realm.close()
-                        continuation.resumeWith(Result.success(Unit))
-                    },
-                    { error ->
-                        // onError
-                        realm.close()
-                        continuation.resumeWith(Result.failure(error))
-                    }
-                )
-
-                continuation.invokeOnCancellation {
-                    realm.close()
+        withContext(Dispatchers.IO) {
+            Realm.getDefaultInstance().use { realm ->
+                realm.executeTransaction { transactionRealm ->
+                    transaction(transactionRealm)
                 }
             }
         }
