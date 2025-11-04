@@ -1,8 +1,14 @@
 package org.ole.planet.myplanet.utilities
 
 import androidx.recyclerview.widget.DiffUtil as RecyclerDiffUtil
+import org.ole.planet.myplanet.ui.team.teamMember.JoinedMemberData
 
 object DiffUtils {
+    val JOINED_MEMBER_DIFF = itemCallback<JoinedMemberData>(
+        areItemsTheSame = { old, new -> old.user.id == new.user.id },
+        areContentsTheSame = { old, new -> old == new }
+    )
+
     fun <T : Any> itemCallback(
         areItemsTheSame: (oldItem: T, newItem: T) -> Boolean,
         areContentsTheSame: (oldItem: T, newItem: T) -> Boolean

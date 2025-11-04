@@ -10,12 +10,14 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowJoinedUserBinding
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
+import org.ole.planet.myplanet.utilities.DiffUtils
 
 data class JoinedMemberData(
     val user: RealmUserModel,
@@ -28,10 +30,9 @@ data class JoinedMemberData(
 
 class AdapterJoinedMember(
     private val context: Context,
-    private val list: MutableList<JoinedMemberData>,
     private var isLoggedInUserTeamLeader: Boolean,
     private val actionListener: MemberActionListener
-) : RecyclerView.Adapter<AdapterJoinedMember.ViewHolderUser>() {
+) : ListAdapter<JoinedMemberData, AdapterJoinedMember.ViewHolderUser>(DiffUtils.JOINED_MEMBER_DIFF) {
 
     interface MemberActionListener {
         fun onRemoveMember(member: JoinedMemberData, position: Int)
@@ -44,7 +45,7 @@ class AdapterJoinedMember(
     }
 
     override fun onBindViewHolder(holder: ViewHolderUser, position: Int) {
-        val memberData = list[position]
+        val memberData = getItem(position)
         val member = memberData.user
         val binding = holder.binding
 
@@ -103,7 +104,7 @@ class AdapterJoinedMember(
         binding: RowJoinedUserBinding,
         position: Int
     ) {
-        if (isLoggedInUserTeamLeader && list.size > 1) {
+        if (isLoggedInUserTeamLeader && itemCount > 1) {
             binding.icMore.visibility = View.VISIBLE
             binding.icMore.setOnClickListener {
                 val overflowMenuOptions = arrayOf(
@@ -125,8 +126,8 @@ class AdapterJoinedMember(
                 }
                 builder.setAdapter(adapter) { _, i ->
                     when (i) {
-                        0 -> actionListener.onRemoveMember(list[position], position)
-                        1 -> actionListener.onMakeLeader(list[position])
+                        0 -> actionListener.onRemoveMember(getItem(position), position)
+                        1 -> actionListener.onMakeLeader(getItem(position))
                     }
                 }.setNegativeButton(R.string.dismiss, null).show()
             }
@@ -135,57 +136,14 @@ class AdapterJoinedMember(
         }
     }
 
-    override fun getItemCount(): Int = list.size
-
     @SuppressLint("NotifyDataSetChanged")
-    fun updateData(newList: MutableList<JoinedMemberData>, isLoggedInUserTeamLeader: Boolean) {
-        list.clear()
-        list.addAll(newList)
+    fun updateData(isLoggedInUserTeamLeader: Boolean) {
         this.isLoggedInUserTeamLeader = isLoggedInUserTeamLeader
         notifyDataSetChanged()
     }
 
-    fun removeMember(memberId: String) {
-        val position = list.indexOfFirst { it.user.id == memberId }
-        if (position != -1) {
-            list.removeAt(position)
-            notifyItemRemoved(position)
-
-            if (list.isNotEmpty()) {
-                notifyItemRangeChanged(0, list.size)
-            }
-        }
-    }
-
-    fun updateLeadership(loggedInUserId: String?, newLeaderId: String) {
-        var oldLeaderPos = -1
-        var newLeaderPos = -1
-
-        list.forEachIndexed { index, memberData ->
-            if (memberData.isLeader) {
-                memberData.isLeader = false
-                oldLeaderPos = index
-            }
-            if (memberData.user.id == newLeaderId) {
-                memberData.isLeader = true
-                newLeaderPos = index
-            }
-        }
-
-        isLoggedInUserTeamLeader = (loggedInUserId == newLeaderId)
-
-        if (newLeaderPos > 0) {
-            val newLeader = list.removeAt(newLeaderPos)
-            list.add(0, newLeader)
-            notifyItemMoved(newLeaderPos, 0)
-        }
-
-        if (oldLeaderPos != -1) notifyItemChanged(if (oldLeaderPos == 0) 1 else oldLeaderPos)
-        notifyItemChanged(0)
-
-        if (list.size > 2) {
-            notifyItemRangeChanged(1, list.size - 1)
-        }
+    fun getMember(position: Int): JoinedMemberData {
+        return getItem(position)
     }
 
     class ViewHolderUser(val binding: RowJoinedUserBinding) :

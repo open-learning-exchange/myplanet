@@ -16,6 +16,8 @@ import org.ole.planet.myplanet.callback.MemberChangeListener
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMember
 import org.ole.planet.myplanet.model.RealmNews
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUserModel
 
@@ -26,14 +28,14 @@ class JoinedMemberFragment : BaseMemberFragment() {
         }
     }
 
-    private var adapterJoined: AdapterJoinedMember? = null
+    private lateinit var adapterJoined: AdapterJoinedMember
 
     fun setMemberChangeListener(listener: MemberChangeListener) {
         this.memberChangeListener = listener
     }
 
-    private val joinedMembers: List<JoinedMemberData>
-        get() = databaseService.withRealm { realm ->
+    private suspend fun loadJoinedMembersData(): List<JoinedMemberData> = withContext(Dispatchers.IO) {
+        databaseService.withRealm { realm ->
             val members = getJoinedMember(teamId, realm).map { realm.copyFromRealm(it) }.toMutableList()
             val leaderId = realm.where(RealmMyTeam::class.java)
                 .equalTo("teamId", teamId)
@@ -65,33 +67,13 @@ class JoinedMemberFragment : BaseMemberFragment() {
                 )
             }
         }
+    }
 
     override val list: List<RealmUserModel>
-        get() = joinedMembers.map { it.user }
+        get() = adapterJoined.currentList.map { it.user }
 
     override val adapter: RecyclerView.Adapter<*>
-        get() {
-            if (adapterJoined == null) {
-                val members = joinedMembers
-                val currentUserId = user?.id
-                val isLeader = members.any { it.user.id == currentUserId && it.isLeader }
-                adapterJoined = AdapterJoinedMember(
-                    requireActivity(),
-                    members.toMutableList(),
-                    isLeader,
-                    object : AdapterJoinedMember.MemberActionListener {
-                        override fun onRemoveMember(member: JoinedMemberData, position: Int) {
-                            handleRemoveMember(member)
-                        }
-
-                        override fun onMakeLeader(member: JoinedMemberData) {
-                            member.user.id?.let { handleMakeLeader(it) }
-                        }
-                    }
-                )
-            }
-            return adapterJoined as AdapterJoinedMember
-        }
+        get() = adapterJoined
 
     override val layoutManager: RecyclerView.LayoutManager
         get() {
@@ -103,6 +85,35 @@ class JoinedMemberFragment : BaseMemberFragment() {
             }
             return GridLayoutManager(activity, columns)
         }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        adapterJoined = AdapterJoinedMember(
+            requireActivity(),
+            false,
+            object : AdapterJoinedMember.MemberActionListener {
+                override fun onRemoveMember(member: JoinedMemberData, position: Int) {
+                    handleRemoveMember(member)
+                }
+
+                override fun onMakeLeader(member: JoinedMemberData) {
+                    member.user.id?.let { handleMakeLeader(it) }
+                }
+            }
+        )
+        binding.rvMember.adapter = adapterJoined
+        loadData()
+    }
+
+    private fun loadData() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val members = loadJoinedMembersData()
+            val isLeader = members.any { it.user.id == user?.id && it.isLeader }
+            adapterJoined.updateData(isLeader)
+            adapterJoined.submitList(members)
+            showNoData(binding.tvNodata, members.size, "members")
+        }
+    }
 
     private fun handleRemoveMember(member: JoinedMemberData) {
         val memberId = member.user.id ?: return
@@ -133,15 +144,8 @@ class JoinedMemberFragment : BaseMemberFragment() {
                     }
 
                     teamRepository.removeMember(teamId, memberId)
-
-                    adapterJoined?.removeMember(memberId)
-
-                    removalResult.newLeaderId?.let { newLeaderId ->
-                        adapterJoined?.updateLeadership(currentUserId, newLeaderId)
-                    }
-
+                    loadData()
                     memberChangeListener.onMemberChanged()
-                    showNoData(binding.tvNodata, adapterJoined?.itemCount ?: 0, "members")
                 } else {
                     Toast.makeText(requireContext(), R.string.cannot_remove_user, Toast.LENGTH_SHORT).show()
                 }
@@ -159,9 +163,7 @@ class JoinedMemberFragment : BaseMemberFragment() {
                 databaseService.executeTransactionAsync { realm ->
                     makeLeaderSync(realm, userId)
                 }
-
-                val currentUserId = user?.id
-                adapterJoined?.updateLeadership(currentUserId, userId)
+                loadData()
                 Toast.makeText(requireContext(), getString(R.string.leader_selected), Toast.LENGTH_SHORT).show()
                 memberChangeListener.onMemberChanged()
             } catch (e: Exception) {
