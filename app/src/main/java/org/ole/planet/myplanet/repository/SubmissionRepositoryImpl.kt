@@ -98,10 +98,7 @@ class SubmissionRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getSubmissionById(id: String): RealmSubmission? {
-        android.util.Log.d("SubmissionFlow", "SubmissionRepository: Searching for submission with id: $id")
-        val submission = findByField(RealmSubmission::class.java, "id", id)
-        android.util.Log.d("SubmissionFlow", "SubmissionRepository: Found submission: ${submission != null}, submission id: ${submission?.id}")
-        return submission
+        return findByField(RealmSubmission::class.java, "id", id)
     }
 
     override suspend fun getSubmissionsByIds(ids: List<String>): List<RealmSubmission> {
@@ -192,12 +189,9 @@ class SubmissionRepositoryImpl @Inject constructor(
     }
 
     override suspend fun saveSubmission(submission: RealmSubmission) {
-        android.util.Log.d("SubmissionFlow", "SubmissionRepository: saveSubmission called for id=${submission.id}")
         try {
             save(submission)
-            android.util.Log.d("SubmissionFlow", "SubmissionRepository: Submission saved successfully")
         } catch (e: Exception) {
-            android.util.Log.e("SubmissionFlow", "SubmissionRepository: Error saving submission", e)
             throw e
         }
     }

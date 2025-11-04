@@ -246,9 +246,6 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                 addTeamInformation(mRealm)
             }
             mRealm.commitTransaction()
-
-            // Debug: Log submission ID
-            android.util.Log.d("SubmissionFlow", "TakeExamFragment: Created submission with ID: ${sub?.id}")
         } catch (e: Exception) {
             mRealm.cancelTransaction()
             throw e
@@ -662,7 +659,6 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     private fun clearAllExistingAnswers(onComplete: () -> Unit = {}) {
-        // Extract Realm object values before entering background thread
         val examIdValue = exam?.id
         val examCourseIdValue = exam?.courseId
         val userIdValue = user?.id

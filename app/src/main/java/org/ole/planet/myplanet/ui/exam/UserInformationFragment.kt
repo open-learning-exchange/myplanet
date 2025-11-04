@@ -38,6 +38,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
+import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
@@ -140,7 +141,6 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             mName = "${fragmentUserInformationBinding.etMname.text}".trim()
         }
 
-        // Initialize user object with all required fields (matching CouchDB structure)
         val user = JsonObject()
 
         if (fragmentUserInformationBinding.ltYob.isVisible) {
@@ -166,11 +166,9 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
                 return
             }
 
-            // Calculate age from year of birth
             calculatedAge = currentYear - yobInt
         }
 
-        // Build user object - only add fields that have values
         if (fname.isNotEmpty()) user.addProperty("firstName", fname)
         if (mName.isNotEmpty()) user.addProperty("middleName", mName)
         if (lname.isNotEmpty()) user.addProperty("lastName", lname)
@@ -187,7 +185,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             if (phone.isNotEmpty()) user.addProperty("phoneNumber", phone)
 
             if (!dob.isNullOrEmpty()) {
-                val birthDateISO = convertToISO8601(dob!!)
+                val birthDateISO = TimeUtils.convertToISO8601(dob!!)
                 user.addProperty("birthDate", birthDateISO)
             }
         }
@@ -207,16 +205,13 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             }
         }
 
-        // Add betaEnabled field (defaults to false)
         user.addProperty("betaEnabled", false)
 
         val teamId = arguments?.getString("teamId")
 
-        // For team surveys, always save to submission only, never update user profile
         if (!teamId.isNullOrEmpty()) {
             saveSubmission(user)
         } else if (TextUtils.isEmpty(id)) {
-            // Only update user profile for non-team surveys without a submission ID
             val userId = userModel?.id
             viewLifecycleOwner.lifecycleScope.launch {
                 try {
@@ -372,34 +367,6 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         dpd.setTitle(getString(R.string.select_date_of_birth))
         dpd.datePicker.maxDate = now.timeInMillis
         dpd.show()
-    }
-
-    private fun convertToISO8601(date: String): String {
-        return try {
-            // Input format: yyyy-MM-dd
-            // Output format: yyyy-MM-dd'T'HH:mm:ss.SSS'Z'
-            val calendar = Calendar.getInstance()
-            val parts = date.split("-")
-            if (parts.size == 3) {
-                calendar.set(parts[0].toInt(), parts[1].toInt() - 1, parts[2].toInt(), 0, 0, 0)
-                calendar.set(Calendar.MILLISECOND, 0)
-                String.format(
-                    Locale.US,
-                    "%04d-%02d-%02dT%02d:%02d:%02d.%03dZ",
-                    calendar.get(Calendar.YEAR),
-                    calendar.get(Calendar.MONTH) + 1,
-                    calendar.get(Calendar.DAY_OF_MONTH),
-                    calendar.get(Calendar.HOUR_OF_DAY),
-                    calendar.get(Calendar.MINUTE),
-                    calendar.get(Calendar.SECOND),
-                    calendar.get(Calendar.MILLISECOND)
-                )
-            } else {
-                date
-            }
-        } catch (_: Exception) {
-            date
-        }
     }
 
     override val key: String
