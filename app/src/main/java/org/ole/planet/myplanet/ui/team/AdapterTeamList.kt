@@ -229,18 +229,20 @@ class AdapterTeamList(
 
             val validTeams = list.filter { it.status?.isNotEmpty() == true }
             if (validTeams.isEmpty()) {
-                withContext(Dispatchers.Main) {
-                    val oldList = filteredList
-                    val oldVisitCounts = visitCounts
+                val oldList = filteredList
+                val oldVisitCounts = visitCounts
+                val diffResult = withContext(Dispatchers.Default) {
                     val newVisitCounts = emptyMap<String, Long>()
                     val newStatusCache = teamStatusCache.toMap()
                     val newList = emptyList<RealmMyTeam>()
-                    val diffResult = DiffUtil.calculateDiff(
+                    DiffUtil.calculateDiff(
                         TeamDiffCallback(oldList, newList, oldVisitCounts, newVisitCounts, oldStatusCache, newStatusCache, userId)
                     )
+                }
 
-                    visitCounts = newVisitCounts
-                    filteredList = newList
+                withContext(Dispatchers.Main) {
+                    visitCounts = emptyMap()
+                    filteredList = emptyList()
                     diffResult.dispatchUpdatesTo(this@AdapterTeamList)
                     updateCompleteListener?.onUpdateComplete(filteredList.size)
                 }
@@ -304,18 +306,20 @@ class AdapterTeamList(
                 }
             )
 
-            withContext(Dispatchers.Main) {
-                val oldList = filteredList
-                val oldVisitCounts = this@AdapterTeamList.visitCounts
+            val oldList = filteredList
+            val oldVisitCounts = this@AdapterTeamList.visitCounts
+            val diffResult = withContext(Dispatchers.Default) {
                 val newList = sortedTeams
                 val newVisitCounts = visitCounts
                 val newStatusCache = teamStatusCache.toMap()
-                val diffResult = DiffUtil.calculateDiff(
+                DiffUtil.calculateDiff(
                     TeamDiffCallback(oldList, newList, oldVisitCounts, newVisitCounts, oldStatusCache, newStatusCache, userId)
                 )
+            }
 
-                this@AdapterTeamList.visitCounts = newVisitCounts
-                filteredList = newList
+            withContext(Dispatchers.Main) {
+                this@AdapterTeamList.visitCounts = visitCounts
+                filteredList = sortedTeams
                 diffResult.dispatchUpdatesTo(this@AdapterTeamList)
                 updateCompleteListener?.onUpdateComplete(filteredList.size)
             }
