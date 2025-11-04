@@ -11,9 +11,14 @@ import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 
 abstract class BaseMemberFragment : BaseTeamFragment() {
     abstract val list: List<RealmUserModel?>
+    abstract val adapter: RecyclerView.Adapter<*>?
     abstract val layoutManager: RecyclerView.LayoutManager?
     private var _binding: FragmentMembersBinding? = null
     protected val binding get() = _binding!!
+
+    abstract fun initObjects()
+    abstract fun setData()
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentMembersBinding.inflate(inflater, container, false)
         return binding.root
@@ -21,7 +26,10 @@ abstract class BaseMemberFragment : BaseTeamFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        initObjects()
         binding.rvMember.layoutManager = layoutManager
+        binding.rvMember.adapter = adapter
+        setData()
         showNoData(binding.tvNodata, list.size, "members")
     }
 

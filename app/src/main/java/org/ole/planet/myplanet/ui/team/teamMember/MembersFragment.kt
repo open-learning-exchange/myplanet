@@ -42,8 +42,12 @@ class MembersFragment : BaseMemberFragment() {
     override val list: List<RealmUserModel>
         get() = getRequestedMember(teamId, mRealm)
 
+    private lateinit var adapterMemberRequest: AdapterMemberRequest
     override val adapter: RecyclerView.Adapter<*>
-        get() = AdapterMemberRequest(
+        get() = adapterMemberRequest
+
+    override fun initObjects() {
+        adapterMemberRequest = AdapterMemberRequest(
             requireActivity(),
             list.toMutableList(),
             mRealm,
@@ -51,6 +55,11 @@ class MembersFragment : BaseMemberFragment() {
             memberChangeListener,
             teamRepository,
         ).apply { setTeamId(teamId) }
+    }
+
+    override fun setData() {
+        // do nothing
+    }
 
     override val layoutManager: RecyclerView.LayoutManager
         get() {

@@ -1,6 +1,8 @@
 package org.ole.planet.myplanet.ui.team.teamMember
 
 import android.content.res.Configuration
+import android.os.Bundle
+import android.view.View
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
@@ -72,9 +74,6 @@ class JoinedMemberFragment : BaseMemberFragment() {
     override val list: List<RealmUserModel>
         get() = adapterJoined.currentList.map { it.user }
 
-    override val adapter: RecyclerView.Adapter<*>
-        get() = adapterJoined
-
     override val layoutManager: RecyclerView.LayoutManager
         get() {
             val columns = when (resources.configuration.screenLayout and Configuration.SCREENLAYOUT_SIZE_MASK) {
@@ -86,8 +85,7 @@ class JoinedMemberFragment : BaseMemberFragment() {
             return GridLayoutManager(activity, columns)
         }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
+    override fun initObjects() {
         adapterJoined = AdapterJoinedMember(
             requireActivity(),
             false,
@@ -101,11 +99,9 @@ class JoinedMemberFragment : BaseMemberFragment() {
                 }
             }
         )
-        binding.rvMember.adapter = adapterJoined
-        loadData()
     }
 
-    private fun loadData() {
+    override fun setData() {
         viewLifecycleOwner.lifecycleScope.launch {
             val members = loadJoinedMembersData()
             val isLeader = members.any { it.user.id == user?.id && it.isLeader }
@@ -144,7 +140,7 @@ class JoinedMemberFragment : BaseMemberFragment() {
                     }
 
                     teamRepository.removeMember(teamId, memberId)
-                    loadData()
+                    setData()
                     memberChangeListener.onMemberChanged()
                 } else {
                     Toast.makeText(requireContext(), R.string.cannot_remove_user, Toast.LENGTH_SHORT).show()
@@ -163,7 +159,7 @@ class JoinedMemberFragment : BaseMemberFragment() {
                 databaseService.executeTransactionAsync { realm ->
                     makeLeaderSync(realm, userId)
                 }
-                loadData()
+                setData()
                 Toast.makeText(requireContext(), getString(R.string.leader_selected), Toast.LENGTH_SHORT).show()
                 memberChangeListener.onMemberChanged()
             } catch (e: Exception) {
