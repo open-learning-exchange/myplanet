@@ -161,6 +161,18 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
 
     private fun showUserInfoDialog() {
         if (!isMySurvey && exam?.isFromNation != true) {
+            android.util.Log.d("SubmissionFlow", "BaseExamFragment: showUserInfoDialog - sub: $sub, sub?.id: ${sub?.id}, teamId: $teamId")
+
+            if (sub == null) {
+                Utilities.toast(activity, "Error: Submission not found. Please try again.")
+                return
+            }
+            if (sub?.id == null) {
+                Utilities.toast(activity, "Error: Submission ID is null. Please try again.")
+                return
+            }
+
+            android.util.Log.d("SubmissionFlow", "BaseExamFragment: Opening UserInformationFragment with submission ID: ${sub?.id}")
             UserInformationFragment.getInstance(sub?.id, teamId, exam?.isFromNation != true).show(childFragmentManager, "")
         } else {
             if (!mRealm.isInTransaction) mRealm.beginTransaction()

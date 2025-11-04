@@ -50,7 +50,6 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     lateinit var submissionRepository: SubmissionRepository
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
-    private var submission: RealmSubmission? = null
     var userModel: RealmUserModel? = null
     var shouldHideElements: Boolean? = null
     @Inject
@@ -59,11 +58,6 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentUserInformationBinding = FragmentUserInformationBinding.inflate(inflater, container, false)
         userModel = userProfileDbHandler.userModel
-        if (!TextUtils.isEmpty(id)) {
-            viewLifecycleOwner.lifecycleScope.launch {
-                submission = id?.let { submissionRepository.getSubmissionById(it) }
-            }
-        }
         shouldHideElements = arguments?.getBoolean("shouldHideElements") == true
         initViews()
         return fragmentUserInformationBinding.root
@@ -145,6 +139,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             mName = "${fragmentUserInformationBinding.etMname.text}".trim()
         }
 
+        // Initialize user object with all required fields (matching CouchDB structure)
         val user = JsonObject()
 
         if (fragmentUserInformationBinding.ltYob.isVisible) {
@@ -169,31 +164,31 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
                     getString(R.string.please_enter_a_valid_year_between_1900_and, currentYear)
                 return
             }
-
-            user.addProperty("age", yob)
         }
 
-        if (fname.isNotEmpty() || lname.isNotEmpty()) {
-            user.addProperty("name", "$fname $lname")
-        }
+        // Build user object - only add fields that have values
         if (fname.isNotEmpty()) user.addProperty("firstName", fname)
-        if (lname.isNotEmpty()) user.addProperty("lastName", lname)
         if (mName.isNotEmpty()) user.addProperty("middleName", mName)
+        if (lname.isNotEmpty()) user.addProperty("lastName", lname)
+
+        if (fragmentUserInformationBinding.llEmailLang.isVisible) {
+            val email = fragmentUserInformationBinding.etEmail.text.toString().trim()
+            val lang = fragmentUserInformationBinding.spnLang.selectedItem.toString()
+            if (email.isNotEmpty()) user.addProperty("email", email)
+            if (lang.isNotEmpty()) user.addProperty("language", lang)
+        }
 
         if (fragmentUserInformationBinding.llPhoneDob.isVisible) {
             val phone = fragmentUserInformationBinding.etPhone.text.toString().trim()
             if (phone.isNotEmpty()) user.addProperty("phoneNumber", phone)
 
-            if (!dob.isNullOrEmpty()) user.addProperty("birthDate", dob)
+            if (!dob.isNullOrEmpty()) {
+                val birthDateISO = convertToISO8601(dob!!)
+                user.addProperty("birthDate", birthDateISO)
+            }
         }
 
-        if (fragmentUserInformationBinding.llEmailLang.isVisible) {
-            val email = fragmentUserInformationBinding.etEmail.text.toString().trim()
-            val lang = fragmentUserInformationBinding.spnLang.selectedItem.toString()
-
-            if (email.isNotEmpty()) user.addProperty("email", email)
-            if (lang.isNotEmpty()) user.addProperty("language", lang)
-        }
+        if (yob.isNotEmpty()) user.addProperty("age", yob)
 
         if (fragmentUserInformationBinding.llLevel.isVisible) {
             val level = fragmentUserInformationBinding.spnLevel.selectedItem.toString()
@@ -204,11 +199,20 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             val rbSelected = requireView().findViewById<RadioButton>(fragmentUserInformationBinding.rbGender.checkedRadioButtonId)
             if (rbSelected != null) {
                 val gender = rbSelected.tag.toString()
-                user.addProperty("gender", gender)
+                if (gender.isNotEmpty()) user.addProperty("gender", gender)
             }
         }
 
-        if (TextUtils.isEmpty(id)) {
+        // Add betaEnabled field (defaults to false)
+        user.addProperty("betaEnabled", false)
+
+        val teamId = arguments?.getString("teamId")
+
+        // For team surveys, always save to submission only, never update user profile
+        if (!teamId.isNullOrEmpty()) {
+            saveSubmission(user)
+        } else if (TextUtils.isEmpty(id)) {
+            // Only update user profile for non-team surveys without a submission ID
             val userId = userModel?.id
             viewLifecycleOwner.lifecycleScope.launch {
                 try {
@@ -245,16 +249,50 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     }
 
     private fun saveSubmission(user: JsonObject) {
-        id?.let { submissionId ->
-            viewLifecycleOwner.lifecycleScope.launch {
-                val sub = submission ?: submissionRepository.getSubmissionById(submissionId)
-                sub?.let {
-                    it.user = user.toString()
-                    it.status = "complete"
-                    submissionRepository.saveSubmission(it)
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                android.util.Log.d("SubmissionFlow", "UserInformationFragment: saveSubmission called, id=$id")
+
+                if (id.isNullOrEmpty()) {
+                    android.util.Log.e("SubmissionFlow", "UserInformationFragment: ERROR - id is null or empty!")
+                    Utilities.toast(MainApplication.context, "Error: Unable to save submission - no ID provided")
+                    if (isAdded) dialog?.dismiss()
+                    return@launch
                 }
-                if (isAdded) {
-                    dialog?.dismiss()
+
+                // Save directly using database transaction to avoid Realm instance issues
+                android.util.Log.d("SubmissionFlow", "UserInformationFragment: Updating submission with id=$id")
+                databaseService.executeTransactionAsync { realm ->
+                    val sub = realm.where(RealmSubmission::class.java)
+                        .equalTo("id", id)
+                        .findFirst()
+
+                    if (sub != null) {
+                        android.util.Log.d("SubmissionFlow", "UserInformationFragment: Found submission in transaction, updating...")
+                        sub.user = user.toString()
+                        sub.status = "complete"
+                        android.util.Log.d("SubmissionFlow", "UserInformationFragment: Submission updated successfully")
+                    } else {
+                        android.util.Log.e("SubmissionFlow", "UserInformationFragment: ERROR - submission not found in transaction!")
+                        throw IllegalStateException("Submission not found with id: $id")
+                    }
+                }
+
+                // Success
+                withContext(Dispatchers.Main) {
+                    Utilities.toast(MainApplication.context, getString(R.string.thank_you_for_taking_this_survey))
+                    if (isAdded) {
+                        dialog?.dismiss()
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("SubmissionFlow", "UserInformationFragment: Exception in saveSubmission", e)
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    Utilities.toast(MainApplication.context, "Error saving submission: ${e.message}")
+                    if (isAdded) {
+                        dialog?.dismiss()
+                    }
                 }
             }
         }
@@ -281,15 +319,19 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         val serverUrlMapper = ServerUrlMapper()
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
+        android.util.Log.d("SubmissionFlow", "UserInformationFragment: Checking server availability for sync")
+
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val primaryAvailable = withTimeoutOrNull(15000) {
                     MainApplication.isServerReachable(mapping.primaryUrl)
                 } ?: false
-                
+
                 val alternativeAvailable = withTimeoutOrNull(15000) {
                     mapping.alternativeUrl?.let { MainApplication.isServerReachable(it) } == true
                 } ?: false
+
+                android.util.Log.d("SubmissionFlow", "UserInformationFragment: Server check - primary: $primaryAvailable, alternative: $alternativeAvailable")
 
                 if (!primaryAvailable && alternativeAvailable) {
                     mapping.alternativeUrl?.let { alternativeUrl ->
@@ -297,27 +339,32 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
                         val editor = settings.edit()
 
                         serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, settings)
+                        android.util.Log.d("SubmissionFlow", "UserInformationFragment: Switched to alternative server URL")
                     }
                 }
 
                 uploadSubmissions()
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                android.util.Log.e("SubmissionFlow", "UserInformationFragment: Error checking server", e)
                 uploadSubmissions()
             }
         }
     }
 
     private fun uploadSubmissions() {
+        android.util.Log.d("SubmissionFlow", "UserInformationFragment: Starting submission upload process")
+
         MainApplication.applicationScope.launch {
             try {
                 withContext(Dispatchers.IO) {
+                    android.util.Log.d("SubmissionFlow", "UserInformationFragment: Uploading submissions...")
                     uploadManager.uploadSubmissions()
-                }
-
-                withContext(Dispatchers.Main) {
+                    android.util.Log.d("SubmissionFlow", "UserInformationFragment: Submissions uploaded, now uploading exam results...")
                     uploadExamResultWrapper()
+                    android.util.Log.d("SubmissionFlow", "UserInformationFragment: Upload process completed successfully")
                 }
             } catch (e: Exception) {
+                android.util.Log.e("SubmissionFlow", "UserInformationFragment: Error during upload process", e)
                 e.printStackTrace()
             }
         }
@@ -325,7 +372,9 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
 
     private fun uploadExamResultWrapper() {
         val successListener = object : SuccessListener {
-            override fun onSuccess(success: String?) {}
+            override fun onSuccess(success: String?) {
+                android.util.Log.d("SubmissionFlow", "UserInformationFragment: Exam result upload callback - success: $success")
+            }
         }
 
         uploadManager.uploadExamResult(successListener)
@@ -342,6 +391,34 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         dpd.setTitle(getString(R.string.select_date_of_birth))
         dpd.datePicker.maxDate = now.timeInMillis
         dpd.show()
+    }
+
+    private fun convertToISO8601(date: String): String {
+        return try {
+            // Input format: yyyy-MM-dd
+            // Output format: yyyy-MM-dd'T'HH:mm:ss.SSS'Z'
+            val calendar = Calendar.getInstance()
+            val parts = date.split("-")
+            if (parts.size == 3) {
+                calendar.set(parts[0].toInt(), parts[1].toInt() - 1, parts[2].toInt(), 0, 0, 0)
+                calendar.set(Calendar.MILLISECOND, 0)
+                String.format(
+                    Locale.US,
+                    "%04d-%02d-%02dT%02d:%02d:%02d.%03dZ",
+                    calendar.get(Calendar.YEAR),
+                    calendar.get(Calendar.MONTH) + 1,
+                    calendar.get(Calendar.DAY_OF_MONTH),
+                    calendar.get(Calendar.HOUR_OF_DAY),
+                    calendar.get(Calendar.MINUTE),
+                    calendar.get(Calendar.SECOND),
+                    calendar.get(Calendar.MILLISECOND)
+                )
+            } else {
+                date
+            }
+        } catch (_: Exception) {
+            date
+        }
     }
 
     override val key: String

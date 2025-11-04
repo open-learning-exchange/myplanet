@@ -163,6 +163,7 @@ class UploadManager @Inject constructor(
     }
 
     fun uploadExamResult(listener: SuccessListener) {
+        android.util.Log.d("SubmissionFlow", "UploadManager: uploadExamResult started")
         val apiInterface = client.create(ApiInterface::class.java)
 
         try {
@@ -181,6 +182,7 @@ class UploadManager @Inject constructor(
                     }
             }
 
+            android.util.Log.d("SubmissionFlow", "UploadManager: Found ${submissionsToUpload.size} submissions to upload")
             var processedCount = 0
             var errorCount = 0
 

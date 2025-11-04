@@ -89,10 +89,11 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         isCertified = isCourseCertified(mRealm, courseId)
 
         if ((questions?.size ?: 0) > 0) {
-            clearAllExistingAnswers()
-            createSubmission()
-            startExam(questions?.get(currentIndex))
-            updateNavButtons()
+            clearAllExistingAnswers {
+                createSubmission()
+                startExam(questions?.get(currentIndex))
+                updateNavButtons()
+            }
         } else {
             binding.container.visibility = View.GONE
             binding.btnSubmit.visibility = View.GONE
@@ -245,6 +246,9 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                 addTeamInformation(mRealm)
             }
             mRealm.commitTransaction()
+
+            // Debug: Log submission ID
+            android.util.Log.d("SubmissionFlow", "TakeExamFragment: Created submission with ID: ${sub?.id}")
         } catch (e: Exception) {
             mRealm.cancelTransaction()
             throw e
@@ -657,18 +661,23 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         return false
     }
 
-    private fun clearAllExistingAnswers() {
+    private fun clearAllExistingAnswers(onComplete: () -> Unit = {}) {
+        // Extract Realm object values before entering background thread
+        val examIdValue = exam?.id
+        val examCourseIdValue = exam?.courseId
+        val userIdValue = user?.id
+
         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             try {
                 databaseService.executeTransactionAsync { realm ->
-                    val parentIdToSearch = if (!TextUtils.isEmpty(exam?.courseId)) {
-                        "${exam?.id ?: id}@${exam?.courseId}"
+                    val parentIdToSearch = if (!TextUtils.isEmpty(examCourseIdValue)) {
+                        "${examIdValue ?: id}@${examCourseIdValue}"
                     } else {
-                        exam?.id ?: id
+                        examIdValue ?: id
                     }
 
                     val allSubmissions = realm.where(RealmSubmission::class.java)
-                        .equalTo("userId", user?.id)
+                        .equalTo("userId", userIdValue)
                         .equalTo("parentId", parentIdToSearch)
                         .findAll()
 
@@ -684,6 +693,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                     ans = ""
                     listAns?.clear()
                     sub = null
+                    onComplete()
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -693,6 +703,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                     ans = ""
                     listAns?.clear()
                     sub = null
+                    onComplete()
                 }
             }
         }
