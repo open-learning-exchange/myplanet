@@ -9,26 +9,9 @@
         <item name="colorAccent">@color/colorAccent</item>
     </style>
 
-    <style name="GuestStyle">
-        <item name="colorPrimary">@color/md_red_500</item>
-        <item name="colorPrimaryDark">@color/md_red_700</item>
-        <item name="colorAccent">@color/md_blue_500</item>
-    </style>
-
     <style name="RatingBar" parent="Theme.AppCompat">
         <item name="colorControlNormal">@color/md_grey_500</item>
         <item name="colorControlActivated">@color/md_yellow_700</item>
-    </style>
-
-    <style name="FullscreenTheme" parent="MaterialDrawerTheme.Light.DarkToolbar.TranslucentStatus">
-        <item name="android:actionBarStyle">@style/FullscreenActionBarStyle</item>
-        <item name="android:windowActionBarOverlay">false</item>
-        <item name="metaButtonBarStyle">?android:attr/buttonBarStyle</item>
-        <item name="metaButtonBarButtonStyle">?android:attr/buttonBarButtonStyle</item>
-    </style>
-
-    <style name="FullscreenActionBarStyle" parent="Widget.AppCompat.ActionBar">
-        <item name="android:background">@color/black_overlay</item>
     </style>
 
     <style name="MyMaterialTheme" parent="MyMaterialTheme.Base" />
@@ -41,28 +24,6 @@
         <item name="colorAccent">@color/colorAccent</item>
     </style>
 
-    <style name="CustomTheme" parent="MaterialDrawerTheme.TranslucentStatus">
-        <!-- ...and here we setting appcompat’s color theme attrs -->
-        <item name="colorPrimary">#F1433C</item>
-        <item name="colorPrimaryDark">#D03033</item>
-        <item name="colorAccent">#02A8F3</item>
-        <!-- MaterialDrawer specific values -->
-        <item name="material_drawer_background">@color/material_drawer_dark_background</item>
-        <item name="material_drawer_primary_text">@color/material_drawer_dark_primary_text</item>
-        <item name="material_drawer_secondary_text">@color/material_drawer_dark_secondary_text
-        </item>
-        <item name="material_drawer_hint_text">@color/material_drawer_dark_hint_text</item>
-        <item name="material_drawer_divider">@color/material_drawer_dark_divider</item>
-        <item name="material_drawer_selected">@color/material_drawer_dark_selected</item>
-        <item name="material_drawer_selected_text">#F1433C</item>
-        <item name="material_drawer_header_selection_text">
-            @color/material_drawer_dark_primary_text
-        </item>
-
-        <!-- CAB :D -->
-        <item name="windowActionModeOverlay">false</item>
-    </style>
-
     <style name="HeaderText">
         <item name="android:textStyle">bold</item>
         <item name="android:padding">@dimen/padding_normal</item>
@@ -71,32 +32,9 @@
     </style>
 
     <!--    Button Themes   -->
-    <style name="RejectButton" parent="Theme.AppCompat">
-        <item name="colorButtonNormal">@color/colorAccent</item>
-        <item name="colorControlHighlight">@color/colorAccent</item>
-    </style>
-
-    <!--  Button that uses accent color, primarily as the most important button on the screen  -->
-    <style name="FocusButton" parent="Theme.AppCompat">
-        <item name="colorButtonNormal">@color/colorAccent</item>
-        <item name="colorControlHighlight">@color/colorAccent</item>
-    </style>
-
     <style name="PrimaryButton" parent="Theme.AppCompat">
         <item name="colorButtonNormal">@color/mainColor</item>
         <item name="colorControlHighlight">@color/colorAccent</item>
-    </style>
-
-    <style name="AccentButton" parent="Theme.AppCompat">
-        <item name="android:textColor">@color/md_white_1000</item>
-        <item name="colorButtonNormal">@color/mainColor</item>
-        <item name="colorControlHighlight">@color/colorPrimary</item>
-    </style>
-
-    <style name="AppThemeButton" parent="Theme.AppCompat">
-        <item name="android:textColor">@color/md_white_1000</item>
-        <item name="colorButtonNormal">@color/mainColor</item>
-        <item name="colorControlHighlight">@color/total_color</item>
     </style>
 
     <style name="BlueButton" parent="Theme.AppCompat">
@@ -123,12 +61,6 @@
         <item name="android:background">@drawable/buttonyellow</item>
         <item name="colorControlHighlight">@color/disable_color</item>
         <item name="android:layout_margin">8dp</item>
-    </style>
-
-    <style name="PrimaryFlatButton" parent="Theme.AppCompat.Light">
-        <item name="android:buttonStyle">@style/Widget.AppCompat.Button.Borderless</item>
-        <item name="colorControlHighlight">@color/colorAccent</item>
-        <item name="colorAccent">@color/colorPrimary</item>
     </style>
 
     <style name="Seekbar" parent="@android:style/Widget.ProgressBar.Horizontal">
@@ -192,11 +124,6 @@
         <item name="android:buttonStyle">@style/NegativeButtonStyleHealth</item>
     </style>
 
-    <style name="SpinnerItemStyle" parent="@android:style/Widget.Holo.DropDownItem.Spinner">
-        <item name="android:textColor">@color/daynight_textColor</item>
-        <item name="android:background">@color/secondary_bg</item>
-    </style>
-
     <style name="PreferencesTheme" parent="ThemeOverlay.AppCompat.DayNight">
         <item name="android:textColor">@color/daynight_textColor</item>
         <item name="android:textColorSecondary">@color/hint_color</item>
@@ -206,12 +133,6 @@
         <item name="windowNoTitle">true</item>
         <item name="android:windowMinWidthMajor">@dimen/dialog_min_width_major</item>
         <item name="android:windowMinWidthMinor">@dimen/dialog_min_width_minor</item>
-    </style>
-
-    <style name="AppTheme.MaterialComponents" parent="Theme.MaterialComponents.DayNight.NoActionBar.Bridge">
-        <item name="colorPrimary">@color/colorPrimary</item>
-        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
-        <item name="colorAccent">@color/colorAccent</item>
     </style>
 
     <style name="primaryButton" parent="Widget.AppCompat.Button">
@@ -224,11 +145,5 @@
     <style name="ResourcePopupMenu" parent="ThemeOverlay.AppCompat.Light">
         <item name="android:popupBackground">@color/md_white_1000</item>
         <item name="android:textColor">@color/daynight_textColor</item>
-    </style>
-
-    <style name="NumberPickerTheme" parent="Theme.AppCompat.Light">
-        <item name="colorControlNormal">@color/accent</item>
-        <item name="android:textColorPrimary">@color/daynight_textColor</item>
-        <item name="android:textSize">16sp</item>
     </style>
 </resources>
