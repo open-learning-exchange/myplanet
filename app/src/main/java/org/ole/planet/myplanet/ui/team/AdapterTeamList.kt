@@ -225,15 +225,18 @@ class AdapterTeamList(
 
         updateListJob?.cancel()
         updateListJob = scope.launch {
+            val oldStatusCache = teamStatusCache.toMap()
+
             val validTeams = list.filter { it.status?.isNotEmpty() == true }
             if (validTeams.isEmpty()) {
                 withContext(Dispatchers.Main) {
                     val oldList = filteredList
                     val oldVisitCounts = visitCounts
                     val newVisitCounts = emptyMap<String, Long>()
+                    val newStatusCache = teamStatusCache.toMap()
                     val newList = emptyList<RealmMyTeam>()
                     val diffResult = DiffUtil.calculateDiff(
-                        TeamDiffCallback(oldList, newList, oldVisitCounts, newVisitCounts)
+                        TeamDiffCallback(oldList, newList, oldVisitCounts, newVisitCounts, oldStatusCache, newStatusCache, userId)
                     )
 
                     visitCounts = newVisitCounts
@@ -306,8 +309,9 @@ class AdapterTeamList(
                 val oldVisitCounts = this@AdapterTeamList.visitCounts
                 val newList = sortedTeams
                 val newVisitCounts = visitCounts
+                val newStatusCache = teamStatusCache.toMap()
                 val diffResult = DiffUtil.calculateDiff(
-                    TeamDiffCallback(oldList, newList, oldVisitCounts, newVisitCounts)
+                    TeamDiffCallback(oldList, newList, oldVisitCounts, newVisitCounts, oldStatusCache, newStatusCache, userId)
                 )
 
                 this@AdapterTeamList.visitCounts = newVisitCounts
@@ -323,6 +327,9 @@ class AdapterTeamList(
         private val newList: List<RealmMyTeam>,
         private val oldVisitCounts: Map<String, Long>,
         private val newVisitCounts: Map<String, Long>,
+        private val oldStatusCache: Map<String, TeamStatus>,
+        private val newStatusCache: Map<String, TeamStatus>,
+        private val userId: String?,
     ) : DiffUtil.Callback() {
         override fun getOldListSize(): Int = oldList.size
 
@@ -342,15 +349,20 @@ class AdapterTeamList(
             val oldVisitCount = oldVisitCounts[oldId] ?: 0L
             val newVisitCount = newVisitCounts[newId] ?: 0L
 
+            val oldStatusKey = "${oldId}_${userId}"
+            val newStatusKey = "${newId}_${userId}"
+            val oldStatus = oldStatusCache[oldStatusKey]
+            val newStatus = newStatusCache[newStatusKey]
+
             return oldItem.name == newItem.name &&
                 oldItem.teamType == newItem.teamType &&
                 oldItem.createdDate == newItem.createdDate &&
                 oldItem.type == newItem.type &&
                 oldItem.status == newItem.status &&
-                oldVisitCount == newVisitCount
+                oldVisitCount == newVisitCount &&
+                oldStatus == newStatus
         }
     }
-
 
     private fun requestToJoin(team: RealmMyTeam, user: RealmUserModel?) {
         val teamId = team._id ?: return
@@ -358,12 +370,22 @@ class AdapterTeamList(
         val userId = user?.id
         val userPlanetCode = user?.planetCode
         val cacheKey = "${teamId}_${userId}"
+        val position = filteredList.indexOfFirst { it._id == teamId }
 
-        teamStatusCache.remove(cacheKey)
+        teamStatusCache[cacheKey] = TeamStatus(
+            isMember = false,
+            isLeader = false,
+            hasPendingRequest = true
+        )
+
+        if (position >= 0) {
+            notifyItemChanged(position)
+        }
 
         scope.launch(Dispatchers.IO) {
             teamRepository.requestToJoin(teamId, userId, userPlanetCode, teamType)
             withContext(Dispatchers.Main) {
+                teamStatusCache.remove(cacheKey)
                 updateList()
             }
         }
@@ -372,7 +394,6 @@ class AdapterTeamList(
     private fun leaveTeam(team: RealmMyTeam, userId: String?) {
         val teamId = team._id ?: return
         val cacheKey = "${teamId}_${userId}"
-
         teamStatusCache.remove(cacheKey)
 
         scope.launch(Dispatchers.IO) {

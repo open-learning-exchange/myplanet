@@ -89,7 +89,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     @Inject
     lateinit var tagRepository: TagRepository
 
-    private val serverUrlMapper = ServerUrlMapper()
+    @Inject
+    lateinit var serverUrlMapper: ServerUrlMapper
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
     
@@ -180,22 +181,19 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         try {
             map = getRatings(mRealm, "resource", model?.id)
             val libraryList: List<RealmMyLibrary?> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary?>()
-            adapterLibrary.setLibraryList(libraryList)
+            val currentSearchTags = if (::searchTags.isInitialized) searchTags else emptyList()
+            val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
+            val filteredLibraryList: List<RealmMyLibrary?> =
+                if (currentSearchTags.isEmpty() && searchQuery.isEmpty()) {
+                    applyFilter(libraryList.filterNotNull()).map { it }
+                } else {
+                    applyFilter(filterLibraryByTag(searchQuery, currentSearchTags)).map { it }
+                }
+
+            adapterLibrary.setLibraryList(filteredLibraryList)
             adapterLibrary.setRatingMap(map!!)
-            adapterLibrary.notifyDataSetChanged()
             checkList()
             showNoData(tvMessage, adapterLibrary.itemCount, "resources")
-
-            if (searchTags.isNotEmpty() || etSearch.text?.isNotEmpty() == true) {
-                adapterLibrary.setLibraryList(
-                    applyFilter(
-                        filterLibraryByTag(
-                            etSearch.text.toString().trim(), searchTags
-                        )
-                    )
-                )
-                showNoData(tvMessage, adapterLibrary.itemCount, "resources")
-            }
 
         } catch (e: Exception) {
             e.printStackTrace()

@@ -166,57 +166,56 @@ class UploadManager @Inject constructor(
         val apiInterface = client.create(ApiInterface::class.java)
 
         try {
-            val hasLooper = Looper.myLooper() != null
+            data class SubmissionData(val id: String?, val serialized: JsonObject, val _id: String?, val _rev: String?)
 
-            databaseService.withRealm { realm ->
-                if (hasLooper) {
-                    realm.executeTransactionAsync({ transactionRealm: Realm ->
-                        val submissions: List<RealmSubmission> = transactionRealm.where(RealmSubmission::class.java).findAll()
-                        var processedCount = 0
-                        var errorCount = 0
+            val submissionsToUpload = databaseService.withRealm { realm ->
+                realm.where(RealmSubmission::class.java).findAll()
+                    .filter { (it.answers?.size ?: 0) > 0 && it.userId?.startsWith("guest") != true }
+                    .map { sub ->
+                        val serialized = if (!TextUtils.isEmpty(sub._id)) {
+                            RealmSubmission.serializeExamResult(realm, sub, context)
+                        } else {
+                            RealmSubmission.serializeExamResult(realm, sub, context)
+                        }
+                        SubmissionData(sub.id, serialized, sub._id, sub._rev)
+                    }
+            }
 
-                        submissions.processInBatches { sub ->
-                            try {
-                                if ((sub.answers?.size ?: 0) > 0) {
-                                    RealmSubmission.continueResultUpload(sub, apiInterface, transactionRealm, context)
-                                    processedCount++
+            var processedCount = 0
+            var errorCount = 0
+
+            submissionsToUpload.processInBatches { data ->
+                try {
+                    val response: JsonObject? = if (TextUtils.isEmpty(data._id)) {
+                        apiInterface?.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/submissions", data.serialized)?.execute()?.body()
+                    } else {
+                        apiInterface?.putDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/submissions/${data._id}", data.serialized)?.execute()?.body()
+                    }
+
+                    if (response != null && data.id != null) {
+                        databaseService.withRealm { realm ->
+                            realm.executeTransaction { transactionRealm ->
+                                transactionRealm.where(RealmSubmission::class.java).equalTo("id", data.id).findFirst()?.let { sub ->
+                                    sub._id = getString("id", response)
+                                    sub._rev = getString("rev", response)
                                 }
-                            } catch (e: Exception) {
-                                errorCount++
-                                e.printStackTrace()
                             }
                         }
-                    }, {
-                        uploadCourseProgress()
-                        listener.onSuccess("Result sync completed successfully")
-                    }) { e: Throwable ->
-                        e.printStackTrace()
-                        listener.onSuccess("Error during result sync: ${e.message}")
+                        processedCount++
+                    } else {
+                        errorCount++
                     }
-                } else {
-                    realm.executeTransaction { transactionRealm: Realm ->
-                        val submissions: List<RealmSubmission> =
-                            transactionRealm.where(RealmSubmission::class.java).findAll()
-
-                        var processedCount = 0
-                        var errorCount = 0
-
-                        submissions.processInBatches { sub ->
-                            try {
-                                if ((sub.answers?.size ?: 0) > 0) {
-                                    RealmSubmission.continueResultUpload(sub, apiInterface, transactionRealm, context)
-                                    processedCount++
-                                }
-                            } catch (e: Exception) {
-                                errorCount++
-                                e.printStackTrace()
-                            }
-                        }
-                    }
-                    uploadCourseProgress()
-                    listener.onSuccess("Result sync completed successfully")
+                } catch (e: IOException) {
+                    errorCount++
+                    e.printStackTrace()
+                } catch (e: Exception) {
+                    errorCount++
+                    e.printStackTrace()
                 }
             }
+
+            uploadCourseProgress()
+            listener.onSuccess("Result sync completed successfully ($processedCount processed, $errorCount errors)")
         } catch (e: Exception) {
             e.printStackTrace()
             listener.onSuccess("Error during result sync: ${e.message}")
@@ -436,25 +435,32 @@ class UploadManager @Inject constructor(
                 override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
                     val `object` = response.body()
                     if (`object` != null) {
-                        try {
-                            val rev = getString("rev", `object`)
-                            val id = getString("id", `object`)
-                            databaseService.withRealm { updateRealm ->
-                                updateRealm.executeTransaction { transactionRealm ->
+                        val rev = getString("rev", `object`)
+                        val id = getString("id", `object`)
+                        databaseService.withRealm { updateRealm ->
+                            updateRealm.executeTransactionAsync({ transactionRealm ->
+                                val managedPersonal = personal.id?.takeIf { it.isNotEmpty() }?.let { personalId ->
                                     transactionRealm.where(RealmMyPersonal::class.java)
-                                        .equalTo("id", personal.id)
+                                        .equalTo("id", personalId)
                                         .findFirst()
-                                        ?.let { managedPersonal ->
-                                            managedPersonal.isUploaded = true
-                                            managedPersonal._rev = rev
-                                            managedPersonal._id = id
-                                        }
+                                } ?: personal._id?.takeIf { it.isNotEmpty() }?.let { existingId ->
+                                    transactionRealm.where(RealmMyPersonal::class.java)
+                                        .equalTo("_id", existingId)
+                                        .findFirst()
                                 }
-                            }
 
-                            uploadAttachment(id, rev, personal, listener)
-                        } catch (e: Exception) {
-                            listener.onSuccess("Error updating personal resource: ${e.message}")
+                                managedPersonal?.let { realmPersonal ->
+                                    realmPersonal.isUploaded = true
+                                    realmPersonal._rev = rev
+                                    realmPersonal._id = id
+                                } ?: throw IllegalStateException("Personal resource not found")
+                            }, {
+                                uploadAttachment(id, rev, personal, listener)
+                            }) { error ->
+                                listener.onSuccess(
+                                    "Error updating personal resource: ${error.message ?: "Unknown error"}"
+                                )
+                            }
                         }
                     } else {
                         listener.onSuccess("Failed to upload personal resource: No response")
