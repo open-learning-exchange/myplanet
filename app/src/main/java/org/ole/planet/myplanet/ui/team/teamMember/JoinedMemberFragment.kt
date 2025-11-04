@@ -74,6 +74,10 @@ class JoinedMemberFragment : BaseMemberFragment() {
     override val list: List<RealmUserModel>
         get() = adapterJoined.currentList.map { it.user }
 
+    override val adapter: RecyclerView.Adapter<*>
+        get() = adapterJoined
+
+
     override val layoutManager: RecyclerView.LayoutManager
         get() {
             val columns = when (resources.configuration.screenLayout and Configuration.SCREENLAYOUT_SIZE_MASK) {
