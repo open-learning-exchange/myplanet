@@ -56,6 +56,17 @@ class AdapterTeamList(
         val hasPendingRequest: Boolean
     )
 
+    private data class TeamData(
+        val _id: String?,
+        val name: String?,
+        val teamType: String?,
+        val createdDate: Long?,
+        val type: String?,
+        val status: String?,
+        val visitCount: Long,
+        val teamStatus: TeamStatus?
+    )
+
     interface OnClickTeamItem {
         fun onEditTeam(team: RealmMyTeam?)
     }
@@ -225,44 +236,43 @@ class AdapterTeamList(
 
         updateListJob?.cancel()
         updateListJob = scope.launch {
-            val oldStatusCache = teamStatusCache.toMap()
+            val oldList = filteredList.map { team ->
+                val teamId = team._id.orEmpty()
+                val cacheKey = "${teamId}_${userId}"
+                TeamData(
+                    _id = team._id,
+                    name = team.name,
+                    teamType = team.teamType,
+                    createdDate = team.createdDate,
+                    type = team.type,
+                    status = team.status,
+                    visitCount = visitCounts[teamId] ?: 0L,
+                    teamStatus = teamStatusCache[cacheKey]
+                )
+            }
 
             val validTeams = list.filter { it.status?.isNotEmpty() == true }
             if (validTeams.isEmpty()) {
-                val oldList = filteredList
-                val oldVisitCounts = visitCounts
                 val diffResult = withContext(Dispatchers.Default) {
-                    val newVisitCounts = emptyMap<String, Long>()
-                    val newStatusCache = teamStatusCache.toMap()
-                    val newList = emptyList<RealmMyTeam>()
-                    DiffUtil.calculateDiff(
-                        TeamDiffCallback(oldList, newList, oldVisitCounts, newVisitCounts, oldStatusCache, newStatusCache, userId)
-                    )
+                    DiffUtil.calculateDiff(TeamDiffCallback(oldList, emptyList()))
                 }
-
-                withContext(Dispatchers.Main) {
-                    visitCounts = emptyMap()
-                    filteredList = emptyList()
-                    diffResult.dispatchUpdatesTo(this@AdapterTeamList)
-                    updateCompleteListener?.onUpdateComplete(filteredList.size)
-                }
+                visitCounts = emptyMap()
+                filteredList = emptyList()
+                diffResult.dispatchUpdatesTo(this@AdapterTeamList)
+                updateCompleteListener?.onUpdateComplete(filteredList.size)
                 return@launch
             }
 
             val teamIds = validTeams.mapNotNull { it._id?.takeIf { id -> id.isNotBlank() } }
-
             val visitCountsDeferred = async(Dispatchers.IO) {
                 teamRepository.getRecentVisitCounts(teamIds)
             }
 
             val statusResults = mutableMapOf<String, TeamStatus>()
             val idsToFetch = linkedSetOf<String>()
-
             validTeams.forEach { team ->
                 val teamId = team._id.orEmpty()
-                if (teamId.isBlank()) {
-                    return@forEach
-                }
+                if (teamId.isBlank()) return@forEach
                 val cacheKey = "${teamId}_${userId}"
                 val cachedStatus = teamStatusCache[cacheKey]
                 if (cachedStatus != null) {
@@ -289,82 +299,58 @@ class AdapterTeamList(
                 }
             }
 
-            val visitCounts = visitCountsDeferred.await()
-
+            val newVisitCounts = visitCountsDeferred.await()
             val sortedTeams = validTeams.sortedWith(
                 compareByDescending<RealmMyTeam> { team ->
                     val teamId = team._id.orEmpty()
-                    val status = statusResults[teamId]
-                        ?: TeamStatus(isMember = false, isLeader = false, hasPendingRequest = false)
+                    val status = statusResults[teamId] ?: TeamStatus(false, false, false)
                     when {
                         status.isLeader -> 3
                         status.isMember -> 2
                         else -> 1
                     }
                 }.thenByDescending { team ->
-                    visitCounts[team._id.orEmpty()] ?: 0L
+                    newVisitCounts[team._id.orEmpty()] ?: 0L
                 }
             )
 
-            val oldList = filteredList
-            val oldVisitCounts = this@AdapterTeamList.visitCounts
-            val diffResult = withContext(Dispatchers.Default) {
-                val newList = sortedTeams
-                val newVisitCounts = visitCounts
-                val newStatusCache = teamStatusCache.toMap()
-                DiffUtil.calculateDiff(
-                    TeamDiffCallback(oldList, newList, oldVisitCounts, newVisitCounts, oldStatusCache, newStatusCache, userId)
+            val newList = sortedTeams.map { team ->
+                val teamId = team._id.orEmpty()
+                val cacheKey = "${teamId}_${userId}"
+                TeamData(
+                    _id = team._id,
+                    name = team.name,
+                    teamType = team.teamType,
+                    createdDate = team.createdDate,
+                    type = team.type,
+                    status = team.status,
+                    visitCount = newVisitCounts[teamId] ?: 0L,
+                    teamStatus = teamStatusCache[cacheKey]
                 )
             }
 
-            withContext(Dispatchers.Main) {
-                this@AdapterTeamList.visitCounts = visitCounts
-                filteredList = sortedTeams
-                diffResult.dispatchUpdatesTo(this@AdapterTeamList)
-                updateCompleteListener?.onUpdateComplete(filteredList.size)
+            val diffResult = withContext(Dispatchers.Default) {
+                DiffUtil.calculateDiff(TeamDiffCallback(oldList, newList))
             }
+
+            visitCounts = newVisitCounts
+            filteredList = sortedTeams
+            diffResult.dispatchUpdatesTo(this@AdapterTeamList)
+            updateCompleteListener?.onUpdateComplete(filteredList.size)
         }
     }
 
     private class TeamDiffCallback(
-        private val oldList: List<RealmMyTeam>,
-        private val newList: List<RealmMyTeam>,
-        private val oldVisitCounts: Map<String, Long>,
-        private val newVisitCounts: Map<String, Long>,
-        private val oldStatusCache: Map<String, TeamStatus>,
-        private val newStatusCache: Map<String, TeamStatus>,
-        private val userId: String?,
+        private val oldList: List<TeamData>, private val newList: List<TeamData>
     ) : DiffUtil.Callback() {
         override fun getOldListSize(): Int = oldList.size
-
         override fun getNewListSize(): Int = newList.size
-
         override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-            val oldItem = oldList[oldItemPosition]
-            val newItem = newList[newItemPosition]
-            return oldItem._id == newItem._id
+            return oldList[oldItemPosition]._id == newList[newItemPosition]._id
         }
 
         override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-            val oldItem = oldList[oldItemPosition]
-            val newItem = newList[newItemPosition]
-            val oldId = oldItem._id.orEmpty()
-            val newId = newItem._id.orEmpty()
-            val oldVisitCount = oldVisitCounts[oldId] ?: 0L
-            val newVisitCount = newVisitCounts[newId] ?: 0L
-
-            val oldStatusKey = "${oldId}_${userId}"
-            val newStatusKey = "${newId}_${userId}"
-            val oldStatus = oldStatusCache[oldStatusKey]
-            val newStatus = newStatusCache[newStatusKey]
-
-            return oldItem.name == newItem.name &&
-                oldItem.teamType == newItem.teamType &&
-                oldItem.createdDate == newItem.createdDate &&
-                oldItem.type == newItem.type &&
-                oldItem.status == newItem.status &&
-                oldVisitCount == newVisitCount &&
-                oldStatus == newStatus
+            return oldList[oldItemPosition] == newList[newItemPosition]
         }
     }
 
