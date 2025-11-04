@@ -225,7 +225,6 @@ class AdapterTeamList(
 
         updateListJob?.cancel()
         updateListJob = scope.launch {
-            // Capture old status cache at the start, before any updates
             val oldStatusCache = teamStatusCache.toMap()
 
             val validTeams = list.filter { it.status?.isNotEmpty() == true }
@@ -310,7 +309,6 @@ class AdapterTeamList(
                 val oldVisitCounts = this@AdapterTeamList.visitCounts
                 val newList = sortedTeams
                 val newVisitCounts = visitCounts
-                // Capture new status cache after all updates have been applied
                 val newStatusCache = teamStatusCache.toMap()
                 val diffResult = DiffUtil.calculateDiff(
                     TeamDiffCallback(oldList, newList, oldVisitCounts, newVisitCounts, oldStatusCache, newStatusCache, userId)
@@ -366,25 +364,20 @@ class AdapterTeamList(
         }
     }
 
-
     private fun requestToJoin(team: RealmMyTeam, user: RealmUserModel?) {
         val teamId = team._id ?: return
         val teamType = team.teamType
         val userId = user?.id
         val userPlanetCode = user?.planetCode
         val cacheKey = "${teamId}_${userId}"
-
-        // Find the position of this team in the current filtered list
         val position = filteredList.indexOfFirst { it._id == teamId }
 
-        // Optimistically update cache to show pending status immediately
         teamStatusCache[cacheKey] = TeamStatus(
             isMember = false,
             isLeader = false,
             hasPendingRequest = true
         )
 
-        // Immediately notify this specific item to trigger onBindViewHolder
         if (position >= 0) {
             notifyItemChanged(position)
         }
@@ -392,7 +385,6 @@ class AdapterTeamList(
         scope.launch(Dispatchers.IO) {
             teamRepository.requestToJoin(teamId, userId, userPlanetCode, teamType)
             withContext(Dispatchers.Main) {
-                // Clear cache to force fresh fetch from DB to confirm the request was saved
                 teamStatusCache.remove(cacheKey)
                 updateList()
             }
@@ -402,7 +394,6 @@ class AdapterTeamList(
     private fun leaveTeam(team: RealmMyTeam, userId: String?) {
         val teamId = team._id ?: return
         val cacheKey = "${teamId}_${userId}"
-
         teamStatusCache.remove(cacheKey)
 
         scope.launch(Dispatchers.IO) {
