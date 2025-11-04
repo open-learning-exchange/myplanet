@@ -255,34 +255,25 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     private fun saveSubmission(user: JsonObject) {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                android.util.Log.d("SubmissionFlow", "UserInformationFragment: saveSubmission called, id=$id")
-
                 if (id.isNullOrEmpty()) {
-                    android.util.Log.e("SubmissionFlow", "UserInformationFragment: ERROR - id is null or empty!")
                     Utilities.toast(MainApplication.context, "Error: Unable to save submission - no ID provided")
                     if (isAdded) dialog?.dismiss()
                     return@launch
                 }
 
-                // Save directly using database transaction to avoid Realm instance issues
-                android.util.Log.d("SubmissionFlow", "UserInformationFragment: Updating submission with id=$id")
                 databaseService.executeTransactionAsync { realm ->
                     val sub = realm.where(RealmSubmission::class.java)
                         .equalTo("id", id)
                         .findFirst()
 
                     if (sub != null) {
-                        android.util.Log.d("SubmissionFlow", "UserInformationFragment: Found submission in transaction, updating...")
                         sub.user = user.toString()
                         sub.status = "complete"
-                        android.util.Log.d("SubmissionFlow", "UserInformationFragment: Submission updated successfully")
                     } else {
-                        android.util.Log.e("SubmissionFlow", "UserInformationFragment: ERROR - submission not found in transaction!")
                         throw IllegalStateException("Submission not found with id: $id")
                     }
                 }
 
-                // Success
                 withContext(Dispatchers.Main) {
                     Utilities.toast(MainApplication.context, getString(R.string.thank_you_for_taking_this_survey))
                     if (isAdded) {
@@ -290,7 +281,6 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
                     }
                 }
             } catch (e: Exception) {
-                android.util.Log.e("SubmissionFlow", "UserInformationFragment: Exception in saveSubmission", e)
                 e.printStackTrace()
                 withContext(Dispatchers.Main) {
                     Utilities.toast(MainApplication.context, "Error saving submission: ${e.message}")
@@ -323,8 +313,6 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         val serverUrlMapper = ServerUrlMapper()
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
-        android.util.Log.d("SubmissionFlow", "UserInformationFragment: Checking server availability for sync")
-
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val primaryAvailable = withTimeoutOrNull(15000) {
@@ -335,40 +323,30 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
                     mapping.alternativeUrl?.let { MainApplication.isServerReachable(it) } == true
                 } ?: false
 
-                android.util.Log.d("SubmissionFlow", "UserInformationFragment: Server check - primary: $primaryAvailable, alternative: $alternativeAvailable")
-
                 if (!primaryAvailable && alternativeAvailable) {
                     mapping.alternativeUrl?.let { alternativeUrl ->
                         val uri = updateUrl.toUri()
                         val editor = settings.edit()
 
                         serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, settings)
-                        android.util.Log.d("SubmissionFlow", "UserInformationFragment: Switched to alternative server URL")
                     }
                 }
 
                 uploadSubmissions()
             } catch (e: Exception) {
-                android.util.Log.e("SubmissionFlow", "UserInformationFragment: Error checking server", e)
                 uploadSubmissions()
             }
         }
     }
 
     private fun uploadSubmissions() {
-        android.util.Log.d("SubmissionFlow", "UserInformationFragment: Starting submission upload process")
-
         MainApplication.applicationScope.launch {
             try {
                 withContext(Dispatchers.IO) {
-                    android.util.Log.d("SubmissionFlow", "UserInformationFragment: Uploading submissions...")
                     uploadManager.uploadSubmissions()
-                    android.util.Log.d("SubmissionFlow", "UserInformationFragment: Submissions uploaded, now uploading exam results...")
                     uploadExamResultWrapper()
-                    android.util.Log.d("SubmissionFlow", "UserInformationFragment: Upload process completed successfully")
                 }
             } catch (e: Exception) {
-                android.util.Log.e("SubmissionFlow", "UserInformationFragment: Error during upload process", e)
                 e.printStackTrace()
             }
         }
@@ -377,7 +355,6 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     private fun uploadExamResultWrapper() {
         val successListener = object : SuccessListener {
             override fun onSuccess(success: String?) {
-                android.util.Log.d("SubmissionFlow", "UserInformationFragment: Exam result upload callback - success: $success")
             }
         }
 
