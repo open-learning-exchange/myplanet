@@ -37,6 +37,12 @@
         <item name="colorControlHighlight">@color/colorAccent</item>
     </style>
 
+    <style name="AppThemeButton" parent="Theme.AppCompat">
+        <item name="android:textColor">@color/md_white_1000</item>
+        <item name="colorButtonNormal">@color/mainColor</item>
+        <item name="colorControlHighlight">@color/total_color</item>
+    </style>
+
     <style name="BlueButton" parent="Theme.AppCompat">
         <item name="android:textColor">@color/md_white_1000</item>
         <item name="android:background">@drawable/buttonblue</item>
@@ -124,6 +130,11 @@
         <item name="android:buttonStyle">@style/NegativeButtonStyleHealth</item>
     </style>
 
+    <style name="SpinnerItemStyle" parent="@android:style/Widget.Holo.DropDownItem.Spinner">
+        <item name="android:textColor">@color/daynight_textColor</item>
+        <item name="android:background">@color/secondary_bg</item>
+    </style>
+
     <style name="PreferencesTheme" parent="ThemeOverlay.AppCompat.DayNight">
         <item name="android:textColor">@color/daynight_textColor</item>
         <item name="android:textColorSecondary">@color/hint_color</item>
@@ -133,6 +144,12 @@
         <item name="windowNoTitle">true</item>
         <item name="android:windowMinWidthMajor">@dimen/dialog_min_width_major</item>
         <item name="android:windowMinWidthMinor">@dimen/dialog_min_width_minor</item>
+    </style>
+
+    <style name="AppTheme.MaterialComponents" parent="Theme.MaterialComponents.DayNight.NoActionBar.Bridge">
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
     </style>
 
     <style name="primaryButton" parent="Widget.AppCompat.Button">
@@ -145,5 +162,11 @@
     <style name="ResourcePopupMenu" parent="ThemeOverlay.AppCompat.Light">
         <item name="android:popupBackground">@color/md_white_1000</item>
         <item name="android:textColor">@color/daynight_textColor</item>
+    </style>
+
+    <style name="NumberPickerTheme" parent="Theme.AppCompat.Light">
+        <item name="colorControlNormal">@color/accent</item>
+        <item name="android:textColorPrimary">@color/daynight_textColor</item>
+        <item name="android:textSize">16sp</item>
     </style>
 </resources>
