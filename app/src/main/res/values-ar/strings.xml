@@ -138,7 +138,6 @@
     <string name="btn_guest_login">تسجيل الدخول كضيف</string>
     <string name="enter_username">أدخل اسم المستخدم</string>
     <string name="login">تسجيل الدخول</string>
-    <string name="child_mode">وضع سهل</string>
     <string name="courses">الدورات</string>
     <string name="enter_message_here">أدخل الرسالة هنا</string>
     <string name="what_would">ما الذي ترغب في مشاركته؟</string>
@@ -274,8 +273,6 @@
         <item>غير مقروء</item>
     </string-array>
 
-    <string name="dictionaries">القواميس</string>
-    <string name="bible">الكتاب المقدس</string>
     <string name="feature_not">الميزة غير متوفرة</string>
     <string name="myhealth">صحتي</string>
     <string name="type_name_to_search">اكتب اسم للبحث</string>
