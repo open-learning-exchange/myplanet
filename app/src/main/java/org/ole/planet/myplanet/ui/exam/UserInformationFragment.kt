@@ -132,6 +132,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         var lname = ""
         var mName = ""
         var yob = ""
+        var calculatedAge = 0
 
         if (fragmentUserInformationBinding.llNames.isVisible) {
             fname = "${fragmentUserInformationBinding.etFname.text}".trim()
@@ -164,6 +165,9 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
                     getString(R.string.please_enter_a_valid_year_between_1900_and, currentYear)
                 return
             }
+
+            // Calculate age from year of birth
+            calculatedAge = currentYear - yobInt
         }
 
         // Build user object - only add fields that have values
@@ -188,7 +192,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             }
         }
 
-        if (yob.isNotEmpty()) user.addProperty("age", yob)
+        if (yob.isNotEmpty()) user.addProperty("age", calculatedAge.toString())
 
         if (fragmentUserInformationBinding.llLevel.isVisible) {
             val level = fragmentUserInformationBinding.spnLevel.selectedItem.toString()
