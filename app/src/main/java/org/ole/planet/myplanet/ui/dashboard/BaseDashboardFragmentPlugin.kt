@@ -147,7 +147,7 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         if (count % 2 == 0) {
             v.setBackgroundResource(R.drawable.light_rect)
         } else {
-            v.setBackgroundResource(R.color.dashboard_item_alternative)
+            v.setBackgroundResource(R.color.daynight_grey)
         }
     }
 }

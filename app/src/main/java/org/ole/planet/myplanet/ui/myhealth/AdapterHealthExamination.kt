@@ -97,7 +97,7 @@ class AdapterHealthExamination(private val context: Context, private val list: L
             .setTitle(binding.txtDate.tag as? CharSequence ?: binding.txtDate.text)
             .setView(alertExaminationBinding.root)
             .setPositiveButton("OK", null).create()
-        val backgroundColor = ContextCompat.getColor(context, R.color.multi_select_grey)
+        val backgroundColor = ContextCompat.getColor(context, R.color.daynight_grey)
         dialog.window?.setBackgroundDrawable(backgroundColor.toDrawable())
         val time = Date().time - 5000 * 60
         if (realmExamination != null) {

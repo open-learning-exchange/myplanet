@@ -90,7 +90,7 @@ class ServerAddressAdapter(
             button.isSelected = isSelected
             if (isSelected) {
                 button.setBackgroundColor(
-                    ContextCompat.getColor(button.context, R.color.selected_color),
+                    ContextCompat.getColor(button.context, R.color.colorPrimary),
                 )
             } else {
                 button.setBackgroundColor(

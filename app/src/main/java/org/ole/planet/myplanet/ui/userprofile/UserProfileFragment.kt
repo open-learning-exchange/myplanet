@@ -429,7 +429,7 @@ class UserProfileFragment : Fragment() {
                     rowStatBinding.root.setBackgroundColor(
                         ContextCompat.getColor(
                             requireContext(),
-                            R.color.user_profile_background
+                            R.color.secondary_bg
                         )
                     )
                 }

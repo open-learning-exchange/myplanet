@@ -29,7 +29,7 @@ class ExpandableListAdapter(private val context: Context, private val expandable
         }
         val expandedListTextView = reusedView?.findViewById<View>(R.id.expandedListItem) as TextView
         expandedListTextView.text = expandedListText
-        reusedView.setBackgroundColor(ContextCompat.getColor(parent?.context!!, R.color.multi_select_grey))
+        reusedView.setBackgroundColor(ContextCompat.getColor(parent?.context!!, R.color.daynight_grey))
         expandedListTextView.setTextColor(ContextCompat.getColor(parent.context, R.color.daynight_textColor))
         return reusedView
     }

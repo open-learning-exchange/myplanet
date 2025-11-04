@@ -177,7 +177,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
             wifi.isWifiEnabled = false
             if (resIcon != null) {
                 DrawableCompat.setTintMode(resIcon.mutate(), PorterDuff.Mode.SRC_ATOP)
-                DrawableCompat.setTint(resIcon, ContextCompat.getColor(this, R.color.green))
+                DrawableCompat.setTint(resIcon, ContextCompat.getColor(this, R.color.md_green_500))
             }
             goOnline.icon = resIcon
             Toast.makeText(this, getString(R.string.wifi_is_turned_off_saving_battery_power), Toast.LENGTH_LONG).show()

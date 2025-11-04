@@ -117,7 +117,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         val mapping = ServerUrlMapper().processUrl(updateUrl)
         try {
             val reachable = isServerReachable(mapping)
-            setNetworkIndicatorColor(if (reachable) R.color.green else R.color.md_yellow_600)
+            setNetworkIndicatorColor(if (reachable) R.color.md_green_500 else R.color.md_yellow_600)
         } catch (e: Exception) {
             e.printStackTrace()
             setNetworkIndicatorColor(R.color.md_yellow_600)
@@ -131,7 +131,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         when (status) {
             is NetworkStatus.Disconnected -> setNetworkIndicatorColor(R.color.md_red_700)
             is NetworkStatus.Connecting -> handleConnectingState()
-            is NetworkStatus.Connected -> setNetworkIndicatorColor(R.color.green)
+            is NetworkStatus.Connected -> setNetworkIndicatorColor(R.color.md_green_500)
         }
     }
 

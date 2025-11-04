@@ -118,7 +118,7 @@ class AdapterMyLife(private val context: Context, private val myLifeList: List<R
         var rvItemContainer: LinearLayout = itemView.findViewById(R.id.rv_item_parent_layout)
 
         override fun onItemSelected() {
-            itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.user_profile_background))
+            itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.secondary_bg))
         }
 
         override fun onItemClear(viewHolder: RecyclerView.ViewHolder?) {

@@ -112,7 +112,7 @@ class TagExpandableAdapter(private var tagList: List<RealmTag>, private val chil
 
         createCheckbox(view, tag)
         binding.tvDrawerTitle.text = tag.name
-        binding.root.setBackgroundColor(ContextCompat.getColor(parent?.context!!, R.color.multi_select_grey))
+        binding.root.setBackgroundColor(ContextCompat.getColor(parent?.context!!, R.color.daynight_grey))
         binding.tvDrawerTitle.setTextColor(ContextCompat.getColor(parent.context, R.color.daynight_textColor))
         binding.tvDrawerTitle.setOnClickListener { clickListener?.onTagClicked(tag) }
 

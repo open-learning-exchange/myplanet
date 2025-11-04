@@ -2,7 +2,6 @@
 <resources>
     <color name="colorPrimary">#18191a</color>
     <color name="colorPrimaryDark">#242526</color>
-    <color name="colorPrimaryLight">#3a3b3c</color>
     <color name="colorPrimaryWhite">@color/textColorPrimary</color>
     <color name="colorAccent">@color/md_red_500</color>
     <color name="textColorPrimary">#e4e6eb</color>
@@ -10,27 +9,22 @@
     <color name="daynight_textColor">@color/textColorPrimary</color>
     <color name="daynight_grey">@color/card_bg</color>
     <color name="daynight_white_grey">@color/card_bg</color>
-    <color name="card_bg">@color/colorPrimaryLight</color>
+    <color name="card_bg">@color/colorPrimaryDark</color>
     <color name="secondary_bg">@color/colorPrimaryDark</color>
     <color name="hint_color">#808080</color>
     <color name="text_highlight_color">@color/hint_color</color>
     <color name="light_dark">@color/colorPrimary</color>
     <color name="mainColor">@color/md_blue_700</color>
-    <color name="mainColorLight">@color/md_blue_500</color>
-    <color name="dashboard_item_alternative">#2E2E2E</color>
     <color name="total_color">@color/md_blue_900</color>
 
     <color name="black_overlay">#66000000</color>
     <color name="bg_white">#FFFFFF</color>
-    <color name="green">#C304E019</color>
 
     <color name="empty_rating">@color/md_white_1000</color>
     <color name="ic_download">#FFFFFF</color>
     <color name="profile_pic">#757575</color>
     <color name="user_profile_label">#1364DA</color>
     <color name="user_profile_description">@color/md_white_1000</color>
-    <color name="user_profile_background">#2E2E2E</color>
-    <color name="multi_select_grey">#2E2E2E</color>
     <color name="background_color">#000000</color>
     <color name="text_color">#FFFFFF</color>
     <color name="teams_heading">@color/md_blue_700</color>
