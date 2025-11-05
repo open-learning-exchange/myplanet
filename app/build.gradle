@@ -113,8 +113,6 @@ android {
     def planetEmbakasiClonePin = project.findProperty('PLANET_EMBAKASI_CLONE_PIN') ?: ""
     def planetCambridgeUrl = project.findProperty('PLANET_CAMBRIDGE_URL') ?: ""
     def planetCambridgePin = project.findProperty('PLANET_CAMBRIDGE_PIN') ?: ""
-    //def planetEgdirbmacUrl = project.findProperty('PLANET_EGDIRBMAC_URL') ?: ""
-    //def planetEgdirbmacPin = project.findProperty('PLANET_EGDIRBMAC_PIN') ?: ""
 
     buildTypes.each {
         it.buildConfigField 'String', 'PLANET_LEARNING_URL', "\"$planetLearningUrl\""
@@ -145,8 +143,6 @@ android {
         it.buildConfigField 'String', 'PLANET_EMBAKASI_CLONE_PIN', "\"${planetEmbakasiClonePin}\""
         it.buildConfigField 'String', 'PLANET_CAMBRIDGE_URL', "\"${planetCambridgeUrl}\""
         it.buildConfigField 'String', 'PLANET_CAMBRIDGE_PIN', "\"${planetCambridgePin}\""
-        //it.buildConfigField 'String', 'PLANET_EGDIRBMAC_URL', "\"${planetEgdirbmacUrl}\""
-        //it.buildConfigField 'String', 'PLANET_EGDIRBMAC_PIN', "\"${planetEgdirbmacPin}\""
     }
 }
 
