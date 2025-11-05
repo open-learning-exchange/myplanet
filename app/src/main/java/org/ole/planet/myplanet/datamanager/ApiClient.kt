@@ -11,8 +11,18 @@ import retrofit2.Retrofit
 object ApiClient {
     lateinit var client: Retrofit
 
+    @Deprecated("This function blocks the calling thread. Use a coroutine with executeWithRetryAndWrap instead.")
     fun <T> executeWithRetry(operation: () -> Response<T>?): Response<T>? = runBlocking {
         RetryUtils.retry(
+            maxAttempts = 3,
+            delayMs = 2000L,
+            shouldRetry = { resp -> resp == null || !resp.isSuccessful },
+            block = { operation() },
+        )
+    }
+
+    suspend fun <T> executeWithRetryAndWrap(operation: suspend () -> Response<T>?): Response<T>? {
+        return RetryUtils.retry(
             maxAttempts = 3,
             delayMs = 2000L,
             shouldRetry = { resp -> resp == null || !resp.isSuccessful },
