@@ -49,7 +49,11 @@ class NewsRepositoryImpl @Inject constructor(
 
     override suspend fun addLabel(newsId: String, label: String) {
         update(RealmNews::class.java, "id", newsId) { news ->
-            val labels = news.labels ?: io.realm.RealmList<String>().also { news.labels = it }
+            var labels = news.labels
+            if (labels == null) {
+                labels = io.realm.RealmList()
+                news.labels = labels
+            }
             if (!labels.contains(label)) {
                 labels.add(label)
             }
