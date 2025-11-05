@@ -1353,5 +1353,6 @@
     <string name="resource_not_found_in_database">Kheyraadka laguma helin kaydka xogta</string>
     <string name="resource_has_no_attachments">Kheyraadka ma laha faylal la soo dejisan karo</string>
     <string name="unable_to_download_resource">Lama soo dejin karo kheyraadka</string>
+    <string name="hide_new_message">Qari fariinta cusub</string>
 
 </resources>

@@ -229,7 +229,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
             imgDelete.visibility = View.GONE
             btnReply.visibility = View.GONE
             imgNews.visibility = View.GONE
-            hsvImages.visibility = View.GONE
+            llNewsImages.visibility = View.GONE
             llNewsImages.removeAllViews()
             recyclerGchat.visibility = View.GONE
             sharedChat.visibility = View.GONE
@@ -541,7 +541,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
 
     interface OnNewsItemClickListener {
         fun showReply(news: RealmNews?, fromLogin: Boolean, nonTeamMember: Boolean)
-        fun addImage(llImage: LinearLayout?)
+        fun addImage(llImage: ViewGroup?)
         fun onNewsItemClick(news: RealmNews?)
         fun clearImages()
         fun onDataChanged()
@@ -607,7 +607,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
 
     private fun loadImage(binding: RowNewsBinding, news: RealmNews?) {
         binding.imgNews.visibility = View.GONE
-        binding.hsvImages.visibility = View.GONE
+        binding.llNewsImages.visibility = View.GONE
         binding.llNewsImages.removeAllViews()
 
         val imageUrls = news?.imageUrls
@@ -618,7 +618,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
                     val path = JsonUtils.getString("imageUrl", imgObject)
                     loadSingleImage(binding, path)
                 } else {
-                    binding.hsvImages.visibility = View.VISIBLE
+                    binding.llNewsImages.visibility = View.VISIBLE
                     for (imageUrl in imageUrls) {
                         val imgObject = gson.fromJson(imageUrl, JsonObject::class.java)
                         val path = JsonUtils.getString("imageUrl", imgObject)
@@ -637,7 +637,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
                     val resourceId = JsonUtils.getString("resourceId", ob)
                     loadLibraryImage(binding, resourceId)
                 } else {
-                    binding.hsvImages.visibility = View.VISIBLE
+                    binding.llNewsImages.visibility = View.VISIBLE
                     for (i in 0 until imagesArray.size()) {
                         val ob = imagesArray[i]?.asJsonObject
                         val resourceId = JsonUtils.getString("resourceId", ob)
@@ -668,9 +668,10 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     private fun addImageToContainer(binding: RowNewsBinding, path: String?) {
         if (path == null) return
         val imageView = ImageView(context)
-        val size = (120 * context.resources.displayMetrics.density).toInt()
-        val params = LinearLayout.LayoutParams(size, size)
-        params.setMargins(8, 0, 8, 0)
+        val size = (100 * context.resources.displayMetrics.density).toInt()
+        val margin = (4 * context.resources.displayMetrics.density).toInt()
+        val params = ViewGroup.MarginLayoutParams(size, size)
+        params.setMargins(margin, margin, margin, margin)
         imageView.layoutParams = params
         imageView.scaleType = ImageView.ScaleType.CENTER_CROP
 
@@ -730,9 +731,10 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
             val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
             if (imageFile.exists()) {
                 val imageView = ImageView(context)
-                val size = (120 * context.resources.displayMetrics.density).toInt()
-                val params = LinearLayout.LayoutParams(size, size)
-                params.setMargins(8, 0, 8, 0)
+                val size = (100 * context.resources.displayMetrics.density).toInt()
+                val margin = (4 * context.resources.displayMetrics.density).toInt()
+                val params = ViewGroup.MarginLayoutParams(size, size)
+                params.setMargins(margin, margin, margin, margin)
                 imageView.layoutParams = params
                 imageView.scaleType = ImageView.ScaleType.CENTER_CROP
 
