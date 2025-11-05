@@ -4,6 +4,10 @@ import android.content.Context
 import android.content.SharedPreferences
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Realm
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -59,45 +63,48 @@ class UserProfileDbHandler @Inject constructor(
     }
 
     fun onLoginAsync(callback: (() -> Unit)? = null, onError: ((Throwable) -> Unit)? = null) {
-        val model = getUserModelCopy()
-        val userId = model?.id
-        val userName = model?.name
-        val parentCode = model?.parentCode
-        val planetCode = model?.planetCode
+        GlobalScope.launch(Dispatchers.IO) {
+            try {
+                val model = getUserModelCopy()
+                val userId = model?.id
+                val userName = model?.name
+                val parentCode = model?.parentCode
+                val planetCode = model?.planetCode
 
-        realmService.withRealmAsync(
-            { realm ->
-                val offlineActivities = realm.createObject(RealmOfflineActivity::class.java, UUID.randomUUID().toString())
-                offlineActivities.userId = userId
-                offlineActivities.userName = userName
-                offlineActivities.parentCode = parentCode
-                offlineActivities.createdOn = planetCode
-                offlineActivities.type = KEY_LOGIN
-                offlineActivities._rev = null
-                offlineActivities._id = null
-                offlineActivities.description = "Member login on offline application"
-                offlineActivities.loginTime = Date().time
-            },
-            onSuccess = {
-                callback?.invoke()
-            },
-            onError = { error ->
-                error.printStackTrace()
-                onError?.invoke(error)
+                realmService.withRealmAsync { realm ->
+                    val offlineActivities = realm.createObject(RealmOfflineActivity::class.java, UUID.randomUUID().toString())
+                    offlineActivities.userId = userId
+                    offlineActivities.userName = userName
+                    offlineActivities.parentCode = parentCode
+                    offlineActivities.createdOn = planetCode
+                    offlineActivities.type = KEY_LOGIN
+                    offlineActivities._rev = null
+                    offlineActivities._id = null
+                    offlineActivities.description = "Member login on offline application"
+                    offlineActivities.loginTime = Date().time
+                }
+                withContext(Dispatchers.Main) {
+                    callback?.invoke()
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    onError?.invoke(e)
+                }
             }
-        )
+        }
     }
 
     fun logoutAsync() {
-        realmService.withRealmAsync(
-            { realm ->
-                RealmOfflineActivity.getRecentLogin(realm)
-                    ?.logoutTime = Date().time
-            },
-            onError = { error ->
-                error.printStackTrace()
+        GlobalScope.launch(Dispatchers.IO) {
+            try {
+                realmService.withRealmAsync { realm ->
+                    RealmOfflineActivity.getRecentLogin(realm)
+                        ?.logoutTime = Date().time
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-        )
+        }
     }
 
 
@@ -139,27 +146,33 @@ class UserProfileDbHandler @Inject constructor(
     }
 
     fun setResourceOpenCount(item: RealmMyLibrary, type: String?) {
-        val model = getUserModelCopy()
-        if (model?.id?.startsWith("guest") == true) {
-            return
+        GlobalScope.launch(Dispatchers.IO) {
+            try {
+                val model = getUserModelCopy()
+                if (model?.id?.startsWith("guest") == true) {
+                    return@launch
+                }
+
+                val userName = model?.name
+                val parentCode = model?.parentCode
+                val planetCode = model?.planetCode
+                val itemTitle = item.title
+                val itemResourceId = item.resourceId
+
+                realmService.withRealmAsync { realm ->
+                    val offlineActivities = realm.createObject(RealmResourceActivity::class.java, "${UUID.randomUUID()}")
+                    offlineActivities.user = userName
+                    offlineActivities.parentCode = parentCode
+                    offlineActivities.createdOn = planetCode
+                    offlineActivities.type = type
+                    offlineActivities.title = itemTitle
+                    offlineActivities.resourceId = itemResourceId
+                    offlineActivities.time = Date().time
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
-
-        val userName = model?.name
-        val parentCode = model?.parentCode
-        val planetCode = model?.planetCode
-        val itemTitle = item.title
-        val itemResourceId = item.resourceId
-
-        realmService.withRealmAsync({ realm ->
-            val offlineActivities = realm.createObject(RealmResourceActivity::class.java, "${UUID.randomUUID()}")
-            offlineActivities.user = userName
-            offlineActivities.parentCode = parentCode
-            offlineActivities.createdOn = planetCode
-            offlineActivities.type = type
-            offlineActivities.title = itemTitle
-            offlineActivities.resourceId = itemResourceId
-            offlineActivities.time = Date().time
-        }, onError = { it.printStackTrace() })
     }
 
     val numberOfResourceOpen: String
