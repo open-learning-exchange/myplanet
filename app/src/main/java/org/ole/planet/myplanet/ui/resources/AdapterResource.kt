@@ -21,7 +21,7 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnLibraryItemSelected
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.RowLibraryBinding
-import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.Library
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TagRepository
@@ -33,12 +33,12 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 class AdapterResource(
     private val context: Context,
-    private var libraryList: List<RealmMyLibrary?>,
+    private var libraryList: List<Library?>,
     private var ratingMap: HashMap<String?, JsonObject>,
     private val tagRepository: TagRepository,
     private val userModel: RealmUserModel?
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-    private val selectedItems: MutableList<RealmMyLibrary?> = ArrayList()
+    private val selectedItems: MutableList<Library?> = ArrayList()
     private var listener: OnLibraryItemSelected? = null
     private val config: ChipCloudConfig = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single)
     private var homeItemClickListener: OnHomeItemClickListener? = null
@@ -63,11 +63,11 @@ class AdapterResource(
         this.ratingChangeListener = ratingChangeListener
     }
 
-    fun getLibraryList(): List<RealmMyLibrary?> {
+    fun getLibraryList(): List<Library?> {
         return libraryList
     }
 
-    fun setLibraryList(libraryList: List<RealmMyLibrary?>) {
+    fun setLibraryList(libraryList: List<Library?>) {
         updateList(libraryList)
     }
 
@@ -105,7 +105,7 @@ class AdapterResource(
                 } else {
                     String.format(Locale.getDefault(), "%.1f", library.averageRating?.toDouble())
                 }
-            holder.rowLibraryBinding.tvDate.text = library.createdDate?.let { formatDate(it, "MMM dd, yyyy") }
+            holder.rowLibraryBinding.tvDate.text = library.createdDate.let { formatDate(it, "MMM dd, yyyy") }
             displayTagCloud(holder, position)
             holder.itemView.setOnClickListener {
                 val adapterPosition = holder.bindingAdapterPosition
@@ -113,13 +113,13 @@ class AdapterResource(
                     libraryList.getOrNull(adapterPosition)?.let { openLibrary(it) }
                 }
             }
-            if (library.isResourceOffline() == true) {
+            if (library.resourceOffline) {
                 holder.rowLibraryBinding.ivDownloaded.visibility = View.INVISIBLE
             } else {
                 holder.rowLibraryBinding.ivDownloaded.visibility = View.VISIBLE
             }
             holder.rowLibraryBinding.ivDownloaded.contentDescription =
-                if (library.isResourceOffline() == true) {
+                if (library.resourceOffline) {
                     context.getString(R.string.view)
                 } else {
                     context.getString(R.string.download)
@@ -168,7 +168,7 @@ class AdapterResource(
         }
     }
 
-    private fun openLibrary(library: RealmMyLibrary?) {
+    private fun openLibrary(library: Library?) {
         homeItemClickListener?.openLibraryDetailFragment(library)
     }
 
@@ -274,7 +274,7 @@ class AdapterResource(
         updateList(sortLibraryList())
     }
 
-    private fun sortLibraryListByTitle(): List<RealmMyLibrary?> {
+    private fun sortLibraryListByTitle(): List<Library?> {
         return if (isTitleAscending) {
             libraryList.sortedBy { it?.title?.lowercase(Locale.ROOT) }
         } else {
@@ -282,7 +282,7 @@ class AdapterResource(
         }
     }
 
-    private fun sortLibraryList(): List<RealmMyLibrary?> {
+    private fun sortLibraryList(): List<Library?> {
         return if (isAscending) {
             libraryList.sortedBy { it?.createdDate }
         } else {
@@ -294,7 +294,7 @@ class AdapterResource(
         return libraryList.size
     }
 
-    private fun updateList(newList: List<RealmMyLibrary?>) {
+    private fun updateList(newList: List<Library?>) {
         val diffResult = DiffUtils.calculateDiff(
             libraryList,
             newList,
@@ -338,7 +338,7 @@ class AdapterResource(
         }
     }
 
-    private fun bindRating(holder: ViewHolderLibrary, library: RealmMyLibrary) {
+    private fun bindRating(holder: ViewHolderLibrary, library: Library) {
         if (ratingMap.containsKey(library.resourceId)) {
             val ratingData = ratingMap[library.resourceId]
             CourseRatingUtils.showRating(
@@ -352,7 +352,7 @@ class AdapterResource(
             val averageRating = library.averageRating?.toFloatOrNull() ?: 0f
             holder.rowLibraryBinding.rating.text = String.format(Locale.getDefault(), "%.2f", averageRating)
             holder.rowLibraryBinding.timesRated.text =
-                context.getString(R.string.rating_count_format, library.timesRated ?: 0)
+                context.getString(R.string.rating_count_format, library.timesRated)
             holder.rowLibraryBinding.ratingBar.rating = averageRating
         }
     }

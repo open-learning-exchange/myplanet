@@ -180,6 +180,50 @@ open class RealmMyLibrary : RealmObject() {
         return !resourceOffline || resourceLocalAddress != null && _rev != downloadedRev
     }
 
+    fun toLibrary(): Library {
+        return Library(
+            id = this.id,
+            _id = this._id,
+            userId = this.userId?.toList(),
+            resourceRemoteAddress = this.resourceRemoteAddress,
+            resourceLocalAddress = this.resourceLocalAddress,
+            resourceOffline = this.resourceOffline,
+            resourceId = this.resourceId,
+            _rev = this._rev,
+            downloadedRev = this.downloadedRev,
+            needsOptimization = this.needsOptimization,
+            publisher = this.publisher,
+            linkToLicense = this.linkToLicense,
+            addedBy = this.addedBy,
+            uploadDate = this.uploadDate,
+            createdDate = this.createdDate ?: 0,
+            openWith = this.openWith,
+            articleDate = this.articleDate,
+            kind = this.kind,
+            language = this.language,
+            author = this.author,
+            year = this.year,
+            medium = this.medium,
+            title = this.title,
+            averageRating = this.averageRating,
+            filename = this.filename,
+            mediaType = this.mediaType,
+            resourceType = this.resourceType,
+            description = this.description,
+            translationAudioPath = this.translationAudioPath,
+            sum = this.sum,
+            timesRated = this.timesRated,
+            resourceFor = this.resourceFor?.toList(),
+            subject = this.subject?.toList(),
+            level = this.level?.toList(),
+            tag = this.tag?.toList(),
+            languages = this.languages?.toList(),
+            courseId = this.courseId,
+            stepId = this.stepId,
+            isPrivate = this.isPrivate,
+        )
+    }
+
     companion object {
         fun getMyLibraryByUserId(mRealm: Realm, settings: SharedPreferences?): List<RealmMyLibrary> {
             val libs = mRealm.where(RealmMyLibrary::class.java).findAll()
