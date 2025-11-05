@@ -4,6 +4,10 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.UserListItemBinding
 import org.ole.planet.myplanet.model.User
@@ -11,7 +15,8 @@ import org.ole.planet.myplanet.utilities.DiffUtils
 
 class TeamListAdapter(
     private var membersList: MutableList<User>,
-    private val onItemClickListener: OnItemClickListener
+    private val onItemClickListener: OnItemClickListener,
+    private val scope: CoroutineScope
 ) : RecyclerView.Adapter<TeamListAdapter.ViewHolder>() {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = UserListItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
@@ -39,19 +44,25 @@ class TeamListAdapter(
     }
 
     fun updateList(newUserList: MutableList<User>) {
-        val diffResult = DiffUtils.calculateDiff(
-            membersList,
-            newUserList,
-            areItemsTheSame = { old, new -> old.name == new.name },
-            areContentsTheSame = { old, new ->
-                old.name == new.name &&
-                    old.fullName == new.fullName &&
-                    old.image == new.image
+        scope.launch {
+            val diffResult = withContext(Dispatchers.IO) {
+                DiffUtils.calculateDiff(
+                    membersList,
+                    newUserList,
+                    areItemsTheSame = { old, new -> old.name == new.name },
+                    areContentsTheSame = { old, new ->
+                        old.name == new.name &&
+                                old.fullName == new.fullName &&
+                                old.image == new.image
+                    }
+                )
             }
-        )
-        membersList.clear()
-        membersList.addAll(newUserList)
-        diffResult.dispatchUpdatesTo(this)
+            withContext(Dispatchers.Main) {
+                membersList.clear()
+                membersList.addAll(newUserList)
+                diffResult.dispatchUpdatesTo(this@TeamListAdapter)
+            }
+        }
     }
     
     fun getList(): List<User> = membersList

@@ -421,7 +421,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         updateTeamDropdown()
 
         if (mAdapter == null) {
-            mAdapter = TeamListAdapter(prefData.getSavedUsers().toMutableList(), this)
+            mAdapter = TeamListAdapter(prefData.getSavedUsers().toMutableList(), this, lifecycleScope)
             binding.recyclerView.layoutManager = LinearLayoutManager(this)
             binding.recyclerView.adapter = mAdapter
         } else {
