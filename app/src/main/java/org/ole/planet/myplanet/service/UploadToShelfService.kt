@@ -16,6 +16,7 @@ import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.datamanager.ApiClient.client
@@ -45,78 +46,173 @@ class UploadToShelfService @Inject constructor(
     private val dbService: DatabaseService,
     @AppPreferences private val sharedPreferences: SharedPreferences
 ) {
-    lateinit var mRealm: Realm
-
     fun uploadUserData(listener: SuccessListener) {
         val apiInterface = client?.create(ApiInterface::class.java)
-        mRealm = dbService.realmInstance
-        mRealm.executeTransactionAsync({ realm: Realm ->
-            val userModels: List<RealmUserModel> = realm.where(RealmUserModel::class.java)
-                .isEmpty("_id").or().equalTo("isUpdated", true)
-                .findAll()
-                .take(100)
-            if (userModels.isEmpty()) {
-                return@executeTransactionAsync
-            }
-            val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
-            userModels.forEachIndexed { index, model ->
-                try {
-                    val header = "Basic ${Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
-                    val userExists = checkIfUserExists(apiInterface, header, model)
-
-                    if (!userExists) {
-                        uploadNewUser(apiInterface, realm, model)
-                    } else if (model.isUpdated) {
-                        updateExistingUser(apiInterface, header, model)
+        MainApplication.applicationScope.launch {
+            try {
+                val userModels = withContext(Dispatchers.IO) {
+                    dbService.realmInstance.use { realm ->
+                        val users = realm.where(RealmUserModel::class.java)
+                            .isEmpty("_id").or().equalTo("isUpdated", true)
+                            .findAll()
+                            .take(100)
+                        realm.copyFromRealm(users)
                     }
-                } catch (e: IOException) {
-                    e.printStackTrace()
+                }
+
+                if (userModels.isNotEmpty()) {
+                    withContext(Dispatchers.IO) {
+                        val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
+                        userModels.forEach { model ->
+                            try {
+                                val header = "Basic ${
+                                    Base64.encodeToString(
+                                        ("${model.name}:${password}").toByteArray(),
+                                        Base64.NO_WRAP
+                                    )
+                                }"
+                                val userExists = checkIfUserExists(apiInterface, header, model)
+
+                                if (!userExists) {
+                                    val obj = model.serialize()
+                                    val createResponse = apiInterface?.putDoc(
+                                        null,
+                                        "application/json",
+                                        "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}",
+                                        obj
+                                    )?.execute()
+
+                                    if (createResponse?.isSuccessful == true) {
+                                        val id = createResponse.body()?.get("id")?.asString
+                                        val rev = createResponse.body()?.get("rev")?.asString
+                                        val fetchDataResponse = apiInterface?.getJsonObject(
+                                            header,
+                                            "${replacedUrl(model)}/_users/$id"
+                                        )?.execute()
+
+                                        if (fetchDataResponse?.isSuccessful == true) {
+                                            val passwordScheme =
+                                                getString("password_scheme", fetchDataResponse.body())
+                                            val derivedKey =
+                                                getString("derived_key", fetchDataResponse.body())
+                                            val salt = getString("salt", fetchDataResponse.body())
+                                            val iterations =
+                                                getString("iterations", fetchDataResponse.body())
+                                            val keyIvResult = saveKeyIv(apiInterface, model, obj)
+
+                                            dbService.realmInstance.use { realm ->
+                                                realm.executeTransaction {
+                                                    val managedModel = it.where(RealmUserModel::class.java).equalTo("id", model.id).findFirst()
+                                                    managedModel?._id = id
+                                                    managedModel?._rev = rev
+                                                    managedModel?.password_scheme = passwordScheme
+                                                    managedModel?.derived_key = derivedKey
+                                                    managedModel?.salt = salt
+                                                    managedModel?.iterations = iterations
+                                                    if (keyIvResult) {
+                                                        managedModel?.key = model.key
+                                                        managedModel?.iv = model.iv
+                                                    }
+                                                    updateHealthData(managedModel?.id, managedModel?._id)
+                                                }
+                                            }
+                                        }
+                                    }
+                                } else if (model.isUpdated) {
+                                    val latestDocResponse = apiInterface?.getJsonObject(
+                                        header,
+                                        "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}"
+                                    )?.execute()
+
+                                    if (latestDocResponse?.isSuccessful == true) {
+                                        val latestRev =
+                                            latestDocResponse.body()?.get("_rev")?.asString
+                                        val obj = model.serialize()
+                                        val objMap =
+                                            obj.entrySet().associate { (key, value) -> key to value }
+                                        val mutableObj =
+                                            mutableMapOf<String, Any>().apply { putAll(objMap) }
+                                        latestRev?.let { r -> mutableObj["_rev"] = r as Any }
+                                        val jsonObject =
+                                            Gson().toJsonTree(mutableObj).asJsonObject
+                                        val updateResponse = apiInterface.putDoc(
+                                            header,
+                                            "application/json",
+                                            "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}",
+                                            jsonObject
+                                        ).execute()
+
+                                        if (updateResponse.isSuccessful) {
+                                            val updatedRev =
+                                                updateResponse.body()?.get("rev")?.asString
+                                            dbService.realmInstance.use { realm ->
+                                                realm.executeTransaction {
+                                                    val managedModel = it.where(RealmUserModel::class.java).equalTo("id", model.id).findFirst()
+                                                    managedModel?._rev = updatedRev
+                                                    managedModel?.isUpdated = false
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            } catch (e: IOException) {
+                                e.printStackTrace()
+                            }
+                        }
+                    }
+                }
+                withContext(Dispatchers.Main) {
+                    uploadToShelf(object : SuccessListener {
+                        override fun onSuccess(success: String?) {
+                            listener.onSuccess(success)
+                        }
+                    })
                 }
             }
-        }, {
-            mRealm.close()
-            uploadToShelf(object : SuccessListener {
-                override fun onSuccess(success: String?) {
-                    listener.onSuccess(success)
-                }
-            })
-        }) { error ->
-            mRealm.close()
-            listener.onSuccess("Error during user data sync: ${error.localizedMessage}")
+        } catch (e: Exception) {
+            e.printStackTrace()
+            withContext(Dispatchers.Main) {
+                listener.onSuccess("Error during user data sync: ${e.localizedMessage}")
+            }
         }
     }
 
     fun uploadSingleUserData(userName: String?, listener: SuccessListener) {
         val apiInterface = client?.create(ApiInterface::class.java)
-        mRealm = dbService.realmInstance
-
-        mRealm.executeTransactionAsync({ realm: Realm ->
-            val userModel = realm.where(RealmUserModel::class.java)
-                .equalTo("name", userName)
-                .findFirst()
-
-            if (userModel != null) {
-                try {
-                    val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
-                    val header = "Basic ${Base64.encodeToString(("${userModel.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
-
-                    val userExists = checkIfUserExists(apiInterface, header, userModel)
-
-                    if (!userExists) {
-                        uploadNewUser(apiInterface, realm, userModel)
-                    } else if (userModel.isUpdated) {
-                        updateExistingUser(apiInterface, header, userModel)
+        MainApplication.applicationScope.launch {
+            try {
+                val userModel = withContext(Dispatchers.IO) {
+                    dbService.realmInstance.use { realm ->
+                        val user = realm.where(RealmUserModel::class.java)
+                            .equalTo("name", userName)
+                            .findFirst()
+                        user?.let { realm.copyFromRealm(it) }
                     }
-                } catch (e: IOException) {
-                    e.printStackTrace()
+                }
+
+                if (userModel != null) {
+                    withContext(Dispatchers.IO) {
+                        val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
+                        val header = "Basic ${Base64.encodeToString(("${userModel.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
+                        val userExists = checkIfUserExists(apiInterface, header, userModel)
+
+                        if (!userExists) {
+                            uploadNewUser(apiInterface, userModel)
+                        } else if (userModel.isUpdated) {
+                            updateExistingUser(apiInterface, header, userModel)
+                        }
+                    }
+                }
+
+                withContext(Dispatchers.Main) {
+                    uploadSingleUserToShelf(userName, listener)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    listener.onSuccess("Error during user data sync: ${e.localizedMessage}")
                 }
             }
-        }, {
-            mRealm.close()
-            uploadSingleUserToShelf(userName, listener)
-        }) { error ->
-            mRealm.close()
-            listener.onSuccess("Error during user data sync: ${error.localizedMessage}")
         }
     }
 
@@ -131,7 +227,7 @@ class UploadToShelfService @Inject constructor(
         }
     }
 
-    private fun uploadNewUser(apiInterface: ApiInterface?, realm: Realm, model: RealmUserModel) {
+    private fun uploadNewUser(apiInterface: ApiInterface?, model: RealmUserModel) {
         try {
             val obj = model.serialize()
             val createResponse = apiInterface?.putDoc(null, "application/json", "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", obj)?.execute()
@@ -141,14 +237,14 @@ class UploadToShelfService @Inject constructor(
                 val rev = createResponse.body()?.get("rev")?.asString
                 model._id = id
                 model._rev = rev
-                processUserAfterCreation(apiInterface, realm, model, obj)
+                processUserAfterCreation(apiInterface, model, obj)
             }
         } catch (e: IOException) {
             e.printStackTrace()
         }
     }
 
-    private fun processUserAfterCreation(apiInterface: ApiInterface?, realm: Realm, model: RealmUserModel, obj: JsonObject) {
+    private fun processUserAfterCreation(apiInterface: ApiInterface?, model: RealmUserModel, obj: JsonObject) {
         try {
             val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
             val header = "Basic ${Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
@@ -160,7 +256,7 @@ class UploadToShelfService @Inject constructor(
                 model.iterations = getString("iterations", fetchDataResponse.body())
 
                 if (saveKeyIv(apiInterface, model, obj)) {
-                    updateHealthData(realm, model)
+                    updateHealthData(model.id, model._id)
                 }
             }
         } catch (e: IOException) {
@@ -205,10 +301,13 @@ class UploadToShelfService @Inject constructor(
         return "$protocol://$replacedUrl"
     }
 
-    private fun updateHealthData(realm: Realm, model: RealmUserModel) {
-        val list: List<RealmMyHealthPojo> = realm.where(RealmMyHealthPojo::class.java).equalTo("_id", model.id).findAll()
-        for (p in list) {
-            p.userId = model._id
+    private fun updateHealthData(userId: String?, user_Id: String?) {
+        dbService.realmInstance.executeTransaction {
+            val list: List<RealmMyHealthPojo> =
+                it.where(RealmMyHealthPojo::class.java).equalTo("_id", userId).findAll()
+            for (p in list) {
+                p.userId = user_Id
+            }
         }
     }
 
@@ -255,147 +354,197 @@ class UploadToShelfService @Inject constructor(
 
     fun uploadHealth() {
         val apiInterface = client?.create(ApiInterface::class.java)
-        mRealm = dbService.realmInstance
-
-        mRealm.executeTransactionAsync({ realm: Realm ->
-            val myHealths: List<RealmMyHealthPojo> = realm.where(RealmMyHealthPojo::class.java).equalTo("isUpdated", true).notEqualTo("userId", "").findAll()
-            myHealths.forEachIndexed { index, pojo ->
-                try {
-                    val res = apiInterface?.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/health", serialize(pojo))?.execute()
-
-                    if (res?.body() != null && res.body()?.has("id") == true) {
-                        pojo._rev = res.body()?.get("rev")?.asString
-                        pojo.isUpdated = false
+        MainApplication.applicationScope.launch {
+            try {
+                val myHealths = withContext(Dispatchers.IO) {
+                    dbService.realmInstance.use { realm ->
+                        val healthData = realm.where(RealmMyHealthPojo::class.java)
+                            .equalTo("isUpdated", true)
+                            .notEqualTo("userId", "")
+                            .findAll()
+                        realm.copyFromRealm(healthData)
                     }
-                } catch (e: Exception) {
-                    e.printStackTrace()
                 }
+
+                if (myHealths.isNotEmpty()) {
+                    withContext(Dispatchers.IO) {
+                        myHealths.forEach { pojo ->
+                            try {
+                                val res = apiInterface?.postDoc(
+                                    UrlUtils.header,
+                                    "application/json",
+                                    "${UrlUtils.getUrl()}/health",
+                                    serialize(pojo)
+                                )?.execute()
+
+                                if (res?.body() != null && res.body()?.has("id") == true) {
+                                    dbService.realmInstance.use { realm ->
+                                        realm.executeTransaction {
+                                            val managedPojo = it.where(RealmMyHealthPojo::class.java).equalTo("_id", pojo._id).findFirst()
+                                            managedPojo?._rev = res.body()?.get("rev")?.asString
+                                            managedPojo?.isUpdated = false
+                                        }
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-        }, {
-            mRealm.close()
-        }) { _ ->
-            mRealm.close()
         }
     }
 
     fun uploadSingleUserHealth(userId: String?, listener: SuccessListener?) {
         val apiInterface = client?.create(ApiInterface::class.java)
-        mRealm = dbService.realmInstance
-
-        mRealm.executeTransactionAsync({ realm: Realm ->
-            if (userId.isNullOrEmpty()) {
-                return@executeTransactionAsync
-            }
-
-            val myHealths: List<RealmMyHealthPojo> = realm.where(RealmMyHealthPojo::class.java)
-                .equalTo("isUpdated", true)
-                .equalTo("userId", userId)
-                .findAll()
-
-            myHealths.forEach { pojo ->
-                try {
-                    val res = apiInterface?.postDoc(
-                        UrlUtils.header,
-                        "application/json",
-                        "${UrlUtils.getUrl()}/health",
-                        serialize(pojo)
-                    )?.execute()
-
-                    if (res?.body() != null && res.body()?.has("id") == true) {
-                        pojo._rev = res.body()?.get("rev")?.asString
-                        pojo.isUpdated = false
+        MainApplication.applicationScope.launch {
+            try {
+                if (userId.isNullOrEmpty()) {
+                    withContext(Dispatchers.Main) {
+                        listener?.onSuccess("User ID is null or empty")
                     }
-                } catch (e: Exception) {
-                    e.printStackTrace()
+                    return@launch
+                }
+
+                val myHealths = withContext(Dispatchers.IO) {
+                    dbService.realmInstance.use { realm ->
+                        val healthData = realm.where(RealmMyHealthPojo::class.java)
+                            .equalTo("isUpdated", true)
+                            .equalTo("userId", userId)
+                            .findAll()
+                        realm.copyFromRealm(healthData)
+                    }
+                }
+
+                if (myHealths.isNotEmpty()) {
+                    withContext(Dispatchers.IO) {
+                        myHealths.forEach { pojo ->
+                            try {
+                                val res = apiInterface?.postDoc(
+                                    UrlUtils.header,
+                                    "application/json",
+                                    "${UrlUtils.getUrl()}/health",
+                                    serialize(pojo)
+                                )?.execute()
+
+                                if (res?.body() != null && res.body()?.has("id") == true) {
+                                    dbService.realmInstance.use { realm ->
+                                        realm.executeTransaction {
+                                            val managedPojo = it.where(RealmMyHealthPojo::class.java).equalTo("_id", pojo._id).findFirst()
+                                            managedPojo?._rev = res.body()?.get("rev")?.asString
+                                            managedPojo?.isUpdated = false
+                                        }
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                        }
+                    }
+                }
+
+                withContext(Dispatchers.Main) {
+                    listener?.onSuccess("Health data for user $userId uploaded successfully")
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    listener?.onSuccess("Error uploading health data for user $userId: ${e.localizedMessage}")
                 }
             }
-        }, {
-            mRealm.close()
-            listener?.onSuccess("Health data for user $userId uploaded successfully")
-        }) { error ->
-            mRealm.close()
-            listener?.onSuccess("Error uploading health data for user $userId: ${error.localizedMessage}")
         }
     }
 
     private fun uploadToShelf(listener: SuccessListener) {
         val apiInterface = client?.create(ApiInterface::class.java)
-        mRealm = dbService.realmInstance
-        var unmanagedUsers: List<RealmUserModel> = emptyList()
+        MainApplication.applicationScope.launch {
+            try {
+                val unmanagedUsers = withContext(Dispatchers.IO) {
+                    dbService.realmInstance.use { realm ->
+                        val users = realm.where(RealmUserModel::class.java).isNotEmpty("_id").findAll()
+                        realm.copyFromRealm(users)
+                    }
+                }
 
-        mRealm.executeTransactionAsync({ realm ->
-            val users = realm.where(RealmUserModel::class.java).isNotEmpty("_id").findAll()
-            unmanagedUsers = realm.copyFromRealm(users)
-        }, {
-            mRealm.close()
-            if (unmanagedUsers.isEmpty()) {
-                listener.onSuccess("Sync with server completed successfully")
-                return@executeTransactionAsync
-            }
-            Thread {
-                var backgroundRealm: Realm? = null
-                try {
-                    backgroundRealm = dbService.realmInstance
+                if (unmanagedUsers.isEmpty()) {
+                    withContext(Dispatchers.Main) {
+                        listener.onSuccess("Sync with server completed successfully")
+                    }
+                    return@launch
+                }
+
+                withContext(Dispatchers.IO) {
                     unmanagedUsers.forEach { model ->
+                        if (model.id?.startsWith("guest") == true) return@forEach
                         try {
-                            if (model.id?.startsWith("guest") == true) return@forEach
                             val jsonDoc = apiInterface?.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/${model._id}")?.execute()?.body()
-                            val `object` = getShelfData(backgroundRealm, model.id, jsonDoc)
-                            `object`.addProperty("_rev", getString("_rev", jsonDoc))
-                            apiInterface?.putDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/shelf/${sharedPreferences.getString("userId", "")}", `object`)?.execute()
+                            val shelfData = dbService.realmInstance.use { realm ->
+                                getShelfData(realm, model.id, jsonDoc)
+                            }
+                            shelfData.addProperty("_rev", getString("_rev", jsonDoc))
+                            apiInterface?.putDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/shelf/${sharedPreferences.getString("userId", "")}", shelfData)?.execute()
                         } catch (e: Exception) {
                             e.printStackTrace()
                         }
                     }
-                    MainApplication.applicationScope.launch(Dispatchers.Main) {
-                        listener.onSuccess("Sync with server completed successfully")
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    MainApplication.applicationScope.launch(Dispatchers.Main) {
-                        listener.onSuccess("Unable to update documents: ${e.localizedMessage}")
-                    }
-                } finally {
-                    backgroundRealm?.close()
                 }
-            }.start()
-        }, { error ->
-            mRealm.close()
-            listener.onSuccess("Unable to update documents: ${error.localizedMessage}")
-        })
+
+                withContext(Dispatchers.Main) {
+                    listener.onSuccess("Sync with server completed successfully")
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    listener.onSuccess("Unable to update documents: ${e.localizedMessage}")
+                }
+            }
+        }
     }
 
     private fun uploadSingleUserToShelf(userName: String?, listener: SuccessListener) {
         val apiInterface = client?.create(ApiInterface::class.java)
-        mRealm = dbService.realmInstance
+        MainApplication.applicationScope.launch {
+            try {
+                val model = withContext(Dispatchers.IO) {
+                    dbService.realmInstance.use { realm ->
+                        val user = realm.where(RealmUserModel::class.java)
+                            .equalTo("name", userName)
+                            .isNotEmpty("_id")
+                            .findFirst()
+                        user?.let { realm.copyFromRealm(it) }
+                    }
+                }
 
-        mRealm.executeTransactionAsync({ realm: Realm ->
-            val model = realm.where(RealmUserModel::class.java)
-                .equalTo("name", userName)
-                .isNotEmpty("_id")
-                .findFirst()
+                if (model != null) {
+                    if (model.id?.startsWith("guest") == true) return@launch
+                    withContext(Dispatchers.IO) {
+                        try {
+                            val shelfUrl = "${UrlUtils.getUrl()}/shelf/${model._id}"
+                            val jsonDoc = apiInterface?.getJsonObject(UrlUtils.header, shelfUrl)?.execute()?.body()
+                            val shelfObject = dbService.realmInstance.use { realm ->
+                                getShelfData(realm, model.id, jsonDoc)
+                            }
+                            shelfObject.addProperty("_rev", getString("_rev", jsonDoc))
+                            val targetUrl = "${UrlUtils.getUrl()}/shelf/${sharedPreferences.getString("userId", "")}"
+                            apiInterface?.putDoc(UrlUtils.header, "application/json", targetUrl, shelfObject)?.execute()?.body()
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
 
-            if (model != null) {
-                try {
-                    if (model.id?.startsWith("guest") == true) return@executeTransactionAsync
-
-                    val shelfUrl = "${UrlUtils.getUrl()}/shelf/${model._id}"
-                    val jsonDoc = apiInterface?.getJsonObject(UrlUtils.header, shelfUrl)?.execute()?.body()
-                    val shelfObject = getShelfData(realm, model.id, jsonDoc)
-                    shelfObject.addProperty("_rev", getString("_rev", jsonDoc))
-
-                    val targetUrl = "${UrlUtils.getUrl()}/shelf/${sharedPreferences.getString("userId", "")}" 
-                    apiInterface?.putDoc(UrlUtils.header, "application/json", targetUrl, shelfObject)?.execute()?.body()
-                } catch (e: Exception) {
-                    e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    listener.onSuccess("Single user shelf sync completed successfully")
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    listener.onSuccess("Unable to update document: ${e.localizedMessage}")
                 }
             }
-        }, {
-            mRealm.close()
-            listener.onSuccess("Single user shelf sync completed successfully")
-        }) { error ->
-            mRealm.close()
-            listener.onSuccess("Unable to update document: ${error.localizedMessage}")
         }
     }
 
