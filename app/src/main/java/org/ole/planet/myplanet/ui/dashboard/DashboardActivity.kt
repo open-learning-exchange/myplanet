@@ -697,24 +697,96 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         realm: Realm,
         userId: String?,
     ): List<NotificationUtils.NotificationConfig> {
-        val newNotifications = mutableListOf<NotificationUtils.NotificationConfig>()
-        createSurveyDatabaseNotifications(realm, userId)
-        createTaskDatabaseNotifications(realm, userId)
-        createStorageDatabaseNotifications(realm, userId)
-        createJoinRequestDatabaseNotifications(realm, userId)
+        val surveyTitles = collectSurveyData(realm, userId)
+        val taskData = collectTaskData(realm, userId)
+        val joinRequestData = collectJoinRequestData(realm, userId)
+        val storageRatio = FileUtils.totalAvailableMemoryRatio(this)
 
-        val unreadNotifications = realm.where(RealmNotification::class.java)
+        val notificationConfigs = realm.where(RealmNotification::class.java)
             .equalTo("userId", userId)
             .equalTo("isRead", false)
             .findAll()
-
-        unreadNotifications.forEach { dbNotification ->
-            val config = createNotificationConfigFromDatabase(dbNotification)
-            if (config != null) {
-                newNotifications.add(config)
+            .mapNotNull { dbNotification ->
+                createNotificationConfigFromDatabase(dbNotification)
             }
+            .toMutableList()
+
+        surveyTitles.forEach { title ->
+            dashboardViewModel.createNotificationIfMissing("survey", title, title, userId)
         }
-        return newNotifications
+
+        taskData.forEach { (title, deadline, id) ->
+            dashboardViewModel.createNotificationIfMissing("task", "$title $deadline", id, userId)
+        }
+
+        if (storageRatio > 85) {
+            dashboardViewModel.createNotificationIfMissing("storage", "$storageRatio%", "storage", userId)
+        }
+        dashboardViewModel.createNotificationIfMissing("storage", "90%", "storage_test", userId)
+
+        joinRequestData.forEach { (message, id) ->
+            dashboardViewModel.createNotificationIfMissing("join_request", message, id, userId)
+        }
+        return notificationConfigs
+    }
+
+    private fun collectSurveyData(realm: Realm, userId: String?): List<String> {
+        return realm.where(RealmSubmission::class.java)
+            .equalTo("userId", userId)
+            .equalTo("status", "pending")
+            .equalTo("type", "survey")
+            .findAll()
+            .mapNotNull { submission ->
+                val examId = submission.parentId?.split("@")?.firstOrNull() ?: ""
+                realm.where(RealmStepExam::class.java)
+                    .equalTo("id", examId)
+                    .findFirst()
+                    ?.name
+            }
+    }
+
+    private fun collectTaskData(realm: Realm, userId: String?): List<Triple<String, String, String>> {
+        return realm.where(RealmTeamTask::class.java)
+            .notEqualTo("status", "archived")
+            .equalTo("completed", false)
+            .equalTo("assignee", userId)
+            .findAll()
+            .mapNotNull { task ->
+                val title = task.title ?: return@mapNotNull null
+                val id = task.id ?: return@mapNotNull null
+                Triple(title, formatDate(task.deadline), id)
+            }
+    }
+
+    private fun collectJoinRequestData(realm: Realm, userId: String?): List<Pair<String, String>> {
+        return realm.where(RealmMyTeam::class.java)
+            .equalTo("userId", userId)
+            .equalTo("docType", "membership")
+            .equalTo("isLeader", true)
+            .findAll()
+            .flatMap { leadership ->
+                realm.where(RealmMyTeam::class.java)
+                    .equalTo("teamId", leadership.teamId)
+                    .equalTo("docType", "request")
+                    .findAll()
+                    .mapNotNull { joinRequest ->
+                        joinRequest._id?.let { requestId ->
+                            val team = realm.where(RealmMyTeam::class.java)
+                                .equalTo("_id", leadership.teamId)
+                                .findFirst()
+
+                            val requester = realm.where(RealmUserModel::class.java)
+                                .equalTo("id", joinRequest.userId)
+                                .findFirst()
+
+                            val requesterName = requester?.name ?: "Unknown User"
+                            val teamName = team?.name ?: "Unknown Team"
+                            val message = getString(R.string.user_requested_to_join_team, requesterName, teamName)
+
+                            Pair(message, requestId)
+                        }
+                    }
+            }
     }
 
     private fun createNotificationConfigFromDatabase(dbNotification: RealmNotification): NotificationUtils.NotificationConfig? {
@@ -752,85 +824,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    private suspend fun createSurveyDatabaseNotifications(realm: Realm, userId: String?) {
-        val pendingSurveys = realm.where(RealmSubmission::class.java)
-            .equalTo("userId", userId)
-            .equalTo("status", "pending")
-            .equalTo("type", "survey")
-            .findAll()
-
-        pendingSurveys.mapNotNull { submission ->
-            val examId = submission.parentId?.split("@")?.firstOrNull() ?: ""
-            realm.where(RealmStepExam::class.java)
-                .equalTo("id", examId)
-                .findFirst()
-                ?.name
-        }.forEach { title ->
-            dashboardViewModel.createNotificationIfMissing("survey", title, title, userId)
-        }
-    }
-
-    private suspend fun createTaskDatabaseNotifications(realm: Realm, userId: String?) {
-        val tasks = realm.where(RealmTeamTask::class.java)
-            .notEqualTo("status", "archived")
-            .equalTo("completed", false)
-            .equalTo("assignee", userId)
-            .findAll()
-
-        tasks.forEach { task ->
-            dashboardViewModel.createNotificationIfMissing(
-                "task",
-                "${task.title} ${formatDate(task.deadline)}",
-                task.id,
-                userId
-            )
-        }
-    }
-
-    private suspend fun createStorageDatabaseNotifications(realm: Realm, userId: String?) {
-        val storageRatio = FileUtils.totalAvailableMemoryRatio(this)
-        if (storageRatio > 85) {
-            dashboardViewModel.createNotificationIfMissing("storage", "$storageRatio%", "storage", userId)
-        }
-
-        dashboardViewModel.createNotificationIfMissing("storage", "90%", "storage_test", userId)
-    }
-
-    private suspend fun createJoinRequestDatabaseNotifications(realm: Realm, userId: String?) {
-        val teamLeaderMemberships = realm.where(RealmMyTeam::class.java)
-            .equalTo("userId", userId)
-            .equalTo("docType", "membership")
-            .equalTo("isLeader", true)
-            .findAll()
-
-        teamLeaderMemberships.forEach { leadership ->
-            val pendingJoinRequests = realm.where(RealmMyTeam::class.java)
-                .equalTo("teamId", leadership.teamId)
-                .equalTo("docType", "request")
-                .findAll()
-
-            pendingJoinRequests.forEach { joinRequest ->
-                val team = realm.where(RealmMyTeam::class.java)
-                    .equalTo("_id", leadership.teamId)
-                    .findFirst()
-
-                val requester = realm.where(RealmUserModel::class.java)
-                    .equalTo("id", joinRequest.userId)
-                    .findFirst()
-
-                val requesterName = requester?.name ?: "Unknown User"
-                val teamName = team?.name ?: "Unknown Team"
-                val message = getString(R.string.user_requested_to_join_team, requesterName, teamName)
-
-                dashboardViewModel.createNotificationIfMissing(
-                    "join_request",
-                    message,
-                    joinRequest._id,
-                    userId
-                )
-            }
-        }
-    }
 
     private fun openNotificationsList(userId: String) {
         val fragment = NotificationsFragment().apply {
