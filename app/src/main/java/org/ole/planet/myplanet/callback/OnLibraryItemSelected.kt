@@ -1,12 +1,8 @@
 package org.ole.planet.myplanet.callback
 
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.model.Library
 
 interface OnLibraryItemSelected {
-    @JvmSuppressWildcards
-    fun onSelectedListChange(list: MutableList<RealmMyLibrary?>)
-    @JvmSuppressWildcards
-    fun onTagClicked(realmTag: RealmTag)
+    fun onSelectedListChange(list: MutableList<Library?>)
+    fun onTagClicked(tag: org.ole.planet.myplanet.model.RealmTag)
 }
-

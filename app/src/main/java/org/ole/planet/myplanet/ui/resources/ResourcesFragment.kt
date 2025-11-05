@@ -59,7 +59,6 @@ import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
-import org.ole.planet.myplanet.model.Library
 
 @AndroidEntryPoint
 class ResourcesFragment : BaseRecyclerFragment<Library?>(), OnLibraryItemSelected,
@@ -181,10 +180,10 @@ class ResourcesFragment : BaseRecyclerFragment<Library?>(), OnLibraryItemSelecte
         if (!isAdded || requireActivity().isFinishing) return
         lifecycleScope.launch {
             try {
-                val results = withContext(Dispatchers.IO) {
-                    databaseService.getRealmInstance().use { realm ->
+                val dbOpsAndFilteringResult = withContext(Dispatchers.IO) {
+                    databaseService.realmInstance.use { realm ->
                         val map = getRatings(realm, "resource", model?.id)
-                        val libraryList = getList(realm, RealmMyLibrary::class.java)
+                        val libraryList = getList(RealmMyLibrary::class.java)
                             .filterIsInstance<RealmMyLibrary>()
                         val currentSearchTags = if (::searchTags.isInitialized) searchTags else emptyList()
                         val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
@@ -198,8 +197,8 @@ class ResourcesFragment : BaseRecyclerFragment<Library?>(), OnLibraryItemSelecte
                     }
                 }
                 withContext(Dispatchers.Main) {
-                    adapterLibrary.setLibraryList(results.second)
-                    adapterLibrary.setRatingMap(results.first)
+                    adapterLibrary.setLibraryList(dbOpsAndFilteringResult.second)
+                    adapterLibrary.setRatingMap(dbOpsAndFilteringResult.first)
                     checkList()
                     showNoData(tvMessage, adapterLibrary.itemCount, "resources")
                 }
@@ -209,12 +208,16 @@ class ResourcesFragment : BaseRecyclerFragment<Library?>(), OnLibraryItemSelecte
         }
     }
 
-    private fun getList(realm: Realm, clazz: Class<out RealmObject>): List<RealmObject> {
-        return realm.where(clazz).findAll()
+    private fun getList(clazz: Class<out RealmMyLibrary>): List<RealmMyLibrary> {
+        return mRealm.where(clazz).findAll()
+    }
+
+    private fun filterLibraryByTag(s: String, tags: List<RealmTag>): List<RealmMyLibrary> {
+        return filterLibraryByTag(mRealm, s, tags)
     }
 
     private fun filterLibraryByTag(realm: Realm, s: String, tags: List<RealmTag>): List<RealmMyLibrary> {
-        var list = getData(realm, s, RealmMyLibrary::class.java)
+        var list = getData(s, RealmMyLibrary::class.java)
         list = if (isMyCourseLib) {
             RealmMyLibrary.getMyLibraryByUserId(model?.id, list)
         } else {
@@ -242,14 +245,14 @@ class ResourcesFragment : BaseRecyclerFragment<Library?>(), OnLibraryItemSelecte
         }
     }
 
-    private fun getData(realm: Realm, s: String, c: Class<RealmMyLibrary>): List<RealmMyLibrary> {
-        return realm.where(c).findAll()
+    private fun getData(s: String, c: Class<RealmMyLibrary>): List<RealmMyLibrary> {
+        return mRealm.where(c).findAll()
     }
 
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
         map = getRatings(mRealm, "resource", model?.id)
-        val libraryList: List<RealmMyLibrary?> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary?>()
+        val libraryList: List<RealmMyLibrary?> = getList(RealmMyLibrary::class.java)
         adapterLibrary = AdapterResource(requireActivity(), libraryList.map { it?.toLibrary() }, map!!, tagRepository, profileDbHandler?.userModel)
         adapterLibrary.setRatingChangeListener(this)
         adapterLibrary.setListener(this)
@@ -547,10 +550,10 @@ class ResourcesFragment : BaseRecyclerFragment<Library?>(), OnLibraryItemSelecte
     override fun getData(): Map<String, Set<String>> {
         val libraryList = adapterLibrary.getLibraryList().filterNotNull()
         val b: MutableMap<String, Set<String>> = HashMap()
-        b["languages"] = libraryList.let { getArrayList(it, "languages").filterNotNull().toSet() }
-        b["subjects"] = libraryList.let { getSubjects(it).toList().toSet() }
-        b["mediums"] = getArrayList(libraryList, "mediums").filterNotNull().toSet()
-        b["levels"] = getLevels(libraryList).toList().toSet()
+        b["languages"] = libraryList.map { it.language }.toSet()
+        b["subjects"] = libraryList.flatMap { it.subject ?: emptyList() }.toSet()
+        b["mediums"] = libraryList.map { it.mediaType }.toSet()
+        b["levels"] = libraryList.flatMap { it.level ?: emptyList() }.toSet()
         return b
     }
 

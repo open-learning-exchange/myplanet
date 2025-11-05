@@ -20,6 +20,7 @@ import java.util.Locale
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
+import org.ole.planet.myplanet.model.Library
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getAllCourses
@@ -116,10 +117,10 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         val courseIds = mutableSetOf<String>()
 
         itemsToAdd.forEach { item ->
-            val realmObject = item as? RealmObject ?: return@forEach
-            when (realmObject) {
-                is RealmMyLibrary -> realmObject.resourceId?.let(resourceIds::add)
-                is RealmMyCourse -> realmObject.courseId?.let(courseIds::add)
+            when (item) {
+                is RealmMyLibrary -> item.resourceId?.let(resourceIds::add)
+                is RealmMyCourse -> item.courseId?.let(courseIds::add)
+                is Library -> item.resourceId?.let(resourceIds::add)
             }
         }
 
@@ -186,9 +187,19 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                 if (!mRealm.isInTransaction) {
                     mRealm.beginTransaction()
                 }
-                val `object` = item as RealmObject
-                deleteCourseProgress(deleteProgress, `object`)
-                removeFromShelf(`object`)
+                when (item) {
+                    is RealmObject -> {
+                        deleteCourseProgress(deleteProgress, item)
+                        removeFromShelf(item)
+                    }
+                    is Library -> {
+                        val realmObject = mRealm.where(RealmMyLibrary::class.java).equalTo("id", item.id).findFirst()
+                        if (realmObject != null) {
+                            deleteCourseProgress(deleteProgress, realmObject)
+                            removeFromShelf(realmObject)
+                        }
+                    }
+                }
                 if (mRealm.isInTransaction) {
                     mRealm.commitTransaction()
                 }

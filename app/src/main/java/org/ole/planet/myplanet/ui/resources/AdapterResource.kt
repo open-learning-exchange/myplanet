@@ -105,7 +105,7 @@ class AdapterResource(
                 } else {
                     String.format(Locale.getDefault(), "%.1f", library.averageRating?.toDouble())
                 }
-            holder.rowLibraryBinding.tvDate.text = library.createdDate.let { formatDate(it, "MMM dd, yyyy") }
+            holder.rowLibraryBinding.tvDate.text = library.createdDate?.let { formatDate(it, "MMM dd, yyyy") }
             displayTagCloud(holder, position)
             holder.itemView.setOnClickListener {
                 val adapterPosition = holder.bindingAdapterPosition
@@ -169,7 +169,7 @@ class AdapterResource(
     }
 
     private fun openLibrary(library: Library?) {
-        homeItemClickListener?.openLibraryDetailFragment(library)
+        library?.id?.let { homeItemClickListener?.openLibraryDetailFragment(it) }
     }
 
     override fun onBindViewHolder(
