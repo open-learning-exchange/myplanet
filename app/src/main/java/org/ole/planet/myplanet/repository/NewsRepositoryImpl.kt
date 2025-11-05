@@ -47,6 +47,20 @@ class NewsRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun addLabel(newsId: String, label: String) {
+        update(RealmNews::class.java, "id", newsId) { news ->
+            if (!news.labels.contains(label)) {
+                news.labels.add(label)
+            }
+        }
+    }
+
+    override suspend fun removeLabel(newsId: String, label: String) {
+        update(RealmNews::class.java, "id", newsId) { news ->
+            news.labels.remove(label)
+        }
+    }
+
     private fun isVisibleToUser(news: RealmNews, userIdentifier: String): Boolean {
         if (news.viewableBy.equals("community", ignoreCase = true)) {
             return true

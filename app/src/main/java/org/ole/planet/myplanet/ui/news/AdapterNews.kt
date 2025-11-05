@@ -40,6 +40,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.NewsRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
@@ -52,8 +53,18 @@ import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.makeExpandable
+import kotlinx.coroutines.CoroutineScope
 
-class AdapterNews(var context: Context, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userProfileDbHandler: UserProfileDbHandler) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
+class AdapterNews(
+    var context: Context,
+    private var currentUser: RealmUserModel?,
+    private val parentNews: RealmNews?,
+    private val teamName: String = "",
+    private val teamId: String? = null,
+    private val userProfileDbHandler: UserProfileDbHandler,
+    private val newsRepository: NewsRepository,
+    private val scope: CoroutineScope,
+) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem ->
             if (oldItem === newItem) return@itemCallback true
@@ -135,7 +146,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     fun setmRealm(mRealm: Realm?) {
         if (mRealm != null) {
             this.mRealm = mRealm
-            labelManager = NewsLabelManager(context, this.mRealm)
+            labelManager = NewsLabelManager(context, newsRepository, scope)
         }
     }
 
@@ -145,7 +156,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         user = userProfileDbHandler.userModel
         settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         if (::mRealm.isInitialized) {
-            if (labelManager == null) labelManager = NewsLabelManager(context, mRealm)
+            if (labelManager == null) labelManager = NewsLabelManager(context, newsRepository, scope)
         }
         return ViewHolderNews(binding)
     }
