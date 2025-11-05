@@ -262,7 +262,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
             startActivity(Intent(activity, AddResourceActivity::class.java).putExtra("resource_local_url", path))
         } else {
             val userModel = userProfileDbHandler.userModel ?: return
-            showAlert(requireContext(), path, myPersonalRepository, userModel.id, userModel.name) {
+            showAlert(requireContext(), path, myPersonalRepository, userModel.id, userModel.name, viewLifecycleOwner.lifecycleScope) {
                 dismiss()
             }
         }
@@ -278,29 +278,41 @@ class AddResourceFragment : BottomSheetDialogFragment() {
             repository: MyPersonalRepository,
             userId: String?,
             userName: String?,
-            onDismiss: (() -> Unit)? = null
+            scope: CoroutineScope,
+            onDismiss: () -> Unit
         ) {
             val v = LayoutInflater.from(context).inflate(R.layout.alert_my_personal, null)
             val etTitle = v.findViewById<EditText>(R.id.et_title)
             val etDesc = v.findViewById<EditText>(R.id.et_description)
-            AlertDialog.Builder(context, R.style.AlertDialogTheme)
+            val dialog = AlertDialog.Builder(context, R.style.AlertDialogTheme)
                 .setTitle(R.string.enter_resource_detail)
                 .setView(v)
-                .setPositiveButton("Save") { _: DialogInterface?, _: Int ->
+                .setPositiveButton(R.string.save, null)
+                .setNegativeButton(R.string.dismiss, null)
+                .create()
+
+            dialog.setOnShowListener {
+                val positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                positiveButton.setOnClickListener {
                     val title = etTitle.text.toString().trim { it <= ' ' }
                     if (title.isEmpty()) {
                         Utilities.toast(context, context.getString(R.string.title_is_required))
-                        return@setPositiveButton
+                        return@setOnClickListener
                     }
                     val desc = etDesc.text.toString().trim { it <= ' ' }
-                    CoroutineScope(Dispatchers.IO).launch {
+                    positiveButton.isEnabled = false
+                    scope.launch(Dispatchers.IO) {
                         repository.savePersonalResource(title, userId, userName, path, desc)
                         withContext(Dispatchers.Main) {
                             Utilities.toast(context, context.getString(R.string.resource_saved_to_my_personal))
-                            onDismiss?.invoke()
+                            positiveButton.isEnabled = true
+                            dialog.dismiss()
+                            onDismiss.invoke()
                         }
                     }
-                }.setNegativeButton(R.string.dismiss, null).show()
+                }
+            }
+            dialog.show()
         }
     }
 }
