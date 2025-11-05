@@ -46,6 +46,8 @@ class DiscussionListFragment : BaseTeamFragment() {
     
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
+    @Inject
+    lateinit var newsRepository: NewsRepository
     private var filteredNewsList: List<RealmNews?> = listOf()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -182,7 +184,7 @@ class DiscussionListFragment : BaseTeamFragment() {
         val existingAdapter = binding.rvDiscussion.adapter
         if (existingAdapter == null) {
             val adapterNews = activity?.let {
-                AdapterNews(it, user, null, getEffectiveTeamName(), teamId, userProfileDbHandler)
+                AdapterNews(it, user, null, getEffectiveTeamName(), teamId, userProfileDbHandler, newsRepository, viewLifecycleOwner.lifecycleScope)
             }
             adapterNews?.setmRealm(mRealm)
             adapterNews?.setListener(this)
