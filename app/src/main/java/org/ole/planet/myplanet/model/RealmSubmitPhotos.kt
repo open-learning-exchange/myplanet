@@ -19,19 +19,6 @@ open class RealmSubmitPhotos : RealmObject() {
     var uploaded = false
 
     companion object {
-        /**
-         * public static JsonArray serializeRealmSubmitPhotos(RealmList<RealmSubmitPhotos> submitPhotos)
-         * {
-         * JsonArray arr = new JsonArray();
-         * for(RealmSubmitPhotos sub: submitPhotos)
-         * {
-         * arr.add(createObject(sub));
-         * }
-         *
-         *
-         * return arr;
-         * }
-        </RealmSubmitPhotos> */
         @JvmStatic
         fun serializeRealmSubmitPhotos(submit: RealmSubmitPhotos): JsonObject {
             val obj = JsonObject()
