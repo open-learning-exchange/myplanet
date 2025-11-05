@@ -23,7 +23,6 @@ import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
 class AdapterTask(
     private val context: Context,
-    private val realm: Realm,
     private val list: List<RealmTeamTask>?,
     private val nonTeamMember: Boolean,
     private val coroutineScope: CoroutineScope
@@ -103,7 +102,12 @@ class AdapterTask(
         }
 
         return coroutineScope.launch(Dispatchers.IO) {
-            val user = realm.where(RealmUserModel::class.java).equalTo("id", assigneeId).findFirst()
+            var user: RealmUserModel? = null
+            Realm.getDefaultInstance().use { realm ->
+                user = realm.where(RealmUserModel::class.java).equalTo("id", assigneeId).findFirst()?.let {
+                    realm.copyFromRealm(it)
+                }
+            }
             withContext(Dispatchers.Main) {
                 val name = user?.name
                 if (name != null) {
