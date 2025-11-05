@@ -14,9 +14,11 @@ import androidx.core.graphics.toColorInt
 import androidx.fragment.app.FragmentManager
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
@@ -45,7 +47,7 @@ class AdapterTeamList(
     private var updateCompleteListener: OnUpdateCompleteListener? = null
     private var filteredList: List<RealmMyTeam> = emptyList()
     private lateinit var prefData: SharedPrefManager
-    private val scope = MainScope()
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val teamStatusCache = mutableMapOf<String, TeamStatus>()
     private var visitCounts: Map<String, Long> = emptyMap()
     private var updateListJob: Job? = null
@@ -378,11 +380,12 @@ class AdapterTeamList(
             hasPendingRequest = true
         )
 
-        if (position >= 0) {
-            notifyItemChanged(position)
-        }
-
-        scope.launch(Dispatchers.IO) {
+        scope.launch {
+            withContext(Dispatchers.Main) {
+                if (position >= 0) {
+                    notifyItemChanged(position)
+                }
+            }
             teamRepository.requestToJoin(teamId, userId, userPlanetCode, teamType)
             withContext(Dispatchers.Main) {
                 teamStatusCache.remove(cacheKey)
