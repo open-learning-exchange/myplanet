@@ -252,9 +252,8 @@ class ResourcesFragment : BaseRecyclerFragment<Library?>(), OnLibraryItemSelecte
 
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
-        map = getRatings(mRealm, "resource", model?.id)
-        val libraryList: List<RealmMyLibrary?> = getList(RealmMyLibrary::class.java)
-        adapterLibrary = AdapterResource(requireActivity(), libraryList.map { it?.toLibrary() }, map!!, tagRepository, profileDbHandler?.userModel)
+        map = HashMap()
+        adapterLibrary = AdapterResource(requireActivity(), emptyList(), map!!, tagRepository, profileDbHandler?.userModel)
         adapterLibrary.setRatingChangeListener(this)
         adapterLibrary.setListener(this)
         return adapterLibrary
@@ -274,11 +273,9 @@ class ResourcesFragment : BaseRecyclerFragment<Library?>(), OnLibraryItemSelecte
 
         setupGuestUserRestrictions()
 
-        showNoData(tvMessage, adapterLibrary.itemCount, "resources")
         clearTagsButton()
         setupUI(binding.myLibraryParentLayout, requireActivity())
-        changeButtonStatus()
-        additionalSetup()
+        refreshResourcesData()
 
         tvFragmentInfo = binding.tvFragmentInfo
         if (isMyCourseLib) tvFragmentInfo.setText(R.string.txt_myLibrary)
@@ -417,6 +414,8 @@ class ResourcesFragment : BaseRecyclerFragment<Library?>(), OnLibraryItemSelecte
             etSearch.visibility = View.VISIBLE
             binding.btnCollections.visibility = View.VISIBLE
             filter.visibility = View.VISIBLE
+            changeButtonStatus()
+            additionalSetup()
         }
     }
 

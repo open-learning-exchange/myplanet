@@ -93,7 +93,7 @@ class AdapterResource(
                     libraryList.getOrNull(adapterPosition)?.let { openLibrary(it) }
                 }
             }
-            holder.rowLibraryBinding.timesRated.text = context.getString(R.string.num_total, library.timesRated)
+            holder.rowLibraryBinding.timesRated.text = context.getString(R.string.num_total, library.timesRated ?: 0)
             holder.rowLibraryBinding.checkbox.isChecked = selectedItems.contains(library)
             val selectedText = context.getString(R.string.selected)
             val libraryTitle = library.title.orEmpty()
