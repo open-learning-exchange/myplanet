@@ -7,9 +7,10 @@ import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemCourseHomeBinding
 import org.ole.planet.myplanet.model.RealmMyCourse
+import io.realm.RealmResults
 
 class CourseAdapter(
-    private val courses: List<RealmMyCourse>,
+    private val courses: RealmResults<RealmMyCourse>,
     private val clickListener: (RealmMyCourse) -> Unit
 ) : RecyclerView.Adapter<CourseAdapter.ViewHolder>() {
 

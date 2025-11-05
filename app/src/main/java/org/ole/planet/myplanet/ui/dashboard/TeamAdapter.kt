@@ -7,9 +7,10 @@ import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemTeamHomeBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
+import io.realm.RealmResults
 
 class TeamAdapter(
-    private val teams: List<RealmMyTeam>,
+    private val teams: RealmResults<RealmMyTeam>,
     private val clickListener: (RealmMyTeam) -> Unit,
     private val viewTeamListener: (RealmMyTeam) -> Unit
 ) : RecyclerView.Adapter<TeamAdapter.ViewHolder>() {

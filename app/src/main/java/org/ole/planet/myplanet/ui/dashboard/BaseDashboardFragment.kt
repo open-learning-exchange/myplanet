@@ -160,8 +160,8 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         val recyclerView = view.findViewById<RecyclerView>(R.id.recyclerViewCourse)
         recyclerView.layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
         myCoursesResults = RealmMyCourse.getMyByUserId(mRealm, settings)
-        val adapter = CourseAdapter(myCoursesResults) { course ->
-            handleClick(course.courseId, course.courseTitle, null, null)
+        val adapter = CourseAdapter(myCoursesResults) {
+            homeItemClickListener?.openCallFragment(CoursesFragment())
         }
         recyclerView.adapter = adapter
         updateMyCoursesUI()
@@ -173,13 +173,27 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         recyclerView.layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
         myTeamsResults = RealmMyTeam.getMyTeamsByUserId(mRealm, settings)
         val adapter = TeamAdapter(myTeamsResults, { team ->
-            handleClick(team._id, team.name, TeamDetailFragment(), null)
+            val f = TeamDetailFragment()
+            val b = Bundle()
+            b.putString("id", team._id)
+            f.arguments = b
+            homeItemClickListener?.openCallFragment(f)
         }, { team ->
-            handleClick(team._id, team.name, TeamDetailFragment(), null)
+            val f = TeamDetailFragment()
+            val b = Bundle()
+            b.putString("id", team._id)
+            f.arguments = b
+            homeItemClickListener?.openCallFragment(f)
         })
         recyclerView.adapter = adapter
         updateMyTeamsUI()
         myTeamsResults.addChangeListener(myTeamsChangeListener)
+    }
+
+    private fun initializeFlexBoxView(v: View, id: Int, c: Class<out RealmObject>) {
+        val flexboxLayout: FlexboxLayout = v.findViewById(id)
+        flexboxLayout.flexDirection = FlexDirection.ROW
+        setUpMyList(c, flexboxLayout, v)
     }
 
     private fun setUpMyList(c: Class<out RealmObject>, flexboxLayout: FlexboxLayout, view: View) {

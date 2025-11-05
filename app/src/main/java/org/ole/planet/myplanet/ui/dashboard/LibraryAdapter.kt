@@ -7,9 +7,10 @@ import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemLibraryHomeBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import io.realm.RealmResults
 
 class LibraryAdapter(
-    private val libraries: List<RealmMyLibrary>,
+    private val libraries: RealmResults<RealmMyLibrary>,
     private val itemClickListener: (RealmMyLibrary) -> Unit,
     private val detailClickListener: (RealmMyLibrary) -> Unit
 ) : RecyclerView.Adapter<LibraryAdapter.ViewHolder>() {
