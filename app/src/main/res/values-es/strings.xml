@@ -138,7 +138,6 @@
     <string name="btn_guest_login">Iniciar sesión como invitado</string>
     <string name="enter_username">Ingresa tu nombre de usuario</string>
     <string name="login">Iniciar sesión</string>
-    <string name="child_mode">Modo fácil</string>
     <string name="courses">Cursos</string>
     <string name="enter_message_here">Ingresa el mensaje aquí</string>
     <string name="what_would">¿Qué te gustaría compartir?</string>
@@ -274,8 +273,6 @@
         <item>no leído</item>
     </string-array>
 
-    <string name="dictionaries">Diccionarios</string>
-    <string name="bible">Biblias</string>
     <string name="feature_not">Función no disponible</string>
     <string name="myhealth">miSalud</string>
     <string name="type_name_to_search">Escribe el nombre para buscar</string>
