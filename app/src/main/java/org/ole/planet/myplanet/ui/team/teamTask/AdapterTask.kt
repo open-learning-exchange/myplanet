@@ -105,9 +105,10 @@ class AdapterTask(
         return coroutineScope.launch(Dispatchers.IO) {
             val user = realm.where(RealmUserModel::class.java).equalTo("id", assigneeId).findFirst()
             withContext(Dispatchers.Main) {
-                if (user != null) {
-                    assigneeCache[assigneeId] = user.name
-                    binding.assignee.text = context.getString(R.string.assigned_to_colon, user.name)
+                val name = user?.name
+                if (name != null) {
+                    assigneeCache[assigneeId] = name
+                    binding.assignee.text = context.getString(R.string.assigned_to_colon, name)
                 } else {
                     binding.assignee.setText(R.string.no_assignee)
                 }
