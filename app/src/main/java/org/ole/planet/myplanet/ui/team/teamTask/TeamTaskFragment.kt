@@ -36,6 +36,8 @@ import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMember
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.TeamTask
+import org.ole.planet.myplanet.model.toTeamTask
 import org.ole.planet.myplanet.ui.myhealth.UserListArrayAdapter
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.ui.team.teamTask.AdapterTask.OnCompletedListener
@@ -50,7 +52,6 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
     private val binding get() = _binding!!
     private var deadline: Calendar? = null
     private var datePicker: TextView? = null
-    var list: List<RealmTeamTask>? = null
     private var teamTaskList: RealmResults<RealmTeamTask>? = null
     private var currentTab = R.id.btn_all
 
@@ -91,7 +92,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
             .notEqualTo("status", "archived").findAllAsync()
 
         teamTaskList?.addChangeListener { results ->
-            updatedTeamTaskList(results)
+            updateTasks(results)
         }
 
         return binding.root
@@ -160,11 +161,6 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
                 mRealm.refresh()
             }
 
-            if (binding.rvTask.adapter != null) {
-                binding.rvTask.adapter?.notifyDataSetChanged()
-                showNoData(binding.tvNodata, binding.rvTask.adapter?.itemCount, "tasks")
-            }
-            setAdapter()
             Utilities.toast(
                 activity,
                 String.format(
@@ -178,36 +174,27 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.rvTask.layoutManager = LinearLayoutManager(activity)
-        list = mRealm.where(RealmTeamTask::class.java).equalTo("teamId", teamId).findAll()
-        setAdapter()
-        showNoData(binding.tvNodata, list?.size, "tasks")
+        adapterTask = AdapterTask(requireContext(), mRealm, !isMemberFlow.value)
+        adapterTask.setListener(this)
+        binding.rvTask.adapter = adapterTask
+        updateTasks()
         binding.taskToggle.setOnCheckedChangeListener { _: SingleSelectToggleGroup?, checkedId: Int ->
             currentTab = checkedId
-            when (checkedId) {
-                R.id.btn_my -> {
-                    myTasks()
-                }
-                R.id.btn_completed -> {
-                    completedTasks()
-                }
-                else -> {
-                    allTasks()
-                }
-            }
-            setAdapter()
+            updateTasks()
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 isMemberFlow.collectLatest { isMember ->
                     binding.fab.isVisible = isMember
-                    setAdapter()
+                    adapterTask.setNonTeamMember(!isMember)
+                    updateTasks()
                 }
             }
         }
     }
 
-    private fun allTasks() {
+    private fun getTasks(): List<RealmTeamTask> {
         val uncompletedTasks = mRealm.where(RealmTeamTask::class.java)
             .equalTo("teamId", teamId)
             .notEqualTo("status", "archived")
@@ -222,19 +209,15 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
             .sort("completedTime", Sort.DESCENDING)
             .findAll()
 
-        list = uncompletedTasks + completedTasks
-    }
-
-    private fun completedTasks() {
-        list = mRealm.where(RealmTeamTask::class.java).equalTo("teamId", teamId)
-            .notEqualTo("status", "archived").equalTo("completed", true)
-            .sort("deadline", Sort.DESCENDING).findAll()
-    }
-
-    private fun myTasks() {
-        list = mRealm.where(RealmTeamTask::class.java).equalTo("teamId", teamId)
+        val myTasks = mRealm.where(RealmTeamTask::class.java).equalTo("teamId", teamId)
             .notEqualTo("status", "archived").equalTo("completed", false)
             .equalTo("assignee", user?.id).sort("deadline", Sort.DESCENDING).findAll()
+
+        return when (currentTab) {
+            R.id.btn_my -> myTasks
+            R.id.btn_completed -> completedTasks
+            else -> uncompletedTasks + completedTasks
+        }
     }
 
     override fun onNewsItemClick(news: RealmNews?) {}
@@ -243,64 +226,42 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
         llImage?.removeAllViews()
     }
 
-    private fun setAdapter() {
+    private fun updateTasks(tasks: List<RealmTeamTask> = getTasks()) {
         if (isAdded) {
-            when (currentTab) {
-                R.id.btn_my -> {
-                    myTasks()
-                }
-                R.id.btn_completed -> {
-                    completedTasks()
-                }
-                R.id.btn_all -> {
-                    allTasks()
-                }
-            }
-            if (list!!.isEmpty()){
-                showNoData(binding.tvNodata, list?.size, "tasks")
-            }
-            else {
-                showNoData(binding.tvNodata, list?.size, "")
-            }
-            adapterTask = AdapterTask(requireContext(), mRealm, list, !isMemberFlow.value)
-            adapterTask.setListener(this)
-            binding.rvTask.adapter = adapterTask
+            val taskList = tasks.map { it.toTeamTask() }
+            adapterTask.submitList(taskList)
+            showNoData(binding.tvNodata, taskList.size, if (taskList.isEmpty()) "tasks" else "")
         }
     }
 
-    override fun onCheckChange(realmTeamTask: RealmTeamTask?, completed: Boolean) {
-        val taskId = realmTeamTask?.id ?: return
+    override fun onCheckChange(task: TeamTask, completed: Boolean) {
         viewLifecycleOwner.lifecycleScope.launch {
-            teamRepository.setTaskCompletion(taskId, completed)
+            teamRepository.setTaskCompletion(task.id, completed)
 
             if (!mRealm.isClosed) {
                 mRealm.refresh()
             }
-
-            setAdapter()
         }
     }
 
-    override fun onEdit(task: RealmTeamTask?) {
-        showTaskAlert(task)
+    override fun onEdit(task: TeamTask) {
+        val realmTask = mRealm.where(RealmTeamTask::class.java).equalTo("id", task.id).findFirst()
+        showTaskAlert(realmTask)
     }
 
-    override fun onDelete(task: RealmTeamTask?) {
-        val taskId = task?.id ?: return
+    override fun onDelete(task: TeamTask) {
         viewLifecycleOwner.lifecycleScope.launch {
-            teamRepository.deleteTask(taskId)
+            teamRepository.deleteTask(task.id)
 
             if (!mRealm.isClosed) {
                 mRealm.refresh()
             }
 
             Utilities.toast(activity, getString(R.string.task_deleted_successfully))
-            setAdapter()
-            showNoData(binding.tvNodata, binding.rvTask.adapter?.itemCount, "tasks")
         }
     }
 
-    override fun onClickMore(realmTeamTask: RealmTeamTask?) {
+    override fun onClickMore(task: TeamTask) {
         val alertUsersSpinnerBinding = AlertUsersSpinnerBinding.inflate(LayoutInflater.from(requireActivity()))
         val userList: List<RealmUserModel> = getJoinedMember(teamId, mRealm)
         val filteredUserList = userList.filter { user -> user.getFullName().isNotBlank() }
@@ -320,8 +281,8 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
                     return@setPositiveButton
                 }
                 val user = selectedItem as RealmUserModel
-                val taskId = realmTeamTask?.id
-                if (taskId.isNullOrBlank()) {
+                val taskId = task.id
+                if (taskId.isBlank()) {
                     Toast.makeText(context, R.string.no_tasks, Toast.LENGTH_SHORT).show()
                     return@setPositiveButton
                 }
@@ -329,24 +290,13 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
                     teamRepository.assignTask(taskId, user.id)
                     Utilities.toast(activity, getString(R.string.assign_task_to) + " " + user.name)
                     adapter.notifyDataSetChanged()
-                    setAdapter()
                 }
             }.show()
-    }
-
-    private fun updatedTeamTaskList(updatedList: RealmResults<RealmTeamTask>) {
-        viewLifecycleOwner.lifecycleScope.launch {
-            adapterTask = AdapterTask(requireContext(), mRealm, updatedList, !isMemberFlow.value)
-            adapterTask.setListener(this@TeamTaskFragment)
-            binding.rvTask.adapter = adapterTask
-            adapterTask.notifyDataSetChanged()
-        }
     }
 
     override fun onDestroyView() {
         teamTaskList?.removeAllChangeListeners()
         teamTaskList = null
-        list = null
         binding.rvTask.adapter = null
         if (isRealmInitialized()) {
             mRealm.close()
