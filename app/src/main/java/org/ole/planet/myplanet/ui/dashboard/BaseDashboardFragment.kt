@@ -157,7 +157,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             itemLibraryHomeBinding.title.text = items.title
             itemLibraryHomeBinding.detail.setOnClickListener {
                 if (homeItemClickListener != null) {
-                    homeItemClickListener?.openLibraryDetailFragment(items)
+                    homeItemClickListener?.openLibraryDetailFragment(items.resourceId)
                 }
             }
 

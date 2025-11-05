@@ -169,7 +169,7 @@ class AdapterResource(
     }
 
     private fun openLibrary(library: Library?) {
-        library?.id?.let { homeItemClickListener?.openLibraryDetailFragment(it) }
+        library?.resourceId?.let { homeItemClickListener?.openLibraryDetailFragment(it) }
     }
 
     override fun onBindViewHolder(

@@ -31,6 +31,7 @@ import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.callback.OnFilterListener
+import io.realm.Realm
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnLibraryItemSelected
 import org.ole.planet.myplanet.callback.SyncListener
@@ -212,7 +213,7 @@ class ResourcesFragment : BaseRecyclerFragment<Library?>(), OnLibraryItemSelecte
         return mRealm.where(clazz).findAll()
     }
 
-    private fun filterLibraryByTag(s: String, tags: List<RealmTag>): List<RealmMyLibrary> {
+    override fun filterLibraryByTag(s: String, tags: List<RealmTag>): List<RealmMyLibrary> {
         return filterLibraryByTag(mRealm, s, tags)
     }
 
@@ -550,9 +551,9 @@ class ResourcesFragment : BaseRecyclerFragment<Library?>(), OnLibraryItemSelecte
     override fun getData(): Map<String, Set<String>> {
         val libraryList = adapterLibrary.getLibraryList().filterNotNull()
         val b: MutableMap<String, Set<String>> = HashMap()
-        b["languages"] = libraryList.map { it.language }.toSet()
+        b["languages"] = libraryList.map { it.language }.filterNotNull().toSet()
         b["subjects"] = libraryList.flatMap { it.subject ?: emptyList() }.toSet()
-        b["mediums"] = libraryList.map { it.mediaType }.toSet()
+        b["mediums"] = libraryList.map { it.mediaType }.filterNotNull().toSet()
         b["levels"] = libraryList.flatMap { it.level ?: emptyList() }.toSet()
         return b
     }

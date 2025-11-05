@@ -41,7 +41,7 @@ class AdapterTeamResource(
             tvDescription.text = resource.description
 
             root.setOnClickListener {
-                listener?.openLibraryDetailFragment(resource)
+                resource.resourceId?.let { it1 -> listener?.openLibraryDetailFragment(it1) }
             }
 
             ivRemove.apply {
