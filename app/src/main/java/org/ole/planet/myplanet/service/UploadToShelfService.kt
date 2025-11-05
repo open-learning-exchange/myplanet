@@ -168,11 +168,11 @@ class UploadToShelfService @Inject constructor(
                         }
                     })
                 }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            withContext(Dispatchers.Main) {
-                listener.onSuccess("Error during user data sync: ${e.localizedMessage}")
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    listener.onSuccess("Error during user data sync: ${e.localizedMessage}")
+                }
             }
         }
     }
@@ -198,8 +198,28 @@ class UploadToShelfService @Inject constructor(
 
                         if (!userExists) {
                             uploadNewUser(apiInterface, userModel)
+                            dbService.realmInstance.use { realm ->
+                                realm.executeTransaction {
+                                    val managedModel = it.where(RealmUserModel::class.java).equalTo("id", userModel.id).findFirst()
+                                    managedModel?._id = userModel._id
+                                    managedModel?._rev = userModel._rev
+                                    managedModel?.password_scheme = userModel.password_scheme
+                                    managedModel?.derived_key = userModel.derived_key
+                                    managedModel?.salt = userModel.salt
+                                    managedModel?.iterations = userModel.iterations
+                                    managedModel?.key = userModel.key
+                                    managedModel?.iv = userModel.iv
+                                }
+                            }
                         } else if (userModel.isUpdated) {
                             updateExistingUser(apiInterface, header, userModel)
+                            dbService.realmInstance.use { realm ->
+                                realm.executeTransaction {
+                                    val managedModel = it.where(RealmUserModel::class.java).equalTo("id", userModel.id).findFirst()
+                                    managedModel?._rev = userModel._rev
+                                    managedModel?.isUpdated = false
+                                }
+                            }
                         }
                     }
                 }
