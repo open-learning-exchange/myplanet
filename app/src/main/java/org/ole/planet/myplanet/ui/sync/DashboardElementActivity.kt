@@ -213,12 +213,16 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
 
     fun logout() {
         lifecycleScope.launch {
+            android.util.Log.d("NotifTiming", "[${System.currentTimeMillis()}] Logout started")
             profileDbHandler.logoutAsync()
             SecurePrefs.clearCredentials(this@DashboardElementActivity)
             settings.edit { putBoolean(Constants.KEY_LOGIN, false) }
             settings.edit { putBoolean(Constants.KEY_NOTIFICATION_SHOWN, false) }
             NotificationUtils.cancelAll(this@DashboardElementActivity)
-            
+            android.util.Log.d("NotifTiming", "[${System.currentTimeMillis()}] Clearing notification caches")
+            NotificationUtils.clearAllCaches(this@DashboardElementActivity)
+            android.util.Log.d("NotifTiming", "[${System.currentTimeMillis()}] Notification caches cleared, starting login screen")
+
             val loginScreen = Intent(this@DashboardElementActivity, LoginActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
                 .putExtra("fromLogout", true)

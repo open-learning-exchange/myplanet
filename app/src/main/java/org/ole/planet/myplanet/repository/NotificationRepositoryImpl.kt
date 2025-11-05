@@ -54,6 +54,7 @@ class NotificationRepositoryImpl @Inject constructor(
         notifications: List<NotificationData>,
         userId: String?
     ) {
+        android.util.Log.d("NotifTiming", "[${System.currentTimeMillis()}] createNotificationsBatch called: ${notifications.size} notifications for user $userId")
         if (notifications.isEmpty() || userId == null) return
 
         val actualUserId = userId
@@ -70,26 +71,38 @@ class NotificationRepositoryImpl @Inject constructor(
                 }
                 .toMap()
         }
+        android.util.Log.d("NotifTiming", "[${System.currentTimeMillis()}] Found ${existingNotifications.size} existing notifications in DB: ${existingNotifications.keys}")
 
         // Filter out notifications that already exist
         val notificationsToCreate = notifications.filter { notif ->
             val key = "${notif.type}:${notif.relatedId ?: "null"}"
             !existingNotifications.containsKey(key)
         }
+        android.util.Log.d("NotifTiming", "[${System.currentTimeMillis()}] After filtering: ${notificationsToCreate.size} new notifications to create")
 
-        // Create only the new notifications in a single transaction
+        // Create notifications in smaller batches for better performance
         if (notificationsToCreate.isNotEmpty()) {
-            executeTransaction { realm ->
-                notificationsToCreate.forEach { notif ->
-                    realm.createObject(RealmNotification::class.java, UUID.randomUUID().toString()).apply {
-                        this.userId = actualUserId
-                        this.type = notif.type
-                        this.message = notif.message
-                        this.relatedId = notif.relatedId
-                        this.createdAt = Date()
+            val chunkSize = 10
+            val chunks = notificationsToCreate.chunked(chunkSize)
+            android.util.Log.d("NotifTiming", "[${System.currentTimeMillis()}] Split into ${chunks.size} chunks of max $chunkSize")
+
+            chunks.forEachIndexed { index, chunk ->
+                executeTransaction { realm ->
+                    chunk.forEach { notif ->
+                        realm.createObject(RealmNotification::class.java, UUID.randomUUID().toString()).apply {
+                            this.userId = actualUserId
+                            this.type = notif.type
+                            this.message = notif.message
+                            this.relatedId = notif.relatedId
+                            this.createdAt = Date()
+                        }
                     }
                 }
+                android.util.Log.d("NotifTiming", "[${System.currentTimeMillis()}] Created chunk ${index + 1}/${chunks.size} (${chunk.size} notifications)")
             }
+            android.util.Log.d("NotifTiming", "[${System.currentTimeMillis()}] Created ${notificationsToCreate.size} notifications in DB")
+        } else {
+            android.util.Log.d("NotifTiming", "[${System.currentTimeMillis()}] No new notifications to create")
         }
     }
 

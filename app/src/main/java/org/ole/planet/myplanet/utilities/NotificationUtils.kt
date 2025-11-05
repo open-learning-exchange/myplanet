@@ -90,6 +90,11 @@ object NotificationUtils {
     }
 
     @JvmStatic
+    fun clearAllCaches(context: Context) {
+        getInstance(context).clearAllNotificationCaches()
+    }
+
+    @JvmStatic
     fun setChannel(notificationManager: android.app.NotificationManager?) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val importance = android.app.NotificationManager.IMPORTANCE_LOW
@@ -158,11 +163,15 @@ object NotificationUtils {
         }
 
         fun showNotification(config: NotificationConfig): Boolean {
+            android.util.Log.d("NotifTiming", "[${System.currentTimeMillis()}] showNotification called for: ${config.id}, type: ${config.type}")
+
             if (!canShowNotification(config.type)) {
+                android.util.Log.d("NotifTiming", "[${System.currentTimeMillis()}] canShowNotification=false for type: ${config.type}")
                 return false
             }
 
             if (sessionShownNotifications.contains(config.id)) {
+                android.util.Log.d("NotifTiming", "[${System.currentTimeMillis()}] Already in sessionShownNotifications: ${config.id}")
                 return false
             }
 
@@ -171,6 +180,7 @@ object NotificationUtils {
             val isAlreadyShowing = activeNotifications.any { it.id == notificationId }
 
             if (isAlreadyShowing) {
+                android.util.Log.d("NotifTiming", "[${System.currentTimeMillis()}] Already showing in system: ${config.id}")
                 return false
             }
 
@@ -178,8 +188,10 @@ object NotificationUtils {
                 val notification = buildNotification(config)
                 notificationManager.notify(notificationId, notification)
                 markNotificationAsShown(config.id)
+                android.util.Log.d("NotifTiming", "[${System.currentTimeMillis()}] Notification shown successfully: ${config.id}")
                 return true
             } catch (e: Exception) {
+                android.util.Log.e("NotifTiming", "[${System.currentTimeMillis()}] Error showing notification: ${config.id}", e)
                 e.printStackTrace()
                 return false
             }
@@ -378,10 +390,21 @@ object NotificationUtils {
         private fun loadActiveNotifications() {
             val saved = preferences.getStringSet(KEY_ACTIVE_NOTIFICATIONS, emptySet()) ?: emptySet()
             activeNotifications.addAll(saved)
+            android.util.Log.d("NotifTiming", "[${System.currentTimeMillis()}] Loaded ${saved.size} active notifications from cache: $saved")
         }
 
         private fun saveActiveNotifications() {
             preferences.edit { putStringSet(KEY_ACTIVE_NOTIFICATIONS, activeNotifications) }
+        }
+
+        fun clearAllNotificationCaches() {
+            android.util.Log.d("NotifTiming", "[${System.currentTimeMillis()}] clearAllNotificationCaches called. Before: active=${activeNotifications.size}, session=${sessionShownNotifications.size}")
+            activeNotifications.clear()
+            sessionShownNotifications.clear()
+            preferences.edit {
+                remove(KEY_ACTIVE_NOTIFICATIONS)
+            }
+            android.util.Log.d("NotifTiming", "[${System.currentTimeMillis()}] clearAllNotificationCaches complete. After: active=${activeNotifications.size}, session=${sessionShownNotifications.size}")
         }
 
         fun createSurveyNotification(surveyId: String, surveyTitle: String): NotificationConfig {

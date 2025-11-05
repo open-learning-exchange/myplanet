@@ -112,6 +112,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private lateinit var challengeHelper: ChallengeHelper
     private lateinit var notificationManager: NotificationUtils.NotificationManager
     private var notificationsShownThisSession = false
+    private var initialNotificationCheckComplete = false
     private var lastNotificationCheckTime = 0L
     private val notificationCheckThrottleMs = 5000L
     private var systemNotificationReceiver: BroadcastReceiver? = null
@@ -494,10 +495,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private inline fun <reified T : RealmObject> setupListener(crossinline query: () -> RealmResults<T>) {
         val results = query()
         val listener = RealmChangeListener<RealmResults<T>> { _ ->
-            if (notificationsShownThisSession) {
+            if (notificationsShownThisSession && initialNotificationCheckComplete) {
                 val currentTime = System.currentTimeMillis()
                 if (currentTime - lastNotificationCheckTime > notificationCheckThrottleMs) {
                     lastNotificationCheckTime = currentTime
+                    android.util.Log.d("NotifTiming", "[${System.currentTimeMillis()}] Realm listener triggered notification check")
                     checkAndCreateNewNotifications()
                 }
             }
@@ -559,24 +561,32 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun checkIfShouldShowNotifications() {
         val fromLogin = intent.getBooleanExtra("from_login", false)
+        android.util.Log.d("NotifTiming", "[${System.currentTimeMillis()}] checkIfShouldShowNotifications: fromLogin=$fromLogin, notificationsShownThisSession=$notificationsShownThisSession")
         if (fromLogin || !notificationsShownThisSession) {
             notificationsShownThisSession = true
+            android.util.Log.d("NotifTiming", "[${System.currentTimeMillis()}] Will check notifications after 1s delay")
             lifecycleScope.launch {
                 kotlinx.coroutines.delay(1000)
+                android.util.Log.d("NotifTiming", "[${System.currentTimeMillis()}] 1s delay complete, calling checkAndCreateNewNotifications")
                 checkAndCreateNewNotifications()
             }
+        } else {
+            android.util.Log.d("NotifTiming", "[${System.currentTimeMillis()}] Skipping notification check (already shown this session)")
         }
     }
 
     private fun checkAndCreateNewNotifications() {
         val userId = user?.id
+        android.util.Log.d("NotifTiming", "[${System.currentTimeMillis()}] checkAndCreateNewNotifications called for user: $userId")
 
         // Prevent duplicate concurrent executions
         if (isCreatingNotifications) {
+            android.util.Log.d("NotifTiming", "[${System.currentTimeMillis()}] Already creating notifications, returning")
             return
         }
 
         isCreatingNotifications = true
+        android.util.Log.d("NotifTiming", "[${System.currentTimeMillis()}] Starting notification creation")
 
         lifecycleScope.launch(Dispatchers.IO) {
             try {
@@ -584,43 +594,73 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 val newNotifications = mutableListOf<NotificationUtils.NotificationConfig>()
 
                 try {
-                    dashboardViewModel.updateResourceNotification(userId)
-                    dashboardViewModel.cleanupDuplicateNotifications(userId)
+                    // Run slow operations in background AFTER showing notifications
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        try {
+                            android.util.Log.d("NotifTiming", "[${System.currentTimeMillis()}] Starting background resource notification update")
+                            dashboardViewModel.updateResourceNotification(userId)
+                            android.util.Log.d("NotifTiming", "[${System.currentTimeMillis()}] Background resource notification update complete")
+                        } catch (e: Exception) {
+                            android.util.Log.e("NotifTiming", "[${System.currentTimeMillis()}] Error in background resource update", e)
+                        }
+                    }
 
+                    // Run cleanup in background (don't block notification display)
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        try {
+                            android.util.Log.d("NotifTiming", "[${System.currentTimeMillis()}] Starting background cleanup of duplicate notifications")
+                            dashboardViewModel.cleanupDuplicateNotifications(userId)
+                            android.util.Log.d("NotifTiming", "[${System.currentTimeMillis()}] Background cleanup complete")
+                        } catch (e: Exception) {
+                            android.util.Log.e("NotifTiming", "[${System.currentTimeMillis()}] Error in background cleanup", e)
+                        }
+                    }
+
+                    android.util.Log.d("NotifTiming", "[${System.currentTimeMillis()}] Creating notifications from DB")
                     databaseService.realmInstance.use { backgroundRealm ->
                         val createdNotifications = createNotifications(backgroundRealm, userId)
                         newNotifications.addAll(createdNotifications)
                         unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
+                        android.util.Log.d("NotifTiming", "[${System.currentTimeMillis()}] Created ${createdNotifications.size} notification configs, unreadCount=$unreadCount")
                     }
                 } catch (e: Exception) {
+                    android.util.Log.e("NotifTiming", "[${System.currentTimeMillis()}] Error creating notifications", e)
                     e.printStackTrace()
                 }
 
                 withContext(Dispatchers.Main) {
                     try {
+                        android.util.Log.d("NotifTiming", "[${System.currentTimeMillis()}] Updating badge and showing notifications")
                         updateNotificationBadge(unreadCount) {
                             openNotificationsList(userId ?: "")
                         }
 
                         val groupedNotifications = newNotifications.groupBy { it.type }
+                        android.util.Log.d("NotifTiming", "[${System.currentTimeMillis()}] Grouped notifications: ${groupedNotifications.mapValues { it.value.size }}")
 
                         groupedNotifications.forEach { (type, notifications) ->
                             when {
                                 notifications.size == 1 -> {
+                                    android.util.Log.d("NotifTiming", "[${System.currentTimeMillis()}] Showing single notification: type=$type, id=${notifications.first().id}")
                                     notificationManager.showNotification(notifications.first())
                                 }
                                 notifications.size > 1 -> {
+                                    android.util.Log.d("NotifTiming", "[${System.currentTimeMillis()}] Showing summary notification: type=$type, count=${notifications.size}")
                                     val summaryConfig = createSummaryNotification(type, notifications.size)
                                     notificationManager.showNotification(summaryConfig)
                                 }
                             }
                         }
+                        android.util.Log.d("NotifTiming", "[${System.currentTimeMillis()}] Finished showing all notifications")
                     } catch (e: Exception) {
+                        android.util.Log.e("NotifTiming", "[${System.currentTimeMillis()}] Error showing notifications", e)
                         e.printStackTrace()
                     }
                 }
             } finally {
                 isCreatingNotifications = false
+                initialNotificationCheckComplete = true
+                android.util.Log.d("NotifTiming", "[${System.currentTimeMillis()}] checkAndCreateNewNotifications complete, Realm listeners now active")
             }
         }
     }
@@ -712,7 +752,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     ): List<NotificationUtils.NotificationConfig> {
         val newNotifications = mutableListOf<NotificationUtils.NotificationConfig>()
 
-        // Collect all notifications to create in batch
+        // Collect all notification data from Realm
         val notificationsToCreate = mutableListOf<org.ole.planet.myplanet.repository.NotificationData>()
 
         notificationsToCreate.addAll(collectSurveyNotifications(realm, userId))
@@ -720,21 +760,67 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         notificationsToCreate.addAll(collectStorageNotifications(realm, userId))
         notificationsToCreate.addAll(collectJoinRequestNotifications(realm, userId))
 
-        // Create all notifications in a single batch transaction
-        dashboardViewModel.createNotificationsBatch(notificationsToCreate, userId)
+        android.util.Log.d("NotifTiming", "[${System.currentTimeMillis()}] Collected ${notificationsToCreate.size} notifications from Realm queries")
 
-        val unreadNotifications = realm.where(RealmNotification::class.java)
-            .equalTo("userId", userId)
-            .equalTo("isRead", false)
-            .findAll()
-
-        unreadNotifications.forEach { dbNotification ->
-            val config = createNotificationConfigFromDatabase(dbNotification)
+        // Create notification configs directly from collected data (for immediate display)
+        notificationsToCreate.forEach { notifData ->
+            val config = createNotificationConfigFromData(notifData)
             if (config != null) {
                 newNotifications.add(config)
             }
         }
+
+        // Persist to database in background (don't block UI)
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                android.util.Log.d("NotifTiming", "[${System.currentTimeMillis()}] Starting DB persist in background")
+                dashboardViewModel.createNotificationsBatch(notificationsToCreate, userId)
+                android.util.Log.d("NotifTiming", "[${System.currentTimeMillis()}] DB persist complete")
+            } catch (e: Exception) {
+                android.util.Log.e("NotifTiming", "[${System.currentTimeMillis()}] Error persisting to DB", e)
+            }
+        }
+
         return newNotifications
+    }
+
+    private fun createNotificationConfigFromData(notifData: org.ole.planet.myplanet.repository.NotificationData): NotificationUtils.NotificationConfig? {
+        return when (notifData.type.lowercase()) {
+            "survey" -> notificationManager.createSurveyNotification(
+                notifData.relatedId ?: notifData.message,
+                notifData.message
+            ).copy(
+                extras = mapOf("surveyId" to (notifData.relatedId ?: notifData.message))
+            )
+            "task" -> {
+                val parts = notifData.message.split(" ")
+                val taskTitle = parts.dropLast(3).joinToString(" ")
+                val deadline = parts.takeLast(3).joinToString(" ")
+                notificationManager.createTaskNotification(
+                    notifData.relatedId ?: notifData.message,
+                    taskTitle,
+                    deadline
+                ).copy(
+                    extras = mapOf("taskId" to (notifData.relatedId ?: notifData.message))
+                )
+            }
+            "resource" -> notificationManager.createResourceNotification(
+                notifData.relatedId ?: "resource_notification",
+                notifData.message.toIntOrNull() ?: 0
+            )
+            "storage" -> {
+                val storageValue = notifData.message.replace("%", "").toIntOrNull() ?: 0
+                notificationManager.createStorageWarningNotification(storageValue, notifData.relatedId ?: "storage")
+            }
+            "join_request" -> notificationManager.createJoinRequestNotification(
+                notifData.relatedId ?: "join_request",
+                "New Request",
+                notifData.message
+            ).copy(
+                extras = mapOf("requestId" to (notifData.relatedId ?: ""), "teamName" to notifData.message)
+            )
+            else -> null
+        }
     }
 
     private fun createNotificationConfigFromDatabase(dbNotification: RealmNotification): NotificationUtils.NotificationConfig? {
