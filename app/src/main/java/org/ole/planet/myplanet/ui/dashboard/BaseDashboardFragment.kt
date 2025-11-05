@@ -15,6 +15,8 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayout
 import io.realm.Case
@@ -64,6 +66,10 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     private lateinit var myTeamsResults: RealmResults<RealmMyTeam>
     private val myTeamsChangeListener = RealmChangeListener<RealmResults<RealmMyTeam>> { _ ->
         updateMyTeamsUI()
+    }
+    private lateinit var myLibraryResults: RealmResults<RealmMyLibrary>
+    private val myLibraryChangeListener = RealmChangeListener<RealmResults<RealmMyLibrary>> { _ ->
+        updateMyLibraryUI()
     }
     private lateinit var offlineActivitiesResults: RealmResults<RealmOfflineActivity>
     fun onLoaded(v: View) {
@@ -136,40 +142,44 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         }
     }
 
-    private fun myLibraryDiv(view: View) {
-        view.findViewById<FlexboxLayout>(R.id.flexboxLayout).flexDirection = FlexDirection.ROW
-        val dbMylibrary = RealmMyLibrary.getMyLibraryByUserId(mRealm, settings)
-        if (dbMylibrary.isEmpty()) {
-            view.findViewById<TextView>(R.id.count_library).visibility = View.GONE
-        } else {
-            view.findViewById<TextView>(R.id.count_library).text = getString(R.string.number_placeholder, dbMylibrary.size)
-        }
-        for ((itemCnt, items) in dbMylibrary.withIndex()) {
-            val itemLibraryHomeBinding = ItemLibraryHomeBinding.inflate(LayoutInflater.from(activity))
-            val v = itemLibraryHomeBinding.root
-            setTextColor(itemLibraryHomeBinding.title, itemCnt)
-            val colorResId = if (itemCnt % 2 == 0) R.color.card_bg else R.color.dashboard_item_alternative
-            val color = context?.let { ContextCompat.getColor(it, colorResId) }
-            if (color != null) {
-                v.setBackgroundColor(color)
-            }
-
-            itemLibraryHomeBinding.title.text = items.title
-            itemLibraryHomeBinding.detail.setOnClickListener {
-                if (homeItemClickListener != null) {
-                    homeItemClickListener?.openLibraryDetailFragment(items)
-                }
-            }
-
-            myLibraryItemClickAction(itemLibraryHomeBinding.title, items)
-            view.findViewById<FlexboxLayout>(R.id.flexboxLayout).addView(v, params)
-        }
+    private fun myLibrary(view: View) {
+        val recyclerView = view.findViewById<RecyclerView>(R.id.recyclerView)
+        recyclerView.layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
+        myLibraryResults = RealmMyLibrary.getMyLibraryByUserId(mRealm, settings)
+        val adapter = LibraryAdapter(myLibraryResults, { library ->
+            openResource(library)
+        }, { library ->
+            homeItemClickListener?.openLibraryDetailFragment(library)
+        })
+        recyclerView.adapter = adapter
+        updateMyLibraryUI()
+        myLibraryResults.addChangeListener(myLibraryChangeListener)
     }
 
-    private fun initializeFlexBoxView(v: View, id: Int, c: Class<out RealmObject>) {
-        val flexboxLayout: FlexboxLayout = v.findViewById(id)
-        flexboxLayout.flexDirection = FlexDirection.ROW
-        setUpMyList(c, flexboxLayout, v)
+    private fun initializeCourseRecyclerView(view: View) {
+        val recyclerView = view.findViewById<RecyclerView>(R.id.recyclerViewCourse)
+        recyclerView.layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
+        myCoursesResults = RealmMyCourse.getMyByUserId(mRealm, settings)
+        val adapter = CourseAdapter(myCoursesResults) { course ->
+            handleClick(course.courseId, course.courseTitle, null, null)
+        }
+        recyclerView.adapter = adapter
+        updateMyCoursesUI()
+        myCoursesResults.addChangeListener(myCoursesChangeListener)
+    }
+
+    private fun initializeTeamRecyclerView(view: View) {
+        val recyclerView = view.findViewById<RecyclerView>(R.id.recyclerViewTeams)
+        recyclerView.layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
+        myTeamsResults = RealmMyTeam.getMyTeamsByUserId(mRealm, settings)
+        val adapter = TeamAdapter(myTeamsResults, { team ->
+            handleClick(team._id, team.name, TeamDetailFragment(), null)
+        }, { team ->
+            handleClick(team._id, team.name, TeamDetailFragment(), null)
+        })
+        recyclerView.adapter = adapter
+        updateMyTeamsUI()
+        myTeamsResults.addChangeListener(myTeamsChangeListener)
     }
 
     private fun setUpMyList(c: Class<out RealmObject>, flexboxLayout: FlexboxLayout, view: View) {
@@ -289,6 +299,9 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         if (::myTeamsResults.isInitialized) {
             myTeamsResults.removeChangeListener(myTeamsChangeListener)
         }
+        if (::myLibraryResults.isInitialized) {
+            myLibraryResults.removeChangeListener(myLibraryChangeListener)
+        }
         if (isRealmInitialized()) {
             mRealm.removeAllChangeListeners()
             if (mRealm.isInTransaction) {
@@ -326,9 +339,9 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         view.findViewById<View>(R.id.txtFullName).setOnClickListener {
             homeItemClickListener?.openCallFragment(UserProfileFragment())
         }
-        myLibraryDiv(view)
-        initializeFlexBoxView(view, R.id.flexboxLayoutCourse, RealmMyCourse::class.java)
-        initializeFlexBoxView(view, R.id.flexboxLayoutTeams, RealmMyTeam::class.java)
+        myLibrary(view)
+        initializeCourseRecyclerView(view)
+        initializeTeamRecyclerView(view)
         initializeFlexBoxView(view, R.id.flexboxLayoutMyLife, RealmMyLife::class.java)
 
         if (mRealm.isInTransaction) {
@@ -342,15 +355,36 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     private fun updateMyCoursesUI() {
-        val flexboxLayout: FlexboxLayout = view?.findViewById(R.id.flexboxLayoutCourse) ?: return
-        flexboxLayout.removeAllViews()
-        setUpMyList(RealmMyCourse::class.java, flexboxLayout, requireView())
+        val countCourse = view?.findViewById<TextView>(R.id.count_course)
+        if (myCoursesResults.isEmpty()) {
+            countCourse?.visibility = View.GONE
+        } else {
+            countCourse?.text = getString(R.string.number_placeholder, myCoursesResults.size)
+            countCourse?.visibility = View.VISIBLE
+        }
+        view?.findViewById<RecyclerView>(R.id.recyclerViewCourse)?.adapter?.notifyDataSetChanged()
     }
 
     private fun updateMyTeamsUI() {
-        val flexboxLayout: FlexboxLayout = view?.findViewById(R.id.flexboxLayoutTeams) ?: return
-        flexboxLayout.removeAllViews()
-        setUpMyList(RealmMyTeam::class.java, flexboxLayout, requireView())
+        val countTeam = view?.findViewById<TextView>(R.id.count_team)
+        if (myTeamsResults.isEmpty()) {
+            countTeam?.visibility = View.GONE
+        } else {
+            countTeam?.text = getString(R.string.number_placeholder, myTeamsResults.size)
+            countTeam?.visibility = View.VISIBLE
+        }
+        view?.findViewById<RecyclerView>(R.id.recyclerViewTeams)?.adapter?.notifyDataSetChanged()
+    }
+
+    private fun updateMyLibraryUI() {
+        val countLibrary = view?.findViewById<TextView>(R.id.count_library)
+        if (myLibraryResults.isEmpty()) {
+            countLibrary?.visibility = View.GONE
+        } else {
+            countLibrary?.text = getString(R.string.number_placeholder, myLibraryResults.size)
+            countLibrary?.visibility = View.VISIBLE
+        }
+        view?.findViewById<RecyclerView>(R.id.recyclerView)?.adapter?.notifyDataSetChanged()
     }
 
     override fun showResourceDownloadDialog() {

@@ -62,21 +62,14 @@
         </FrameLayout>
 
 
-        <HorizontalScrollView
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerViewCourse"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:contentDescription="@string/my_courses"
             android:layout_weight="1"
-            android:background="@color/card_bg">
-
-            <com.google.android.flexbox.FlexboxLayout
-                android:id="@+id/flexboxLayoutCourse"
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                app:alignContent="stretch"
-                app:alignItems="stretch"
-                app:flexWrap="wrap" />
-        </HorizontalScrollView>
+            android:background="@color/card_bg"
+            android:orientation="horizontal"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
     </LinearLayout>
 
 </androidx.cardview.widget.CardView>

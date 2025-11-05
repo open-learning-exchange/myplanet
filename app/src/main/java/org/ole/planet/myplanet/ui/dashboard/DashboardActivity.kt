@@ -139,8 +139,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         setupSystemNotificationReceiver()
         checkIfShouldShowNotifications()
         addBackPressCallback()
-        challengeHelper = ChallengeHelper(this, mRealm, user, settings, editor, dashboardViewModel)
-        challengeHelper.evaluateChallengeDialog()
+        lifecycleScope.launch(Dispatchers.IO) {
+            challengeHelper = ChallengeHelper(this@DashboardActivity, mRealm, user, settings, editor, dashboardViewModel)
+            challengeHelper.evaluateChallengeDialog()
+        }
         handleNotificationIntent(intent)
     }
 
@@ -205,8 +207,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun setupNavigation() {
         lifecycleScope.launch {
-            delay(50)
-            headerResult = accountHeader
+            headerResult = withContext(Dispatchers.IO) {
+                accountHeader
+            }
             createDrawer()
             supportFragmentManager.addOnBackStackChangedListener {
                 val frag = supportFragmentManager.findFragmentById(R.id.fragment_container)
@@ -559,8 +562,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val fromLogin = intent.getBooleanExtra("from_login", false)
         if (fromLogin || !notificationsShownThisSession) {
             notificationsShownThisSession = true
-            lifecycleScope.launch {
-                kotlinx.coroutines.delay(1000)
+            lifecycleScope.launch(Dispatchers.IO) {
                 checkAndCreateNewNotifications()
             }
         }
