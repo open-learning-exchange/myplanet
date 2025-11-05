@@ -155,4 +155,30 @@ object TimeUtils {
             e.printStackTrace()
             null
         }
+
+    fun convertToISO8601(date: String): String {
+        return try {
+            val calendar = java.util.Calendar.getInstance()
+            val parts = date.split("-")
+            if (parts.size == 3) {
+                calendar.set(parts[0].toInt(), parts[1].toInt() - 1, parts[2].toInt(), 0, 0, 0)
+                calendar.set(java.util.Calendar.MILLISECOND, 0)
+                String.format(
+                    Locale.US,
+                    "%04d-%02d-%02dT%02d:%02d:%02d.%03dZ",
+                    calendar.get(java.util.Calendar.YEAR),
+                    calendar.get(java.util.Calendar.MONTH) + 1,
+                    calendar.get(java.util.Calendar.DAY_OF_MONTH),
+                    calendar.get(java.util.Calendar.HOUR_OF_DAY),
+                    calendar.get(java.util.Calendar.MINUTE),
+                    calendar.get(java.util.Calendar.SECOND),
+                    calendar.get(java.util.Calendar.MILLISECOND)
+                )
+            } else {
+                date
+            }
+        } catch (_: Exception) {
+            date
+        }
+    }
 }

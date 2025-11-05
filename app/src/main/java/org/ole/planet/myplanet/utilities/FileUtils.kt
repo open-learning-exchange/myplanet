@@ -306,11 +306,7 @@ object FileUtils {
 
         return Pair(totalBytes, availableBytes)
     }
-    private fun extractFileName(filePath: String?): String? {
-        return filePath?.let { File(it).name.takeIf { name -> name.isNotEmpty() } }
-    }
-
     fun nameWithoutExtension(fileName: String?): String? {
-        return extractFileName(fileName)?.substringBeforeLast('.')
+        return fileName?.let { File(it).name.takeIf { name -> name.isNotEmpty() } }?.substringBeforeLast('.')
     }
 }

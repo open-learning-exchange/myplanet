@@ -138,7 +138,6 @@
     <string name="btn_guest_login">Marti ahaan u soo gal</string>
     <string name= "enter_username">Geli Magaca isticmaalaha</string>
     <string name="login">Giri</string>
-    <string name="child_mode">Qaabka fudud</string>
     <string name="courses">Koorsooyin</string>
     <string name="enter_message_here">halkan ku gali fariinta</string>
     <string name="what_would">maxaad jeceshahay inaad wadaagto?</string>
@@ -274,8 +273,6 @@
         <item>aan la akhriyin</item>
     </string-array>
 
-    <string name="dictionaries">Qaamuusyada</string>
-    <string name="bible">Quraan</string>
     <string name="feature_not">Heerkaan lama helin</string>
     <string name="myhealth">Caafimaadkaan</string>
     <string name="type_name_to_search">Geli magaca si aad u raadto</string>
