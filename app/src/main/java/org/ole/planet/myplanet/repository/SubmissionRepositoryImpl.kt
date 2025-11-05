@@ -189,7 +189,11 @@ class SubmissionRepositoryImpl @Inject constructor(
     }
 
     override suspend fun saveSubmission(submission: RealmSubmission) {
-        save(submission)
+        try {
+            save(submission)
+        } catch (e: Exception) {
+            throw e
+        }
     }
 
 }
