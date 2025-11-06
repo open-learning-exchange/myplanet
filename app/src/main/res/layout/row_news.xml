@@ -103,20 +103,16 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
-                <HorizontalScrollView
-                    android:id="@+id/hsv_images"
+                <com.google.android.flexbox.FlexboxLayout
+                    android:id="@+id/ll_news_images"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:visibility="gone">
-
-                    <LinearLayout
-                        android:id="@+id/ll_news_images"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:padding="@dimen/padding_small" />
-                </HorizontalScrollView>
-
+                    android:padding="@dimen/padding_small"
+                    android:visibility="gone"
+                    app:flexWrap="wrap"
+                    app:alignItems="flex_start"
+                    app:alignContent="flex_start"
+                    app:justifyContent="flex_start" />
                 <ImageView
                     android:id="@+id/img_news"
                     android:layout_width="120dp"
@@ -188,7 +184,6 @@
                 app:layout_constraintEnd_toStartOf="@+id/btn_share"
                 app:layout_constraintStart_toEndOf="@+id/btn_show_reply"
                 app:layout_constraintTop_toTopOf="parent" />
-
             <ImageButton
                 android:id="@+id/btn_share"
                 android:layout_width="0dp"
@@ -203,7 +198,6 @@
                 app:layout_constraintStart_toEndOf="@+id/btn_add_label"
                 app:layout_constraintTop_toTopOf="parent"
                 app:tint="@color/daynight_textColor" />
-
             <LinearLayout
                 android:id="@+id/ll_edit_delete"
                 android:layout_width="wrap_content"
