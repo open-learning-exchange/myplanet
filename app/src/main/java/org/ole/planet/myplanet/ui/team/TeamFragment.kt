@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -19,7 +20,6 @@ import io.realm.Realm
 import io.realm.RealmQuery
 import io.realm.RealmResults
 import javax.inject.Inject
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
@@ -31,7 +31,6 @@ import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getMyTeamsByUserId
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
@@ -55,7 +54,12 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
     private var teamList: RealmResults<RealmMyTeam>? = null
     private lateinit var adapterTeamList: AdapterTeamList
     private var conditionApplied: Boolean = false
-    private var progressDialog: DialogUtils.CustomProgressDialog? = null
+    private var fragmentStartTime: Long = 0
+    private var dataLoadStartTime: Long = 0
+
+    companion object {
+        private const val TAG = "Team.Fragment"
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -69,9 +73,13 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+        fragmentStartTime = System.currentTimeMillis()
+        Log.d(TAG, "onCreateView: START - timestamp: $fragmentStartTime")
+
         _binding = FragmentTeamBinding.inflate(inflater, container, false)
         mRealm = databaseService.realmInstance
         user = userProfileDbHandler.getUserModelCopy()
+        Log.d(TAG, "onCreateView: View binding and realm setup completed - elapsed: ${System.currentTimeMillis() - fragmentStartTime}ms")
 
         if (user?.isGuest() == true) {
             binding.addTeam.visibility = View.GONE
@@ -86,7 +94,8 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
             getString(R.string.team)
         }
 
-        showLoadingDialog()
+        dataLoadStartTime = System.currentTimeMillis()
+        Log.d(TAG, "onCreateView: Starting team list query - elapsed: ${dataLoadStartTime - fragmentStartTime}ms")
 
         if (fromDashboard) {
             teamList = getMyTeamsByUserId(mRealm, settings)
@@ -102,10 +111,14 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
                 query.equalTo("type", "enterprise").findAllAsync()
             }
         }
+        Log.d(TAG, "onCreateView: Team list query created - elapsed: ${System.currentTimeMillis() - fragmentStartTime}ms")
 
         teamList?.addChangeListener { _ ->
+            val changeListenerTime = System.currentTimeMillis()
+            Log.d(TAG, "onCreateView: Team list change listener triggered - elapsed: ${changeListenerTime - fragmentStartTime}ms")
             updatedTeamList()
         }
+        Log.d(TAG, "onCreateView: END - total elapsed: ${System.currentTimeMillis() - fragmentStartTime}ms")
         return binding.root
     }
 
@@ -214,14 +227,12 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
 
     override fun onResume() {
         super.onResume()
-        showLoadingDialog()
         setTeamList()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.rvTeamList.layoutManager = LinearLayoutManager(activity)
-        showLoadingDialog()
         setTeamList()
         binding.etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
@@ -288,14 +299,21 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
     }
 
     private fun setTeamList() {
+        val setTeamListStartTime = System.currentTimeMillis()
+        Log.d(TAG, "setTeamList: START - elapsed from fragment start: ${setTeamListStartTime - fragmentStartTime}ms")
+
         val list = teamList
         if (list == null) {
+            Log.d(TAG, "setTeamList: Team list is null, returning")
             return
         }
 
+        val adapterStartTime = System.currentTimeMillis()
         adapterTeamList = activity?.let {
             AdapterTeamList(it, list, childFragmentManager, teamRepository, user)
         } ?: return
+        Log.d(TAG, "setTeamList: Adapter created - elapsed: ${System.currentTimeMillis() - adapterStartTime}ms")
+
         adapterTeamList.setType(type)
         adapterTeamList.setTeamListener(this@TeamFragment)
         adapterTeamList.setUpdateCompleteListener(this@TeamFragment)
@@ -305,12 +323,16 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
             } else {
                 View.VISIBLE
             }
+
+        val setAdapterStartTime = System.currentTimeMillis()
         binding.rvTeamList.adapter = adapterTeamList
+        Log.d(TAG, "setTeamList: Adapter set to RecyclerView - elapsed: ${System.currentTimeMillis() - setAdapterStartTime}ms")
+
         listContentDescription(conditionApplied)
+        Log.d(TAG, "setTeamList: END - total elapsed: ${System.currentTimeMillis() - setTeamListStartTime}ms")
     }
 
     private fun refreshTeamList() {
-        showLoadingDialog()
         mRealm.refresh()
         teamList?.removeAllChangeListeners()
 
@@ -340,7 +362,9 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
     }
 
     override fun onUpdateComplete(itemCount: Int) {
-        hideLoadingDialog()
+        val totalElapsed = System.currentTimeMillis() - fragmentStartTime
+        Log.d(TAG, "onUpdateComplete: Adapter update complete with $itemCount items - total elapsed from fragment start: ${totalElapsed}ms")
+
         if (itemCount == 0) {
             showNoResultsMessage(true)
         } else {
@@ -349,13 +373,19 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
     }
 
     private fun updatedTeamList() {
+        val updateStartTime = System.currentTimeMillis()
+        Log.d(TAG, "updatedTeamList: START - elapsed from fragment start: ${updateStartTime - fragmentStartTime}ms")
+
         viewLifecycleOwner.lifecycleScope.launch {
             if (!::adapterTeamList.isInitialized || binding.rvTeamList.adapter == null) {
+                Log.d(TAG, "updatedTeamList: Adapter not initialized, calling setTeamList()")
                 setTeamList()
             } else {
+                Log.d(TAG, "updatedTeamList: Calling adapter.updateList()")
                 adapterTeamList.updateList()
             }
             listContentDescription(conditionApplied)
+            Log.d(TAG, "updatedTeamList: END - elapsed: ${System.currentTimeMillis() - updateStartTime}ms")
         }
     }
 
@@ -392,34 +422,6 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
         }
     }
 
-    private fun showLoadingDialog() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            try {
-                if (progressDialog == null) {
-                    progressDialog = DialogUtils.CustomProgressDialog(requireContext())
-                }
-                progressDialog?.setText(
-                    if (TextUtils.equals(type, "enterprise")) {
-                        getString(R.string.loading_enterprises)
-                    } else {
-                        getString(R.string.loading_teams)
-                    }
-                )
-                delay(50)
-                if (isAdded && !requireActivity().isFinishing) {
-                    progressDialog?.show()
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-    }
-
-    private fun hideLoadingDialog() {
-        progressDialog?.dismiss()
-        progressDialog = null
-    }
-
     override fun onDestroyView() {
         teamList?.removeAllChangeListeners()
         if (this::adapterTeamList.isInitialized) {
@@ -428,7 +430,6 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
         if (this::mRealm.isInitialized && !mRealm.isClosed) {
             mRealm.close()
         }
-        hideLoadingDialog()
         _binding = null
         super.onDestroyView()
     }

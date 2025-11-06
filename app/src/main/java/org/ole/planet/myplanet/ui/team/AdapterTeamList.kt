@@ -5,6 +5,7 @@ import android.content.DialogInterface
 import android.graphics.PorterDuff
 import android.graphics.Typeface
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -18,7 +19,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -27,6 +27,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemTeamListBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.TeamMemberStatus
 import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
@@ -49,6 +50,10 @@ class AdapterTeamList(
     private val teamStatusCache = mutableMapOf<String, TeamStatus>()
     private var visitCounts: Map<String, Long> = emptyMap()
     private var updateListJob: Job? = null
+
+    companion object {
+        private const val TAG = "Team.Adapter"
+    }
 
     data class TeamStatus(
         val isMember: Boolean,
@@ -87,10 +92,6 @@ class AdapterTeamList(
         val binding = ItemTeamListBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         prefData = SharedPrefManager(context)
         return ViewHolderTeam(binding)
-    }
-
-    init {
-        updateList()
     }
 
     override fun onBindViewHolder(holder: ViewHolderTeam, position: Int) {
@@ -231,11 +232,15 @@ class AdapterTeamList(
     }
 
     fun updateList() {
+        val updateListStartTime = System.currentTimeMillis()
+        Log.d(TAG, "updateList: START")
+
         val user: RealmUserModel? = currentUser
         val userId = user?.id
 
         updateListJob?.cancel()
         updateListJob = scope.launch {
+            val mapOldListStartTime = System.currentTimeMillis()
             val oldList = filteredList.map { team ->
                 val teamId = team._id.orEmpty()
                 val cacheKey = "${teamId}_${userId}"
@@ -250,9 +255,14 @@ class AdapterTeamList(
                     teamStatus = teamStatusCache[cacheKey]
                 )
             }
+            Log.d(TAG, "updateList: Old list mapped (${oldList.size} items) - elapsed: ${System.currentTimeMillis() - mapOldListStartTime}ms")
 
+            val filterStartTime = System.currentTimeMillis()
             val validTeams = list.filter { it.status?.isNotEmpty() == true }
+            Log.d(TAG, "updateList: Valid teams filtered (${validTeams.size} items) - elapsed: ${System.currentTimeMillis() - filterStartTime}ms")
+
             if (validTeams.isEmpty()) {
+                Log.d(TAG, "updateList: No valid teams, returning empty list")
                 val diffResult = withContext(Dispatchers.Default) {
                     DiffUtil.calculateDiff(TeamDiffCallback(oldList, emptyList()))
                 }
@@ -260,14 +270,18 @@ class AdapterTeamList(
                 filteredList = emptyList()
                 diffResult.dispatchUpdatesTo(this@AdapterTeamList)
                 updateCompleteListener?.onUpdateComplete(filteredList.size)
+                Log.d(TAG, "updateList: END (empty list) - total elapsed: ${System.currentTimeMillis() - updateListStartTime}ms")
                 return@launch
             }
 
             val teamIds = validTeams.mapNotNull { it._id?.takeIf { id -> id.isNotBlank() } }
+            Log.d(TAG, "updateList: Starting visit counts fetch for ${teamIds.size} teams")
+            val visitCountsFetchStartTime = System.currentTimeMillis()
             val visitCountsDeferred = async(Dispatchers.IO) {
                 teamRepository.getRecentVisitCounts(teamIds)
             }
 
+            val statusCheckStartTime = System.currentTimeMillis()
             val statusResults = mutableMapOf<String, TeamStatus>()
             val idsToFetch = linkedSetOf<String>()
             validTeams.forEach { team ->
@@ -281,25 +295,37 @@ class AdapterTeamList(
                     idsToFetch += teamId
                 }
             }
+            Log.d(TAG, "updateList: Status cache checked - ${statusResults.size} cached, ${idsToFetch.size} to fetch - elapsed: ${System.currentTimeMillis() - statusCheckStartTime}ms")
 
             if (idsToFetch.isNotEmpty()) {
-                idsToFetch.map { teamId ->
-                    async(Dispatchers.IO) {
-                        val status = TeamStatus(
-                            isMember = teamRepository.isMember(userId, teamId),
-                            isLeader = teamRepository.isTeamLeader(teamId, userId),
-                            hasPendingRequest = teamRepository.hasPendingRequest(teamId, userId),
-                        )
-                        teamId to status
-                    }
-                }.awaitAll().forEach { (teamId, status) ->
+                val statusFetchStartTime = System.currentTimeMillis()
+                Log.d(TAG, "updateList: Starting batch status fetch for ${idsToFetch.size} teams")
+
+                // Fetch all statuses in a single batch call
+                val batchStatuses = withContext(Dispatchers.IO) {
+                    teamRepository.getTeamMemberStatuses(userId, idsToFetch)
+                }
+
+                // Update cache and results
+                batchStatuses.forEach { (teamId, memberStatus) ->
+                    val status = TeamStatus(
+                        isMember = memberStatus.isMember,
+                        isLeader = memberStatus.isLeader,
+                        hasPendingRequest = memberStatus.hasPendingRequest
+                    )
                     val cacheKey = "${teamId}_${userId}"
                     teamStatusCache[cacheKey] = status
                     statusResults[teamId] = status
                 }
+
+                Log.d(TAG, "updateList: Batch status fetch completed for ${idsToFetch.size} teams - elapsed: ${System.currentTimeMillis() - statusFetchStartTime}ms")
             }
 
+            val visitCountsAwaitStartTime = System.currentTimeMillis()
             val newVisitCounts = visitCountsDeferred.await()
+            Log.d(TAG, "updateList: Visit counts fetched (${newVisitCounts.size} teams) - elapsed: ${System.currentTimeMillis() - visitCountsAwaitStartTime}ms, total fetch time: ${System.currentTimeMillis() - visitCountsFetchStartTime}ms")
+
+            val sortStartTime = System.currentTimeMillis()
             val sortedTeams = validTeams.sortedWith(
                 compareByDescending<RealmMyTeam> { team ->
                     val teamId = team._id.orEmpty()
@@ -313,7 +339,9 @@ class AdapterTeamList(
                     newVisitCounts[team._id.orEmpty()] ?: 0L
                 }
             )
+            Log.d(TAG, "updateList: Teams sorted - elapsed: ${System.currentTimeMillis() - sortStartTime}ms")
 
+            val newListMapStartTime = System.currentTimeMillis()
             val newList = sortedTeams.map { team ->
                 val teamId = team._id.orEmpty()
                 val cacheKey = "${teamId}_${userId}"
@@ -328,15 +356,22 @@ class AdapterTeamList(
                     teamStatus = teamStatusCache[cacheKey]
                 )
             }
+            Log.d(TAG, "updateList: New list mapped (${newList.size} items) - elapsed: ${System.currentTimeMillis() - newListMapStartTime}ms")
 
+            val diffStartTime = System.currentTimeMillis()
             val diffResult = withContext(Dispatchers.Default) {
                 DiffUtil.calculateDiff(TeamDiffCallback(oldList, newList))
             }
+            Log.d(TAG, "updateList: DiffUtil calculated - elapsed: ${System.currentTimeMillis() - diffStartTime}ms")
 
+            val dispatchStartTime = System.currentTimeMillis()
             visitCounts = newVisitCounts
             filteredList = sortedTeams
             diffResult.dispatchUpdatesTo(this@AdapterTeamList)
+            Log.d(TAG, "updateList: Updates dispatched to adapter - elapsed: ${System.currentTimeMillis() - dispatchStartTime}ms")
+
             updateCompleteListener?.onUpdateComplete(filteredList.size)
+            Log.d(TAG, "updateList: END - total elapsed: ${System.currentTimeMillis() - updateListStartTime}ms")
         }
     }
 

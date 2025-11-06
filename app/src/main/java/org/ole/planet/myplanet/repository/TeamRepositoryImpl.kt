@@ -199,6 +199,50 @@ class TeamRepositoryImpl @Inject constructor(
         } > 0
     }
 
+    override suspend fun getTeamMemberStatuses(userId: String?, teamIds: Collection<String>): Map<String, TeamMemberStatus> {
+        if (userId.isNullOrBlank() || teamIds.isEmpty()) return emptyMap()
+
+        val validIds = teamIds.filter { it.isNotBlank() }.distinct()
+        if (validIds.isEmpty()) return emptyMap()
+
+        // Fetch all memberships for this user in these teams (gives us isMember and isLeader)
+        val memberships = queryList(RealmMyTeam::class.java) {
+            equalTo("userId", userId)
+            equalTo("docType", "membership")
+            `in`("teamId", validIds.toTypedArray())
+        }
+
+        // Fetch all pending requests for this user in these teams
+        val pendingRequests = queryList(RealmMyTeam::class.java) {
+            equalTo("userId", userId)
+            equalTo("docType", "request")
+            `in`("teamId", validIds.toTypedArray())
+        }
+
+        // Build maps for quick lookup
+        val membershipMap = memberships
+            .mapNotNull { it.teamId }
+            .toSet()
+
+        val leaderMap = memberships
+            .filter { it.isLeader }
+            .mapNotNull { it.teamId }
+            .toSet()
+
+        val pendingRequestMap = pendingRequests
+            .mapNotNull { it.teamId }
+            .toSet()
+
+        // Create status for all requested teams
+        return validIds.associateWith { teamId ->
+            TeamMemberStatus(
+                isMember = teamId in membershipMap,
+                isLeader = teamId in leaderMap,
+                hasPendingRequest = teamId in pendingRequestMap
+            )
+        }
+    }
+
     override suspend fun getRecentVisitCounts(teamIds: Collection<String>): Map<String, Long> {
         if (teamIds.isEmpty()) return emptyMap()
 
