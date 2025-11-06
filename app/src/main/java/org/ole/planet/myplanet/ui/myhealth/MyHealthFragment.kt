@@ -427,7 +427,9 @@ class MyHealthFragment : Fragment() {
                     .`in`("id", userIds.toTypedArray())
                     .findAll()
 
-                val displayNames = userModels.associate { it.id to (it.getFullName() ?: "") }
+                val displayNames = userModels.mapNotNull { user ->
+                    user.id?.let { id -> id to (user.getFullName() ?: "") }
+                }.toMap()
 
                 val adap = AdapterHealthExamination(requireActivity(), list, mh, currentUser, displayNames)
                 binding.rvRecords.apply {
