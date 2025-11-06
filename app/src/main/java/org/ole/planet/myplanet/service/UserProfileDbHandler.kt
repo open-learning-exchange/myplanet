@@ -23,7 +23,6 @@ class UserProfileDbHandler @Inject constructor(
     private val realmService: DatabaseService,
     @AppPreferences private val settings: SharedPreferences
 ) {
-    var mRealm: Realm
     private val fullName: String
 
     // Backward compatibility constructor
@@ -36,17 +35,13 @@ class UserProfileDbHandler @Inject constructor(
     init {
         try {
             fullName = Utilities.getUserName(settings)
-            mRealm = realmService.realmInstance
         } catch (e: IllegalArgumentException) {
             throw e
         }
     }
 
-    val userModel: RealmUserModel? get() {
-        if (mRealm.isClosed) {
-            mRealm = realmService.realmInstance
-        }
-        return mRealm.where(RealmUserModel::class.java)
+    val userModel: RealmUserModel? get() = realmService.withRealm { realm ->
+        realm.where(RealmUserModel::class.java)
             .equalTo("id", settings.getString("userId", ""))
             .findFirst()
     }
@@ -68,71 +63,68 @@ class UserProfileDbHandler @Inject constructor(
     }
 
     fun onLoginAsync(callback: (() -> Unit)? = null, onError: ((Throwable) -> Unit)? = null) {
-        if (mRealm.isClosed) {
-            mRealm = realmService.realmInstance
+        realmService.withRealm { realm ->
+            val model = userModel
+            val userId = model?.id
+            val userName = model?.name
+            val parentCode = model?.parentCode
+            val planetCode = model?.planetCode
+
+            realm.executeTransactionAsync(
+                { transactionRealm ->
+                    val offlineActivities = transactionRealm.createObject(RealmOfflineActivity::class.java, UUID.randomUUID().toString())
+                    offlineActivities.userId = userId
+                    offlineActivities.userName = userName
+                    offlineActivities.parentCode = parentCode
+                    offlineActivities.createdOn = planetCode
+                    offlineActivities.type = KEY_LOGIN
+                    offlineActivities._rev = null
+                    offlineActivities._id = null
+                    offlineActivities.description = "Member login on offline application"
+                    offlineActivities.loginTime = Date().time
+                },
+                {
+                    callback?.invoke()
+                },
+                { error ->
+                    error.printStackTrace()
+                    onError?.invoke(error)
+                }
+            )
         }
-
-        val model = userModel
-        val userId = model?.id
-        val userName = model?.name
-        val parentCode = model?.parentCode
-        val planetCode = model?.planetCode
-
-        mRealm.executeTransactionAsync(
-            { realm ->
-                val offlineActivities = realm.createObject(RealmOfflineActivity::class.java, UUID.randomUUID().toString())
-                offlineActivities.userId = userId
-                offlineActivities.userName = userName
-                offlineActivities.parentCode = parentCode
-                offlineActivities.createdOn = planetCode
-                offlineActivities.type = KEY_LOGIN
-                offlineActivities._rev = null
-                offlineActivities._id = null
-                offlineActivities.description = "Member login on offline application"
-                offlineActivities.loginTime = Date().time
-            },
-            {
-                callback?.invoke()
-            },
-            { error ->
-                error.printStackTrace()
-                onError?.invoke(error)
-            }
-        )
     }
 
     fun logoutAsync() {
-        val realm = realmService.realmInstance
-        realm.executeTransactionAsync(
-            { r ->
-                RealmOfflineActivity.getRecentLogin(r)
-                    ?.logoutTime = Date().time
-            },
-            {
-                realm.close()
-            },
-            { error ->
-                realm.close()
-                error.printStackTrace()
-            }
-        )
-    }
-
-    fun onDestroy() {
-        if (!mRealm.isClosed) {
-            mRealm.close()
+        realmService.withRealm { realm ->
+            realm.executeTransactionAsync(
+                { r ->
+                    RealmOfflineActivity.getRecentLogin(r)
+                        ?.logoutTime = Date().time
+                },
+                {
+                    // realm is managed by withRealm, no need to close
+                },
+                { error ->
+                    // realm is managed by withRealm, no need to close
+                    error.printStackTrace()
+                }
+            )
         }
     }
 
-    val lastVisit: Long? get() = mRealm.where(RealmOfflineActivity::class.java).max("loginTime") as Long?
-    val offlineVisits: Int get() = getOfflineVisits(userModel)
+    val lastVisit: Long? get() = realmService.withRealm { realm ->
+        realm.where(RealmOfflineActivity::class.java).max("loginTime") as Long?
+    }
+    val offlineVisits: Int get() = realmService.withRealm { realm ->
+        getOfflineVisits(realm, userModel)
+    }
 
-    fun getOfflineVisits(m: RealmUserModel?): Int { val dbUsers = mRealm.where(RealmOfflineActivity::class.java).equalTo("userName", m?.name).equalTo("type", KEY_LOGIN).findAll()
-        return if (!dbUsers.isEmpty()) {
-            dbUsers.size
-        } else {
-            0
-        }
+    fun getOfflineVisits(realm: Realm, m: RealmUserModel?): Int {
+        val dbUsers = realm.where(RealmOfflineActivity::class.java)
+            .equalTo("userName", m?.name)
+            .equalTo("type", KEY_LOGIN)
+            .findAll()
+        return dbUsers.size
     }
 
     fun getLastVisit(m: RealmUserModel): String {
@@ -159,38 +151,40 @@ class UserProfileDbHandler @Inject constructor(
             return
         }
 
-        val userName = model?.name
-        val parentCode = model?.parentCode
-        val planetCode = model?.planetCode
-        val itemTitle = item.title
-        val itemResourceId = item.resourceId
+        realmService.withRealm { realm ->
+            val userName = model?.name
+            val parentCode = model?.parentCode
+            val planetCode = model?.planetCode
+            val itemTitle = item.title
+            val itemResourceId = item.resourceId
 
-        mRealm.executeTransactionAsync { realm ->
-            val offlineActivities = realm.createObject(RealmResourceActivity::class.java, "${UUID.randomUUID()}")
-            offlineActivities.user = userName
-            offlineActivities.parentCode = parentCode
-            offlineActivities.createdOn = planetCode
-            offlineActivities.type = type
-            offlineActivities.title = itemTitle
-            offlineActivities.resourceId = itemResourceId
-            offlineActivities.time = Date().time
+            realm.executeTransactionAsync { transactionRealm ->
+                val offlineActivities = transactionRealm.createObject(RealmResourceActivity::class.java, "${UUID.randomUUID()}")
+                offlineActivities.user = userName
+                offlineActivities.parentCode = parentCode
+                offlineActivities.createdOn = planetCode
+                offlineActivities.type = type
+                offlineActivities.title = itemTitle
+                offlineActivities.resourceId = itemResourceId
+                offlineActivities.time = Date().time
+            }
         }
     }
 
-    val numberOfResourceOpen: String get() {
-        val count = mRealm.where(RealmResourceActivity::class.java).equalTo("user", fullName)
+    val numberOfResourceOpen: String get() = realmService.withRealm { realm ->
+        val count = realm.where(RealmResourceActivity::class.java).equalTo("user", fullName)
             .equalTo("type", KEY_RESOURCE_OPEN).count()
-        return if (count == 0L) "" else "Resource opened $count times."
+        if (count == 0L) "" else "Resource opened $count times."
     }
 
-    val maxOpenedResource: String get() {
-        val result = mRealm.where(RealmResourceActivity::class.java)
+    val maxOpenedResource: String get() = realmService.withRealm { realm ->
+        val result = realm.where(RealmResourceActivity::class.java)
             .equalTo("user", fullName).equalTo("type", KEY_RESOURCE_OPEN)
             .findAll().where().distinct("resourceId").findAll()
         var maxCount = 0L
         var maxOpenedResource = ""
         for (realmResourceActivities in result) {
-            val count = mRealm.where(RealmResourceActivity::class.java)
+            val count = realm.where(RealmResourceActivity::class.java)
                 .equalTo("user", fullName)
                 .equalTo("type", KEY_RESOURCE_OPEN)
                 .equalTo("resourceId", realmResourceActivities.resourceId).count()
@@ -200,7 +194,7 @@ class UserProfileDbHandler @Inject constructor(
                 maxOpenedResource = "${realmResourceActivities.title}"
             }
         }
-        return if (maxCount == 0L) "" else "$maxOpenedResource opened $maxCount times"
+        if (maxCount == 0L) "" else "$maxOpenedResource opened $maxCount times"
     }
 
     companion object {
