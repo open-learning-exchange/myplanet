@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.resources.AddResourceFragment">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="@dimen/padding_normal"
+        android:background="@color/card_bg">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="@dimen/padding_large"
+            android:text="@string/add_resource"
+            android:textColor="@color/daynight_textColor"
+            android:textSize="@dimen/text_size_mid" />
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/_1dp"
+            android:background="@color/daynight_textColor" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center">
+
+            <LinearLayout
+                android:id="@+id/ll_capture_image"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_weight="1"
+                android:background="?attr/selectableItemBackground"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:layout_width="@dimen/_80dp"
+                    android:layout_height="@dimen/_80dp"
+                    android:layout_gravity="center"
+                    android:layout_margin="@dimen/padding_large"
+                    android:background="@drawable/oval_primary"
+                    android:gravity="center"
+                    android:padding="@dimen/padding_large"
+                    app:srcCompat="@drawable/ic_camera"
+                    app:tint="@color/daynight_textColor" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:gravity="center"
+                    android:text="@string/capture_image"
+                    android:textColor="@color/daynight_textColor" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/ll_record_video"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_weight="1"
+                android:background="?attr/selectableItemBackground"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:layout_width="@dimen/_80dp"
+                    android:layout_height="@dimen/_80dp"
+                    android:layout_gravity="center"
+                    android:layout_margin="@dimen/padding_large"
+                    android:background="@drawable/oval_primary"
+                    android:gravity="center"
+                    android:padding="@dimen/padding_large"
+                    app:srcCompat="@drawable/ic_record_video"
+                    app:tint="@color/daynight_textColor" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:gravity="center"
+                    android:text="@string/record_video"
+                    android:textColor="@color/daynight_textColor" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/ll_record_audio"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_weight="1"
+                android:background="?attr/selectableItemBackground"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:layout_width="@dimen/_80dp"
+                    android:layout_height="@dimen/_80dp"
+                    android:layout_gravity="center"
+                    android:layout_margin="@dimen/padding_large"
+                    android:background="@drawable/oval_primary"
+                    android:gravity="center"
+                    android:padding="@dimen/padding_large"
+                    app:srcCompat="@drawable/ic_mic"
+                    app:tint="@color/daynight_textColor" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:gravity="center"
+                    android:text="@string/record_audio"
+                    android:textColor="@color/daynight_textColor" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/ll_draft"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_weight="1"
+                android:background="?attr/selectableItemBackground"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:layout_width="@dimen/_80dp"
+                    android:layout_height="@dimen/_80dp"
+                    android:layout_gravity="center"
+                    android:layout_margin="@dimen/padding_large"
+                    android:background="@drawable/oval_primary"
+                    android:gravity="center"
+                    android:padding="@dimen/padding_large"
+                    app:srcCompat="@drawable/ic_folder"
+                    app:tint="@color/daynight_textColor" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:gravity="center"
+                    android:text="@string/select_gallery"
+                    android:textColor="@color/daynight_textColor" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
