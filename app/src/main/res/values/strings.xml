@@ -696,14 +696,6 @@
     <string name="health_record_not_available_sync_health_data">Health record not available, Sync health data?</string>
     <string name="sync">sync</string>
     <string name="got_it">GOT IT</string>
-    <string name="please_make_sure_your_device_is_horizontal">Please make sure your device is horizontal</string>
-    <string name="click_on_the_logo_to_get_the_full_menu_of_your_planet_home_mylibrary_mycourses_library_courses_community_enterprises_and_surveys">Click on the logo to get the full menu of your planet: Home, myLibrary, myCourses, Library, Courses, Community, Enterprises, and Surveys</string>
-    <string name="navigate_to_the_home_tab_to_access_your_dashboard_with_your_library_courses_and_teams">Navigate to the Home Tab to access your dashboard with your library, courses, and teams</string>
-    <string name="navigate_to_the_library_tab_to_access_resources_in_your_community">Navigate to the Library Tab to access resources in your community</string>
-    <string name="navigate_to_the_courses_tab_to_access_the_courses_exams_questions_lessons_within_your_community">Navigate to the Courses Tab to access the courses (exams, questions, lessons) within your community</string>
-    <string name="navigate_to_the_teams_tab_to_join_request_and_check_up_on_your_teams">Navigate to the Teams Tab to join, request, and check up on your teams</string>
-    <string name="navigate_to_the_enterprises_tab_to_search_through_a_list_of_enterprises_within_your_community">Navigate to the Enterprises tab to search through a list of enterprises within your community</string>
-    <string name="navigate_to_the_community_tab_to_access_the_news_community_leaders_calendar_services_and_finances_involved_within_your_community">Navigate to the Community tab to access the news, community leaders, calendar, services, and finances involved within your community</string>
     <string name="session_expired">Session expired.</string>
     <string name="downloading_started_please_check_notificati">Downloading started, please check notification…</string>
     <string name="dictionary">Dictionary</string>
@@ -813,8 +805,6 @@
     <string name="unable_to_connect_to_planet_wifi">Unable to connect to planet wifi.</string>
     <string name="you_are_now_connected">"You are now connected "</string>
     <string name="press_back_again_to_exit">Press BACK again to exit</string>
-    <string name="press_the_sync_button_to_sync_your_planet_account_data_with_your_myplanet_application_data">Press the Sync Button to Sync your Planet account data with your myPlanet application data</string>
-    <string name="press_the_settings_button_to_access_your_myplanet_planet_account_server_settings_to_properly_set_up_your_syncing_process">Press the Settings Button to access your myPlanet/Planet account server settings to properly set up your syncing process.</string>
     <string name="it_has_been_more_than">"It has been more than "</string>
     <string name="days_since_you_last_synced_this_device">" days since you last synced this device."</string>
     <string name="connect_it_to_the_server_over_wifi_and_sync_it_to_reactivate_this_tablet">\n Connect it to the server over wifi and sync it to reactivate this tablet</string>
@@ -1178,13 +1168,6 @@
     <string name="chat_enter_message">Enter Message</string>
     <string name="hour">hour</string>
     <string name="hours">hours</string>
-    <string name="material_calendar_monday">M</string>
-    <string name="material_calendar_tuesday">T</string>
-    <string name="material_calendar_wednesday">W</string>
-    <string name="material_calendar_thursday">T</string>
-    <string name="material_calendar_friday">F</string>
-    <string name="material_calendar_saturday">S</string>
-    <string name="material_calendar_sunday">S</string>
     <array name="material_calendar_months_array">
         <item>January</item>
         <item>February</item>
@@ -1199,9 +1182,6 @@
         <item>November</item>
         <item>December</item>
     </array>
-    <string name="material_calendar_today_button">Today</string>
-    <string name="material_calendar_positive_button">OK</string>
-    <string name="material_calendar_negative_button">Cancel</string>
     <string name="switching_off_manual_configuration_to_clear_data">switching off manual configuration will clear all data, are you sure you want to continue?</string>
     <string name="switching_on_manual_configuration_to_clear_data">switching on manual configuration will clear all data, are you sure you want to continue?</string>
     <string name="chart_description">Login Activity Chart</string>
@@ -1353,6 +1333,5 @@
     <string name="resource_not_found_in_database">Resource not found in database</string>
     <string name="resource_has_no_attachments">Resource has no downloadable files</string>
     <string name="unable_to_download_resource">Unable to download resource</string>
-    <string name="hide_new_message">Hide new message</string>
 
 </resources>

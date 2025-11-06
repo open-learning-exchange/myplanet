@@ -696,14 +696,6 @@
     <string name="health_record_not_available_sync_health_data">سجل الصحة غير متاح، هل ترغب في مزامنة بيانات الصحة؟</string>
     <string name="sync">مزامنة</string>
     <string name="got_it">فهمت</string>
-    <string name="please_make_sure_your_device_is_horizontal">يرجى التأكد من أن جهازك أفقي</string>
-    <string name="click_on_the_logo_to_get_the_full_menu_of_your_planet_home_mylibrary_mycourses_library_courses_community_enterprises_and_surveys">انقر على الشعار للحصول على القائمة الكاملة لكوكبك: الصفحة الرئيسية، مكتبتي، دوراتي، المكتبة، الدورات، المجتمع، المؤسسات، والاستبيانات</string>
-    <string name="navigate_to_the_home_tab_to_access_your_dashboard_with_your_library_courses_and_teams">انتقل إلى علامة التبويب الرئيسية للوصول إلى لوحة المعلومات الخاصة بك مع مكتبتك ودوراتك وفرقك</string>
-    <string name="navigate_to_the_library_tab_to_access_resources_in_your_community">انتقل إلى علامة التبويب المكتبة للوصول إلى الموارد في مجتمعك</string>
-    <string name="navigate_to_the_courses_tab_to_access_the_courses_exams_questions_lessons_within_your_community">انتقل إلى علامة التبويب الدورات للوصول إلى الدورات (الاختبارات والأسئلة والدروس) داخل مجتمعك</string>
-    <string name="navigate_to_the_teams_tab_to_join_request_and_check_up_on_your_teams">انتقل إلى علامة التبويب الفرق للانضمام وطلب الانضمام ومتابعة فرقك</string>
-    <string name="navigate_to_the_enterprises_tab_to_search_through_a_list_of_enterprises_within_your_community">انتقل إلى علامة التبويب المؤسسات للبحث في قائمة المؤسسات داخل مجتمعك</string>
-    <string name="navigate_to_the_community_tab_to_access_the_news_community_leaders_calendar_services_and_finances_involved_within_your_community">انتقل إلى علامة التبويب المجتمع للوصول إلى الأخبار وقادة المجتمع والتقويم والخدمات والمال المشارك في مجتمعك</string>
     <string name="session_expired">انتهت الجلسة.</string>
     <string name="downloading_started_please_check_notificati">بدأ التنزيل، يرجى التحقق من الإشعار…</string>
     <string name="dictionary">القاموس</string>
@@ -813,8 +805,6 @@
     <string name="unable_to_connect_to_planet_wifi">غير قادر على الاتصال بشبكة بلانت اللاسلكية</string>
     <string name="you_are_now_connected">لقد تم الآن الاتصال</string>
     <string name="press_back_again_to_exit">اضغط BACK مرة أخرى للخروج</string>
-    <string name="press_the_sync_button_to_sync_your_planet_account_data_with_your_myplanet_application_data">اضغط على زر المزامنة لمزامنة بيانات حسابك في بلانت مع بيانات تطبيق ماي بلانت الخاص بك</string>
-    <string name="press_the_settings_button_to_access_your_myplanet_planet_account_server_settings_to_properly_set_up_your_syncing_process">اضغط على زر الإعدادات للوصول إلى إعدادات الخادم الخاص بحسابك في بلانت ماي بلانت لإعداد عملية المزامنة الخاصة بك بشكل صحيح</string>
     <string name="it_has_been_more_than">لقد مرت مدة تزيد عن </string>
     <string name="days_since_you_last_synced_this_device">أيام منذ آخر مزامنة لهذا الجهاز.</string>
     <string name="connect_it_to_the_server_over_wifi_and_sync_it_to_reactivate_this_tablet">\n اتصل به بالخادم عبر الواي فاي وقم بمزامنته لإعادة تنشيط هذا الجهاز اللوحي</string>
@@ -1178,13 +1168,6 @@
     <string name="chat_enter_message">أدخل الرسالة</string>
     <string name="hour">ساعة</string>
     <string name="hours">ساعات</string>
-    <string name="material_calendar_monday">الاثنين</string>
-    <string name="material_calendar_tuesday">الثلاثاء</string>
-    <string name="material_calendar_wednesday">الأربعاء</string>
-    <string name="material_calendar_thursday">الخميس</string>
-    <string name="material_calendar_friday">الجمعة</string>
-    <string name="material_calendar_saturday">السبت</string>
-    <string name="material_calendar_sunday">الأحد</string>
     <array name="material_calendar_months_array">
         <item>يناير</item>
         <item>فبراير</item>
@@ -1199,9 +1182,6 @@
         <item>نوفمبر</item>
         <item>ديسمبر</item>
     </array>
-    <string name="material_calendar_today_button">اليوم</string>
-    <string name="material_calendar_positive_button">موافق</string>
-    <string name="material_calendar_negative_button">إلغاء</string>
     <string name="switching_off_manual_configuration_to_clear_data">سيؤدي إيقاف التكوين اليدوي إلى مسح جميع البيانات، هل أنت متأكد أنك تريد المتابعة؟</string>
     <string name="switching_on_manual_configuration_to_clear_data">سيؤدي تشغيل التكوين اليدوي إلى مسح جميع البيانات، هل أنت متأكد أنك تريد المتابعة؟</string>
     <string name="chart_description">مخطط نشاط تسجيل الدخول</string>
@@ -1353,6 +1333,5 @@
     <string name="resource_not_found_in_database">المورد غير موجود في قاعدة البيانات</string>
     <string name="resource_has_no_attachments">المورد لا يحتوي على ملفات قابلة للتنزيل</string>
     <string name="unable_to_download_resource">غير قادر على تنزيل المورد</string>
-    <string name="hide_new_message">إخفاء الرسالة الجديدة</string>
 
 </resources>
