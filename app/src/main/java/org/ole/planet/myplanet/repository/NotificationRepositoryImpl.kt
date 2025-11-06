@@ -2,14 +2,23 @@ package org.ole.planet.myplanet.repository
 
 import java.util.Date
 import java.util.UUID
+import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.Date
+import java.util.UUID
+import java.util.regex.Pattern
 import javax.inject.Inject
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNotification
+import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.model.RealmUserModel
 
 class NotificationRepositoryImpl @Inject constructor(
-        databaseService: DatabaseService,
-    ) : RealmRepository(databaseService), NotificationRepository {
-
+    private val databaseService: DatabaseService,
+    @ApplicationContext private val context: Context
+) : RealmRepository(databaseService), NotificationRepository {
     override suspend fun createNotificationIfMissing(
         type: String,
         message: String,
@@ -116,8 +125,8 @@ class NotificationRepositoryImpl @Inject constructor(
         return updatedIds
     }
 
-    override suspend fun getNotifications(userId: String, filter: String): List<RealmNotification> {
-        return queryList(RealmNotification::class.java) {
+    override suspend fun getNotifications(userId: String, filter: String): List<org.ole.planet.myplanet.model.Notification> {
+        val notifications = queryList(RealmNotification::class.java) {
             equalTo("userId", userId)
             when (filter) {
                 "read" -> equalTo("isRead", true)
@@ -126,6 +135,90 @@ class NotificationRepositoryImpl @Inject constructor(
             sort("isRead", io.realm.Sort.ASCENDING, "createdAt", io.realm.Sort.DESCENDING)
         }.filter {
             it.message.isNotEmpty() && it.message != "INVALID"
+        }
+
+        return notifications.map { notification ->
+            org.ole.planet.myplanet.model.Notification(
+                id = notification.id,
+                userId = notification.userId,
+                message = formatNotificationMessage(notification),
+                isRead = notification.isRead,
+                createdAt = notification.createdAt,
+                type = notification.type,
+                relatedId = notification.relatedId,
+                title = notification.title
+            )
+        }
+    }
+
+    private fun formatNotificationMessage(notification: RealmNotification): String {
+        return when (notification.type.lowercase()) {
+            "survey" -> context.getString(R.string.pending_survey_notification) + " ${notification.message}"
+            "task" -> {
+                val datePattern = Pattern.compile("\\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\\s\\d{1,2},\\s\\w+\\s\\d{4}\\b")
+                val matcher = datePattern.matcher(notification.message)
+                if (matcher.find()) {
+                    val taskTitle = notification.message.substring(0, matcher.start()).trim()
+                    val dateValue = notification.message.substring(matcher.start()).trim()
+                    formatTaskNotification(context, taskTitle, dateValue)
+                } else {
+                    notification.message
+                }
+            }
+            "resource" -> {
+                notification.message.toIntOrNull()?.let { count ->
+                    context.getString(R.string.resource_notification, count)
+                } ?: notification.message
+            }
+            "storage" -> {
+                val storageValue = notification.message.replace("%", "").toIntOrNull()
+                storageValue?.let {
+                    when {
+                        it <= 10 -> context.getString(R.string.storage_running_low) + " ${it}%"
+                        it <= 40 -> context.getString(R.string.storage_running_low) + " ${it}%"
+                        else -> context.getString(R.string.storage_available) + " ${it}%"
+                    }
+                } ?: notification.message
+            }
+            "join_request" -> {
+                databaseService.withRealm { realm ->
+                    val joinRequest = realm.where(RealmMyTeam::class.java)
+                        .equalTo("_id", notification.relatedId)
+                        .equalTo("docType", "request")
+                        .findFirst()
+                    val team = joinRequest?.teamId?.let { tid ->
+                        realm.where(RealmMyTeam::class.java)
+                            .equalTo("_id", tid)
+                            .findFirst()
+                    }
+                    val requester = joinRequest?.userId?.let { uid ->
+                        realm.where(RealmUserModel::class.java)
+                            .equalTo("id", uid)
+                            .findFirst()
+                    }
+                    val requesterName = requester?.name ?: "Unknown User"
+                    val teamName = team?.name ?: "Unknown Team"
+                    "<b>${context.getString(R.string.join_request_prefix)}</b> " +
+                            context.getString(R.string.user_requested_to_join_team, requesterName, teamName)
+                }
+            }
+            else -> notification.message
+        }
+    }
+
+    private fun formatTaskNotification(context: Context, taskTitle: String, dateValue: String): String {
+        return databaseService.withRealm { realm ->
+            val taskObj = realm.where(RealmTeamTask::class.java)
+                .equalTo("title", taskTitle)
+                .findFirst()
+            val team = realm.where(RealmMyTeam::class.java)
+                .equalTo("_id", taskObj?.teamId)
+                .findFirst()
+            if (team?.name != null) {
+                "<b>${team.name}</b>: ${context.getString(R.string.task_notification, taskTitle, dateValue)}"
+            } else {
+                context.getString(R.string.task_notification, taskTitle, dateValue)
+            }
         }
     }
 }
