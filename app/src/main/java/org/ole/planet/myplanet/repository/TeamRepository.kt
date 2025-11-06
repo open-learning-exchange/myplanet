@@ -84,4 +84,6 @@ interface TeamRepository {
         planetCode: String?,
     ): Result<Unit>
     suspend fun respondToMemberRequest(teamId: String, userId: String, accept: Boolean): Result<Unit>
+    suspend fun getJoinedMembersCount(teamId: String): Int
+    suspend fun canModerateRequests(teamId: String, userId: String): Boolean
 }

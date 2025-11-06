@@ -46,7 +46,6 @@ class MembersFragment : BaseMemberFragment() {
         get() = AdapterMemberRequest(
             requireActivity(),
             list.toMutableList(),
-            mRealm,
             currentUser,
             memberChangeListener,
             teamRepository,

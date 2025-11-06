@@ -567,5 +567,23 @@ class TeamRepositoryImpl @Inject constructor(
             isNotEmpty("resourceId")
         }.mapNotNull { it.resourceId }
     }
+
+    override suspend fun getJoinedMembersCount(teamId: String): Int {
+        if (teamId.isBlank()) return 0
+        return count(RealmMyTeam::class.java) {
+            equalTo("teamId", teamId)
+            equalTo("docType", "membership")
+        }.toInt()
+    }
+
+    override suspend fun canModerateRequests(teamId: String, userId: String): Boolean {
+        if (teamId.isBlank() || userId.isBlank()) return false
+        val membershipRecord = find(RealmMyTeam::class.java) {
+            equalTo("teamId", teamId)
+            equalTo("docType", "membership")
+            equalTo("userId", userId)
+        }
+        return membershipRecord != null
+    }
 }
 
