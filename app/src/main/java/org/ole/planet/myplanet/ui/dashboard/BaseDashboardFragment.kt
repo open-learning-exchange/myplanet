@@ -24,7 +24,9 @@ import io.realm.RealmResults
 import io.realm.Sort
 import java.util.Calendar
 import java.util.UUID
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.NotificationCallback
 import org.ole.planet.myplanet.callback.SyncListener
@@ -173,103 +175,146 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     private fun setUpMyList(c: Class<out RealmObject>, flexboxLayout: FlexboxLayout, view: View) {
-        val dbMycourses: List<RealmObject>
         val userId = settings?.getString("userId", "--")
-        setUpMyLife(userId)
-        dbMycourses = when (c) {
-            RealmMyCourse::class.java -> {
-                RealmMyCourse.getMyByUserId(mRealm, settings).filter { !it.courseTitle.isNullOrBlank() }
-            }
-            RealmMyTeam::class.java -> {
-                val i = myTeamInit(flexboxLayout)
-                setCountText(i, RealmMyTeam::class.java, view)
-                return
-            }
-            RealmMyLife::class.java -> {
-                myLifeListInit(flexboxLayout)
-                return
-            }
-            else -> {
-                userId?.let {
-                    mRealm.where(c).contains("userId", it, Case.INSENSITIVE).findAll()
-                } ?: listOf()
+        lifecycleScope.launch {
+            setUpMyLife(userId)
+            when (c) {
+                RealmMyCourse::class.java -> {
+                    val dbMycourses = loadMyCourses()
+                    renderMyCourses(dbMycourses, flexboxLayout, view)
+                }
+
+                RealmMyTeam::class.java -> {
+                    val teamData = loadMyTeams()
+                    renderMyTeams(teamData, flexboxLayout, view)
+                }
+
+                RealmMyLife::class.java -> {
+                    val dbMylife = loadMyLifeData()
+                    renderMyLife(dbMylife, flexboxLayout)
+                }
+
+                else -> {
+                    val otherData = loadOtherData(c, userId)
+                    renderOtherData(otherData, flexboxLayout, view, c)
+                }
             }
         }
-        setCountText(dbMycourses.size, c, view)
+    }
+
+    private suspend fun loadMyCourses(): List<RealmMyCourse> = withContext(Dispatchers.IO) {
+        databaseService.withRealm { realm ->
+            val courses = RealmMyCourse.getMyByUserId(realm, settings).filter { !it.courseTitle.isNullOrBlank() }
+            realm.copyFromRealm(courses)
+        }
+    }
+
+    private fun renderMyCourses(dbMycourses: List<RealmMyCourse>, flexboxLayout: FlexboxLayout, view: View) {
+        setCountText(dbMycourses.size, RealmMyCourse::class.java, view)
         val myCoursesTextViewArray = arrayOfNulls<TextView>(dbMycourses.size)
         for ((itemCnt, items) in dbMycourses.withIndex()) {
-            val course = items as RealmMyCourse
             setTextViewProperties(myCoursesTextViewArray, itemCnt, items)
             myCoursesTextViewArray[itemCnt]?.let { setTextColor(it, itemCnt) }
             flexboxLayout.addView(myCoursesTextViewArray[itemCnt], params)
         }
     }
 
-    private fun myTeamInit(flexboxLayout: FlexboxLayout): Int {
-        val dbMyTeam = RealmMyTeam.getMyTeamsByUserId(mRealm, settings)
-        val userId = profileDbHandler.userModel?.id
-        for ((count, ob) in dbMyTeam.withIndex()) {
+    private suspend fun loadMyTeams(): List<TeamData> = withContext(Dispatchers.IO) {
+        databaseService.withRealm { realm ->
+            val dbMyTeam = RealmMyTeam.getMyTeamsByUserId(realm, settings)
+            val userId = profileDbHandler.userModel?.id
+            val teamData = dbMyTeam.map { team ->
+                val notification = realm.where(RealmTeamNotification::class.java)
+                    .equalTo("parentId", team._id).equalTo("type", "chat").findFirst()
+                val chatCount = realm.where(RealmNews::class.java).equalTo("viewableBy", "teams")
+                    .equalTo("viewableId", team._id).count()
+                val tasks = realm.where(RealmTeamTask::class.java).equalTo("assignee", userId)
+                    .between(
+                        "deadline",
+                        Calendar.getInstance().timeInMillis,
+                        Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }.timeInMillis
+                    )
+                    .findAll()
+                TeamData(
+                    realm.copyFromRealm(team),
+                    notification != null && notification.lastCount < chatCount,
+                    tasks.isNotEmpty()
+                )
+            }
+            teamData
+        }
+    }
+
+
+    private fun renderMyTeams(teamData: List<TeamData>, flexboxLayout: FlexboxLayout, view: View) {
+        setCountText(teamData.size, RealmMyTeam::class.java, view)
+        for ((count, data) in teamData.withIndex()) {
             val v = LayoutInflater.from(activity).inflate(R.layout.item_home_my_team, flexboxLayout, false)
             val name = v.findViewById<TextView>(R.id.tv_name)
             setBackgroundColor(v, count)
-            if ((ob as RealmMyTeam).teamType == "sync") {
+            if (data.team.teamType == "sync") {
                 name.setTypeface(null, Typeface.BOLD)
             }
-            handleClick(ob._id, ob.name, TeamDetailFragment(), name)
-            showNotificationIcons(ob, v, userId)
-            name.text = ob.name
+            handleClick(data.team._id, data.team.name, TeamDetailFragment(), name)
+            v.findViewById<ImageView>(R.id.img_chat).visibility = if (data.hasUnreadMessages) View.VISIBLE else View.GONE
+            v.findViewById<ImageView>(R.id.img_task).visibility = if (data.hasUpcomingTasks) View.VISIBLE else View.GONE
+            name.text = data.team.name
             flexboxLayout.addView(v, params)
         }
-        return dbMyTeam.size
     }
 
-    private fun showNotificationIcons(ob: RealmObject, v: View, userId: String?) {
-        val current = Calendar.getInstance().timeInMillis
-        val tomorrow = Calendar.getInstance()
-        tomorrow.add(Calendar.DAY_OF_YEAR, 1)
-        val imgTask = v.findViewById<ImageView>(R.id.img_task)
-        val imgChat = v.findViewById<ImageView>(R.id.img_chat)
-        val notification: RealmTeamNotification? = mRealm.where(RealmTeamNotification::class.java)
-            .equalTo("parentId", (ob as RealmMyTeam)._id).equalTo("type", "chat").findFirst()
-        val chatCount: Long = mRealm.where(RealmNews::class.java).equalTo("viewableBy", "teams")
-            .equalTo("viewableId", ob._id).count()
-        if (notification != null) {
-            imgChat.visibility = if (notification.lastCount < chatCount) View.VISIBLE else View.GONE
+    private suspend fun loadMyLifeData(): List<RealmMyLife> = withContext(Dispatchers.IO) {
+        databaseService.withRealm { realm ->
+            val rawMylife: List<RealmMyLife> = RealmMyLife.getMyLifeByUserId(realm, settings)
+            realm.copyFromRealm(rawMylife.filter { it.isVisible })
         }
-        val tasks = mRealm.where(RealmTeamTask::class.java).equalTo("assignee", userId)
-            .between("deadline", current, tomorrow.timeInMillis).findAll()
-        imgTask.visibility = if (tasks.isNotEmpty()) View.VISIBLE else View.GONE
     }
 
-    private fun myLifeListInit(flexboxLayout: FlexboxLayout) {
-        val dbMylife: MutableList<RealmMyLife> = ArrayList()
-        val rawMylife: List<RealmMyLife> = RealmMyLife.getMyLifeByUserId(mRealm, settings)
-        for (item in rawMylife) if (item.isVisible) dbMylife.add(item)
+
+    private fun renderMyLife(dbMylife: List<RealmMyLife>, flexboxLayout: FlexboxLayout) {
         for ((itemCnt, items) in dbMylife.withIndex()) {
             flexboxLayout.addView(getLayout(itemCnt, items), params)
         }
     }
 
-    private fun setUpMyLife(userId: String?) {
+    private suspend fun loadOtherData(c: Class<out RealmObject>, userId: String?): List<RealmObject> = withContext(Dispatchers.IO) {
         databaseService.withRealm { realm ->
-            val realmObjects = RealmMyLife.getMyLifeByUserId(mRealm, settings)
+            val results = userId?.let {
+                realm.where(c).contains("userId", it, Case.INSENSITIVE).findAll()
+            } ?: emptyList()
+            realm.copyFromRealm(results)
+        }
+    }
+
+    private fun renderOtherData(data: List<RealmObject>, flexboxLayout: FlexboxLayout, view: View, c: Class<out RealmObject>) {
+        // A generic renderer could be implemented here if needed, for now, it's empty
+    }
+
+    data class TeamData(
+        val team: RealmMyTeam,
+        val hasUnreadMessages: Boolean,
+        val hasUpcomingTasks: Boolean
+    )
+
+
+    private suspend fun setUpMyLife(userId: String?) = withContext(Dispatchers.IO) {
+        databaseService.withRealm { realm ->
+            val realmObjects = RealmMyLife.getMyLifeByUserId(realm, settings)
             if (realmObjects.isEmpty()) {
-                if (!realm.isInTransaction) {
-                    realm.beginTransaction()
+                realm.executeTransaction {
+                    val myLifeListBase = getMyLifeListBase(userId)
+                    var weight = 1
+                    for (item in myLifeListBase) {
+                        var ml: RealmMyLife
+                        ml = it.createObject(RealmMyLife::class.java, UUID.randomUUID().toString())
+                        ml.title = item.title
+                        ml.imageId = item.imageId
+                        ml.weight = weight
+                        ml.userId = item.userId
+                        ml.isVisible = true
+                        weight++
+                    }
                 }
-                val myLifeListBase = getMyLifeListBase(userId)
-                var ml: RealmMyLife
-                var weight = 1
-                for (item in myLifeListBase) {
-                    ml = realm.createObject(RealmMyLife::class.java, UUID.randomUUID().toString())
-                    ml.title = item.title
-                    ml.imageId = item.imageId
-                    ml.weight = weight
-                    ml.userId = item.userId
-                    ml.isVisible = true
-                    weight++
-                }
-                realm.commitTransaction()
             }
         }
     }
