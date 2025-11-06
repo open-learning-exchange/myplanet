@@ -11,6 +11,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import java.util.Date
 import java.util.UUID
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
@@ -30,14 +31,6 @@ import org.ole.planet.myplanet.utilities.CustomClickableSpan
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 
-private data class StepData(
-    val step: RealmCourseStep,
-    val resources: List<RealmMyLibrary>,
-    val stepExams: List<RealmStepExam>,
-    val stepSurvey: List<RealmStepExam>,
-    val userHasCourse: Boolean
-)
-
 class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     private lateinit var fragmentCourseStepBinding: FragmentCourseStepBinding
     var stepId: String? = null
@@ -47,6 +40,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     private lateinit var stepSurvey: List<RealmStepExam>
     var user: RealmUserModel? = null
     private var stepNumber = 0
+    private var saveInProgress: Job? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) {
@@ -63,9 +57,8 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         return fragmentCourseStepBinding.root
     }
 
-    private fun saveCourseProgress() {
-        databaseService.withRealm { realm ->
-            if (!realm.isInTransaction) realm.beginTransaction()
+    private suspend fun saveCourseProgress() {
+        databaseService.executeTransactionAsync { realm ->
             var courseProgress = realm.where(RealmCourseProgress::class.java)
                 .equalTo("courseId", step.courseId)
                 .equalTo("userId", user?.id)
@@ -84,56 +77,38 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
             courseProgress?.updatedDate = Date().time
             courseProgress?.parentCode = user?.parentCode
             courseProgress?.userId = user?.id
-            realm.commitTransaction()
         }
     }
-    private suspend fun loadStepData(): StepData {
-        return databaseService.withRealmAsync { realm ->
-            val step = realm.where(RealmCourseStep::class.java)
+
+    private fun launchSaveCourseProgress() {
+        if (saveInProgress?.isActive == true) return
+        saveInProgress = lifecycleScope.launch {
+            saveCourseProgress()
+        }
+        saveInProgress?.invokeOnCompletion { saveInProgress = null }
+    }
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        databaseService.withRealm { realm ->
+            step = realm.where(RealmCourseStep::class.java)
                 .equalTo("id", stepId)
                 .findFirst()
                 ?.let { realm.copyFromRealm(it) }!!
-
-            val resources = realm.where(RealmMyLibrary::class.java)
+            resources = realm.where(RealmMyLibrary::class.java)
                 .equalTo("stepId", stepId)
                 .findAll()
                 .let { realm.copyFromRealm(it) }
-
-            val stepExams = realm.where(RealmStepExam::class.java)
+            stepExams = realm.where(RealmStepExam::class.java)
                 .equalTo("stepId", stepId)
                 .equalTo("type", "courses")
                 .findAll()
                 .let { realm.copyFromRealm(it) }
-
-            val stepSurvey = realm.where(RealmStepExam::class.java)
+            stepSurvey = realm.where(RealmStepExam::class.java)
                 .equalTo("stepId", stepId)
                 .equalTo("type", "surveys")
                 .findAll()
                 .let { realm.copyFromRealm(it) }
-            val userHasCourse = isMyCourse(user?.id, step.courseId, realm)
-            StepData(step, resources, stepExams, stepSurvey, userHasCourse)
         }
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        viewLifecycleOwner.lifecycleScope.launch {
-            fragmentCourseStepBinding.progressBar.visibility = View.VISIBLE
-            try {
-                val stepData = loadStepData()
-                step = stepData.step
-                resources = stepData.resources
-                stepExams = stepData.stepExams
-                stepSurvey = stepData.stepSurvey
-                renderStepData(stepData.userHasCourse)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            } finally {
-                fragmentCourseStepBinding.progressBar.visibility = View.GONE
-            }
-        }
-    }
-    private fun renderStepData(userHasCourse: Boolean) {
         fragmentCourseStepBinding.btnResources.text = getString(R.string.resources_size, resources.size)
         hideTestIfNoQuestion()
         fragmentCourseStepBinding.tvTitle.text = step.stepTitle
@@ -145,6 +120,9 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         )
         setMarkdownText(fragmentCourseStepBinding.description, markdownContentWithLocalPaths)
         fragmentCourseStepBinding.description.movementMethod = LinkMovementMethod.getInstance()
+        val userHasCourse = databaseService.withRealm { realm ->
+            isMyCourse(user?.id, step.courseId, realm)
+        }
         if (!userHasCourse) {
             fragmentCourseStepBinding.btnTakeTest.visibility = View.GONE
             fragmentCourseStepBinding.btnTakeSurvey.visibility = View.GONE
@@ -162,7 +140,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
             }
         }
         if (isVisible && userHasCourse) {
-            saveCourseProgress()
+            launchSaveCourseProgress()
         }
     }
 
@@ -201,7 +179,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                     isMyCourse(user?.id, step.courseId, realm)
                 }
                 if (userHasCourse) {
-                    saveCourseProgress()
+                    launchSaveCourseProgress()
                 }
             }
         } catch (e: Exception) {
