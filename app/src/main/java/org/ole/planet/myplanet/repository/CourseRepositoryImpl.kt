@@ -7,10 +7,17 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmStepExam
+import kotlinx.coroutines.flow.Flow
 
 class CourseRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
 ) : RealmRepository(databaseService), CourseRepository {
+    override fun getMyCourses(): Flow<List<RealmMyCourse>> {
+        return queryListFlow(RealmMyCourse::class.java) {
+            isNotNull("courseTitle")
+            isNotEmpty("courseTitle")
+        }
+    }
 
     override suspend fun getCourseByCourseId(courseId: String?): RealmMyCourse? {
         if (courseId.isNullOrBlank()) {

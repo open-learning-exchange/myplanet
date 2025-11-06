@@ -37,6 +37,13 @@ class TeamRepositoryImpl @Inject constructor(
     @AppPreferences private val preferences: SharedPreferences,
     private val serverUrlMapper: ServerUrlMapper,
 ) : RealmRepository(databaseService), TeamRepository {
+    override fun getMyTeams(): Flow<List<RealmMyTeam>> {
+        val userId = userProfileDbHandler.userModel?.id ?: return kotlinx.coroutines.flow.flowOf(emptyList())
+        return queryListFlow(RealmMyTeam::class.java) {
+            equalTo("userId", userId)
+            equalTo("docType", "membership")
+        }
+    }
 
     override suspend fun getShareableTeams(): List<RealmMyTeam> {
         return queryList(RealmMyTeam::class.java) {

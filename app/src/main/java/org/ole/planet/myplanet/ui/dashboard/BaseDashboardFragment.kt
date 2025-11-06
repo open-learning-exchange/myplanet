@@ -48,24 +48,49 @@ import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.ui.userprofile.UserProfileFragment
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.DialogUtils
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.collectLatest
 import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCallback,
     SyncListener {
+    private val dashboardViewModel: DashboardViewModel by viewModels()
     private var fullName: String? = null
     private var params = LinearLayout.LayoutParams(250, 100)
     private var di: DialogUtils.CustomProgressDialog? = null
-    private lateinit var myCoursesResults: RealmResults<RealmMyCourse>
-    private val myCoursesChangeListener = RealmChangeListener<RealmResults<RealmMyCourse>> { _ ->
-        updateMyCoursesUI()
-    }
-    private lateinit var myTeamsResults: RealmResults<RealmMyTeam>
-    private val myTeamsChangeListener = RealmChangeListener<RealmResults<RealmMyTeam>> { _ ->
-        updateMyTeamsUI()
-    }
     private lateinit var offlineActivitiesResults: RealmResults<RealmOfflineActivity>
+
+    override fun onViewCreated(view: View, savedInstanceState: android.os.Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        initView(view)
+        dashboardViewModel.loadDashboardData()
+        observeDashboardData()
+    }
+
+    private fun observeDashboardData() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    dashboardViewModel.courses.collectLatest { renderMyCourses(it) }
+                }
+                launch {
+                    dashboardViewModel.teams.collectLatest { renderMyTeams(it) }
+                }
+                launch {
+                    dashboardViewModel.library.collectLatest { renderMyLibrary(it) }
+                }
+                launch {
+                    dashboardViewModel.myLife.collectLatest { renderMyLife(it) }
+                }
+            }
+        }
+    }
     fun onLoaded(v: View) {
         model = profileDbHandler.userModel
         fullName = profileDbHandler.userModel?.getFullName()
@@ -136,13 +161,16 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         }
     }
 
-    private fun myLibraryDiv(view: View) {
-        view.findViewById<FlexboxLayout>(R.id.flexboxLayout).flexDirection = FlexDirection.ROW
-        val dbMylibrary = RealmMyLibrary.getMyLibraryByUserId(mRealm, settings)
+    private fun renderMyLibrary(dbMylibrary: List<RealmMyLibrary>) {
+        val flexboxLayout = view?.findViewById<FlexboxLayout>(R.id.flexboxLayout) ?: return
+        flexboxLayout.removeAllViews()
+        flexboxLayout.flexDirection = FlexDirection.ROW
+        val countLibrary = view?.findViewById<TextView>(R.id.count_library)
         if (dbMylibrary.isEmpty()) {
-            view.findViewById<TextView>(R.id.count_library).visibility = View.GONE
+            countLibrary?.visibility = View.GONE
         } else {
-            view.findViewById<TextView>(R.id.count_library).text = getString(R.string.number_placeholder, dbMylibrary.size)
+            countLibrary?.text = getString(R.string.number_placeholder, dbMylibrary.size)
+            countLibrary?.visibility = View.VISIBLE
         }
         for ((itemCnt, items) in dbMylibrary.withIndex()) {
             val itemLibraryHomeBinding = ItemLibraryHomeBinding.inflate(LayoutInflater.from(activity))
@@ -153,66 +181,38 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             if (color != null) {
                 v.setBackgroundColor(color)
             }
-
             itemLibraryHomeBinding.title.text = items.title
             itemLibraryHomeBinding.detail.setOnClickListener {
                 if (homeItemClickListener != null) {
                     homeItemClickListener?.openLibraryDetailFragment(items)
                 }
             }
-
             myLibraryItemClickAction(itemLibraryHomeBinding.title, items)
-            view.findViewById<FlexboxLayout>(R.id.flexboxLayout).addView(v, params)
+            flexboxLayout.addView(v, params)
         }
     }
 
-    private fun initializeFlexBoxView(v: View, id: Int, c: Class<out RealmObject>) {
-        val flexboxLayout: FlexboxLayout = v.findViewById(id)
-        flexboxLayout.flexDirection = FlexDirection.ROW
-        setUpMyList(c, flexboxLayout, v)
-    }
-
-    private fun setUpMyList(c: Class<out RealmObject>, flexboxLayout: FlexboxLayout, view: View) {
-        val dbMycourses: List<RealmObject>
-        val userId = settings?.getString("userId", "--")
-        setUpMyLife(userId)
-        dbMycourses = when (c) {
-            RealmMyCourse::class.java -> {
-                RealmMyCourse.getMyByUserId(mRealm, settings).filter { !it.courseTitle.isNullOrBlank() }
-            }
-            RealmMyTeam::class.java -> {
-                val i = myTeamInit(flexboxLayout)
-                setCountText(i, RealmMyTeam::class.java, view)
-                return
-            }
-            RealmMyLife::class.java -> {
-                myLifeListInit(flexboxLayout)
-                return
-            }
-            else -> {
-                userId?.let {
-                    mRealm.where(c).contains("userId", it, Case.INSENSITIVE).findAll()
-                } ?: listOf()
-            }
-        }
-        setCountText(dbMycourses.size, c, view)
+    private fun renderMyCourses(dbMycourses: List<RealmMyCourse>) {
+        val flexboxLayout = view?.findViewById<FlexboxLayout>(R.id.flexboxLayoutCourse) ?: return
+        flexboxLayout.removeAllViews()
+        setCountText(dbMycourses.size, RealmMyCourse::class.java, requireView())
         val myCoursesTextViewArray = arrayOfNulls<TextView>(dbMycourses.size)
         for ((itemCnt, items) in dbMycourses.withIndex()) {
-            val course = items as RealmMyCourse
             setTextViewProperties(myCoursesTextViewArray, itemCnt, items)
             myCoursesTextViewArray[itemCnt]?.let { setTextColor(it, itemCnt) }
             flexboxLayout.addView(myCoursesTextViewArray[itemCnt], params)
         }
     }
 
-    private fun myTeamInit(flexboxLayout: FlexboxLayout): Int {
-        val dbMyTeam = RealmMyTeam.getMyTeamsByUserId(mRealm, settings)
+    private fun renderMyTeams(dbMyTeam: List<RealmMyTeam>) {
+        val flexboxLayout = view?.findViewById<FlexboxLayout>(R.id.flexboxLayoutTeams) ?: return
+        flexboxLayout.removeAllViews()
         val userId = profileDbHandler.userModel?.id
         for ((count, ob) in dbMyTeam.withIndex()) {
             val v = LayoutInflater.from(activity).inflate(R.layout.item_home_my_team, flexboxLayout, false)
             val name = v.findViewById<TextView>(R.id.tv_name)
             setBackgroundColor(v, count)
-            if ((ob as RealmMyTeam).teamType == "sync") {
+            if (ob.teamType == "sync") {
                 name.setTypeface(null, Typeface.BOLD)
             }
             handleClick(ob._id, ob.name, TeamDetailFragment(), name)
@@ -220,7 +220,15 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             name.text = ob.name
             flexboxLayout.addView(v, params)
         }
-        return dbMyTeam.size
+        setCountText(dbMyTeam.size, RealmMyTeam::class.java, requireView())
+    }
+
+    private fun renderMyLife(myLife: List<RealmMyLife>) {
+        val flexboxLayout = view?.findViewById<FlexboxLayout>(R.id.flexboxLayoutMyLife) ?: return
+        flexboxLayout.removeAllViews()
+        for ((itemCnt, items) in myLife.withIndex()) {
+            flexboxLayout.addView(getLayout(itemCnt, items), params)
+        }
     }
 
     private fun showNotificationIcons(ob: RealmObject, v: View, userId: String?) {
@@ -241,12 +249,11 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         imgTask.visibility = if (tasks.isNotEmpty()) View.VISIBLE else View.GONE
     }
 
-    private fun myLifeListInit(flexboxLayout: FlexboxLayout) {
-        val dbMylife: MutableList<RealmMyLife> = ArrayList()
-        val rawMylife: List<RealmMyLife> = RealmMyLife.getMyLifeByUserId(mRealm, settings)
-        for (item in rawMylife) if (item.isVisible) dbMylife.add(item)
-        for ((itemCnt, items) in dbMylife.withIndex()) {
-            flexboxLayout.addView(getLayout(itemCnt, items), params)
+    private fun myLibraryItemClickAction(textView: TextView, items: RealmMyLibrary?) {
+        textView.setOnClickListener {
+            items?.let {
+                openResource(it)
+            }
         }
     }
 
@@ -274,21 +281,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         }
     }
 
-    private fun myLibraryItemClickAction(textView: TextView, items: RealmMyLibrary?) {
-        textView.setOnClickListener {
-            items?.let {
-                openResource(it)
-            }
-        }
-    }
-
     override fun onDestroy() {
-        if (::myCoursesResults.isInitialized) {
-            myCoursesResults.removeChangeListener(myCoursesChangeListener)
-        }
-        if (::myTeamsResults.isInitialized) {
-            myTeamsResults.removeChangeListener(myTeamsChangeListener)
-        }
         if (isRealmInitialized()) {
             mRealm.removeAllChangeListeners()
             if (mRealm.isInTransaction) {
@@ -326,31 +319,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         view.findViewById<View>(R.id.txtFullName).setOnClickListener {
             homeItemClickListener?.openCallFragment(UserProfileFragment())
         }
-        myLibraryDiv(view)
-        initializeFlexBoxView(view, R.id.flexboxLayoutCourse, RealmMyCourse::class.java)
-        initializeFlexBoxView(view, R.id.flexboxLayoutTeams, RealmMyTeam::class.java)
-        initializeFlexBoxView(view, R.id.flexboxLayoutMyLife, RealmMyLife::class.java)
-
-        if (mRealm.isInTransaction) {
-            mRealm.commitTransaction()
-        }
-        myCoursesResults = RealmMyCourse.getMyByUserId(mRealm, settings)
-        myTeamsResults = RealmMyTeam.getMyTeamsByUserId(mRealm, settings)
-
-        myCoursesResults.addChangeListener(myCoursesChangeListener)
-        myTeamsResults.addChangeListener(myTeamsChangeListener)
-    }
-
-    private fun updateMyCoursesUI() {
-        val flexboxLayout: FlexboxLayout = view?.findViewById(R.id.flexboxLayoutCourse) ?: return
-        flexboxLayout.removeAllViews()
-        setUpMyList(RealmMyCourse::class.java, flexboxLayout, requireView())
-    }
-
-    private fun updateMyTeamsUI() {
-        val flexboxLayout: FlexboxLayout = view?.findViewById(R.id.flexboxLayoutTeams) ?: return
-        flexboxLayout.removeAllViews()
-        setUpMyList(RealmMyTeam::class.java, flexboxLayout, requireView())
     }
 
     override fun showResourceDownloadDialog() {
