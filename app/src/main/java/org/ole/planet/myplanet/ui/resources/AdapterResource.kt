@@ -15,7 +15,10 @@ import com.google.gson.JsonObject
 import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
 import java.util.Locale
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnLibraryItemSelected
@@ -227,18 +230,18 @@ class AdapterResource(
         }
         lifecycleOwner.lifecycleScope.launch {
             try {
-                val tags = tagRepository.getTagsForResource(resourceId)
+                val tags = withContext(Dispatchers.IO) {
+                    tagRepository.getTagsForResource(resourceId)
+                }
                 tagCache[resourceId] = tags
 
-                val flexboxLayout = holder.rowLibraryBinding.flexboxDrawable
-                holder.itemView.post {
+                if (isActive) {
                     val adapterPosition = holder.bindingAdapterPosition
-                    if (adapterPosition == RecyclerView.NO_POSITION) {
-                        return@post
-                    }
-                    val currentResourceId = libraryList.getOrNull(adapterPosition)?.id
-                    if (currentResourceId == resourceId) {
-                        renderTagCloud(flexboxLayout, tags)
+                    if (adapterPosition != RecyclerView.NO_POSITION) {
+                        val currentResourceId = libraryList.getOrNull(adapterPosition)?.id
+                        if (currentResourceId == resourceId) {
+                            renderTagCloud(holder.rowLibraryBinding.flexboxDrawable, tags)
+                        }
                     }
                 }
             } finally {

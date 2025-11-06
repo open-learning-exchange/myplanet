@@ -113,8 +113,6 @@ android {
     def planetEmbakasiClonePin = project.findProperty('PLANET_EMBAKASI_CLONE_PIN') ?: ""
     def planetCambridgeUrl = project.findProperty('PLANET_CAMBRIDGE_URL') ?: ""
     def planetCambridgePin = project.findProperty('PLANET_CAMBRIDGE_PIN') ?: ""
-    //def planetEgdirbmacUrl = project.findProperty('PLANET_EGDIRBMAC_URL') ?: ""
-    //def planetEgdirbmacPin = project.findProperty('PLANET_EGDIRBMAC_PIN') ?: ""
 
     buildTypes.each {
         it.buildConfigField 'String', 'PLANET_LEARNING_URL', "\"$planetLearningUrl\""
@@ -145,8 +143,6 @@ android {
         it.buildConfigField 'String', 'PLANET_EMBAKASI_CLONE_PIN', "\"${planetEmbakasiClonePin}\""
         it.buildConfigField 'String', 'PLANET_CAMBRIDGE_URL', "\"${planetCambridgeUrl}\""
         it.buildConfigField 'String', 'PLANET_CAMBRIDGE_PIN', "\"${planetCambridgePin}\""
-        //it.buildConfigField 'String', 'PLANET_EGDIRBMAC_URL', "\"${planetEgdirbmacUrl}\""
-        //it.buildConfigField 'String', 'PLANET_EGDIRBMAC_PIN', "\"${planetEgdirbmacPin}\""
     }
 }
 
@@ -197,8 +193,8 @@ dependencies {
     implementation 'com.github.clans:fab:1.6.4'
     implementation 'com.applandeo:material-calendar-view:1.9.2'
     implementation 'com.afollestad.material-dialogs:commons:0.9.6.0'
-    implementation 'com.borax12.materialdaterangepicker:library:2.0'
     implementation 'com.nex3z:toggle-button-group:1.2.3'
+    implementation('com.mikepenz:materialdrawer:6.1.1@aar') { transitive = true}
     implementation('com.opencsv:opencsv:5.12.0') {
         exclude group: 'commons-logging', module: 'commons-logging'
     }
@@ -211,14 +207,6 @@ dependencies {
     implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2"
     implementation 'pl.droidsonroids.gif:android-gif-drawable:1.2.29'
-
-    implementation 'com.mikepenz:google-material-typeface:3.0.1.1.original@aar'
-    implementation 'com.mikepenz:fontawesome-typeface:5.3.1.1@aar'
-    implementation 'com.mikepenz:octicons-typeface:3.2.0.5@aar'
-    implementation 'com.mikepenz:itemanimators:1.1.0@aar'
-    implementation 'com.mikepenz:crossfader:1.6.0@aar'
-    implementation 'com.mikepenz:crossfadedrawerlayout:1.1.0@aar'
-    implementation('com.mikepenz:materialdrawer:6.1.1@aar') { transitive = true}
 
     def camera_version = "1.4.2"
     implementation "androidx.camera:camera-core:$camera_version"
