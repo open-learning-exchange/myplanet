@@ -1353,5 +1353,6 @@
     <string name="resource_not_found_in_database">المورد غير موجود في قاعدة البيانات</string>
     <string name="resource_has_no_attachments">المورد لا يحتوي على ملفات قابلة للتنزيل</string>
     <string name="unable_to_download_resource">غير قادر على تنزيل المورد</string>
+    <string name="hide_new_message">إخفاء الرسالة الجديدة</string>
 
 </resources>
