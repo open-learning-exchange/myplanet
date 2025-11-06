@@ -183,8 +183,6 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
 
     override fun onResume() {
         super.onResume()
-        // Refresh data when returning from TakeExamFragment
-        // This ensures the list is up-to-date with any submission changes
         updateAdapterData(currentIsTeamShareAllowed)
     }
 
