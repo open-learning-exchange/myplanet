@@ -23,6 +23,7 @@ import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
+import io.realm.Realm
 import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
@@ -60,6 +61,7 @@ import org.ole.planet.myplanet.utilities.SharedPrefManager
 
 @AndroidEntryPoint
 class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelected, TagClickListener, RealtimeSyncMixin {
+    private var _courseList: List<RealmMyCourse?> = emptyList()
 
     private lateinit var tvAddToLib: TextView
     private lateinit var tvSelected: TextView
@@ -183,10 +185,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     private fun getFullCourseList(): List<RealmMyCourse?> {
-        val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java)
-            .filterIsInstance<RealmMyCourse?>()
-            .filter { !it?.courseTitle.isNullOrBlank() }
-        return courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
+        return _courseList
     }
 
     private fun refreshCoursesData() {
@@ -231,35 +230,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
-        if (!mRealm.isInTransaction) {
-            mRealm.refresh()
-        }
-
-        val map = getRatings(mRealm, "course", model?.id)
-        val progressMap = getCourseProgress(mRealm, model?.id)
-        val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>().filter { !it?.courseTitle.isNullOrBlank() }
-        val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
-        adapterCourses = AdapterCourses(
-            requireActivity(),
-            sortedCourseList,
-            map,
-            userProfileDbHandler,
-            tagRepository,
-            this@CoursesFragment
-        )
-        adapterCourses.setProgressMap(progressMap)
-        adapterCourses.setListener(this)
-        adapterCourses.setRatingChangeListener(this)
-
-        if (isMyCourseLib) {
-            val courseIds = courseList.mapNotNull { it?.id }
-            resources = mRealm.where(RealmMyLibrary::class.java)
-                .`in`("courseId", courseIds.toTypedArray())
-                .equalTo("resourceOffline", false)
-                .isNotNull("resourceLocalAddress")
-                .findAll()
-            courseLib = "courses"
-        }
         return adapterCourses
     }
 
@@ -272,15 +242,57 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         setupButtonVisibility()
         setupEventListeners()
         clearTags()
-        showNoData(tvMessage, adapterCourses.itemCount, "courses")
-        setupUI(requireView().findViewById(R.id.my_course_parent_layout), requireActivity())
 
+        adapterCourses = AdapterCourses(requireActivity(), emptyList(), HashMap(), userProfileDbHandler, tagRepository, this)
+        recyclerView.adapter = adapterCourses
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            val courseData = getCourseData()
+            _courseList = courseData.courseList
+            adapterCourses.setCourseList(courseData.courseList)
+            adapterCourses.setRatings(courseData.ratings)
+            adapterCourses.setProgressMap(courseData.progressMap)
+            resources = courseData.resources
+            showNoData(tvMessage, adapterCourses.itemCount, "courses")
+            checkList()
+        }
+
+        setupUI(requireView().findViewById(R.id.my_course_parent_layout), requireActivity())
         if (!isMyCourseLib) tvFragmentInfo.setText(R.string.our_courses)
         additionalSetup()
         setupMyProgressButton()
 
         realtimeSyncHelper = RealtimeSyncHelper(this, this)
         realtimeSyncHelper.setupRealtimeSync()
+    }
+
+    private suspend fun getCourseData(): CourseData = withContext(Dispatchers.IO) {
+        val realm = Realm.getDefaultInstance()
+        try {
+            val courseList = getList(RealmMyCourse::class.java)
+                .filterIsInstance<RealmMyCourse?>()
+                .filter { !it?.courseTitle.isNullOrBlank() }
+            val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
+            _courseList = sortedCourseList
+
+            val ratings = getRatings(realm, "course", model?.id)
+            val progressMap = getCourseProgress(realm, model?.id)
+
+            var resources: List<RealmMyLibrary> = emptyList()
+            if (isMyCourseLib) {
+                val courseIds = courseList.mapNotNull { it?.id }
+                resources = realm.where(RealmMyLibrary::class.java)
+                    .`in`("courseId", courseIds.toTypedArray())
+                    .equalTo("resourceOffline", false)
+                    .isNotNull("resourceLocalAddress")
+                    .findAll()
+                courseLib = "courses"
+            }
+
+            CourseData(sortedCourseList, ratings, progressMap, realm.copyFromRealm(resources))
+        } finally {
+            realm.close()
+        }
     }
 
     private fun setupButtonVisibility() {

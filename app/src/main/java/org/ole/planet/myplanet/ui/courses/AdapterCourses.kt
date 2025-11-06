@@ -101,6 +101,12 @@ class AdapterCourses(
         dispatchDiff(courseList)
     }
 
+    fun setRatings(ratings: HashMap<String?, JsonObject>) {
+        this.map.clear()
+        this.map.putAll(ratings)
+        notifyDataSetChanged()
+    }
+
     private fun sortCourseListByTitle(list: List<RealmMyCourse?>): List<RealmMyCourse?> {
         return list.sortedWith { course1: RealmMyCourse?, course2: RealmMyCourse? ->
             if (isTitleAscending) {
