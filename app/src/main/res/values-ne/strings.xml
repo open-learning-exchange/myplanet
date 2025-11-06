@@ -1332,6 +1332,7 @@
     <string name="redo_survey">सर्वे पुनः गर्नुहोस्</string>
     <string name="resource_not_found_in_database">डाटाबेसमा स्रोत फेला परेन</string>
     <string name="resource_has_no_attachments">स्रोतसँग कुनै डाउनलोड योग्य फाइलहरू छैनन्</string>
-    <string name="unable_to_download_resource">स्रोत डाउनलोड गर्न असमर्थ</string>e
+    <string name="unable_to_download_resource">स्रोत डाउनलोड गर्न असमर्थ</string>
+    <string name="hide_new_message">नयाँ सन्देश लुकाउनुहोस्</string>
 
 </resources>

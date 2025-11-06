@@ -1333,5 +1333,6 @@
     <string name="resource_not_found_in_database">Recurso no encontrado en la base de datos</string>
     <string name="resource_has_no_attachments">El recurso no tiene archivos descargables</string>
     <string name="unable_to_download_resource">No se puede descargar el recurso</string>
+    <string name="hide_new_message">Ocultar nuevo mensaje</string>
 
 </resources>

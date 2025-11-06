@@ -279,7 +279,9 @@ class TeamCalendarFragment : BaseTeamFragment() {
         recyclerView.layoutParams.height = cardHeight + extraHeight
         recyclerView.requestLayout()
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
-        recyclerView.adapter = AdapterMeetup(meetupList)
+        val adapter = AdapterMeetup()
+        recyclerView.adapter = adapter
+        adapter.submitList(meetupList)
 
         val dialog = AlertDialog.Builder(requireContext())
             .setView(dialogView)
