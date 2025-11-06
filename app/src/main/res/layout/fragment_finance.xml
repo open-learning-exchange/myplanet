@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.enterprises.FinanceFragment">
+
+    <LinearLayout
+        android:id="@+id/data_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingLeft="@dimen/padding_normal"
+            android:paddingRight="@dimen/padding_normal">
+
+            <LinearLayout
+                android:id="@+id/llFromDate"
+                android:orientation="horizontal"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center_vertical">
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="From Date"
+                    android:textColorHint="@color/hint_color">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/tvFromDateCalendar"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:focusable="false"
+                        android:inputType="none"
+                        android:padding="@dimen/padding_normal"
+                        android:textColor="@color/daynight_textColor"
+                        android:textSize="16sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <ImageView
+                    android:id="@+id/tvFromDateCalendarIcon"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:src="@drawable/ic_date"
+                    app:tint="@color/daynight_textColor"
+                    android:contentDescription="Select From Date"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:padding="@dimen/padding_small" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/llToDate"
+                android:orientation="horizontal"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center_vertical">
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="To Date"
+                    android:textColorHint="@color/hint_color">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etToDate"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:focusable="false"
+                        android:inputType="none"
+                        android:padding="@dimen/padding_normal"
+                        android:textColor="@color/daynight_textColor"
+                        android:textSize="16sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <ImageView
+                    android:id="@+id/tvToDateCalendarIcon"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:src="@drawable/ic_date"
+                    app:tint="@color/daynight_textColor"
+                    android:contentDescription="Select To Date"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:padding="@dimen/padding_small" />
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/btn_reset"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:layout_marginStart="16dp"
+                android:background="@color/mainColor"
+                android:layout_gravity="left"
+                android:padding="@dimen/padding_normal"
+                android:text="@string/date_reset"
+                android:textColor="@android:color/white"
+                android:textSize="@dimen/text_size_mid"
+                android:theme="@style/GuestStyle" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingLeft="@dimen/padding_normal"
+            android:paddingRight="@dimen/padding_normal">
+
+            <TextView
+                android:id="@+id/balance_caution"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:padding="@dimen/padding_large"
+                android:text="@string/negative_balance"
+                android:textColor="@color/md_red_A700"
+                android:textSize="@dimen/text_size_mid" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingLeft="@dimen/padding_normal"
+            android:paddingRight="@dimen/padding_normal">
+
+            <LinearLayout
+                android:id="@+id/ll_date"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1">
+
+                <TextView
+                    android:id="@+id/date"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:padding="@dimen/padding_small"
+                    android:text="@string/date"
+                    android:textColor="@color/daynight_textColor"
+                    android:textSize="@dimen/text_size_mid"
+                    android:textStyle="bold" />
+                <ImageView
+                    android:id="@+id/img_date"
+                    android:layout_width="@dimen/icon_size_mid"
+                    android:layout_height="@dimen/icon_size_mid"
+                    android:layout_gravity="center"
+                    app:srcCompat="@drawable/ic_down" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/note"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:padding="@dimen/padding_small"
+                android:text="@string/note"
+                android:textColor="@color/daynight_textColor"
+                android:textSize="@dimen/text_size_mid"
+                android:textStyle="bold" />
+            <TextView
+                android:id="@+id/credit"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:padding="@dimen/padding_small"
+                android:text="@string/credit"
+                android:textColor="@color/daynight_textColor"
+                android:textSize="@dimen/text_size_mid"
+                android:textStyle="bold" />
+            <TextView
+                android:id="@+id/debit"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:padding="@dimen/padding_small"
+                android:text="@string/debit"
+                android:textColor="@color/daynight_textColor"
+                android:textSize="@dimen/text_size_mid"
+                android:textStyle="bold" />
+            <TextView
+                android:id="@+id/balance"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:padding="@dimen/padding_small"
+                android:text="@string/balance"
+                android:textColor="@color/daynight_textColor"
+                android:textSize="@dimen/text_size_mid"
+                android:textStyle="bold"
+                android:visibility="visible" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/md_blue_grey_700" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/cardview_dark_background"
+            android:padding="@dimen/padding_normal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textSize="@dimen/text_size_mid" />
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:padding="@dimen/padding_small"
+                android:text="@string/total"
+                android:textColor="@color/bg_white"
+                android:textSize="@dimen/text_size_mid" />
+            <TextView
+                android:id="@+id/tv_credit"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:padding="@dimen/padding_small"
+                android:text="@string/credit"
+                android:textColor="@color/bg_white"
+                android:textSize="@dimen/text_size_mid" />
+            <TextView
+                android:id="@+id/tv_debit"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:padding="@dimen/padding_small"
+                android:text="@string/debit"
+                android:textColor="@color/bg_white"
+                android:textSize="@dimen/text_size_mid" />
+            <TextView
+                android:id="@+id/tv_balance"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:padding="@dimen/padding_small"
+                android:text="@string/balance"
+                android:textColor="@color/bg_white"
+                android:textSize="@dimen/text_size_mid"
+                android:visibility="visible" />
+        </LinearLayout>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_finance"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="@dimen/padding_normal" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tv_nodata"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:gravity="center"
+        android:text="@string/nodata"
+        android:visibility="gone"
+        android:textColor="@color/daynight_textColor" />
+    <com.github.clans.fab.FloatingActionButton
+        android:id="@+id/add_transaction"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|right"
+        android:layout_margin="@dimen/padding_large"
+        android:src="@drawable/ic_add"
+        app:fab_label="Add Transaction" />
+</FrameLayout>
