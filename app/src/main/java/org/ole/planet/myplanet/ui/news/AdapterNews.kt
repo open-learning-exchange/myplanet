@@ -125,7 +125,10 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     }
 
     fun setNonTeamMember(nonTeamMember: Boolean) {
-        this.nonTeamMember = nonTeamMember
+        if (this.nonTeamMember != nonTeamMember) {
+            this.nonTeamMember = nonTeamMember
+            notifyItemRangeChanged(0, itemCount)
+        }
     }
 
     fun setListener(listener: OnNewsItemClickListener?) {
