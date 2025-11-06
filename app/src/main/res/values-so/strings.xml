@@ -696,14 +696,6 @@
     <string name="health_record_not_available_sync_health_data">Diiwaanka caafimaadka lama helin, dib u hagrees data caafimaadka?</string>
     <string name="sync">Dib u hagrees</string>
     <string name="got_it">GUUL</string>
-    <string name="please_make_sure_your_device_is_horizontal">Fadlan hubso in qalabkaada ay joogaan afarood</string>
-    <string name="click_on_the_logo_to_get_the_full_menu_of_your_planet_home_mylibrary_mycourses_library_courses_community_enterprises_and_surveys">Guji logga si aad u heli karto menu buuxa ee Geedkaaga: Hoose, Maktabaddaada, Kursiyadaaga, Maktabadda, Kursiyada, Bulshada, Shirkadaha, iyo Suuragal</string>
-    <string name="navigate_to_the_home_tab_to_access_your_dashboard_with_your_library_courses_and_teams">Dabool tabka Hoose si aad u heli karto xirmooyinkaaga oo ku yaala maktabadda, kursiyada iyo kooxahaaga</string>
-    <string name="navigate_to_the_library_tab_to_access_resources_in_your_community">Dabool tabka Maktabadda si aad u heli karto khadka ay ka shaqeeyaan bulshaddeeda</string>
-    <string name="navigate_to_the_courses_tab_to_access_the_courses_exams_questions_lessons_within_your_community">Dabool tabka Kursiyada si aad u heli karto kursiyada (imtixaanka, su\'aasha, darsashada) ee ku jira bulshaddeeda</string>
-    <string name="navigate_to_the_teams_tab_to_join_request_and_check_up_on_your_teams">Dabool tabka kooxaha si aad uga qaadato, codsatid, iyo kaga soo xidhiidho kooxahaada</string>
-    <string name="navigate_to_the_enterprises_tab_to_search_through_a_list_of_enterprises_within_your_community">Dabool tabka Shirkadaha si aad u raadi karto liiska shirkadaha ee ka jira bulshaddeeda</string>
-    <string name="navigate_to_the_community_tab_to_access_the_news_community_leaders_calendar_services_and_finances_involved_within_your_community">Dabool tabka Bulshada si aad u heli karto wararka, madaxda bulshada, taariikhda, adeegyada, iyo maaliyada ee ku jira bulshaddeeda</string>
     <string name="session_expired">Ku dhacday wakhti la isla xiriiray.</string>
     <string name="downloading_started_please_check_notificati">Degsaday soo degista, fadlan check notifikishanka…</string>
     <string name="dictionary">Qaamuus</string>
@@ -813,8 +805,6 @@
     <string name="unable_to_connect_to_planet_wifi">Lama soo galin karo wifi-ka Geedka.</string>
     <string name="you_are_now_connected">Hadda waxaad la xiriirayaa</string>
     <string name="press_back_again_to_exit">Daboolka BACK wixii hore ugu celi</string>
-    <string name="press_the_sync_button_to_sync_your_planet_account_data_with_your_myplanet_application_data">Daboolka dib-u-hagreeska si aad u hagreesid data-accountka Geedkaaga oo isku xirka app-kaaga myPlanet</string>
-    <string name="press_the_settings_button_to_access_your_myplanet_planet_account_server_settings_to_properly_set_up_your_syncing_process">Daboolka cajiib ah si aad u heli karto goobta lacag bixinta oo loo hagreeso serverkaaka Geedka</string>
     <string name="it_has_been_more_than">waxaa ka badan </string>
     <string name="days_since_you_last_synced_this_device">maalmood ka dib marka aad dib u hagreesatid qalabkanan.</string>
     <string name="connect_it_to_the_server_over_wifi_and_sync_it_to_reactivate_this_tablet">\nKu xiran talaalka serverka oo ku sug WiFi si aad u hagreesid taabeltaaga.</string>
@@ -1178,13 +1168,6 @@
     <string name="chat_enter_message">Geli fariin</string>
     <string name="hour">saac</string>
     <string name="hours">saacadood</string>
-    <string name="material_calendar_monday">I</string>
-    <string name="material_calendar_tuesday">T</string>
-    <string name="material_calendar_wednesday">Ar</string>
-    <string name="material_calendar_thursday">K</string>
-    <string name="material_calendar_friday">J</string>
-    <string name="material_calendar_saturday">S</string>
-    <string name="material_calendar_sunday">Ax</string>
     <array name="material_calendar_months_array">
         <item>Janaayo</item>
         <item>Febraayo</item>
@@ -1199,9 +1182,6 @@
         <item>Noofembar</item>
         <item>Disembar</item>
     </array>
-    <string name="material_calendar_today_button">Maanta</string>
-    <string name="material_calendar_positive_button">Haa</string>
-    <string name="material_calendar_negative_button">Maya</string>
     <string name="switching_off_manual_configuration_to_clear_data">daminta habka gacanta ah waxay tirtiri doontaa dhammaan xogta, ma hubtaa inaad rabto inaad sii waddo?</string>
     <string name="switching_on_manual_configuration_to_clear_data">furista habka gacanta ah waxay tirtiri doontaa dhammaan xogta, ma hubtaa inaad rabto inaad sii waddo?</string>
     <string name="chart_description">Shaxda Waxqabadka Gelitaanka</string>
