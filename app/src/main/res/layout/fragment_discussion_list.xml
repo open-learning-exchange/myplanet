@@ -25,7 +25,6 @@
             android:textColor="@android:color/white"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/linearLayout6" />
-
         <LinearLayout
             android:id="@+id/ll_add_news"
             android:layout_width="match_parent"
@@ -72,7 +71,6 @@
                             android:minWidth="@dimen/user_image_size"
                             android:text="@string/button_submit"
                             android:theme="@style/PrimaryButton" />
-
                         <Button
                             android:id="@+id/add_news_image"
                             android:layout_width="wrap_content"
@@ -105,7 +103,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:padding="@dimen/padding_normal" />
-
             <TextView
                 android:id="@+id/tv_nodata"
                 android:layout_width="wrap_content"
