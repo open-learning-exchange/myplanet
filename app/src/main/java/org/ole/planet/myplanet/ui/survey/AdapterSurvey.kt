@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.survey
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -144,24 +145,33 @@ class AdapterSurvey(
                     tvDescription.visibility = View.VISIBLE
                     tvDescription.text = exam.description
                 }
-                var teamSubmission = mRealm.where(RealmSubmission::class.java)
-                    .equalTo("parentId", exam.id)
-                    .equalTo("membershipDoc.teamId", teamId)
-                    .findFirst()
+
+                // Query for existing team submission
+                fun getTeamSubmission(): RealmSubmission? {
+                    return mRealm.where(RealmSubmission::class.java)
+                        .equalTo("parentId", exam.id)
+                        .equalTo("membershipDoc.teamId", teamId)
+                        .findFirst()
+                }
+
+                var teamSubmission = getTeamSubmission()
 
                 startSurvey.setOnClickListener {
-                    if (teamSubmission?.isValid != true) {
-                        teamSubmission = mRealm.where(RealmSubmission::class.java)
-                            .equalTo("parentId", exam.id)
-                            .equalTo("membershipDoc.teamId", teamId)
-                            .findFirst()
-                    }
+                    val clickTime = System.currentTimeMillis()
+                    Log.d("SurveyAdoption", "═══════════════════════════════════════")
+                    Log.d("SurveyAdoption", "Button clicked at: $clickTime")
+                    Log.d("SurveyAdoption", "Survey: ${exam.name} (${exam.id})")
+
+                    // Always re-query to get the latest state
+                    teamSubmission = getTeamSubmission()
 
                     val shouldAdopt = exam.isTeamShareAllowed && teamSubmission?.isValid != true
 
                     if (shouldAdopt) {
-                        adoptSurvey(exam, teamId)
+                        Log.d("SurveyAdoption", "Action: Adopting survey")
+                        adoptSurvey(exam, teamId, clickTime)
                     } else {
+                        Log.d("SurveyAdoption", "Action: Opening existing survey")
                         AdapterMySubmission.openSurvey(listener, exam.id, false, isTeam, teamId)
                     }
                 }
@@ -174,6 +184,8 @@ class AdapterSurvey(
                     startSurvey.visibility = View.GONE
                 }
 
+                // Always re-query to ensure button text matches current state
+                teamSubmission = getTeamSubmission()
                 val shouldShowAdopt = exam.isTeamShareAllowed && teamSubmission?.isValid != true
 
                 startSurvey.text = when {
@@ -196,11 +208,15 @@ class AdapterSurvey(
             }
         }
 
-        fun adoptSurvey(exam: RealmStepExam, teamId: String?) {
+        fun adoptSurvey(exam: RealmStepExam, teamId: String?, clickTime: Long) {
+            val methodStartTime = System.currentTimeMillis()
+            Log.d("SurveyAdoption", "adoptSurvey() entered at: $methodStartTime (+${methodStartTime - clickTime}ms from click)")
+
             val userModel = userProfileDbHandler.userModel
             val sParentCode = settings.getString("parentCode", "")
             val planetCode = settings.getString("planetCode", "")
 
+            val jsonBuildStart = System.currentTimeMillis()
             val parentJsonString = try {
                 JSONObject().apply {
                     put("_id", exam.id)
@@ -239,17 +255,28 @@ class AdapterSurvey(
                 "{}"
             }
 
+            val jsonBuildEnd = System.currentTimeMillis()
+            Log.d("SurveyAdoption", "JSON prep completed: $jsonBuildEnd (+${jsonBuildEnd - jsonBuildStart}ms)")
+
             val adoptionId = "${UUID.randomUUID()}"
             val examId = exam.id
             val userId = userModel?.id
 
             if (mRealm.isClosed) {
+                Log.d("SurveyAdoption", "ERROR: Realm is closed")
                 Snackbar.make(binding.root, context.getString(R.string.failed_to_adopt_survey), Snackbar.LENGTH_LONG).show()
                 return
             }
 
+            val transactionStartTime = System.currentTimeMillis()
+            Log.d("SurveyAdoption", "Starting async transaction: $transactionStartTime (+${transactionStartTime - clickTime}ms total)")
+
             try {
                 mRealm.executeTransactionAsync({ realm ->
+                    val txStart = System.currentTimeMillis()
+                    Log.d("SurveyAdoption", "[BG Thread] Transaction block entered: $txStart")
+
+                    val queryStart = System.currentTimeMillis()
                     val existingAdoption = if (isTeam && teamId != null) {
                         realm.where(RealmSubmission::class.java)
                             .equalTo("userId", userId)
@@ -266,7 +293,11 @@ class AdapterSurvey(
                             .findFirst()
                     }
 
+                    val queryEnd = System.currentTimeMillis()
+                    Log.d("SurveyAdoption", "[BG Thread] Query completed: $queryEnd (+${queryEnd - queryStart}ms) - Found existing: ${existingAdoption != null}")
+
                     if (existingAdoption == null) {
+                        val createStart = System.currentTimeMillis()
                         realm.createObject(RealmSubmission::class.java, adoptionId).apply {
                             parentId = examId
                             parent = parentJsonString
@@ -287,22 +318,50 @@ class AdapterSurvey(
                                 }
                             }
                         }
+                        val createEnd = System.currentTimeMillis()
+                        Log.d("SurveyAdoption", "[BG Thread] Object created: $createEnd (+${createEnd - createStart}ms)")
                     }
+
+                    val txEnd = System.currentTimeMillis()
+                    Log.d("SurveyAdoption", "[BG Thread] Transaction block completed: $txEnd (total: ${txEnd - txStart}ms)")
                 }, {
+                    val successCallbackTime = System.currentTimeMillis()
+                    Log.d("SurveyAdoption", "[Main Thread] Success callback: $successCallbackTime (+${successCallbackTime - clickTime}ms total)")
+
+                    val refreshStart = System.currentTimeMillis()
                     mRealm.refresh()
+                    val refreshEnd = System.currentTimeMillis()
+                    Log.d("SurveyAdoption", "Realm refresh completed: $refreshEnd (+${refreshEnd - refreshStart}ms)")
 
                     adoptedSurveyIds.add("$examId")
                     val position = examList.indexOfFirst { it.id == examId }
                     if (position != -1) {
+                        val notifyStart = System.currentTimeMillis()
                         notifyItemChanged(position)
+                        val notifyEnd = System.currentTimeMillis()
+                        Log.d("SurveyAdoption", "notifyItemChanged at position $position: $notifyEnd (+${notifyEnd - notifyStart}ms)")
                     }
 
+                    val snackbarTime = System.currentTimeMillis()
                     Snackbar.make(binding.root, context.getString(R.string.survey_adopted_successfully), Snackbar.LENGTH_LONG).show()
+                    Log.d("SurveyAdoption", "Snackbar shown: $snackbarTime")
+
+                    val callbackStart = System.currentTimeMillis()
                     surveyAdoptListener.onSurveyAdopted()
+                    val callbackEnd = System.currentTimeMillis()
+                    Log.d("SurveyAdoption", "onSurveyAdopted() callback: $callbackEnd (+${callbackEnd - callbackStart}ms)")
+                    Log.d("SurveyAdoption", "TOTAL TIME: ${callbackEnd - clickTime}ms")
+                    Log.d("SurveyAdoption", "═══════════════════════════════════════")
                 }, { error ->
+                    val errorTime = System.currentTimeMillis()
+                    Log.e("SurveyAdoption", "ERROR callback: $errorTime - ${error.message}")
+                    Log.e("SurveyAdoption", "═══════════════════════════════════════")
                     Snackbar.make(binding.root, context.getString(R.string.failed_to_adopt_survey), Snackbar.LENGTH_LONG).show()
                 })
             } catch (e: Exception) {
+                val exceptionTime = System.currentTimeMillis()
+                Log.e("SurveyAdoption", "EXCEPTION: $exceptionTime - ${e.message}")
+                Log.e("SurveyAdoption", "═══════════════════════════════════════")
                 Snackbar.make(binding.root, context.getString(R.string.failed_to_adopt_survey), Snackbar.LENGTH_LONG).show()
             }
         }

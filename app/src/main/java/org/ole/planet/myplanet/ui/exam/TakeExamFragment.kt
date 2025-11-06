@@ -232,6 +232,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         try {
             sub = createSubmission(null, mRealm)
             setParentId()
+            setParentJson()
             sub?.userId = user?.id
             sub?.status = "pending"
             sub?.type = type
@@ -265,6 +266,23 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                 id
             }
             else -> sub?.parentId
+        }
+    }
+
+    private fun setParentJson() {
+        try {
+            val parentJsonString = JSONObject().apply {
+                put("_id", exam?.id ?: id)
+                put("name", exam?.name ?: "")
+                put("courseId", exam?.courseId ?: "")
+                put("sourcePlanet", exam?.sourcePlanet ?: "")
+                put("teamShareAllowed", exam?.isTeamShareAllowed ?: false)
+                put("noOfQuestions", exam?.noOfQuestions ?: 0)
+                put("isFromNation", exam?.isFromNation ?: false)
+            }.toString()
+            sub?.parent = parentJsonString
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 

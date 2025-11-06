@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.survey
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -156,7 +157,13 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
     }
 
     override fun onSurveyAdopted() {
+        val callbackReceived = System.currentTimeMillis()
+        Log.d("SurveyAdoption", "[Fragment] onSurveyAdopted() received: $callbackReceived")
+
         binding.rbTeamSurvey.isChecked = true
+
+        val updateStart = System.currentTimeMillis()
+        Log.d("SurveyAdoption", "[Fragment] Calling updateAdapterData: $updateStart")
         updateAdapterData(isTeamShareAllowed = false)
     }
 
@@ -179,6 +186,13 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         setupListeners()
         updateAdapterData(isTeamShareAllowed = false)
         showHideRadioButton()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Refresh data when returning from TakeExamFragment
+        // This ensures the list is up-to-date with any submission changes
+        updateAdapterData(currentIsTeamShareAllowed)
     }
 
     private fun showHideRadioButton() {
@@ -260,17 +274,34 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
     }
 
     fun updateAdapterData(isTeamShareAllowed: Boolean? = null) {
+        val methodStart = System.currentTimeMillis()
+        Log.d("SurveyAdoption", "[Fragment] updateAdapterData() entered: $methodStart")
+
         val useTeamShareAllowed = isTeamShareAllowed ?: currentIsTeamShareAllowed
         currentIsTeamShareAllowed = useTeamShareAllowed
 
         loadSurveysJob?.cancel()
+        val launchTime = System.currentTimeMillis()
+        Log.d("SurveyAdoption", "[Fragment] Launching coroutine: $launchTime")
+
         loadSurveysJob = launchWhenViewIsReady {
+            val queryStart = System.currentTimeMillis()
+            Log.d("SurveyAdoption", "[Fragment] [Coroutine] Starting repository query: $queryStart")
+
             currentSurveys = when {
                 isTeam && useTeamShareAllowed -> surveyRepository.getAdoptableTeamSurveys(teamId)
                 isTeam -> surveyRepository.getTeamOwnedSurveys(teamId)
                 else -> surveyRepository.getIndividualSurveys()
             }
+
+            val queryEnd = System.currentTimeMillis()
+            Log.d("SurveyAdoption", "[Fragment] [Coroutine] Repository query completed: $queryEnd (+${queryEnd - queryStart}ms) - Found ${currentSurveys.size} surveys")
+
+            val filterStart = System.currentTimeMillis()
             applySearchFilter()
+            val filterEnd = System.currentTimeMillis()
+            Log.d("SurveyAdoption", "[Fragment] [Coroutine] applySearchFilter completed: $filterEnd (+${filterEnd - filterStart}ms)")
+            Log.d("SurveyAdoption", "[Fragment] updateAdapterData total time: ${filterEnd - methodStart}ms")
         }
     }
 
