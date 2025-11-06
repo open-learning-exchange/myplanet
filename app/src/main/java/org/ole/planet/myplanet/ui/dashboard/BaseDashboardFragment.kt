@@ -277,17 +277,20 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         }
     }
 
-    private suspend fun loadOtherData(c: Class<out RealmObject>, userId: String?): List<RealmObject> = withContext(Dispatchers.IO) {
+    private suspend fun loadOtherData(c: Class<out RealmObject>, userId: String?): List<out RealmObject> = withContext(Dispatchers.IO) {
         databaseService.withRealm { realm ->
-            val results = userId?.let {
-                realm.where(c).contains("userId", it, Case.INSENSITIVE).findAll()
+            userId?.let {
+                val results = realm.where(c).contains("userId", it, Case.INSENSITIVE).findAll()
+                realm.copyFromRealm(results)
             } ?: emptyList()
-            realm.copyFromRealm(results)
         }
     }
 
-    private fun renderOtherData(data: List<RealmObject>, flexboxLayout: FlexboxLayout, view: View, c: Class<out RealmObject>) {
-        // A generic renderer could be implemented here if needed, for now, it's empty
+    private fun renderOtherData(data: List<out RealmObject>, flexboxLayout: FlexboxLayout, view: View, c: Class<out RealmObject>) {
+        // The original code had a generic rendering loop here, but it would crash
+        // because it tried to cast all objects to RealmMyCourse.
+        // Since there are no callers that would hit this else case, leaving this empty
+        // is safer and prevents a potential crash.
     }
 
     data class TeamData(
