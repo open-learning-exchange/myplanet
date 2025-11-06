@@ -82,4 +82,11 @@ class CourseRepositoryImpl @Inject constructor(
             isNotNull("resourceLocalAddress")
         }
     }
+
+    override suspend fun getAllCourses(): List<RealmMyCourse?> {
+        val courseList: List<RealmMyCourse?> = queryList(RealmMyCourse::class.java)
+            .filterIsInstance<RealmMyCourse?>()
+            .filter { !it?.courseTitle.isNullOrBlank() }
+        return courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
+    }
 }
