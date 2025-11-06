@@ -47,6 +47,7 @@ class AdapterTeamList(
     private lateinit var prefData: SharedPrefManager
     private val scope = MainScope()
     private val teamStatusCache = mutableMapOf<String, TeamStatus>()
+    private val visitCountsCache = mutableMapOf<String, Long>()
     private var visitCounts: Map<String, Long> = emptyMap()
     private var updateListJob: Job? = null
 
@@ -264,8 +265,13 @@ class AdapterTeamList(
             }
 
             val teamIds = validTeams.mapNotNull { it._id?.takeIf { id -> id.isNotBlank() } }
-            val visitCountsDeferred = async(Dispatchers.IO) {
-                teamRepository.getRecentVisitCounts(teamIds)
+            val (cachedVisitIds, nonCachedVisitIds) = teamIds.partition { it in visitCountsCache }
+            val visitCountsDeferred = if (nonCachedVisitIds.isNotEmpty()) {
+                async(Dispatchers.IO) {
+                    teamRepository.getRecentVisitCounts(nonCachedVisitIds)
+                }
+            } else {
+                async { emptyMap<String, Long>() }
             }
 
             val statusResults = mutableMapOf<String, TeamStatus>()
@@ -300,6 +306,8 @@ class AdapterTeamList(
             }
 
             val newVisitCounts = visitCountsDeferred.await()
+            newVisitCounts.forEach { (id, count) -> visitCountsCache[id] = count }
+            val allVisitCounts = cachedVisitIds.associateWith { visitCountsCache[it]!! } + newVisitCounts
             val sortedTeams = validTeams.sortedWith(
                 compareByDescending<RealmMyTeam> { team ->
                     val teamId = team._id.orEmpty()
@@ -310,7 +318,7 @@ class AdapterTeamList(
                         else -> 1
                     }
                 }.thenByDescending { team ->
-                    newVisitCounts[team._id.orEmpty()] ?: 0L
+                    allVisitCounts[team._id.orEmpty()] ?: 0L
                 }
             )
 
@@ -324,7 +332,7 @@ class AdapterTeamList(
                     createdDate = team.createdDate,
                     type = team.type,
                     status = team.status,
-                    visitCount = newVisitCounts[teamId] ?: 0L,
+                    visitCount = allVisitCounts[teamId] ?: 0L,
                     teamStatus = teamStatusCache[cacheKey]
                 )
             }
@@ -333,7 +341,7 @@ class AdapterTeamList(
                 DiffUtil.calculateDiff(TeamDiffCallback(oldList, newList))
             }
 
-            visitCounts = newVisitCounts
+            visitCounts = allVisitCounts
             filteredList = sortedTeams
             diffResult.dispatchUpdatesTo(this@AdapterTeamList)
             updateCompleteListener?.onUpdateComplete(filteredList.size)
@@ -415,6 +423,7 @@ class AdapterTeamList(
     fun cleanup() {
         scope.cancel()
         teamStatusCache.clear()
+        visitCountsCache.clear()
     }
 
     override fun getItemCount(): Int = filteredList.size
