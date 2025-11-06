@@ -57,11 +57,11 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         return fragmentCourseStepBinding.root
     }
 
-    private suspend fun saveCourseProgress() {
+    private suspend fun saveCourseProgress(userId: String?, planetCode: String?, parentCode: String?) {
         databaseService.executeTransactionAsync { realm ->
             var courseProgress = realm.where(RealmCourseProgress::class.java)
                 .equalTo("courseId", step.courseId)
-                .equalTo("userId", user?.id)
+                .equalTo("userId", userId)
                 .equalTo("stepNum", stepNumber)
                 .findFirst()
             if (courseProgress == null) {
@@ -73,17 +73,20 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
             if (stepExams.isEmpty()) {
                 courseProgress?.passed = true
             }
-            courseProgress?.createdOn = user?.planetCode
+            courseProgress?.createdOn = planetCode
             courseProgress?.updatedDate = Date().time
-            courseProgress?.parentCode = user?.parentCode
-            courseProgress?.userId = user?.id
+            courseProgress?.parentCode = parentCode
+            courseProgress?.userId = userId
         }
     }
 
     private fun launchSaveCourseProgress() {
         if (saveInProgress?.isActive == true) return
+        val userId = user?.id
+        val planetCode = user?.planetCode
+        val parentCode = user?.parentCode
         saveInProgress = lifecycleScope.launch {
-            saveCourseProgress()
+            saveCourseProgress(userId, planetCode, parentCode)
         }
         saveInProgress?.invokeOnCompletion { saveInProgress = null }
     }
