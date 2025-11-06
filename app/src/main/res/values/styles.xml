@@ -226,4 +226,14 @@
         <item name="android:textColorPrimary">@color/daynight_textColor</item>
         <item name="android:textSize">16sp</item>
     </style>
+
+    <style name="AppTheme.Dialog.NoActionBar.MinWidth" parent="Theme.AppCompat.Light.Dialog">
+        <item name="windowNoTitle">true</item>
+        <item name="windowActionBar">false</item>
+        <item name="android:windowMinWidthMajor">65%</item>
+        <item name="android:windowMinWidthMinor">85%</item>
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+    </style>
 </resources>
