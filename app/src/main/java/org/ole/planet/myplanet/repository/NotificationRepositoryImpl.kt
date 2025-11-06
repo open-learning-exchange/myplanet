@@ -138,13 +138,13 @@ class NotificationRepositoryImpl @Inject constructor(
         return notifications.map { notification ->
             org.ole.planet.myplanet.model.Notification(
                 id = notification.id,
-                userId = notification.userId,
+                userId = notification.userId ?: "",
                 message = formatNotificationMessage(notification),
                 isRead = notification.isRead,
                 createdAt = notification.createdAt,
                 type = notification.type,
                 relatedId = notification.relatedId,
-                title = notification.title
+                title = notification.title ?: ""
             )
         }
     }
