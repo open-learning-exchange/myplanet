@@ -6,7 +6,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 
 data class CourseData(
     val courseList: List<RealmMyCourse?>,
-    val ratings: HashMap<String, JsonObject>,
-    val progressMap: HashMap<String, JsonObject>,
+    val ratings: HashMap<String?, JsonObject>,
+    val progressMap: HashMap<String?, JsonObject>,
     val resources: List<RealmMyLibrary> = emptyList()
 )

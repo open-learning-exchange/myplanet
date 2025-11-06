@@ -275,8 +275,16 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
             _courseList = sortedCourseList
 
-            val ratings = getRatings(realm, "course", model?.id)
-            val progressMap = getCourseProgress(realm, model?.id)
+            val ratings = getRatings(realm, "course", model?.id).let { map ->
+                HashMap<String?, JsonObject>().apply {
+                    map.forEach { (key, value) -> this[key] = value }
+                }
+            }
+            val progressMap = getCourseProgress(realm, model?.id).let { map ->
+                HashMap<String?, JsonObject>().apply {
+                    map.forEach { (key, value) -> this[key] = value }
+                }
+            }
 
             var resources: List<RealmMyLibrary> = emptyList()
             if (isMyCourseLib) {
