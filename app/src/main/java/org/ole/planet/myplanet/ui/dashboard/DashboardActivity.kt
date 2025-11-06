@@ -393,7 +393,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     handleTaskNavigation(relatedId)
                 }
                 NotificationUtils.TYPE_JOIN_REQUEST -> {
-                    handleJoinRequestNavigation(relatedId)
+                    lifecycleScope.launch {
+                        handleJoinRequestNavigation(relatedId)
+                    }
                 }
                 NotificationUtils.TYPE_RESOURCE -> {
                     openCallFragment(ResourcesFragment(), "Resources")
@@ -439,19 +441,28 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
     
-    private fun handleJoinRequestNavigation(requestId: String?) {
+    private suspend fun handleJoinRequestNavigation(requestId: String?) {
         if (requestId != null) {
             val actualJoinRequestId = if (requestId.startsWith("join_request_")) {
                 requestId.removePrefix("join_request_")
             } else {
                 requestId
             }
-            val joinRequest = mRealm.where(RealmMyTeam::class.java)
-                .equalTo("_id", actualJoinRequestId)
-                .equalTo("docType", "request")
-                .findFirst()
 
-            val teamId = joinRequest?.teamId
+            val teamId = withContext(Dispatchers.IO) {
+                val startTime = System.currentTimeMillis()
+                var localTeamId: String? = null
+                Realm.getDefaultInstance().use { realm ->
+                    val joinRequest = realm.where(RealmMyTeam::class.java)
+                        .equalTo("_id", actualJoinRequestId)
+                        .equalTo("docType", "request")
+                        .findFirst()
+                    localTeamId = joinRequest?.teamId
+                }
+                val endTime = System.currentTimeMillis()
+                android.util.Log.d("DashboardActivity", "Join request query took ${endTime - startTime}ms")
+                localTeamId
+            }
 
             if (teamId?.isNotEmpty() == true) {
                 val f = TeamDetailFragment()
