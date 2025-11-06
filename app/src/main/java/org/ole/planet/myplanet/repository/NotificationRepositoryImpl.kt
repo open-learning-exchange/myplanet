@@ -1,7 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import java.util.Date
-import java.util.UUID
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Date
@@ -182,10 +180,12 @@ class NotificationRepositoryImpl @Inject constructor(
             }
             "join_request" -> {
                 databaseService.withRealm { realm ->
-                    val joinRequest = realm.where(RealmMyTeam::class.java)
-                        .equalTo("_id", notification.relatedId)
-                        .equalTo("docType", "request")
-                        .findFirst()
+                    val joinRequest = notification.relatedId?.let {
+                        realm.where(RealmMyTeam::class.java)
+                            .equalTo("_id", it)
+                            .equalTo("docType", "request")
+                            .findFirst()
+                    }
                     val team = joinRequest?.teamId?.let { tid ->
                         realm.where(RealmMyTeam::class.java)
                             .equalTo("_id", tid)
