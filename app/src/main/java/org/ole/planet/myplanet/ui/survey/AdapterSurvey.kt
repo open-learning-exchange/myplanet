@@ -145,7 +145,6 @@ class AdapterSurvey(
                     tvDescription.text = exam.description
                 }
 
-                // Query for existing team submission
                 fun getTeamSubmission(): RealmSubmission? {
                     return mRealm.where(RealmSubmission::class.java)
                         .equalTo("parentId", exam.id)
@@ -156,7 +155,6 @@ class AdapterSurvey(
                 var teamSubmission = getTeamSubmission()
 
                 startSurvey.setOnClickListener {
-                    // Always re-query to get the latest state
                     teamSubmission = getTeamSubmission()
 
                     val shouldAdopt = exam.isTeamShareAllowed && teamSubmission?.isValid != true
@@ -176,7 +174,6 @@ class AdapterSurvey(
                     startSurvey.visibility = View.GONE
                 }
 
-                // Always re-query to ensure button text matches current state
                 teamSubmission = getTeamSubmission()
                 val shouldShowAdopt = exam.isTeamShareAllowed && teamSubmission?.isValid != true
 
