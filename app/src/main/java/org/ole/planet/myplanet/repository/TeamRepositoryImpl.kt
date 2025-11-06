@@ -205,21 +205,18 @@ class TeamRepositoryImpl @Inject constructor(
         val validIds = teamIds.filter { it.isNotBlank() }.distinct()
         if (validIds.isEmpty()) return emptyMap()
 
-        // Fetch all memberships for this user in these teams (gives us isMember and isLeader)
         val memberships = queryList(RealmMyTeam::class.java) {
             equalTo("userId", userId)
             equalTo("docType", "membership")
             `in`("teamId", validIds.toTypedArray())
         }
 
-        // Fetch all pending requests for this user in these teams
         val pendingRequests = queryList(RealmMyTeam::class.java) {
             equalTo("userId", userId)
             equalTo("docType", "request")
             `in`("teamId", validIds.toTypedArray())
         }
 
-        // Build maps for quick lookup
         val membershipMap = memberships
             .mapNotNull { it.teamId }
             .toSet()
@@ -233,7 +230,6 @@ class TeamRepositoryImpl @Inject constructor(
             .mapNotNull { it.teamId }
             .toSet()
 
-        // Create status for all requested teams
         return validIds.associateWith { teamId ->
             TeamMemberStatus(
                 isMember = teamId in membershipMap,
