@@ -107,7 +107,7 @@ class AdapterCourses(
                 if (progressMap?.get(old?.courseId) != progressMap?.get(new?.courseId)) {
                     bundle.putBoolean(PROGRESS_PAYLOAD, true)
                 }
-                bundle.ifEmpty { null }
+                if (bundle.isEmpty) null else bundle
             }
         )
         courseList = newList
@@ -337,7 +337,7 @@ class AdapterCourses(
         }
 
         val hasTagPayload = payloads.any { it == TAG_PAYLOAD }
-        val bundle = payloads.filterIsInstance<Bundle>().fold(Bundle(), Bundle::putAll)
+        val bundle = payloads.filterIsInstance<Bundle>().fold(Bundle()) { acc, b -> acc.apply { putAll(b) } }
         val hasRatingPayload = bundle.containsKey(RATING_PAYLOAD)
         val hasProgressPayload = bundle.containsKey(PROGRESS_PAYLOAD)
 
@@ -423,7 +423,7 @@ class AdapterCourses(
             )
         } else {
             holder.rowCourseBinding.ratingBar.rating = 0f
-            holder.rowCourseBinding.rating.text = context.getString(R.string.no_rating)
+            holder.rowCourseBinding.rating.text = context.getString(R.string.no_ratings)
             holder.rowCourseBinding.timesRated.text = ""
         }
     }
