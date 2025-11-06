@@ -418,29 +418,46 @@ class MyHealthFragment : Fragment() {
                 binding.tvNoRecords.visibility = View.GONE
                 binding.tvDataPlaceholder.visibility = View.VISIBLE
 
-                val userIds = list.mapNotNull {
-                    val encrypted = currentUser?.let { user -> it.getEncryptedDataAsJson(user) }
-                    encrypted?.let { json -> org.ole.planet.myplanet.utilities.JsonUtils.getString("createdBy", json) }
-                }.distinct()
+                val unmanagedList = mRealm.copyFromRealm(list)
+                val unmanagedCurrentUser = currentUser?.let { mRealm.copyFromRealm(it) }
 
-                val userModels = mRealm.where(RealmUserModel::class.java)
-                    .`in`("id", userIds.toTypedArray())
-                    .findAll()
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val displayNames = withContext(Dispatchers.IO) {
+                        val userIds = unmanagedList.mapNotNull {
+                            try {
+                                val encrypted = unmanagedCurrentUser?.let { user -> it.getEncryptedDataAsJson(user) }
+                                encrypted?.let { json -> org.ole.planet.myplanet.utilities.JsonUtils.getString("createdBy", json) }
+                            } catch (e: Exception) {
+                                null
+                            }
+                        }.distinct()
 
-                val displayNames = userModels.mapNotNull { user ->
-                    user.id?.let { id -> id to (user.getFullName() ?: "") }
-                }.toMap()
+                        var names = emptyMap<String, String>()
+                        if (userIds.isNotEmpty()) {
+                            Realm.getDefaultInstance().use { realm ->
+                                val userModels = realm.where(RealmUserModel::class.java)
+                                    .`in`("id", userIds.toTypedArray())
+                                    .findAll()
+                                val unmanagedUsers = realm.copyFromRealm(userModels)
+                                names = unmanagedUsers.mapNotNull { user ->
+                                    user.id?.let { id -> id to (user.getFullName() ?: "") }
+                                }.toMap()
+                            }
+                        }
+                        names
+                    }
 
-                val adap = AdapterHealthExamination(requireActivity(), list, mh, currentUser, displayNames)
-                binding.rvRecords.apply {
-                    layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
-                    isNestedScrollingEnabled = false
-                    adapter = adap
-                }
-                binding.rvRecords.post {
-                    val lastPosition = list.size - 1
-                    if (lastPosition >= 0) {
-                        binding.rvRecords.scrollToPosition(lastPosition)
+                    val adap = AdapterHealthExamination(requireActivity(), list, mh, currentUser, displayNames)
+                    binding.rvRecords.apply {
+                        layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
+                        isNestedScrollingEnabled = false
+                        adapter = adap
+                    }
+                    binding.rvRecords.post {
+                        val lastPosition = list.size - 1
+                        if (lastPosition >= 0) {
+                            binding.rvRecords.scrollToPosition(lastPosition)
+                        }
                     }
                 }
             } else {
