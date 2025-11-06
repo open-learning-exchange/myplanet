@@ -32,65 +32,96 @@ class JoinedMemberFragment : BaseMemberFragment() {
         this.memberChangeListener = listener
     }
 
-    private val joinedMembers: List<JoinedMemberData>
-        get() = databaseService.withRealm { realm ->
-            val members = getJoinedMember(teamId, realm).map { realm.copyFromRealm(it) }.toMutableList()
-            val leaderId = realm.where(RealmMyTeam::class.java)
-                .equalTo("teamId", teamId)
-                .equalTo("isLeader", true)
-                .findFirst()?.userId
-            val leader = members.find { it.id == leaderId }
-            if (leader != null) {
-                members.remove(leader)
-                members.add(0, leader)
+    private var _joinedMembers: List<JoinedMemberData>? = null
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        binding.progressBar.visibility = View.VISIBLE
+        viewLifecycleOwner.lifecycleScope.launch {
+            loadJoinedMembers()
+            if (isAdded) {
+                binding.progressBar.visibility = View.GONE
             }
-            members.map { member ->
-                val lastVisitTimestamp = RealmTeamLog.getLastVisit(realm, member.name, teamId)
-                val lastVisitDate = if (lastVisitTimestamp != null) {
-                    val sdf = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
-                    sdf.format(Date(lastVisitTimestamp))
-                } else {
-                    getString(R.string.no_visit)
+        }
+    }
+
+    private suspend fun loadJoinedMembers() {
+        val membersData = withContext(Dispatchers.IO) {
+            databaseService.withRealm { realm ->
+                val members = getJoinedMember(teamId, realm).map { realm.copyFromRealm(it) }.toMutableList()
+                val leaderId = realm.where(RealmMyTeam::class.java)
+                    .equalTo("teamId", teamId)
+                    .equalTo("isLeader", true)
+                    .findFirst()?.userId
+                val leader = members.find { it.id == leaderId }
+                if (leader != null) {
+                    members.remove(leader)
+                    members.add(0, leader)
                 }
-                val visitCount = RealmTeamLog.getVisitCount(realm, member.name, teamId)
-                val offlineVisits = profileDbHandler?.getOfflineVisits(member)?.toString() ?: "0"
-                val profileLastVisit = profileDbHandler?.getLastVisit(member) ?: ""
-                JoinedMemberData(
-                    member,
-                    visitCount,
-                    lastVisitDate,
-                    offlineVisits,
-                    profileLastVisit,
-                    member.id == leaderId
-                )
+                members.map { member ->
+                    val lastVisitTimestamp = RealmTeamLog.getLastVisit(realm, member.name, teamId)
+                    val lastVisitDate = if (lastVisitTimestamp != null) {
+                        val sdf = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
+                        sdf.format(Date(lastVisitTimestamp))
+                    } else {
+                        getString(R.string.no_visit)
+                    }
+                    val visitCount = RealmTeamLog.getVisitCount(realm, member.name, teamId)
+                    val offlineVisits = profileDbHandler?.getOfflineVisits(member)?.toString() ?: "0"
+                    val profileLastVisit = profileDbHandler?.getLastVisit(member) ?: ""
+                    JoinedMemberData(
+                        member,
+                        visitCount,
+                        lastVisitDate,
+                        offlineVisits,
+                        profileLastVisit,
+                        member.id == leaderId
+                    )
+                }
             }
         }
 
+        _joinedMembers = membersData
+        if (isAdded) {
+            setupAdapter()
+        }
+    }
+
+    private fun setupAdapter() {
+        val members = _joinedMembers ?: return
+        val currentUserId = user?.id
+        val isLeader = members.any { it.user.id == currentUserId && it.isLeader }
+        adapterJoined = AdapterJoinedMember(
+            requireActivity(),
+            members.toMutableList(),
+            isLeader,
+            object : AdapterJoinedMember.MemberActionListener {
+                override fun onRemoveMember(member: JoinedMemberData, position: Int) {
+                    handleRemoveMember(member)
+                }
+
+                override fun onMakeLeader(member: JoinedMemberData) {
+                    member.user.id?.let { handleMakeLeader(it) }
+                }
+            }
+        )
+        binding.rvMember.adapter = adapterJoined
+        showNoData(binding.tvNodata, adapterJoined?.itemCount ?: 0, "members")
+    }
+
+
     override val list: List<RealmUserModel>
-        get() = joinedMembers.map { it.user }
+        get() = _joinedMembers?.map { it.user } ?: emptyList()
 
     override val adapter: RecyclerView.Adapter<*>
         get() {
             if (adapterJoined == null) {
-                val members = joinedMembers
-                val currentUserId = user?.id
-                val isLeader = members.any { it.user.id == currentUserId && it.isLeader }
-                adapterJoined = AdapterJoinedMember(
-                    requireActivity(),
-                    members.toMutableList(),
-                    isLeader,
-                    object : AdapterJoinedMember.MemberActionListener {
-                        override fun onRemoveMember(member: JoinedMemberData, position: Int) {
-                            handleRemoveMember(member)
-                        }
-
-                        override fun onMakeLeader(member: JoinedMemberData) {
-                            member.user.id?.let { handleMakeLeader(it) }
-                        }
-                    }
-                )
+                setupAdapter()
             }
-            return adapterJoined as AdapterJoinedMember
+            return adapterJoined ?: AdapterJoinedMember(requireActivity(), mutableListOf(), false, object : AdapterJoinedMember.MemberActionListener {
+                override fun onRemoveMember(member: JoinedMemberData, position: Int) {}
+                override fun onMakeLeader(member: JoinedMemberData) {}
+            })
         }
 
     override val layoutManager: RecyclerView.LayoutManager
