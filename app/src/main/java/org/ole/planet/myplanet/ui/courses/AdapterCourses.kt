@@ -61,6 +61,8 @@ class AdapterCourses(
 
     companion object {
         private const val TAG_PAYLOAD = "payload_tags"
+        private const val RATING_PAYLOAD = "payload_rating"
+        private const val PROGRESS_PAYLOAD = "payload_progress"
     }
 
     init {
@@ -84,13 +86,28 @@ class AdapterCourses(
             newList,
             areItemsTheSame = { old, new -> old?.id == new?.id },
             areContentsTheSame = { old, new ->
+                val ratingSame = map[old?.courseId] == map[new?.courseId]
+                val progressSame = progressMap?.get(old?.courseId) == progressMap?.get(new?.courseId)
+
                 old?.courseTitle == new?.courseTitle &&
                         old?.description == new?.description &&
                         old?.gradeLevel == new?.gradeLevel &&
                         old?.subjectLevel == new?.subjectLevel &&
                         old?.createdDate == new?.createdDate &&
                         old?.isMyCourse == new?.isMyCourse &&
-                        old?.getNumberOfSteps() == new?.getNumberOfSteps()
+                        old?.getNumberOfSteps() == new?.getNumberOfSteps() &&
+                        ratingSame &&
+                        progressSame
+            },
+            getChangePayload = { old, new ->
+                val bundle = Bundle()
+                if (map[old?.courseId] != map[new?.courseId]) {
+                    bundle.putBoolean(RATING_PAYLOAD, true)
+                }
+                if (progressMap?.get(old?.courseId) != progressMap?.get(new?.courseId)) {
+                    bundle.putBoolean(PROGRESS_PAYLOAD, true)
+                }
+                bundle.ifEmpty { null }
             }
         )
         courseList = newList
@@ -176,7 +193,8 @@ class AdapterCourses(
         if (!isGuest) setupRatingBar(holder, course)
         setupCheckbox(holder, course, position, isGuest)
 
-        showProgressAndRating(position, holder)
+        updateRatingViews(holder, position)
+        updateProgressViews(holder, position)
 
         holder.rowCourseBinding.root.setOnClickListener {
             val newPosition = holder.bindingAdapterPosition
@@ -313,10 +331,28 @@ class AdapterCourses(
         position: Int,
         payloads: MutableList<Any>
     ) {
-        if (holder is ViewHoldercourse && payloads.any { it == TAG_PAYLOAD }) {
-            val courseId = courseList.getOrNull(position)?.id ?: return
-            val tags = tagCache[courseId].orEmpty()
-            renderTagCloud(holder.rowCourseBinding.flexboxDrawable, tags)
+        if (holder !is ViewHoldercourse) {
+            super.onBindViewHolder(holder, position, payloads)
+            return
+        }
+
+        val hasTagPayload = payloads.any { it == TAG_PAYLOAD }
+        val bundle = payloads.filterIsInstance<Bundle>().fold(Bundle(), Bundle::putAll)
+        val hasRatingPayload = bundle.containsKey(RATING_PAYLOAD)
+        val hasProgressPayload = bundle.containsKey(PROGRESS_PAYLOAD)
+
+        if (hasTagPayload || hasRatingPayload || hasProgressPayload) {
+            if (hasTagPayload) {
+                val courseId = courseList.getOrNull(position)?.id ?: return
+                val tags = tagCache[courseId].orEmpty()
+                renderTagCloud(holder.rowCourseBinding.flexboxDrawable, tags)
+            }
+            if (hasRatingPayload) {
+                updateRatingViews(holder, position)
+            }
+            if (hasProgressPayload) {
+                updateProgressViews(holder, position)
+            }
         } else {
             super.onBindViewHolder(holder, position, payloads)
         }
@@ -374,34 +410,37 @@ class AdapterCourses(
         }
     }
 
-    private fun showProgressAndRating(position: Int, holder: RecyclerView.ViewHolder) {
-        val viewHolder = holder as ViewHoldercourse
-        showProgress(viewHolder.rowCourseBinding, position)
-        if (map.containsKey(courseList[position]!!.courseId)) {
-            val `object` = map[courseList[position]!!.courseId]
+    private fun updateRatingViews(holder: ViewHoldercourse, position: Int) {
+        val course = courseList.getOrNull(position) ?: return
+        if (map.containsKey(course.courseId)) {
+            val ratingObject = map[course.courseId]
             CourseRatingUtils.showRating(
                 context,
-                `object`,
-                viewHolder.rowCourseBinding.rating,
-                viewHolder.rowCourseBinding.timesRated,
-                viewHolder.rowCourseBinding.ratingBar
+                ratingObject,
+                holder.rowCourseBinding.rating,
+                holder.rowCourseBinding.timesRated,
+                holder.rowCourseBinding.ratingBar
             )
         } else {
-            viewHolder.rowCourseBinding.ratingBar.rating = 0f
+            holder.rowCourseBinding.ratingBar.rating = 0f
+            holder.rowCourseBinding.rating.text = context.getString(R.string.no_rating)
+            holder.rowCourseBinding.timesRated.text = ""
         }
     }
 
-    private fun showProgress(binding: RowCourseBinding, position: Int) {
-        if (progressMap?.containsKey(courseList[position]?.courseId) == true) {
-            val ob = progressMap!![courseList[position]?.courseId]
-            binding.courseProgress.max = getInt("max", ob)
-            binding.courseProgress.progress = getInt("current", ob)
-            if (getInt("current", ob) < getInt("max", ob)) {
-                binding.courseProgress.secondaryProgress = getInt("current", ob) + 1
+    private fun updateProgressViews(holder: ViewHoldercourse, position: Int) {
+        val course = courseList.getOrNull(position) ?: return
+        val progress = progressMap?.get(course.courseId)
+        if (progress != null) {
+            holder.rowCourseBinding.courseProgress.max = getInt("max", progress)
+            val currentProgress = getInt("current", progress)
+            holder.rowCourseBinding.courseProgress.progress = currentProgress
+            if (currentProgress < holder.rowCourseBinding.courseProgress.max) {
+                holder.rowCourseBinding.courseProgress.secondaryProgress = currentProgress + 1
             }
-            binding.courseProgress.visibility = View.VISIBLE
+            holder.rowCourseBinding.courseProgress.visibility = View.VISIBLE
         } else {
-            binding.courseProgress.visibility = View.GONE
+            holder.rowCourseBinding.courseProgress.visibility = View.GONE
         }
     }
 
