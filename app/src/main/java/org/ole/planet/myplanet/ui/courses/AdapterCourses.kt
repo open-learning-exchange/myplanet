@@ -423,8 +423,8 @@ class AdapterCourses(
             )
         } else {
             holder.rowCourseBinding.ratingBar.rating = 0f
-            holder.rowCourseBinding.rating.text = context.getString(R.string.no_ratings)
-            holder.rowCourseBinding.timesRated.text = ""
+            holder.rowCourseBinding.rating.text = context.getString(R.string.zero_point_zero)
+            holder.rowCourseBinding.timesRated.text = context.getString(R.string.rating_count_format, 0)
         }
     }
 
