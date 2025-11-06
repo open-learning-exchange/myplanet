@@ -1,17 +1,12 @@
 package org.ole.planet.myplanet.ui.dashboard
 
-import android.app.DatePickerDialog
-import android.content.Intent
 import android.graphics.Typeface
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
-import android.widget.AdapterView
-import android.widget.DatePicker
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
@@ -21,14 +16,11 @@ import io.realm.Case
 import io.realm.RealmChangeListener
 import io.realm.RealmObject
 import io.realm.RealmResults
-import io.realm.Sort
 import java.util.Calendar
 import java.util.UUID
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.NotificationCallback
 import org.ole.planet.myplanet.callback.SyncListener
-import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.ItemLibraryHomeBinding
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -38,21 +30,16 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmTeamNotification
 import org.ole.planet.myplanet.model.RealmTeamTask
-import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.TransactionSyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_LOGIN
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
-import org.ole.planet.myplanet.ui.myhealth.UserListArrayAdapter
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.ui.userprofile.UserProfileFragment
-import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.DialogUtils
-import org.ole.planet.myplanet.utilities.DownloadUtils
-import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
-open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCallback,
+open class BaseDashboardFragment : BaseDashboardFragmentPlugin(),
     SyncListener {
     private var fullName: String? = null
     private var params = LinearLayout.LayoutParams(250, 100)
@@ -105,35 +92,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         v.findViewById<TextView>(R.id.txtRole).text = getString(R.string.user_role, model?.getRoleAsString())
         val offlineVisits = profileDbHandler.offlineVisits
         v.findViewById<TextView>(R.id.txtFullName).text = getString(R.string.user_name, fullName, offlineVisits)
-    }
-
-    override fun forceDownloadNewsImages() {
-        Utilities.toast(activity, getString(R.string.please_select_starting_date))
-        val now = Calendar.getInstance()
-        val dpd = DatePickerDialog(requireActivity(), { _: DatePicker?, i: Int, i1: Int, i2: Int ->
-            now[Calendar.YEAR] = i
-            now[Calendar.MONTH] = i1
-            now[Calendar.DAY_OF_MONTH] = i2
-            val imageList = mRealm.where(RealmMyLibrary::class.java).equalTo("isPrivate", true)
-                .greaterThan("createdDate", now.timeInMillis).equalTo("mediaType", "image")
-                .findAll()
-            val urls = ArrayList<String>()
-            getUrlsAndStartDownload(imageList, urls) },
-            now[Calendar.YEAR], now[Calendar.MONTH], now[Calendar.DAY_OF_MONTH]
-        )
-        dpd.setTitle(getString(R.string.read_offline_news_from))
-        dpd.show()
-    }
-
-    override fun downloadDictionary() {
-        val list = ArrayList<String>()
-        list.add(Constants.DICTIONARY_URL)
-        if (!FileUtils.checkFileExist(requireContext(), Constants.DICTIONARY_URL)) {
-            Utilities.toast(activity, getString(R.string.downloading_started_please_check_notification))
-            DownloadUtils.openDownloadService(activity, list, false)
-        } else {
-            Utilities.toast(activity, getString(R.string.file_already_exists))
-        }
     }
 
     private fun myLibraryDiv(view: View) {
@@ -353,42 +311,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         setUpMyList(RealmMyTeam::class.java, flexboxLayout, requireView())
     }
 
-    override fun showResourceDownloadDialog() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            showDownloadDialog(getLibraryList(mRealm))
-        }
-    }
-
-    override fun showUserResourceDialog() {
-        var dialog: AlertDialog? = null
-        val userModelList = mRealm.where(RealmUserModel::class.java).sort("joinDate", Sort.DESCENDING).findAll()
-        val adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, userModelList)
-        val alertHealthListBinding = AlertHealthListBinding.inflate(LayoutInflater.from(activity))
-        alertHealthListBinding.etSearch.visibility = View.GONE
-        alertHealthListBinding.spnSort.visibility = View.GONE
-
-        alertHealthListBinding.btnAddMember.setOnClickListener {
-            startActivity(Intent(requireContext(), BecomeMemberActivity::class.java))
-        }
-
-        alertHealthListBinding.list.adapter = adapter
-        alertHealthListBinding.list.onItemClickListener = AdapterView.OnItemClickListener { _, _, i, _ ->
-            val selected = alertHealthListBinding.list.adapter.getItem(i) as RealmUserModel
-            showDownloadDialog(getLibraryList(mRealm, selected._id))
-            dialog?.dismiss()
-        }
-
-        dialog = AlertDialog.Builder(requireActivity())
-            .setTitle(getString(R.string.select_member))
-            .setView(alertHealthListBinding.root)
-            .setCancelable(false)
-            .setNegativeButton(R.string.dismiss, null)
-            .create()
-
-        dialog.show()
-    }
-
-    override fun syncKeyId() {
+    fun syncKeyId() {
         if (model?.getRoleAsString()?.contains("health") == true) {
             settings?.let { TransactionSyncManager.syncAllHealthData(mRealm, it, this) }
         } else {
