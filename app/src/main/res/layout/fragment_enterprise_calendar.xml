@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:background="@color/secondary_bg"
+    android:layout_height="match_parent"
+    tools:context=".ui.team.TeamCalendarFragment">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <com.applandeo.materialcalendarview.CalendarView
+            android:id="@+id/calendarView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:abbreviationsBarColor="@color/secondary_bg"
+            app:abbreviationsLabelsColor="@color/disable_color"
+            app:anotherMonthsDaysLabelsColor="@color/disable_color"
+            app:daysLabelsColor="@color/daynight_textColor"
+            app:eventsEnabled="false"
+            app:headerColor="@color/colorPrimary"
+            app:pagesColor="@color/card_bg"
+            app:selectionColor="@color/colorAccent"
+            app:selectionLabelColor="@color/md_white_1000"
+            app:todayLabelColor="@color/mainColor"
+            app:type="many_days_picker" />
+        <TextView
+            android:id="@+id/meetup"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/_10dp"
+            android:layout_marginTop="@dimen/_10dp"
+            android:visibility="gone"
+            android:layout_marginBottom="4dp"
+            android:text="@string/txt_myMeetups"
+            android:textColor="@color/md_black_1000"
+            android:textStyle="bold" />
+    </LinearLayout>
+</FrameLayout>
