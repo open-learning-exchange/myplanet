@@ -54,6 +54,7 @@ class AdapterResource(
     companion object {
         private const val TAGS_PAYLOAD = "payload_tags"
         private const val RATING_PAYLOAD = "payload_rating"
+        private const val SELECTION_PAYLOAD = "payload_selection"
     }
 
     init {
@@ -165,7 +166,7 @@ class AdapterResource(
         } else {
             selectedItems.clear()
         }
-        notifyDataSetChanged()
+        notifyItemRangeChanged(0, libraryList.size, SELECTION_PAYLOAD)
         if (listener != null) {
             listener?.onSelectedListChange(selectedItems)
         }
@@ -193,6 +194,10 @@ class AdapterResource(
             }
             if (payloads.contains(RATING_PAYLOAD)) {
                 bindRating(holder, library)
+                handled = true
+            }
+            if (payloads.contains(SELECTION_PAYLOAD)) {
+                holder.rowLibraryBinding.checkbox.isChecked = selectedItems.contains(library)
                 handled = true
             }
             if (!handled) {
