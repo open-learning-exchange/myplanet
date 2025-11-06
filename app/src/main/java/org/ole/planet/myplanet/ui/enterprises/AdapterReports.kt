@@ -12,6 +12,7 @@ import com.google.android.material.snackbar.Snackbar
 import com.google.gson.JsonObject
 import io.realm.RealmResults
 import java.util.Calendar
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -22,8 +23,6 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils
-
-import kotlinx.coroutines.CoroutineScope
 
 class AdapterReports(
     private val context: Context,
