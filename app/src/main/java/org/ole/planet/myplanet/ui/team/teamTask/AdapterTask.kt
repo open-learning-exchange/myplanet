@@ -8,18 +8,14 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.CompoundButton
 import androidx.recyclerview.widget.RecyclerView
-import io.realm.Realm
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowTaskBinding
-import org.ole.planet.myplanet.model.RealmTeamTask
-import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.team.teamTask.AdapterTask.ViewHolderTask
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
 class AdapterTask(
     private val context: Context,
-    private val realm: Realm,
-    private val list: List<RealmTeamTask>?,
+    private val list: List<Task>?,
     private val nonTeamMember: Boolean
 ) : RecyclerView.Adapter<ViewHolderTask>() {
     private var listener: OnCompletedListener? = null
@@ -82,15 +78,12 @@ class AdapterTask(
         }
     }
 
-    private fun showAssignee(binding: RowTaskBinding, realmTeamTask: RealmTeamTask) {
-        if (!TextUtils.isEmpty(realmTeamTask.assignee)) {
-            val model = realm.where(RealmUserModel::class.java).equalTo("id", realmTeamTask.assignee).findFirst()
-            if (model != null) {
-                binding.assignee.text = context.getString(R.string.assigned_to_colon, model.name)
-                return
-            }
+    private fun showAssignee(binding: RowTaskBinding, task: Task) {
+        if (!TextUtils.isEmpty(task.assigneeName)) {
+            binding.assignee.text = context.getString(R.string.assigned_to_colon, task.assigneeName)
+        } else {
+            binding.assignee.setText(R.string.no_assignee)
         }
-        binding.assignee.setText(R.string.no_assignee)
     }
 
     override fun getItemCount(): Int {
@@ -98,10 +91,10 @@ class AdapterTask(
     }
 
     interface OnCompletedListener {
-        fun onCheckChange(realmTeamTask: RealmTeamTask?, b: Boolean)
-        fun onEdit(task: RealmTeamTask?)
-        fun onDelete(task: RealmTeamTask?)
-        fun onClickMore(realmTeamTask: RealmTeamTask?)
+        fun onCheckChange(realmTeamTask: Task?, b: Boolean)
+        fun onEdit(task: Task?)
+        fun onDelete(task: Task?)
+        fun onClickMore(realmTeamTask: Task?)
     }
 
     class ViewHolderTask(val binding: RowTaskBinding) : RecyclerView.ViewHolder(binding.root)
