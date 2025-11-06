@@ -30,6 +30,14 @@ import org.ole.planet.myplanet.utilities.CustomClickableSpan
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 
+private data class StepData(
+    val step: RealmCourseStep,
+    val resources: List<RealmMyLibrary>,
+    val stepExams: List<RealmStepExam>,
+    val stepSurvey: List<RealmStepExam>,
+    val userHasCourse: Boolean
+)
+
 class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     private lateinit var fragmentCourseStepBinding: FragmentCourseStepBinding
     var stepId: String? = null
@@ -79,28 +87,53 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
             realm.commitTransaction()
         }
     }
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        databaseService.withRealm { realm ->
-            step = realm.where(RealmCourseStep::class.java)
+    private suspend fun loadStepData(): StepData {
+        return databaseService.withRealmAsync { realm ->
+            val step = realm.where(RealmCourseStep::class.java)
                 .equalTo("id", stepId)
                 .findFirst()
                 ?.let { realm.copyFromRealm(it) }!!
-            resources = realm.where(RealmMyLibrary::class.java)
+
+            val resources = realm.where(RealmMyLibrary::class.java)
                 .equalTo("stepId", stepId)
                 .findAll()
                 .let { realm.copyFromRealm(it) }
-            stepExams = realm.where(RealmStepExam::class.java)
+
+            val stepExams = realm.where(RealmStepExam::class.java)
                 .equalTo("stepId", stepId)
                 .equalTo("type", "courses")
                 .findAll()
                 .let { realm.copyFromRealm(it) }
-            stepSurvey = realm.where(RealmStepExam::class.java)
+
+            val stepSurvey = realm.where(RealmStepExam::class.java)
                 .equalTo("stepId", stepId)
                 .equalTo("type", "surveys")
                 .findAll()
                 .let { realm.copyFromRealm(it) }
+            val userHasCourse = isMyCourse(user?.id, step.courseId, realm)
+            StepData(step, resources, stepExams, stepSurvey, userHasCourse)
         }
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        viewLifecycleOwner.lifecycleScope.launch {
+            fragmentCourseStepBinding.progressBar.visibility = View.VISIBLE
+            try {
+                val stepData = loadStepData()
+                step = stepData.step
+                resources = stepData.resources
+                stepExams = stepData.stepExams
+                stepSurvey = stepData.stepSurvey
+                renderStepData(stepData.userHasCourse)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                fragmentCourseStepBinding.progressBar.visibility = View.GONE
+            }
+        }
+    }
+    private fun renderStepData(userHasCourse: Boolean) {
         fragmentCourseStepBinding.btnResources.text = getString(R.string.resources_size, resources.size)
         hideTestIfNoQuestion()
         fragmentCourseStepBinding.tvTitle.text = step.stepTitle
@@ -112,9 +145,6 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         )
         setMarkdownText(fragmentCourseStepBinding.description, markdownContentWithLocalPaths)
         fragmentCourseStepBinding.description.movementMethod = LinkMovementMethod.getInstance()
-        val userHasCourse = databaseService.withRealm { realm ->
-            isMyCourse(user?.id, step.courseId, realm)
-        }
         if (!userHasCourse) {
             fragmentCourseStepBinding.btnTakeTest.visibility = View.GONE
             fragmentCourseStepBinding.btnTakeSurvey.visibility = View.GONE
