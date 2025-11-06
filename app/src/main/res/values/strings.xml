@@ -138,7 +138,6 @@
     <string name="btn_guest_login">Login As Guest</string>
     <string name="enter_username">Enter Username</string>
     <string name="login">Login</string>
-    <string name="child_mode">Easy Mode</string>
     <string name="courses">Courses</string>
     <string name="enter_message_here">Enter message here</string>
     <string name="what_would">What would you like to share?</string>
@@ -274,8 +273,6 @@
         <item>unread</item>
     </string-array>
 
-    <string name="dictionaries">Dictionaries</string>
-    <string name="bible">Bibles</string>
     <string name="feature_not">Feature not available</string>
     <string name="myhealth">myHealth</string>
     <string name="type_name_to_search">Type name to search</string>
@@ -1356,5 +1353,6 @@
     <string name="resource_not_found_in_database">Resource not found in database</string>
     <string name="resource_has_no_attachments">Resource has no downloadable files</string>
     <string name="unable_to_download_resource">Unable to download resource</string>
+    <string name="hide_new_message">Hide new message</string>
 
 </resources>

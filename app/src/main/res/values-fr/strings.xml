@@ -138,7 +138,6 @@
     <string name="btn_guest_login">Connexion en tant qu\'invité</string>
     <string name="enter_username">Entrer le nom d\'utilisateur</string>
     <string name="login">Connexion</string>
-    <string name="child_mode">Mode facile</string>
     <string name="courses">Cours</string>
     <string name="enter_message_here">Saisissez votre message ici</string>
     <string name="what_would">Que souhaitez-vous partager ?</string>
@@ -274,8 +273,6 @@
         <item>non lu</item>
     </string-array>
 
-    <string name="dictionaries">Dictionnaires</string>
-    <string name="bible">Bibles</string>
     <string name="feature_not">Fonctionnalité non disponible</string>
     <string name="myhealth">maSanté</string>
     <string name="type_name_to_search">Saisissez le nom à rechercher</string>
@@ -1356,5 +1353,6 @@
     <string name="resource_not_found_in_database">Ressource introuvable dans la base de données</string>
     <string name="resource_has_no_attachments">La ressource n’a pas de fichiers téléchargeables</string>
     <string name="unable_to_download_resource">Impossible de télécharger la ressource</string>
+    <string name="hide_new_message">Masquer le nouveau message</string>
 
 </resources>
