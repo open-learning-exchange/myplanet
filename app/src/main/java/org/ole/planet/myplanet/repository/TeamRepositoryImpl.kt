@@ -578,12 +578,11 @@ class TeamRepositoryImpl @Inject constructor(
 
     override suspend fun canModerateRequests(teamId: String, userId: String): Boolean {
         if (teamId.isBlank() || userId.isBlank()) return false
-        val membershipRecord = find(RealmMyTeam::class.java) {
+        return count(RealmMyTeam::class.java) {
             equalTo("teamId", teamId)
             equalTo("docType", "membership")
             equalTo("userId", userId)
-        }
-        return membershipRecord != null
+        } > 0
     }
 }
 
