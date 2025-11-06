@@ -13,6 +13,8 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmOfflineActivity
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
@@ -127,7 +129,21 @@ class UserProfileDbHandler @Inject constructor(
     val lastVisit: Long? get() = mRealm.where(RealmOfflineActivity::class.java).max("loginTime") as Long?
     val offlineVisits: Int get() = getOfflineVisits(userModel)
 
-    fun getOfflineVisits(m: RealmUserModel?): Int { val dbUsers = mRealm.where(RealmOfflineActivity::class.java).equalTo("userName", m?.name).equalTo("type", KEY_LOGIN).findAll()
+    suspend fun getOfflineVisitsAsync(m: RealmUserModel?): Int = withContext(Dispatchers.IO) {
+        realmService.withRealm { realm ->
+            realm.where(RealmOfflineActivity::class.java)
+                .equalTo("userName", m?.name)
+                .equalTo("type", KEY_LOGIN)
+                .findAll()
+                .size
+        }
+    }
+
+    fun getOfflineVisits(m: RealmUserModel?): Int {
+        val dbUsers = mRealm.where(RealmOfflineActivity::class.java)
+            .equalTo("userName", m?.name)
+            .equalTo("type", KEY_LOGIN)
+            .findAll()
         return if (!dbUsers.isEmpty()) {
             dbUsers.size
         } else {
