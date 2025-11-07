@@ -696,14 +696,6 @@
     <string name="health_record_not_available_sync_health_data">Dossier de santé non disponible, synchroniser les données de santé ?</string>
     <string name="sync">Synchroniser</string>
     <string name="got_it">COMPRIS</string>
-    <string name="please_make_sure_your_device_is_horizontal">Veuillez vous assurer que votre appareil est en mode horizontal.</string>
-    <string name="click_on_the_logo_to_get_the_full_menu_of_your_planet_home_mylibrary_mycourses_library_courses_community_enterprises_and_surveys">Cliquez sur le logo pour accéder au menu complet de votre planète: Accueil, ma bibliothèque, mes cours, bibliothèque, cours, communauté, entreprises et enquêtes.</string>
-    <string name="navigate_to_the_home_tab_to_access_your_dashboard_with_your_library_courses_and_teams">Accédez à l\'onglet Accueil pour accéder à votre tableau de bord avec votre bibliothèque, vos cours et vos équipes.</string>
-    <string name="navigate_to_the_library_tab_to_access_resources_in_your_community">Accédez à l\'onglet Bibliothèque pour accéder aux ressources de votre communauté.</string>
-    <string name="navigate_to_the_courses_tab_to_access_the_courses_exams_questions_lessons_within_your_community">Accédez à l\'onglet Cours pour accéder aux cours (examens, questions, leçons) de votre communauté.</string>
-    <string name="navigate_to_the_teams_tab_to_join_request_and_check_up_on_your_teams">Accédez à l\'onglet Équipes pour rejoindre, demander et suivre vos équipes.</string>
-    <string name="navigate_to_the_enterprises_tab_to_search_through_a_list_of_enterprises_within_your_community">Accédez à l\'onglet Entreprises pour rechercher une liste d\'entreprises de votre communauté.</string>
-    <string name="navigate_to_the_community_tab_to_access_the_news_community_leaders_calendar_services_and_finances_involved_within_your_community">Accédez à l\'onglet Communauté pour accéder aux actualités, aux leaders de la communauté, au calendrier, aux services et aux finances de votre communauté.</string>
     <string name="session_expired">Session expirée.</string>
     <string name="downloading_started_please_check_notificati">Téléchargement commencé, veuillez vérifier les notifications…</string>
     <string name="dictionary">Dictionnaire</string>
@@ -813,8 +805,6 @@
     <string name="unable_to_connect_to_planet_wifi">Impossible de se connecter au wifi de Planet.</string>
     <string name="you_are_now_connected">"Vous êtes maintenant connecté "</string>
     <string name="press_back_again_to_exit">Appuyez à nouveau sur RETOUR pour quitter</string>
-    <string name="press_the_sync_button_to_sync_your_planet_account_data_with_your_myplanet_application_data">Appuyez sur le bouton de synchronisation pour synchroniser les données de votre compte Planet avec celles de votre application myPlanet.</string>
-    <string name="press_the_settings_button_to_access_your_myplanet_planet_account_server_settings_to_properly_set_up_your_syncing_process">Appuyez sur le bouton Paramètres pour accéder aux paramètres de votre compte myPlanet/Planet pour configurer correctement le processus de synchronisation.</string>
     <string name="it_has_been_more_than">"Cela fait plus de "</string>
     <string name="days_since_you_last_synced_this_device">" jours depuis votre dernière synchronisation sur cet appareil."</string>
     <string name="connect_it_to_the_server_over_wifi_and_sync_it_to_reactivate_this_tablet">\nConnectez-le au serveur via le wifi et synchronisez-le pour réactiver cette tablette</string>
@@ -1178,13 +1168,6 @@
     <string name="chat_enter_message">Entrez le message</string>
     <string name="hour">heure</string>
     <string name="hours">heures</string>
-    <string name="material_calendar_monday">L</string>
-    <string name="material_calendar_tuesday">M</string>
-    <string name="material_calendar_wednesday">M</string>
-    <string name="material_calendar_thursday">J</string>
-    <string name="material_calendar_friday">V</string>
-    <string name="material_calendar_saturday">S</string>
-    <string name="material_calendar_sunday">D</string>
     <array name="material_calendar_months_array">
         <item>Janvier</item>
         <item>Février</item>
@@ -1199,9 +1182,6 @@
         <item>Novembre</item>
         <item>Décembre</item>
     </array>
-    <string name="material_calendar_today_button">Aujourd\'hui</string>
-    <string name="material_calendar_positive_button">Oui</string>
-    <string name="material_calendar_negative_button">Non</string>
     <string name="switching_off_manual_configuration_to_clear_data">La désactivation de la configuration manuelle effacera toutes les données. Êtes-vous sûr de vouloir continuer?</string>
     <string name="switching_on_manual_configuration_to_clear_data">L\'activation de la configuration manuelle effacera toutes les données. Êtes-vous sûr de vouloir continuer?</string>
     <string name="chart_description">Graphique d\'Activité de Connexion</string>
