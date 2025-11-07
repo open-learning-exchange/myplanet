@@ -129,7 +129,6 @@ class MyMeetupDetailFragment : Fragment(), View.OnClickListener {
     }
 
     override fun onDestroy() {
-        userProfileDbHandler?.onDestroy()
         userProfileDbHandler = null
         super.onDestroy()
     }
