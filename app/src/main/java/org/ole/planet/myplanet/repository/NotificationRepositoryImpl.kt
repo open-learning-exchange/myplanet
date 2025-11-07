@@ -123,29 +123,23 @@ class NotificationRepositoryImpl @Inject constructor(
         return updatedIds
     }
 
-    override suspend fun getNotifications(userId: String, filter: String): List<org.ole.planet.myplanet.model.Notification> {
-        val notifications = queryList(RealmNotification::class.java) {
-            equalTo("userId", userId)
+    override suspend fun getNotifications(userId: String, filter: String): List<RealmNotification> {
+        return databaseService.withRealm { realm ->
+            val query = realm.where(RealmNotification::class.java)
+                .equalTo("userId", userId)
             when (filter) {
-                "read" -> equalTo("isRead", true)
-                "unread" -> equalTo("isRead", false)
+                "read" -> query.equalTo("isRead", true)
+                "unread" -> query.equalTo("isRead", false)
             }
-            sort("isRead", io.realm.Sort.ASCENDING, "createdAt", io.realm.Sort.DESCENDING)
-        }.filter {
-            it.message.isNotEmpty() && it.message != "INVALID"
-        }
+            val notifications = query.sort("isRead", io.realm.Sort.ASCENDING, "createdAt", io.realm.Sort.DESCENDING).findAll()
+                .filter { it.message.isNotEmpty() && it.message != "INVALID" }
 
-        return notifications.map { notification ->
-            org.ole.planet.myplanet.model.Notification(
-                id = notification.id,
-                userId = notification.userId ?: "",
-                message = formatNotificationMessage(notification),
-                isRead = notification.isRead,
-                createdAt = notification.createdAt,
-                type = notification.type,
-                relatedId = notification.relatedId,
-                title = notification.title ?: ""
-            )
+            val unmanagedNotifications = realm.copyFromRealm(notifications)
+
+            unmanagedNotifications.forEach { notification ->
+                notification.message = formatNotificationMessage(notification)
+            }
+            unmanagedNotifications
         }
     }
 
