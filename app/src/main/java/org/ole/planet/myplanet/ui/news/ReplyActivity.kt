@@ -8,8 +8,8 @@ import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
+import android.view.ViewGroup
 import android.widget.ImageView
-import android.widget.LinearLayout
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
@@ -55,7 +55,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     private lateinit var imageList: RealmList<String>
-    private var llImage: LinearLayout? = null
+    private var llImage: ViewGroup? = null
     private lateinit var openFolderLauncher: ActivityResultLauncher<Intent>
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -116,7 +116,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         startActivity(Intent(this, ReplyActivity::class.java).putExtra("id", news?.id))
     }
 
-    override fun addImage(llImage: LinearLayout?) {
+    override fun addImage(llImage: ViewGroup?) {
         this.llImage = llImage
         val intent = Intent(Intent.ACTION_GET_CONTENT)
         intent.type = "image/*"

@@ -10,7 +10,7 @@ import android.os.Bundle
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
-import android.widget.LinearLayout
+import android.view.ViewGroup
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
@@ -41,7 +41,7 @@ import org.ole.planet.myplanet.utilities.FileUtils.getRealPathFromURI
 abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListener {
     lateinit var imageList: RealmList<String>
     @JvmField
-    protected var llImage: LinearLayout? = null
+    protected var llImage: ViewGroup? = null
     @JvmField
     protected var adapterNews: AdapterNews? = null
     lateinit var openFolderLauncher: ActivityResultLauncher<Intent>
@@ -121,7 +121,7 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
         }
     }
 
-    override fun addImage(llImage: LinearLayout?) {
+    override fun addImage(llImage: ViewGroup?) {
         this.llImage = llImage
         val openFolderIntent = FileUtils.openOleFolder(requireContext())
         openFolderLauncher.launch(openFolderIntent)
