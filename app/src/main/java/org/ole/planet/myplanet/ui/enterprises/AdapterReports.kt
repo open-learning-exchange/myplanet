@@ -15,6 +15,7 @@ import java.util.Calendar
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.DialogAddReportBinding
 import org.ole.planet.myplanet.databinding.ReportListItemBinding
@@ -26,7 +27,8 @@ import org.ole.planet.myplanet.utilities.TimeUtils
 class AdapterReports(
     private val context: Context,
     private val teamRepository: TeamRepository,
-    private var list: RealmResults<RealmMyTeam>
+    private var list: RealmResults<RealmMyTeam>,
+    private val scope: CoroutineScope,
 ) : RecyclerView.Adapter<AdapterReports.ViewHolderReports>() {
     private var startTimeStamp: String? = null
     private var endTimeStamp: String? = null
@@ -195,12 +197,18 @@ class AdapterReports(
                         addProperty("updatedDate", System.currentTimeMillis())
                         addProperty("updated", true)
                     }
-                    CoroutineScope(Dispatchers.Main).launch {
+                    scope.launch {
                         try {
-                            teamRepository.updateReport(reportId, doc)
+                            withContext(Dispatchers.IO) {
+                                teamRepository.updateReport(reportId, doc)
+                            }
                             dialog.dismiss()
                         } catch (e: Exception) {
-                            Snackbar.make(binding.root, "Failed to update report. Please try again.", Snackbar.LENGTH_LONG).show()
+                            Snackbar.make(
+                                binding.root,
+                                "Failed to update report. Please try again.",
+                                Snackbar.LENGTH_LONG
+                            ).show()
                         }
                     }
                 }
@@ -218,9 +226,11 @@ class AdapterReports(
                 builder.setTitle(context.getString(R.string.delete_report))
                     .setMessage(R.string.delete_record)
                     .setPositiveButton(R.string.ok) { _, _ ->
-                        CoroutineScope(Dispatchers.Main).launch {
+                        scope.launch {
                             try {
-                                teamRepository.archiveReport(reportId)
+                                withContext(Dispatchers.IO) {
+                                    teamRepository.archiveReport(reportId)
+                                }
                             } catch (e: Exception) {
                                 binding.root.let { view ->
                                     Snackbar.make(view, context.getString(R.string.failed_to_delete_report), Snackbar.LENGTH_LONG).show()

@@ -232,6 +232,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         try {
             sub = createSubmission(null, mRealm)
             setParentId()
+            setParentJson()
             sub?.userId = user?.id
             sub?.status = "pending"
             sub?.type = type
@@ -265,6 +266,23 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                 id
             }
             else -> sub?.parentId
+        }
+    }
+
+    private fun setParentJson() {
+        try {
+            val parentJsonString = JSONObject().apply {
+                put("_id", exam?.id ?: id)
+                put("name", exam?.name ?: "")
+                put("courseId", exam?.courseId ?: "")
+                put("sourcePlanet", exam?.sourcePlanet ?: "")
+                put("teamShareAllowed", exam?.isTeamShareAllowed ?: false)
+                put("noOfQuestions", exam?.noOfQuestions ?: 0)
+                put("isFromNation", exam?.isFromNation ?: false)
+            }.toString()
+            sub?.parent = parentJsonString
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
@@ -316,13 +334,6 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             question?.type.equals("selectMultiple", ignoreCase = true) -> {
                 binding.llCheckbox.visibility = View.VISIBLE
                 showCheckBoxes(question, ans)
-                for (i in 0 until binding.llCheckbox.childCount) {
-                    val child = binding.llCheckbox.getChildAt(i)
-                    if (child is CompoundButton) {
-                        val choiceText = child.text.toString()
-                        child.isChecked = listAns?.containsKey(choiceText) == true
-                    }
-                }
             }
             question?.type.equals("ratingScale", ignoreCase = true) -> {
                 binding.llRatingScale.visibility = View.VISIBLE
@@ -339,6 +350,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     private fun loadSavedAnswer(question: RealmExamQuestion?) {
         val questionId = question?.id ?: return
         val answerData = answerCache[questionId]
+        clearAnswer()
 
         if (answerData != null) {
             when (question.type) {
@@ -352,7 +364,6 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                     }
                 }
                 "selectMultiple" -> {
-                    listAns?.clear()
                     listAns?.putAll(answerData.multipleAnswers)
                     if (answerData.otherText.isNotEmpty()) {
                         binding.etAnswer.setText(answerData.otherText)
@@ -366,8 +377,6 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                     binding.etAnswer.setText(ans)
                 }
             }
-        } else {
-            clearAnswer()
         }
     }
 

@@ -36,7 +36,7 @@ object NewsActions {
         val view: View,
         val editText: EditText,
         val inputLayout: TextInputLayout,
-        val imageLayout: LinearLayout
+        val imageLayout: ViewGroup
     )
 
     fun createEditDialogComponents(
@@ -46,12 +46,12 @@ object NewsActions {
         val v = android.view.LayoutInflater.from(context).inflate(R.layout.alert_input, null)
         val tlInput = v.findViewById<TextInputLayout>(R.id.tl_input)
         val et = v.findViewById<EditText>(R.id.et_input)
-        val llImage = v.findViewById<LinearLayout>(R.id.ll_alert_image)
+        val llImage = v.findViewById<ViewGroup>(R.id.ll_alert_image)
         v.findViewById<View>(R.id.add_news_image).setOnClickListener { listener?.addImage(llImage) }
         return EditDialogComponents(v, et, tlInput, llImage)
     }
 
-    private fun loadExistingImages(context: Context, news: RealmNews?, imageLayout: LinearLayout) {
+    private fun loadExistingImages(context: Context, news: RealmNews?, imageLayout: ViewGroup) {
         imagesToRemove.clear()
         imageLayout.removeAllViews()
 
@@ -70,11 +70,11 @@ object NewsActions {
         }
     }
 
-    private fun addImageWithRemoveIcon(context: Context, imagePath: String, imageLayout: LinearLayout) {
+    private fun addImageWithRemoveIcon(context: Context, imagePath: String, imageLayout: ViewGroup) {
         val frameLayout = FrameLayout(context).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                dpToPx(context, 150),
-                dpToPx(context, 150)
+            layoutParams = ViewGroup.MarginLayoutParams(
+                dpToPx(context, 100),
+                dpToPx(context, 100)
             ).apply {
                 setMargins(dpToPx(context, 4), dpToPx(context, 4), dpToPx(context, 4), dpToPx(context, 4))
             }

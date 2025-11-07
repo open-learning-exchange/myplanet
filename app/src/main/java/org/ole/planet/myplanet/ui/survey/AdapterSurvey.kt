@@ -145,18 +145,18 @@ class AdapterSurvey(
                     tvDescription.visibility = View.VISIBLE
                     tvDescription.text = exam.description
                 }
-                var teamSubmission = mRealm.where(RealmSubmission::class.java)
-                    .equalTo("parentId", exam.id)
-                    .equalTo("membershipDoc.teamId", teamId)
-                    .findFirst()
+
+                fun getTeamSubmission(): RealmSubmission? {
+                    return mRealm.where(RealmSubmission::class.java)
+                        .equalTo("parentId", exam.id)
+                        .equalTo("membershipDoc.teamId", teamId)
+                        .findFirst()
+                }
+
+                var teamSubmission = getTeamSubmission()
 
                 startSurvey.setOnClickListener {
-                    if (teamSubmission?.isValid != true) {
-                        teamSubmission = mRealm.where(RealmSubmission::class.java)
-                            .equalTo("parentId", exam.id)
-                            .equalTo("membershipDoc.teamId", teamId)
-                            .findFirst()
-                    }
+                    teamSubmission = getTeamSubmission()
 
                     val shouldAdopt = exam.isTeamShareAllowed && teamSubmission?.isValid != true
 
@@ -175,6 +175,7 @@ class AdapterSurvey(
                     startSurvey.visibility = View.GONE
                 }
 
+                teamSubmission = getTeamSubmission()
                 val shouldShowAdopt = exam.isTeamShareAllowed && teamSubmission?.isValid != true
 
                 startSurvey.text = when {
