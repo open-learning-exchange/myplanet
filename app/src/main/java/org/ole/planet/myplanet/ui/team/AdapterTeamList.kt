@@ -18,7 +18,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -87,10 +86,6 @@ class AdapterTeamList(
         val binding = ItemTeamListBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         prefData = SharedPrefManager(context)
         return ViewHolderTeam(binding)
-    }
-
-    init {
-        updateList()
     }
 
     override fun onBindViewHolder(holder: ViewHolderTeam, position: Int) {
@@ -252,6 +247,7 @@ class AdapterTeamList(
             }
 
             val validTeams = list.filter { it.status?.isNotEmpty() == true }
+
             if (validTeams.isEmpty()) {
                 val diffResult = withContext(Dispatchers.Default) {
                     DiffUtil.calculateDiff(TeamDiffCallback(oldList, emptyList()))
@@ -283,16 +279,16 @@ class AdapterTeamList(
             }
 
             if (idsToFetch.isNotEmpty()) {
-                idsToFetch.map { teamId ->
-                    async(Dispatchers.IO) {
-                        val status = TeamStatus(
-                            isMember = teamRepository.isMember(userId, teamId),
-                            isLeader = teamRepository.isTeamLeader(teamId, userId),
-                            hasPendingRequest = teamRepository.hasPendingRequest(teamId, userId),
-                        )
-                        teamId to status
-                    }
-                }.awaitAll().forEach { (teamId, status) ->
+                val batchStatuses = withContext(Dispatchers.IO) {
+                    teamRepository.getTeamMemberStatuses(userId, idsToFetch)
+                }
+
+                batchStatuses.forEach { (teamId, memberStatus) ->
+                    val status = TeamStatus(
+                        isMember = memberStatus.isMember,
+                        isLeader = memberStatus.isLeader,
+                        hasPendingRequest = memberStatus.hasPendingRequest
+                    )
                     val cacheKey = "${teamId}_${userId}"
                     teamStatusCache[cacheKey] = status
                     statusResults[teamId] = status
