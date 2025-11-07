@@ -1,10 +1,13 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.JsonObject
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmStepExam
 
@@ -88,5 +91,13 @@ class CourseRepositoryImpl @Inject constructor(
             .filterIsInstance<RealmMyCourse?>()
             .filter { !it?.courseTitle.isNullOrBlank() }
         return courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
+    }
+
+    override suspend fun getRatings(userId: String?): HashMap<String?, JsonObject> {
+        return RealmRating.getRatings(realm, "course", userId)
+    }
+
+    override suspend fun getCourseProgress(userId: String?): HashMap<String?, JsonObject> {
+        return RealmCourseProgress.getCourseProgress(realm, userId)
     }
 }
