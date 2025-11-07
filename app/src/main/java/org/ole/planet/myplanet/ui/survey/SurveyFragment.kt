@@ -181,6 +181,11 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         showHideRadioButton()
     }
 
+    override fun onResume() {
+        super.onResume()
+        updateAdapterData(currentIsTeamShareAllowed)
+    }
+
     private fun showHideRadioButton() {
         if (isTeam) {
             binding.rgSurvey.visibility = View.VISIBLE
