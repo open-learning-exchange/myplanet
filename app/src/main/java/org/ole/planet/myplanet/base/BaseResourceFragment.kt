@@ -489,9 +489,6 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     override fun onDestroy() {
-        if (::profileDbHandler.isInitialized) {
-            profileDbHandler.onDestroy()
-        }
         cleanupRealm()
         super.onDestroy()
     }

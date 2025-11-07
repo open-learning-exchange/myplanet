@@ -46,6 +46,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
     private val serverUrlMapper = ServerUrlMapper()
     private var loadSurveysJob: Job? = null
     private var currentSurveys: List<RealmStepExam> = emptyList()
+    private val surveyInfoMap = mutableMapOf<String, SurveyInfo>()
 
     @Inject
     lateinit var syncManager: SyncManager
@@ -81,7 +82,8 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
             teamId,
             this,
             settings,
-            profileDbHandler
+            profileDbHandler,
+            surveyInfoMap
         )
         prefManager = SharedPrefManager(requireContext())
         
@@ -181,6 +183,11 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         showHideRadioButton()
     }
 
+    override fun onResume() {
+        super.onResume()
+        updateAdapterData(currentIsTeamShareAllowed)
+    }
+
     private fun showHideRadioButton() {
         if (isTeam) {
             binding.rgSurvey.visibility = View.VISIBLE
@@ -262,7 +269,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
     fun updateAdapterData(isTeamShareAllowed: Boolean? = null) {
         val useTeamShareAllowed = isTeamShareAllowed ?: currentIsTeamShareAllowed
         currentIsTeamShareAllowed = useTeamShareAllowed
-
+        val userProfileModel = profileDbHandler.userModel
         loadSurveysJob?.cancel()
         loadSurveysJob = launchWhenViewIsReady {
             currentSurveys = when {
@@ -270,6 +277,14 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
                 isTeam -> surveyRepository.getTeamOwnedSurveys(teamId)
                 else -> surveyRepository.getIndividualSurveys()
             }
+            val surveyInfos = surveyRepository.getSurveyInfos(
+                isTeam,
+                teamId,
+                userProfileModel?.id,
+                currentSurveys
+            )
+            surveyInfoMap.clear()
+            surveyInfoMap.putAll(surveyInfos)
             applySearchFilter()
         }
     }
