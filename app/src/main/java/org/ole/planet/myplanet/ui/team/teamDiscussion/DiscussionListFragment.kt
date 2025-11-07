@@ -6,8 +6,6 @@ import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.appcompat.app.AlertDialog
-import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -24,7 +22,6 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.databinding.AlertInputBinding
 import org.ole.planet.myplanet.databinding.FragmentDiscussionListBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
@@ -36,7 +33,6 @@ import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.news.AdapterNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.FileUtils
-import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 class DiscussionListFragment : BaseTeamFragment() {
@@ -50,7 +46,61 @@ class DiscussionListFragment : BaseTeamFragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentDiscussionListBinding.inflate(inflater, container, false)
-        binding.addMessage.setOnClickListener { showAddMessage() }
+        binding.addMessage.setOnClickListener {
+            binding.llAddNews.visibility = if (binding.llAddNews.isVisible) {
+                binding.etMessage.setText("")
+                binding.tlMessage.error = null
+                clearImages()
+                View.GONE
+            } else {
+                View.VISIBLE
+            }
+            binding.addMessage.text = if (binding.llAddNews.isVisible) {
+                getString(R.string.hide_new_message)
+            } else {
+                getString(R.string.add_message)
+            }
+        }
+
+        binding.addNewsImage.setOnClickListener {
+            llImage = binding.llImages
+            val openFolderIntent = FileUtils.openOleFolder(requireContext())
+            openFolderLauncher.launch(openFolderIntent)
+        }
+
+        binding.btnSubmit.setOnClickListener {
+            val message = binding.etMessage.text.toString().trim { it <= ' ' }
+            if (message.isEmpty()) {
+                binding.tlMessage.error = getString(R.string.please_enter_message)
+                return@setOnClickListener
+            }
+            binding.etMessage.setText(R.string.empty_text)
+            val map = HashMap<String?, String>()
+                map["viewInId"] = getEffectiveTeamId()
+                map["viewInSection"] = "teams"
+                map["message"] = message
+                map["messageType"] = getEffectiveTeamType()
+                map["messagePlanetCode"] = team?.teamPlanetCode ?: ""
+                map["name"] = getEffectiveTeamName()
+
+            user?.let { userModel ->
+                try {
+                    createNews(map, mRealm, userModel, imageList)
+                    binding.rvDiscussion.post {
+                        binding.rvDiscussion.smoothScrollToPosition(0)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+
+            binding.etMessage.text?.clear()
+            imageList.clear()
+            llImage?.removeAllViews()
+            binding.llAddNews.visibility = View.GONE
+            binding.tlMessage.error = null
+            binding.addMessage.text = getString(R.string.add_message)
+        }
 
         if (shouldQueryTeamFromRealm()) {
             team = try {
@@ -200,67 +250,6 @@ class DiscussionListFragment : BaseTeamFragment() {
                 }
             }
         }
-    }
-
-    private fun showAddMessage() {
-        val inputBinding = AlertInputBinding.inflate(layoutInflater)
-        val layout = inputBinding.tlInput
-        inputBinding.addNewsImage.setOnClickListener {
-            llImage = inputBinding.llImage
-            val openFolderIntent = FileUtils.openOleFolder(requireContext())
-            openFolderLauncher.launch(openFolderIntent)
-        }
-        layout.hint = getString(R.string.enter_message)
-        layout.editText?.setHintTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
-        inputBinding.custMsg.text = getString(R.string.add_message)
-
-        val dialog = AlertDialog.Builder(requireActivity(), R.style.CustomAlertDialog)
-            .setView(inputBinding.root)
-            .setPositiveButton(getString(R.string.save), null)
-            .setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
-                layout.editText?.text?.clear()
-                imageList.clear()
-                llImage?.removeAllViews()
-                dialog.dismiss()
-            }
-            .create()
-
-        dialog.setOnShowListener {
-            val saveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-            saveButton.setOnClickListener {
-                val msg = "${layout.editText?.text}".trim { it <= ' ' }
-                if (msg.isEmpty()) {
-                    Utilities.toast(activity, getString(R.string.message_is_required))
-                    return@setOnClickListener
-                }
-
-                val map = HashMap<String?, String>()
-                map["viewInId"] = getEffectiveTeamId()
-                map["viewInSection"] = "teams"
-                map["message"] = msg
-                map["messageType"] = getEffectiveTeamType()
-                map["messagePlanetCode"] = team?.teamPlanetCode ?: ""
-                map["name"] = getEffectiveTeamName()
-
-                user?.let { userModel ->
-                    try {
-                        createNews(map, mRealm, userModel, imageList)
-                        binding.rvDiscussion.post {
-                            binding.rvDiscussion.smoothScrollToPosition(0)
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
-
-                layout.editText?.text?.clear()
-                imageList.clear()
-                llImage?.removeAllViews()
-                dialog.dismiss()
-            }
-        }
-
-        dialog.show()
     }
 
     override fun setData(list: List<RealmNews?>?) {

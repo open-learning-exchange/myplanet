@@ -1082,7 +1082,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     override fun onDestroy() {
-        profileDbHandler.onDestroy()
         realmListeners.forEach { it.removeListener() }
         realmListeners.clear()
 

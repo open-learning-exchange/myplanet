@@ -189,9 +189,6 @@ class AddResourceActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
-        if (::userProfileDbHandler.isInitialized) {
-            userProfileDbHandler.onDestroy()
-        }
         super.onDestroy()
     }
 

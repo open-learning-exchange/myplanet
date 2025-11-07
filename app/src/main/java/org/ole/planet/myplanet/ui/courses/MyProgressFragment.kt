@@ -125,9 +125,6 @@ class MyProgressFragment : Fragment() {
 
     override fun onDestroyView() {
         _binding = null
-        if (this::userProfileDbHandler.isInitialized) {
-            userProfileDbHandler.onDestroy()
-        }
         super.onDestroyView()
     }
 }

@@ -151,7 +151,6 @@ class PDFReaderActivity : AppCompatActivity(), AudioRecordListener {
         if (this::audioRecorderService.isInitialized && audioRecorderService.isRecording()) {
             audioRecorderService.stopRecording()
         }
-        userProfileDbHandler.onDestroy()
         super.onDestroy()
     }
 
