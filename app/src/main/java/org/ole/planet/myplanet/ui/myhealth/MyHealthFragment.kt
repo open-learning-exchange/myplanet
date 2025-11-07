@@ -419,7 +419,7 @@ class MyHealthFragment : Fragment() {
                 binding.tvDataPlaceholder.visibility = View.VISIBLE
 
                 val unmanagedList = mRealm.copyFromRealm(list)
-                val unmanagedCurrentUser = currentUser?.let { mRealm.copyFromRealm(it) }
+                val unmanagedCurrentUser = currentUser
 
                 viewLifecycleOwner.lifecycleScope.launch {
                     val displayNames = withContext(Dispatchers.IO) {
