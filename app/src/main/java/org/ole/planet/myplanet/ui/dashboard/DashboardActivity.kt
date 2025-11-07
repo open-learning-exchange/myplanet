@@ -390,7 +390,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     handleSurveyNavigation(relatedId)
                 }
                 NotificationUtils.TYPE_TASK -> {
-                    handleTaskNavigation(relatedId)
+                    lifecycleScope.launch {
+                        handleTaskNavigation(relatedId)
+                    }
                 }
                 NotificationUtils.TYPE_JOIN_REQUEST -> {
                     handleJoinRequestNavigation(relatedId)
@@ -415,27 +417,35 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
     
-    private fun handleTaskNavigation(taskId: String?) {
-        if (taskId != null) {
-            val task = mRealm.where(RealmTeamTask::class.java)
-                .equalTo("id", taskId)
-                .findFirst()
+    private suspend fun handleTaskNavigation(taskId: String?) {
+        if (taskId == null) return
 
-            val linkJson = JSONObject(task?.link ?: "{}")
-            val teamId = linkJson.optString("teams")
-            if (teamId.isNotEmpty()) {
-                val teamObject = mRealm.where(RealmMyTeam::class.java)?.equalTo("_id", teamId)?.findFirst()
+        val teamData = withContext(Dispatchers.IO) {
+            var result: Triple<String, String, String>? = null
+            Realm.getDefaultInstance().use { realm ->
+                val task = realm.where(RealmTeamTask::class.java)
+                    .equalTo("id", taskId)
+                    .findFirst()
 
-                val f = TeamDetailFragment.newInstance(
-                    teamId = teamId,
-                    teamName = teamObject?.name ?: "",
-                    teamType = teamObject?.type ?: "",
-                    isMyTeam = true,
-                    navigateToPage = TasksPage
-                )
-
-                openCallFragment(f)
+                val linkJson = JSONObject(task?.link ?: "{}")
+                val teamId = linkJson.optString("teams")
+                if (teamId.isNotEmpty()) {
+                    val teamObject = realm.where(RealmMyTeam::class.java)?.equalTo("_id", teamId)?.findFirst()
+                    result = Triple(teamId, teamObject?.name ?: "", teamObject?.type ?: "")
+                }
             }
+            result
+        }
+
+        teamData?.let { (teamId, teamName, teamType) ->
+            val f = TeamDetailFragment.newInstance(
+                teamId = teamId,
+                teamName = teamName,
+                teamType = teamType,
+                isMyTeam = true,
+                navigateToPage = TasksPage
+            )
+            openCallFragment(f)
         }
     }
     
@@ -1082,7 +1092,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     override fun onDestroy() {
-        profileDbHandler.onDestroy()
         realmListeners.forEach { it.removeListener() }
         realmListeners.clear()
 
