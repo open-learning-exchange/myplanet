@@ -9,12 +9,12 @@ import java.util.Date
 import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmOfflineActivity
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
@@ -127,28 +127,26 @@ class UserProfileDbHandler @Inject constructor(
     }
 
     val lastVisit: Long? get() = mRealm.where(RealmOfflineActivity::class.java).max("loginTime") as Long?
+    @Deprecated("Crashes if userModel is accessed from a background thread.")
     val offlineVisits: Int get() = getOfflineVisits(userModel)
 
-    suspend fun getOfflineVisitsAsync(m: RealmUserModel?): Int = withContext(Dispatchers.IO) {
+    suspend fun getOfflineVisitsAsync(userName: String?): Int = withContext(Dispatchers.IO) {
         realmService.withRealm { realm ->
             realm.where(RealmOfflineActivity::class.java)
-                .equalTo("userName", m?.name)
+                .equalTo("userName", userName)
                 .equalTo("type", KEY_LOGIN)
                 .findAll()
                 .size
         }
     }
 
+    @Deprecated("Crashes if m is a managed Realm object from another thread.")
     fun getOfflineVisits(m: RealmUserModel?): Int {
         val dbUsers = mRealm.where(RealmOfflineActivity::class.java)
             .equalTo("userName", m?.name)
             .equalTo("type", KEY_LOGIN)
             .findAll()
-        return if (!dbUsers.isEmpty()) {
-            dbUsers.size
-        } else {
-            0
-        }
+        return dbUsers.size
     }
 
     fun getLastVisit(m: RealmUserModel): String {

@@ -696,6 +696,14 @@
     <string name="health_record_not_available_sync_health_data">स्वास्थ्य रेकर्ड उपलब्ध छैन, स्वास्थ्य डाटा सिंक गर्नुहोस्?</string>
     <string name="sync">सिंक</string>
     <string name="got_it">सम्म सम्म</string>
+    <string name="please_make_sure_your_device_is_horizontal">कृपया आफ्नो उपकरण अनुसार दायाँ तल गर्नुहोस्</string>
+    <string name="click_on_the_logo_to_get_the_full_menu_of_your_planet_home_mylibrary_mycourses_library_courses_community_enterprises_and_surveys">तपाईंको प्लानेटको पूर्ण मेनु प्राप्त गर्नका लागि लोगोमा क्लिक गर्नुहोस्: होम, मेरो पुस्तकालय, मेरो पाठ्यक्रमहरू, पुस्तकालय, पाठ्यक्रमहरू, समुदाय, उद्यमहरू, र सर्वेक्षणहरू</string>
+    <string name="navigate_to_the_home_tab_to_access_your_dashboard_with_your_library_courses_and_teams">आफ्नो ड्यासबोर्डमा पहुँच गर्नका लागि गृह ट्याबमा जानुहोस् जहाँ तपाइँको पुस्तकालय, पाठ्यक्रमहरू, र टिमहरू छन्</string>
+    <string name="navigate_to_the_library_tab_to_access_resources_in_your_community">तपाईंको समुदायमा स्रोतहरूमा पहुँच गर्नका लागि पुस्तकालय ट्याबमा जानुहोस्</string>
+    <string name="navigate_to_the_courses_tab_to_access_the_courses_exams_questions_lessons_within_your_community">तपाईंको समुदायभित्रका पाठ्यक्रमहरू (परीक्षाहरू, प्रश्नहरू, सिकाइहरू) मा पहुँच गर्नका लागि पाठ्यक्रमहरू ट्याबमा जानुहोस्</string>
+    <string name="navigate_to_the_teams_tab_to_join_request_and_check_up_on_your_teams">तपाईंको टिमहरूसँग सामिल हुन, अनुरोध गर्न र जाँच गर्नका लागि टिमहरू ट्याबमा जानुहोस्</string>
+    <string name="navigate_to_the_enterprises_tab_to_search_through_a_list_of_enterprises_within_your_community">तपाईंको समुदायभित्रका उद्यमहरूको सूची खोज्नका लागि उद्यमहरू ट्याबमा जानुहोस्</string>
+    <string name="navigate_to_the_community_tab_to_access_the_news_community_leaders_calendar_services_and_finances_involved_within_your_community">तपाईंको समुदायभित्रका समाचार, समुदायका नेता, पात्रो, सेवा र वित्तसम्बन्धी प्रवद्र्धनमा पहुँच गर्नका लागि समुदाय ट्याबमा जानुहोस्</string>
     <string name="session_expired">सत्र समाप्त भयो।</string>
     <string name="downloading_started_please_check_notificati">डाउनलोड सुरु भयो, कृपया सूचना जाँच गर्नुहोस्…</string>
     <string name="dictionary">शब्दकोश</string>
@@ -805,6 +813,8 @@
     <string name="unable_to_connect_to_planet_wifi">प्लानेट वाईफाईसँग सम्बन्ध स्थापित गर्न सकिएन।</string>
     <string name="you_are_now_connected">"तपाईं अब सम्बन्धित छन् "</string>
     <string name="press_back_again_to_exit">बाहिर निस्कनको लागि पुन: प्रेस गर्नुहोस्</string>
+    <string name="press_the_sync_button_to_sync_your_planet_account_data_with_your_myplanet_application_data">Press the Sync Button to Sync your Planet account data with your myPlanet application data</string>
+    <string name="press_the_settings_button_to_access_your_myplanet_planet_account_server_settings_to_properly_set_up_your_syncing_process">Press the Settings Button to access your myPlanet/Planet account server settings to properly set up your syncing process.</string>
     <string name="it_has_been_more_than">"यो भन्दा बढी समय भएको छ "</string>
     <string name="days_since_you_last_synced_this_device">" दिन भएको छ जब तपाईंले यो डिभाइस सिंक गरें।"</string>
     <string name="connect_it_to_the_server_over_wifi_and_sync_it_to_reactivate_this_tablet">\n यसलाई WiFi मार्फत सर्भरसँग कनेक्ट गरी सिंक गर्नुहोस् यो ट्याबलेट पुन: सक्रिय गर्नका लागि</string>
@@ -1168,6 +1178,13 @@
     <string name="chat_enter_message">सन्देश प्रविष्ट गर्नुहोस्</string>
     <string name="hour">घण्टा</string>
     <string name="hours">घण्टा</string>
+    <string name="material_calendar_monday">सो</string>
+    <string name="material_calendar_tuesday">मं</string>
+    <string name="material_calendar_wednesday">बु</string>
+    <string name="material_calendar_thursday">बि</string>
+    <string name="material_calendar_friday">शु</string>
+    <string name="material_calendar_saturday">श</string>
+    <string name="material_calendar_sunday">आ</string>
     <array name="material_calendar_months_array">
         <item>जनवरी</item>
         <item>फेब्रुअरी</item>
@@ -1182,6 +1199,9 @@
         <item>नोभेम्बर</item>
         <item>डिसेम्बर</item>
     </array>
+    <string name="material_calendar_today_button">आज</string>
+    <string name="material_calendar_positive_button">ठीक छ</string>
+    <string name="material_calendar_negative_button">रद्द गर्नुहोस्</string>
     <string name="switching_off_manual_configuration_to_clear_data">म्यानुअल कन्फिगरेसन बन्द गर्दा सबै डाटा मेटिनेछ, के तपाईं निश्चित रूपमा जारी राख्न चाहनुहुन्छ?</string>
     <string name="switching_on_manual_configuration_to_clear_data">म्यानुअल कन्फिगरेसन सुरु गर्दा सबै डाटा मेटिनेछ, के तपाईं निश्चित रूपमा जारी राख्न चाहनुहुन्छ?</string>
     <string name="chart_description">लगइन गतिविधि चार्ट</string>
@@ -1333,6 +1353,6 @@
     <string name="resource_not_found_in_database">डाटाबेसमा स्रोत फेला परेन</string>
     <string name="resource_has_no_attachments">स्रोतसँग कुनै डाउनलोड योग्य फाइलहरू छैनन्</string>
     <string name="unable_to_download_resource">स्रोत डाउनलोड गर्न असमर्थ</string>
-    <string name="hide_new_message">नयाँ सन्देश लुकाउनुहोस्</string>
+    <string name="hide_new_message">नयाँ सन्देश लुकाउनुहोस्</string>e
 
 </resources>

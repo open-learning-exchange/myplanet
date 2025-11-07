@@ -2,22 +2,20 @@ package org.ole.planet.myplanet.ui.mymeetup
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemMeetupBinding
 import org.ole.planet.myplanet.model.RealmMeetup
-import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
-class AdapterMeetup : ListAdapter<RealmMeetup, AdapterMeetup.ViewHolderMeetup>(DIFF_CALLBACK) {
+class AdapterMeetup(private val list: List<RealmMeetup>) : RecyclerView.Adapter<AdapterMeetup.ViewHolderMeetup>() {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderMeetup {
         val binding = ItemMeetupBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ViewHolderMeetup(binding)
     }
 
     override fun onBindViewHolder(holder: ViewHolderMeetup, position: Int) {
-        val meetup = getItem(position)
+        val meetup = list[position]
         val binding = holder.binding
         val context = binding.root.context
         binding.tvTitle.text = context.getString(R.string.message_placeholder, meetup.title)
@@ -31,12 +29,9 @@ class AdapterMeetup : ListAdapter<RealmMeetup, AdapterMeetup.ViewHolderMeetup>(D
         binding.tvCreator.text = context.getString(R.string.message_placeholder, meetup.creator)
     }
 
-    class ViewHolderMeetup(val binding: ItemMeetupBinding) : RecyclerView.ViewHolder(binding.root)
-
-    companion object {
-        val DIFF_CALLBACK = DiffUtils.itemCallback<RealmMeetup>(
-            areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id },
-            areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
-        )
+    override fun getItemCount(): Int {
+        return list.size
     }
+
+    class ViewHolderMeetup(val binding: ItemMeetupBinding) : RecyclerView.ViewHolder(binding.root)
 }

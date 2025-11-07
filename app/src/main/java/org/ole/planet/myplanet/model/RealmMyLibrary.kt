@@ -14,9 +14,6 @@ import java.util.Date
 import java.util.UUID
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
@@ -184,36 +181,6 @@ open class RealmMyLibrary : RealmObject() {
     }
 
     companion object {
-        suspend fun getMyLibraryCountByUserId(databaseService: DatabaseService, settings: SharedPreferences?): Int = withContext(Dispatchers.IO) {
-            databaseService.withRealm { realm ->
-                val userId = settings?.getString("userId", "--")
-                val teamIds = RealmMyTeam.getResourceIdsByUser(userId, realm)
-                realm.where(RealmMyLibrary::class.java)
-                    .beginGroup()
-                    .contains("userId", userId)
-                    .or()
-                    .`in`("resourceId", teamIds.toTypedArray())
-                    .endGroup()
-                    .findAll()
-                    .size
-            }
-        }
-
-        suspend fun getMyLibraryByUserIdAsync(databaseService: DatabaseService, settings: SharedPreferences?): List<RealmMyLibrary> = withContext(Dispatchers.IO) {
-            databaseService.withRealm { realm ->
-                val userId = settings?.getString("userId", "--")
-                val teamIds = RealmMyTeam.getResourceIdsByUser(userId, realm)
-                val results = realm.where(RealmMyLibrary::class.java)
-                    .beginGroup()
-                    .contains("userId", userId)
-                    .or()
-                    .`in`("resourceId", teamIds.toTypedArray())
-                    .endGroup()
-                    .findAll()
-                realm.copyFromRealm(results)
-            }
-        }
-
         fun getMyLibraryByUserId(mRealm: Realm, settings: SharedPreferences?): List<RealmMyLibrary> {
             val libs = mRealm.where(RealmMyLibrary::class.java).findAll()
             return getMyLibraryByUserId(settings?.getString("userId", "--"), libs, mRealm)
