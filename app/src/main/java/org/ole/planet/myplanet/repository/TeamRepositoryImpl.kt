@@ -370,7 +370,9 @@ class TeamRepositoryImpl @Inject constructor(
             }
             task.sync = gson.toJson(syncObj)
         }
-        save(task)
+        withContext(Dispatchers.Main) {
+            save(task)
+        }
     }
 
     override suspend fun assignTask(taskId: String, assigneeId: String?) {

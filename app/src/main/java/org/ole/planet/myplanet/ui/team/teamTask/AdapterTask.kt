@@ -30,7 +30,6 @@ class AdapterTask(
 
     fun setNonTeamMember(nonTeamMember: Boolean) {
         this.nonTeamMember = nonTeamMember
-        notifyDataSetChanged()
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderTask {
