@@ -15,7 +15,10 @@ import com.google.gson.JsonObject
 import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
 import java.util.Locale
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnLibraryItemSelected
@@ -51,6 +54,7 @@ class AdapterResource(
     companion object {
         private const val TAGS_PAYLOAD = "payload_tags"
         private const val RATING_PAYLOAD = "payload_rating"
+        private const val SELECTION_PAYLOAD = "payload_selection"
     }
 
     init {
@@ -162,7 +166,7 @@ class AdapterResource(
         } else {
             selectedItems.clear()
         }
-        notifyDataSetChanged()
+        notifyItemRangeChanged(0, libraryList.size, SELECTION_PAYLOAD)
         if (listener != null) {
             listener?.onSelectedListChange(selectedItems)
         }
@@ -190,6 +194,10 @@ class AdapterResource(
             }
             if (payloads.contains(RATING_PAYLOAD)) {
                 bindRating(holder, library)
+                handled = true
+            }
+            if (payloads.contains(SELECTION_PAYLOAD)) {
+                holder.rowLibraryBinding.checkbox.isChecked = selectedItems.contains(library)
                 handled = true
             }
             if (!handled) {
@@ -222,18 +230,18 @@ class AdapterResource(
         }
         lifecycleOwner.lifecycleScope.launch {
             try {
-                val tags = tagRepository.getTagsForResource(resourceId)
+                val tags = withContext(Dispatchers.IO) {
+                    tagRepository.getTagsForResource(resourceId)
+                }
                 tagCache[resourceId] = tags
 
-                val flexboxLayout = holder.rowLibraryBinding.flexboxDrawable
-                holder.itemView.post {
+                if (isActive) {
                     val adapterPosition = holder.bindingAdapterPosition
-                    if (adapterPosition == RecyclerView.NO_POSITION) {
-                        return@post
-                    }
-                    val currentResourceId = libraryList.getOrNull(adapterPosition)?.id
-                    if (currentResourceId == resourceId) {
-                        renderTagCloud(flexboxLayout, tags)
+                    if (adapterPosition != RecyclerView.NO_POSITION) {
+                        val currentResourceId = libraryList.getOrNull(adapterPosition)?.id
+                        if (currentResourceId == resourceId) {
+                            renderTagCloud(holder.rowLibraryBinding.flexboxDrawable, tags)
+                        }
                     }
                 }
             } finally {
