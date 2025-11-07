@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
+import io.realm.RealmObject
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -44,7 +45,13 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
         val sParentCode = settings.getString("parentCode", "")
         val communityName = settings.getString("communityName", "")
         mRealm = databaseService.realmInstance
-        user = profileDbHandler?.userModel?.let { mRealm.copyFromRealm(it) }
+        user = profileDbHandler?.userModel?.let { userModel ->
+            if (RealmObject.isManaged(userModel)) {
+                mRealm.copyFromRealm(userModel)
+            } else {
+                userModel
+            }
+        }
         teamId = requireArguments().getString("id", "") ?: "$communityName@$sParentCode"
 
         loadTeamData()
