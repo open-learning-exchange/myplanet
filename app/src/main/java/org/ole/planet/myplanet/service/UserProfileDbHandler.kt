@@ -127,11 +127,17 @@ class UserProfileDbHandler @Inject constructor(
     val lastVisit: Long? get() = mRealm.where(RealmOfflineActivity::class.java).max("loginTime") as Long?
     val offlineVisits: Int get() = getOfflineVisits(userModel)
 
-    fun getOfflineVisits(m: RealmUserModel?): Int { val dbUsers = mRealm.where(RealmOfflineActivity::class.java).equalTo("userName", m?.name).equalTo("type", KEY_LOGIN).findAll()
-        return if (!dbUsers.isEmpty()) {
-            dbUsers.size
-        } else {
-            0
+    fun getOfflineVisits(m: RealmUserModel?): Int {
+        return realmService.withRealm { realm ->
+            val dbUsers = realm.where(RealmOfflineActivity::class.java)
+                .equalTo("userName", m?.name)
+                .equalTo("type", KEY_LOGIN)
+                .findAll()
+            if (!dbUsers.isEmpty()) {
+                dbUsers.size
+            } else {
+                0
+            }
         }
     }
 
