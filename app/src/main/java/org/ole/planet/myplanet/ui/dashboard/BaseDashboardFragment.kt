@@ -103,8 +103,10 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             .equalTo("type", KEY_LOGIN)
             .findAllAsync()
         v.findViewById<TextView>(R.id.txtRole).text = getString(R.string.user_role, model?.getRoleAsString())
-        val offlineVisits = profileDbHandler.offlineVisits
-        v.findViewById<TextView>(R.id.txtFullName).text = getString(R.string.user_name, fullName, offlineVisits)
+        lifecycleScope.launch {
+            val offlineVisits = profileDbHandler.getOfflineVisitsSuspending()
+            v.findViewById<TextView>(R.id.txtFullName).text = getString(R.string.user_name, fullName, offlineVisits)
+        }
     }
 
     override fun forceDownloadNewsImages() {

@@ -52,6 +52,7 @@ import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.resources.CollectionsFragment
+import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utilities.DialogUtils
@@ -92,6 +93,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     @Inject
     lateinit var tagRepository: TagRepository
+
+    @Inject
+    lateinit var realmService: DatabaseService
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
 
@@ -249,7 +253,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         viewLifecycleOwner.lifecycleScope.launch {
             val courseData = getCourseData()
             _courseList = courseData.courseList
-            adapterCourses.setCourseList(courseData.courseList)
+            adapterCourses.setCourseList(_courseList)
             adapterCourses.setRatings(courseData.ratings)
             adapterCourses.setProgressMap(courseData.progressMap)
             resources = courseData.resources
@@ -267,13 +271,20 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     private suspend fun getCourseData(): CourseData = withContext(Dispatchers.IO) {
-        val realm = Realm.getDefaultInstance()
-        try {
-            val courseList = getList(RealmMyCourse::class.java)
-                .filterIsInstance<RealmMyCourse?>()
-                .filter { !it?.courseTitle.isNullOrBlank() }
-            val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
-            _courseList = sortedCourseList
+        realmService.withRealm { realm ->
+            val courseList = if (isMyCourseLib) {
+                RealmMyCourse.getMyByUserId(realm, settings)
+            } else {
+                realm.where(RealmMyCourse::class.java).findAll()
+            }
+
+            val filteredList = courseList
+                .filter { !it.courseTitle.isNullOrBlank() }
+                .map { course ->
+                    course.isMyCourse = course.userId?.contains(settings.getString("userId", "")) == true
+                    course
+                }
+            val sortedCourseList = filteredList.sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
 
             val ratings = getRatings(realm, "course", model?.id).let { map ->
                 HashMap<String?, JsonObject>().apply {
@@ -288,7 +299,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
             var resources: List<RealmMyLibrary> = emptyList()
             if (isMyCourseLib) {
-                val courseIds = courseList.mapNotNull { it?.id }
+                val courseIds = courseList.mapNotNull { it.id }
                 resources = realm.where(RealmMyLibrary::class.java)
                     .`in`("courseId", courseIds.toTypedArray())
                     .equalTo("resourceOffline", false)
@@ -297,9 +308,12 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 courseLib = "courses"
             }
 
-            CourseData(sortedCourseList, ratings, progressMap, realm.copyFromRealm(resources))
-        } finally {
-            realm.close()
+            CourseData(
+                realm.copyFromRealm(sortedCourseList),
+                ratings,
+                progressMap,
+                realm.copyFromRealm(resources)
+            )
         }
     }
 

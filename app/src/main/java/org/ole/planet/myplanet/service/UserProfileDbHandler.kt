@@ -9,6 +9,8 @@ import java.util.Date
 import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -126,6 +128,20 @@ class UserProfileDbHandler @Inject constructor(
 
     val lastVisit: Long? get() = mRealm.where(RealmOfflineActivity::class.java).max("loginTime") as Long?
     val offlineVisits: Int get() = getOfflineVisits(userModel)
+
+    suspend fun getOfflineVisitsSuspending(): Int = withContext(Dispatchers.IO) {
+        realmService.withRealm { realm ->
+            val userId = settings.getString("userId", "")
+            val user = realm.where(RealmUserModel::class.java)
+                .equalTo("id", userId)
+                .findFirst()
+            val dbUsers = realm.where(RealmOfflineActivity::class.java)
+                .equalTo("userName", user?.name)
+                .equalTo("type", KEY_LOGIN)
+                .findAll()
+            dbUsers.size
+        }
+    }
 
     fun getOfflineVisits(m: RealmUserModel?): Int { val dbUsers = mRealm.where(RealmOfflineActivity::class.java).equalTo("userName", m?.name).equalTo("type", KEY_LOGIN).findAll()
         return if (!dbUsers.isEmpty()) {
