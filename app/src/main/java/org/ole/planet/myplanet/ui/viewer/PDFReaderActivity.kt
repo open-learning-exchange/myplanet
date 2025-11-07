@@ -125,8 +125,9 @@ class PDFReaderActivity : AppCompatActivity(), AudioRecordListener {
                 outputFile,
                 myPersonalRepository,
                 userModel.id,
-                userModel.name
-            )
+                userModel.name,
+                lifecycleScope
+            ) {}
         }
         binding.fabRecord.setImageResource(R.drawable.ic_mic)
     }
