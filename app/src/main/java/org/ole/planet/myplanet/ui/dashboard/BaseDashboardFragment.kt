@@ -69,7 +69,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     override fun onViewCreated(view: View, savedInstanceState: android.os.Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         initView(view)
-        dashboardViewModel.loadDashboardData()
         observeDashboardData()
     }
 

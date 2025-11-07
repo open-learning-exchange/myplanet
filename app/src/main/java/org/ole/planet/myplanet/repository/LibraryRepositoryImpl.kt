@@ -9,8 +9,8 @@ import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onRemove
 import kotlinx.coroutines.flow.Flow
 
 class LibraryRepositoryImpl @Inject constructor(
-    databaseSerrvice: DatabaseService
-) : RealmRepository(databaseSerrvice), LibraryRepository {
+    databaseService: DatabaseService
+) : RealmRepository(databaseService), LibraryRepository {
     override fun getMyLibrary(): Flow<List<RealmMyLibrary>> {
         return queryListFlow(RealmMyLibrary::class.java) {
             equalTo("isPrivate", false)
