@@ -34,7 +34,8 @@ class AdapterSurvey(
     val teamId: String?,
     private val surveyAdoptListener: SurveyAdoptListener,
     private val settings: SharedPreferences,
-    private val userProfileDbHandler: UserProfileDbHandler
+    private val userProfileDbHandler: UserProfileDbHandler,
+    private val surveyInfoMap: Map<String, SurveyInfo>
 ) : RecyclerView.Adapter<AdapterSurvey.ViewHolderSurvey>() {
     private var examList: List<RealmStepExam> = emptyList()
     private var listener: OnHomeItemClickListener? = null
@@ -187,13 +188,10 @@ class AdapterSurvey(
                     startSurvey.visibility = View.GONE
                 }
 
-                tvNoSubmissions.text = when {
-                    isTeam -> getNoOfSubmissionByTeam(teamId, exam.id, mRealm)
-                    else -> getNoOfSubmissionByUser(exam.id, exam.courseId, userId, mRealm)
-                }
-                tvDateCompleted.text = getRecentSubmissionDate(exam.id, exam.courseId, userId, mRealm)
-                val creationTime = exam.id?.let { RealmStepExam.getSurveyCreationTime(it, mRealm) }
-                tvDate.text = creationTime?.let { formatDate(it, "MMM dd, yyyy") } ?: ""
+                val surveyInfo = surveyInfoMap[exam.id]
+                tvNoSubmissions.text = surveyInfo?.submissionCount ?: ""
+                tvDateCompleted.text = surveyInfo?.lastSubmissionDate ?: ""
+                tvDate.text = surveyInfo?.creationDate ?: ""
             }
         }
 
