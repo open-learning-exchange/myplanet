@@ -15,4 +15,5 @@ interface CourseRepository {
     suspend fun getAllCourses(): List<RealmMyCourse?>
     suspend fun getRatings(userId: String?): HashMap<String?, JsonObject>
     suspend fun getCourseProgress(userId: String?): HashMap<String?, JsonObject>
+    suspend fun getCourseResources(courseIds: List<String?>): List<RealmMyLibrary>
 }

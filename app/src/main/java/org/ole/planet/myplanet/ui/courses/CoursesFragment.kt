@@ -146,7 +146,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                             withContext(Dispatchers.Main) {
                                 customProgressDialog?.dismiss()
                                 customProgressDialog = null
-                                viewModel.loadCourses(model?.id)
+                                viewModel.loadCourses(model?.id, isMyCourseLib)
                             }
                         }
                         prefManager.setCoursesSynced(true)
@@ -218,7 +218,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         realtimeSyncHelper = RealtimeSyncHelper(this, this)
         realtimeSyncHelper.setupRealtimeSync()
         observeCourses()
-        viewModel.loadCourses(model?.id)
+        viewModel.loadCourses(model?.id, isMyCourseLib)
     }
 
     private fun observeCourses() {
@@ -226,6 +226,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             adapterCourses.setCourseList(state.courses)
             adapterCourses.setRatingsMap(state.ratings)
             adapterCourses.setProgressMap(state.progress)
+            resources = state.resources
             showNoData(tvMessage, adapterCourses.itemCount, "courses")
         }
     }
@@ -263,7 +264,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             alertDialogBuilder.setMessage(message)
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
                     deleteSelected(true)
-                    viewModel.loadCourses(model?.id)
+                    viewModel.loadCourses(model?.id, isMyCourseLib)
                     checkList()
                 }
                 .setNegativeButton(R.string.no, null).show()
@@ -279,7 +280,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             alertDialogBuilder.setMessage(message)
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
                     deleteSelected(true)
-                    viewModel.loadCourses(model?.id)
+                    viewModel.loadCourses(model?.id, isMyCourseLib)
                     checkList()
                 }
                 .setNegativeButton(R.string.no, null).show()
@@ -449,7 +450,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             searchTags.clear()
             etSearch.setText(R.string.empty_text)
             tvSelected.text = context?.getString(R.string.empty_text)
-            viewModel.loadCourses(model?.id)
+            viewModel.loadCourses(model?.id, isMyCourseLib)
             scrollToTop()
             showNoData(tvMessage, adapterCourses.itemCount, "courses")
             spnGrade.setSelection(0)
@@ -487,10 +488,10 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             }
             .setNegativeButton(R.string.ok) { dialog: DialogInterface, _: Int ->
                 dialog.cancel()
-                viewModel.loadCourses(model?.id)
+                viewModel.loadCourses(model?.id, isMyCourseLib)
             }
             .setOnDismissListener {
-                viewModel.loadCourses(model?.id)
+                viewModel.loadCourses(model?.id, isMyCourseLib)
             }
 
         return builder.create()
@@ -601,7 +602,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     override fun onDataUpdated(table: String, update: TableDataUpdate) {
         if (table == "courses" && update.shouldRefreshUI) {
-            viewModel.loadCourses(model?.id)
+            viewModel.loadCourses(model?.id, isMyCourseLib)
         }
     }
 
@@ -617,6 +618,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     override fun onRatingChanged() {
-        viewModel.loadCourses(model?.id)
+        viewModel.loadCourses(model?.id, isMyCourseLib)
     }
 }

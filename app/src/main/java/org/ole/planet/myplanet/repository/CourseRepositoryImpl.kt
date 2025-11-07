@@ -94,10 +94,25 @@ class CourseRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getRatings(userId: String?): HashMap<String?, JsonObject> {
-        return RealmRating.getRatings(realm, "course", userId)
+        return databaseService.withRealmAsync {
+            RealmRating.getRatings(it, "course", userId)
+        }
     }
 
     override suspend fun getCourseProgress(userId: String?): HashMap<String?, JsonObject> {
-        return RealmCourseProgress.getCourseProgress(realm, userId)
+        return databaseService.withRealmAsync {
+            RealmCourseProgress.getCourseProgress(it, userId)
+        }
+    }
+
+    override suspend fun getCourseResources(courseIds: List<String?>): List<RealmMyLibrary> {
+        if (courseIds.isEmpty()) {
+            return emptyList()
+        }
+        return queryList(RealmMyLibrary::class.java) {
+            `in`("courseId", courseIds.toTypedArray())
+            equalTo("resourceOffline", false)
+            isNotNull("resourceLocalAddress")
+        }
     }
 }

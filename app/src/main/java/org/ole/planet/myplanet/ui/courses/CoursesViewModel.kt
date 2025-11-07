@@ -9,11 +9,13 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.repository.CourseRepository
+import org.ole.planet.myplanet.repository.TagRepository
 import javax.inject.Inject
 
 @HiltViewModel
 class CoursesViewModel @Inject constructor(
-    private val courseRepository: CourseRepository
+    private val courseRepository: CourseRepository,
+    private val tagRepository: TagRepository
 ) : ViewModel() {
 
     private val _uiState = MutableLiveData<CoursesUiState>()
@@ -26,12 +28,17 @@ class CoursesViewModel @Inject constructor(
     private var gradeLevel = ""
     private var searchTags = listOf<RealmTag>()
 
-    fun loadCourses(userId: String?) {
+    fun loadCourses(userId: String?, isMyCourseLib: Boolean) {
         viewModelScope.launch {
             _allCourses = courseRepository.getAllCourses()
             val ratings = courseRepository.getRatings(userId)
             val progress = courseRepository.getCourseProgress(userId)
-            _uiState.postValue(CoursesUiState(courses = _allCourses, ratings = ratings, progress = progress))
+            val resources = if (isMyCourseLib) {
+                courseRepository.getCourseResources(_allCourses.map { it?.id })
+            } else {
+                emptyList()
+            }
+            _uiState.postValue(CoursesUiState(courses = _allCourses, ratings = ratings, progress = progress, resources = resources))
         }
     }
 
@@ -73,10 +80,15 @@ class CoursesViewModel @Inject constructor(
             }
         }
         if (searchTags.isNotEmpty()) {
-            filteredList = filteredList.filter { course ->
-                course?.tags?.any { tag -> searchTags.any { it.id == tag.id } } == true
+            viewModelScope.launch {
+                filteredList = filteredList.filter { course ->
+                    val courseTags = tagRepository.getTagsForCourse(course?.id)
+                    courseTags.any { tag: RealmTag -> searchTags.any { it.id == tag.id } }
+                }
+                _uiState.postValue(_uiState.value?.copy(courses = filteredList))
             }
+        } else {
+            _uiState.postValue(_uiState.value?.copy(courses = filteredList))
         }
-        _uiState.postValue(_uiState.value?.copy(courses = filteredList))
     }
 }
