@@ -9,6 +9,11 @@ import android.view.ViewGroup
 import android.widget.CompoundButton
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowTaskBinding
 import org.ole.planet.myplanet.model.RealmTeamTask
@@ -18,10 +23,11 @@ import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
 class AdapterTask(
     private val context: Context,
-    private val realm: Realm,
     private val list: List<RealmTeamTask>?,
-    private val nonTeamMember: Boolean
+    private val nonTeamMember: Boolean,
+    private val coroutineScope: CoroutineScope
 ) : RecyclerView.Adapter<ViewHolderTask>() {
+    private val assigneeCache: MutableMap<String, String> = mutableMapOf()
     private var listener: OnCompletedListener? = null
     fun setListener(listener: OnCompletedListener?) {
         this.listener = listener
@@ -33,6 +39,7 @@ class AdapterTask(
     }
 
     override fun onBindViewHolder(holder: ViewHolderTask, position: Int) {
+        holder.assigneeJob?.cancel()
         list?.get(position)?.let {
             val binding = holder.binding
             binding.checkbox.setOnCheckedChangeListener(null)
@@ -47,7 +54,7 @@ class AdapterTask(
                     context.getString(R.string.completed_colon, formatDate(it.deadline))
                 )
             }
-            showAssignee(binding, it)
+            holder.assigneeJob = showAssignee(binding, it)
             binding.icMore.setOnClickListener {
                 listener?.onClickMore(list[position])
             }
@@ -82,15 +89,35 @@ class AdapterTask(
         }
     }
 
-    private fun showAssignee(binding: RowTaskBinding, realmTeamTask: RealmTeamTask) {
-        if (!TextUtils.isEmpty(realmTeamTask.assignee)) {
-            val model = realm.where(RealmUserModel::class.java).equalTo("id", realmTeamTask.assignee).findFirst()
-            if (model != null) {
-                binding.assignee.text = context.getString(R.string.assigned_to_colon, model.name)
-                return
+    private fun showAssignee(binding: RowTaskBinding, realmTeamTask: RealmTeamTask): Job? {
+        val assigneeId = realmTeamTask.assignee
+        if (assigneeId.isNullOrEmpty()) {
+            binding.assignee.setText(R.string.no_assignee)
+            return null
+        }
+
+        assigneeCache[assigneeId]?.let {
+            binding.assignee.text = context.getString(R.string.assigned_to_colon, it)
+            return null
+        }
+
+        return coroutineScope.launch(Dispatchers.IO) {
+            var user: RealmUserModel? = null
+            Realm.getDefaultInstance().use { realm ->
+                user = realm.where(RealmUserModel::class.java).equalTo("id", assigneeId).findFirst()?.let {
+                    realm.copyFromRealm(it)
+                }
+            }
+            withContext(Dispatchers.Main) {
+                val name = user?.name
+                if (name != null) {
+                    assigneeCache[assigneeId] = name
+                    binding.assignee.text = context.getString(R.string.assigned_to_colon, name)
+                } else {
+                    binding.assignee.setText(R.string.no_assignee)
+                }
             }
         }
-        binding.assignee.setText(R.string.no_assignee)
     }
 
     override fun getItemCount(): Int {
@@ -104,5 +131,7 @@ class AdapterTask(
         fun onClickMore(realmTeamTask: RealmTeamTask?)
     }
 
-    class ViewHolderTask(val binding: RowTaskBinding) : RecyclerView.ViewHolder(binding.root)
+    class ViewHolderTask(val binding: RowTaskBinding) : RecyclerView.ViewHolder(binding.root) {
+        var assigneeJob: Job? = null
+    }
 }
