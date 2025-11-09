@@ -17,6 +17,7 @@ import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
@@ -39,13 +40,13 @@ class AdapterTeamList(
     private val fragmentManager: FragmentManager,
     private val teamRepository: TeamRepository,
     private val currentUser: RealmUserModel?,
-    private val scope: CoroutineScope,
 ) : RecyclerView.Adapter<AdapterTeamList.ViewHolderTeam>() {
     private var type: String? = ""
     private var teamListener: OnClickTeamItem? = null
     private var updateCompleteListener: OnUpdateCompleteListener? = null
     private var filteredList: List<RealmMyTeam> = emptyList()
     private lateinit var prefData: SharedPrefManager
+    private val scope = MainScope()
     private val teamStatusCache = mutableMapOf<String, TeamStatus>()
     private var visitCounts: Map<String, Long> = emptyMap()
     private var updateListJob: Job? = null
@@ -407,6 +408,11 @@ class AdapterTeamList(
 
     fun setType(type: String?) {
         this.type = type
+    }
+
+    fun cleanup() {
+        scope.cancel()
+        teamStatusCache.clear()
     }
 
     override fun getItemCount(): Int = filteredList.size

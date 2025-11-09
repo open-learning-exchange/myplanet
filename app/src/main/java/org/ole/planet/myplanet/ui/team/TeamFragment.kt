@@ -254,7 +254,6 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
                         childFragmentManager,
                         teamRepository,
                         user,
-                        viewLifecycleOwner.lifecycleScope,
                     )
                     adapterTeamList.setTeamListener(this@TeamFragment)
                     adapterTeamList.setUpdateCompleteListener(this@TeamFragment)
@@ -288,7 +287,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
         }
 
         adapterTeamList = activity?.let {
-            AdapterTeamList(it, list, childFragmentManager, teamRepository, user, viewLifecycleOwner.lifecycleScope)
+            AdapterTeamList(it, list, childFragmentManager, teamRepository, user)
         } ?: return
 
         adapterTeamList.setType(type)
@@ -388,6 +387,9 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
 
     override fun onDestroyView() {
         teamList?.removeAllChangeListeners()
+        if (this::adapterTeamList.isInitialized) {
+            adapterTeamList.cleanup()
+        }
         if (this::mRealm.isInitialized && !mRealm.isClosed) {
             mRealm.close()
         }
