@@ -74,7 +74,11 @@ class SyncManager @Inject constructor(
     private var backgroundSync: Job? = null
     private val syncScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var betaSync = false
-    private val improvedSyncInitialized = AtomicBoolean(false)
+    private val initializationJob: Job by lazy {
+        syncScope.launch {
+            improvedSyncManager.get().initialize()
+        }
+    }
 
     fun start(listener: SyncListener?, type: String, syncTables: List<String>? = null) {
         this.listener = listener
@@ -86,17 +90,7 @@ class SyncManager @Inject constructor(
             val useImproved = settings.getBoolean("useImprovedSync", false)
             val isSyncRequest = type.equals("sync", ignoreCase = true)
             if (useImproved && isSyncRequest) {
-                val manager = improvedSyncManager.get()
-                if (improvedSyncInitialized.compareAndSet(false, true)) {
-                    runBlocking { manager.initialize() }
-                }
-                val syncMode = if (settings.getBoolean("fastSync", false)) {
-                    SyncMode.Fast
-                } else {
-                    SyncMode.Standard
-                }
-                createLog("sync_manager_route", "improved|mode=${syncMode.javaClass.simpleName}")
-                manager.start(listener, syncMode, syncTables)
+                initializeAndStartImprovedSync(listener, syncTables)
             } else {
                 if (useImproved && !isSyncRequest) {
                     createLog("sync_manager_route", "legacy|reason=$type")
@@ -104,6 +98,25 @@ class SyncManager @Inject constructor(
                     createLog("sync_manager_route", "legacy")
                 }
                 authenticateAndSync(type, syncTables)
+            }
+        }
+    }
+
+    private fun initializeAndStartImprovedSync(listener: SyncListener?, syncTables: List<String>?) {
+        syncScope.launch {
+            try {
+                initializationJob.join()
+
+                val manager = improvedSyncManager.get()
+                val syncMode = if (settings.getBoolean("fastSync", false)) {
+                    SyncMode.Fast
+                } else {
+                    SyncMode.Standard
+                }
+                createLog("sync_manager_route", "improved|mode=${syncMode.javaClass.simpleName}")
+                manager.start(listener, syncMode, syncTables)
+            } catch (e: Exception) {
+                listener?.onSyncFailed(e.message)
             }
         }
     }
