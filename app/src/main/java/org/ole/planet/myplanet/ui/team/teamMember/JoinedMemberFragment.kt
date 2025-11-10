@@ -77,7 +77,6 @@ class JoinedMemberFragment : BaseMemberFragment() {
                 val isLeader = members.any { it.user.id == currentUserId && it.isLeader }
                 adapterJoined = AdapterJoinedMember(
                     requireActivity(),
-                    members.toMutableList(),
                     isLeader,
                     object : AdapterJoinedMember.MemberActionListener {
                         override fun onRemoveMember(member: JoinedMemberData, position: Int) {
@@ -88,7 +87,9 @@ class JoinedMemberFragment : BaseMemberFragment() {
                             member.user.id?.let { handleMakeLeader(it) }
                         }
                     }
-                )
+                ).also {
+                    it.updateData(members, isLeader)
+                }
             }
             return adapterJoined as AdapterJoinedMember
         }
