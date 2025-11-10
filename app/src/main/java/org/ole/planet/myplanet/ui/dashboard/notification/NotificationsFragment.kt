@@ -102,86 +102,99 @@ class NotificationsFragment : Fragment() {
     }
 
     private fun handleNotificationClick(notification: RealmNotification) {
-        when (notification.type) {
-            "storage" -> {
-                val intent = Intent(ACTION_INTERNAL_STORAGE_SETTINGS)
-                startActivity(intent)
-            }
-            "survey" -> {
-                databaseService.withRealm { realm ->
-                    val currentStepExam = realm.where(RealmStepExam::class.java)
-                        .equalTo("name", notification.relatedId)
-                        .findFirst()
-                    if (currentStepExam != null && activity is OnHomeItemClickListener) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            when (notification.type) {
+                "storage" -> {
+                    val intent = Intent(ACTION_INTERNAL_STORAGE_SETTINGS)
+                    startActivity(intent)
+                }
+                "survey" -> {
+                    val examId = withContext(Dispatchers.IO) {
+                        databaseService.withRealm { realm ->
+                            realm.where(RealmStepExam::class.java)
+                                .equalTo("name", notification.relatedId)
+                                .findFirst()?.id
+                        }
+                    }
+                    if (examId != null && activity is OnHomeItemClickListener) {
                         AdapterMySubmission.openSurvey(
                             activity as OnHomeItemClickListener,
-                            currentStepExam.id,
+                            examId,
                             false,
                             false,
                             "",
                         )
                     }
                 }
-            }
-            "task" -> {
-                databaseService.withRealm { realm ->
-                    val taskId = notification.relatedId
-                    val task = realm.where(RealmTeamTask::class.java)
-                        .equalTo("id", taskId)
-                        .findFirst()
-
-                    val linkJson = JSONObject(task?.link ?: "{}")
-                    val teamId = linkJson.optString("teams")
-                    if (teamId.isNotEmpty() && activity is OnHomeItemClickListener) {
-                        val teamObject = realm.where(RealmMyTeam::class.java)
-                            .equalTo("_id", teamId)
-                            .findFirst()
+                "task" -> {
+                    val teamDetails = withContext(Dispatchers.IO) {
+                        databaseService.withRealm { realm ->
+                            val taskId = notification.relatedId
+                            val task = realm.where(RealmTeamTask::class.java)
+                                .equalTo("id", taskId)
+                                .findFirst()
+                            val linkJson = JSONObject(task?.link ?: "{}")
+                            val teamId = linkJson.optString("teams")
+                            if (teamId.isNotEmpty()) {
+                                val teamObject = realm.where(RealmMyTeam::class.java)
+                                    .equalTo("_id", teamId)
+                                    .findFirst()
+                                Triple(teamId, teamObject?.name, teamObject?.type)
+                            } else {
+                                null
+                            }
+                        }
+                    }
+                    if (teamDetails != null && activity is OnHomeItemClickListener) {
+                        val (teamId, teamName, teamType) = teamDetails
                         val f = TeamDetailFragment.newInstance(
                             teamId = teamId,
-                            teamName = teamObject?.name ?: "",
-                            teamType = teamObject?.type ?: "",
+                            teamName = teamName ?: "",
+                            teamType = teamType ?: "",
                             isMyTeam = true,
                             navigateToPage = TasksPage,
                         )
-
                         (activity as OnHomeItemClickListener).openCallFragment(f)
                     }
                 }
-            }
-            "join_request" -> {
-                val joinRequestId = notification.relatedId
-                if (joinRequestId?.isNotEmpty() == true && activity is OnHomeItemClickListener) {
-                    val actualJoinRequestId = if (joinRequestId.startsWith("join_request_")) {
-                        joinRequestId.removePrefix("join_request_")
-                    } else {
-                        joinRequestId
-                    }
-                    databaseService.withRealm { realm ->
-                        val joinRequest = realm.where(RealmMyTeam::class.java)
-                            .equalTo("_id", actualJoinRequestId)
-                            .equalTo("docType", "request")
-                            .findFirst()
-
-                        val teamId = joinRequest?.teamId
-                        if (teamId?.isNotEmpty() == true) {
-                            val f = TeamDetailFragment()
-                            val b = Bundle()
-                            b.putString("id", teamId)
-                            b.putBoolean("isMyTeam", true)
-                            b.putString("navigateToPage", JoinRequestsPage.id)
-                            f.arguments = b
-                            (activity as OnHomeItemClickListener).openCallFragment(f)
+                "join_request" -> {
+                    val teamId = withContext(Dispatchers.IO) {
+                        val joinRequestId = notification.relatedId
+                        if (joinRequestId?.isNotEmpty() == true) {
+                            val actualJoinRequestId = if (joinRequestId.startsWith("join_request_")) {
+                                joinRequestId.removePrefix("join_request_")
+                            } else {
+                                joinRequestId
+                            }
+                            databaseService.withRealm { realm ->
+                                realm.where(RealmMyTeam::class.java)
+                                    .equalTo("_id", actualJoinRequestId)
+                                    .equalTo("docType", "request")
+                                    .findFirst()?.teamId
+                            }
+                        } else {
+                            null
                         }
                     }
+
+                    if (teamId?.isNotEmpty() == true && activity is OnHomeItemClickListener) {
+                        val f = TeamDetailFragment()
+                        val b = Bundle()
+                        b.putString("id", teamId)
+                        b.putBoolean("isMyTeam", true)
+                        b.putString("navigateToPage", JoinRequestsPage.id)
+                        f.arguments = b
+                        (activity as OnHomeItemClickListener).openCallFragment(f)
+                    }
+                }
+                "resource" -> {
+                    dashboardActivity.openMyFragment(ResourcesFragment())
                 }
             }
-            "resource" -> {
-                dashboardActivity.openMyFragment(ResourcesFragment())
-            }
-        }
 
-        if (!notification.isRead) {
-            markAsReadById(notification.id)
+            if (!notification.isRead) {
+                markAsReadById(notification.id)
+            }
         }
     }
 
