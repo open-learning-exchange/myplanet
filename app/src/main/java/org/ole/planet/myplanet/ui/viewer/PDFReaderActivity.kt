@@ -125,8 +125,9 @@ class PDFReaderActivity : AppCompatActivity(), AudioRecordListener {
                 outputFile,
                 myPersonalRepository,
                 userModel.id,
-                userModel.name
-            )
+                userModel.name,
+                lifecycleScope
+            ) {}
         }
         binding.fabRecord.setImageResource(R.drawable.ic_mic)
     }
@@ -150,7 +151,6 @@ class PDFReaderActivity : AppCompatActivity(), AudioRecordListener {
         if (this::audioRecorderService.isInitialized && audioRecorderService.isRecording()) {
             audioRecorderService.stopRecording()
         }
-        userProfileDbHandler.onDestroy()
         super.onDestroy()
     }
 

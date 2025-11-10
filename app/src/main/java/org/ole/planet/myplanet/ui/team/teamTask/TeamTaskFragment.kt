@@ -252,7 +252,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
             else {
                 showNoData(binding.tvNodata, list?.size, "")
             }
-            adapterTask = AdapterTask(requireContext(), mRealm, list, !isMemberFlow.value)
+            adapterTask = AdapterTask(requireContext(), list, !isMemberFlow.value, viewLifecycleOwner.lifecycleScope)
             adapterTask.setListener(this)
             binding.rvTask.adapter = adapterTask
         }
@@ -326,7 +326,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
 
     private fun updatedTeamTaskList(updatedList: RealmResults<RealmTeamTask>) {
         viewLifecycleOwner.lifecycleScope.launch {
-            adapterTask = AdapterTask(requireContext(), mRealm, updatedList, !isMemberFlow.value)
+            adapterTask = AdapterTask(requireContext(), updatedList, !isMemberFlow.value, viewLifecycleOwner.lifecycleScope)
             adapterTask.setListener(this@TeamTaskFragment)
             binding.rvTask.adapter = adapterTask
             adapterTask.notifyDataSetChanged()

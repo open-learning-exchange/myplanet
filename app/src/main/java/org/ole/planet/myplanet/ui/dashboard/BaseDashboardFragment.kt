@@ -17,6 +17,7 @@ import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayout
+import io.realm.Realm
 import io.realm.Case
 import io.realm.RealmChangeListener
 import io.realm.RealmObject
@@ -24,7 +25,9 @@ import io.realm.RealmResults
 import io.realm.Sort
 import java.util.Calendar
 import java.util.UUID
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.NotificationCallback
 import org.ole.planet.myplanet.callback.SyncListener
@@ -136,9 +139,15 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         }
     }
 
-    private fun myLibraryDiv(view: View) {
+    private suspend fun myLibraryDiv(view: View) {
+        val dbMylibrary = withContext(Dispatchers.IO) {
+            Realm.getDefaultInstance().use { realm ->
+                val results = RealmMyLibrary.getMyLibraryByUserId(realm, settings)
+                realm.copyFromRealm(results)
+            }
+        }
+
         view.findViewById<FlexboxLayout>(R.id.flexboxLayout).flexDirection = FlexDirection.ROW
-        val dbMylibrary = RealmMyLibrary.getMyLibraryByUserId(mRealm, settings)
         if (dbMylibrary.isEmpty()) {
             view.findViewById<TextView>(R.id.count_library).visibility = View.GONE
         } else {
@@ -326,7 +335,9 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         view.findViewById<View>(R.id.txtFullName).setOnClickListener {
             homeItemClickListener?.openCallFragment(UserProfileFragment())
         }
-        myLibraryDiv(view)
+        viewLifecycleOwner.lifecycleScope.launch {
+            myLibraryDiv(view)
+        }
         initializeFlexBoxView(view, R.id.flexboxLayoutCourse, RealmMyCourse::class.java)
         initializeFlexBoxView(view, R.id.flexboxLayoutTeams, RealmMyTeam::class.java)
         initializeFlexBoxView(view, R.id.flexboxLayoutMyLife, RealmMyLife::class.java)
