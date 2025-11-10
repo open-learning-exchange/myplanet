@@ -836,9 +836,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         if (this::mRealm.isInitialized && !mRealm.isClosed) {
             mRealm.close()
         }
-        if (this::profileDbHandler.isInitialized) {
-            profileDbHandler.onDestroy()
-        }
         super.onDestroy()
     }
     companion object {

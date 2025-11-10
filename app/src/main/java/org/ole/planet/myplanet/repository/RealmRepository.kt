@@ -18,16 +18,28 @@ open class RealmRepository(private val databaseService: DatabaseService) {
     protected suspend fun <T : RealmObject> queryList(
         clazz: Class<T>,
         builder: RealmQuery<T>.() -> Unit = {},
+    ): List<T> = queryList(clazz, false, builder)
+
+    protected suspend fun <T : RealmObject> queryList(
+        clazz: Class<T>,
+        ensureLatest: Boolean,
+        builder: RealmQuery<T>.() -> Unit = {},
     ): List<T> =
-        databaseService.withRealmAsync { realm ->
+        withRealm(ensureLatest) { realm ->
             realm.queryList(clazz, builder)
         }
 
     protected suspend fun <T : RealmObject> count(
         clazz: Class<T>,
         builder: RealmQuery<T>.() -> Unit = {},
+    ): Long = count(clazz, false, builder)
+
+    protected suspend fun <T : RealmObject> count(
+        clazz: Class<T>,
+        ensureLatest: Boolean,
+        builder: RealmQuery<T>.() -> Unit = {},
     ): Long =
-        databaseService.withRealmAsync { realm ->
+        withRealm(ensureLatest) { realm ->
             realm.where(clazz).apply(builder).count()
         }
 
@@ -54,8 +66,15 @@ open class RealmRepository(private val databaseService: DatabaseService) {
         clazz: Class<T>,
         fieldName: String,
         value: V,
+    ): T? = findByField(clazz, fieldName, value, false)
+
+    protected suspend fun <T : RealmObject, V : Any> findByField(
+        clazz: Class<T>,
+        fieldName: String,
+        value: V,
+        ensureLatest: Boolean,
     ): T? =
-        databaseService.withRealmAsync { realm ->
+        withRealm(ensureLatest) { realm ->
             realm.findCopyByField(clazz, fieldName, value)
         }
 
@@ -90,8 +109,20 @@ open class RealmRepository(private val databaseService: DatabaseService) {
         }
     }
 
+    protected suspend fun <T> withRealm(
+        ensureLatest: Boolean = false,
+        operation: (Realm) -> T,
+    ): T {
+        return databaseService.withRealmAsync { realm ->
+            if (ensureLatest) {
+                realm.refresh()
+            }
+            operation(realm)
+        }
+    }
+
     protected suspend fun <T> withRealmAsync(operation: (Realm) -> T): T {
-        return databaseService.withRealmAsync(operation)
+        return withRealm(false, operation)
     }
 
     protected fun <T> withRealmFlow(
