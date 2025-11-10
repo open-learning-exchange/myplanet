@@ -15,6 +15,7 @@ import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.view.ViewTreeObserver
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
@@ -126,22 +127,33 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        postponeEnterTransition()
         checkUser()
         initViews()
         updateAppTitle()
         notificationManager = NotificationUtils.getInstance(this)
         if (handleGuestAccess()) return
-        setupNavigation()
         handleInitialFragment()
         setupToolbarActions()
         hideWifi()
-        setupRealmListeners()
         setupSystemNotificationReceiver()
         checkIfShouldShowNotifications()
         addBackPressCallback()
+        handleNotificationIntent(intent)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        lifecycleScope.launch(Dispatchers.IO) {
+            setupHeavyTasks()
+        }
+    }
+
+    private fun setupHeavyTasks() {
+        setupNavigation()
+        setupRealmListeners()
         challengeHelper = ChallengeHelper(this, mRealm, user, settings, editor, dashboardViewModel)
         challengeHelper.evaluateChallengeDialog()
-        handleNotificationIntent(intent)
     }
 
     private fun initViews() {
@@ -160,6 +172,15 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         service = Service(this)
         tl = findViewById(R.id.tab_layout)
         binding.root.viewTreeObserver.addOnGlobalLayoutListener { topBarVisible() }
+        binding.root.viewTreeObserver.addOnPreDrawListener(
+            object : ViewTreeObserver.OnPreDrawListener {
+                override fun onPreDraw(): Boolean {
+                    binding.root.viewTreeObserver.removeOnPreDrawListener(this)
+                    startPostponedEnterTransition()
+                    reportFullyDrawn()
+                    return true
+                }
+            })
         binding.appBarBell.ivSetting.setOnClickListener {
             startActivity(Intent(this, SettingActivity::class.java))
         }
