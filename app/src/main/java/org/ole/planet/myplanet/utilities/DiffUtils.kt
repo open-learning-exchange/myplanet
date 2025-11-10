@@ -25,8 +25,10 @@ object DiffUtils {
             override fun getNewListSize() = newList.size
             override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int) =
                 areItemsTheSame(oldList[oldItemPosition], newList[newItemPosition])
+
             override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int) =
                 areContentsTheSame(oldList[oldItemPosition], newList[newItemPosition])
+
             override fun getChangePayload(oldItemPosition: Int, newItemPosition: Int): Any? {
                 return getChangePayload?.invoke(oldList[oldItemPosition], newList[newItemPosition])
             }
