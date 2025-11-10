@@ -523,39 +523,95 @@ class SyncManager @Inject constructor(
                 batchCount++
 
                 try {
-                    var response: JsonObject? = null
+                    var response: retrofit2.Response<okhttp3.ResponseBody>? = null
                     ApiClient.executeWithRetryAndWrap {
-                        apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/resources/_all_docs?include_docs=true&limit=$batchSize&skip=$skip").execute()
+                        apiInterface.getJsonObjectStream(UrlUtils.header, "${UrlUtils.getUrl()}/resources/_all_docs?include_docs=true&limit=$batchSize&skip=$skip").execute()
                     }?.let {
-                        response = it.body()
+                        response = it
                     }
 
-                    if (response == null) {
+                    if (response?.body() == null) {
                         skip += batchSize
                         continue
                     }
 
-                    val rows = getJsonArray("rows", response)
-
-                    if (rows.size() == 0) {
-                        break
-                    }
-
-                    val batchDocuments = JsonArray()
-                    val validDocuments = mutableListOf<Pair<JsonObject, String>>()
-
-                    for (i in 0 until rows.size()) {
-                        val rowObj = rows[i].asJsonObject
-                        if (rowObj.has("doc")) {
-                            val doc = getJsonObject("doc", rowObj)
-                            val id = getString("_id", doc)
-
-                            if (!id.startsWith("_design") && id.isNotBlank()) {
-                                batchDocuments.add(doc)
-                                validDocuments.add(Pair(doc, id))
+                    val rowsProcessed = response!!.body()!!.use { responseBody ->
+                        responseBody.charStream().use { reader ->
+                            com.google.gson.stream.JsonReader(reader).use { jsonReader ->
+                                var processedRowCount = 0
+                                jsonReader.beginObject()
+                                while (jsonReader.hasNext()) {
+                                    if (jsonReader.nextName() == "rows") {
+                                        jsonReader.beginArray()
+                                        while (jsonReader.hasNext()) {
+                                            val rowObj = Gson().fromJson<JsonObject>(jsonReader, JsonObject::class.java)
+                                            processResourceRow(rowObj, realmInstance, newIds)
+                                            processedRowCount++
+                                        }
+                                        jsonReader.endArray()
+                                    } else {
+                                        jsonReader.skipValue()
+                                    }
+                                }
+                                jsonReader.endObject()
+                                processedRowCount
                             }
                         }
                     }
+
+                    if (rowsProcessed == 0) {
+                        break
+                    }
+                    processedItems += rowsProcessed
+                    skip += rowsProcessed
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    skip += batchSize
+                }
+            }
+            try {
+                val validNewIds = newIds.filter { !it.isNullOrBlank() }
+                if (validNewIds.isNotEmpty() && validNewIds.size == newIds.size) {
+                    removeDeletedResource(validNewIds, realmInstance)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            logger.endProcess("resource_sync", processedItems)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            logger.endProcess("resource_sync", processedItems)
+        }
+    }
+
+    private fun processResourceRow(rowObj: JsonObject, realmInstance: Realm, newIds: MutableList<String?>) {
+        if (rowObj.has("doc")) {
+            val doc = getJsonObject("doc", rowObj)
+            val id = getString("_id", doc)
+            if (!id.startsWith("_design") && id.isNotBlank()) {
+                try {
+                    realmInstance.executeTransaction { realm ->
+                        val singleDocArray = JsonArray()
+                        singleDocArray.add(doc)
+                        val singleIds = save(singleDocArray, realm)
+                        if (singleIds.isNotEmpty()) {
+                            newIds.addAll(singleIds)
+                        }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
+    }
+
+    private fun handleException(message: String?) {
+        if (listener != null) {
+            isSyncing = false
+            MainApplication.syncFailedCount++
+            listener?.onSyncFailed(message)
+        }
+    }
 
                     if (validDocuments.isNotEmpty()) {
                         try {
@@ -683,20 +739,32 @@ class SyncManager @Inject constructor(
         }
 
         val response = ApiClient.executeWithRetryAndWrap {
-            apiInterface.findDocs(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/shelf/_all_docs?include_docs=true", keysObject).execute()
-        }?.body()
+            apiInterface.findDocsStream(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/shelf/_all_docs?include_docs=true", keysObject).execute()
+        }
 
-        response?.let { responseBody ->
-            val rows = getJsonArray("rows", responseBody)
-            for (i in 0 until rows.size()) {
-                val row = rows[i].asJsonObject
-                if (row.has("doc")) {
-                    val doc = getJsonObject("doc", row)
-                    val shelfId = getString("_id", doc)
-
-                    if (hasShelfDataUltraFast(doc)) {
-                        shelvesWithData.add(shelfId)
+        response?.body()?.use { responseBody ->
+            responseBody.charStream().use { reader ->
+                com.google.gson.stream.JsonReader(reader).use { jsonReader ->
+                    jsonReader.beginObject()
+                    while (jsonReader.hasNext()) {
+                        if (jsonReader.nextName() == "rows") {
+                            jsonReader.beginArray()
+                            while (jsonReader.hasNext()) {
+                                val row = Gson().fromJson<JsonObject>(jsonReader, JsonObject::class.java)
+                                if (row.has("doc")) {
+                                    val doc = getJsonObject("doc", row)
+                                    val shelfId = getString("_id", doc)
+                                    if (hasShelfDataUltraFast(doc)) {
+                                        shelvesWithData.add(shelfId)
+                                    }
+                                }
+                            }
+                            jsonReader.endArray()
+                        } else {
+                            jsonReader.skipValue()
+                        }
                     }
+                    jsonReader.endObject()
                 }
             }
         }

@@ -28,8 +28,16 @@ interface ApiInterface {
     @GET
     fun getJsonObject(@Header("Authorization") header: String?, @Url url: String?): Call<JsonObject>
 
+    @Streaming
+    @GET
+    fun getJsonObjectStream(@Header("Authorization") header: String?, @Url url: String?): Call<ResponseBody>
+
     @POST
     fun findDocs(@Header("Authorization") header: String?, @Header("Content-Type") c: String?, @Url url: String?, @Body s: JsonObject?): Call<JsonObject>
+
+    @Streaming
+    @POST
+    fun findDocsStream(@Header("Authorization") header: String?, @Header("Content-Type") c: String?, @Url url: String?, @Body s: JsonObject?): Call<ResponseBody>
 
     @POST
     fun postDoc(@Header("Authorization") header: String?, @Header("Content-Type") c: String?, @Url url: String?, @Body s: JsonObject?): Call<JsonObject>
