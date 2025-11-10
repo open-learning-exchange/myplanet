@@ -208,21 +208,11 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
     }
 
     private fun allTasks() {
-        val uncompletedTasks = mRealm.where(RealmTeamTask::class.java)
+        list = mRealm.where(RealmTeamTask::class.java)
             .equalTo("teamId", teamId)
             .notEqualTo("status", "archived")
-            .equalTo("completed", false)
-            .sort("deadline", Sort.DESCENDING)
+            .sort(arrayOf("completed", "deadline"), arrayOf(Sort.ASCENDING, Sort.DESCENDING))
             .findAll()
-
-        val completedTasks = mRealm.where(RealmTeamTask::class.java)
-            .equalTo("teamId", teamId)
-            .notEqualTo("status", "archived")
-            .equalTo("completed", true)
-            .sort("completedTime", Sort.DESCENDING)
-            .findAll()
-
-        list = uncompletedTasks + completedTasks
     }
 
     private fun completedTasks() {
@@ -262,7 +252,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
             else {
                 showNoData(binding.tvNodata, list?.size, "")
             }
-            adapterTask = AdapterTask(requireContext(), mRealm, list, !isMemberFlow.value)
+            adapterTask = AdapterTask(requireContext(), list, !isMemberFlow.value, viewLifecycleOwner.lifecycleScope)
             adapterTask.setListener(this)
             binding.rvTask.adapter = adapterTask
         }
@@ -336,7 +326,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
 
     private fun updatedTeamTaskList(updatedList: RealmResults<RealmTeamTask>) {
         viewLifecycleOwner.lifecycleScope.launch {
-            adapterTask = AdapterTask(requireContext(), mRealm, updatedList, !isMemberFlow.value)
+            adapterTask = AdapterTask(requireContext(), updatedList, !isMemberFlow.value, viewLifecycleOwner.lifecycleScope)
             adapterTask.setListener(this@TeamTaskFragment)
             binding.rvTask.adapter = adapterTask
             adapterTask.notifyDataSetChanged()
