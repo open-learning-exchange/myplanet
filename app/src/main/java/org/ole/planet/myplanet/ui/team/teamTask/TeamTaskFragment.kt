@@ -48,8 +48,6 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
-    @Inject
-    lateinit var userRepository: UserRepository
     private var _binding: FragmentTeamTaskBinding? = null
     private val binding get() = _binding!!
     private var deadline: Calendar? = null
