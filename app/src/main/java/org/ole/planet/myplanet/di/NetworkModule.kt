@@ -18,6 +18,10 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
+annotation class HealthCheckHttpClient
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
 annotation class StandardHttpClient
 
 @Qualifier
@@ -43,6 +47,27 @@ object NetworkModule {
             .readTimeout(read, TimeUnit.SECONDS)
             .writeTimeout(write, TimeUnit.SECONDS)
             .build()
+    }
+
+    @Provides
+    @Singleton
+    @HealthCheckHttpClient
+    fun provideHealthCheckOkHttpClient(): OkHttpClient {
+        return buildOkHttpClient(5, 5, 5)
+    }
+
+    @Provides
+    @Singleton
+    fun provideHealthCheckApi(
+        @HealthCheckHttpClient okHttpClient: OkHttpClient,
+        gson: Gson
+    ): HealthCheckApi {
+        val retrofit = Retrofit.Builder()
+            .baseUrl("http://localhost/") // Base URL is overridden by @Url
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create(gson))
+            .build()
+        return retrofit.create(HealthCheckApi::class.java)
     }
 
     @Provides

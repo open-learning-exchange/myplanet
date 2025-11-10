@@ -12,6 +12,7 @@ import android.os.StrictMode.VmPolicy
 import android.provider.Settings
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.annotation.WorkerThread
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
 import dagger.hilt.android.EntryPointAccessors
@@ -37,6 +38,7 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.di.ApiClientEntryPoint
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.DefaultPreferences
+import org.ole.planet.myplanet.di.HealthCheckEntryPoint
 import org.ole.planet.myplanet.di.WorkerDependenciesEntryPoint
 import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.service.AutoSyncWorker
@@ -50,6 +52,7 @@ import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utilities.NetworkUtils.startListenNetworkState
 import org.ole.planet.myplanet.utilities.NetworkUtils.stopListenNetworkState
+import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.ThemeMode
 import org.ole.planet.myplanet.utilities.VersionUtils.getVersionName
@@ -126,39 +129,37 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             }
         }
 
+        @WorkerThread
         suspend fun isServerReachable(urlString: String): Boolean {
+            if (urlString.isBlank()) return false
+
             val serverUrlMapper = ServerUrlMapper()
             val mapping = serverUrlMapper.processUrl(urlString)
-            val urlsToTry = mutableListOf(urlString)
+            val urlsToTry = mutableListOf(mapping.primaryUrl)
             mapping.alternativeUrl?.let { urlsToTry.add(it) }
 
-            return try {
-                if (urlString.isBlank()) return false
+            val entryPoint = EntryPointAccessors.fromApplication(
+                context,
+                HealthCheckEntryPoint::class.java
+            )
+            val healthCheckApi = entryPoint.healthCheckApi()
 
-                val formattedUrl = if (!urlString.startsWith("http://") && !urlString.startsWith("https://")) {
-                    "http://$urlString"
-                } else {
-                    urlString
+            for (url in urlsToTry) {
+                try {
+                    val formattedUrl = if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                        "http://$url"
+                    } else {
+                        url
+                    }
+                    val response = withContext(Dispatchers.IO) {
+                        healthCheckApi.checkServerHealth(formattedUrl)
+                    }
+                    if (response.isSuccessful) return true
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
-
-                val url = URL(formattedUrl)
-                val connection = withContext(Dispatchers.IO) {
-                    url.openConnection()
-                } as HttpURLConnection
-                connection.requestMethod = "GET"
-                connection.connectTimeout = 5000
-                connection.readTimeout = 5000
-                withContext(Dispatchers.IO) {
-                    connection.connect()
-                }
-                val responseCode = connection.responseCode
-                connection.disconnect()
-                responseCode in 200..299
-
-            } catch (e: Exception) {
-                e.printStackTrace()
-                false
             }
+            return false
         }
 
         fun handleUncaughtException(e: Throwable) {
