@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.repository.CourseRepository
 import org.ole.planet.myplanet.repository.LibraryRepository
 import org.ole.planet.myplanet.repository.NotificationRepository
@@ -64,5 +65,9 @@ class DashboardViewModel @Inject constructor(
 
     suspend fun getUnreadNotificationsSize(userId: String?): Int {
         return notificationRepository.getUnreadCount(userId)
+    }
+
+    suspend fun getMyLibraryItems(userId: String?): List<RealmMyLibrary> {
+        return libraryRepository.getLibraryListForUser(userId)
     }
 }

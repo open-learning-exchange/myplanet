@@ -50,13 +50,17 @@ import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.ui.userprofile.UserProfileFragment
 import org.ole.planet.myplanet.utilities.Constants
+import androidx.fragment.app.viewModels
+import dagger.hilt.android.AndroidEntryPoint
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCallback,
     SyncListener {
+    private val dashboardViewModel: DashboardViewModel by viewModels()
     private var fullName: String? = null
     private var params = LinearLayout.LayoutParams(250, 100)
     private var di: DialogUtils.CustomProgressDialog? = null
@@ -139,14 +143,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         }
     }
 
-    private suspend fun myLibraryDiv(view: View) {
-        val dbMylibrary = withContext(Dispatchers.IO) {
-            Realm.getDefaultInstance().use { realm ->
-                val results = RealmMyLibrary.getMyLibraryByUserId(realm, settings)
-                realm.copyFromRealm(results)
-            }
-        }
-
+    private fun myLibraryDiv(view: View, dbMylibrary: List<RealmMyLibrary>) {
         view.findViewById<FlexboxLayout>(R.id.flexboxLayout).flexDirection = FlexDirection.ROW
         if (dbMylibrary.isEmpty()) {
             view.findViewById<TextView>(R.id.count_library).visibility = View.GONE
@@ -336,7 +333,8 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             homeItemClickListener?.openCallFragment(UserProfileFragment())
         }
         viewLifecycleOwner.lifecycleScope.launch {
-            myLibraryDiv(view)
+            val dbMylibrary = dashboardViewModel.getMyLibraryItems(settings.getString("userId", "--"))
+            myLibraryDiv(view, dbMylibrary)
         }
         initializeFlexBoxView(view, R.id.flexboxLayoutCourse, RealmMyCourse::class.java)
         initializeFlexBoxView(view, R.id.flexboxLayoutTeams, RealmMyTeam::class.java)
