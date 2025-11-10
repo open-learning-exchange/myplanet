@@ -264,9 +264,6 @@ class SettingActivity : AppCompatActivity() {
         }
 
         override fun onDestroy() {
-            if (this::profileDbHandler.isInitialized) {
-                profileDbHandler.onDestroy()
-            }
             super.onDestroy()
         }
 
