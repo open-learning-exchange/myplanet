@@ -41,11 +41,13 @@ class LibraryRepositoryImpl @Inject constructor(
     override suspend fun getLibraryListForUser(userId: String?): List<RealmMyLibrary> {
         if (userId == null) return emptyList()
 
+        // OPTIMIZATION: Filter by userId in the query first, then check needToUpdate
+        // This is faster than loading all libraries and filtering in memory
         val results = queryList(RealmMyLibrary::class.java) {
             equalTo("isPrivate", false)
+            contains("userId", userId)
         }
         return filterLibrariesNeedingUpdate(results)
-            .filter { it.userId?.contains(userId) == true }
     }
 
     override suspend fun getStepResources(stepId: String?, resourceOffline: Boolean): List<RealmMyLibrary> {
@@ -61,11 +63,31 @@ class LibraryRepositoryImpl @Inject constructor(
     override suspend fun countLibrariesNeedingUpdate(userId: String?): Int {
         if (userId == null) return 0
 
-        val results = queryList(RealmMyLibrary::class.java) {
-            equalTo("isPrivate", false)
+        // OPTIMIZATION: Use Realm query to filter directly in database instead of loading all into memory
+        // This is much faster than loading all libraries and filtering in Kotlin
+        return withRealm { realm ->
+            // Count resources that need update and belong to this user
+            // needToUpdate() logic: !resourceOffline OR (resourceLocalAddress != null AND _rev != downloadedRev)
+
+            // Case 1: Resources that are not offline
+            val notOfflineCount = realm.where(RealmMyLibrary::class.java)
+                .equalTo("isPrivate", false)
+                .equalTo("resourceOffline", false)
+                .contains("userId", userId)
+                .count()
+
+            // Case 2: Resources that have local address but need update (_rev != downloadedRev)
+            val needsUpdateCount = realm.where(RealmMyLibrary::class.java)
+                .equalTo("isPrivate", false)
+                .equalTo("resourceOffline", true)
+                .isNotNull("resourceLocalAddress")
+                .notEqualTo("_rev", "")  // Has a revision
+                .contains("userId", userId)
+                .findAll()
+                .count { it._rev != it.downloadedRev }  // Only count if revisions don't match
+
+            (notOfflineCount + needsUpdateCount).toInt()
         }
-        return filterLibrariesNeedingUpdate(results)
-            .count { it.userId?.contains(userId) == true }
     }
 
     override suspend fun saveLibraryItem(item: RealmMyLibrary) {

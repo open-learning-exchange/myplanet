@@ -26,6 +26,10 @@ class DashboardViewModel @Inject constructor(
 
     private val _unreadNotifications = MutableStateFlow(0)
     val unreadNotifications: StateFlow<Int> = _unreadNotifications.asStateFlow()
+
+    // Cache for resource notification updates to prevent frequent heavy operations
+    private var lastResourceNotificationUpdate = 0L
+    private val resourceNotificationUpdateThrottleMs = 60000L // 1 minute
     fun calculateIndividualProgress(voiceCount: Int, hasUnfinishedSurvey: Boolean): Int {
         val earnedDollarsVoice = minOf(voiceCount, 5) * 2
         val earnedDollarsSurvey = if (!hasUnfinishedSurvey) 1 else 0
@@ -40,9 +44,23 @@ class DashboardViewModel @Inject constructor(
         return total.coerceAtMost(11)
     }
 
-    suspend fun updateResourceNotification(userId: String?) {
+    suspend fun updateResourceNotification(userId: String?, forceUpdate: Boolean = false) {
+        val currentTime = System.currentTimeMillis()
+
+        // OPTIMIZATION: Only update if enough time has passed or force update is requested
+        if (!forceUpdate && currentTime - lastResourceNotificationUpdate < resourceNotificationUpdateThrottleMs) {
+            android.util.Log.d("DashboardViewModel", "Skipping resource notification update, last update was ${currentTime - lastResourceNotificationUpdate}ms ago")
+            return
+        }
+
+        android.util.Log.d("DashboardViewModel", "Updating resource notifications")
+        val startTime = System.currentTimeMillis()
         val resourceCount = libraryRepository.countLibrariesNeedingUpdate(userId)
+        val endTime = System.currentTimeMillis()
+        android.util.Log.d("DashboardViewModel", "countLibrariesNeedingUpdate took ${endTime - startTime}ms, found $resourceCount resources")
+
         notificationRepository.updateResourceNotification(userId, resourceCount)
+        lastResourceNotificationUpdate = currentTime
     }
 
     suspend fun createNotificationIfMissing(
@@ -52,6 +70,13 @@ class DashboardViewModel @Inject constructor(
         userId: String?,
     ) {
         notificationRepository.createNotificationIfMissing(type, message, relatedId, userId)
+    }
+
+    suspend fun createNotificationsIfMissing(
+        notifications: List<NotificationRepository.NotificationData>,
+        userId: String?,
+    ) {
+        notificationRepository.createNotificationsIfMissing(notifications, userId)
     }
 
     suspend fun getPendingSurveys(userId: String?): List<RealmSubmission> {

@@ -12,4 +12,14 @@ interface NotificationRepository {
         relatedId: String?,
         userId: String?,
     )
+    suspend fun createNotificationsIfMissing(
+        notifications: List<NotificationData>,
+        userId: String?,
+    )
+
+    data class NotificationData(
+        val type: String,
+        val message: String,
+        val relatedId: String?,
+    )
 }

@@ -41,6 +41,73 @@ class NotificationRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun createNotificationsIfMissing(
+        notifications: List<NotificationRepository.NotificationData>,
+        userId: String?,
+    ) {
+        val actualUserId = userId ?: ""
+        if (notifications.isEmpty()) return
+
+        val startTime = System.currentTimeMillis()
+        android.util.Log.d("NotificationRepository", "createNotificationsIfMissing: Starting batch create for ${notifications.size} notifications")
+
+        executeTransaction { realm ->
+            // OPTIMIZATION: Query only for the specific relatedIds we're checking
+            // This is much faster than loading all notifications
+            val relatedIds = notifications.mapNotNull { it.relatedId }.distinct()
+
+            val existingNotifications = if (relatedIds.isNotEmpty()) {
+                realm.where(RealmNotification::class.java)
+                    .equalTo("userId", actualUserId)
+                    .`in`("relatedId", relatedIds.toTypedArray())
+                    .findAll()
+            } else {
+                // If no relatedIds, query for null relatedIds only
+                realm.where(RealmNotification::class.java)
+                    .equalTo("userId", actualUserId)
+                    .isNull("relatedId")
+                    .findAll()
+            }
+
+            android.util.Log.d("NotificationRepository", "createNotificationsIfMissing: Found ${existingNotifications.size} existing notifications")
+
+            // Create a set of existing notification keys for O(1) lookup
+            val existingKeys = existingNotifications.mapNotNull { existing ->
+                if (existing.relatedId != null) {
+                    "${existing.type}:${existing.relatedId}"
+                } else {
+                    "${existing.type}:null"
+                }
+            }.toSet()
+
+            val now = Date()
+            var createdCount = 0
+
+            // Batch create all missing notifications in a single transaction
+            notifications.forEach { notification ->
+                val key = if (notification.relatedId != null) {
+                    "${notification.type}:${notification.relatedId}"
+                } else {
+                    "${notification.type}:null"
+                }
+
+                if (key !in existingKeys) {
+                    realm.createObject(RealmNotification::class.java, UUID.randomUUID().toString()).apply {
+                        this.userId = actualUserId
+                        this.type = notification.type
+                        this.message = notification.message
+                        this.relatedId = notification.relatedId
+                        this.createdAt = now
+                    }
+                    createdCount++
+                }
+            }
+
+            val endTime = System.currentTimeMillis()
+            android.util.Log.d("NotificationRepository", "createNotificationsIfMissing: Created $createdCount new notifications in ${endTime - startTime}ms")
+        }
+    }
+
     override suspend fun getUnreadCount(userId: String?): Int {
         if (userId == null) return 0
 

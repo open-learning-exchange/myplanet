@@ -66,6 +66,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.chat.ChatHistoryListFragment
@@ -115,6 +116,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private var lastNotificationCheckTime = 0L
     private val notificationCheckThrottleMs = 5000L
     private var systemNotificationReceiver: BroadcastReceiver? = null
+    private var dashboardNavigationStartTime = 0L
 
     private interface RealmListener {
         fun removeListener()
@@ -126,22 +128,54 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        dashboardNavigationStartTime = System.currentTimeMillis()
+        android.util.Log.d("DashboardTiming", "Dashboard navigation started at: $dashboardNavigationStartTime")
+
         checkUser()
+        android.util.Log.d("DashboardTiming", "After checkUser: ${System.currentTimeMillis() - dashboardNavigationStartTime}ms")
+
         initViews()
+        android.util.Log.d("DashboardTiming", "After initViews: ${System.currentTimeMillis() - dashboardNavigationStartTime}ms")
+
         updateAppTitle()
+        android.util.Log.d("DashboardTiming", "After updateAppTitle: ${System.currentTimeMillis() - dashboardNavigationStartTime}ms")
+
         notificationManager = NotificationUtils.getInstance(this)
+        android.util.Log.d("DashboardTiming", "After notificationManager init: ${System.currentTimeMillis() - dashboardNavigationStartTime}ms")
+
         if (handleGuestAccess()) return
+        android.util.Log.d("DashboardTiming", "After handleGuestAccess: ${System.currentTimeMillis() - dashboardNavigationStartTime}ms")
+
         setupNavigation()
+        android.util.Log.d("DashboardTiming", "After setupNavigation: ${System.currentTimeMillis() - dashboardNavigationStartTime}ms")
+
         handleInitialFragment()
+        android.util.Log.d("DashboardTiming", "After handleInitialFragment: ${System.currentTimeMillis() - dashboardNavigationStartTime}ms")
+
         setupToolbarActions()
+        android.util.Log.d("DashboardTiming", "After setupToolbarActions: ${System.currentTimeMillis() - dashboardNavigationStartTime}ms")
+
         hideWifi()
+        android.util.Log.d("DashboardTiming", "After hideWifi: ${System.currentTimeMillis() - dashboardNavigationStartTime}ms")
+
         setupRealmListeners()
+        android.util.Log.d("DashboardTiming", "After setupRealmListeners: ${System.currentTimeMillis() - dashboardNavigationStartTime}ms")
+
         setupSystemNotificationReceiver()
+        android.util.Log.d("DashboardTiming", "After setupSystemNotificationReceiver: ${System.currentTimeMillis() - dashboardNavigationStartTime}ms")
+
         checkIfShouldShowNotifications()
+        android.util.Log.d("DashboardTiming", "After checkIfShouldShowNotifications: ${System.currentTimeMillis() - dashboardNavigationStartTime}ms")
+
         addBackPressCallback()
+        android.util.Log.d("DashboardTiming", "After addBackPressCallback: ${System.currentTimeMillis() - dashboardNavigationStartTime}ms")
+
         challengeHelper = ChallengeHelper(this, mRealm, user, settings, editor, dashboardViewModel)
         challengeHelper.evaluateChallengeDialog()
+        android.util.Log.d("DashboardTiming", "After challengeHelper: ${System.currentTimeMillis() - dashboardNavigationStartTime}ms")
+
         handleNotificationIntent(intent)
+        android.util.Log.d("DashboardTiming", "After handleNotificationIntent (onCreate complete): ${System.currentTimeMillis() - dashboardNavigationStartTime}ms")
     }
 
     private fun initViews() {
@@ -204,10 +238,13 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun setupNavigation() {
+        android.util.Log.d("DashboardTiming", "setupNavigation: Starting coroutine at ${System.currentTimeMillis() - dashboardNavigationStartTime}ms")
         lifecycleScope.launch {
-            delay(50)
+            android.util.Log.d("DashboardTiming", "setupNavigation: Inside coroutine at ${System.currentTimeMillis() - dashboardNavigationStartTime}ms")
             headerResult = accountHeader
+            android.util.Log.d("DashboardTiming", "setupNavigation: After accountHeader at ${System.currentTimeMillis() - dashboardNavigationStartTime}ms")
             createDrawer()
+            android.util.Log.d("DashboardTiming", "setupNavigation: After createDrawer at ${System.currentTimeMillis() - dashboardNavigationStartTime}ms")
             supportFragmentManager.addOnBackStackChangedListener {
                 val frag = supportFragmentManager.findFragmentById(R.id.fragment_container)
                 val idToSelect = when (frag) {
@@ -577,43 +614,81 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun checkIfShouldShowNotifications() {
+        android.util.Log.d("DashboardTiming", "checkIfShouldShowNotifications: Called at ${System.currentTimeMillis() - dashboardNavigationStartTime}ms")
         val fromLogin = intent.getBooleanExtra("from_login", false)
         if (fromLogin || !notificationsShownThisSession) {
             notificationsShownThisSession = true
+            android.util.Log.d("DashboardTiming", "checkIfShouldShowNotifications: Starting coroutine at ${System.currentTimeMillis() - dashboardNavigationStartTime}ms")
             lifecycleScope.launch {
-                kotlinx.coroutines.delay(1000)
+                android.util.Log.d("DashboardTiming", "checkIfShouldShowNotifications: Inside coroutine at ${System.currentTimeMillis() - dashboardNavigationStartTime}ms")
+                android.util.Log.d("DashboardTiming", "checkIfShouldShowNotifications: Calling checkAndCreateNewNotifications immediately at ${System.currentTimeMillis() - dashboardNavigationStartTime}ms")
                 checkAndCreateNewNotifications()
             }
+        } else {
+            android.util.Log.d("DashboardTiming", "checkIfShouldShowNotifications: Skipped (notificationsShownThisSession=$notificationsShownThisSession)")
         }
     }
 
     private fun checkAndCreateNewNotifications() {
+        android.util.Log.d("DashboardTiming", "checkAndCreateNewNotifications: Called at ${System.currentTimeMillis() - dashboardNavigationStartTime}ms")
         val userId = user?.id
 
         lifecycleScope.launch(Dispatchers.IO) {
+            android.util.Log.d("DashboardTiming", "checkAndCreateNewNotifications: Inside IO coroutine at ${System.currentTimeMillis() - dashboardNavigationStartTime}ms")
+
+            // OPTIMIZATION: Fetch notification count FIRST (fast operation - 0ms)
             var unreadCount = 0
-            val newNotifications = mutableListOf<NotificationUtils.NotificationConfig>()
-
             try {
-                dashboardViewModel.updateResourceNotification(userId)
-                databaseService.realmInstance.use { backgroundRealm ->
-                    val createdNotifications = createNotifications(backgroundRealm, userId)
-                    newNotifications.addAll(createdNotifications)
+                val fetchStartTime = System.currentTimeMillis()
+                android.util.Log.d("DashboardTiming", "Fetching notification count at: $fetchStartTime (${fetchStartTime - dashboardNavigationStartTime}ms from start)")
+                unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
+                val fetchEndTime = System.currentTimeMillis()
+                android.util.Log.d("DashboardTiming", "Notification count fetched: $unreadCount, took ${fetchEndTime - fetchStartTime}ms")
 
-                    unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
+                // Display badge immediately with current count
+                withContext(Dispatchers.Main) {
+                    android.util.Log.d("DashboardTiming", "checkAndCreateNewNotifications: Displaying badge immediately at ${System.currentTimeMillis() - dashboardNavigationStartTime}ms")
+                    updateNotificationBadge(unreadCount) {
+                        openNotificationsList(userId ?: "")
+                    }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
 
+            // Now do heavy operations in background (resource update + notification creation)
+            val newNotifications = mutableListOf<NotificationUtils.NotificationConfig>()
+            try {
+                android.util.Log.d("DashboardTiming", "Starting heavy operations (updateResourceNotification) at ${System.currentTimeMillis() - dashboardNavigationStartTime}ms")
+                val resourceUpdateStart = System.currentTimeMillis()
+                dashboardViewModel.updateResourceNotification(userId)
+                val resourceUpdateEnd = System.currentTimeMillis()
+                android.util.Log.d("DashboardTiming", "Resource notification update took ${resourceUpdateEnd - resourceUpdateStart}ms")
+
+                databaseService.realmInstance.use { backgroundRealm ->
+                    val createdNotifications = createNotifications(backgroundRealm, userId)
+                    newNotifications.addAll(createdNotifications)
+
+                    // Fetch updated count after resource update
+                    val updatedCount = dashboardViewModel.getUnreadNotificationsSize(userId)
+                    if (updatedCount != unreadCount) {
+                        android.util.Log.d("DashboardTiming", "Notification count changed from $unreadCount to $updatedCount, updating badge")
+                        withContext(Dispatchers.Main) {
+                            updateNotificationBadge(updatedCount) {
+                                openNotificationsList(userId ?: "")
+                            }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
+            // Show system notifications
             withContext(Dispatchers.Main) {
                 try {
-                    updateNotificationBadge(unreadCount) {
-                        openNotificationsList(userId ?: "")
-                    }
-
                     val groupedNotifications = newNotifications.groupBy { it.type }
-                    
+
                     groupedNotifications.forEach { (type, notifications) ->
                         when {
                             notifications.size == 1 -> {
@@ -625,7 +700,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                             }
                         }
                     }
-
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
@@ -718,11 +792,17 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         realm: Realm,
         userId: String?,
     ): List<NotificationUtils.NotificationConfig> {
+        val createNotificationsStart = System.currentTimeMillis()
+        android.util.Log.d("DashboardTiming", "createNotifications: Starting data collection")
+
         val surveyTitles = collectSurveyData(realm, userId)
         val taskData = collectTaskData(realm, userId)
         val joinRequestData = collectJoinRequestData(realm, userId)
         val storageRatio = FileUtils.totalAvailableMemoryRatio(this)
 
+        android.util.Log.d("DashboardTiming", "createNotifications: Data collection complete, took ${System.currentTimeMillis() - createNotificationsStart}ms")
+
+        val notificationConfigsStart = System.currentTimeMillis()
         val notificationConfigs = realm.where(RealmNotification::class.java)
             .equalTo("userId", userId)
             .equalTo("isRead", false)
@@ -732,82 +812,174 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
             .toMutableList()
 
+        android.util.Log.d("DashboardTiming", "createNotifications: Mapped notification configs in ${System.currentTimeMillis() - notificationConfigsStart}ms")
+
+        val createDbNotificationsStart = System.currentTimeMillis()
+
+        // OPTIMIZATION: Batch create all notifications in a single transaction
+        val notificationsToCreate = mutableListOf<NotificationRepository.NotificationData>()
+
         surveyTitles.forEach { title ->
-            dashboardViewModel.createNotificationIfMissing("survey", title, title, userId)
+            notificationsToCreate.add(NotificationRepository.NotificationData("survey", title, title))
         }
 
         taskData.forEach { (title, deadline, id) ->
-            dashboardViewModel.createNotificationIfMissing("task", "$title $deadline", id, userId)
+            notificationsToCreate.add(NotificationRepository.NotificationData("task", "$title $deadline", id))
         }
 
         if (storageRatio > 85) {
-            dashboardViewModel.createNotificationIfMissing("storage", "$storageRatio%", "storage", userId)
+            notificationsToCreate.add(NotificationRepository.NotificationData("storage", "$storageRatio%", "storage"))
         }
-        dashboardViewModel.createNotificationIfMissing("storage", "90%", "storage_test", userId)
+        notificationsToCreate.add(NotificationRepository.NotificationData("storage", "90%", "storage_test"))
 
         joinRequestData.forEach { (message, id) ->
-            dashboardViewModel.createNotificationIfMissing("join_request", message, id, userId)
+            notificationsToCreate.add(NotificationRepository.NotificationData("join_request", message, id))
         }
+
+        // Batch create all notifications at once
+        dashboardViewModel.createNotificationsIfMissing(notificationsToCreate, userId)
+
+        android.util.Log.d("DashboardTiming", "createNotifications: Created DB notifications in ${System.currentTimeMillis() - createDbNotificationsStart}ms")
+        android.util.Log.d("DashboardTiming", "createNotifications: Total time ${System.currentTimeMillis() - createNotificationsStart}ms")
+
         return notificationConfigs
     }
 
     private fun collectSurveyData(realm: Realm, userId: String?): List<String> {
-        return realm.where(RealmSubmission::class.java)
+        val startTime = System.currentTimeMillis()
+
+        // Get all pending survey submissions
+        val submissions = realm.where(RealmSubmission::class.java)
             .equalTo("userId", userId)
             .equalTo("status", "pending")
             .equalTo("type", "survey")
             .findAll()
-            .mapNotNull { submission ->
-                val examId = submission.parentId?.split("@")?.firstOrNull() ?: ""
-                realm.where(RealmStepExam::class.java)
-                    .equalTo("id", examId)
-                    .findFirst()
-                    ?.name
-            }
+
+        if (submissions.isEmpty()) {
+            android.util.Log.d("DashboardTiming", "collectSurveyData: No submissions found, took ${System.currentTimeMillis() - startTime}ms")
+            return emptyList()
+        }
+
+        // OPTIMIZATION: Collect all exam IDs first, then batch query
+        val examIds = submissions.mapNotNull { submission ->
+            submission.parentId?.split("@")?.firstOrNull()
+        }.distinct()
+
+        if (examIds.isEmpty()) {
+            android.util.Log.d("DashboardTiming", "collectSurveyData: No exam IDs found, took ${System.currentTimeMillis() - startTime}ms")
+            return emptyList()
+        }
+
+        // Single batch query instead of N individual queries
+        val exams = realm.where(RealmStepExam::class.java)
+            .`in`("id", examIds.toTypedArray())
+            .findAll()
+
+        // Create a map for O(1) lookups
+        val examMap = exams.associateBy { it.id }
+
+        val result = submissions.mapNotNull { submission ->
+            val examId = submission.parentId?.split("@")?.firstOrNull() ?: return@mapNotNull null
+            examMap[examId]?.name
+        }
+
+        val endTime = System.currentTimeMillis()
+        android.util.Log.d("DashboardTiming", "collectSurveyData: Found ${result.size} surveys from ${submissions.size} submissions in ${endTime - startTime}ms")
+
+        return result
     }
 
     private fun collectTaskData(realm: Realm, userId: String?): List<Triple<String, String, String>> {
-        return realm.where(RealmTeamTask::class.java)
+        val startTime = System.currentTimeMillis()
+
+        val tasks = realm.where(RealmTeamTask::class.java)
             .notEqualTo("status", "archived")
             .equalTo("completed", false)
             .equalTo("assignee", userId)
             .findAll()
-            .mapNotNull { task ->
-                val title = task.title ?: return@mapNotNull null
-                val id = task.id ?: return@mapNotNull null
-                Triple(title, formatDate(task.deadline), id)
-            }
+
+        val result = tasks.mapNotNull { task ->
+            val title = task.title ?: return@mapNotNull null
+            val id = task.id ?: return@mapNotNull null
+            Triple(title, formatDate(task.deadline), id)
+        }
+
+        val endTime = System.currentTimeMillis()
+        android.util.Log.d("DashboardTiming", "collectTaskData: Found ${result.size} tasks from ${tasks.size} total in ${endTime - startTime}ms")
+
+        return result
     }
 
     private fun collectJoinRequestData(realm: Realm, userId: String?): List<Pair<String, String>> {
-        return realm.where(RealmMyTeam::class.java)
+        val startTime = System.currentTimeMillis()
+
+        // Get all leaderships for this user
+        val leaderships = realm.where(RealmMyTeam::class.java)
             .equalTo("userId", userId)
             .equalTo("docType", "membership")
             .equalTo("isLeader", true)
             .findAll()
-            .flatMap { leadership ->
-                realm.where(RealmMyTeam::class.java)
-                    .equalTo("teamId", leadership.teamId)
-                    .equalTo("docType", "request")
-                    .findAll()
-                    .mapNotNull { joinRequest ->
-                        joinRequest._id?.let { requestId ->
-                            val team = realm.where(RealmMyTeam::class.java)
-                                .equalTo("_id", leadership.teamId)
-                                .findFirst()
 
-                            val requester = realm.where(RealmUserModel::class.java)
-                                .equalTo("id", joinRequest.userId)
-                                .findFirst()
+        if (leaderships.isEmpty()) {
+            android.util.Log.d("DashboardTiming", "collectJoinRequestData: No leaderships found, took ${System.currentTimeMillis() - startTime}ms")
+            return emptyList()
+        }
 
-                            val requesterName = requester?.name ?: "Unknown User"
-                            val teamName = team?.name ?: "Unknown Team"
-                            val message = getString(R.string.user_requested_to_join_team, requesterName, teamName)
+        // OPTIMIZATION: Collect all teamIds first
+        val teamIds = leaderships.mapNotNull { it.teamId }.distinct()
 
-                            Pair(message, requestId)
-                        }
-                    }
-            }
+        if (teamIds.isEmpty()) {
+            android.util.Log.d("DashboardTiming", "collectJoinRequestData: No team IDs found, took ${System.currentTimeMillis() - startTime}ms")
+            return emptyList()
+        }
+
+        // Batch query for all join requests (instead of one query per leadership)
+        val allJoinRequests = realm.where(RealmMyTeam::class.java)
+            .`in`("teamId", teamIds.toTypedArray())
+            .equalTo("docType", "request")
+            .findAll()
+
+        if (allJoinRequests.isEmpty()) {
+            android.util.Log.d("DashboardTiming", "collectJoinRequestData: No join requests found, took ${System.currentTimeMillis() - startTime}ms")
+            return emptyList()
+        }
+
+        // Batch query for all teams (instead of one query per request)
+        val teams = realm.where(RealmMyTeam::class.java)
+            .`in`("_id", teamIds.toTypedArray())
+            .findAll()
+        val teamMap = teams.associateBy { it._id }
+
+        // Batch query for all requesters (instead of one query per request)
+        val requesterIds = allJoinRequests.mapNotNull { it.userId }.distinct().toTypedArray()
+        val requesters = if (requesterIds.isNotEmpty()) {
+            realm.where(RealmUserModel::class.java)
+                .`in`("id", requesterIds)
+                .findAll()
+        } else {
+            emptyList()
+        }
+        val requesterMap = requesters.associateBy { it.id }
+
+        // Now build the result using O(1) map lookups
+        val result = allJoinRequests.mapNotNull { joinRequest ->
+            val requestId = joinRequest._id ?: return@mapNotNull null
+            val teamId = joinRequest.teamId ?: return@mapNotNull null
+
+            val team = teamMap[teamId]
+            val requester = requesterMap[joinRequest.userId]
+
+            val requesterName = requester?.name ?: "Unknown User"
+            val teamName = team?.name ?: "Unknown Team"
+            val message = getString(R.string.user_requested_to_join_team, requesterName, teamName)
+
+            Pair(message, requestId)
+        }
+
+        val endTime = System.currentTimeMillis()
+        android.util.Log.d("DashboardTiming", "collectJoinRequestData: Found ${result.size} join requests from ${leaderships.size} leaderships in ${endTime - startTime}ms")
+
+        return result
     }
 
     private fun createNotificationConfigFromDatabase(dbNotification: RealmNotification): NotificationUtils.NotificationConfig? {
@@ -869,6 +1041,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         smsCountTxt.text = "$count"
         smsCountTxt.visibility = if (count > 0) View.VISIBLE else View.GONE
         actionView.setOnClickListener(onClickListener)
+
+        val badgeDisplayTime = System.currentTimeMillis()
+        val totalTime = badgeDisplayTime - dashboardNavigationStartTime
+        android.util.Log.d("DashboardTiming", "Notification badge displayed at: $badgeDisplayTime")
+        android.util.Log.d("DashboardTiming", "TOTAL TIME from dashboard navigation to notification badge display: ${totalTime}ms")
     }
 
     fun refreshChatHistoryList() {
