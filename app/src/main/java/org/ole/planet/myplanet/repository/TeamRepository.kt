@@ -20,6 +20,8 @@ interface TeamRepository {
     suspend fun getTeamByDocumentIdOrTeamId(id: String): RealmMyTeam?
     suspend fun getTeamLinks(): List<RealmMyTeam>
     suspend fun getTeamById(teamId: String): RealmMyTeam?
+    suspend fun getTaskTeamInfo(taskId: String): Triple<String, String, String>?
+    suspend fun getJoinRequestTeamId(requestId: String): String?
     suspend fun isMember(userId: String?, teamId: String): Boolean
     suspend fun isTeamLeader(teamId: String, userId: String?): Boolean
     suspend fun hasPendingRequest(teamId: String, userId: String?): Boolean

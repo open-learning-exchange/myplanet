@@ -66,6 +66,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.chat.ChatHistoryListFragment
@@ -109,6 +110,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private val dashboardViewModel: DashboardViewModel by viewModels()
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
+    @Inject
+    lateinit var teamRepository: TeamRepository
     private lateinit var challengeHelper: ChallengeHelper
     private lateinit var notificationManager: NotificationUtils.NotificationManager
     private var notificationsShownThisSession = false
@@ -422,22 +425,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private suspend fun handleTaskNavigation(taskId: String?) {
         if (taskId == null) return
 
-        val teamData = withContext(Dispatchers.IO) {
-            var result: Triple<String, String, String>? = null
-            Realm.getDefaultInstance().use { realm ->
-                val task = realm.where(RealmTeamTask::class.java)
-                    .equalTo("id", taskId)
-                    .findFirst()
-
-                val linkJson = JSONObject(task?.link ?: "{}")
-                val teamId = linkJson.optString("teams")
-                if (teamId.isNotEmpty()) {
-                    val teamObject = realm.where(RealmMyTeam::class.java)?.equalTo("_id", teamId)?.findFirst()
-                    result = Triple(teamId, teamObject?.name ?: "", teamObject?.type ?: "")
-                }
-            }
-            result
-        }
+        val teamData = teamRepository.getTaskTeamInfo(taskId)
 
         teamData?.let { (teamId, teamName, teamType) ->
             val f = TeamDetailFragment.newInstance(
@@ -450,7 +438,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             openCallFragment(f)
         }
     }
-    
+
     private suspend fun handleJoinRequestNavigation(requestId: String?) {
         if (requestId != null) {
             val actualJoinRequestId = if (requestId.startsWith("join_request_")) {
@@ -459,20 +447,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 requestId
             }
 
-            val teamId = withContext(Dispatchers.IO) {
-                val startTime = System.currentTimeMillis()
-                var localTeamId: String? = null
-                Realm.getDefaultInstance().use { realm ->
-                    val joinRequest = realm.where(RealmMyTeam::class.java)
-                        .equalTo("_id", actualJoinRequestId)
-                        .equalTo("docType", "request")
-                        .findFirst()
-                    localTeamId = joinRequest?.teamId
-                }
-                val endTime = System.currentTimeMillis()
-                android.util.Log.d("DashboardActivity", "Join request query took ${endTime - startTime}ms")
-                localTeamId
-            }
+            val teamId = teamRepository.getJoinRequestTeamId(actualJoinRequestId)
 
             if (teamId?.isNotEmpty() == true) {
                 val f = TeamDetailFragment()
