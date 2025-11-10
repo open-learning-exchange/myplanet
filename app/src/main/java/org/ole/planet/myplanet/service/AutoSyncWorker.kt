@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.di.AutoSyncEntryPoint
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.utilities.DialogUtils.startDownloadUpdate
 import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.Utilities
@@ -78,10 +79,12 @@ class AutoSyncWorker(
             }
             if (!MainApplication.isSyncRunning) {
                 MainApplication.isSyncRunning = true
-                uploadManager.uploadExamResult(this)
-                uploadManager.uploadFeedback(this)
-                uploadManager.uploadAchievement()
-                uploadManager.uploadResourceActivities("")
+                MainApplication.applicationScope.launch {
+                    uploadManager.uploadExamResult()
+                    uploadManager.uploadFeedback()
+                    uploadManager.uploadAchievement()
+                    uploadManager.uploadResourceActivities("")
+                }
                 uploadManager.uploadUserActivities(this)
                 uploadManager.uploadCourseActivities()
                 uploadManager.uploadSearchActivity()
