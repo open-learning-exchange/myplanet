@@ -229,6 +229,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                 .detectDiskWrites()
                 .detectNetwork()
                 .penaltyLog()
+                .penaltyDeath()
                 .build()
             StrictMode.setThreadPolicy(threadPolicy)
         }

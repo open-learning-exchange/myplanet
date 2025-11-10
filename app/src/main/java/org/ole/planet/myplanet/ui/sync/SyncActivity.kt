@@ -230,13 +230,15 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             .show()
     }
 
-    private fun clearInternalStorage() {
-        val myDir = File(FileUtils.getOlePath(this))
-        if (myDir.isDirectory) {
-            val children = myDir.list()
-            if (children != null) {
-                for (i in children.indices) {
-                    File(myDir, children[i]).delete()
+    private suspend fun clearInternalStorage() {
+        withContext(Dispatchers.IO) {
+            val myDir = File(FileUtils.getOlePath(this@SyncActivity))
+            if (myDir.isDirectory) {
+                val children = myDir.list()
+                if (children != null) {
+                    for (i in children.indices) {
+                        File(myDir, children[i]).delete()
+                    }
                 }
             }
         }
@@ -728,20 +730,27 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         processedUrl = saveConfigAndContinue(dialog, url, isAlternativeUrl, defaultUrl)
         if (TextUtils.isEmpty(processedUrl)) return
         isSync = true
-        if (checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) && settings.getBoolean("firstRun", true)) {
-            clearInternalStorage()
-        }
-        Service(this).isPlanetAvailable(object : PlanetAvailableListener {
-            override fun isAvailable() {
-                Service(context).checkVersion(this@SyncActivity, settings)
-            }
-            override fun notAvailable() {
-                if (!isFinishing) {
-                    syncFailed = true
-                    showAlert(context, "Error", getString(R.string.planet_server_not_reachable))
+        val startSyncFlow = {
+            Service(this).isPlanetAvailable(object : PlanetAvailableListener {
+                override fun isAvailable() {
+                    Service(context).checkVersion(this@SyncActivity, settings)
                 }
+                override fun notAvailable() {
+                    if (!isFinishing) {
+                        syncFailed = true
+                        showAlert(context, "Error", getString(R.string.planet_server_not_reachable))
+                    }
+                }
+            })
+        }
+        if (checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) && settings.getBoolean("firstRun", true)) {
+            lifecycleScope.launch {
+                clearInternalStorage()
+                startSyncFlow()
             }
-        })
+        } else {
+            startSyncFlow()
+        }
     }
 
     override fun onSuccess(success: String?) {
