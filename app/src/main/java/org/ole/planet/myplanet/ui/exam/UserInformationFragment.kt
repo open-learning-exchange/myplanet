@@ -329,7 +329,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     }
 
     private fun uploadSubmissions() {
-        MainApplication.applicationScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             try {
                 withContext(Dispatchers.IO) {
                     uploadManager.uploadSubmissions()
@@ -341,13 +341,8 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         }
     }
 
-    private fun uploadExamResultWrapper() {
-        val successListener = object : SuccessListener {
-            override fun onSuccess(success: String?) {
-            }
-        }
-
-        uploadManager.uploadExamResult(successListener)
+    private suspend fun uploadExamResultWrapper() {
+        uploadManager.uploadExamResult()
     }
 
     private fun showDatePickerDialog() {

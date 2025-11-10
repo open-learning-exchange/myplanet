@@ -199,15 +199,7 @@ class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters)
         }
 
         try {
-            val successListener = object : SuccessListener {
-                override fun onSuccess(success: String?) {
-                    // No UI updates required for background sync completion.
-                }
-            }
-
-            withContext(Dispatchers.IO) {
-                uploadManager.uploadExamResult(successListener)
-            }
+            uploadManager.uploadExamResult()
         } catch (e: Exception) {
             e.printStackTrace()
         }
