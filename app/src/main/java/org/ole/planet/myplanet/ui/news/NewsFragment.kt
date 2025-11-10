@@ -471,6 +471,7 @@ class NewsFragment : BaseNewsFragment() {
     override fun onDestroyView() {
         updatedNewsList?.removeAllChangeListeners()
         updatedNewsList = null
+        adapterNews?.unregisterAdapterDataObserver(observer)
         if (isRealmInitialized()) {
             mRealm.close()
         }
