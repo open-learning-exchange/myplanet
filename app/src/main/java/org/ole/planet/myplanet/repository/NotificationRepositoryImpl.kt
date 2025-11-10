@@ -52,27 +52,18 @@ class NotificationRepositoryImpl @Inject constructor(
         android.util.Log.d("NotificationRepository", "createNotificationsIfMissing: Starting batch create for ${notifications.size} notifications")
 
         executeTransaction { realm ->
-            // OPTIMIZATION: Query only for the specific relatedIds we're checking
-            // This is much faster than loading all notifications
-            val relatedIds = notifications.mapNotNull { it.relatedId }.distinct()
+            // OPTIMIZATION: Query only UNREAD notifications (old read ones don't matter)
+            // This is much faster than searching through all historical notifications
+            val queryStartTime = System.currentTimeMillis()
+            val existingUnreadNotifications = realm.where(RealmNotification::class.java)
+                .equalTo("userId", actualUserId)
+                .equalTo("isRead", false)
+                .findAll()
 
-            val existingNotifications = if (relatedIds.isNotEmpty()) {
-                realm.where(RealmNotification::class.java)
-                    .equalTo("userId", actualUserId)
-                    .`in`("relatedId", relatedIds.toTypedArray())
-                    .findAll()
-            } else {
-                // If no relatedIds, query for null relatedIds only
-                realm.where(RealmNotification::class.java)
-                    .equalTo("userId", actualUserId)
-                    .isNull("relatedId")
-                    .findAll()
-            }
-
-            android.util.Log.d("NotificationRepository", "createNotificationsIfMissing: Found ${existingNotifications.size} existing notifications")
+            android.util.Log.d("NotificationRepository", "createNotificationsIfMissing: Found ${existingUnreadNotifications.size} unread notifications in ${System.currentTimeMillis() - queryStartTime}ms")
 
             // Create a set of existing notification keys for O(1) lookup
-            val existingKeys = existingNotifications.mapNotNull { existing ->
+            val existingKeys = existingUnreadNotifications.mapNotNull { existing ->
                 if (existing.relatedId != null) {
                     "${existing.type}:${existing.relatedId}"
                 } else {
@@ -82,6 +73,7 @@ class NotificationRepositoryImpl @Inject constructor(
 
             val now = Date()
             var createdCount = 0
+            var skippedCount = 0
 
             // Batch create all missing notifications in a single transaction
             notifications.forEach { notification ->
@@ -100,11 +92,13 @@ class NotificationRepositoryImpl @Inject constructor(
                         this.createdAt = now
                     }
                     createdCount++
+                } else {
+                    skippedCount++
                 }
             }
 
             val endTime = System.currentTimeMillis()
-            android.util.Log.d("NotificationRepository", "createNotificationsIfMissing: Created $createdCount new notifications in ${endTime - startTime}ms")
+            android.util.Log.d("NotificationRepository", "createNotificationsIfMissing: Created $createdCount new, skipped $skippedCount existing in ${endTime - startTime}ms total")
         }
     }
 
