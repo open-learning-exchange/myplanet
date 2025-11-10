@@ -27,13 +27,13 @@ class FeedbackDetailViewModel @Inject constructor(
     val events: SharedFlow<FeedbackDetailEvent> = _events.asSharedFlow()
 
     fun loadFeedback(id: String?) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             _feedback.value = feedbackRepository.getFeedbackById(id)
         }
     }
 
     fun closeFeedback(id: String?) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             feedbackRepository.closeFeedback(id)
             _feedback.value = feedbackRepository.getFeedbackById(id)
             _events.emit(FeedbackDetailEvent.CloseFeedbackSuccess)
@@ -41,7 +41,7 @@ class FeedbackDetailViewModel @Inject constructor(
     }
 
     fun addReply(id: String?, obj: JsonObject) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             feedbackRepository.addReply(id, obj)
             _feedback.value = feedbackRepository.getFeedbackById(id)
         }
