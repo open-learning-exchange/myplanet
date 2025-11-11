@@ -144,7 +144,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     override fun onStart() {
         super.onStart()
-        lifecycleScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch {
             setupHeavyTasks()
         }
     }
