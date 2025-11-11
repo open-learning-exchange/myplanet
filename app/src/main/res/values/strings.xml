@@ -571,9 +571,6 @@
     <string name="csv_filename">CSV Filename</string>
     <string name="please_enter_reply">Please enter reply</string>
     <string name="image_filename">Image Filename</string>
-    <string name="markdown_filename">Markdown Filename</string>
-    <string name="select_login_mode">Select Login Mode:</string>
-    <string name="normal_mode">Normal Mode</string>
     <string name="select_date">Select Date</string>
     <string name="public_public">Public</string>
     <string name="type_asterisk">Type*</string>
@@ -983,7 +980,6 @@
     <string name="main_controls">main controls</string>
     <string name="select_user_to_login">Select User To Login</string>
     <string name="dismiss">Dismiss</string>
-    <string name="gps_is_settings">GPS is settings</string>
     <string name="gps_is_not_enabled_do_you_want_to_go_to_settings_menu">GPS is not enabled. Do you want to go to settings menu?</string>
     <string name="available_space_colon">available space: </string>
     <string name="community_leaders">Community Leaders</string>
