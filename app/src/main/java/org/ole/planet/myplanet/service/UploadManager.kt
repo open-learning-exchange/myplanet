@@ -187,9 +187,11 @@ class UploadManager @Inject constructor(
             submissionsToUpload.processInBatches { data ->
                 try {
                     val response: JsonObject? = if (TextUtils.isEmpty(data._id)) {
-                        apiInterface?.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/submissions", data.serialized)?.execute()?.body()
+                        apiInterface.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/submissions", data.serialized)
+                            .execute().body()
                     } else {
-                        apiInterface?.putDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/submissions/${data._id}", data.serialized)?.execute()?.body()
+                        apiInterface.putDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/submissions/${data._id}", data.serialized)
+                            .execute().body()
                     }
 
                     if (response != null && data.id != null) {
