@@ -58,16 +58,15 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentHomeBellBinding.inflate(inflater, container, false)
-        val view = binding.root
-        initView(view)
-        declareElements()
-        onLoaded(view)
-        user = profileDbHandler?.userModel
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        initView(view)
+        declareElements()
+        onLoaded(view)
+        user = profileDbHandler?.userModel
         binding.cardProfileBell.txtCommunityName.text = model?.planetCode
         setupNetworkStatusMonitoring()
         (activity as DashboardActivity?)?.supportActionBar?.hide()
