@@ -169,9 +169,8 @@ repositories {
 }
 
 dependencies {
-    testImplementation 'junit:junit:4.13.2'
-
     implementation fileTree(include: ['*.jar', '*.aar'], dir: 'libs')
+    implementation platform("org.jetbrains.kotlin:kotlin-bom:2.2.10")
 
     implementation 'androidx.annotation:annotation:1.9.1'
     implementation 'androidx.appcompat:appcompat:1.7.1'
@@ -201,9 +200,6 @@ dependencies {
     implementation 'de.rtner:PBKDF2:1.1.4'
     implementation 'org.osmdroid:osmdroid-android:6.1.20'
     implementation 'org.jetbrains:annotations:26.0.2'
-
-    implementation(platform("org.jetbrains.kotlin:kotlin-bom:2.2.10"))
-
     implementation "org.jetbrains.kotlin:kotlin-stdlib:${rootProject.ext['kotlin_version']}"
     implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2"
@@ -236,6 +232,8 @@ dependencies {
     implementation "io.noties.markwon:image:$markwon_version"
     implementation "io.noties.markwon:html:$markwon_version"
     implementation "io.noties.markwon:ext-tables:$markwon_version"
+
+    testImplementation 'junit:junit:4.13.2'
 }
 realm {
     syncEnabled = true
