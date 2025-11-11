@@ -40,7 +40,9 @@ import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
 import org.ole.planet.myplanet.ui.team.TeamFragment
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class BellDashboardFragment : BaseDashboardFragment() {
     private var _binding: FragmentHomeBellBinding? = null
     private val binding get() = _binding!!
