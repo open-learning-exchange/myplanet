@@ -14,7 +14,6 @@ android {
         ndkVersion = '26.3.11579264'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
-        multiDexEnabled = true
     }
     configurations.configureEach {
         resolutionStrategy.force 'com.google.android.material:material:1.12.0'
@@ -171,10 +170,11 @@ repositories {
 
 dependencies {
     testImplementation 'junit:junit:4.13.2'
+
     implementation fileTree(include: ['*.jar', '*.aar'], dir: 'libs')
+
     implementation 'androidx.constraintlayout:constraintlayout:2.2.1'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
-    implementation 'androidx.multidex:multidex:2.0.1'
     implementation 'androidx.appcompat:appcompat:1.7.1'
     implementation 'androidx.recyclerview:recyclerview:1.4.0'
     implementation 'androidx.annotation:annotation:1.9.1'
@@ -184,25 +184,26 @@ dependencies {
     implementation "androidx.work:work-runtime:2.10.3"
     implementation "androidx.slidingpanelayout:slidingpanelayout:1.2.0"
     implementation 'androidx.preference:preference-ktx:1.2.1'
-
     implementation 'com.google.code.gson:gson:2.13.1'
     implementation 'com.google.android.material:material:1.12.0'
-
-    implementation "com.github.VaibhavLakhera:Circular-Progress-View:0.1.2"
-    implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
+    implementation 'com.github.chrisbanes:PhotoView:2.3.0'
     implementation 'com.github.clans:fab:1.6.4'
+    implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
+    implementation "com.github.VaibhavLakhera:Circular-Progress-View:0.1.2"
     implementation 'com.applandeo:material-calendar-view:1.9.2'
     implementation 'com.afollestad.material-dialogs:commons:0.9.6.0'
     implementation 'com.nex3z:toggle-button-group:1.2.3'
-    implementation('com.mikepenz:materialdrawer:6.1.1@aar') { transitive = true}
-    implementation('com.opencsv:opencsv:5.12.0') {
-        exclude group: 'commons-logging', module: 'commons-logging'
-    }
+
+    implementation('com.mikepenz:materialdrawer:6.1.1@aar') { transitive = true }
+    implementation('com.opencsv:opencsv:5.12.0') { exclude group: 'commons-logging', module: 'commons-logging' }
 
     implementation 'de.hdodenhof:circleimageview:3.1.0'
     implementation 'de.rtner:PBKDF2:1.1.4'
     implementation 'org.osmdroid:osmdroid-android:6.1.20'
     implementation 'org.jetbrains:annotations:26.0.2'
+
+    implementation(platform("org.jetbrains.kotlin:kotlin-bom:2.2.10"))
+
     implementation "org.jetbrains.kotlin:kotlin-stdlib:${rootProject.ext['kotlin_version']}"
     implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2"
@@ -235,9 +236,6 @@ dependencies {
     implementation "io.noties.markwon:image:$markwon_version"
     implementation "io.noties.markwon:html:$markwon_version"
     implementation "io.noties.markwon:ext-tables:$markwon_version"
-    implementation(platform("org.jetbrains.kotlin:kotlin-bom:2.2.10"))
-
-    implementation 'com.github.chrisbanes:PhotoView:2.3.0'
 }
 realm {
     syncEnabled = true
