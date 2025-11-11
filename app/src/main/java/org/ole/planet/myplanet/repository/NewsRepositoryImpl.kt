@@ -7,6 +7,7 @@ import io.realm.Sort
 import java.util.HashMap
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.datamanager.findCopyByField
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -17,12 +18,15 @@ class NewsRepositoryImpl @Inject constructor(
 ) : RealmRepository(databaseService), NewsRepository {
 
     override suspend fun getNewsWithReplies(newsId: String): Pair<RealmNews?, List<RealmNews>> {
-        val news = findByField(RealmNews::class.java, "id", newsId)
-        val replies = queryList(RealmNews::class.java) {
-            equalTo("replyTo", newsId, Case.INSENSITIVE)
-            sort("time", Sort.DESCENDING)
+        return withRealm(ensureLatest = true) { realm ->
+            val news = realm.findCopyByField(RealmNews::class.java, "id", newsId)
+            val replies = realm.where(RealmNews::class.java)
+                .equalTo("replyTo", newsId, Case.INSENSITIVE)
+                .sort("time", Sort.DESCENDING)
+                .findAll()
+                .let { realm.copyFromRealm(it) }
+            news to replies
         }
-        return news to replies
     }
 
     override suspend fun getCommunityVisibleNews(userIdentifier: String): List<RealmNews> {

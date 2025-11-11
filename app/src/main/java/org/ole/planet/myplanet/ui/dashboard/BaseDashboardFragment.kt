@@ -17,8 +17,8 @@ import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayout
-import io.realm.Realm
 import io.realm.Case
+import io.realm.Realm
 import io.realm.RealmChangeListener
 import io.realm.RealmObject
 import io.realm.RealmResults
@@ -140,11 +140,9 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     private suspend fun myLibraryDiv(view: View) {
-        val dbMylibrary = withContext(Dispatchers.IO) {
-            Realm.getDefaultInstance().use { realm ->
-                val results = RealmMyLibrary.getMyLibraryByUserId(realm, settings)
-                realm.copyFromRealm(results)
-            }
+        val dbMylibrary = databaseService.withRealmAsync { realm ->
+            val results = RealmMyLibrary.getMyLibraryByUserId(realm, settings)
+            realm.copyFromRealm(results)
         }
 
         view.findViewById<FlexboxLayout>(R.id.flexboxLayout).flexDirection = FlexDirection.ROW

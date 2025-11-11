@@ -177,7 +177,7 @@ class UploadManager @Inject constructor(
             submissionIds.chunked(BATCH_SIZE).forEach { batchIds ->
                 val submissionsToUpload = databaseService.withRealm { realm ->
                     realm.where(RealmSubmission::class.java)
-                        . `in`("id", batchIds.toTypedArray())
+                        .`in`("id", batchIds.toTypedArray())
                         .findAll()
                         .map { sub ->
                             val serialized = RealmSubmission.serializeExamResult(realm, sub, context)

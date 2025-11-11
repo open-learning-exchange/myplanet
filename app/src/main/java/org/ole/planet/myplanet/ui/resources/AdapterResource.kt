@@ -309,10 +309,22 @@ class AdapterResource(
             areItemsTheSame = { old, new -> old?.id == new?.id },
             areContentsTheSame = { old, new ->
                 old?.title == new?.title &&
-                    old?.description == new?.description &&
-                    old?.createdDate == new?.createdDate &&
-                    old?.averageRating == new?.averageRating &&
-                    old?.timesRated == new?.timesRated
+                        old?.description == new?.description &&
+                        old?.createdDate == new?.createdDate &&
+                        old?.averageRating == new?.averageRating &&
+                        old?.timesRated == new?.timesRated
+            },
+            getChangePayload = { old, new ->
+                val ratingChanged = old?.averageRating != new?.averageRating || old?.timesRated != new?.timesRated
+                val otherContentChanged = old?.title != new?.title ||
+                        old?.description != new?.description ||
+                        old?.createdDate != new?.createdDate
+
+                if (ratingChanged && !otherContentChanged) {
+                    RATING_PAYLOAD
+                } else {
+                    null
+                }
             }
         )
         libraryList = newList

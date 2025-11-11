@@ -26,6 +26,7 @@ import io.realm.Sort
 import java.util.Calendar
 import java.util.Date
 import java.util.UUID
+import javax.inject.Inject
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
@@ -36,6 +37,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMember
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.ui.myhealth.UserListArrayAdapter
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.ui.team.teamTask.AdapterTask.OnCompletedListener
@@ -208,21 +210,11 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
     }
 
     private fun allTasks() {
-        val uncompletedTasks = mRealm.where(RealmTeamTask::class.java)
+        list = mRealm.where(RealmTeamTask::class.java)
             .equalTo("teamId", teamId)
             .notEqualTo("status", "archived")
-            .equalTo("completed", false)
-            .sort("deadline", Sort.DESCENDING)
+            .sort(arrayOf("completed", "deadline"), arrayOf(Sort.ASCENDING, Sort.DESCENDING))
             .findAll()
-
-        val completedTasks = mRealm.where(RealmTeamTask::class.java)
-            .equalTo("teamId", teamId)
-            .notEqualTo("status", "archived")
-            .equalTo("completed", true)
-            .sort("completedTime", Sort.DESCENDING)
-            .findAll()
-
-        list = uncompletedTasks + completedTasks
     }
 
     private fun completedTasks() {
@@ -262,7 +254,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
             else {
                 showNoData(binding.tvNodata, list?.size, "")
             }
-            adapterTask = AdapterTask(requireContext(), list, !isMemberFlow.value, viewLifecycleOwner.lifecycleScope)
+            adapterTask = AdapterTask(requireContext(), list, !isMemberFlow.value, viewLifecycleOwner.lifecycleScope, userRepository)
             adapterTask.setListener(this)
             binding.rvTask.adapter = adapterTask
         }
@@ -336,7 +328,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
 
     private fun updatedTeamTaskList(updatedList: RealmResults<RealmTeamTask>) {
         viewLifecycleOwner.lifecycleScope.launch {
-            adapterTask = AdapterTask(requireContext(), updatedList, !isMemberFlow.value, viewLifecycleOwner.lifecycleScope)
+            adapterTask = AdapterTask(requireContext(), updatedList, !isMemberFlow.value, viewLifecycleOwner.lifecycleScope, userRepository)
             adapterTask.setListener(this@TeamTaskFragment)
             binding.rvTask.adapter = adapterTask
             adapterTask.notifyDataSetChanged()

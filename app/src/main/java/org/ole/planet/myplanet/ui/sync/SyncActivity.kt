@@ -357,7 +357,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             if (settings != null) {
                 this.settings = settings
             }
-            if (mRealm.isEmpty) {
+            val isEmpty = databaseService.withRealm { realm -> realm.isEmpty }
+            if (isEmpty) {
                 alertDialogOkay(getString(R.string.server_not_configured_properly_connect_this_device_with_planet_server))
                 false
             } else {
@@ -371,7 +372,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     private fun checkName(username: String?, password: String?, isManagerMode: Boolean): Boolean {
         try {
-            val user = mRealm.where(RealmUserModel::class.java).equalTo("name", username).findFirst()
+            val user = databaseService.withRealm { realm ->
+                realm.where(RealmUserModel::class.java).equalTo("name", username).findFirst()?.let { realm.copyFromRealm(it) }
+            }
             user?.let {
                 if (it._id?.isEmpty() == true) {
                     if (username == it.name && password == it.password) {
@@ -765,7 +768,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 continueSyncProcess()
             }
         } else {
-            mRealm.executeTransactionAsync { realm: Realm -> realm.deleteAll() }
+            lifecycleScope.launch(Dispatchers.IO) {
+                databaseService.executeTransactionAsync { realm -> realm.deleteAll() }
+            }
         }
         builder.setCancelable(cancelable)
         builder.show()

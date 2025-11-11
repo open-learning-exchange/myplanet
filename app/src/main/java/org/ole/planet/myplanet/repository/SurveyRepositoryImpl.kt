@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.repository
 
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
-import io.realm.Sort
 import javax.inject.Inject
 import org.json.JSONException
 import org.json.JSONObject

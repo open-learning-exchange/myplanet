@@ -3,16 +3,15 @@ package org.ole.planet.myplanet.service
 import android.content.Context
 import android.content.SharedPreferences
 import dagger.hilt.android.qualifiers.ApplicationContext
-import io.realm.Realm
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -71,7 +70,7 @@ class UserProfileDbHandler @Inject constructor(
                 val parentCode = model?.parentCode
                 val planetCode = model?.planetCode
 
-                realmService.withRealmAsync { realm ->
+                realmService.executeTransactionAsync { realm ->
                     val offlineActivities = realm.createObject(RealmOfflineActivity::class.java, UUID.randomUUID().toString())
                     offlineActivities.userId = userId
                     offlineActivities.userName = userName
@@ -97,7 +96,7 @@ class UserProfileDbHandler @Inject constructor(
     fun logoutAsync() {
         GlobalScope.launch(Dispatchers.IO) {
             try {
-                realmService.withRealmAsync { realm ->
+                realmService.executeTransactionAsync { realm ->
                     RealmOfflineActivity.getRecentLogin(realm)
                         ?.logoutTime = Date().time
                 }
@@ -146,6 +145,9 @@ class UserProfileDbHandler @Inject constructor(
     }
 
     fun setResourceOpenCount(item: RealmMyLibrary, type: String?) {
+        val itemTitle = item.title
+        val itemResourceId = item.resourceId
+
         GlobalScope.launch(Dispatchers.IO) {
             try {
                 val model = getUserModelCopy()
@@ -156,10 +158,8 @@ class UserProfileDbHandler @Inject constructor(
                 val userName = model?.name
                 val parentCode = model?.parentCode
                 val planetCode = model?.planetCode
-                val itemTitle = item.title
-                val itemResourceId = item.resourceId
 
-                realmService.withRealmAsync { realm ->
+                realmService.executeTransactionAsync { realm ->
                     val offlineActivities = realm.createObject(RealmResourceActivity::class.java, "${UUID.randomUUID()}")
                     offlineActivities.user = userName
                     offlineActivities.parentCode = parentCode
