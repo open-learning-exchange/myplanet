@@ -17,6 +17,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowTaskBinding
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.ui.team.teamTask.AdapterTask.ViewHolderTask
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
@@ -24,7 +25,8 @@ class AdapterTask(
     private val context: Context,
     private val list: List<RealmTeamTask>?,
     private val nonTeamMember: Boolean,
-    private val coroutineScope: CoroutineScope
+    private val coroutineScope: CoroutineScope,
+    private val userRepository: UserRepository
 ) : RecyclerView.Adapter<ViewHolderTask>() {
     private val assigneeCache: MutableMap<String, String> = mutableMapOf()
     private var listener: OnCompletedListener? = null
@@ -101,12 +103,7 @@ class AdapterTask(
         }
 
         return coroutineScope.launch(Dispatchers.IO) {
-            var user: RealmUserModel? = null
-            Realm.getDefaultInstance().use { realm ->
-                user = realm.where(RealmUserModel::class.java).equalTo("id", assigneeId).findFirst()?.let {
-                    realm.copyFromRealm(it)
-                }
-            }
+            val user = userRepository.getUserById(assigneeId)
             withContext(Dispatchers.Main) {
                 val name = user?.name
                 if (name != null) {
