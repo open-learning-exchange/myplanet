@@ -43,9 +43,10 @@ object ServiceModule {
         databaseService: DatabaseService,
         @AppPreferences preferences: SharedPreferences,
         apiInterface: ApiInterface,
-        improvedSyncManager: Lazy<ImprovedSyncManager>
+        improvedSyncManager: Lazy<ImprovedSyncManager>,
+        @ApplicationScope scope: CoroutineScope
     ): SyncManager {
-        return SyncManager(context, databaseService, preferences, apiInterface, improvedSyncManager)
+        return SyncManager(context, databaseService, preferences, apiInterface, improvedSyncManager, scope)
     }
 
     @Provides

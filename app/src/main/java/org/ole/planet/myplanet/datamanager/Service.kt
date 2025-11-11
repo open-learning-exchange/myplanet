@@ -15,7 +15,6 @@ import java.util.concurrent.Executors
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
@@ -25,6 +24,8 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SecurityDataCallback
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.di.ApiInterfaceEntryPoint
+import org.ole.planet.myplanet.di.ApplicationScope
+import org.ole.planet.myplanet.di.ApplicationScopeEntryPoint
 import org.ole.planet.myplanet.di.AutoSyncEntryPoint
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmCommunity
@@ -52,19 +53,25 @@ import retrofit2.Response
 
 class Service @Inject constructor(
     private val context: Context,
-    private val retrofitInterface: ApiInterface
+    private val retrofitInterface: ApiInterface,
+    @ApplicationScope private val serviceScope: CoroutineScope,
 ) {
     constructor(context: Context) : this(
         context,
         EntryPointAccessors.fromApplication(
             context.applicationContext,
             ApiInterfaceEntryPoint::class.java
-        ).apiInterface()
+        ).apiInterface(),
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            ApplicationScopeEntryPoint::class.java
+        ).applicationScope(),
     )
+
     private val preferences: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
-    private val configurationManager = ConfigurationManager(context, preferences, retrofitInterface)
+    private val configurationManager =
+        ConfigurationManager(context, preferences, retrofitInterface)
     private fun getUploadToShelfService(): UploadToShelfService {
         val entryPoint = EntryPointAccessors.fromApplication(
             context.applicationContext,
