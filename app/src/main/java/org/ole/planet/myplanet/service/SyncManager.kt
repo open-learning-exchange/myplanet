@@ -37,6 +37,7 @@ import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.ManagerSync
 import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.insert
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.insertMyCourses
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
@@ -64,7 +65,8 @@ class SyncManager @Inject constructor(
     private val databaseService: DatabaseService,
     @AppPreferences private val settings: SharedPreferences,
     private val apiInterface: ApiInterface,
-    private val improvedSyncManager: Lazy<ImprovedSyncManager>
+    private val improvedSyncManager: Lazy<ImprovedSyncManager>,
+    @ApplicationScope private val syncScope: CoroutineScope
 ) {
     private var td: Thread? = null
     lateinit var mRealm: Realm
@@ -72,7 +74,6 @@ class SyncManager @Inject constructor(
     private val stringArray = arrayOfNulls<String>(4)
     private var listener: SyncListener? = null
     private var backgroundSync: Job? = null
-    private val syncScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var betaSync = false
     private val improvedSyncInitialized = AtomicBoolean(false)
 
