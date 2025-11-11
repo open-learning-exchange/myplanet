@@ -16,7 +16,7 @@
         android:textStyle="bold"
         android:textColor="@color/md_white_1000"
         android:padding="10dp"/>
-    <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    <ScrollView
         android:id="@+id/scrollView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
