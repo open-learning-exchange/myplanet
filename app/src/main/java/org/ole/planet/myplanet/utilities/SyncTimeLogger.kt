@@ -37,39 +37,32 @@ object SyncTimeLogger {
 
     private fun saveSummaryToRealm(summary: String, uploadManager: UploadManager? = null) {
         val settings = MainApplication.context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
-        MainApplication.applicationScope.launch(Dispatchers.Main) {
+        MainApplication.applicationScope.launch(Dispatchers.IO) {
             MainApplication.createLog("sync summary", summary)
             val updateUrl = "${settings.getString("serverURL", "")}"
             val serverUrlMapper = ServerUrlMapper()
             val mapping = serverUrlMapper.processUrl(updateUrl)
 
-            MainApplication.applicationScope.launch(Dispatchers.IO) {
-                val primaryAvailable = MainApplication.isServerReachable(mapping.primaryUrl)
-                val alternativeAvailable =
-                    mapping.alternativeUrl?.let { MainApplication.isServerReachable(it) } == true
+            val primaryAvailable = MainApplication.isServerReachable(mapping.primaryUrl)
+            val alternativeAvailable =
+                mapping.alternativeUrl?.let { MainApplication.isServerReachable(it) } == true
 
-                if (!primaryAvailable && alternativeAvailable) {
-                    mapping.alternativeUrl.let { alternativeUrl ->
-                        val uri = updateUrl.toUri()
-                        val editor = settings.edit()
+            if (!primaryAvailable && alternativeAvailable) {
+                mapping.alternativeUrl?.let { alternativeUrl ->
+                    val uri = updateUrl.toUri()
+                    val editor = settings.edit()
 
-                        serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, settings)
-                    }
-                }
-
-                withContext(Dispatchers.Main) {
-                    uploadCrashLogs(uploadManager)
+                    serverUrlMapper.updateUrlPreferences(
+                        editor,
+                        uri,
+                        alternativeUrl,
+                        mapping.primaryUrl,
+                        settings
+                    )
                 }
             }
-        }
-    }
-
-    private fun uploadCrashLogs(uploadManager: UploadManager?) {
-        MainApplication.applicationScope.launch {
             try {
-                withContext(Dispatchers.IO) {
-                    uploadManager?.uploadCrashLog()
-                }
+                uploadManager?.uploadCrashLog()
             } catch (e: Exception) {
                 e.printStackTrace()
             }
