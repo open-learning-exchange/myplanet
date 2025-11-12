@@ -119,13 +119,13 @@ class NotificationRepositoryImpl @Inject constructor(
     override suspend fun getNotifications(userId: String, filter: String): List<RealmNotification> {
         return queryList(RealmNotification::class.java) {
             equalTo("userId", userId)
+            notEqualTo("message", "INVALID")
+            isNotEmpty("message")
             when (filter) {
                 "read" -> equalTo("isRead", true)
                 "unread" -> equalTo("isRead", false)
             }
             sort("isRead", io.realm.Sort.ASCENDING, "createdAt", io.realm.Sort.DESCENDING)
-        }.filter {
-            it.message.isNotEmpty() && it.message != "INVALID"
         }
     }
 }

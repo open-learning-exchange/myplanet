@@ -33,7 +33,6 @@ open class RealmCertification : RealmObject() {
 
         @JvmStatic
         fun isCourseCertified(realm: Realm, courseId: String?): Boolean {
-            // FIXME
             if (courseId == null) {
                 return false
             }

@@ -102,31 +102,16 @@ class NotificationsFragment : Fragment() {
 
     private fun handleNotificationClick(notification: RealmNotification) {
         viewLifecycleOwner.lifecycleScope.launch {
-            when (notification.type) {
-                "storage" -> {
-                    val intent = Intent(ACTION_INTERNAL_STORAGE_SETTINGS)
-                    startActivity(intent)
-                }
-                "survey" -> {
-                    val examId = withContext(Dispatchers.IO) {
+            val result = withContext(Dispatchers.IO) {
+                when (notification.type) {
+                    "survey" -> {
                         databaseService.withRealm { realm ->
                             realm.where(RealmStepExam::class.java)
                                 .equalTo("name", notification.relatedId)
                                 .findFirst()?.id
                         }
                     }
-                    if (examId != null && activity is OnHomeItemClickListener) {
-                        AdapterMySubmission.openSurvey(
-                            activity as OnHomeItemClickListener,
-                            examId,
-                            false,
-                            false,
-                            "",
-                        )
-                    }
-                }
-                "task" -> {
-                    val teamDetails = withContext(Dispatchers.IO) {
+                    "task" -> {
                         databaseService.withRealm { realm ->
                             val taskId = notification.relatedId
                             val task = realm.where(RealmTeamTask::class.java)
@@ -144,20 +129,7 @@ class NotificationsFragment : Fragment() {
                             }
                         }
                     }
-                    if (teamDetails != null && activity is OnHomeItemClickListener) {
-                        val (teamId, teamName, teamType) = teamDetails
-                        val f = TeamDetailFragment.newInstance(
-                            teamId = teamId,
-                            teamName = teamName ?: "",
-                            teamType = teamType ?: "",
-                            isMyTeam = true,
-                            navigateToPage = TasksPage,
-                        )
-                        (activity as OnHomeItemClickListener).openCallFragment(f)
-                    }
-                }
-                "join_request" -> {
-                    val teamId = withContext(Dispatchers.IO) {
+                    "join_request" -> {
                         val joinRequestId = notification.relatedId
                         if (joinRequestId?.isNotEmpty() == true) {
                             val actualJoinRequestId = if (joinRequestId.startsWith("join_request_")) {
@@ -175,7 +147,43 @@ class NotificationsFragment : Fragment() {
                             null
                         }
                     }
+                    else -> null
+                }
+            }
 
+            when (notification.type) {
+                "storage" -> {
+                    val intent = Intent(ACTION_INTERNAL_STORAGE_SETTINGS)
+                    startActivity(intent)
+                }
+                "survey" -> {
+                    val examId = result as? String
+                    if (examId != null && activity is OnHomeItemClickListener) {
+                        AdapterMySubmission.openSurvey(
+                            activity as OnHomeItemClickListener,
+                            examId,
+                            false,
+                            false,
+                            "",
+                        )
+                    }
+                }
+                "task" -> {
+                    val teamDetails = result as? Triple<String, String?, String?>
+                    if (teamDetails != null && activity is OnHomeItemClickListener) {
+                        val (teamId, teamName, teamType) = teamDetails
+                        val f = TeamDetailFragment.newInstance(
+                            teamId = teamId,
+                            teamName = teamName ?: "",
+                            teamType = teamType ?: "",
+                            isMyTeam = true,
+                            navigateToPage = TasksPage,
+                        )
+                        (activity as OnHomeItemClickListener).openCallFragment(f)
+                    }
+                }
+                "join_request" -> {
+                    val teamId = result as? String
                     if (teamId?.isNotEmpty() == true && activity is OnHomeItemClickListener) {
                         val f = TeamDetailFragment()
                         val b = Bundle()
