@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
+import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils
 
@@ -251,7 +252,12 @@ class AdapterTeamList(
 
             if (validTeams.isEmpty()) {
                 val diffResult = withContext(Dispatchers.Default) {
-                    DiffUtil.calculateDiff(TeamDiffCallback(oldList, emptyList()))
+                    DiffUtils.calculateDiff(
+                        oldList,
+                        emptyList(),
+                        areItemsTheSame = { old, new -> old._id == new._id },
+                        areContentsTheSame = { old, new -> old == new }
+                    )
                 }
                 visitCounts = emptyMap()
                 filteredList = emptyList()
@@ -334,27 +340,18 @@ class AdapterTeamList(
             }
 
             val diffResult = withContext(Dispatchers.Default) {
-                DiffUtil.calculateDiff(TeamDiffCallback(oldList, newList))
+                DiffUtils.calculateDiff(
+                    oldList,
+                    newList,
+                    areItemsTheSame = { old, new -> old._id == new._id },
+                    areContentsTheSame = { old, new -> old == new }
+                )
             }
 
             visitCounts = allVisitCounts
             filteredList = sortedTeams
             diffResult.dispatchUpdatesTo(this@AdapterTeamList)
             updateCompleteListener?.onUpdateComplete(filteredList.size)
-        }
-    }
-
-    private class TeamDiffCallback(
-        private val oldList: List<TeamData>, private val newList: List<TeamData>
-    ) : DiffUtil.Callback() {
-        override fun getOldListSize(): Int = oldList.size
-        override fun getNewListSize(): Int = newList.size
-        override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-            return oldList[oldItemPosition]._id == newList[newItemPosition]._id
-        }
-
-        override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-            return oldList[oldItemPosition] == newList[newItemPosition]
         }
     }
 

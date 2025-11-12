@@ -166,6 +166,9 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     private fun declareElements() {
         binding.customDeviceName.text = getCustomDeviceName()
         btnSignIn.setOnClickListener {
+            if (isFinishing || isDestroyed) {
+                return@setOnClickListener
+            }
             if (getUrl() != "/db") {
                 if (TextUtils.isEmpty(binding.inputName.text.toString())) {
                     binding.inputName.error = getString(R.string.err_msg_name)
@@ -173,7 +176,9 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                     binding.inputPassword.error = getString(R.string.err_msg_password)
                 } else {
                     val enterUserName = binding.inputName.text.toString().trimEnd()
-                    val user = mRealm.where(RealmUserModel::class.java).equalTo("name", enterUserName).findFirst()
+                    val user = databaseService.withRealm { realm ->
+                        realm.where(RealmUserModel::class.java).equalTo("name", enterUserName).findFirst()?.let { realm.copyFromRealm(it) }
+                    }
                     if (user == null || !user.isArchived) {
                         submitForm(enterUserName, binding.inputPassword.text.toString())
                     } else {
@@ -256,6 +261,9 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         binding.inputName.addTextChangedListener(MyTextWatcher(binding.inputName))
         binding.inputPassword.addTextChangedListener(MyTextWatcher(binding.inputPassword))
         binding.inputPassword.setOnEditorActionListener { _: TextView?, actionId: Int, event: KeyEvent? ->
+            if (isFinishing || isDestroyed) {
+                return@setOnEditorActionListener false
+            }
             if (actionId == EditorInfo.IME_ACTION_DONE || event != null && event.action == KeyEvent.ACTION_DOWN && event.keyCode == KeyEvent.KEYCODE_ENTER) {
                 btnSignIn.performClick()
                 return@setOnEditorActionListener true
@@ -287,8 +295,10 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     }
 
     fun updateTeamDropdown() {
-        val teams: List<RealmMyTeam>? = mRealm.where(RealmMyTeam::class.java)
-            ?.isEmpty("teamId")?.equalTo("status", "active")?.findAll()
+        val teams: List<RealmMyTeam>? = databaseService.withRealm { realm ->
+            realm.where(RealmMyTeam::class.java)
+                .isEmpty("teamId").equalTo("status", "active").findAll()?.let { realm.copyFromRealm(it) }
+        }
 
         if (!teams.isNullOrEmpty()) {
             binding.team.visibility = View.VISIBLE
@@ -407,7 +417,9 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     fun getTeamMembers() {
         selectedTeamId = prefData.getSelectedTeamId().toString()
         if (selectedTeamId?.isNotEmpty() == true) {
-            users = RealmMyTeam.getUsers(selectedTeamId, mRealm, "membership")
+            users = databaseService.withRealm { realm ->
+                RealmMyTeam.getUsers(selectedTeamId, realm, "membership").map { realm.copyFromRealm(it) }.toMutableList()
+            }
             val userList = (users as? MutableList<RealmUserModel>)?.map {
                 User(it.name ?: "", it.name ?: "", "", it.userImage ?: "", "team")
             } ?: emptyList()
@@ -444,7 +456,9 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             binding.inputName.setText(user.name)
         } else {
             if (user.source == "guest"){
-                val model = RealmUserModel.createGuestUser(user.name, mRealm, settings)?.let { mRealm.copyFromRealm(it) }
+                val model = databaseService.withRealm { realm ->
+                    RealmUserModel.createGuestUser(user.name, realm, settings)?.let { realm.copyFromRealm(it) }
+                }
                 if (model == null) {
                     toast(this, getString(R.string.unable_to_login))
                 } else {
@@ -469,7 +483,9 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         builder.setNegativeButton("cancel") { dialog: DialogInterface, _: Int -> dialog.dismiss() }
         builder.setPositiveButton("continue") { dialog: DialogInterface, _: Int ->
             dialog.dismiss()
-            val model = RealmUserModel.createGuestUser(username, mRealm, settings)?.let { mRealm.copyFromRealm(it) }
+            val model = databaseService.withRealm { realm ->
+                RealmUserModel.createGuestUser(username, realm, settings)?.let { realm.copyFromRealm(it) }
+            }
             if (model == null) {
                 toast(this, getString(R.string.unable_to_login))
             } else {
@@ -574,9 +590,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     }
 
     override fun onDestroy() {
-        if (!mRealm.isClosed) {
-            mRealm.close()
-        }
         super.onDestroy()
     }
 }
