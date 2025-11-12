@@ -16,6 +16,8 @@ data class TeamMemberStatus(
 interface TeamRepository {
     suspend fun getShareableTeams(): List<RealmMyTeam>
     suspend fun getShareableEnterprises(): List<RealmMyTeam>
+    fun getTeams(type: String?): Flow<List<RealmMyTeam>>
+    fun getMyTeams(): Flow<List<RealmMyTeam>>
     suspend fun getTeamResources(teamId: String): List<RealmMyLibrary>
     suspend fun getTeamByDocumentIdOrTeamId(id: String): RealmMyTeam?
     suspend fun getTeamLinks(): List<RealmMyTeam>

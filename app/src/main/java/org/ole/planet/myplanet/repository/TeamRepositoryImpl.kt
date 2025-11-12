@@ -54,6 +54,30 @@ class TeamRepositoryImpl @Inject constructor(
         }
     }
 
+    override fun getTeams(type: String?): Flow<List<RealmMyTeam>> {
+        return queryListFlow(RealmMyTeam::class.java) {
+            isEmpty("teamId")
+            notEqualTo("status", "archived")
+            if (type.isNullOrEmpty() || type == "team") {
+                notEqualTo("type", "enterprise")
+            } else {
+                equalTo("type", "enterprise")
+            }
+        }
+    }
+
+    override fun getMyTeams(): Flow<List<RealmMyTeam>> {
+        val user = userProfileDbHandler.userModel
+        val teamIds = queryList(RealmMyTeam::class.java) {
+            equalTo("userId", user?._id)
+            equalTo("docType", "membership")
+        }.map { it.teamId }
+
+        return queryListFlow(RealmMyTeam::class.java) {
+            `in`("_id", teamIds.toTypedArray())
+        }
+    }
+
     override suspend fun getTeamResources(teamId: String): List<RealmMyLibrary> {
         val resourceIds = getResourceIds(teamId)
         return if (resourceIds.isEmpty()) {
