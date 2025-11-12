@@ -90,7 +90,6 @@ class AdapterMyProgress(private val context: Context, private val list: JsonArra
     internal inner class ViewHolderMyProgress(val binding: RowMyProgressBinding) : RecyclerView.ViewHolder(binding.root) {
         val tvTitle = binding.tvTitle
         val tvTotal = binding.tvTotal
-        // val llProgress = binding.llProgress
         val tvDescription = binding.tvDescription
     }
 }
