@@ -9,8 +9,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
-        versionCode = 3725
-        versionName = "0.37.25"
+        versionCode = 3726
+        versionName = "0.37.26"
         ndkVersion = '26.3.11579264'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -202,7 +202,6 @@ dependencies {
     implementation 'de.hdodenhof:circleimageview:3.1.0'
     implementation 'de.rtner:PBKDF2:1.1.4'
     implementation 'org.osmdroid:osmdroid-android:6.1.20'
-    implementation 'org.jetbrains:annotations:26.0.2'
     implementation "org.jetbrains.kotlin:kotlin-stdlib:${rootProject.ext['kotlin_version']}"
     implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2"
