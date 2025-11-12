@@ -115,6 +115,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private var lastNotificationCheckTime = 0L
     private val notificationCheckThrottleMs = 5000L
     private var systemNotificationReceiver: BroadcastReceiver? = null
+    private lateinit var mRealm: Realm
 
     private interface RealmListener {
         fun removeListener()
@@ -126,6 +127,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        mRealm = databaseService.realmInstance
         checkUser()
         initViews()
         updateAppTitle()
@@ -1109,6 +1111,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         systemNotificationReceiver?.let {
             unregisterReceiver(it)
             systemNotificationReceiver = null
+        }
+
+        if (::mRealm.isInitialized && !mRealm.isClosed) {
+            mRealm.close()
         }
         super.onDestroy()
     }
