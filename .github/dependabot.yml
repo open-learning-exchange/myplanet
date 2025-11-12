@@ -1,14 +1,16 @@
 version: 2
 updates:
   - package-ecosystem: "github-actions"
-    directory: "/.github/workflows"
+    directories:
+      - "/"
+      - "/.github/workflows"
     schedule:
       interval: "daily"
     commit-message:
       prefix: "actions:"
     open-pull-requests-limit: 10
   - package-ecosystem: "gradle"
-    directory:
+    directories:
       - "/"
       - "/app"
     schedule:
