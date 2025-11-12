@@ -228,6 +228,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                 .detectDiskReads()
                 .detectDiskWrites()
                 .detectNetwork()
+                .detectSlowCalls()
                 .penaltyLog()
                 .build()
             StrictMode.setThreadPolicy(threadPolicy)
