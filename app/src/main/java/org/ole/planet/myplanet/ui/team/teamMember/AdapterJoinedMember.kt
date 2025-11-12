@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.team.teamMember
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -16,6 +17,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowJoinedUserBinding
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
+import org.ole.planet.myplanet.utilities.DiffUtils
 
 data class JoinedMemberData(
     val user: RealmUserModel,
