@@ -112,7 +112,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private lateinit var intervalLabel: TextView
     lateinit var spinner: Spinner
     private lateinit var syncSwitch: SwitchCompat
-    lateinit var mRealm: Realm
     lateinit var editor: SharedPreferences.Editor
     private var syncTimeInterval = intArrayOf(60 * 60, 3 * 60 * 60)
     lateinit var syncIcon: ImageView
@@ -152,7 +151,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         super.onCreate(savedInstanceState)
         settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         editor = settings.edit()
-        mRealm = databaseService.realmInstance
         requestAllPermissions()
         prefData = SharedPrefManager(this)
         defaultPref = PreferenceManager.getDefaultSharedPreferences(this)
@@ -357,7 +355,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             if (settings != null) {
                 this.settings = settings
             }
-            if (mRealm.isEmpty) {
+            val isEmpty = databaseService.withRealm { realm -> realm.isEmpty }
+            if (isEmpty) {
                 alertDialogOkay(getString(R.string.server_not_configured_properly_connect_this_device_with_planet_server))
                 false
             } else {
@@ -371,7 +370,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     private fun checkName(username: String?, password: String?, isManagerMode: Boolean): Boolean {
         try {
-            val user = mRealm.where(RealmUserModel::class.java).equalTo("name", username).findFirst()
+            val user = databaseService.withRealm { realm ->
+                realm.where(RealmUserModel::class.java).equalTo("name", username).findFirst()?.let { realm.copyFromRealm(it) }
+            }
             user?.let {
                 if (it._id?.isEmpty() == true) {
                     if (username == it.name && password == it.password) {
@@ -765,7 +766,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 continueSyncProcess()
             }
         } else {
-            mRealm.executeTransactionAsync { realm: Realm -> realm.deleteAll() }
+            lifecycleScope.launch(Dispatchers.IO) {
+                databaseService.executeTransactionAsync { realm -> realm.deleteAll() }
+            }
         }
         builder.setCancelable(cancelable)
         builder.show()
@@ -832,12 +835,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     override fun onDestroy() {
         if (this::bManager.isInitialized) {
             bManager.unregisterReceiver(broadcastReceiver)
-        }
-        if (this::mRealm.isInitialized && !mRealm.isClosed) {
-            mRealm.close()
-        }
-        if (this::profileDbHandler.isInitialized) {
-            profileDbHandler.onDestroy()
         }
         super.onDestroy()
     }

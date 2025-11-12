@@ -37,6 +37,7 @@ import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.ManagerSync
 import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.insert
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.insertMyCourses
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
@@ -64,7 +65,8 @@ class SyncManager @Inject constructor(
     private val databaseService: DatabaseService,
     @AppPreferences private val settings: SharedPreferences,
     private val apiInterface: ApiInterface,
-    private val improvedSyncManager: Lazy<ImprovedSyncManager>
+    private val improvedSyncManager: Lazy<ImprovedSyncManager>,
+    @ApplicationScope private val syncScope: CoroutineScope
 ) {
     private var td: Thread? = null
     lateinit var mRealm: Realm
@@ -72,7 +74,6 @@ class SyncManager @Inject constructor(
     private val stringArray = arrayOfNulls<String>(4)
     private var listener: SyncListener? = null
     private var backgroundSync: Job? = null
-    private val syncScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var betaSync = false
     private val improvedSyncInitialized = AtomicBoolean(false)
 
@@ -135,7 +136,9 @@ class SyncManager @Inject constructor(
     private fun authenticateAndSync(type: String, syncTables: List<String>?) {
         td = Thread {
             if (TransactionSyncManager.authenticate()) {
-                startSync(type, syncTables)
+                runBlocking {
+                    startSync(type, syncTables)
+                }
             } else {
                 handleException(context.getString(R.string.invalid_configuration))
                 cleanupMainSync()
@@ -144,7 +147,7 @@ class SyncManager @Inject constructor(
         td?.start()
     }
 
-    private fun startSync(type: String, syncTables: List<String>?) {
+    private suspend fun startSync(type: String, syncTables: List<String>?) {
         val isFastSync = settings.getBoolean("fastSync", false)
         if (!isFastSync || type == "upload") {
             startFullSync()
@@ -153,13 +156,13 @@ class SyncManager @Inject constructor(
         }
     }
 
-    private fun startFullSync() {
+    private suspend fun startFullSync() {
         try {
             val logger = SyncTimeLogger
             logger.startLogging()
 
             initializeSync()
-            runBlocking {
+            coroutineScope {
                 val syncJobs = listOf(
                     async {
                         logger.startProcess("tablet_users_sync")
@@ -265,13 +268,13 @@ class SyncManager @Inject constructor(
         }
     }
 
-    private fun startFastSync(syncTables: List<String>? = null) {
+    private suspend fun startFastSync(syncTables: List<String>? = null) {
         try {
             val logger = SyncTimeLogger
             logger.startLogging()
 
             initializeSync()
-            runBlocking {
+            coroutineScope {
                 val syncJobs = mutableListOf<Deferred<Unit>>()
                 if (syncTables?.contains("tablet_users") != false) {
                     syncJobs.add(
@@ -494,7 +497,7 @@ class SyncManager @Inject constructor(
         backgroundSync = null
     }
 
-    private fun resourceTransactionSync(backgroundRealm: Realm? = null) {
+    private suspend fun resourceTransactionSync(backgroundRealm: Realm? = null) {
         val logger = SyncTimeLogger
         logger.startProcess("resource_sync")
         var processedItems = 0
@@ -503,7 +506,7 @@ class SyncManager @Inject constructor(
             val realmInstance = backgroundRealm ?: mRealm
             val newIds: MutableList<String?> = ArrayList()
             var totalRows = 0
-            ApiClient.executeWithRetry {
+            ApiClient.executeWithRetryAndWrap {
                 apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/resources/_all_docs?limit=0").execute()
             }?.let { response ->
                 response.body()?.let { body ->
@@ -522,7 +525,7 @@ class SyncManager @Inject constructor(
 
                 try {
                     var response: JsonObject? = null
-                    ApiClient.executeWithRetry {
+                    ApiClient.executeWithRetryAndWrap {
                         apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/resources/_all_docs?include_docs=true&limit=$batchSize&skip=$skip").execute()
                     }?.let {
                         response = it.body()
@@ -650,11 +653,11 @@ class SyncManager @Inject constructor(
             return cachedShelves
         }
 
-        val allShelves = ApiClient.executeWithRetry {
+        val allShelves = ApiClient.executeWithRetryAndWrap {
             apiInterface.getDocuments(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/_all_docs").execute()
         }?.body()?.rows ?: return emptyList()
 
-        runBlocking {
+        coroutineScope {
             val semaphore = Semaphore(8)
             val checkJobs = allShelves.chunked(25).map { shelfBatch ->
                 async(Dispatchers.IO) {
@@ -680,7 +683,7 @@ class SyncManager @Inject constructor(
             add("keys", Gson().fromJson(Gson().toJson(shelfIds), JsonArray::class.java))
         }
 
-        val response = ApiClient.executeWithRetry {
+        val response = ApiClient.executeWithRetryAndWrap {
             apiInterface.findDocs(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/shelf/_all_docs?include_docs=true", keysObject).execute()
         }?.body()
 
@@ -736,19 +739,19 @@ class SyncManager @Inject constructor(
         }
     }
 
-    private fun myLibraryTransactionSync() {
+    private suspend fun myLibraryTransactionSync() {
         val logger = SyncTimeLogger
         logger.startProcess("library_sync")
         var processedItems = 0
 
         try {
-            val shelvesWithData = runBlocking { getShelvesWithDataBatchOptimized() }
+            val shelvesWithData = getShelvesWithDataBatchOptimized()
 
             if (shelvesWithData.isEmpty()) {
                 return
             }
 
-            runBlocking {
+            coroutineScope {
                 val semaphore = Semaphore(3)
                 val shelfJobs = shelvesWithData.map { shelfId ->
                     async(Dispatchers.IO) {
@@ -773,7 +776,7 @@ class SyncManager @Inject constructor(
 
         try {
             var shelfDoc: JsonObject? = null
-            ApiClient.executeWithRetry {
+            ApiClient.executeWithRetryAndWrap {
                 apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/$shelfId").execute()
             }?.let {
                 shelfDoc = it.body()
@@ -802,7 +805,7 @@ class SyncManager @Inject constructor(
         return processedItems
     }
 
-    private fun processShelfDataOptimizedSync(shelfId: String?, shelfData: Constants.ShelfData, shelfDoc: JsonObject?, apiInterface: ApiInterface): Int {
+    private suspend fun processShelfDataOptimizedSync(shelfId: String?, shelfData: Constants.ShelfData, shelfDoc: JsonObject?, apiInterface: ApiInterface): Int {
         var processedCount = 0
 
         try {
@@ -832,7 +835,7 @@ class SyncManager @Inject constructor(
                 keysObject.add("keys", Gson().fromJson(Gson().toJson(batch), JsonArray::class.java))
 
                 var response: JsonObject? = null
-                ApiClient.executeWithRetry {
+                ApiClient.executeWithRetryAndWrap {
                     apiInterface.findDocs(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/${shelfData.type}/_all_docs?include_docs=true", keysObject).execute()
                 }?.let {
                     response = it.body()

@@ -14,11 +14,10 @@ import androidx.core.graphics.toColorInt
 import androidx.fragment.app.FragmentManager
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -30,6 +29,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
+import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils
 
@@ -39,14 +39,15 @@ class AdapterTeamList(
     private val fragmentManager: FragmentManager,
     private val teamRepository: TeamRepository,
     private val currentUser: RealmUserModel?,
+    private val scope: CoroutineScope,
 ) : RecyclerView.Adapter<AdapterTeamList.ViewHolderTeam>() {
     private var type: String? = ""
     private var teamListener: OnClickTeamItem? = null
     private var updateCompleteListener: OnUpdateCompleteListener? = null
     private var filteredList: List<RealmMyTeam> = emptyList()
     private lateinit var prefData: SharedPrefManager
-    private val scope = MainScope()
     private val teamStatusCache = mutableMapOf<String, TeamStatus>()
+    private val visitCountsCache = mutableMapOf<String, Long>()
     private var visitCounts: Map<String, Long> = emptyMap()
     private var updateListJob: Job? = null
 
@@ -87,10 +88,6 @@ class AdapterTeamList(
         val binding = ItemTeamListBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         prefData = SharedPrefManager(context)
         return ViewHolderTeam(binding)
-    }
-
-    init {
-        updateList()
     }
 
     override fun onBindViewHolder(holder: ViewHolderTeam, position: Int) {
@@ -252,9 +249,15 @@ class AdapterTeamList(
             }
 
             val validTeams = list.filter { it.status?.isNotEmpty() == true }
+
             if (validTeams.isEmpty()) {
                 val diffResult = withContext(Dispatchers.Default) {
-                    DiffUtil.calculateDiff(TeamDiffCallback(oldList, emptyList()))
+                    DiffUtils.calculateDiff(
+                        oldList,
+                        emptyList(),
+                        areItemsTheSame = { old, new -> old._id == new._id },
+                        areContentsTheSame = { old, new -> old == new }
+                    )
                 }
                 visitCounts = emptyMap()
                 filteredList = emptyList()
@@ -264,8 +267,13 @@ class AdapterTeamList(
             }
 
             val teamIds = validTeams.mapNotNull { it._id?.takeIf { id -> id.isNotBlank() } }
-            val visitCountsDeferred = async(Dispatchers.IO) {
-                teamRepository.getRecentVisitCounts(teamIds)
+            val (cachedVisitIds, nonCachedVisitIds) = teamIds.partition { it in visitCountsCache }
+            val visitCountsDeferred = if (nonCachedVisitIds.isNotEmpty()) {
+                async(Dispatchers.IO) {
+                    teamRepository.getRecentVisitCounts(nonCachedVisitIds)
+                }
+            } else {
+                async { emptyMap<String, Long>() }
             }
 
             val statusResults = mutableMapOf<String, TeamStatus>()
@@ -283,16 +291,16 @@ class AdapterTeamList(
             }
 
             if (idsToFetch.isNotEmpty()) {
-                idsToFetch.map { teamId ->
-                    async(Dispatchers.IO) {
-                        val status = TeamStatus(
-                            isMember = teamRepository.isMember(userId, teamId),
-                            isLeader = teamRepository.isTeamLeader(teamId, userId),
-                            hasPendingRequest = teamRepository.hasPendingRequest(teamId, userId),
-                        )
-                        teamId to status
-                    }
-                }.awaitAll().forEach { (teamId, status) ->
+                val batchStatuses = withContext(Dispatchers.IO) {
+                    teamRepository.getTeamMemberStatuses(userId, idsToFetch)
+                }
+
+                batchStatuses.forEach { (teamId, memberStatus) ->
+                    val status = TeamStatus(
+                        isMember = memberStatus.isMember,
+                        isLeader = memberStatus.isLeader,
+                        hasPendingRequest = memberStatus.hasPendingRequest
+                    )
                     val cacheKey = "${teamId}_${userId}"
                     teamStatusCache[cacheKey] = status
                     statusResults[teamId] = status
@@ -300,6 +308,8 @@ class AdapterTeamList(
             }
 
             val newVisitCounts = visitCountsDeferred.await()
+            newVisitCounts.forEach { (id, count) -> visitCountsCache[id] = count }
+            val allVisitCounts = cachedVisitIds.associateWith { visitCountsCache[it]!! } + newVisitCounts
             val sortedTeams = validTeams.sortedWith(
                 compareByDescending<RealmMyTeam> { team ->
                     val teamId = team._id.orEmpty()
@@ -310,7 +320,7 @@ class AdapterTeamList(
                         else -> 1
                     }
                 }.thenByDescending { team ->
-                    newVisitCounts[team._id.orEmpty()] ?: 0L
+                    allVisitCounts[team._id.orEmpty()] ?: 0L
                 }
             )
 
@@ -324,33 +334,24 @@ class AdapterTeamList(
                     createdDate = team.createdDate,
                     type = team.type,
                     status = team.status,
-                    visitCount = newVisitCounts[teamId] ?: 0L,
+                    visitCount = allVisitCounts[teamId] ?: 0L,
                     teamStatus = teamStatusCache[cacheKey]
                 )
             }
 
             val diffResult = withContext(Dispatchers.Default) {
-                DiffUtil.calculateDiff(TeamDiffCallback(oldList, newList))
+                DiffUtils.calculateDiff(
+                    oldList,
+                    newList,
+                    areItemsTheSame = { old, new -> old._id == new._id },
+                    areContentsTheSame = { old, new -> old == new }
+                )
             }
 
-            visitCounts = newVisitCounts
+            visitCounts = allVisitCounts
             filteredList = sortedTeams
             diffResult.dispatchUpdatesTo(this@AdapterTeamList)
             updateCompleteListener?.onUpdateComplete(filteredList.size)
-        }
-    }
-
-    private class TeamDiffCallback(
-        private val oldList: List<TeamData>, private val newList: List<TeamData>
-    ) : DiffUtil.Callback() {
-        override fun getOldListSize(): Int = oldList.size
-        override fun getNewListSize(): Int = newList.size
-        override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-            return oldList[oldItemPosition]._id == newList[newItemPosition]._id
-        }
-
-        override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-            return oldList[oldItemPosition] == newList[newItemPosition]
         }
     }
 
@@ -415,6 +416,7 @@ class AdapterTeamList(
     fun cleanup() {
         scope.cancel()
         teamStatusCache.clear()
+        visitCountsCache.clear()
     }
 
     override fun getItemCount(): Int = filteredList.size

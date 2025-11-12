@@ -218,9 +218,6 @@ class SettingActivity : AppCompatActivity() {
 
         private fun setBetaToggleOn() {
             val beta = findPreference<SwitchPreference>("beta_function")
-//            val rating = findPreference<SwitchPreference>("beta_rating")
-//            val myHealth = findPreference<SwitchPreference>("beta_myHealth")
-//            val healthWorker = findPreference<SwitchPreference>("beta_healthWorker")
 
             beta?.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, _: Any? ->
                 true
@@ -264,9 +261,6 @@ class SettingActivity : AppCompatActivity() {
         }
 
         override fun onDestroy() {
-            if (this::profileDbHandler.isInitialized) {
-                profileDbHandler.onDestroy()
-            }
             super.onDestroy()
         }
 

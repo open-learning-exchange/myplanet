@@ -223,6 +223,15 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     }
 
     private fun setupStrictMode() {
+        if (BuildConfig.DEBUG) {
+            val threadPolicy = StrictMode.ThreadPolicy.Builder()
+                .detectDiskReads()
+                .detectDiskWrites()
+                .detectNetwork()
+                .penaltyLog()
+                .build()
+            StrictMode.setThreadPolicy(threadPolicy)
+        }
         val builder = VmPolicy.Builder()
         StrictMode.setVmPolicy(builder.build())
         builder.detectFileUriExposure()

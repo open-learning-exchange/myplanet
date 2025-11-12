@@ -115,6 +115,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private var lastNotificationCheckTime = 0L
     private val notificationCheckThrottleMs = 5000L
     private var systemNotificationReceiver: BroadcastReceiver? = null
+    private lateinit var mRealm: Realm
 
     private interface RealmListener {
         fun removeListener()
@@ -126,6 +127,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        mRealm = databaseService.realmInstance
         checkUser()
         initViews()
         updateAppTitle()
@@ -390,10 +392,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     handleSurveyNavigation(relatedId)
                 }
                 NotificationUtils.TYPE_TASK -> {
-                    handleTaskNavigation(relatedId)
+                    lifecycleScope.launch {
+                        handleTaskNavigation(relatedId)
+                    }
                 }
                 NotificationUtils.TYPE_JOIN_REQUEST -> {
-                    handleJoinRequestNavigation(relatedId)
+                    lifecycleScope.launch {
+                        handleJoinRequestNavigation(relatedId)
+                    }
                 }
                 NotificationUtils.TYPE_RESOURCE -> {
                     openCallFragment(ResourcesFragment(), "Resources")
@@ -415,43 +421,60 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
     
-    private fun handleTaskNavigation(taskId: String?) {
-        if (taskId != null) {
-            val task = mRealm.where(RealmTeamTask::class.java)
-                .equalTo("id", taskId)
-                .findFirst()
+    private suspend fun handleTaskNavigation(taskId: String?) {
+        if (taskId == null) return
 
-            val linkJson = JSONObject(task?.link ?: "{}")
-            val teamId = linkJson.optString("teams")
-            if (teamId.isNotEmpty()) {
-                val teamObject = mRealm.where(RealmMyTeam::class.java)?.equalTo("_id", teamId)?.findFirst()
+        val teamData = withContext(Dispatchers.IO) {
+            var result: Triple<String, String, String>? = null
+            Realm.getDefaultInstance().use { realm ->
+                val task = realm.where(RealmTeamTask::class.java)
+                    .equalTo("id", taskId)
+                    .findFirst()
 
-                val f = TeamDetailFragment.newInstance(
-                    teamId = teamId,
-                    teamName = teamObject?.name ?: "",
-                    teamType = teamObject?.type ?: "",
-                    isMyTeam = true,
-                    navigateToPage = TasksPage
-                )
-
-                openCallFragment(f)
+                val linkJson = JSONObject(task?.link ?: "{}")
+                val teamId = linkJson.optString("teams")
+                if (teamId.isNotEmpty()) {
+                    val teamObject = realm.where(RealmMyTeam::class.java)?.equalTo("_id", teamId)?.findFirst()
+                    result = Triple(teamId, teamObject?.name ?: "", teamObject?.type ?: "")
+                }
             }
+            result
+        }
+
+        teamData?.let { (teamId, teamName, teamType) ->
+            val f = TeamDetailFragment.newInstance(
+                teamId = teamId,
+                teamName = teamName,
+                teamType = teamType,
+                isMyTeam = true,
+                navigateToPage = TasksPage
+            )
+            openCallFragment(f)
         }
     }
     
-    private fun handleJoinRequestNavigation(requestId: String?) {
+    private suspend fun handleJoinRequestNavigation(requestId: String?) {
         if (requestId != null) {
             val actualJoinRequestId = if (requestId.startsWith("join_request_")) {
                 requestId.removePrefix("join_request_")
             } else {
                 requestId
             }
-            val joinRequest = mRealm.where(RealmMyTeam::class.java)
-                .equalTo("_id", actualJoinRequestId)
-                .equalTo("docType", "request")
-                .findFirst()
 
-            val teamId = joinRequest?.teamId
+            val teamId = withContext(Dispatchers.IO) {
+                val startTime = System.currentTimeMillis()
+                var localTeamId: String? = null
+                Realm.getDefaultInstance().use { realm ->
+                    val joinRequest = realm.where(RealmMyTeam::class.java)
+                        .equalTo("_id", actualJoinRequestId)
+                        .equalTo("docType", "request")
+                        .findFirst()
+                    localTeamId = joinRequest?.teamId
+                }
+                val endTime = System.currentTimeMillis()
+                android.util.Log.d("DashboardActivity", "Join request query took ${endTime - startTime}ms")
+                localTeamId
+            }
 
             if (teamId?.isNotEmpty() == true) {
                 val f = TeamDetailFragment()
@@ -1082,13 +1105,16 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     override fun onDestroy() {
-        profileDbHandler.onDestroy()
         realmListeners.forEach { it.removeListener() }
         realmListeners.clear()
 
         systemNotificationReceiver?.let {
             unregisterReceiver(it)
             systemNotificationReceiver = null
+        }
+
+        if (::mRealm.isInitialized && !mRealm.isClosed) {
+            mRealm.close()
         }
         super.onDestroy()
     }

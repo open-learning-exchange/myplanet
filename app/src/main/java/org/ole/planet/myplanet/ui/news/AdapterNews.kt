@@ -12,7 +12,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
-import android.widget.LinearLayout
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.cardview.widget.CardView
@@ -36,6 +35,7 @@ import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNewsBinding
 import org.ole.planet.myplanet.model.Conversation
+import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
@@ -53,7 +53,7 @@ import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.makeExpandable
 
-class AdapterNews(var context: Context, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userProfileDbHandler: UserProfileDbHandler) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
+class AdapterNews(var context: Context, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userProfileDbHandler: UserProfileDbHandler, private val databaseService: DatabaseService) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem ->
             if (oldItem === newItem) return@itemCallback true
@@ -461,17 +461,47 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
 
     fun isTeamLeader(): Boolean {
         if(teamId==null)return false
-        val team = mRealm.where(RealmMyTeam::class.java)
-            .equalTo("teamId", teamId)
-            .equalTo("isLeader", true)
-            .findFirst()
-        return team?.userId == currentUser?._id
+        return try {
+            if (::mRealm.isInitialized && !mRealm.isClosed) {
+                val team = mRealm.where(RealmMyTeam::class.java)
+                    .equalTo("teamId", teamId)
+                    .equalTo("isLeader", true)
+                    .findFirst()
+                team?.userId == currentUser?._id
+            } else {
+                databaseService.withRealm { realm ->
+                    val team = realm.where(RealmMyTeam::class.java)
+                        .equalTo("teamId", teamId)
+                        .equalTo("isLeader", true)
+                        .findFirst()
+                    team?.userId == currentUser?._id
+                }
+            }
+        } catch (e: Exception) {
+            false
+        }
     }
 
-    private fun getReplies(finalNews: RealmNews?): List<RealmNews> = mRealm.where(RealmNews::class.java)
-        .sort("time", Sort.DESCENDING)
-        .equalTo("replyTo", finalNews?.id, Case.INSENSITIVE)
-        .findAll()
+    private fun getReplies(finalNews: RealmNews?): List<RealmNews> {
+        return try {
+            if (::mRealm.isInitialized && !mRealm.isClosed) {
+                mRealm.where(RealmNews::class.java)
+                    .sort("time", Sort.DESCENDING)
+                    .equalTo("replyTo", finalNews?.id, Case.INSENSITIVE)
+                    .findAll()
+            } else {
+                databaseService.withRealm { realm ->
+                    realm.where(RealmNews::class.java)
+                        .sort("time", Sort.DESCENDING)
+                        .equalTo("replyTo", finalNews?.id, Case.INSENSITIVE)
+                        .findAll()
+                        .let { realm.copyFromRealm(it) }
+                }
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
 
     private fun updateReplyCount(viewHolder: ViewHolderNews, replies: List<RealmNews>, position: Int) {
         with(viewHolder.binding) {

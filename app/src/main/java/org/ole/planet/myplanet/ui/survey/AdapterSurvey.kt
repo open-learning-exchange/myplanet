@@ -18,13 +18,9 @@ import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMembershipDoc
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmSubmission.Companion.getNoOfSubmissionByTeam
-import org.ole.planet.myplanet.model.RealmSubmission.Companion.getNoOfSubmissionByUser
-import org.ole.planet.myplanet.model.RealmSubmission.Companion.getRecentSubmissionDate
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.utilities.DiffUtils
-import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
 class AdapterSurvey(
     private val context: Context,
@@ -34,7 +30,8 @@ class AdapterSurvey(
     val teamId: String?,
     private val surveyAdoptListener: SurveyAdoptListener,
     private val settings: SharedPreferences,
-    private val userProfileDbHandler: UserProfileDbHandler
+    private val userProfileDbHandler: UserProfileDbHandler,
+    private val surveyInfoMap: Map<String, SurveyInfo>
 ) : RecyclerView.Adapter<AdapterSurvey.ViewHolderSurvey>() {
     private var examList: List<RealmStepExam> = emptyList()
     private var listener: OnHomeItemClickListener? = null
@@ -144,18 +141,18 @@ class AdapterSurvey(
                     tvDescription.visibility = View.VISIBLE
                     tvDescription.text = exam.description
                 }
-                var teamSubmission = mRealm.where(RealmSubmission::class.java)
-                    .equalTo("parentId", exam.id)
-                    .equalTo("membershipDoc.teamId", teamId)
-                    .findFirst()
+
+                fun getTeamSubmission(): RealmSubmission? {
+                    return mRealm.where(RealmSubmission::class.java)
+                        .equalTo("parentId", exam.id)
+                        .equalTo("membershipDoc.teamId", teamId)
+                        .findFirst()
+                }
+
+                var teamSubmission = getTeamSubmission()
 
                 startSurvey.setOnClickListener {
-                    if (teamSubmission?.isValid != true) {
-                        teamSubmission = mRealm.where(RealmSubmission::class.java)
-                            .equalTo("parentId", exam.id)
-                            .equalTo("membershipDoc.teamId", teamId)
-                            .findFirst()
-                    }
+                    teamSubmission = getTeamSubmission()
 
                     val shouldAdopt = exam.isTeamShareAllowed && teamSubmission?.isValid != true
 
@@ -174,6 +171,7 @@ class AdapterSurvey(
                     startSurvey.visibility = View.GONE
                 }
 
+                teamSubmission = getTeamSubmission()
                 val shouldShowAdopt = exam.isTeamShareAllowed && teamSubmission?.isValid != true
 
                 startSurvey.text = when {
@@ -186,13 +184,10 @@ class AdapterSurvey(
                     startSurvey.visibility = View.GONE
                 }
 
-                tvNoSubmissions.text = when {
-                    isTeam -> getNoOfSubmissionByTeam(teamId, exam.id, mRealm)
-                    else -> getNoOfSubmissionByUser(exam.id, exam.courseId, userId, mRealm)
-                }
-                tvDateCompleted.text = getRecentSubmissionDate(exam.id, exam.courseId, userId, mRealm)
-                val creationTime = exam.id?.let { RealmStepExam.getSurveyCreationTime(it, mRealm) }
-                tvDate.text = creationTime?.let { formatDate(it, "MMM dd, yyyy") } ?: ""
+                val surveyInfo = surveyInfoMap[exam.id]
+                tvNoSubmissions.text = surveyInfo?.submissionCount ?: ""
+                tvDateCompleted.text = surveyInfo?.lastSubmissionDate ?: ""
+                tvDate.text = surveyInfo?.creationDate ?: ""
             }
         }
 
