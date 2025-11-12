@@ -392,7 +392,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             
             when (notificationType) {
                 NotificationUtils.TYPE_SURVEY -> {
-                    handleSurveyNavigation(relatedId)
+                    lifecycleScope.launch {
+                        handleSurveyNavigation(relatedId)
+                    }
                 }
                 NotificationUtils.TYPE_TASK -> {
                     lifecycleScope.launch {
@@ -416,10 +418,16 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
     
-    private fun handleSurveyNavigation(surveyId: String?) {
+    private suspend fun handleSurveyNavigation(surveyId: String?) {
         if (surveyId != null) {
-            val currentStepExam = mRealm.where(RealmStepExam::class.java).equalTo("name", surveyId)
-                .findFirst()
+            val currentStepExam = withContext(Dispatchers.IO) {
+                Realm.getDefaultInstance().use { realm ->
+                    realm.where(RealmStepExam::class.java).equalTo("name", surveyId)
+                        .findFirst()?.let {
+                            realm.copyFromRealm(it)
+                        }
+                }
+            }
             AdapterMySubmission.openSurvey(this, currentStepExam?.id, false, false, "")
         }
     }
