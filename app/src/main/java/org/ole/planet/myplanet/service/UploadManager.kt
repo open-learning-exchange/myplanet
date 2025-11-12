@@ -164,55 +164,55 @@ class UploadManager @Inject constructor(
 
     fun uploadExamResult(listener: SuccessListener) {
         val apiInterface = client.create(ApiInterface::class.java)
-
         try {
-            data class SubmissionData(val id: String?, val serialized: JsonObject, val _id: String?, val _rev: String?)
-
-            val submissionsToUpload = databaseService.withRealm { realm ->
+            val submissionIds = databaseService.withRealm { realm ->
                 realm.where(RealmSubmission::class.java).findAll()
                     .filter { (it.answers?.size ?: 0) > 0 && it.userId?.startsWith("guest") != true }
-                    .map { sub ->
-                        val serialized = if (!TextUtils.isEmpty(sub._id)) {
-                            RealmSubmission.serializeExamResult(realm, sub, context)
-                        } else {
-                            RealmSubmission.serializeExamResult(realm, sub, context)
-                        }
-                        SubmissionData(sub.id, serialized, sub._id, sub._rev)
-                    }
+                    .mapNotNull { it.id }
             }
 
             var processedCount = 0
             var errorCount = 0
 
-            submissionsToUpload.processInBatches { data ->
-                try {
-                    val response: JsonObject? = if (TextUtils.isEmpty(data._id)) {
-                        apiInterface.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/submissions", data.serialized)
-                            .execute().body()
-                    } else {
-                        apiInterface.putDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/submissions/${data._id}", data.serialized)
-                            .execute().body()
-                    }
+            submissionIds.chunked(BATCH_SIZE).forEach { batchIds ->
+                val submissionsToUpload = databaseService.withRealm { realm ->
+                    realm.where(RealmSubmission::class.java)
+                        .`in`("id", batchIds.toTypedArray())
+                        .findAll()
+                        .map { sub ->
+                            val serialized = RealmSubmission.serializeExamResult(realm, sub, context)
+                            Triple(sub.id, serialized, sub._id)
+                        }
+                }
 
-                    if (response != null && data.id != null) {
-                        databaseService.withRealm { realm ->
-                            realm.executeTransaction { transactionRealm ->
-                                transactionRealm.where(RealmSubmission::class.java).equalTo("id", data.id).findFirst()?.let { sub ->
-                                    sub._id = getString("id", response)
-                                    sub._rev = getString("rev", response)
+                for ((id, serialized, _id) in submissionsToUpload) {
+                    try {
+                        val response: JsonObject? = if (TextUtils.isEmpty(_id)) {
+                            apiInterface.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/submissions", serialized).execute().body()
+                        } else {
+                            apiInterface.putDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/submissions/$_id", serialized).execute().body()
+                        }
+
+                        if (response != null && id != null) {
+                            databaseService.withRealm { realm ->
+                                realm.executeTransaction { transactionRealm ->
+                                    transactionRealm.where(RealmSubmission::class.java).equalTo("id", id).findFirst()?.let { sub ->
+                                        sub._id = getString("id", response)
+                                        sub._rev = getString("rev", response)
+                                    }
                                 }
                             }
+                            processedCount++
+                        } else {
+                            errorCount++
                         }
-                        processedCount++
-                    } else {
+                    } catch (e: IOException) {
                         errorCount++
+                        e.printStackTrace()
+                    } catch (e: Exception) {
+                        errorCount++
+                        e.printStackTrace()
                     }
-                } catch (e: IOException) {
-                    errorCount++
-                    e.printStackTrace()
-                } catch (e: Exception) {
-                    errorCount++
-                    e.printStackTrace()
                 }
             }
 
