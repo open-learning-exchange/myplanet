@@ -32,14 +32,14 @@ class SurveyRepositoryImpl @Inject constructor(
         val surveyInfos = getSurveyInfos(isTeam, teamId, userId, surveys)
         return surveys.map {
             val surveyInfo = surveyInfos[it.id]
-            val questionCount = queryCount(org.ole.planet.myplanet.model.RealmExamQuestion::class.java) {
+            val questionCount = count(org.ole.planet.myplanet.model.RealmExamQuestion::class.java) {
                 equalTo("examId", it.id)
             }
             val teamSubmission = if (isTeam) {
-                queryFirst(RealmSubmission::class.java) {
+                queryList(RealmSubmission::class.java) {
                     equalTo("parentId", it.id)
                     equalTo("membershipDoc.teamId", teamId)
-                }
+                }.firstOrNull()
             } else {
                 null
             }

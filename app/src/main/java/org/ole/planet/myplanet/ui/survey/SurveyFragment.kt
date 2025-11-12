@@ -81,6 +81,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
             this,
             settings,
             profileDbHandler,
+            mRealm
         )
         prefManager = SharedPrefManager(requireContext())
         

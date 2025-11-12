@@ -7,4 +7,6 @@ data class SurveyDisplayModel(
     val submissionCount: String,
     val lastSubmissionDate: String,
     val creationDate: String,
+    val questionCount: Long,
+    val teamSubmissionIsValid: Boolean?,
 )

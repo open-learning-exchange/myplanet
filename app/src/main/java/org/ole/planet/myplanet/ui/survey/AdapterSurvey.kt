@@ -29,7 +29,8 @@ class AdapterSurvey(
     val teamId: String?,
     private val surveyAdoptListener: SurveyAdoptListener,
     private val settings: SharedPreferences,
-    private val userProfileDbHandler: UserProfileDbHandler
+    private val userProfileDbHandler: UserProfileDbHandler,
+    private val mRealm: Realm
 ) : RecyclerView.Adapter<AdapterSurvey.ViewHolderSurvey>() {
     private var examList: List<SurveyDisplayModel> = emptyList()
     private var listener: OnHomeItemClickListener? = null
@@ -268,7 +269,7 @@ class AdapterSurvey(
                     mRealm.refresh()
 
                     adoptedSurveyIds.add("$examId")
-                    val position = examList.indexOfFirst { it.id == examId }
+                    val position = examList.indexOfFirst { it.realmStepExam.id == examId }
                     if (position != -1) {
                         notifyItemChanged(position)
                     }
