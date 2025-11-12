@@ -294,9 +294,10 @@ fun SyncActivity.setupManualConfigEnabled(binding: DialogServerUrlBinding, dialo
     editor.putString("serverProtocol", getString(R.string.http_protocol)).apply()
     showConfigurationUIElements(binding, true, dialog)
 
-    val communities: List<RealmCommunity> =
-        mRealm.where(RealmCommunity::class.java).sort("weight", Sort.ASCENDING).findAll()
-    val nonEmptyCommunities = communities.filter { it.isValid && !TextUtils.isEmpty(it.name) }
+    val communities: List<RealmCommunity> = databaseService.withRealm { realm ->
+        realm.where(RealmCommunity::class.java).sort("weight", Sort.ASCENDING).findAll().let { realm.copyFromRealm(it) }
+    }
+    val nonEmptyCommunities = communities.filter { !TextUtils.isEmpty(it.name) }
     binding.spnCloud.adapter = ArrayAdapter(this, R.layout.spinner_item_white, nonEmptyCommunities)
     binding.spnCloud.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
         override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
