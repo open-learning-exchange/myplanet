@@ -24,20 +24,18 @@ import org.ole.planet.myplanet.utilities.DiffUtils
 
 class AdapterSurvey(
     private val context: Context,
-    private val mRealm: Realm,
     private val userId: String?,
     private val isTeam: Boolean,
     val teamId: String?,
     private val surveyAdoptListener: SurveyAdoptListener,
     private val settings: SharedPreferences,
-    private val userProfileDbHandler: UserProfileDbHandler,
-    private val surveyInfoMap: Map<String, SurveyInfo>
+    private val userProfileDbHandler: UserProfileDbHandler
 ) : RecyclerView.Adapter<AdapterSurvey.ViewHolderSurvey>() {
-    private var examList: List<RealmStepExam> = emptyList()
+    private var examList: List<SurveyDisplayModel> = emptyList()
     private var listener: OnHomeItemClickListener? = null
     private val adoptedSurveyIds = mutableSetOf<String>()
     private var isTitleAscending = true
-    private var sortStrategy: (List<RealmStepExam>) -> List<RealmStepExam> = { list ->
+    private var sortStrategy: (List<SurveyDisplayModel>) -> List<SurveyDisplayModel> = { list ->
         sortSurveyList(false, list)
     }
 
@@ -47,11 +45,11 @@ class AdapterSurvey(
         }
     }
 
-    fun updateData(newList: List<RealmStepExam>) {
+    fun updateData(newList: List<SurveyDisplayModel>) {
         dispatchDiff(examList, newList)
     }
 
-    fun updateDataAfterSearch(newList: List<RealmStepExam>) {
+    fun updateDataAfterSearch(newList: List<SurveyDisplayModel>) {
         val oldList = examList
         val sortedList = if (oldList.isEmpty()) {
             sortSurveyList(false, newList)
@@ -63,12 +61,12 @@ class AdapterSurvey(
 
     private fun sortSurveyList(
         isAscend: Boolean,
-        list: List<RealmStepExam>
-    ): List<RealmStepExam> {
+        list: List<SurveyDisplayModel>
+    ): List<SurveyDisplayModel> {
         return if (isAscend) {
-            list.sortedBy { it.createdDate }
+            list.sortedBy { it.realmStepExam.createdDate }
         } else {
-            list.sortedByDescending { it.createdDate }
+            list.sortedByDescending { it.realmStepExam.createdDate }
         }
     }
 
@@ -81,12 +79,12 @@ class AdapterSurvey(
 
     private fun sortSurveyListByName(
         isAscend: Boolean,
-        list: List<RealmStepExam>
-    ): List<RealmStepExam> {
+        list: List<SurveyDisplayModel>
+    ): List<SurveyDisplayModel> {
         return if (isAscend) {
-            list.sortedBy { it.name?.lowercase() }
+            list.sortedBy { it.realmStepExam.name?.lowercase() }
         } else {
-            list.sortedByDescending { it.name?.lowercase() }
+            list.sortedByDescending { it.realmStepExam.name?.lowercase() }
         }
     }
 
@@ -99,13 +97,13 @@ class AdapterSurvey(
     }
 
     private fun dispatchDiff(
-        oldList: List<RealmStepExam>,
-        newList: List<RealmStepExam>
+        oldList: List<SurveyDisplayModel>,
+        newList: List<SurveyDisplayModel>
     ) {
         val diffResult = DiffUtils.calculateDiff(
             oldList,
             newList,
-            areItemsTheSame = { old, new -> old.id == new.id },
+            areItemsTheSame = { old, new -> old.realmStepExam.id == new.realmStepExam.id },
             areContentsTheSame = { old, new -> old == new }
         )
         examList = newList
@@ -129,11 +127,12 @@ class AdapterSurvey(
             binding.sendSurvey.visibility = View.GONE
             binding.sendSurvey.setOnClickListener {
                 val current = examList[bindingAdapterPosition]
-                listener?.sendSurvey(current)
+                listener?.sendSurvey(current.realmStepExam)
             }
         }
 
-        fun bind(exam: RealmStepExam) {
+        fun bind(surveyDisplayModel: SurveyDisplayModel) {
+            val exam = surveyDisplayModel.realmStepExam
             binding.apply {
                 startSurvey.visibility = View.VISIBLE
                 tvTitle.text = exam.name
@@ -142,20 +141,8 @@ class AdapterSurvey(
                     tvDescription.text = exam.description
                 }
 
-                fun getTeamSubmission(): RealmSubmission? {
-                    return mRealm.where(RealmSubmission::class.java)
-                        .equalTo("parentId", exam.id)
-                        .equalTo("membershipDoc.teamId", teamId)
-                        .findFirst()
-                }
-
-                var teamSubmission = getTeamSubmission()
-
                 startSurvey.setOnClickListener {
-                    teamSubmission = getTeamSubmission()
-
-                    val shouldAdopt = exam.isTeamShareAllowed && teamSubmission?.isValid != true
-
+                    val shouldAdopt = exam.isTeamShareAllowed && surveyDisplayModel.teamSubmissionIsValid != true
                     if (shouldAdopt) {
                         adoptSurvey(exam, teamId)
                     } else {
@@ -163,16 +150,11 @@ class AdapterSurvey(
                     }
                 }
 
-                val questions = mRealm.where(RealmExamQuestion::class.java).equalTo("examId", exam.id)
-                    .findAll()
-
-                if (questions.isEmpty()) {
+                if (surveyDisplayModel.questionCount == 0L) {
                     sendSurvey.visibility = View.GONE
                     startSurvey.visibility = View.GONE
                 }
-
-                teamSubmission = getTeamSubmission()
-                val shouldShowAdopt = exam.isTeamShareAllowed && teamSubmission?.isValid != true
+                val shouldShowAdopt = exam.isTeamShareAllowed && surveyDisplayModel.teamSubmissionIsValid != true
 
                 startSurvey.text = when {
                     shouldShowAdopt -> context.getString(R.string.adopt_survey)
@@ -184,10 +166,9 @@ class AdapterSurvey(
                     startSurvey.visibility = View.GONE
                 }
 
-                val surveyInfo = surveyInfoMap[exam.id]
-                tvNoSubmissions.text = surveyInfo?.submissionCount ?: ""
-                tvDateCompleted.text = surveyInfo?.lastSubmissionDate ?: ""
-                tvDate.text = surveyInfo?.creationDate ?: ""
+                tvNoSubmissions.text = surveyDisplayModel.submissionCount
+                tvDateCompleted.text = surveyDisplayModel.lastSubmissionDate
+                tvDate.text = surveyDisplayModel.creationDate
             }
         }
 

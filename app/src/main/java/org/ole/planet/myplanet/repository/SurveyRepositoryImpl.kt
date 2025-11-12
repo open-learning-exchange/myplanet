@@ -10,6 +10,7 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.ui.survey.SurveyInfo
+import org.ole.planet.myplanet.ui.survey.SurveyDisplayModel
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDateWithTime
 
@@ -17,6 +18,41 @@ class SurveyRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
     databaseService: DatabaseService
 ) : RealmRepository(databaseService), SurveyRepository {
+    override suspend fun getSurveyDisplayModels(
+        isTeam: Boolean,
+        teamId: String?,
+        userId: String?,
+        isTeamShareAllowed: Boolean
+    ): List<SurveyDisplayModel> {
+        val surveys = when {
+            isTeam && isTeamShareAllowed -> getAdoptableTeamSurveys(teamId)
+            isTeam -> getTeamOwnedSurveys(teamId)
+            else -> getIndividualSurveys()
+        }
+        val surveyInfos = getSurveyInfos(isTeam, teamId, userId, surveys)
+        return surveys.map {
+            val surveyInfo = surveyInfos[it.id]
+            val questionCount = queryCount(org.ole.planet.myplanet.model.RealmExamQuestion::class.java) {
+                equalTo("examId", it.id)
+            }
+            val teamSubmission = if (isTeam) {
+                queryFirst(RealmSubmission::class.java) {
+                    equalTo("parentId", it.id)
+                    equalTo("membershipDoc.teamId", teamId)
+                }
+            } else {
+                null
+            }
+            SurveyDisplayModel(
+                realmStepExam = it,
+                submissionCount = surveyInfo?.submissionCount ?: "",
+                lastSubmissionDate = surveyInfo?.lastSubmissionDate ?: "",
+                creationDate = surveyInfo?.creationDate ?: "",
+                questionCount = questionCount,
+                teamSubmissionIsValid = teamSubmission?.isValid
+            )
+        }
+    }
 
     override suspend fun getTeamOwnedSurveys(teamId: String?): List<RealmStepExam> {
         if (teamId.isNullOrEmpty()) return emptyList()

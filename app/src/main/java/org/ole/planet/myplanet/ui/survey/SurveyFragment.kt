@@ -45,8 +45,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
     lateinit var prefManager: SharedPrefManager
     private val serverUrlMapper = ServerUrlMapper()
     private var loadSurveysJob: Job? = null
-    private var currentSurveys: List<RealmStepExam> = emptyList()
-    private val surveyInfoMap = mutableMapOf<String, SurveyInfo>()
+    private var currentSurveys: List<SurveyDisplayModel> = emptyList()
 
     @Inject
     lateinit var syncManager: SyncManager
@@ -76,14 +75,12 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         val userProfileModel = profileDbHandler.userModel
         adapter = AdapterSurvey(
             requireActivity(),
-            mRealm,
             userProfileModel?.id,
             isTeam,
             teamId,
             this,
             settings,
             profileDbHandler,
-            surveyInfoMap
         )
         prefManager = SharedPrefManager(requireContext())
         
@@ -249,14 +246,14 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         }
     }
 
-    private fun search(s: String, list: List<RealmStepExam>): List<RealmStepExam> {
+    private fun search(s: String, list: List<SurveyDisplayModel>): List<SurveyDisplayModel> {
         val queryParts = s.split(" ").filterNot { it.isEmpty() }
         val normalizedQuery = normalizeText(s)
-        val startsWithQuery = mutableListOf<RealmStepExam>()
-        val containsQuery = mutableListOf<RealmStepExam>()
+        val startsWithQuery = mutableListOf<SurveyDisplayModel>()
+        val containsQuery = mutableListOf<SurveyDisplayModel>()
 
         for (item in list) {
-            val title = item.name?.let { normalizeText(it) } ?: continue
+            val title = item.realmStepExam.name?.let { normalizeText(it) } ?: continue
             if (title.startsWith(normalizedQuery, ignoreCase = true)) {
                 startsWithQuery.add(item)
             } else if (queryParts.all { title.contains(normalizeText(it), ignoreCase = true) }) {
@@ -272,19 +269,12 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         val userProfileModel = profileDbHandler.userModel
         loadSurveysJob?.cancel()
         loadSurveysJob = launchWhenViewIsReady {
-            currentSurveys = when {
-                isTeam && useTeamShareAllowed -> surveyRepository.getAdoptableTeamSurveys(teamId)
-                isTeam -> surveyRepository.getTeamOwnedSurveys(teamId)
-                else -> surveyRepository.getIndividualSurveys()
-            }
-            val surveyInfos = surveyRepository.getSurveyInfos(
+            currentSurveys = surveyRepository.getSurveyDisplayModels(
                 isTeam,
                 teamId,
                 userProfileModel?.id,
-                currentSurveys
+                useTeamShareAllowed
             )
-            surveyInfoMap.clear()
-            surveyInfoMap.putAll(surveyInfos)
             applySearchFilter()
         }
     }

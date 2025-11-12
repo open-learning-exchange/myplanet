@@ -13,4 +13,11 @@ interface SurveyRepository {
         userId: String?,
         surveys: List<RealmStepExam>
     ): Map<String, SurveyInfo>
+
+    suspend fun getSurveyDisplayModels(
+        isTeam: Boolean,
+        teamId: String?,
+        userId: String?,
+        isTeamShareAllowed: Boolean
+    ): List<org.ole.planet.myplanet.ui.survey.SurveyDisplayModel>
 }
