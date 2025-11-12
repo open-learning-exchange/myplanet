@@ -142,19 +142,19 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                 }
 
                 val url = URL(formattedUrl)
-                val connection = withContext(Dispatchers.IO) {
-                    url.openConnection()
-                } as HttpURLConnection
-                connection.requestMethod = "GET"
-                connection.connectTimeout = 5000
-                connection.readTimeout = 5000
-                withContext(Dispatchers.IO) {
-                    connection.connect()
+                val responseCode = withContext(Dispatchers.IO) {
+                    val connection = url.openConnection() as HttpURLConnection
+                    try {
+                        connection.requestMethod = "GET"
+                        connection.connectTimeout = 5000
+                        connection.readTimeout = 5000
+                        connection.connect()
+                        connection.responseCode
+                    } finally {
+                        connection.disconnect()
+                    }
                 }
-                val responseCode = connection.responseCode
-                connection.disconnect()
                 responseCode in 200..299
-
             } catch (e: Exception) {
                 e.printStackTrace()
                 false

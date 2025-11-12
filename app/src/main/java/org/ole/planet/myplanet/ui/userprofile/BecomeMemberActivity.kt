@@ -31,6 +31,7 @@ import org.ole.planet.myplanet.utilities.VersionUtils
 @AndroidEntryPoint
 class BecomeMemberActivity : BaseActivity() {
     private lateinit var activityBecomeMemberBinding: ActivityBecomeMemberBinding
+    private lateinit var mRealm: Realm
     var dob: String = ""
     var guest: Boolean = false
     
@@ -162,6 +163,7 @@ class BecomeMemberActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        mRealm = databaseService.realmInstance
         activityBecomeMemberBinding = ActivityBecomeMemberBinding.inflate(layoutInflater)
         setContentView(activityBecomeMemberBinding.root)
         EdgeToEdgeUtils.setupEdgeToEdgeWithKeyboard(this, activityBecomeMemberBinding.root)
@@ -202,7 +204,7 @@ class BecomeMemberActivity : BaseActivity() {
     }
 
     override fun onDestroy() {
-        if (!mRealm.isClosed) {
+        if (::mRealm.isInitialized && !mRealm.isClosed) {
             mRealm.close()
         }
         super.onDestroy()
