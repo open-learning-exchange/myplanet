@@ -9,8 +9,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
-        versionCode = 3726
-        versionName = "0.37.26"
+        versionCode = 3727
+        versionName = "0.37.27"
         ndkVersion = '26.3.11579264'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -190,6 +190,7 @@ dependencies {
 
     implementation "com.github.VaibhavLakhera:Circular-Progress-View:0.1.2"
     implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
+    implementation "com.github.bumptech.glide:glide:4.16.0"
     implementation 'com.github.clans:fab:1.6.4'
     implementation 'com.applandeo:material-calendar-view:1.9.2'
     implementation 'com.afollestad.material-dialogs:commons:0.9.6.0'
@@ -219,10 +220,6 @@ dependencies {
     implementation "com.squareup.retrofit2:retrofit:$retrofit2_version"
     implementation "com.squareup.retrofit2:converter-gson:$retrofit2_version"
     implementation("com.squareup.okhttp3:okhttp:5.1.0")
-
-    def glide_version = "4.16.0"
-    implementation "com.github.bumptech.glide:glide:$glide_version"
-    kapt "com.github.bumptech.glide:compiler:$glide_version"
 
     def media3_version = "1.8.0"
     implementation "androidx.media3:media3-exoplayer:$media3_version"
