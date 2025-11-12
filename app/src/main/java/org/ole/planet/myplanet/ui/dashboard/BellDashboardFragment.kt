@@ -342,7 +342,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
     }
 
     private fun observeCompletedCourses() {
-        binding.cardProfileBell.progressBarBadges.visibility = View.VISIBLE
+        binding.cardProfileBell.progressBarBadges?.visibility = View.VISIBLE
         viewModel.loadCompletedCourses(user?.id)
 
         viewLifecycleOwner.lifecycleScope.launch {
@@ -350,7 +350,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
                 viewModel.completedCourses.collectLatest { courses ->
                     if (courses.isNotEmpty()) {
                         showBadges(courses)
-                        binding.cardProfileBell.progressBarBadges.visibility = View.GONE
+                        binding.cardProfileBell.progressBarBadges?.visibility = View.GONE
                     }
                 }
             }
@@ -358,8 +358,8 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             delay(2000)
-            if (binding.cardProfileBell.progressBarBadges.visibility == View.VISIBLE) {
-                binding.cardProfileBell.progressBarBadges.visibility = View.GONE
+            if (binding.cardProfileBell.progressBarBadges?.visibility == View.VISIBLE) {
+                binding.cardProfileBell.progressBarBadges?.visibility = View.GONE
             }
         }
     }
