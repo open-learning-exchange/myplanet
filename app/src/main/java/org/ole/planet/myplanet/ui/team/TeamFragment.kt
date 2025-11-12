@@ -280,17 +280,6 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
         }
     }
 
-    private fun updatedTeamList() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            if (!::adapterTeamList.isInitialized || binding.rvTeamList.adapter == null) {
-                setTeamList()
-            } else {
-                adapterTeamList.updateList()
-            }
-            listContentDescription(conditionApplied)
-        }
-    }
-
     private fun listContentDescription(conditionApplied: Boolean) {
         if (conditionApplied) {
             binding.rvTeamList.contentDescription = getString(R.string.enterprise_list)

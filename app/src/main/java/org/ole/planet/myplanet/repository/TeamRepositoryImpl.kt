@@ -11,6 +11,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
@@ -68,13 +69,14 @@ class TeamRepositoryImpl @Inject constructor(
 
     override fun getMyTeams(): Flow<List<RealmMyTeam>> {
         val user = userProfileDbHandler.userModel
-        val teamIds = queryList(RealmMyTeam::class.java) {
+        return queryListFlow(RealmMyTeam::class.java) {
             equalTo("userId", user?._id)
             equalTo("docType", "membership")
-        }.map { it.teamId }
-
-        return queryListFlow(RealmMyTeam::class.java) {
-            `in`("_id", teamIds.toTypedArray())
+        }.flatMapLatest { memberships ->
+            val teamIds = memberships.map { it.teamId }.toTypedArray()
+            queryListFlow(RealmMyTeam::class.java) {
+                `in`("_id", teamIds)
+            }
         }
     }
 
