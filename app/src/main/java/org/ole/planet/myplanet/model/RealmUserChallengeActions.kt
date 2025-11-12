@@ -15,11 +15,11 @@ open class RealmUserChallengeActions : RealmObject() {
 
     companion object {
         fun createActionAsync(
-            realm: Realm,
             userId: String,
             resourceId: String?,
             actionType: String
         ) {
+            val realm = Realm.getDefaultInstance()
             realm.executeTransactionAsync({ bgRealm ->
                 val action = bgRealm.createObject(
                     RealmUserChallengeActions::class.java,
@@ -30,9 +30,21 @@ open class RealmUserChallengeActions : RealmObject() {
                 action.resourceId = resourceId
                 action.time       = System.currentTimeMillis()
             }, {
+                realm.close()
             }, { e ->
                 e.printStackTrace()
+                realm.close()
             })
+        }
+
+        @Deprecated("Use createActionAsync without realm parameter")
+        fun createActionAsync(
+            realm: Realm,
+            userId: String,
+            resourceId: String?,
+            actionType: String
+        ) {
+            createActionAsync(userId, resourceId, actionType)
         }
     }
 }

@@ -31,7 +31,14 @@ class DatabaseService(context: Context) {
         get() = Realm.getDefaultInstance()
 
     private inline fun <T> withRealmInstance(block: (Realm) -> T): T {
-        return realmInstance.use(block)
+        val realm = Realm.getDefaultInstance()
+        return try {
+            block(realm)
+        } finally {
+            if (!realm.isClosed) {
+                realm.close()
+            }
+        }
     }
 
     fun <T> withRealm(operation: (Realm) -> T): T {

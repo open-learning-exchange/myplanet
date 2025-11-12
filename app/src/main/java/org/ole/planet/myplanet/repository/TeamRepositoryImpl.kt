@@ -82,6 +82,37 @@ class TeamRepositoryImpl @Inject constructor(
         return findByField(RealmMyTeam::class.java, "_id", teamId)
     }
 
+    override suspend fun getTaskTeamInfo(taskId: String): Triple<String, String, String>? = withContext(Dispatchers.IO) {
+        databaseService.withRealm { realm ->
+            val task = realm.where(RealmTeamTask::class.java)
+                .equalTo("id", taskId)
+                .findFirst()
+
+            task?.let {
+                val linkJson = org.json.JSONObject(it.link ?: "{}")
+                val teamId = linkJson.optString("teams")
+                if (teamId.isNotEmpty()) {
+                    val teamObject = realm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
+                    teamObject?.let { team ->
+                        Triple(teamId, team.name ?: "", team.type ?: "")
+                    }
+                } else {
+                    null
+                }
+            }
+        }
+    }
+
+    override suspend fun getJoinRequestTeamId(requestId: String): String? = withContext(Dispatchers.IO) {
+        databaseService.withRealm { realm ->
+            val joinRequest = realm.where(RealmMyTeam::class.java)
+                .equalTo("_id", requestId)
+                .equalTo("docType", "request")
+                .findFirst()
+            joinRequest?.teamId
+        }
+    }
+
     override fun getTeamTransactions(
         teamId: String,
         startDate: Long?,

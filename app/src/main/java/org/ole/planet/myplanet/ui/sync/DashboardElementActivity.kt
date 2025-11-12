@@ -162,7 +162,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         val dialog = builder.build()
         currentDialog = dialog
         service.getMinApk(this, url, serverPin, this, "DashboardActivity")
-        createActionAsync(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
+        createActionAsync("${profileDbHandler.userModel?.id}", null, "sync")
     }
 
     @SuppressLint("RestrictedApi")
