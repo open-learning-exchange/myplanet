@@ -30,10 +30,11 @@ import org.ole.planet.myplanet.utilities.Utilities
 import retrofit2.Response
 
 object TransactionSyncManager {
-    fun authenticate(): Boolean {
+    suspend fun authenticate(): Boolean {
         val apiInterface = client?.create(ApiInterface::class.java)
         try {
-            val response: Response<DocumentResponse>? = apiInterface?.getDocuments(UrlUtils.header, "${UrlUtils.getUrl()}/tablet_users/_all_docs")?.execute()
+            val response: Response<DocumentResponse>? =
+                apiInterface?.getDocumentsSuspended(UrlUtils.header, "${UrlUtils.getUrl()}/tablet_users/_all_docs")
             if (response != null) {
                 return response.code() == 200
             }
@@ -94,12 +95,14 @@ object TransactionSyncManager {
         }
     }
 
-    fun syncDb(realm: Realm, table: String) {
-        realm.executeTransactionAsync { mRealm: Realm ->
+    suspend fun syncDb(realm: Realm, table: String) {
+        realm.executeTransaction { mRealm: Realm ->
             val apiInterface = client?.create(ApiInterface::class.java)
-            val allDocs = apiInterface?.getJsonObject(UrlUtils.header, UrlUtils.getUrl() + "/" + table + "/_all_docs?include_doc=false")
             try {
-                val all = allDocs?.execute()
+                val all = apiInterface?.getJsonObjectSuspended(
+                    UrlUtils.header,
+                    UrlUtils.getUrl() + "/" + table + "/_all_docs?include_doc=false"
+                )
                 val rows = getJsonArray("rows", all?.body())
                 val keys: MutableList<String> = ArrayList()
                 for (i in 0 until rows.size()) {
@@ -108,7 +111,12 @@ object TransactionSyncManager {
                     if (i == rows.size() - 1 || keys.size == 1000) {
                         val obj = JsonObject()
                         obj.add("keys", Gson().fromJson(Gson().toJson(keys), JsonArray::class.java))
-                        val response = apiInterface?.findDocs(UrlUtils.header, "application/json", UrlUtils.getUrl() + "/" + table + "/_all_docs?include_docs=true", obj)?.execute()
+                        val response = apiInterface?.findDocsSuspended(
+                            UrlUtils.header,
+                            "application/json",
+                            UrlUtils.getUrl() + "/" + table + "/_all_docs?include_docs=true",
+                            obj
+                        )
                         if (response?.body() != null) {
                             val arr = getJsonArray("rows", response.body())
                             if (table == "chat_history") {

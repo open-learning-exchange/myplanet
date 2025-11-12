@@ -26,10 +26,19 @@ interface ApiInterface {
     fun getDocuments(@Header("Authorization") header: String?, @Url url: String?): Call<DocumentResponse>
 
     @GET
+    suspend fun getDocumentsSuspended(@Header("Authorization") header: String?, @Url url: String?): Response<DocumentResponse>
+
+    @GET
     fun getJsonObject(@Header("Authorization") header: String?, @Url url: String?): Call<JsonObject>
+
+    @GET
+    suspend fun getJsonObjectSuspended(@Header("Authorization") header: String?, @Url url: String?): Response<JsonObject>
 
     @POST
     fun findDocs(@Header("Authorization") header: String?, @Header("Content-Type") c: String?, @Url url: String?, @Body s: JsonObject?): Call<JsonObject>
+
+    @POST
+    suspend fun findDocsSuspended(@Header("Authorization") header: String?, @Header("Content-Type") c: String?, @Url url: String?, @Body s: JsonObject?): Response<JsonObject>
 
     @POST
     fun postDoc(@Header("Authorization") header: String?, @Header("Content-Type") c: String?, @Url url: String?, @Body s: JsonObject?): Call<JsonObject>

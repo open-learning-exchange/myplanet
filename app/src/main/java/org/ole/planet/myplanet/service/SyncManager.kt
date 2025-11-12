@@ -26,7 +26,6 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import org.ole.planet.myplanet.MainApplication
@@ -69,7 +68,6 @@ class SyncManager @Inject constructor(
     private val improvedSyncManager: Lazy<ImprovedSyncManager>,
     @ApplicationScope private val syncScope: CoroutineScope
 ) {
-    private var td: Thread? = null
     lateinit var mRealm: Realm
     private var isSyncing = false
     private val stringArray = arrayOfNulls<String>(4)
@@ -137,10 +135,7 @@ class SyncManager @Inject constructor(
             if (!betaSync) {
                 if (::mRealm.isInitialized && !mRealm.isClosed) {
                     mRealm.close()
-                    td?.interrupt()
                 }
-            } else {
-                td?.interrupt()
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -148,17 +143,20 @@ class SyncManager @Inject constructor(
     }
 
     private fun authenticateAndSync(type: String, syncTables: List<String>?) {
-        td = Thread {
-            if (TransactionSyncManager.authenticate()) {
-                runBlocking {
+        syncScope.launch {
+            try {
+                if (TransactionSyncManager.authenticate()) {
                     startSync(type, syncTables)
+                } else {
+                    handleException(context.getString(R.string.invalid_configuration))
+                    cleanupMainSync()
                 }
-            } else {
-                handleException(context.getString(R.string.invalid_configuration))
+            } catch (e: Exception) {
+                e.printStackTrace()
+                handleException(e.message)
                 cleanupMainSync()
             }
         }
-        td?.start()
     }
 
     private suspend fun startSync(type: String, syncTables: List<String>?) {
@@ -489,9 +487,6 @@ class SyncManager @Inject constructor(
             } catch (e: Exception) {
                 e.printStackTrace()
             }
-            td?.interrupt()
-        } else {
-            td?.interrupt()
         }
     }
 
