@@ -425,6 +425,13 @@ class TeamRepositoryImpl @Inject constructor(
         }
     }
 
+    override fun getTasksByTeamId(teamId: String): Flow<List<RealmTeamTask>> {
+        return queryListFlow(RealmTeamTask::class.java) {
+            equalTo("teamId", teamId)
+            notEqualTo("status", "archived")
+        }
+    }
+
     override suspend fun deleteTask(taskId: String) {
         delete(RealmTeamTask::class.java, "id", taskId)
     }
