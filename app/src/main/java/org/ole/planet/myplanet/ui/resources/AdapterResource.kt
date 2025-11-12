@@ -317,7 +317,7 @@ class AdapterResource(
     }
 
     fun setRatingMap(newRatingMap: HashMap<String?, JsonObject>) {
-.        val updatedResourceIds = mutableSetOf<String?>()
+        val updatedResourceIds = mutableSetOf<String?>()
 
         newRatingMap.forEach { (resourceId, newRating) ->
             if (ratingMap[resourceId] != newRating) {
