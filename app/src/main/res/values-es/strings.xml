@@ -653,27 +653,28 @@
     <string name="pending_survey_notification">tienes una encuesta pendiente:</string>
     <string name="task_notification">%1$s vence en %2$s</string>
     <string name="resource_notification">Tienes %1$d recursos no descargados</string>
+
     <string name="vitals_format">
-    Temperatura: %1$s\n
-    Pulso: %2$s\n
-    Presión arterial: %3$s\n
-    Altura: %4$s\n
-    Peso: %5$s\n
-    Visión: %6$s\n
-    Audición: %7$s\n
-</string>
+        Temperatura: %1$s\n
+        Pulso: %2$s\n
+        Presión arterial: %3$s\n
+        Altura: %4$s\n
+        Peso: %5$s\n
+        Visión: %6$s\n
+        Audición: %7$s\n
+    </string>
 
     <string name="observations_notes_colon">
-    Observaciones y análisis: %1$s\n
-    %2$s\n
-    %3$s\n
-    %4$s\n
-    %5$s\n
-    Alergias: %6$s\n
-    Radiografía: %7$s\n
-    Pruebas de laboratorio: %8$s\n
-    Estudios: %9$s\n
-</string>
+        Observaciones y análisis: %1$s\n
+        %2$s\n
+        %3$s\n
+        %4$s\n
+        %5$s\n
+        Alergias: %6$s\n
+        Radiografía: %7$s\n
+        Pruebas de laboratorio: %8$s\n
+        Estudios: %9$s\n
+    </string>
 
     <string name="blood_pressure_should_be_numeric_systolic_diastolic">La presión arterial debe ser numérica sistólica/diastólica</string>
     <string name="blood_pressure_should_be_systolic_diastolic">La presión arterial debe ser sistólica/diastólica</string>
@@ -876,10 +877,12 @@
     <string name="available_space_colon">Espacio disponible: </string>
     <string name="community_leaders">Líderes comunitarios</string>
     <string name="services">Servicios</string>
+
     <plurals name="survey_taken_count">
         <item quantity="one">Encuesta realizada %d vez</item>
         <item quantity="other">Encuesta realizada %d veces</item>
     </plurals>
+
     <string name="ai_chat">Chat IA</string>
     <string name="kindly_give_a_rating">Por favor, dé una calificación</string>
     <string name="must_start_with_letter_or_number">Debe comenzar con una letra o número</string>
