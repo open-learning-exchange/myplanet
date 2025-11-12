@@ -16,6 +16,7 @@ import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.android.HiltAndroidApp
+import org.ole.planet.myplanet.di.ApplicationScopeEntryPoint
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Date
