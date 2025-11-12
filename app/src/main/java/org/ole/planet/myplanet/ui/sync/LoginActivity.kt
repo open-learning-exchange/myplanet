@@ -166,6 +166,9 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     private fun declareElements() {
         binding.customDeviceName.text = getCustomDeviceName()
         btnSignIn.setOnClickListener {
+            if (isFinishing || isDestroyed) {
+                return@setOnClickListener
+            }
             if (getUrl() != "/db") {
                 if (TextUtils.isEmpty(binding.inputName.text.toString())) {
                     binding.inputName.error = getString(R.string.err_msg_name)
@@ -258,6 +261,9 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         binding.inputName.addTextChangedListener(MyTextWatcher(binding.inputName))
         binding.inputPassword.addTextChangedListener(MyTextWatcher(binding.inputPassword))
         binding.inputPassword.setOnEditorActionListener { _: TextView?, actionId: Int, event: KeyEvent? ->
+            if (isFinishing || isDestroyed) {
+                return@setOnEditorActionListener false
+            }
             if (actionId == EditorInfo.IME_ACTION_DONE || event != null && event.action == KeyEvent.ACTION_DOWN && event.keyCode == KeyEvent.KEYCODE_ENTER) {
                 btnSignIn.performClick()
                 return@setOnEditorActionListener true
@@ -584,9 +590,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     }
 
     override fun onDestroy() {
-        if (!mRealm.isClosed) {
-            mRealm.close()
-        }
         super.onDestroy()
     }
 }
