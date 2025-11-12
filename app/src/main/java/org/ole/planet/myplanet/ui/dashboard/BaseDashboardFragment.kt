@@ -140,11 +140,9 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     private suspend fun myLibraryDiv(view: View) {
-        val dbMylibrary = withContext(Dispatchers.IO) {
-            Realm.getDefaultInstance().use { realm ->
-                val results = RealmMyLibrary.getMyLibraryByUserId(realm, settings)
-                realm.copyFromRealm(results)
-            }
+        val dbMylibrary = databaseService.withRealmAsync { realm ->
+            val results = RealmMyLibrary.getMyLibraryByUserId(realm, settings)
+            realm.copyFromRealm(results)
         }
 
         view.findViewById<FlexboxLayout>(R.id.flexboxLayout).flexDirection = FlexDirection.ROW
