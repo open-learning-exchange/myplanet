@@ -668,19 +668,17 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             if (isConnected) {
                 val serverUrl = settings.getString("serverURL", "")
                 if (!serverUrl.isNullOrEmpty()) {
-                    MainApplication.applicationScope.launch(Dispatchers.IO) {
+                    MainApplication.applicationScope.launch {
                         val canReachServer = MainApplication.Companion.isServerReachable(serverUrl)
                         if (canReachServer) {
                             withContext(Dispatchers.Main) {
                                 startUpload("login")
                             }
-                            withContext(Dispatchers.Default) {
-                                val backgroundRealm = databaseService.realmInstance
-                                try {
-                                    TransactionSyncManager.syncDb(backgroundRealm, "login_activities")
-                                } finally {
-                                    backgroundRealm.close()
-                                }
+                            val backgroundRealm = databaseService.realmInstance
+                            try {
+                                TransactionSyncManager.syncDb(backgroundRealm, "login_activities")
+                            } finally {
+                                backgroundRealm.close()
                             }
                         }
                     }

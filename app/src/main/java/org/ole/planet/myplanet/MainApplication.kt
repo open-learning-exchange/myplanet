@@ -88,11 +88,11 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             }
             return "0"
         }
-        val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        lateinit var applicationScope: CoroutineScope
         lateinit var defaultPref: SharedPreferences
 
         fun createLog(type: String, error: String = "") {
-            applicationScope.launch(Dispatchers.IO) {
+            applicationScope.launch {
                 val entryPoint = EntryPointAccessors.fromApplication(
                     context,
                     WorkerDependenciesEntryPoint::class.java
@@ -207,6 +207,10 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         preferences = appPreferences
         service = databaseService
         defaultPref = defaultPreferences
+        applicationScope = EntryPointAccessors.fromApplication(
+            this,
+            ApplicationScopeEntryPoint::class.java
+        ).applicationScope()
     }
 
     private fun ensureApiClientInitialized() {
@@ -397,6 +401,5 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         }
         super.onTerminate()
         stopListenNetworkState()
-        applicationScope.cancel()
     }
 }
