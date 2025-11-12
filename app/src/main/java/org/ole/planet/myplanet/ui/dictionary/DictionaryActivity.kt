@@ -57,10 +57,11 @@ class DictionaryActivity : BaseActivity() {
             isEmpty = realm.where(RealmDictionary::class.java).count() == 0L
         }
         if (isEmpty) {
+            val context = this@DictionaryActivity
             val json = withContext(Dispatchers.IO) {
                 try {
                     val data = FileUtils.getStringFromFile(
-                        FileUtils.getSDPathFromUrl(this, Constants.DICTIONARY_URL)
+                        FileUtils.getSDPathFromUrl(context, Constants.DICTIONARY_URL)
                     )
                     Gson().fromJson(data, JsonArray::class.java)
                 } catch (e: Exception) {
