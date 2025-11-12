@@ -19,10 +19,8 @@
     <string name="hint_name">اسم المستخدم</string>
     <string name="btn_back">رجع</string>
     <string name="btn_sign_in">تسجيل الدخول</string>
-    <string name="btn_sync">مزامنة</string>
     <string name="select_team">حدد الفريق</string>
     <string name="btn_sync_save">حفظ</string>
-    <string name="btn_sync_cancel">إلغاء</string>
     <string name="err_msg_name">الرجاء إدخال اسم المستخدم</string>
     <string name="err_msg_password">الرجاء إدخال كلمة المرور</string>
     <string name="err_msg_login">اسم المستخدم و/أو كلمة المرور غير متطابقة</string>
@@ -83,7 +81,6 @@
     <string name="middle_name">الاسم الأوسط</string>
     <string name="first_name">الاسم الأول</string>
     <string name="search_dots">بحث…</string>
-    <string name="btn_remove_lib">إزالة</string>
     <string name="download">تحميل</string>
     <string name="published_by">نشر بواسطة:</string>
     <string name="author">المؤلف:</string>
@@ -255,7 +252,6 @@
     <string name="myhealth">صحتي</string>
     <string name="action">إجراء</string>
     <string name="created_on">تم الإنشاء في</string>
-    <string name="name_normal">الاسم</string>
     <string name="mypersonals">معلوماتي الشخصية</string>
     <string name="capture_image">التقاط صورة</string>
     <string name="resources">موارد</string>
@@ -279,7 +275,6 @@
     <string name="team">الفرق</string>
     <string name="applicants">المتقدمون</string>
     <string name="finances">المالية</string>
-    <string name="nodata">لا توجد بيانات متاحة</string>
     <string name="note">ملاحظة *</string>
     <string name="amount">المبلغ</string>
     <string name="debit">مدين</string>
@@ -494,14 +489,9 @@
     <string name="last_sync_date">%s :تاريخ آخر مزامنة</string>
     <string name="no_assignee">لا يوجد مُعيَّن</string>
     <string name="note_">ملاحظات</string>
-    <string name="diagno">التشخيص</string>
-    <string name="treat">العلاجات</string>
-    <string name="medicay">الأدوية</string>
     <string name="immunizations">التحصينات</string>
-    <string name="allergy">الحساسية</string>
     <string name="xrays">الأشعة السينية</string>
     <string name="tests">الفحوصات</string>
-    <string name="referral">الإحالات</string>
     <string name="other_diagnosis">تشخيصات أخرى</string>
     <string name="close">يغلق</string>
     <string name="negative_balance">الرصيد الحالي سالب!</string>

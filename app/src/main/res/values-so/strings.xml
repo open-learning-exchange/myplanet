@@ -19,10 +19,8 @@
     <string name="hint_name">Magaca isticmaalaha</string>
     <string name="btn_back">Dib</string>
     <string name="btn_sign_in">Soo gal</string>
-    <string name="btn_sync">Isku xidh </string>
     <string name="btn_sync_save">Keyd</string>
     <string name="select_team">xulo koox</string>
-    <string name="btn_sync_cancel">burin</string>
     <string name="err_msg_name">Geli magaca isticmaalaha</string>
     <string name="err_msg_password">Geli erayga sirta ah</string>
     <string name="err_msg_login">Magaca isticmaalaha iyo/ama erayga sirta ah isma dhigmaan</string>
@@ -83,7 +81,6 @@
     <string name="middle_name">Magaca Dhexe</string>
     <string name="first_name">Magaca koowaad</string>
     <string name="search_dots">Raadi…</string>
-    <string name="btn_remove_lib">saar </string>
     <string name="download">Download</string>
     <string name="published_by">Waxaa daabacay:</string>
     <string name="author">Qoraaga:</string>
@@ -255,7 +252,6 @@
     <string name="myhealth">Caafimaadkaan</string>
     <string name="action">Hawlgal</string>
     <string name="created_on">Lagu sameeyey</string>
-    <string name="name_normal">Magaca</string>
     <string name="mypersonals">Dhamaan xogtaaga caafimaadka</string>
     <string name="capture_image">Sawir ku xir</string>
     <string name="resources">Vifijo</string>
@@ -279,7 +275,6 @@
     <string name="team">Kooxaha</string>
     <string name="applicants">Loo baahan yahay</string>
     <string name="finances">Maaliyadda</string>
-    <string name="nodata">Wax ma jirin</string>
     <string name="note">Fariin *</string>
     <string name="amount">Masaafad</string>
     <string name="debit">Debit</string>
@@ -494,14 +489,9 @@
     <string name="last_sync_date">Taariikhda Hore ee Iskaashiga: %s</string>
     <string name="no_assignee">Qof oo xoolo aan la yeelan</string>
     <string name="note_">fikirro</string>
-    <string name="diagno">xeerka qalbiga</string>
-    <string name="treat">falafelaha</string>
-    <string name="medicay">duubistada</string>
     <string name="immunizations">xallinta daryeelka</string>
-    <string name="allergy">istinka halista</string>
     <string name="xrays">xaraashada xaraashada</string>
     <string name="tests">Baarista</string>
-    <string name="referral">diraasaadka</string>
     <string name="other_diagnosis">Xeerka Kale</string>
     <string name="close">Xir</string>
     <string name="negative_balance">Xalinta hanaanka hadda waa ka baxa!</string>

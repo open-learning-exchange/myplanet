@@ -696,8 +696,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         val contextWrapper = ContextThemeWrapper(this, R.style.AlertDialogTheme)
         val dialog = MaterialDialog.Builder(contextWrapper)
             .customView(binding.root, true)
-            .positiveText(R.string.btn_sync)
-            .negativeText(R.string.btn_sync_cancel)
+            .positiveText(R.string.sync)
+            .negativeText(R.string.txt_cancel)
             .neutralText(R.string.btn_sync_save)
             .onPositive { d: MaterialDialog, _: DialogAction? -> performSync(d) }
             .build()

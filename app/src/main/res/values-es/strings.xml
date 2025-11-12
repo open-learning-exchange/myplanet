@@ -19,10 +19,8 @@
     <string name="hint_name">Nombre</string>
     <string name="btn_back">Volver</string>
     <string name="btn_sign_in">Iniciar sesión</string>
-    <string name="btn_sync">Sincronizar</string>
     <string name="select_team">seleccionar equipo</string>
     <string name="btn_sync_save">Guardar</string>
-    <string name="btn_sync_cancel">Cancelar</string>
     <string name="err_msg_name">Ingresa tu nombre de usuario</string>
     <string name="err_msg_password">Ingresa la contraseña</string>
     <string name="err_msg_login">El nombre de usuario y/o la contraseña no coinciden</string>
@@ -83,7 +81,6 @@
     <string name="middle_name">Segundo nombre</string>
     <string name="first_name">Nombre de Pila</string>
     <string name="search_dots">Buscar…</string>
-    <string name="btn_remove_lib">Eliminar</string>
     <string name="download">Descargar</string>
     <string name="published_by">Publicado por:</string>
     <string name="author">Autor:</string>
@@ -255,7 +252,6 @@
     <string name="myhealth">miSalud</string>
     <string name="action">Acción</string>
     <string name="created_on">Creado en</string>
-    <string name="name_normal">Nombre</string>
     <string name="mypersonals">misPersonales</string>
     <string name="capture_image">Capturar imagen</string>
     <string name="resources">Recursos</string>
@@ -279,7 +275,6 @@
     <string name="team">Equipos</string>
     <string name="applicants">Solicitantes</string>
     <string name="finances">Finanzas</string>
-    <string name="nodata">No hay datos disponibles</string>
     <string name="note">Nota *</string>
     <string name="amount">Cantidad</string>
     <string name="debit">Débito</string>
@@ -494,14 +489,9 @@
     <string name="last_sync_date">Fecha de última sincronización: %s</string>
     <string name="no_assignee">Sin asignado/a</string>
     <string name="note_">notas</string>
-    <string name="diagno">diagnósticos</string>
-    <string name="treat">tratamientos</string>
-    <string name="medicay">medicamentos</string>
     <string name="immunizations">inmunizaciones</string>
-    <string name="allergy">alergias</string>
     <string name="xrays">radiografías</string>
     <string name="tests">pruebas</string>
-    <string name="referral">referencias</string>
     <string name="other_diagnosis">Otros diagnósticos</string>
     <string name="close">Cerrar</string>
     <string name="negative_balance">¡El saldo actual es negativo!</string>

@@ -35,7 +35,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:gravity="center"
-                android:text="@string/btn_sync_cancel"
+                android:text="@string/txt_cancel"
                 android:theme="@style/PrimaryButton" />
 
             <Button
