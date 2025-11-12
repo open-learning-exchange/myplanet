@@ -66,7 +66,12 @@ class RealtimeSyncHelper(
     
     private fun refreshRecyclerView() {
         fragment.viewLifecycleOwner.lifecycleScope.launch {
-            mixin.getSyncRecyclerView()?.adapter?.notifyDataSetChanged()
+            val adapter = mixin.getSyncRecyclerView()?.adapter
+            if (adapter is RefreshableAdapter) {
+                adapter.refresh()
+            } else {
+                adapter?.notifyDataSetChanged()
+            }
         }
     }
     

@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TagRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.sync.RefreshableAdapter
 import org.ole.planet.myplanet.utilities.CourseRatingUtils
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getInt
@@ -41,13 +42,14 @@ import org.ole.planet.myplanet.utilities.Utilities
 class AdapterCourses(
     private val context: Context,
     private var courseList: List<RealmMyCourse?>,
-    private val map: HashMap<String?, JsonObject>,
+    private var map: HashMap<String?, JsonObject>,
     private val userProfileDbHandler: UserProfileDbHandler,
     private val tagRepository: TagRepository,
     private val lifecycleOwner: LifecycleOwner
-) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+) : RecyclerView.Adapter<RecyclerView.ViewHolder>(), RefreshableAdapter {
     private val selectedItems: MutableList<RealmMyCourse?> = ArrayList()
     private var listener: OnCourseItemSelected? = null
+    var onRefreshListener: (() -> Unit)? = null
     private var homeItemClickListener: OnHomeItemClickListener? = null
     private var progressMap: HashMap<String?, JsonObject>? = null
     private var ratingChangeListener: OnRatingChangeListener? = null
@@ -72,12 +74,20 @@ class AdapterCourses(
         config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single)
     }
 
+    override fun refresh() {
+        onRefreshListener?.invoke()
+    }
+
     fun setRatingChangeListener(ratingChangeListener: OnRatingChangeListener?) {
         this.ratingChangeListener = ratingChangeListener
     }
 
     fun getCourseList(): List<RealmMyCourse?> {
         return courseList
+    }
+
+    fun updateRatings(newMap: HashMap<String?, JsonObject>) {
+        this.map = newMap
     }
 
     private fun dispatchDiff(newList: List<RealmMyCourse?>) {
