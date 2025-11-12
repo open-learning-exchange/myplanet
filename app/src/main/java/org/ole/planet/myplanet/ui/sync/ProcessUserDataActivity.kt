@@ -29,6 +29,7 @@ import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.PermissionActivity
 import org.ole.planet.myplanet.callback.SecurityDataCallback
@@ -202,78 +203,98 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
             }
             return
         }
-        customProgressDialog.setText(this.getString(R.string.uploading_data_to_server_please_wait))
-        customProgressDialog.show()
+        lifecycleScope.launch(Dispatchers.IO) {
+            val TIMEOUT_DURATION = 300000L
+            val result = withTimeoutOrNull(TIMEOUT_DURATION) {
+                withContext(Dispatchers.Main) {
+                    customProgressDialog.setText(this@ProcessUserDataActivity.getString(R.string.uploading_data_to_server_please_wait))
+                    customProgressDialog.show()
+                }
+                val asyncOperationsCounter = AtomicInteger(0)
+                // Corrected from 6 to 7 as there are 7 async operations with callbacks
+                val totalAsyncOperations = 7
 
-        lifecycleScope.launch {
-            val asyncOperationsCounter = AtomicInteger(0)
-            val totalAsyncOperations = 6
-
-            fun checkAllOperationsComplete() {
-                if (asyncOperationsCounter.incrementAndGet() == totalAsyncOperations) {
-                    runOnUiThread {
-                        if (!isFinishing && !isDestroyed) {
-                            customProgressDialog.dismiss()
-                            Toast.makeText(this@ProcessUserDataActivity, "upload complete", Toast.LENGTH_SHORT).show()
+                fun checkAllOperationsComplete() {
+                    if (asyncOperationsCounter.incrementAndGet() == totalAsyncOperations) {
+                        runOnUiThread {
+                            if (!isFinishing && !isDestroyed) {
+                                customProgressDialog.dismiss()
+                                Toast.makeText(this@ProcessUserDataActivity, "upload complete", Toast.LENGTH_SHORT).show()
+                            }
                         }
                     }
                 }
-            }
 
-            uploadManager.uploadAchievement()
-            uploadManager.uploadNews()
-            uploadManager.uploadResourceActivities("")
-            uploadManager.uploadCourseActivities()
-            uploadManager.uploadSearchActivity()
-            uploadManager.uploadTeams()
-            uploadManager.uploadRating()
-            uploadManager.uploadTeamTask()
-            uploadManager.uploadMeetups()
-            uploadManager.uploadSubmissions()
-            uploadManager.uploadCrashLog()
-
-            uploadToShelfService.uploadUserData {
-                uploadToShelfService.uploadHealth()
-                checkAllOperationsComplete()
-            }
-
-            uploadManager.uploadUserActivities(object : SuccessListener {
-                override fun onSuccess(success: String?) {
+                withContext(Dispatchers.Main) { customProgressDialog.setText("Uploading achievements... (1/18)") }
+                uploadManager.uploadAchievement()
+                withContext(Dispatchers.Main) { customProgressDialog.setText("Uploading news... (2/18)") }
+                uploadManager.uploadNews()
+                withContext(Dispatchers.Main) { customProgressDialog.setText("Uploading resource activities... (3/18)") }
+                uploadManager.uploadResourceActivities("")
+                withContext(Dispatchers.Main) { customProgressDialog.setText("Uploading course activities... (4/18)") }
+                uploadManager.uploadCourseActivities()
+                withContext(Dispatchers.Main) { customProgressDialog.setText("Uploading search activities... (5/18)") }
+                uploadManager.uploadSearchActivity()
+                withContext(Dispatchers.Main) { customProgressDialog.setText("Uploading teams... (6/18)") }
+                uploadManager.uploadTeams()
+                withContext(Dispatchers.Main) { customProgressDialog.setText("Uploading ratings... (7/18)") }
+                uploadManager.uploadRating()
+                withContext(Dispatchers.Main) { customProgressDialog.setText("Uploading team tasks... (8/18)") }
+                uploadManager.uploadTeamTask()
+                withContext(Dispatchers.Main) { customProgressDialog.setText("Uploading meetups... (9/18)") }
+                uploadManager.uploadMeetups()
+                withContext(Dispatchers.Main) { customProgressDialog.setText("Uploading submissions... (10/18)") }
+                uploadManager.uploadSubmissions()
+                withContext(Dispatchers.Main) { customProgressDialog.setText("Uploading crash logs... (11/18)") }
+                uploadManager.uploadCrashLog()
+                withContext(Dispatchers.Main) { customProgressDialog.setText("Uploading user data... (12/18)") }
+                uploadToShelfService.uploadUserData {
+                    uploadToShelfService.uploadHealth()
                     checkAllOperationsComplete()
                 }
-            })
-
-            launch(Dispatchers.IO) {
+                withContext(Dispatchers.Main) { customProgressDialog.setText("Uploading user activities... (13/18)") }
+                uploadManager.uploadUserActivities(object : SuccessListener {
+                    override fun onSuccess(success: String?) {
+                        checkAllOperationsComplete()
+                    }
+                })
+                withContext(Dispatchers.Main) { customProgressDialog.setText("Uploading exam results... (14/18)") }
                 uploadManager.uploadExamResult(object : SuccessListener {
                     override fun onSuccess(success: String?) {
                         checkAllOperationsComplete()
                     }
                 })
+                withContext(Dispatchers.Main) { customProgressDialog.setText("Uploading feedback... (15/18)") }
+                uploadManager.uploadFeedback(object : SuccessListener {
+                    override fun onSuccess(success: String?) {
+                        checkAllOperationsComplete()
+                    }
+                })
+                withContext(Dispatchers.Main) { customProgressDialog.setText("Uploading resources... (16/18)") }
+                uploadManager.uploadResource(object : SuccessListener {
+                    override fun onSuccess(success: String?) {
+                        checkAllOperationsComplete()
+                    }
+                })
+                withContext(Dispatchers.Main) { customProgressDialog.setText("Uploading photos... (17/18)") }
+                uploadManager.uploadSubmitPhotos(object : SuccessListener {
+                    override fun onSuccess(success: String?) {
+                        checkAllOperationsComplete()
+                    }
+                })
+                withContext(Dispatchers.Main) { customProgressDialog.setText("Uploading activities... (18/18)") }
+                uploadManager.uploadActivities(object : SuccessListener {
+                    override fun onSuccess(success: String?) {
+                        checkAllOperationsComplete()
+                    }
+                })
             }
-
-            uploadManager.uploadFeedback(object : SuccessListener {
-                override fun onSuccess(success: String?) {
-                    checkAllOperationsComplete()
+            if (result == null) {
+                withContext(Dispatchers.Main) {
+                    customProgressDialog.dismiss()
+                    Toast.makeText(this@ProcessUserDataActivity, "Upload timed out", Toast.LENGTH_LONG).show()
                 }
-            })
-
-            uploadManager.uploadResource(object : SuccessListener {
-                override fun onSuccess(success: String?) {
-                    checkAllOperationsComplete()
-                }
-            })
-
-            uploadManager.uploadSubmitPhotos(object : SuccessListener {
-                override fun onSuccess(success: String?) {
-                    checkAllOperationsComplete()
-                }
-            })
-
-            uploadManager.uploadActivities(object : SuccessListener {
-                override fun onSuccess(success: String?) {
-                    checkAllOperationsComplete()
-                }
-            })
+            }
         }
     }
 
