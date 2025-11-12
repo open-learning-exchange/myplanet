@@ -2,8 +2,6 @@ package org.ole.planet.myplanet.ui.news
 
 import android.content.res.Configuration
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -21,6 +19,9 @@ import io.realm.RealmResults
 import io.realm.Sort
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -38,6 +39,7 @@ import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
+import org.ole.planet.myplanet.utilities.textChanges
 
 @AndroidEntryPoint
 class NewsFragment : BaseNewsFragment() {
@@ -329,15 +331,15 @@ class NewsFragment : BaseNewsFragment() {
     }
     
     private fun setupSearchTextListener() {
-        etSearch.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-                searchFilteredList = applySearchFilter(labelFilteredList)
+        etSearch.textChanges()
+            .debounce(300)
+            .onEach { text ->
+                val searchQuery = text.toString().trim()
+                searchFilteredList = applySearchFilter(labelFilteredList, searchQuery)
                 setData(searchFilteredList)
                 scrollToTop()
             }
-            override fun afterTextChanged(s: Editable) {}
-        })
+            .launchIn(viewLifecycleOwner.lifecycleScope)
     }
     
     private fun applySearchFilter(list: List<RealmNews?>, queryParam: String? = null): List<RealmNews?> {
