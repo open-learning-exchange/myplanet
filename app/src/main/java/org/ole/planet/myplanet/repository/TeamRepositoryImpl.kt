@@ -104,10 +104,12 @@ class TeamRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getJoinRequestTeamId(requestId: String): String? {
-        val request = findByField(RealmMyTeam::class.java, "_id", requestId) {
-            equalTo("docType", "request")
+        return withRealm { realm ->
+            realm.where(RealmMyTeam::class.java)
+                .equalTo("_id", requestId)
+                .equalTo("docType", "request")
+                .findFirst()?.teamId
         }
-        return request?.teamId
     }
 
     override fun getTeamTransactions(
