@@ -287,7 +287,7 @@ class FinanceFragment : BaseTeamFragment() {
     private fun mapTransactionsToPresentationModel(transactions: List<RealmMyTeam>): List<TransactionData> {
         val transactionDataList = mutableListOf<TransactionData>()
         var balance = 0
-        for (team in transactions) {
+        for (team in transactions.filter { it._id != null }) {
             balance += if ("debit".equals(team.type, ignoreCase = true)) {
                 -team.amount
             } else {
@@ -295,7 +295,7 @@ class FinanceFragment : BaseTeamFragment() {
             }
             transactionDataList.add(
                 TransactionData(
-                    id = team._id,
+                    id = team._id!!,
                     date = team.date,
                     description = team.description,
                     type = team.type,
