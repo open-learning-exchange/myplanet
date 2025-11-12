@@ -206,10 +206,8 @@ dependencies {
     implementation "com.google.dagger:hilt-android:$dagger_hilt_version"
     kapt "com.google.dagger:hilt-android-compiler:$dagger_hilt_version"
     implementation "com.nex3z:toggle-button-group:1.2.3"
-
-    implementation("com.mikepenz:materialdrawer:6.1.1@aar") { transitive = true }
-    implementation("com.opencsv:opencsv:5.12.0") { exclude group: 'commons-logging', module: 'commons-logging' }
-
+    implementation "com.mikepenz:materialdrawer:6.1.1@aar" { transitive = true }
+    implementation "com.opencsv:opencsv:5.12.0" { exclude group: 'commons-logging', module: 'commons-logging' }
     implementation "com.squareup.retrofit2:retrofit:$retrofit2_version"
     implementation "com.squareup.retrofit2:converter-gson:$retrofit2_version"
     implementation "com.squareup.okhttp3:okhttp:5.1.0"
