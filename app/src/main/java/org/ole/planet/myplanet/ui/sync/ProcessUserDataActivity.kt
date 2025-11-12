@@ -67,7 +67,6 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
 
     @Inject
     lateinit var userRepository: UserRepository
-    
     lateinit var settings: SharedPreferences
     val customProgressDialog: DialogUtils.CustomProgressDialog by lazy {
         DialogUtils.CustomProgressDialog(this)
@@ -198,78 +197,84 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
             })
             return
         } else if (source == "login") {
-            uploadManager.uploadUserActivities(this@ProcessUserDataActivity)
+            lifecycleScope.launch(Dispatchers.IO) {
+                uploadManager.uploadUserActivities(this@ProcessUserDataActivity)
+            }
             return
         }
         customProgressDialog.setText(this.getString(R.string.uploading_data_to_server_please_wait))
         customProgressDialog.show()
 
-        uploadManager.uploadAchievement()
-        uploadManager.uploadNews()
-        uploadManager.uploadResourceActivities("")
-        uploadManager.uploadCourseActivities()
-        uploadManager.uploadSearchActivity()
-        uploadManager.uploadTeams()
-        uploadManager.uploadRating()
-        uploadManager.uploadTeamTask()
-        uploadManager.uploadMeetups()
-        uploadManager.uploadSubmissions()
-        uploadManager.uploadCrashLog()
+        lifecycleScope.launch {
+            val asyncOperationsCounter = AtomicInteger(0)
+            val totalAsyncOperations = 6
 
-        val asyncOperationsCounter = AtomicInteger(0)
-        val totalAsyncOperations = 6
-
-        fun checkAllOperationsComplete() {
-            if (asyncOperationsCounter.incrementAndGet() == totalAsyncOperations) {
-                runOnUiThread {
-                    if (!isFinishing && !isDestroyed) {
-                        customProgressDialog.dismiss()
-                        Toast.makeText(this@ProcessUserDataActivity, "upload complete", Toast.LENGTH_SHORT).show()
+            fun checkAllOperationsComplete() {
+                if (asyncOperationsCounter.incrementAndGet() == totalAsyncOperations) {
+                    runOnUiThread {
+                        if (!isFinishing && !isDestroyed) {
+                            customProgressDialog.dismiss()
+                            Toast.makeText(this@ProcessUserDataActivity, "upload complete", Toast.LENGTH_SHORT).show()
+                        }
                     }
                 }
             }
+
+            uploadManager.uploadAchievement()
+            uploadManager.uploadNews()
+            uploadManager.uploadResourceActivities("")
+            uploadManager.uploadCourseActivities()
+            uploadManager.uploadSearchActivity()
+            uploadManager.uploadTeams()
+            uploadManager.uploadRating()
+            uploadManager.uploadTeamTask()
+            uploadManager.uploadMeetups()
+            uploadManager.uploadSubmissions()
+            uploadManager.uploadCrashLog()
+
+            uploadToShelfService.uploadUserData {
+                uploadToShelfService.uploadHealth()
+                checkAllOperationsComplete()
+            }
+
+            uploadManager.uploadUserActivities(object : SuccessListener {
+                override fun onSuccess(success: String?) {
+                    checkAllOperationsComplete()
+                }
+            })
+
+            launch(Dispatchers.IO) {
+                uploadManager.uploadExamResult(object : SuccessListener {
+                    override fun onSuccess(success: String?) {
+                        checkAllOperationsComplete()
+                    }
+                })
+            }
+
+            uploadManager.uploadFeedback(object : SuccessListener {
+                override fun onSuccess(success: String?) {
+                    checkAllOperationsComplete()
+                }
+            })
+
+            uploadManager.uploadResource(object : SuccessListener {
+                override fun onSuccess(success: String?) {
+                    checkAllOperationsComplete()
+                }
+            })
+
+            uploadManager.uploadSubmitPhotos(object : SuccessListener {
+                override fun onSuccess(success: String?) {
+                    checkAllOperationsComplete()
+                }
+            })
+
+            uploadManager.uploadActivities(object : SuccessListener {
+                override fun onSuccess(success: String?) {
+                    checkAllOperationsComplete()
+                }
+            })
         }
-
-        uploadToShelfService.uploadUserData {
-            uploadToShelfService.uploadHealth()
-            checkAllOperationsComplete()
-        }
-
-        uploadManager.uploadUserActivities(object : SuccessListener {
-            override fun onSuccess(success: String?) {
-                checkAllOperationsComplete()
-            }
-        })
-
-        uploadManager.uploadExamResult(object : SuccessListener {
-            override fun onSuccess(success: String?) {
-                checkAllOperationsComplete()
-            }
-        })
-
-        uploadManager.uploadFeedback(object : SuccessListener {
-            override fun onSuccess(success: String?) {
-                checkAllOperationsComplete()
-            }
-        })
-
-        uploadManager.uploadResource(object : SuccessListener {
-            override fun onSuccess(success: String?) {
-                checkAllOperationsComplete()
-            }
-        })
-
-        uploadManager.uploadSubmitPhotos(object : SuccessListener {
-            override fun onSuccess(success: String?) {
-                checkAllOperationsComplete()
-            }
-        })
-
-        uploadManager.uploadActivities(object : SuccessListener {
-            override fun onSuccess(success: String?) {
-                checkAllOperationsComplete()
-            }
-        })
     }
 
     protected fun hideKeyboard(view: View?) {

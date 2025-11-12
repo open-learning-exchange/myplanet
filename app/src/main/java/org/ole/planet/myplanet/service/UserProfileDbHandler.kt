@@ -76,7 +76,7 @@ class UserProfileDbHandler @Inject constructor(
                 val parentCode = model?.parentCode
                 val planetCode = model?.planetCode
 
-                realmService.withRealmAsync { realm ->
+                realmService.executeTransactionAsync { realm ->
                     val offlineActivities = realm.createObject(RealmOfflineActivity::class.java, UUID.randomUUID().toString())
                     offlineActivities.userId = userId
                     offlineActivities.userName = userName
@@ -102,7 +102,7 @@ class UserProfileDbHandler @Inject constructor(
     fun logoutAsync() {
         applicationScope.launch(Dispatchers.IO) {
             try {
-                realmService.withRealmAsync { realm ->
+                realmService.executeTransactionAsync { realm ->
                     RealmOfflineActivity.getRecentLogin(realm)
                         ?.logoutTime = Date().time
                 }
@@ -151,6 +151,9 @@ class UserProfileDbHandler @Inject constructor(
     }
 
     fun setResourceOpenCount(item: RealmMyLibrary, type: String?) {
+        val itemTitle = item.title
+        val itemResourceId = item.resourceId
+
         applicationScope.launch(Dispatchers.IO) {
             try {
                 val model = getUserModelCopy()
@@ -161,10 +164,8 @@ class UserProfileDbHandler @Inject constructor(
                 val userName = model?.name
                 val parentCode = model?.parentCode
                 val planetCode = model?.planetCode
-                val itemTitle = item.title
-                val itemResourceId = item.resourceId
 
-                realmService.withRealmAsync { realm ->
+                realmService.executeTransactionAsync { realm ->
                     val offlineActivities = realm.createObject(RealmResourceActivity::class.java, "${UUID.randomUUID()}")
                     offlineActivities.user = userName
                     offlineActivities.parentCode = parentCode
