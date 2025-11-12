@@ -9,7 +9,9 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.TeamUpdateListener
@@ -39,10 +41,12 @@ class PlanFragment : BaseTeamFragment() {
         super.onViewCreated(view, savedInstanceState)
 
         viewLifecycleOwner.lifecycleScope.launch {
-            teamFlow.collect { updatedTeam ->
-                if (updatedTeam != null) {
-                    updateUIWithTeamData(updatedTeam)
-                    updateButtonVisibility(updatedTeam)
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                teamFlow.collect { updatedTeam ->
+                    if (updatedTeam != null) {
+                        updateUIWithTeamData(updatedTeam)
+                        updateButtonVisibility(updatedTeam)
+                    }
                 }
             }
         }
