@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.google.gson.JsonObject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -28,13 +27,13 @@ class FeedbackDetailViewModel @Inject constructor(
     val events: SharedFlow<FeedbackDetailEvent> = _events.asSharedFlow()
 
     fun loadFeedback(id: String?) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             _feedback.value = feedbackRepository.getFeedbackById(id)
         }
     }
 
     fun closeFeedback(id: String?) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             feedbackRepository.closeFeedback(id)
             _feedback.value = feedbackRepository.getFeedbackById(id)
             _events.emit(FeedbackDetailEvent.CloseFeedbackSuccess)
@@ -42,7 +41,7 @@ class FeedbackDetailViewModel @Inject constructor(
     }
 
     fun addReply(id: String?, obj: JsonObject) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             feedbackRepository.addReply(id, obj)
             _feedback.value = feedbackRepository.getFeedbackById(id)
         }
