@@ -9,6 +9,8 @@ import androidx.work.Worker
 import androidx.work.WorkerParameters
 import dagger.hilt.android.EntryPointAccessors
 import java.util.Date
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.callback.SyncListener
@@ -26,11 +28,11 @@ class AutoSyncWorker(
     private val context: Context,
     workerParams: WorkerParameters
 ) : Worker(context, workerParams), SyncListener, CheckVersionCallback, SuccessListener {
-    
     private lateinit var preferences: SharedPreferences
     private lateinit var syncManager: SyncManager
     private lateinit var uploadManager: UploadManager
     private lateinit var uploadToShelfService: UploadToShelfService
+    private val backgroundExecutor: ExecutorService = Executors.newSingleThreadExecutor()
     
     override fun doWork(): Result {
         preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -78,22 +80,24 @@ class AutoSyncWorker(
             }
             if (!MainApplication.isSyncRunning) {
                 MainApplication.isSyncRunning = true
-                uploadManager.uploadExamResult(this)
-                uploadManager.uploadFeedback(this)
-                uploadManager.uploadAchievement()
-                uploadManager.uploadResourceActivities("")
-                uploadManager.uploadUserActivities(this)
-                uploadManager.uploadCourseActivities()
-                uploadManager.uploadSearchActivity()
-                uploadManager.uploadRating()
-                uploadManager.uploadResource(this)
-                uploadManager.uploadNews()
-                uploadManager.uploadTeams()
-                uploadManager.uploadTeamTask()
-                uploadManager.uploadMeetups()
-                uploadManager.uploadCrashLog()
-                uploadManager.uploadSubmissions()
-                uploadManager.uploadActivities { MainApplication.isSyncRunning = false }
+                backgroundExecutor.execute {
+                    uploadManager.uploadExamResult(this@AutoSyncWorker)
+                    uploadManager.uploadFeedback(this@AutoSyncWorker)
+                    uploadManager.uploadAchievement()
+                    uploadManager.uploadResourceActivities("")
+                    uploadManager.uploadUserActivities(this@AutoSyncWorker)
+                    uploadManager.uploadCourseActivities()
+                    uploadManager.uploadSearchActivity()
+                    uploadManager.uploadRating()
+                    uploadManager.uploadResource(this@AutoSyncWorker)
+                    uploadManager.uploadNews()
+                    uploadManager.uploadTeams()
+                    uploadManager.uploadTeamTask()
+                    uploadManager.uploadMeetups()
+                    uploadManager.uploadCrashLog()
+                    uploadManager.uploadSubmissions()
+                    uploadManager.uploadActivities { MainApplication.isSyncRunning = false }
+                }
             }
         }
     }
@@ -101,6 +105,11 @@ class AutoSyncWorker(
     override fun onSuccess(success: String?) {
         val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         settings.edit { putLong("lastUsageUploaded", Date().time) }
+    }
+
+    override fun onStopped() {
+        super.onStopped()
+        backgroundExecutor.shutdown()
     }
 
     private fun isAppInForeground(context: Context): Boolean {

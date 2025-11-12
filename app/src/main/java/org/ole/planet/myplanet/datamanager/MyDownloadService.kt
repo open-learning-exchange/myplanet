@@ -24,6 +24,7 @@ import java.io.IOException
 import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
@@ -50,6 +51,9 @@ class MyDownloadService : Service() {
     private var totalDownloadsCount = 0
     private var completedDownloadsCount = 0
 
+    private val downloadJob = SupervisorJob()
+    private val downloadScope = CoroutineScope(downloadJob + Dispatchers.IO)
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -75,7 +79,7 @@ class MyDownloadService : Service() {
 
         updateNotificationForBatchDownload()
 
-        CoroutineScope(Dispatchers.IO).launch {
+        downloadScope.launch {
             urls.forEachIndexed { index, url ->
                 currentIndex = index
                 initDownload(url, fromSync)
@@ -343,6 +347,7 @@ class MyDownloadService : Service() {
             stopForeground(true)
         } catch (_: Exception) {
         }
+        downloadJob.cancel()
         notificationManager?.cancel(ONGOING_NOTIFICATION_ID)
         super.onDestroy()
     }

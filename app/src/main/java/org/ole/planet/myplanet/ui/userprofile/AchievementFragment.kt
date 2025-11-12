@@ -46,6 +46,7 @@ class AchievementFragment : BaseContainerFragment() {
     private var _binding: FragmentAchievementBinding? = null
     private val binding get() = _binding!!
     private lateinit var aRealm: Realm
+    private lateinit var realmChangeListener: io.realm.RealmChangeListener<Realm>
     var user: RealmUserModel? = null
     var listener: OnHomeItemClickListener? = null
     private var achievement: RealmAchievement? = null
@@ -82,11 +83,14 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     override fun onDestroyView() {
+        super.onDestroyView()
         if (::realtimeSyncListener.isInitialized) {
             syncCoordinator.removeListener(realtimeSyncListener)
         }
+        if (::realmChangeListener.isInitialized) {
+            aRealm.removeChangeListener(realmChangeListener)
+        }
         _binding = null
-        super.onDestroyView()
     }
 
     private fun startAchievementSync() {
@@ -193,11 +197,12 @@ class AchievementFragment : BaseContainerFragment() {
 
         achievement?.let {
             updateAchievementUI()
-            aRealm.addChangeListener {
+            realmChangeListener = io.realm.RealmChangeListener {
                 if (isAdded) {
                     populateAchievements()
                 }
             }
+            aRealm.addChangeListener(realmChangeListener)
         }
     }
 
@@ -303,7 +308,6 @@ class AchievementFragment : BaseContainerFragment() {
         customProgressDialog?.dismiss()
         customProgressDialog = null
         if (this::aRealm.isInitialized && !aRealm.isClosed) {
-            aRealm.removeAllChangeListeners()
             aRealm.close()
         }
         try {
