@@ -191,7 +191,6 @@
     <string name="arabic">عربى</string>
     <string name="french">français</string>
 
-
     <string-array name="open_With">
         <item>HTML</item>
         <item>PDF.js</item>
