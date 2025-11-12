@@ -96,40 +96,40 @@ object TransactionSyncManager {
     }
 
     suspend fun syncDb(realm: Realm, table: String) {
-        realm.executeTransaction { mRealm: Realm ->
-            val apiInterface = client?.create(ApiInterface::class.java)
-            try {
-                val all = apiInterface?.getJsonObjectSuspended(
-                    UrlUtils.header,
-                    UrlUtils.getUrl() + "/" + table + "/_all_docs?include_doc=false"
-                )
-                val rows = getJsonArray("rows", all?.body())
-                val keys: MutableList<String> = ArrayList()
-                for (i in 0 until rows.size()) {
-                    val `object` = rows[i].asJsonObject
-                    if (!TextUtils.isEmpty(getString("id", `object`))) keys.add(getString("key", `object`))
-                    if (i == rows.size() - 1 || keys.size == 1000) {
-                        val obj = JsonObject()
-                        obj.add("keys", Gson().fromJson(Gson().toJson(keys), JsonArray::class.java))
-                        val response = apiInterface?.findDocsSuspended(
-                            UrlUtils.header,
-                            "application/json",
-                            UrlUtils.getUrl() + "/" + table + "/_all_docs?include_docs=true",
-                            obj
-                        )
-                        if (response?.body() != null) {
-                            val arr = getJsonArray("rows", response.body())
+        val apiInterface = client?.create(ApiInterface::class.java)
+        try {
+            val all = apiInterface?.getJsonObjectSuspended(
+                UrlUtils.header,
+                UrlUtils.getUrl() + "/" + table + "/_all_docs?include_doc=false"
+            )
+            val rows = getJsonArray("rows", all?.body())
+            val keys: MutableList<String> = ArrayList()
+            for (i in 0 until rows.size()) {
+                val `object` = rows[i].asJsonObject
+                if (!TextUtils.isEmpty(getString("id", `object`))) keys.add(getString("key", `object`))
+                if (i == rows.size() - 1 || keys.size == 1000) {
+                    val obj = JsonObject()
+                    obj.add("keys", Gson().fromJson(Gson().toJson(keys), JsonArray::class.java))
+                    val response = apiInterface?.findDocsSuspended(
+                        UrlUtils.header,
+                        "application/json",
+                        UrlUtils.getUrl() + "/" + table + "/_all_docs?include_docs=true",
+                        obj
+                    )
+                    if (response?.body() != null) {
+                        val arr = getJsonArray("rows", response.body())
+                        realm.executeTransaction { mRealm: Realm ->
                             if (table == "chat_history") {
                                 insertToChat(arr, mRealm)
                             }
                             insertDocs(arr, mRealm, table)
                         }
-                        keys.clear()
                     }
+                    keys.clear()
                 }
-            } catch (e: IOException) {
-                e.printStackTrace()
             }
+        } catch (e: IOException) {
+            e.printStackTrace()
         }
     }
 
