@@ -18,8 +18,6 @@ import org.ole.planet.myplanet.utilities.VersionUtils
 
 class MyPlanet : Serializable {
     var planetVersion: String? = null
-//    var latestapk: String? = null
-//    var minapk: String? = null
     var minapkcode = 0
     var latestapkcode = 0
     var apkpath: String? = null
