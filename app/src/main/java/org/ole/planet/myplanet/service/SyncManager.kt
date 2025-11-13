@@ -20,13 +20,13 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import org.ole.planet.myplanet.MainApplication
@@ -148,17 +148,14 @@ class SyncManager @Inject constructor(
     }
 
     private fun authenticateAndSync(type: String, syncTables: List<String>?) {
-        td = Thread {
+        syncScope.launch {
             if (TransactionSyncManager.authenticate()) {
-                runBlocking {
-                    startSync(type, syncTables)
-                }
+                startSync(type, syncTables)
             } else {
                 handleException(context.getString(R.string.invalid_configuration))
                 cleanupMainSync()
             }
         }
-        td?.start()
     }
 
     private suspend fun startSync(type: String, syncTables: List<String>?) {

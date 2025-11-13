@@ -96,69 +96,34 @@ class UploadManager @Inject constructor(
 
     }
 
-    fun uploadActivities(listener: SuccessListener?) {
+    fun uploadActivities() {
         val apiInterface = client?.create(ApiInterface::class.java)
         val model = databaseService.withRealm { realm ->
             realm.where(RealmUserModel::class.java)
                 .equalTo("id", pref.getString("userId", ""))
                 .findFirst()
                 ?.let { realm.copyFromRealm(it) }
-        } ?: run {
-            listener?.onSuccess("Cannot upload activities: user model is null")
-            return
-        }
+        } ?: return
 
         if (model.isManager()) {
-            listener?.onSuccess("Skipping activities upload for manager")
             return
         }
 
         try {
-            apiInterface?.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/myplanet_activities", MyPlanet.getNormalMyPlanetActivities(MainApplication.context, pref, model))?.enqueue(object : Callback<JsonObject?> {
-                override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {}
+            apiInterface?.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/myplanet_activities", MyPlanet.getNormalMyPlanetActivities(MainApplication.context, pref, model))?.execute()
+            val response = apiInterface?.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/myplanet_activities/${getAndroidId(MainApplication.context)}@${NetworkUtils.getUniqueIdentifier()}")?.execute()
+            var `object` = response?.body()
 
-                override fun onFailure(call: Call<JsonObject?>, t: Throwable) {}
-            })
-
-            apiInterface?.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/myplanet_activities/${getAndroidId(MainApplication.context)}@${NetworkUtils.getUniqueIdentifier()}")?.enqueue(object : Callback<JsonObject?> {
-                override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
-                    var `object` = response.body()
-
-                    if (`object` != null) {
-                        val usages = `object`.getAsJsonArray("usages")
-                        usages.addAll(MyPlanet.getTabletUsages(context))
-                        `object`.add("usages", usages)
-                    } else {
-                        `object` = MyPlanet.getMyPlanetActivities(context, pref, model)
-                    }
-
-                    apiInterface.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/myplanet_activities", `object`).enqueue(object : Callback<JsonObject?> {
-                        override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
-                            listener?.onSuccess("My planet activities uploaded successfully")
-                        }
-
-                        override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
-                            listener?.onSuccess("Failed to upload activities: ${t.message}")
-                        }
-                    })
-                }
-
-                override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
-                    val `object` = MyPlanet.getMyPlanetActivities(context, pref, model)
-                    apiInterface.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/myplanet_activities", `object`).enqueue(object : Callback<JsonObject?> {
-                        override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
-                            listener?.onSuccess("My planet activities uploaded successfully")
-                        }
-
-                        override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
-                            listener?.onSuccess("Failed to upload activities: ${t.message}")
-                        }
-                    })
-                }
-            })
+            if (`object` != null) {
+                val usages = `object`.getAsJsonArray("usages")
+                usages.addAll(MyPlanet.getTabletUsages(context))
+                `object`.add("usages", usages)
+            } else {
+                `object` = MyPlanet.getMyPlanetActivities(context, pref, model)
+            }
+            apiInterface.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/myplanet_activities", `object`).execute()
         } catch (e: Exception) {
             e.printStackTrace()
-            listener?.onSuccess("Failed to upload activities: ${e.message}")
         }
     }
 

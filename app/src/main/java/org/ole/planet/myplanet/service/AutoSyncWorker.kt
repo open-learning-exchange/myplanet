@@ -8,6 +8,10 @@ import androidx.core.content.edit
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import dagger.hilt.android.EntryPointAccessors
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import java.util.Date
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -32,8 +36,7 @@ class AutoSyncWorker(
     private lateinit var syncManager: SyncManager
     private lateinit var uploadManager: UploadManager
     private lateinit var uploadToShelfService: UploadToShelfService
-    private val backgroundExecutor: ExecutorService = Executors.newSingleThreadExecutor()
-    
+    private val scope = CoroutineScope(Dispatchers.IO)
     override fun doWork(): Result {
         preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         
@@ -71,33 +74,37 @@ class AutoSyncWorker(
 
     override fun onCheckingVersion() {}
     override fun onError(msg: String, blockSync: Boolean) {
-        if (!blockSync) {
-            syncManager.start(this, "upload")
-            uploadToShelfService.uploadUserData {
-                Service(MainApplication.context).healthAccess {
-                    uploadToShelfService.uploadHealth()
+        if (blockSync || MainApplication.isSyncRunning) {
+            return
+        }
+
+        MainApplication.isSyncRunning = true
+        scope.launch {
+            try {
+                syncManager.start(this@AutoSyncWorker, "upload")
+                uploadToShelfService.uploadUserData {
+                    Service(MainApplication.context).healthAccess {
+                        uploadToShelfService.uploadHealth()
+                    }
                 }
-            }
-            if (!MainApplication.isSyncRunning) {
-                MainApplication.isSyncRunning = true
-                backgroundExecutor.execute {
-                    uploadManager.uploadExamResult(this@AutoSyncWorker)
-                    uploadManager.uploadFeedback(this@AutoSyncWorker)
-                    uploadManager.uploadAchievement()
-                    uploadManager.uploadResourceActivities("")
-                    uploadManager.uploadUserActivities(this@AutoSyncWorker)
-                    uploadManager.uploadCourseActivities()
-                    uploadManager.uploadSearchActivity()
-                    uploadManager.uploadRating()
-                    uploadManager.uploadResource(this@AutoSyncWorker)
-                    uploadManager.uploadNews()
-                    uploadManager.uploadTeams()
-                    uploadManager.uploadTeamTask()
-                    uploadManager.uploadMeetups()
-                    uploadManager.uploadCrashLog()
-                    uploadManager.uploadSubmissions()
-                    uploadManager.uploadActivities { MainApplication.isSyncRunning = false }
-                }
+                uploadManager.uploadExamResult(this@AutoSyncWorker)
+                uploadManager.uploadFeedback(this@AutoSyncWorker)
+                uploadManager.uploadAchievement()
+                uploadManager.uploadResourceActivities("")
+                uploadManager.uploadUserActivities(this@AutoSyncWorker)
+                uploadManager.uploadCourseActivities()
+                uploadManager.uploadSearchActivity()
+                uploadManager.uploadRating()
+                uploadManager.uploadResource(this@AutoSyncWorker)
+                uploadManager.uploadNews()
+                uploadManager.uploadTeams()
+                uploadManager.uploadTeamTask()
+                uploadManager.uploadMeetups()
+                uploadManager.uploadCrashLog()
+                uploadManager.uploadSubmissions()
+                uploadManager.uploadActivities()
+            } finally {
+                MainApplication.isSyncRunning = false
             }
         }
     }
@@ -109,7 +116,7 @@ class AutoSyncWorker(
 
     override fun onStopped() {
         super.onStopped()
-        backgroundExecutor.shutdown()
+        scope.cancel()
     }
 
     private fun isAppInForeground(context: Context): Boolean {
