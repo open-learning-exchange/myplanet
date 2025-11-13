@@ -83,6 +83,7 @@
     <string name="middle_name">विचारको नाम</string>
     <string name="first_name">नाम</string>
     <string name="search_dots">खोज्नुहोस्…</string>
+    <string name="btn_remove_lib">हटाउनुहोस्</string>
     <string name="download">डाउनलोड गर्नुहोस्</string>
     <string name="published_by">प्रकाशित गर्ने:</string>
     <string name="author">लेखक:</string>
