@@ -489,9 +489,14 @@
     <string name="last_sync_date">%s :تاريخ آخر مزامنة</string>
     <string name="no_assignee">لا يوجد مُعيَّن</string>
     <string name="note_">ملاحظات</string>
+    <string name="diagno">التشخيص</string>
+    <string name="treat">العلاجات</string>
+    <string name="medicay">الأدوية</string>
     <string name="immunizations">التحصينات</string>
+    <string name="allergy">الحساسية</string>
     <string name="xrays">الأشعة السينية</string>
     <string name="tests">الفحوصات</string>
+    <string name="referral">الإحالات</string>
     <string name="other_diagnosis">تشخيصات أخرى</string>
     <string name="close">يغلق</string>
     <string name="negative_balance">الرصيد الحالي سالب!</string>
