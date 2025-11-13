@@ -210,7 +210,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                 if (isAdd) {
                     getString(R.string.add_to_mylib)
                 } else {
-                    getString(R.string.remove)
+                    getString(R.string.btn_remove_lib)
                 }
         } else {
             binding.btnRemove.visibility = View.GONE
