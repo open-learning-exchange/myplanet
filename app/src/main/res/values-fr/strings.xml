@@ -83,6 +83,7 @@
     <string name="middle_name">Deuxième prénom</string>
     <string name="first_name">Prénom</string>
     <string name="search_dots">Rechercher…</string>
+    <string name="btn_remove_lib">Supprimer</string>
     <string name="download">Télécharger</string>
     <string name="published_by">Publié par:</string>
     <string name="author">Auteur:</string>
