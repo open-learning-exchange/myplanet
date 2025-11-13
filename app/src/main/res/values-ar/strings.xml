@@ -19,8 +19,10 @@
     <string name="hint_name">اسم المستخدم</string>
     <string name="btn_back">رجع</string>
     <string name="btn_sign_in">تسجيل الدخول</string>
+    <string name="btn_sync">مزامنة</string>
     <string name="select_team">حدد الفريق</string>
     <string name="btn_sync_save">حفظ</string>
+    <string name="btn_sync_cancel">إلغاء</string>
     <string name="err_msg_name">الرجاء إدخال اسم المستخدم</string>
     <string name="err_msg_password">الرجاء إدخال كلمة المرور</string>
     <string name="err_msg_login">اسم المستخدم و/أو كلمة المرور غير متطابقة</string>
