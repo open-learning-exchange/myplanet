@@ -176,7 +176,7 @@ dependencies {
     def markwon_version = "4.6.2"
 
     implementation fileTree(include: ['*.jar', '*.aar'], dir: 'libs')
-    implementation platform("org.jetbrains.kotlin:kotlin-bom:2.2.10")
+    implementation platform("org.jetbrains.kotlin:kotlin-bom:2.2.21")
 
     implementation("androidx.annotation:annotation:1.9.1")
     implementation("androidx.appcompat:appcompat:1.7.1")
