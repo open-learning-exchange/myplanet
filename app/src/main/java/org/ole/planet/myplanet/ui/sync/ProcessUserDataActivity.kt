@@ -269,11 +269,8 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
                 }
             })
 
-            uploadManager.uploadActivities(object : SuccessListener {
-                override fun onSuccess(success: String?) {
-                    checkAllOperationsComplete()
-                }
-            })
+            uploadManager.uploadActivities()
+            checkAllOperationsComplete()
         }
     }
 

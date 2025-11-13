@@ -121,7 +121,7 @@ class UploadManager @Inject constructor(
             } else {
                 `object` = MyPlanet.getMyPlanetActivities(context, pref, model)
             }
-            apiInterface.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/myplanet_activities", `object`).execute()
+            apiInterface?.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/myplanet_activities", `object`)?.execute()
         } catch (e: Exception) {
             e.printStackTrace()
         }
