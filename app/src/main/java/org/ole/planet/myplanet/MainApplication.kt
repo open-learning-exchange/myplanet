@@ -181,8 +181,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
     override fun onCreate() {
         super.onCreate()
-        initApp()
         setupCriticalProperties()
+        initApp()
         ensureApiClientInitialized()
         setupStrictMode()
         registerExceptionHandler()
