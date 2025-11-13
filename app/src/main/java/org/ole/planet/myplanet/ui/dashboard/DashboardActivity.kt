@@ -66,6 +66,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.chat.ChatHistoryListFragment
@@ -109,12 +110,15 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private val dashboardViewModel: DashboardViewModel by viewModels()
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
+    @Inject
+    lateinit var teamRepository: TeamRepository
     private lateinit var challengeHelper: ChallengeHelper
     private lateinit var notificationManager: NotificationUtils.NotificationManager
     private var notificationsShownThisSession = false
     private var lastNotificationCheckTime = 0L
     private val notificationCheckThrottleMs = 5000L
     private var systemNotificationReceiver: BroadcastReceiver? = null
+    private lateinit var mRealm: Realm
 
     private interface RealmListener {
         fun removeListener()
@@ -126,6 +130,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        mRealm = databaseService.realmInstance
         checkUser()
         initViews()
         updateAppTitle()
@@ -387,7 +392,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             
             when (notificationType) {
                 NotificationUtils.TYPE_SURVEY -> {
-                    handleSurveyNavigation(relatedId)
+                    lifecycleScope.launch {
+                        handleSurveyNavigation(relatedId)
+                    }
                 }
                 NotificationUtils.TYPE_TASK -> {
                     lifecycleScope.launch {
@@ -411,10 +418,16 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
     
-    private fun handleSurveyNavigation(surveyId: String?) {
+    private suspend fun handleSurveyNavigation(surveyId: String?) {
         if (surveyId != null) {
-            val currentStepExam = mRealm.where(RealmStepExam::class.java).equalTo("name", surveyId)
-                .findFirst()
+            val currentStepExam = withContext(Dispatchers.IO) {
+                Realm.getDefaultInstance().use { realm ->
+                    realm.where(RealmStepExam::class.java).equalTo("name", surveyId)
+                        .findFirst()?.let {
+                            realm.copyFromRealm(it)
+                        }
+                }
+            }
             AdapterMySubmission.openSurvey(this, currentStepExam?.id, false, false, "")
         }
     }
@@ -422,22 +435,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private suspend fun handleTaskNavigation(taskId: String?) {
         if (taskId == null) return
 
-        val teamData = withContext(Dispatchers.IO) {
-            var result: Triple<String, String, String>? = null
-            Realm.getDefaultInstance().use { realm ->
-                val task = realm.where(RealmTeamTask::class.java)
-                    .equalTo("id", taskId)
-                    .findFirst()
-
-                val linkJson = JSONObject(task?.link ?: "{}")
-                val teamId = linkJson.optString("teams")
-                if (teamId.isNotEmpty()) {
-                    val teamObject = realm.where(RealmMyTeam::class.java)?.equalTo("_id", teamId)?.findFirst()
-                    result = Triple(teamId, teamObject?.name ?: "", teamObject?.type ?: "")
-                }
-            }
-            result
-        }
+        val teamData = teamRepository.getTaskTeamInfo(taskId)
 
         teamData?.let { (teamId, teamName, teamType) ->
             val f = TeamDetailFragment.newInstance(
@@ -450,7 +448,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             openCallFragment(f)
         }
     }
-    
+
     private suspend fun handleJoinRequestNavigation(requestId: String?) {
         if (requestId != null) {
             val actualJoinRequestId = if (requestId.startsWith("join_request_")) {
@@ -459,20 +457,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 requestId
             }
 
-            val teamId = withContext(Dispatchers.IO) {
-                val startTime = System.currentTimeMillis()
-                var localTeamId: String? = null
-                Realm.getDefaultInstance().use { realm ->
-                    val joinRequest = realm.where(RealmMyTeam::class.java)
-                        .equalTo("_id", actualJoinRequestId)
-                        .equalTo("docType", "request")
-                        .findFirst()
-                    localTeamId = joinRequest?.teamId
-                }
-                val endTime = System.currentTimeMillis()
-                android.util.Log.d("DashboardActivity", "Join request query took ${endTime - startTime}ms")
-                localTeamId
-            }
+            val teamId = teamRepository.getJoinRequestTeamId(actualJoinRequestId)
 
             if (teamId?.isNotEmpty() == true) {
                 val f = TeamDetailFragment()
@@ -1109,6 +1094,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         systemNotificationReceiver?.let {
             unregisterReceiver(it)
             systemNotificationReceiver = null
+        }
+
+        if (::mRealm.isInitialized && !mRealm.isClosed) {
+            mRealm.close()
         }
         super.onDestroy()
     }
