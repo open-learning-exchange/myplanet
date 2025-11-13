@@ -9,8 +9,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
-        versionCode = 3755
-        versionName = "0.37.55"
+        versionCode = 3756
+        versionName = "0.37.56"
         ndkVersion = '26.3.11579264'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -196,7 +196,7 @@ dependencies {
     implementation("androidx.work:work-runtime:2.11.0")
     implementation("com.afollestad.material-dialogs:commons:0.9.6.0")
     implementation("com.applandeo:material-calendar-view:1.9.2")
-    implementation("com.github.bumptech.glide:glide:4.16.0")
+    implementation("com.github.bumptech.glide:glide:5.0.5")
     implementation("com.github.chrisbanes:PhotoView:2.3.0")
     implementation("com.github.clans:fab:1.6.4")
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
