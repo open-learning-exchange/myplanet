@@ -149,13 +149,11 @@ class ImprovedSyncManager @Inject constructor(
 
             if (strategy.isSupported(table)) {
                 poolManager.useRealm { realm ->
-                    strategy.syncTable(table, realm, config).collect()
+                    strategy.syncTable(table, realm, config, databaseService).collect()
                 }
             } else {
                 // Fallback to standard sync
-                poolManager.useRealm { realm ->
-                    TransactionSyncManager.syncDb(databaseService, table)
-                }
+                TransactionSyncManager.syncDb(databaseService, table)
             }
 
             logger.endProcess("${table}_sync")

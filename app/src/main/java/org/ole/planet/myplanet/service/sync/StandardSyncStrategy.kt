@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.service.sync
 import io.realm.Realm
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.service.TransactionSyncManager
 
 class StandardSyncStrategy : SyncStrategy {
@@ -10,7 +11,8 @@ class StandardSyncStrategy : SyncStrategy {
     override suspend fun syncTable(
         table: String,
         realm: Realm,
-        config: SyncConfig
+        config: SyncConfig,
+        databaseService: DatabaseService
     ): Flow<SyncResult> = flow {
         val startTime = System.currentTimeMillis()
         

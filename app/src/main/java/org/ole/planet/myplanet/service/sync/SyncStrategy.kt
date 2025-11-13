@@ -21,11 +21,14 @@ data class SyncResult(
     val strategy: String
 )
 
+import org.ole.planet.myplanet.datamanager.DatabaseService
+
 interface SyncStrategy {
     suspend fun syncTable(
         table: String,
         realm: Realm,
-        config: SyncConfig
+        config: SyncConfig,
+        databaseService: DatabaseService
     ): Flow<SyncResult>
 
     fun getStrategyName(): String
