@@ -252,6 +252,7 @@
     <string name="myhealth">miSalud</string>
     <string name="action">Acción</string>
     <string name="created_on">Creado en</string>
+    <string name="name_normal">Nombre</string>
     <string name="mypersonals">misPersonales</string>
     <string name="capture_image">Capturar imagen</string>
     <string name="resources">Recursos</string>
@@ -275,6 +276,7 @@
     <string name="team">Equipos</string>
     <string name="applicants">Solicitantes</string>
     <string name="finances">Finanzas</string>
+    <string name="nodata">No hay datos disponibles</string>
     <string name="note">Nota *</string>
     <string name="amount">Cantidad</string>
     <string name="debit">Débito</string>
