@@ -489,9 +489,14 @@
     <string name="last_sync_date">अन्तिम सिङ्क मिति: %s</string>
     <string name="no_assignee">कुनै निर्धारित व्यक्ति छैन</string>
     <string name="note_">नोटहरू</string>
+    <string name="diagno">निदान</string>
+    <string name="treat">उपचारहरू</string>
+    <string name="medicay">औषधि</string>
     <string name="immunizations">प्रतिरक्षात्मक टिकाकरण</string>
+    <string name="allergy">एलर्जीहरू</string>
     <string name="xrays">एक्स-रे</string>
     <string name="tests">परीक्षाहरू</string>
+    <string name="referral">रेफरलहरू</string>
     <string name="other_diagnosis">अन्य निदानहरू</string>
     <string name="close">बन्द गर्नुहोस्</string>
     <string name="negative_balance">हालको शेष श्रेणी नकारात्मक छ!</string>
