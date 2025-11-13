@@ -489,9 +489,14 @@
     <string name="last_sync_date">last sync: %s</string>
     <string name="no_assignee">No assignee</string>
     <string name="note_">notes</string>
+    <string name="diagno">diagnosis</string>
+    <string name="treat">treatments</string>
+    <string name="medicay">medications</string>
     <string name="immunizations">immunizations</string>
+    <string name="allergy">allergies</string>
     <string name="xrays">xrays</string>
     <string name="tests">tests</string>
+    <string name="referral">referrals</string>
     <string name="other_diagnosis">Other Diagnosis</string>
     <string name="close">Close</string>
     <string name="negative_balance">The current balance is negative!</string>
