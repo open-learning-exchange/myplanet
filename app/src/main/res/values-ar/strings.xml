@@ -252,6 +252,7 @@
     <string name="myhealth">صحتي</string>
     <string name="action">إجراء</string>
     <string name="created_on">تم الإنشاء في</string>
+    <string name="name_normal">الاسم</string>
     <string name="mypersonals">معلوماتي الشخصية</string>
     <string name="capture_image">التقاط صورة</string>
     <string name="resources">موارد</string>
@@ -275,6 +276,7 @@
     <string name="team">الفرق</string>
     <string name="applicants">المتقدمون</string>
     <string name="finances">المالية</string>
+    <string name="nodata">لا توجد بيانات متاحة</string>
     <string name="note">ملاحظة *</string>
     <string name="amount">المبلغ</string>
     <string name="debit">مدين</string>
