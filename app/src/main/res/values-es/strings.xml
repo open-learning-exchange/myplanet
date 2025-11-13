@@ -489,9 +489,14 @@
     <string name="last_sync_date">Fecha de última sincronización: %s</string>
     <string name="no_assignee">Sin asignado/a</string>
     <string name="note_">notas</string>
+    <string name="diagno">diagnósticos</string>
+    <string name="treat">tratamientos</string>
+    <string name="medicay">medicamentos</string>
     <string name="immunizations">inmunizaciones</string>
+    <string name="allergy">alergias</string>
     <string name="xrays">radiografías</string>
     <string name="tests">pruebas</string>
+    <string name="referral">referencias</string>
     <string name="other_diagnosis">Otros diagnósticos</string>
     <string name="close">Cerrar</string>
     <string name="negative_balance">¡El saldo actual es negativo!</string>
