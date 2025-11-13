@@ -9,8 +9,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
-        versionCode = 3756
-        versionName = "0.37.56"
+        versionCode = 3757
+        versionName = "0.37.57"
         ndkVersion = '26.3.11579264'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -210,7 +210,7 @@ dependencies {
     implementation("com.opencsv:opencsv:5.12.0") { exclude group: 'commons-logging', module: 'commons-logging' }
     implementation("com.squareup.retrofit2:retrofit:$retrofit2_version")
     implementation("com.squareup.retrofit2:converter-gson:$retrofit2_version")
-    implementation("com.squareup.okhttp3:okhttp:5.1.0")
+    implementation("com.squareup.okhttp3:okhttp:5.3.0")
     implementation("de.hdodenhof:circleimageview:3.1.0")
     implementation("de.rtner:PBKDF2:1.1.4")
     implementation("io.noties.markwon:editor:$markwon_version")
