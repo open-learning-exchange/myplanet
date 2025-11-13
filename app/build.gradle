@@ -9,8 +9,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
-        versionCode = 3753
-        versionName = "0.37.53"
+        versionCode = 3754
+        versionName = "0.37.54"
         ndkVersion = '26.3.11579264'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -176,7 +176,7 @@ dependencies {
     def markwon_version = "4.6.2"
 
     implementation fileTree(include: ['*.jar', '*.aar'], dir: 'libs')
-    implementation platform("org.jetbrains.kotlin:kotlin-bom:2.2.10")
+    implementation platform("org.jetbrains.kotlin:kotlin-bom:2.2.21")
 
     implementation("androidx.annotation:annotation:1.9.1")
     implementation("androidx.appcompat:appcompat:1.7.1")
