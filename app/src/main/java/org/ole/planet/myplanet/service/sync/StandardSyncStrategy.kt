@@ -16,7 +16,7 @@ class StandardSyncStrategy : SyncStrategy {
         
         try {
             // Use the existing TransactionSyncManager for standard sync
-            TransactionSyncManager.syncDb(realm, table)
+            TransactionSyncManager.syncDb(databaseService, table)
             
             val endTime = System.currentTimeMillis()
             emit(

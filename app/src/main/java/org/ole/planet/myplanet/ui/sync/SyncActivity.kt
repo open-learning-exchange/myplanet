@@ -677,7 +677,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                             withContext(Dispatchers.Default) {
                                 val backgroundRealm = databaseService.realmInstance
                                 try {
-                                    TransactionSyncManager.syncDb(backgroundRealm, "login_activities")
+                                    TransactionSyncManager.syncDb(databaseService, "login_activities")
                                 } finally {
                                     backgroundRealm.close()
                                 }

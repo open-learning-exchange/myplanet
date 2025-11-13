@@ -262,7 +262,9 @@ class SyncManager @Inject constructor(
             logger.endProcess("resource_sync")
 
             logger.startProcess("on_synced")
-            RealmResourceActivity.onSynced(settings)
+            val mRealm = databaseService.realmInstance
+            RealmResourceActivity.onSynced(mRealm, settings)
+            mRealm.close()
             logger.endProcess("on_synced")
 
             logger.stopLogging()
@@ -456,7 +458,9 @@ class SyncManager @Inject constructor(
             logger.endProcess("admin_sync")
 
             logger.startProcess("on_synced")
-            RealmResourceActivity.onSynced(settings)
+            val mRealm = databaseService.realmInstance
+            RealmResourceActivity.onSynced(mRealm, settings)
+            mRealm.close()
             logger.endProcess("on_synced")
 
             logger.stopLogging()
@@ -486,9 +490,8 @@ class SyncManager @Inject constructor(
         try {
             val newIds: MutableList<String?> = ArrayList()
             var totalRows = 0
-            ApiClient.executeWithRetryAndWrap {
-                apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/resources/_all_docs?limit=0").execute()
-            }?.let { response ->
+            val response = apiInterface.getJsonObjectSuspended(UrlUtils.header, "${UrlUtils.getUrl()}/resources/_all_docs?limit=0")
+            if (response.isSuccessful) {
                 response.body()?.let { body ->
                     if (body.has("total_rows")) {
                         totalRows = body.get("total_rows").asInt
@@ -504,19 +507,13 @@ class SyncManager @Inject constructor(
                 batchCount++
 
                 try {
-                    var response: JsonObject? = null
-                    ApiClient.executeWithRetryAndWrap {
-                        apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/resources/_all_docs?include_docs=true&limit=$batchSize&skip=$skip").execute()
-                    }?.let {
-                        response = it.body()
-                    }
-
-                    if (response == null) {
+                    val response = apiInterface.getJsonObjectSuspended(UrlUtils.header, "${UrlUtils.getUrl()}/resources/_all_docs?include_docs=true&limit=$batchSize&skip=$skip")
+                    if (!response.isSuccessful) {
                         skip += batchSize
                         continue
                     }
 
-                    val rows = getJsonArray("rows", response)
+                    val rows = getJsonArray("rows", response.body())
 
                     if (rows.size() == 0) {
                         break
@@ -635,9 +632,12 @@ class SyncManager @Inject constructor(
             return cachedShelves
         }
 
-        val allShelves = ApiClient.executeWithRetryAndWrap {
-            apiInterface.getDocuments(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/_all_docs").execute()
-        }?.body()?.rows ?: return emptyList()
+        val allShelvesResponse = apiInterface.getDocumentsSuspended(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/_all_docs")
+        val allShelves = if (allShelvesResponse.isSuccessful) {
+            allShelvesResponse.body()?.rows ?: emptyList()
+        } else {
+            return emptyList()
+        }
 
         coroutineScope {
             val semaphore = Semaphore(8)
@@ -665,13 +665,12 @@ class SyncManager @Inject constructor(
             add("keys", Gson().fromJson(Gson().toJson(shelfIds), JsonArray::class.java))
         }
 
-        val response = ApiClient.executeWithRetryAndWrap {
-            apiInterface.findDocs(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/shelf/_all_docs?include_docs=true", keysObject).execute()
-        }?.body()
+        val response = apiInterface.findDocsSuspended(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/shelf/_all_docs?include_docs=true", keysObject)
 
-        response?.let { responseBody ->
-            val rows = getJsonArray("rows", responseBody)
-            for (i in 0 until rows.size()) {
+        if (response.isSuccessful) {
+            response.body()?.let { responseBody ->
+                val rows = getJsonArray("rows", responseBody)
+                for (i in 0 until rows.size()) {
                 val row = rows[i].asJsonObject
                 if (row.has("doc")) {
                     val doc = getJsonObject("doc", row)
@@ -682,6 +681,7 @@ class SyncManager @Inject constructor(
                     }
                 }
             }
+        }
         }
         return shelvesWithData
     }
@@ -757,16 +757,11 @@ class SyncManager @Inject constructor(
         var processedItems = 0
 
         try {
-            var shelfDoc: JsonObject? = null
-            ApiClient.executeWithRetryAndWrap {
-                apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/$shelfId").execute()
-            }?.let {
-                shelfDoc = it.body()
-            }
-
-            if (shelfDoc == null) {
+            val shelfDocResponse = apiInterface.getJsonObjectSuspended(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/$shelfId")
+            if (!shelfDocResponse.isSuccessful) {
                 return 0
             }
+            val shelfDoc = shelfDocResponse.body()
 
             coroutineScope {
                 val dataJobs = Constants.shelfDataList.mapNotNull { shelfData ->
@@ -816,16 +811,11 @@ class SyncManager @Inject constructor(
                 val keysObject = JsonObject()
                 keysObject.add("keys", Gson().fromJson(Gson().toJson(batch), JsonArray::class.java))
 
-                var response: JsonObject? = null
-                ApiClient.executeWithRetryAndWrap {
-                    apiInterface.findDocs(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/${shelfData.type}/_all_docs?include_docs=true", keysObject).execute()
-                }?.let {
-                    response = it.body()
-                }
+                val response = apiInterface.findDocsSuspended(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/${shelfData.type}/_all_docs?include_docs=true", keysObject)
+                if (!response.isSuccessful) continue
 
-                if (response == null) continue
-
-                val responseRows = getJsonArray("rows", response)
+                val responseBody = response.body() ?: continue
+                val responseRows = getJsonArray("rows", responseBody)
                 if (responseRows.size() == 0) continue
 
                 val documentsToProcess = mutableListOf<JsonObject>()

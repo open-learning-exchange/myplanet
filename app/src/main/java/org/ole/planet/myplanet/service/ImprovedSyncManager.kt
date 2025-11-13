@@ -129,10 +129,13 @@ class ImprovedSyncManager @Inject constructor(
         ManagerSync.instance.syncAdmin()
         logger.endProcess("admin_sync")
 
-        poolManager.useRealm { realm ->
+        val realm = databaseService.realmInstance
+        try {
             logger.startProcess("on_synced")
             org.ole.planet.myplanet.model.RealmResourceActivity.onSynced(realm, settings)
             logger.endProcess("on_synced")
+        } finally {
+            realm.close()
         }
 
         logger.stopLogging()
@@ -151,7 +154,7 @@ class ImprovedSyncManager @Inject constructor(
             } else {
                 // Fallback to standard sync
                 poolManager.useRealm { realm ->
-                    TransactionSyncManager.syncDb(realm, table)
+                    TransactionSyncManager.syncDb(databaseService, table)
                 }
             }
 

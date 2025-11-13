@@ -40,15 +40,13 @@ open class RealmResourceActivity : RealmObject() {
         }
 
         @JvmStatic
-        fun onSynced(settings: SharedPreferences) {
-            val dbService = DatabaseService(MainApplication.context)
-            val mRealm = dbService.realmInstance
+        fun onSynced(mRealm: Realm, settings: SharedPreferences) {
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
             }
             val user = mRealm.where(RealmUserModel::class.java).equalTo("id", settings.getString("userId", "")).findFirst()
-            if (user == null || user.id?.startsWith("guest") == true) {
-                mRealm.close()
+                ?: return
+            if (user.id?.startsWith("guest") == true) {
                 return
             }
             val activities = mRealm.createObject(RealmResourceActivity::class.java, UUID.randomUUID().toString())
@@ -60,7 +58,6 @@ open class RealmResourceActivity : RealmObject() {
             activities.type = "sync"
             activities.time = Date().time
             mRealm.commitTransaction()
-            mRealm.close()
         }
     }
 }
