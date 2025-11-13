@@ -489,9 +489,14 @@
     <string name="last_sync_date">Taariikhda Hore ee Iskaashiga: %s</string>
     <string name="no_assignee">Qof oo xoolo aan la yeelan</string>
     <string name="note_">fikirro</string>
+    <string name="diagno">xeerka qalbiga</string>
+    <string name="treat">falafelaha</string>
+    <string name="medicay">duubistada</string>
     <string name="immunizations">xallinta daryeelka</string>
+    <string name="allergy">istinka halista</string>
     <string name="xrays">xaraashada xaraashada</string>
     <string name="tests">Baarista</string>
+    <string name="referral">diraasaadka</string>
     <string name="other_diagnosis">Xeerka Kale</string>
     <string name="close">Xir</string>
     <string name="negative_balance">Xalinta hanaanka hadda waa ka baxa!</string>
