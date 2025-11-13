@@ -347,11 +347,17 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
                 val userId = user?.id
                 val userPlanetCode = user?.planetCode
                 val teamType = team?.teamType
-                RealmMyTeam.requestToJoin(teamId, userId, userPlanetCode, mRealm, teamType)
-                binding.btnLeave.text = getString(R.string.requested)
-                binding.btnLeave.isEnabled = false
                 viewLifecycleOwner.lifecycleScope.launch {
-                    teamRepository.syncTeamActivities()
+                    try {
+                        teamRepository.requestToJoin(teamId, userId, userPlanetCode, teamType)
+                        binding.btnLeave.text = getString(R.string.requested)
+                        binding.btnLeave.isEnabled = false
+                        teamRepository.syncTeamActivities()
+                    } catch (e: Exception) {
+                        binding.btnLeave.text = getString(R.string.join)
+                        binding.btnLeave.isEnabled = true
+                        Snackbar.make(binding.root, R.string.request_failed, Snackbar.LENGTH_SHORT).show()
+                    }
                 }
             }
         }
