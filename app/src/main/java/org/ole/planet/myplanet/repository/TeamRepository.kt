@@ -77,7 +77,7 @@ interface TeamRepository {
         createdBy: String,
     ): Boolean
     suspend fun syncTeamActivities()
-    fun getTeamTransactions(
+    suspend fun getTeamTransactions(
         teamId: String,
         startDate: Long? = null,
         endDate: Long? = null,

@@ -113,7 +113,7 @@ class TeamRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun getTeamTransactions(
+    override suspend fun getTeamTransactions(
         teamId: String,
         startDate: Long?,
         endDate: Long?,
