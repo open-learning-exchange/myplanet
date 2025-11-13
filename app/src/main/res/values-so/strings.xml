@@ -252,6 +252,7 @@
     <string name="myhealth">Caafimaadkaan</string>
     <string name="action">Hawlgal</string>
     <string name="created_on">Lagu sameeyey</string>
+    <string name="name_normal">Magaca</string>
     <string name="mypersonals">Dhamaan xogtaaga caafimaadka</string>
     <string name="capture_image">Sawir ku xir</string>
     <string name="resources">Vifijo</string>
@@ -275,6 +276,7 @@
     <string name="team">Kooxaha</string>
     <string name="applicants">Loo baahan yahay</string>
     <string name="finances">Maaliyadda</string>
+    <string name="nodata">Wax ma jirin</string>
     <string name="note">Fariin *</string>
     <string name="amount">Masaafad</string>
     <string name="debit">Debit</string>
