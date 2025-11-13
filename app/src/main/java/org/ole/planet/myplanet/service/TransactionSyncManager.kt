@@ -13,6 +13,7 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.datamanager.ApiInterface
+import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.DocumentResponse
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.insert
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
@@ -95,7 +96,7 @@ object TransactionSyncManager {
         }
     }
 
-    suspend fun syncDb(realm: Realm, table: String) {
+    suspend fun syncDb(databaseService: DatabaseService, table: String) {
         val apiInterface = client?.create(ApiInterface::class.java)
         try {
             val all = apiInterface?.getJsonObjectSuspended(
@@ -118,12 +119,14 @@ object TransactionSyncManager {
                     )
                     if (response?.body() != null) {
                         val arr = getJsonArray("rows", response.body())
-                        realm.executeTransaction { mRealm: Realm ->
+                        val mRealm = databaseService.realmInstance
+                        mRealm.executeTransaction { realm: Realm ->
                             if (table == "chat_history") {
-                                insertToChat(arr, mRealm)
+                                insertToChat(arr, realm)
                             }
-                            insertDocs(arr, mRealm, table)
+                            insertDocs(arr, realm, table)
                         }
+                        mRealm.close()
                     }
                     keys.clear()
                 }
