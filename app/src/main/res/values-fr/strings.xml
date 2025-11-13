@@ -19,8 +19,10 @@
     <string name="hint_name">Nom d\'utilisateur</string>
     <string name="btn_back">Retourner</string>
     <string name="btn_sign_in">Se connecter</string>
+    <string name="btn_sync">Synchroniser</string>
     <string name="select_team">sélectionner une équipe</string>
     <string name="btn_sync_save">Enregistrer</string>
+    <string name="btn_sync_cancel">Annuler</string>
     <string name="err_msg_name">Entrez votre nom d\'utilisateur</string>
     <string name="err_msg_password">Entrez le mot de passe</string>
     <string name="err_msg_login">Le nom d\'utilisateur et/ou le mot de passe ne correspondent pas</string>
