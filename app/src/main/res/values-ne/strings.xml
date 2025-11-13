@@ -252,6 +252,7 @@
     <string name="myhealth">मेरो स्वास्थ्य</string>
     <string name="action">कार्य</string>
     <string name="created_on">मा सिर्जना गरिएको</string>
+    <string name="name_normal">नाम</string>
     <string name="mypersonals">मेरो व्यक्तिगत</string>
     <string name="capture_image">तस्वीर कप्चर गर्नुहोस्</string>
     <string name="resources">स्रोतहरू</string>
@@ -275,6 +276,7 @@
     <string name="team">टटिमहरू</string>
     <string name="applicants">आवेदकहरू</string>
     <string name="finances">वित्त</string>
+    <string name="nodata">कुनै डाटा उपलब्ध छैन</string>
     <string name="note">नोट *</string>
     <string name="amount">रकम</string>
     <string name="debit">नेलो</string>
