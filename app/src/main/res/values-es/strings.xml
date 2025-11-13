@@ -83,6 +83,7 @@
     <string name="middle_name">Segundo nombre</string>
     <string name="first_name">Nombre de Pila</string>
     <string name="search_dots">Buscar…</string>
+    <string name="btn_remove_lib">Eliminar</string>
     <string name="download">Descargar</string>
     <string name="published_by">Publicado por:</string>
     <string name="author">Autor:</string>
