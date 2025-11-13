@@ -83,6 +83,7 @@
     <string name="middle_name">الاسم الأوسط</string>
     <string name="first_name">الاسم الأول</string>
     <string name="search_dots">بحث…</string>
+    <string name="btn_remove_lib">إزالة</string>
     <string name="download">تحميل</string>
     <string name="published_by">نشر بواسطة:</string>
     <string name="author">المؤلف:</string>
