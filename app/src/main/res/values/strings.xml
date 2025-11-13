@@ -1173,5 +1173,6 @@
     <string name="resource_has_no_attachments">Resource has no downloadable files</string>
     <string name="unable_to_download_resource">Unable to download resource</string>
     <string name="hide_new_message">Hide new message</string>
+    <string name="request_failed">Request failed, please try again.</string>
 
 </resources>
