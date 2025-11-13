@@ -224,7 +224,6 @@ dependencies {
     implementation("pl.droidsonroids.gif:android-gif-drawable:1.2.29")
 
     testImplementation("junit:junit:4.13.2")
-    implementation("io.realm:realm-android-kotlin-extensions:11.7.0")
 }
 realm {
     syncEnabled = true
