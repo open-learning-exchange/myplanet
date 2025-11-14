@@ -19,12 +19,15 @@ import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import kotlinx.coroutines.CoroutineScope
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.utilities.Utilities
 
 class UserProfileDbHandler @Inject constructor(
     @ApplicationContext private val context: Context,
     private val realmService: DatabaseService,
-    @AppPreferences private val settings: SharedPreferences
+    @AppPreferences private val settings: SharedPreferences,
+    @ApplicationScope private val applicationScope: CoroutineScope
 ) {
     private val fullName: String
 
@@ -32,7 +35,8 @@ class UserProfileDbHandler @Inject constructor(
     constructor(context: Context) : this(
         context,
         DatabaseService(context),
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+        CoroutineScope(Dispatchers.IO)
     )
 
     init {
@@ -62,7 +66,7 @@ class UserProfileDbHandler @Inject constructor(
     }
 
     fun onLoginAsync(callback: (() -> Unit)? = null, onError: ((Throwable) -> Unit)? = null) {
-        GlobalScope.launch(Dispatchers.IO) {
+        applicationScope.launch {
             try {
                 val model = getUserModelCopy()
                 val userId = model?.id
@@ -94,7 +98,7 @@ class UserProfileDbHandler @Inject constructor(
     }
 
     fun logoutAsync() {
-        GlobalScope.launch(Dispatchers.IO) {
+        applicationScope.launch {
             try {
                 realmService.executeTransactionAsync { realm ->
                     RealmOfflineActivity.getRecentLogin(realm)
@@ -148,7 +152,7 @@ class UserProfileDbHandler @Inject constructor(
         val itemTitle = item.title
         val itemResourceId = item.resourceId
 
-        GlobalScope.launch(Dispatchers.IO) {
+        applicationScope.launch {
             try {
                 val model = getUserModelCopy()
                 if (model?.id?.startsWith("guest") == true) {

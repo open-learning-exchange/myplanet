@@ -2,8 +2,6 @@ package org.ole.planet.myplanet.ui.news
 
 import android.content.res.Configuration
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -21,6 +19,9 @@ import io.realm.RealmResults
 import io.realm.Sort
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -38,6 +39,7 @@ import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
+import org.ole.planet.myplanet.utilities.textChanges
 
 @AndroidEntryPoint
 class NewsFragment : BaseNewsFragment() {
@@ -49,7 +51,6 @@ class NewsFragment : BaseNewsFragment() {
     lateinit var userProfileDbHandler: UserProfileDbHandler
     @Inject
     lateinit var newsRepository: NewsRepository
-    private var updatedNewsList: RealmResults<RealmNews>? = null
     private var filteredNewsList: List<RealmNews?> = listOf()
     private var searchFilteredList: List<RealmNews?> = listOf()
     private var labelFilteredList: List<RealmNews?> = listOf()
@@ -95,66 +96,29 @@ class NewsFragment : BaseNewsFragment() {
             }
         }
 
-        updatedNewsList = mRealm.where(RealmNews::class.java).sort("time", Sort.DESCENDING)
-            .isEmpty("replyTo").equalTo("docType", "message", Case.INSENSITIVE)
-            .findAllAsync()
-
-        updatedNewsList?.addChangeListener { results ->
-            if (_binding == null) return@addChangeListener
-            val searchQuery = etSearch.text.toString().trim()
-            val detachedResults = mRealm.copyFromRealm(results)
-            viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Default) {
-                val filtered = filterNewsList(detachedResults)
-                val labels = collectAllLabels(filtered)
-                val labelFiltered = applyLabelFilter(filtered)
-                val searchFiltered = applySearchFilter(labelFiltered, searchQuery)
-                withContext(Dispatchers.Main) {
-                    if (_binding == null) return@withContext
-                    filteredNewsList = filtered
-                    labelFilteredList = labelFiltered
-                    searchFilteredList = searchFiltered
-                    updateLabelSpinner(labels)
-                    setData(searchFilteredList)
-                    scrollToTop()
-                }
-            }
-        }
-        
         setupSearchTextListener()
         setupLabelFilter()
 
         return binding.root
     }
 
-    private fun filterNewsList(results: Iterable<RealmNews>): List<RealmNews?> {
-        val filteredList: MutableList<RealmNews?> = ArrayList()
-        for (news in results) {
-            if (news.viewableBy.equals("community", ignoreCase = true)) {
-                filteredList.add(news)
-                continue
-            }
-
-            if (!news.viewIn.isNullOrEmpty()) {
-                val ar = gson.fromJson(news.viewIn, JsonArray::class.java)
-                for (e in ar) {
-                    val ob = e.asJsonObject
-                    var userId = "${user?.planetCode}@${user?.parentCode}"
-                    if(userId.isEmpty() || userId=="@"){
-                        userId = settings?.getString("planetCode","")+"@"+settings?.getString("parentCode", "")
-                    }
-                    if (ob != null && ob.has("_id") && ob["_id"].asString.equals(userId, ignoreCase = true)) {
-                        filteredList.add(news)
-                        break
-                    }
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        viewLifecycleOwner.lifecycleScope.launch {
+            newsRepository.getCommunityNews(getUserIdentifier()).collect { news ->
+                val filtered = news.map { it as RealmNews? }
+                val labels = collectAllLabels(filtered)
+                val labelFiltered = applyLabelFilter(filtered)
+                val searchFiltered = applySearchFilter(labelFiltered, etSearch.text.toString().trim())
+                if (_binding != null) {
+                    filteredNewsList = filtered
+                    labelFilteredList = labelFiltered
+                    searchFilteredList = searchFiltered
+                    setupLabelFilter(labels)
+                    setData(searchFilteredList)
                 }
             }
         }
-        return filteredList
-    }
-    
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        loadCommunityNews()
         binding.btnSubmit.setOnClickListener {
             val message = binding.etMessage.text.toString().trim { it <= ' ' }
             if (message.isEmpty()) {
@@ -173,7 +137,6 @@ class NewsFragment : BaseNewsFragment() {
             imageList.clear()
             llImage?.removeAllViews()
             adapterNews?.addItem(n)
-            filteredNewsList = filterNewsList(updatedNewsList!!)
             labelFilteredList = applyLabelFilter(filteredNewsList)
             searchFilteredList = applySearchFilter(labelFilteredList)
             setData(searchFilteredList)
@@ -184,25 +147,6 @@ class NewsFragment : BaseNewsFragment() {
             llImage = binding.llImages
             val openFolderIntent = FileUtils.openOleFolder(requireContext())
             openFolderLauncher.launch(openFolderIntent)
-        }
-    }
-
-    private fun loadCommunityNews() {
-        val searchQuery = etSearch.text.toString().trim()
-        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Default) {
-            val news = newsRepository.getCommunityVisibleNews(getUserIdentifier())
-            val filtered = news.map { it as RealmNews? }
-            val labels = collectAllLabels(filtered)
-            val labelFiltered = applyLabelFilter(filtered)
-            val searchFiltered = applySearchFilter(labelFiltered, searchQuery)
-            withContext(Dispatchers.Main) {
-                if (_binding == null) return@withContext
-                filteredNewsList = filtered
-                labelFilteredList = labelFiltered
-                searchFilteredList = searchFiltered
-                setupLabelFilter(labels)
-                setData(searchFilteredList)
-            }
         }
     }
 
@@ -329,15 +273,15 @@ class NewsFragment : BaseNewsFragment() {
     }
     
     private fun setupSearchTextListener() {
-        etSearch.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-                searchFilteredList = applySearchFilter(labelFilteredList)
+        etSearch.textChanges()
+            .debounce(300)
+            .onEach { text ->
+                val searchQuery = text.toString().trim()
+                searchFilteredList = applySearchFilter(labelFilteredList, searchQuery)
                 setData(searchFilteredList)
                 scrollToTop()
             }
-            override fun afterTextChanged(s: Editable) {}
-        })
+            .launchIn(viewLifecycleOwner.lifecycleScope)
     }
     
     private fun applySearchFilter(list: List<RealmNews?>, queryParam: String? = null): List<RealmNews?> {
@@ -469,8 +413,7 @@ class NewsFragment : BaseNewsFragment() {
     }
 
     override fun onDestroyView() {
-        updatedNewsList?.removeAllChangeListeners()
-        updatedNewsList = null
+        adapterNews?.unregisterAdapterDataObserver(observer)
         if (isRealmInitialized()) {
             mRealm.close()
         }
