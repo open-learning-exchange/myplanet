@@ -81,6 +81,11 @@ class BellDashboardFragment : BaseDashboardFragment() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        updateSurveyCount()
+    }
+
     private fun setupNetworkStatusMonitoring() {
         networkStatusJob?.cancel()
         networkStatusJob = viewLifecycleOwner.lifecycleScope.launch {

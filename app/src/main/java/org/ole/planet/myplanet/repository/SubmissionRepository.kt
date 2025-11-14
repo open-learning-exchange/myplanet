@@ -23,4 +23,11 @@ interface SubmissionRepository {
     suspend fun createSurveySubmission(examId: String, userId: String?)
     suspend fun saveSubmission(submission: RealmSubmission)
     suspend fun getNoOfSurveySubmissionByUser(userId: String?): Int
+    suspend fun getNoOfSubmissionByUser(id: String?, courseId: String?, userId: String?): String
+    suspend fun getRecentSubmissionDate(id: String?, courseId: String?, userId: String?): String
+    suspend fun getNoOfSubmissionByTeam(teamId: String?, examId: String?): String
+    suspend fun isStepCompleted(id: String?, userId: String?): Boolean
+    suspend fun insertSubmission(submission: com.google.gson.JsonObject)
+    suspend fun serializeExamResult(sub: RealmSubmission): com.google.gson.JsonObject
+    suspend fun continueResultUpload(sub: RealmSubmission)
 }

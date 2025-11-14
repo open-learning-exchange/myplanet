@@ -251,6 +251,17 @@ open class RealmSubmission : RealmObject() {
         }
 
         @JvmStatic
+        fun getNoOfSurveySubmissionByUser(userId: String?, mRealm: Realm): Int {
+            if (userId == null) return 0
+
+            return mRealm.where(RealmSubmission::class.java)
+                .equalTo("userId", userId)
+                .equalTo("type", "survey")
+                .equalTo("status", "pending", Case.INSENSITIVE)
+                .count().toInt()
+        }
+
+        @JvmStatic
         fun getRecentSubmissionDate(id: String?, courseId:String?, userId: String?, mRealm: Realm): String {
             if (id == null || userId == null) return ""
             val submissionParentId= generateParentId(courseId, id)

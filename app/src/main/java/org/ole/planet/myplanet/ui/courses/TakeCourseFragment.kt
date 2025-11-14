@@ -38,7 +38,6 @@ import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onAdd
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onRemove
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmSubmission.Companion.isStepCompleted
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
@@ -53,6 +52,8 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     lateinit var databaseService: DatabaseService
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
+    @Inject
+    lateinit var submissionRepository: SubmissionRepository
     lateinit var mRealm: Realm
     private var currentCourse: RealmMyCourse? = null
     lateinit var steps: List<RealmCourseStep?>
@@ -238,12 +239,14 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
     private fun changeNextButtonState(position: Int) {
         if (courseId == "4e6b78800b6ad18b4e8b0e1e38a98cac") {
-            if (isStepCompleted(mRealm, steps[position - 1]?.id, userModel?.id)) {
-                binding.nextStep.isClickable = true
-                binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
-            } else {
-                binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_grey_500))
-                binding.nextStep.isClickable = false
+            lifecycleScope.launch {
+                if (submissionRepository.isStepCompleted(steps[position - 1]?.id, userModel?.id)) {
+                    binding.nextStep.isClickable = true
+                    binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
+                } else {
+                    binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_grey_500))
+                    binding.nextStep.isClickable = false
+                }
             }
         } else {
             binding.nextStep.isClickable = true

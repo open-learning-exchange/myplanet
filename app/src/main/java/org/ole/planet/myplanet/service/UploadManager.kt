@@ -23,6 +23,7 @@ import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.FileUploadService
 import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmApkLog
@@ -68,7 +69,8 @@ class UploadManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val databaseService: DatabaseService,
     @AppPreferences private val pref: SharedPreferences,
-    private val gson: Gson
+    private val gson: Gson,
+    private val submissionRepository: SubmissionRepository
 ) : FileUploadService() {
 
     private fun uploadNewsActivities() {
@@ -164,30 +166,33 @@ class UploadManager @Inject constructor(
 
     fun uploadExamResult(listener: SuccessListener) {
         val apiInterface = client.create(ApiInterface::class.java)
-        try {
-            val submissionIds = databaseService.withRealm { realm ->
-                realm.where(RealmSubmission::class.java).findAll()
-                    .filter { (it.answers?.size ?: 0) > 0 && it.userId?.startsWith("guest") != true }
-                    .mapNotNull { it.id }
-            }
+import kotlinx.coroutines.runBlocking
 
-            var processedCount = 0
-            var errorCount = 0
-
-            submissionIds.chunked(BATCH_SIZE).forEach { batchIds ->
-                val submissionsToUpload = databaseService.withRealm { realm ->
-                    realm.where(RealmSubmission::class.java)
-                        .`in`("id", batchIds.toTypedArray())
-                        .findAll()
-                        .map { sub ->
-                            val serialized = RealmSubmission.serializeExamResult(realm, sub, context)
-                            Triple(sub.id, serialized, sub._id)
-                        }
+        runBlocking {
+            try {
+                val submissionIds = databaseService.withRealm { realm ->
+                    realm.where(RealmSubmission::class.java).findAll()
+                        .filter { (it.answers?.size ?: 0) > 0 && it.userId?.startsWith("guest") != true }
+                        .mapNotNull { it.id }
                 }
 
-                for ((id, serialized, _id) in submissionsToUpload) {
-                    try {
-                        val response: JsonObject? = if (TextUtils.isEmpty(_id)) {
+                var processedCount = 0
+                var errorCount = 0
+
+                submissionIds.chunked(BATCH_SIZE).forEach { batchIds ->
+                    val submissionsToUpload = databaseService.withRealm { realm ->
+                        realm.where(RealmSubmission::class.java)
+                            .`in`("id", batchIds.toTypedArray())
+                            .findAll()
+                            .map { sub ->
+                                val serialized = runBlocking { submissionRepository.serializeExamResult(sub) }
+                                Triple(sub.id, serialized, sub._id)
+                            }
+                    }
+
+                    for ((id, serialized, _id) in submissionsToUpload) {
+                        try {
+                            val response: JsonObject? = if (TextUtils.isEmpty(_id)) {
                             apiInterface.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/submissions", serialized).execute().body()
                         } else {
                             apiInterface.putDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/submissions/$_id", serialized).execute().body()

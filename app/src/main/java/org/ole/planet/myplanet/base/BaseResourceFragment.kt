@@ -41,7 +41,6 @@ import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onRemove
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmSubmission.Companion.getExamMap
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.CourseRepository
@@ -222,8 +221,8 @@ abstract class BaseResourceFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             val list = submissionRepository.getPendingSurveys(model?.id)
             if (list.isEmpty()) return@launch
-            val exams = getExamMap(mRealm, list)
-            val arrayAdapter = createSurveyAdapter(list, exams)
+            val exams = submissionRepository.getExamMapForSubmissions(list)
+            val arrayAdapter = createSurveyAdapter(list, exams as HashMap<String?, RealmStepExam>)
             pendingSurveyDialog?.dismiss()
             pendingSurveyDialog = AlertDialog.Builder(requireActivity()).setTitle("Pending Surveys")
                 .setAdapter(arrayAdapter) { _: DialogInterface?, i: Int ->

@@ -32,7 +32,11 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import javax.inject.Inject
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+
 open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
+    private var tvCount: TextView? = null
     fun handleClick(id: String?, title: String?, f: Fragment, v: TextView) {
         v.text = title
         v.setOnClickListener {
@@ -122,10 +126,8 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
 
         if (title == getString(R.string.my_survey)) {
             itemMyLifeBinding.tvCount.visibility = View.VISIBLE
-            lifecycleScope.launch {
-                val noOfSurvey = submissionRepository.getNoOfSurveySubmissionByUser(user?.id)
-                itemMyLifeBinding.tvCount.text = noOfSurvey.toString()
-            }
+            tvCount = itemMyLifeBinding.tvCount
+            updateSurveyCount()
         } else {
             itemMyLifeBinding.tvCount.visibility = View.GONE
         }
@@ -134,6 +136,16 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
             handleClickMyLife(title, v)
         }
         return v
+    }
+
+    fun updateSurveyCount() {
+        lifecycleScope.launch {
+            val user = profileDbHandler.userModel
+            val noOfSurvey = submissionRepository.getNoOfSurveySubmissionByUser(user?.id)
+            withContext(Dispatchers.Main) {
+                tvCount?.text = noOfSurvey.toString()
+            }
+        }
     }
 
     fun getMyLifeListBase(userId: String?): List<RealmMyLife> {
