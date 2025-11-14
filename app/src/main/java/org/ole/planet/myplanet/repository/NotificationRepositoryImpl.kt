@@ -2,8 +2,6 @@ package org.ole.planet.myplanet.repository
 
 import java.util.Date
 import java.util.UUID
-import java.util.Date
-import java.util.UUID
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.Notification
