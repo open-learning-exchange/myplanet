@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.team.teamMember
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -16,6 +17,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowJoinedUserBinding
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
+import org.ole.planet.myplanet.utilities.DiffUtils
 
 data class JoinedMemberData(
     val user: RealmUserModel,
@@ -41,6 +43,25 @@ class AdapterJoinedMember(
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderUser {
         val binding = RowJoinedUserBinding.inflate(LayoutInflater.from(context), parent, false)
         return ViewHolderUser(binding)
+    }
+
+    override fun onBindViewHolder(
+        holder: ViewHolderUser,
+        position: Int,
+        payloads: MutableList<Any>
+    ) {
+        if (payloads.isNotEmpty()) {
+            val payload = payloads[0] as Bundle
+            if (payload.containsKey("KEY_LEADER")) {
+                val isLeader = payload.getBoolean("KEY_LEADER")
+                holder.binding.tvIsLeader.visibility = if (isLeader) View.VISIBLE else View.GONE
+                if (isLeader) {
+                    holder.binding.tvIsLeader.text = context.getString(R.string.team_leader)
+                }
+            }
+        } else {
+            super.onBindViewHolder(holder, position, payloads)
+        }
     }
 
     override fun onBindViewHolder(holder: ViewHolderUser, position: Int) {
@@ -137,12 +158,25 @@ class AdapterJoinedMember(
 
     override fun getItemCount(): Int = list.size
 
-    @SuppressLint("NotifyDataSetChanged")
-    fun updateData(newList: MutableList<JoinedMemberData>, isLoggedInUserTeamLeader: Boolean) {
-        list.clear()
-        list.addAll(newList)
+    fun updateData(newList: List<JoinedMemberData>, isLoggedInUserTeamLeader: Boolean) {
         this.isLoggedInUserTeamLeader = isLoggedInUserTeamLeader
-        notifyDataSetChanged()
+        val oldList = ArrayList(this.list)
+        val diffResult = DiffUtils.calculateDiff(
+            oldList,
+            newList,
+            areItemsTheSame = { old, new -> old.user.id == new.user.id },
+            areContentsTheSame = { old, new -> old == new },
+            getChangePayload = { old, new ->
+                val payload = Bundle()
+                if (old.isLeader != new.isLeader) {
+                    payload.putBoolean("KEY_LEADER", new.isLeader)
+                }
+                if (payload.isEmpty) null else payload
+            }
+        )
+        this.list.clear()
+        this.list.addAll(newList)
+        diffResult.dispatchUpdatesTo(this)
     }
 
     fun removeMember(memberId: String) {
