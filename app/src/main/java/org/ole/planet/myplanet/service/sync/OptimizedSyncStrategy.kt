@@ -4,6 +4,7 @@ import android.content.Context
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import io.realm.DynamicRealm
 import io.realm.DynamicRealmObject
 import io.realm.Realm
 import kotlinx.coroutines.Dispatchers
@@ -131,7 +132,7 @@ class OptimizedSyncStrategy : SyncStrategy {
         val modelClass = Constants.classList[table] ?: return
         val dynamicRealm = Realm.getInstance(realm.configuration)
         try {
-            dynamicRealm.executeTransaction { r ->
+            dynamicRealm.executeTransaction { r: DynamicRealm ->
                 deletedDocIds.forEach { id ->
                     r.where(modelClass.simpleName)
                         .equalTo("_id", id)
