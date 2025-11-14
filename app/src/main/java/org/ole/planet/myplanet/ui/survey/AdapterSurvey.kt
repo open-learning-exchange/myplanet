@@ -5,6 +5,8 @@ import android.content.SharedPreferences
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import io.realm.Realm
@@ -32,8 +34,7 @@ class AdapterSurvey(
     private val settings: SharedPreferences,
     private val userProfileDbHandler: UserProfileDbHandler,
     private val surveyInfoMap: Map<String, SurveyInfo>
-) : RecyclerView.Adapter<AdapterSurvey.ViewHolderSurvey>() {
-    private var examList: List<RealmStepExam> = emptyList()
+) : ListAdapter<RealmStepExam, AdapterSurvey.ViewHolderSurvey>(SurveyDiffCallback()) {
     private var listener: OnHomeItemClickListener? = null
     private val adoptedSurveyIds = mutableSetOf<String>()
     private var isTitleAscending = true
@@ -48,17 +49,16 @@ class AdapterSurvey(
     }
 
     fun updateData(newList: List<RealmStepExam>) {
-        dispatchDiff(examList, newList)
+        submitList(newList)
     }
 
     fun updateDataAfterSearch(newList: List<RealmStepExam>) {
-        val oldList = examList
-        val sortedList = if (oldList.isEmpty()) {
+        val sortedList = if (currentList.isEmpty()) {
             sortSurveyList(false, newList)
         } else {
             sortStrategy(newList)
         }
-        dispatchDiff(oldList, sortedList)
+        submitList(sortedList)
     }
 
     private fun sortSurveyList(
@@ -73,10 +73,9 @@ class AdapterSurvey(
     }
 
     fun sortByDate(isAscend: Boolean) {
-        val oldList = examList
         sortStrategy = { list -> sortSurveyList(isAscend, list) }
-        val sortedList = sortStrategy(examList)
-        dispatchDiff(oldList, sortedList)
+        val sortedList = sortStrategy(currentList)
+        submitList(sortedList)
     }
 
     private fun sortSurveyListByName(
@@ -92,24 +91,9 @@ class AdapterSurvey(
 
     fun toggleTitleSortOrder() {
         isTitleAscending = !isTitleAscending
-        val oldList = examList
         sortStrategy = { list -> sortSurveyListByName(isTitleAscending, list) }
-        val sortedList = sortStrategy(examList)
-        dispatchDiff(oldList, sortedList)
-    }
-
-    private fun dispatchDiff(
-        oldList: List<RealmStepExam>,
-        newList: List<RealmStepExam>
-    ) {
-        val diffResult = DiffUtils.calculateDiff(
-            oldList,
-            newList,
-            areItemsTheSame = { old, new -> old.id == new.id },
-            areContentsTheSame = { old, new -> old == new }
-        )
-        examList = newList
-        diffResult.dispatchUpdatesTo(this)
+        val sortedList = sortStrategy(currentList)
+        submitList(sortedList)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderSurvey {
@@ -118,17 +102,15 @@ class AdapterSurvey(
     }
 
     override fun onBindViewHolder(holder: ViewHolderSurvey, position: Int) {
-        holder.bind(examList[position])
+        holder.bind(getItem(position))
     }
-
-    override fun getItemCount(): Int = examList.size
 
     inner class ViewHolderSurvey(private val binding: RowSurveyBinding) : RecyclerView.ViewHolder(binding.root) {
         init {
             binding.startSurvey.visibility = View.VISIBLE
             binding.sendSurvey.visibility = View.GONE
             binding.sendSurvey.setOnClickListener {
-                val current = examList[bindingAdapterPosition]
+                val current = getItem(bindingAdapterPosition)
                 listener?.sendSurvey(current)
             }
         }
@@ -287,7 +269,7 @@ class AdapterSurvey(
                     mRealm.refresh()
 
                     adoptedSurveyIds.add("$examId")
-                    val position = examList.indexOfFirst { it.id == examId }
+                    val position = currentList.indexOfFirst { it.id == examId }
                     if (position != -1) {
                         notifyItemChanged(position)
                     }
@@ -301,5 +283,15 @@ class AdapterSurvey(
                 Snackbar.make(binding.root, context.getString(R.string.failed_to_adopt_survey), Snackbar.LENGTH_LONG).show()
             }
         }
+    }
+}
+
+class SurveyDiffCallback : DiffUtil.ItemCallback<RealmStepExam>() {
+    override fun areItemsTheSame(oldItem: RealmStepExam, newItem: RealmStepExam): Boolean {
+        return oldItem.id == newItem.id
+    }
+
+    override fun areContentsTheSame(oldItem: RealmStepExam, newItem: RealmStepExam): Boolean {
+        return oldItem == newItem
     }
 }
