@@ -12,6 +12,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
@@ -73,9 +74,13 @@ class TeamRepositoryImpl @Inject constructor(
             equalTo("userId", user?._id)
             equalTo("docType", "membership")
         }.flatMapLatest { memberships ->
-            val teamIds = memberships.map { it.teamId }.toTypedArray()
-            queryListFlow(RealmMyTeam::class.java) {
-                `in`("_id", teamIds)
+            val teamIds = memberships.mapNotNull { it.teamId }.toTypedArray()
+            if (teamIds.isEmpty()) {
+                flowOf(emptyList())
+            } else {
+                queryListFlow(RealmMyTeam::class.java) {
+                    `in`("_id", teamIds)
+                }
             }
         }
     }

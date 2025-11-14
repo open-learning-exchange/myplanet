@@ -75,19 +75,6 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
             getString(R.string.team)
         }
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                val teamFlow = if (fromDashboard) {
-                    teamRepository.getMyTeams()
-                } else {
-                    teamRepository.getTeams(type)
-                }
-                teamFlow.collect { teams ->
-                    teamList = teams
-                    setTeamList(teams)
-                }
-            }
-        }
         return binding.root
     }
 
@@ -199,61 +186,49 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.rvTeamList.layoutManager = LinearLayoutManager(activity)
-        setTeamList(teamList)
+        adapterTeamList = AdapterTeamList(
+            requireContext(),
+            teamList,
+            childFragmentManager,
+            teamRepository,
+            user,
+            viewLifecycleOwner.lifecycleScope,
+        )
+        binding.rvTeamList.adapter = adapterTeamList
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                val teamFlow = if (fromDashboard) {
+                    teamRepository.getMyTeams()
+                } else {
+                    teamRepository.getTeams(type)
+                }
+                teamFlow.collect { teams ->
+                    teamList = teams
+                    adapterTeamList.setData(teams)
+                    adapterTeamList.updateList()
+                }
+            }
+        }
+
         binding.etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
             override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {
-                if (TextUtils.isEmpty(charSequence)) {
-                    showNoResultsMessage(false)
-                    setTeamList(teamList)
-                    return
-                }
-                val list: List<RealmMyTeam>
-                val conditionApplied: Boolean
-                if(fromDashboard){
-                    list = teamList.filter {
+                val filteredList = if (TextUtils.isEmpty(charSequence)) {
+                    teamList
+                } else {
+                    teamList.filter {
                         it.name?.contains(charSequence.toString(), ignoreCase = true) == true
                     }
-                } else {
-                    list = teamList.filter {
-                        it.name?.contains(charSequence.toString(), ignoreCase = true) == true
-                    }
-                    conditionApplied = type == "enterprise"
                 }
-
-                if (list.isEmpty()) {
-                    showNoResultsMessage(true, charSequence.toString())
-                    binding.rvTeamList.adapter = null
-                } else {
-                    showNoResultsMessage(false)
-                    val sortedList = list.sortedWith(compareByDescending<RealmMyTeam> {
-                        it.name?.startsWith(charSequence.toString(), ignoreCase = true)
-                    }.thenBy { it.name })
-
-                    val adapterTeamList = AdapterTeamList(
-                        activity as Context,
-                        sortedList,
-                        childFragmentManager,
-                        teamRepository,
-                        user,
-                        viewLifecycleOwner.lifecycleScope,
-                    )
-                    adapterTeamList.setTeamListener(this@TeamFragment)
-                    adapterTeamList.setUpdateCompleteListener(this@TeamFragment)
-                    binding.rvTeamList.adapter = adapterTeamList
-                    listContentDescription(type == "enterprise")
-                }
+                adapterTeamList.setData(filteredList)
+                adapterTeamList.updateList()
             }
-
             override fun afterTextChanged(editable: Editable) {}
         })
     }
 
     private fun setTeamList(teams: List<RealmMyTeam>) {
-        adapterTeamList = activity?.let {
-            AdapterTeamList(it, teams, childFragmentManager, teamRepository, user, viewLifecycleOwner.lifecycleScope)
-        } ?: return
-
         adapterTeamList.setType(type)
         adapterTeamList.setTeamListener(this@TeamFragment)
         adapterTeamList.setUpdateCompleteListener(this@TeamFragment)
@@ -263,9 +238,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
             } else {
                 View.VISIBLE
             }
-
-        binding.rvTeamList.adapter = adapterTeamList
-        listContentDescription(type == "enterprise")
+        adapterTeamList.updateList()
     }
 
     override fun onEditTeam(team: RealmMyTeam?) {

@@ -35,7 +35,7 @@ import org.ole.planet.myplanet.utilities.TimeUtils
 
 class AdapterTeamList(
     private val context: Context,
-    private val list: List<RealmMyTeam>,
+    private var list: List<RealmMyTeam>,
     private val fragmentManager: FragmentManager,
     private val teamRepository: TeamRepository,
     private val currentUser: RealmUserModel?,
@@ -82,6 +82,10 @@ class AdapterTeamList(
 
     fun setUpdateCompleteListener(listener: OnUpdateCompleteListener?) {
         this.updateCompleteListener = listener
+    }
+
+    fun setData(newList: List<RealmMyTeam>) {
+        this.list = newList
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderTeam {
