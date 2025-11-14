@@ -21,6 +21,7 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.ManagerSync
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.service.sync.AdaptiveBatchProcessor
+import org.ole.planet.myplanet.service.sync.OptimizedSyncStrategy
 import org.ole.planet.myplanet.service.sync.RealmPoolManager
 import org.ole.planet.myplanet.service.sync.StandardSyncStrategy
 import org.ole.planet.myplanet.service.sync.SyncMode
@@ -39,6 +40,7 @@ class ImprovedSyncManager @Inject constructor(
     private val poolManager = RealmPoolManager.getInstance()
 
     private val standardStrategy = StandardSyncStrategy()
+    private val optimizedStrategy = OptimizedSyncStrategy()
 
     private var isSyncing = false
     private var listener: SyncListener? = null
@@ -167,7 +169,7 @@ class ImprovedSyncManager @Inject constructor(
     private fun getStrategy(syncMode: SyncMode): SyncStrategy {
         return when (syncMode) {
             SyncMode.Standard -> standardStrategy
-            SyncMode.Fast, SyncMode.Optimized -> standardStrategy
+            SyncMode.Fast, SyncMode.Optimized -> optimizedStrategy
         }
     }
 
