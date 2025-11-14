@@ -209,41 +209,42 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun setupNavigation() {
+        headerResult = accountHeader
+        createDrawer()
+        supportFragmentManager.addOnBackStackChangedListener {
+            val frag = supportFragmentManager.findFragmentById(R.id.fragment_container)
+            val idToSelect = when (frag) {
+                is BellDashboardFragment -> 0L
+                is ResourcesFragment -> {
+                    val isMy = frag.arguments?.getBoolean("isMyCourseLib", false) == true
+                    if (isMy) 1L else 3L
+                }
+                is CoursesFragment -> {
+                    val isMy = frag.arguments?.getBoolean("isMyCourseLib", false) == true
+                    if (isMy) 2L else 4L
+                }
+                is TeamFragment -> {
+                    val isDashboard = frag.arguments?.getBoolean("fromDashboard", false) == true
+                    val isEnterprise = frag.arguments?.getString("type") == "enterprise"
+                    if (isDashboard) 0L else if (isEnterprise) 6L else 5L
+                }
+                is CommunityTabFragment -> 7L
+                is SurveyFragment -> 8L
+                else -> null
+            }
+            idToSelect?.let { result?.setSelection(it, false) }
+        }
+        result?.actionBarDrawerToggle?.isDrawerIndicatorEnabled = true
+        dl = result?.drawerLayout
+        topbarSetting()
+
         lifecycleScope.launch {
             delay(50)
-            headerResult = accountHeader
-            createDrawer()
-            supportFragmentManager.addOnBackStackChangedListener {
-                val frag = supportFragmentManager.findFragmentById(R.id.fragment_container)
-                val idToSelect = when (frag) {
-                    is BellDashboardFragment -> 0L
-                    is ResourcesFragment -> {
-                        val isMy = frag.arguments?.getBoolean("isMyCourseLib", false) == true
-                        if (isMy) 1L else 3L
-                    }
-                    is CoursesFragment -> {
-                        val isMy = frag.arguments?.getBoolean("isMyCourseLib", false) == true
-                        if (isMy) 2L else 4L
-                    }
-                    is TeamFragment -> {
-                        val isDashboard = frag.arguments?.getBoolean("fromDashboard", false) == true
-                        val isEnterprise = frag.arguments?.getString("type") == "enterprise"
-                        if (isDashboard) 0L else if (isEnterprise) 6L else 5L
-                    }
-                    is CommunityTabFragment -> 7L
-                    is SurveyFragment -> 8L
-                    else -> null
-                }
-                idToSelect?.let { result?.setSelection(it, false) }
-            }
             if (!(user?.id?.startsWith("guest") == true && profileDbHandler.offlineVisits >= 3) &&
                 resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
             ) {
                 result?.openDrawer()
             }
-            result?.actionBarDrawerToggle?.isDrawerIndicatorEnabled = true
-            dl = result?.drawerLayout
-            topbarSetting()
         }
     }
 
