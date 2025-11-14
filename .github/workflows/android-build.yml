@@ -36,6 +36,9 @@ jobs:
           name: workspace-${{ matrix.build }}
           path: .
 
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
       - name: build debug as test
         run: |
           FLAVOR=${{ matrix.build }}

@@ -38,6 +38,9 @@ jobs:
           name: workspace-${{ matrix.build }}
           path: .
 
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
       - name: set release version
         run: echo ANDROID_VERSION=$(grep -oP 'versionName = "\K[^\"]+' app/build.gradle) >> $GITHUB_ENV
 
