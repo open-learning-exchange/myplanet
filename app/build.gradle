@@ -12,7 +12,6 @@ android {
         versionCode = 3778
         versionName = "0.37.78"
         ndkVersion = '26.3.11579264'
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
     }
     configurations.configureEach {
@@ -222,8 +221,6 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
     implementation("pl.droidsonroids.gif:android-gif-drawable:1.2.29")
-
-    testImplementation("junit:junit:4.13.2")
 }
 realm {
     syncEnabled = true
