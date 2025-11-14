@@ -7,10 +7,10 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.JsonObject
-import io.realm.RealmResults
 import java.util.Calendar
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -21,15 +21,15 @@ import org.ole.planet.myplanet.databinding.DialogAddReportBinding
 import org.ole.planet.myplanet.databinding.ReportListItemBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.repository.TeamRepository
+import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils
 
 class AdapterReports(
     private val context: Context,
     private val teamRepository: TeamRepository,
-    private var list: RealmResults<RealmMyTeam>,
     private val scope: CoroutineScope,
-) : RecyclerView.Adapter<AdapterReports.ViewHolderReports>() {
+) : ListAdapter<RealmMyTeam, AdapterReports.ViewHolderReports>(diffCallback) {
     private var startTimeStamp: String? = null
     private var endTimeStamp: String? = null
     lateinit var prefData: SharedPrefManager
@@ -50,7 +50,7 @@ class AdapterReports(
             binding.edit.visibility = View.VISIBLE
             binding.delete.visibility = View.VISIBLE
         }
-        val report = list[position]
+        val report = getItem(position)
         binding.tvReportTitle.text = context.getString(R.string.team_financial_report, prefData.getTeamName())
         report?.let {
             with(binding) {
@@ -76,7 +76,7 @@ class AdapterReports(
         binding.edit.setOnClickListener {
             val adapterPosition = holder.bindingAdapterPosition
             if (adapterPosition == RecyclerView.NO_POSITION) return@setOnClickListener
-            val currentReport = list[adapterPosition] ?: return@setOnClickListener
+            val currentReport = getItem(adapterPosition) ?: return@setOnClickListener
             val dialogAddReportBinding = DialogAddReportBinding.inflate(LayoutInflater.from(context))
             val v: View = dialogAddReportBinding.root
             val builder = AlertDialog.Builder(context, R.style.AlertDialogTheme)
@@ -220,7 +220,7 @@ class AdapterReports(
         binding.delete.setOnClickListener {
             val adapterPosition = holder.bindingAdapterPosition
             if (adapterPosition == RecyclerView.NO_POSITION) return@setOnClickListener
-            val reportToDelete = list[adapterPosition]
+            val reportToDelete = getItem(adapterPosition)
             reportToDelete?._id?.let { reportId ->
                 val builder = AlertDialog.Builder(context, R.style.AlertDialogTheme)
                 builder.setTitle(context.getString(R.string.delete_report))
@@ -246,13 +246,16 @@ class AdapterReports(
 
     }
 
-    override fun getItemCount(): Int {
-        return list.size
-    }
-
     fun setNonTeamMember(nonTeamMember: Boolean) {
         this.nonTeamMember = nonTeamMember
     }
 
     class ViewHolderReports(val binding: ReportListItemBinding) : RecyclerView.ViewHolder(binding.root)
+
+    companion object {
+        val diffCallback = DiffUtils.itemCallback<RealmMyTeam>(
+            areItemsTheSame = { oldItem, newItem -> oldItem._id == newItem._id },
+            areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
+        )
+    }
 }

@@ -187,6 +187,7 @@
     <string name="nepali">नेपाली</string>
     <string name="arabic">عربى</string>
     <string name="french">français</string>
+
     <string-array name="open_With">
         <item>HTML</item>
         <item>PDF.js</item>
@@ -249,6 +250,7 @@
         <item>read</item>
         <item>unread</item>
     </string-array>
+
     <string name="myhealth">myHealth</string>
     <string name="action">Action</string>
     <string name="created_on">Created On</string>
@@ -457,6 +459,7 @@
         <item>Vitamin A Deficiency</item>
         <item>Zika</item>
     </string-array>
+
     <string name="more_action">Filter</string>
     <string name="my_progress">My Progress</string>
     <string name="my_activity">My Activity</string>
@@ -640,6 +643,7 @@
     <string name="pending_survey_notification">you have a pending survey:</string>
     <string name="task_notification">%1$s is due in %2$s</string>
     <string name="resource_notification">You have %1$d resources not downloaded</string>
+
     <string name="vitals_format">
         Temperature: %1$s\n
         Pulse: %2$s\n
@@ -651,16 +655,17 @@
     </string>
 
     <string name="observations_notes_colon">
-    Observations and analysis: %1$s\n
-    %2$s\n
-    %3$s\n
-    %4$s\n
-    %5$s\n
-    Allergies: %6$s\n
-    X-ray: %7$s\n
-    Lab Tests: %8$s\n
-    Studies: %9$s\n
-</string>
+        Observations and analysis: %1$s\n
+        %2$s\n
+        %3$s\n
+        %4$s\n
+        %5$s\n
+        Allergies: %6$s\n
+        X-ray: %7$s\n
+        Lab Tests: %8$s\n
+        Studies: %9$s\n
+    </string>
+
     <string name="blood_pressure_should_be_numeric_systolic_diastolic">Blood Pressure should be numeric systolic/diastolic</string>
     <string name="blood_pressure_should_be_systolic_diastolic">Blood Pressure should be systolic/diastolic</string>
     <string name="bp_must_be_between_60_40_and_300_200">Bp must be between 60/40 and 300/200</string>
@@ -862,10 +867,12 @@
     <string name="available_space_colon">available space: </string>
     <string name="community_leaders">Community Leaders</string>
     <string name="services">Services</string>
+
     <plurals name="survey_taken_count">
         <item quantity="one">Survey taken %d time</item>
         <item quantity="other">Survey taken %d times</item>
     </plurals>
+
     <string name="ai_chat">AI Chat</string>
     <string name="kindly_give_a_rating">Kindly give a rating</string>
     <string name="must_start_with_letter_or_number">Must start with letter or number</string>
