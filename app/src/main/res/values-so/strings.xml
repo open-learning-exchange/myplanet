@@ -653,27 +653,28 @@
     <string name="pending_survey_notification">waxaad leedahay su\'aal weydiin sugaya:</string>
     <string name="task_notification">%1$s waa inuu dhamaadaa %2$s</string>
     <string name="resource_notification">Waxaad haysataa %1$d agab aan la soo dejisan</string>
+
     <string name="vitals_format">
-    Heerkulka: %1$s\n
-    Garaaca wadnaha: %2$s\n
-    Cadaadiska dhiigga: %3$s\n
-    Dhererka: %4$s\n
-    Miisaanka: %5$s\n
-    Aragga: %6$s\n
-    Maqalka: %7$s\n
-</string>
+        Heerkulka: %1$s\n
+        Garaaca wadnaha: %2$s\n
+        Cadaadiska dhiigga: %3$s\n
+        Dhererka: %4$s\n
+        Miisaanka: %5$s\n
+        Aragga: %6$s\n
+        Maqalka: %7$s\n
+    </string>
 
     <string name="observations_notes_colon">
-    Xogaha iyo falanqaynta: %1$s\n
-    %2$s\n
-    %3$s\n
-    %4$s\n
-    %5$s\n
-    Xasaasiyadaha: %6$s\n
-    Raajada: %7$s\n
-    Baaritaanka Laboratooriga: %8$s\n
-    Daraasaadka: %9$s\n
-</string>
+        Xogaha iyo falanqaynta: %1$s\n
+        %2$s\n
+        %3$s\n
+        %4$s\n
+        %5$s\n
+        Xasaasiyadaha: %6$s\n
+        Raajada: %7$s\n
+        Baaritaanka Laboratooriga: %8$s\n
+        Daraasaadka: %9$s\n
+    </string>
 
     <string name="blood_pressure_should_be_numeric_systolic_diastolic">Dhacdo dheecaanka waa in uu noocan yahay (systolic/diastolic)</string>
     <string name="blood_pressure_should_be_systolic_diastolic">Dhacdo dheecaanka waa in uu noocan yahay (systolic/diastolic)</string>
@@ -876,10 +877,12 @@
     <string name="available_space_colon">Boos la heli karo: </string>
     <string name="community_leaders">Hogaamiyayaasha bulshada</string>
     <string name="services">adeegyo</string>
+
     <plurals name="survey_taken_count">
         <item quantity="one">Sahan ayaa la qaaday %d jeer</item>
         <item quantity="other">Sahan ayaa la qaaday %d jeer</item>
     </plurals>
+
     <string name="ai_chat">AI Chat</string>
     <string name="kindly_give_a_rating">si naxariis leh u bixi rating</string>
     <string name="must_start_with_letter_or_number">Waa in la bilaabo lambarka ama tirada</string>
