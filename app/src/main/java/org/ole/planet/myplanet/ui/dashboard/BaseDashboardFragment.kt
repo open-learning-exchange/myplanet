@@ -259,7 +259,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
     private fun setUpMyLife(userId: String?) {
         databaseService.withRealm { realm ->
-            val realmObjects = RealmMyLife.getMyLifeByUserId(mRealm, settings)
+            val realmObjects = RealmMyLife.getMyLifeByUserId(realm, settings)
             if (realmObjects.isEmpty()) {
                 if (!realm.isInTransaction) {
                     realm.beginTransaction()
