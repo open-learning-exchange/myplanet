@@ -33,8 +33,6 @@ import org.ole.planet.myplanet.repository.SubmissionRepository
 import javax.inject.Inject
 
 open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
-    @Inject
-    lateinit var submissionRepository: SubmissionRepository
     fun handleClick(id: String?, title: String?, f: Fragment, v: TextView) {
         v.text = title
         v.setOnClickListener {
