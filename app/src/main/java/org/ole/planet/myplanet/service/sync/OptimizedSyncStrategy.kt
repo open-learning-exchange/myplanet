@@ -81,9 +81,9 @@ class OptimizedSyncStrategy : SyncStrategy {
         val dynamicRealm = Realm.getInstance(realm.configuration)
         return try {
             val results = dynamicRealm.where(modelClass.simpleName).findAll()
-            results.mapNotNull { obj: DynamicRealmObject ->
-                val id = obj.getString("_id")
-                val rev = obj.getString("_rev")
+            results.mapNotNull {
+                val id = it.getString("_id")
+                val rev = it.getString("_rev")
                 if (id.isNullOrEmpty() || rev.isNullOrEmpty()) null else id to rev
             }.toMap()
         } finally {
@@ -100,7 +100,7 @@ class OptimizedSyncStrategy : SyncStrategy {
         if (!response.isSuccessful) {
             throw IOException("Failed to fetch remote documents for table $table: ${response.code()} ${response.message()}")
         }
-        response.body()?.rows?.associate { it.id to it.value.rev } ?: emptyMap()
+        response.body()?.rows?.associate { it.id!! to it.value!!.rev!! } ?: emptyMap()
     }
 
     private fun compareDocuments(
@@ -125,10 +125,12 @@ class OptimizedSyncStrategy : SyncStrategy {
         val modelClass = Constants.classList[table] ?: return
 
         realm.executeTransaction { r ->
-            r.where(modelClass)
-                .isIn("_id", deletedDocIds.toTypedArray())
-                .findAll()
-                .deleteAllFromRealm()
+            deletedDocIds.forEach { id ->
+                r.where(modelClass)
+                    .equalTo("_id", id)
+                    .findFirst()
+                    ?.deleteFromRealm()
+            }
         }
     }
 
