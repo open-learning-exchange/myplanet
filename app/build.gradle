@@ -16,7 +16,7 @@ android {
         vectorDrawables.useSupportLibrary = true
     }
     configurations.configureEach {
-        resolutionStrategy.force 'com.google.android.material:material:1.12.0'
+        resolutionStrategy.force 'com.google.android.material:material:1.13.0'
     }
     buildTypes {
         release {
@@ -176,7 +176,7 @@ dependencies {
     def markwon_version = "4.6.2"
 
     implementation fileTree(include: ['*.jar', '*.aar'], dir: 'libs')
-    implementation platform("org.jetbrains.kotlin:kotlin-bom:2.2.10")
+    implementation platform("org.jetbrains.kotlin:kotlin-bom:2.2.21")
 
     implementation("androidx.annotation:annotation:1.9.1")
     implementation("androidx.appcompat:appcompat:1.7.1")
@@ -196,12 +196,12 @@ dependencies {
     implementation("androidx.work:work-runtime:2.11.0")
     implementation("com.afollestad.material-dialogs:commons:0.9.6.0")
     implementation("com.applandeo:material-calendar-view:1.9.2")
-    implementation("com.github.bumptech.glide:glide:4.16.0")
+    implementation("com.github.bumptech.glide:glide:5.0.5")
     implementation("com.github.chrisbanes:PhotoView:2.3.0")
     implementation("com.github.clans:fab:1.6.4")
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
     implementation("com.github.VaibhavLakhera:Circular-Progress-View:0.1.2")
-    implementation("com.google.android.material:material:1.12.0")
+    implementation("com.google.android.material:material:1.13.0")
     implementation("com.google.code.gson:gson:2.13.2")
     implementation("com.google.dagger:hilt-android:$dagger_hilt_version")
     kapt("com.google.dagger:hilt-android-compiler:$dagger_hilt_version")
@@ -210,7 +210,7 @@ dependencies {
     implementation("com.opencsv:opencsv:5.12.0") { exclude group: 'commons-logging', module: 'commons-logging' }
     implementation("com.squareup.retrofit2:retrofit:$retrofit2_version")
     implementation("com.squareup.retrofit2:converter-gson:$retrofit2_version")
-    implementation("com.squareup.okhttp3:okhttp:5.1.0")
+    implementation("com.squareup.okhttp3:okhttp:5.3.0")
     implementation("de.hdodenhof:circleimageview:3.1.0")
     implementation("de.rtner:PBKDF2:1.1.4")
     implementation("io.noties.markwon:editor:$markwon_version")
