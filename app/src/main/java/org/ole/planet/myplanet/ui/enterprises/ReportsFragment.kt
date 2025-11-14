@@ -222,6 +222,10 @@ class ReportsFragment : BaseTeamFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        adapterReports = AdapterReports(requireContext(), teamRepository, viewLifecycleOwner.lifecycleScope)
+        binding.rvReports.adapter = adapterReports
+        binding.rvReports.layoutManager = LinearLayoutManager(activity)
+
         list = mRealm.where(RealmMyTeam::class.java)
             .equalTo("teamId", teamId)
             .equalTo("docType", "report")
@@ -234,9 +238,7 @@ class ReportsFragment : BaseTeamFragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 isMemberFlow.collectLatest { isMember ->
                     binding.addReports.isVisible = isMember
-                    if (this@ReportsFragment::adapterReports.isInitialized) {
-                        adapterReports.setNonTeamMember(!isMember)
-                    }
+                    adapterReports.setNonTeamMember(!isMember)
                 }
             }
         }
@@ -252,19 +254,14 @@ class ReportsFragment : BaseTeamFragment() {
     fun updatedReportsList(results: RealmResults<RealmMyTeam>) {
         if (_binding == null) return
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            adapterReports = AdapterReports(requireContext(), teamRepository, results, viewLifecycleOwner.lifecycleScope)
-            adapterReports.setNonTeamMember(!isMemberFlow.value)
-            binding.rvReports.layoutManager = LinearLayoutManager(activity)
-            binding.rvReports.adapter = adapterReports
-            adapterReports.notifyDataSetChanged()
+        val immutableResults = results.let { mRealm.copyFromRealm(it) }
+        adapterReports.submitList(immutableResults)
 
-            if (results.isEmpty()) {
-                binding.exportCSV.visibility = View.GONE
-                BaseRecyclerFragment.showNoData(binding.tvMessage, results.count(), "reports")
-            } else {
-                binding.exportCSV.visibility = View.VISIBLE
-            }
+        if (results.isEmpty()) {
+            binding.exportCSV.visibility = View.GONE
+            BaseRecyclerFragment.showNoData(binding.tvMessage, results.count(), "reports")
+        } else {
+            binding.exportCSV.visibility = View.VISIBLE
         }
     }
 
