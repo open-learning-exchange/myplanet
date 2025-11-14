@@ -22,4 +22,5 @@ interface SubmissionRepository {
     suspend fun hasPendingExamResults(): Boolean
     suspend fun createSurveySubmission(examId: String, userId: String?)
     suspend fun saveSubmission(submission: RealmSubmission)
+    suspend fun getNoOfSurveySubmissionByUser(userId: String?): Int
 }

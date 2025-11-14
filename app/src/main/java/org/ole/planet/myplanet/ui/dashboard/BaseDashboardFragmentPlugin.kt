@@ -16,7 +16,6 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.ui.myhealth.MyHealthFragment
@@ -28,8 +27,14 @@ import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utilities.Utilities
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.repository.SubmissionRepository
+import javax.inject.Inject
 
 open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
+    @Inject
+    lateinit var submissionRepository: SubmissionRepository
     fun handleClick(id: String?, title: String?, f: Fragment, v: TextView) {
         v.text = title
         v.setOnClickListener {
@@ -119,8 +124,10 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
 
         if (title == getString(R.string.my_survey)) {
             itemMyLifeBinding.tvCount.visibility = View.VISIBLE
-            val noOfSurvey = RealmSubmission.getNoOfSurveySubmissionByUser(user?.id, mRealm)
-            itemMyLifeBinding.tvCount.text = noOfSurvey.toString()
+            lifecycleScope.launch {
+                val noOfSurvey = submissionRepository.getNoOfSurveySubmissionByUser(user?.id)
+                itemMyLifeBinding.tvCount.text = noOfSurvey.toString()
+            }
         } else {
             itemMyLifeBinding.tvCount.visibility = View.GONE
         }

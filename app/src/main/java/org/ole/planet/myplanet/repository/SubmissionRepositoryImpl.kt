@@ -196,4 +196,12 @@ class SubmissionRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getNoOfSurveySubmissionByUser(userId: String?): Int {
+        if (userId == null) return 0
+        return count(RealmSubmission::class.java) {
+            equalTo("userId", userId)
+            equalTo("type", "survey")
+            equalTo("status", "pending", Case.INSENSITIVE)
+        }.toInt()
+    }
 }
