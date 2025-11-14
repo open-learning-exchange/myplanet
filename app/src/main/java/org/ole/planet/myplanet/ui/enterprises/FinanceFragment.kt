@@ -30,7 +30,7 @@ class FinanceFragment : BaseTeamFragment() {
     private var _binding: FragmentFinanceBinding? = null
     private val binding get() = _binding!!
     private lateinit var addTransactionBinding: AddTransactionBinding
-    private var adapterFinance: AdapterFinance? = null
+    private lateinit var adapterFinance: AdapterFinance
     var date: Calendar? = null
     private var transactions: List<RealmMyTeam> = emptyList()
     private var isAsc = false
@@ -207,6 +207,9 @@ class FinanceFragment : BaseTeamFragment() {
             binding.addTransaction.visibility = View.GONE
         }
         binding.addTransaction.setOnClickListener { addTransaction() }
+        adapterFinance = AdapterFinance(requireActivity())
+        binding.rvFinance.layoutManager = LinearLayoutManager(activity)
+        binding.rvFinance.adapter = adapterFinance
         observeTransactions()
     }
 
@@ -281,32 +284,48 @@ class FinanceFragment : BaseTeamFragment() {
         return addTransactionBinding.root
     }
 
+    private fun mapTransactionsToPresentationModel(transactions: List<RealmMyTeam>): List<TransactionData> {
+        val transactionDataList = mutableListOf<TransactionData>()
+        var balance = 0
+        for (team in transactions.filter { it._id != null }) {
+            balance += if ("debit".equals(team.type, ignoreCase = true)) {
+                -team.amount
+            } else {
+                team.amount
+            }
+            transactionDataList.add(
+                TransactionData(
+                    id = team._id!!,
+                    date = team.date,
+                    description = team.description,
+                    type = team.type,
+                    amount = team.amount,
+                    balance = balance
+                )
+            )
+        }
+        return transactionDataList
+    }
+
     private fun updatedFinanceList(results: List<RealmMyTeam>) {
         if (view == null) return
-        viewLifecycleOwner.lifecycleScope.launch {
-            if (results.isNotEmpty()) {
-                if (adapterFinance == null) {
-                    adapterFinance = AdapterFinance(requireActivity(), results)
-                    binding.rvFinance.layoutManager = LinearLayoutManager(activity)
-                } else {
-                    adapterFinance?.updateData(results)
-                }
-                binding.rvFinance.adapter = adapterFinance
-                adapterFinance?.notifyDataSetChanged()
-                calculateTotal(results)
-                binding.dataLayout.visibility = View.VISIBLE
-                binding.tvNodata.visibility = View.GONE
-            } else if (binding.tvFromDateCalendar.text.isNullOrEmpty()
-                && binding.etToDate.text.isNullOrEmpty()) {
-                binding.rvFinance.adapter = null
-                binding.dataLayout.visibility = View.GONE
-                binding.tvNodata.visibility = View.VISIBLE
-            } else {
-                calculateTotal(results)
-                binding.dataLayout.visibility = View.VISIBLE
-                binding.tvNodata.visibility = View.VISIBLE
-                binding.rvFinance.adapter = null
-            }
+
+        val transactionData = mapTransactionsToPresentationModel(results)
+        adapterFinance.submitList(transactionData)
+        calculateTotal(results)
+
+        if (results.isNotEmpty()) {
+            binding.dataLayout.visibility = View.VISIBLE
+            binding.tvNodata.visibility = View.GONE
+            binding.rvFinance.visibility = View.VISIBLE
+        } else if (binding.tvFromDateCalendar.text.isNullOrEmpty() && binding.etToDate.text.isNullOrEmpty()) {
+            binding.dataLayout.visibility = View.GONE
+            binding.tvNodata.visibility = View.VISIBLE
+            binding.rvFinance.visibility = View.GONE
+        } else {
+            binding.dataLayout.visibility = View.VISIBLE
+            binding.tvNodata.visibility = View.VISIBLE
+            binding.rvFinance.visibility = View.GONE
         }
     }
 
