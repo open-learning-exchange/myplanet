@@ -2,12 +2,16 @@ package org.ole.planet.myplanet.repository
 
 import java.util.Date
 import java.util.UUID
+import java.util.Date
+import java.util.UUID
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.model.Notification
 import org.ole.planet.myplanet.model.RealmNotification
+import org.ole.planet.myplanet.model.toNotification
 
 class NotificationRepositoryImpl @Inject constructor(
-        databaseService: DatabaseService,
+    databaseService: DatabaseService,
     ) : RealmRepository(databaseService), NotificationRepository {
 
     override suspend fun createNotificationIfMissing(
@@ -116,7 +120,7 @@ class NotificationRepositoryImpl @Inject constructor(
         return updatedIds
     }
 
-    override suspend fun getNotifications(userId: String, filter: String): List<RealmNotification> {
+    override suspend fun getNotifications(userId: String, filter: String): List<Notification> {
         return queryList(RealmNotification::class.java) {
             equalTo("userId", userId)
             notEqualTo("message", "INVALID")
@@ -126,7 +130,7 @@ class NotificationRepositoryImpl @Inject constructor(
                 "unread" -> equalTo("isRead", false)
             }
             sort("isRead", io.realm.Sort.ASCENDING, "createdAt", io.realm.Sort.DESCENDING)
-        }
+        }.map { it.toNotification() }
     }
 }
 

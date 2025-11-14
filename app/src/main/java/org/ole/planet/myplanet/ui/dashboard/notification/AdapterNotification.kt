@@ -11,18 +11,18 @@ import java.util.regex.Pattern
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNotificationsBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.model.Notification
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.DiffUtils as DiffUtilExtensions
 
 class AdapterNotification(
     private val databaseService: DatabaseService,
-    notifications: List<RealmNotification>,
+    notifications: List<Notification>,
     private val onMarkAsReadClick: (String) -> Unit,
-    private val onNotificationClick: (RealmNotification) -> Unit
-) : ListAdapter<RealmNotification, AdapterNotification.ViewHolderNotifications>(
+    private val onNotificationClick: (Notification) -> Unit
+) : ListAdapter<Notification, AdapterNotification.ViewHolderNotifications>(
     DiffUtilExtensions.itemCallback(
         areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id },
         areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
@@ -43,14 +43,14 @@ class AdapterNotification(
         holder.bind(notification)
     }
 
-    fun updateNotifications(newNotifications: List<RealmNotification>) {
+    fun updateNotifications(newNotifications: List<Notification>) {
         submitList(newNotifications)
     }
 
     inner class ViewHolderNotifications(private val rowNotificationsBinding: RowNotificationsBinding) :
         RecyclerView.ViewHolder(rowNotificationsBinding.root) {
 
-        fun bind(notification: RealmNotification) {
+        fun bind(notification: Notification) {
             val context = rowNotificationsBinding.root.context
             val currentNotification = formatNotificationMessage(notification, context)
             rowNotificationsBinding.title.text = Html.fromHtml(currentNotification, Html.FROM_HTML_MODE_LEGACY)
@@ -70,7 +70,7 @@ class AdapterNotification(
             }
         }
 
-        private fun formatNotificationMessage(notification: RealmNotification, context: Context): String {
+        private fun formatNotificationMessage(notification: Notification, context: Context): String {
             return when (notification.type.lowercase()) {
                 "survey" -> context.getString(R.string.pending_survey_notification) + " ${notification.message}"
                 "task" -> {

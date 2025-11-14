@@ -26,8 +26,8 @@ import org.ole.planet.myplanet.R.array.status_options
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentNotificationsBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.model.Notification
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.repository.NotificationRepository
@@ -100,7 +100,7 @@ class NotificationsFragment : Fragment() {
         return binding.root
     }
 
-    private fun handleNotificationClick(notification: RealmNotification) {
+    private fun handleNotificationClick(notification: Notification) {
         viewLifecycleOwner.lifecycleScope.launch {
             val result = withContext(Dispatchers.IO) {
                 when (notification.type) {
@@ -325,33 +325,20 @@ class NotificationsFragment : Fragment() {
     }
 
     private fun getUpdatedListAfterMarkingRead(
-        currentList: List<RealmNotification>,
+        currentList: List<Notification>,
         notificationIds: Set<String>,
         selectedFilter: String,
-    ): List<RealmNotification> {
+    ): List<Notification> {
         return if (selectedFilter == "unread") {
             currentList.filterNot { notificationIds.contains(it.id) }
         } else {
             currentList.map { notification ->
                 if (notificationIds.contains(notification.id) && !notification.isRead) {
-                    notification.asReadCopy()
+                    notification.copy(isRead = true, createdAt = Date())
                 } else {
                     notification
                 }
-            }.sortedWith(compareBy<RealmNotification> { it.isRead }.thenByDescending { it.createdAt })
-        }
-    }
-
-    private fun RealmNotification.asReadCopy(): RealmNotification {
-        return RealmNotification().also { copy ->
-            copy.id = id
-            copy.userId = userId
-            copy.message = message
-            copy.isRead = true
-            copy.createdAt = Date()
-            copy.type = type
-            copy.relatedId = relatedId
-            copy.title = title
+            }.sortedWith(compareBy<Notification> { it.isRead }.thenByDescending { it.createdAt })
         }
     }
 
