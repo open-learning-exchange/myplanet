@@ -8,13 +8,7 @@ on:
 
 jobs:
   setup:
-    strategy:
-      fail-fast: false
-      matrix:
-        build: [default, lite]
     uses: ./.github/workflows/setup.yml
-    with:
-      build: ${{ matrix.build }}
 
   release:
     needs: setup
@@ -35,11 +29,20 @@ jobs:
       - name: Download workspace
         uses: actions/download-artifact@v4
         with:
-          name: workspace-${{ matrix.build }}
+          name: workspace
           path: .
 
       - name: Make gradlew executable
         run: chmod +x gradlew
+
+      - name: check and diff the code to get lite
+        if: matrix.build == 'lite'
+        run: |
+          file="app/src/main/AndroidManifest.xml"
+          lite="app/src/lite/AndroidManifest.xml"
+          ls -al "$file" "$lite"
+          diff <(sed 's/^\s*<!--//; s/-->\s*$//' "$file") <(sed 's/^\s*<!--//; s/-->\s*$//' "$lite")
+          cp "$lite" "$file"
 
       - name: set release version
         run: echo ANDROID_VERSION=$(grep -oP 'versionName = "\K[^\"]+' app/build.gradle) >> $GITHUB_ENV
