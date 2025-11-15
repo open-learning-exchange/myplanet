@@ -41,9 +41,6 @@ jobs:
         uses: gradle/actions/setup-gradle@v5
         with:
           gradle-version: wrapper
-          cache-disabled: false
-          cache-read-only: false
-          cache-write-only: false
 
       - name: Make gradlew executable
         run: chmod +x gradlew
