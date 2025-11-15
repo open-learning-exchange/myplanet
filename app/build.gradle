@@ -185,7 +185,7 @@ dependencies {
     implementation("androidx.constraintlayout:constraintlayout:2.2.1")
     implementation("androidx.core:core-ktx:1.17.0")
     implementation("androidx.hilt:hilt-work:$hilt_work_version")
-    ksp("androidx.hilt:hilt-compiler:$hilt_work_version")
+    kapt("androidx.hilt:hilt-compiler:$hilt_work_version")
     implementation("androidx.localbroadcastmanager:localbroadcastmanager:1.1.0")
     implementation("androidx.media3:media3-exoplayer:$media3_version")
     implementation("androidx.media3:media3-ui:$media3_version")
