@@ -347,7 +347,9 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             }
         }
 
-        uploadManager.uploadExamResult(successListener)
+        lifecycleScope.launch {
+            uploadManager.uploadExamResult(successListener)
+        }
     }
 
     private fun showDatePickerDialog() {

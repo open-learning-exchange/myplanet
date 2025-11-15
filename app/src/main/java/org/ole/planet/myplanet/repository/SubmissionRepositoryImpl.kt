@@ -7,12 +7,8 @@ import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
-import io.realm.Case
-import io.realm.Sort
-import java.util.Date
 import javax.inject.Inject
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
@@ -25,12 +21,13 @@ import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
-import org.ole.planet.myplanet.model.RealmSubmission.Companion.generateParentId
 import java.util.UUID
 import io.realm.Realm
 import android.text.TextUtils
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmUserModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class SubmissionRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
@@ -202,7 +199,6 @@ class SubmissionRepositoryImpl @Inject constructor(
                 .sort("lastUpdateTime", Sort.DESCENDING)
                 .equalTo("status", "pending")
                 .findFirst()
-import io.realm.Realm
 
             sub = createSubmission(sub, realm)
             sub.parentId = parentId
@@ -411,18 +407,33 @@ import io.realm.Realm
     }
 
     override suspend fun continueResultUpload(sub: RealmSubmission) {
-        withRealm { realm ->
-            if (!TextUtils.isEmpty(sub.userId) && sub.userId?.startsWith("guest") == true) return@withRealm
-            val apiInterface = ApiClient.client.create(ApiInterface::class.java)
-            val `object`: JsonObject? = if (TextUtils.isEmpty(sub._id)) {
-                apiInterface?.postDoc(UrlUtils.header, "application/json", UrlUtils.getUrl() + "/submissions", serializeExamResult(sub))?.execute()?.body()
+        if (!TextUtils.isEmpty(sub.userId) && sub.userId?.startsWith("guest") == true) return
+        val serializedSub = serializeExamResult(sub)
+        val apiInterface = ApiClient.client.create(ApiInterface::class.java)
+        val `object`: JsonObject? = withContext(Dispatchers.IO) {
+            if (TextUtils.isEmpty(sub._id)) {
+                apiInterface.postDoc(UrlUtils.header, "application/json", UrlUtils.getUrl() + "/submissions", serializedSub).execute().body()
             } else {
-                apiInterface?.putDoc(UrlUtils.header, "application/json", UrlUtils.getUrl() + "/submissions/" + sub._id, serializeExamResult(sub))?.execute()?.body()
+                apiInterface.putDoc(UrlUtils.header, "application/json", UrlUtils.getUrl() + "/submissions/" + sub._id, serializedSub).execute().body()
             }
-            if (`object` != null) {
+        }
+        if (`object` != null) {
+            executeTransaction {
                 sub._id = JsonUtils.getString("id", `object`)
                 sub._rev = JsonUtils.getString("rev", `object`)
             }
+        }
+    }
+
+    private fun generateParentId(courseId: String?, examId: String?): String? {
+        return if (!examId.isNullOrEmpty()) {
+            if (!courseId.isNullOrEmpty()) {
+                "$examId@$courseId"
+            } else {
+                examId
+            }
+        } else {
+            null
         }
     }
 }

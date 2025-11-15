@@ -30,4 +30,5 @@ interface SubmissionRepository {
     suspend fun insertSubmission(submission: com.google.gson.JsonObject)
     suspend fun serializeExamResult(sub: RealmSubmission): com.google.gson.JsonObject
     suspend fun continueResultUpload(sub: RealmSubmission)
+    suspend fun getExamMapForSubmissions(submissions: List<RealmSubmission>): Map<String?, RealmStepExam>
 }

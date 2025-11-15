@@ -53,6 +53,9 @@ import org.ole.planet.myplanet.utilities.VersionUtils.getAndroidId
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.runBlocking
 
 private const val BATCH_SIZE = 50
 
@@ -164,46 +167,45 @@ class UploadManager @Inject constructor(
         }
     }
 
-    fun uploadExamResult(listener: SuccessListener) {
+    suspend fun uploadExamResult(listener: SuccessListener) {
         val apiInterface = client.create(ApiInterface::class.java)
-import kotlinx.coroutines.runBlocking
+        try {
+            val submissionIds = databaseService.withRealm { realm ->
+                realm.where(RealmSubmission::class.java).findAll()
+                    .filter { (it.answers?.size ?: 0) > 0 && it.userId?.startsWith("guest") != true }
+                    .mapNotNull { it.id }
+            }
 
-        runBlocking {
-            try {
-                val submissionIds = databaseService.withRealm { realm ->
-                    realm.where(RealmSubmission::class.java).findAll()
-                        .filter { (it.answers?.size ?: 0) > 0 && it.userId?.startsWith("guest") != true }
-                        .mapNotNull { it.id }
-                }
+            var processedCount = 0
+            var errorCount = 0
 
-                var processedCount = 0
-                var errorCount = 0
-
-                submissionIds.chunked(BATCH_SIZE).forEach { batchIds ->
-                    val submissionsToUpload = databaseService.withRealm { realm ->
+            submissionIds.chunked(BATCH_SIZE).forEach { batchIds ->
+                val submissions = databaseService.withRealm { realm ->
+                    realm.copyFromRealm(
                         realm.where(RealmSubmission::class.java)
                             .`in`("id", batchIds.toTypedArray())
                             .findAll()
-                            .map { sub ->
-                                val serialized = runBlocking { submissionRepository.serializeExamResult(sub) }
-                                Triple(sub.id, serialized, sub._id)
-                            }
-                    }
+                    )
+                }
 
-                    for ((id, serialized, _id) in submissionsToUpload) {
-                        try {
-                            val response: JsonObject? = if (TextUtils.isEmpty(_id)) {
-                            apiInterface.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/submissions", serialized).execute().body()
-                        } else {
-                            apiInterface.putDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/submissions/$_id", serialized).execute().body()
+                for (sub in submissions) {
+                    try {
+                        val serialized = submissionRepository.serializeExamResult(sub)
+                        val response = withContext(Dispatchers.IO) {
+                            if (TextUtils.isEmpty(sub._id)) {
+                                apiInterface.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/submissions", serialized).execute().body()
+                            } else {
+                                apiInterface.putDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/submissions/${sub._id}", serialized).execute().body()
+                            }
                         }
 
-                        if (response != null && id != null) {
+                        if (response != null && sub.id != null) {
+                            val subId = sub.id
                             databaseService.withRealm { realm ->
                                 realm.executeTransaction { transactionRealm ->
-                                    transactionRealm.where(RealmSubmission::class.java).equalTo("id", id).findFirst()?.let { sub ->
-                                        sub._id = getString("id", response)
-                                        sub._rev = getString("rev", response)
+                                    transactionRealm.where(RealmSubmission::class.java).equalTo("id", subId).findFirst()?.let { subInDb ->
+                                        subInDb._id = getString("id", response)
+                                        subInDb._rev = getString("rev", response)
                                     }
                                 }
                             }
@@ -220,13 +222,12 @@ import kotlinx.coroutines.runBlocking
                     }
                 }
             }
-
-            uploadCourseProgress()
-            listener.onSuccess("Result sync completed successfully ($processedCount processed, $errorCount errors)")
-        } catch (e: Exception) {
-            e.printStackTrace()
-            listener.onSuccess("Error during result sync: ${e.message}")
         }
+        uploadCourseProgress()
+        listener.onSuccess("Result sync completed successfully ($processedCount processed, $errorCount errors)")
+    } catch (e: Exception) {
+        e.printStackTrace()
+        listener.onSuccess("Error during result sync: ${e.message}")
     }
 
     private fun createImage(user: RealmUserModel?, imgObject: JsonObject?): JsonObject {
