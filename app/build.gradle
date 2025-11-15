@@ -230,3 +230,7 @@ dependencies {
 realm {
     syncEnabled = true
 }
+kapt {
+    correctErrorTypes = true
+    useBuildCache = true
+}
