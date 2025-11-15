@@ -668,19 +668,17 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             if (isConnected) {
                 val serverUrl = settings.getString("serverURL", "")
                 if (!serverUrl.isNullOrEmpty()) {
-                    MainApplication.applicationScope.launch(Dispatchers.IO) {
+                    MainApplication.applicationScope.launch {
                         val canReachServer = MainApplication.Companion.isServerReachable(serverUrl)
                         if (canReachServer) {
                             withContext(Dispatchers.Main) {
                                 startUpload("login")
                             }
-                            withContext(Dispatchers.Default) {
-                                val backgroundRealm = databaseService.realmInstance
-                                try {
-                                    TransactionSyncManager.syncDb(backgroundRealm, "login_activities")
-                                } finally {
-                                    backgroundRealm.close()
-                                }
+                            val backgroundRealm = databaseService.realmInstance
+                            try {
+                                TransactionSyncManager.syncDb(backgroundRealm, "login_activities")
+                            } finally {
+                                backgroundRealm.close()
                             }
                         }
                     }
@@ -696,8 +694,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         val contextWrapper = ContextThemeWrapper(this, R.style.AlertDialogTheme)
         val dialog = MaterialDialog.Builder(contextWrapper)
             .customView(binding.root, true)
-            .positiveText(R.string.btn_sync)
-            .negativeText(R.string.btn_sync_cancel)
+            .positiveText(R.string.sync)
+            .negativeText(R.string.txt_cancel)
             .neutralText(R.string.btn_sync_save)
             .onPositive { d: MaterialDialog, _: DialogAction? -> performSync(d) }
             .build()
