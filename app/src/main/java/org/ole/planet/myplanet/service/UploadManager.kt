@@ -222,14 +222,13 @@ class UploadManager @Inject constructor(
                     }
                 }
             }
+            uploadCourseProgress()
+            listener.onSuccess("Result sync completed successfully ($processedCount processed, $errorCount errors)")
+        } catch (e: Exception) {
+            e.printStackTrace()
+            listener.onSuccess("Error during result sync: ${e.message}")
         }
-        uploadCourseProgress()
-        listener.onSuccess("Result sync completed successfully ($processedCount processed, $errorCount errors)")
-    } catch (e: Exception) {
-        e.printStackTrace()
-        listener.onSuccess("Error during result sync: ${e.message}")
     }
-}
     private fun createImage(user: RealmUserModel?, imgObject: JsonObject?): JsonObject {
         val `object` = JsonObject()
         `object`.addProperty("title", getString("fileName", imgObject))
