@@ -1,23 +1,22 @@
-plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.kapt)
-    alias(libs.plugins.hilt)
-    alias(libs.plugins.realm.android)
-}
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-kapt'
+apply plugin: 'com.google.devtools.ksp'
+apply plugin: 'dagger.hilt.android.plugin'
+apply plugin: 'realm-android'
 android {
     compileSdk = 36
     defaultConfig {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
-        versionCode = 3782
-        versionName = "0.37.82"
+        versionCode = 3781
+        versionName = "0.37.81"
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }
     configurations.configureEach {
-        resolutionStrategy.force libs.material
+        resolutionStrategy.force 'com.google.android.material:material:1.13.0'
     }
     buildTypes {
         release {
@@ -172,52 +171,52 @@ repositories {
 dependencies {
     implementation fileTree(include: ['*.jar', '*.aar'], dir: 'libs')
     implementation platform(libs.kotlin.bom)
-    implementation libs.androidx.annotation
-    implementation libs.androidx.appcompat
-    implementation libs.androidx.cardview
-    implementation libs.androidx.constraintlayout
-    implementation libs.androidx.core.ktx
-    implementation libs.androidx.hilt.work
-    kapt libs.androidx.hilt.compiler
-    implementation libs.androidx.localbroadcastmanager
-    implementation libs.androidx.media3.exoplayer
-    implementation libs.androidx.media3.ui
-    implementation libs.androidx.media3.common
-    implementation libs.androidx.preference.ktx
-    implementation libs.androidx.recyclerview
-    implementation libs.androidx.security.crypto
-    implementation libs.androidx.slidingpanelayout
-    implementation libs.androidx.work.runtime
-    implementation libs.material.dialogs.commons
-    implementation libs.material.calendar.view
-    implementation libs.glide
-    ksp libs.glide
-    implementation libs.photoview
-    implementation libs.fab
-    implementation libs.mpandroidchart
-    implementation libs.circular.progress.view
-    implementation libs.material
-    implementation libs.gson
-    implementation libs.hilt.android
-    ksp libs.hilt.android.compiler
-    implementation libs.toggle.button.group
+
+    implementation(libs.annotation)
+    implementation(libs.appcompat)
+    implementation(libs.cardview)
+    implementation(libs.constraintlayout)
+    implementation(libs.core.ktx)
+    implementation(libs.hilt.work)
+    kapt(libs.hilt.compiler)
+    implementation(libs.localbroadcastmanager)
+    implementation(libs.media3.exoplayer)
+    implementation(libs.media3.ui)
+    implementation(libs.media3.common)
+    implementation(libs.preference.ktx)
+    implementation(libs.recyclerview)
+    implementation(libs.security.crypto)
+    implementation(libs.slidingpanelayout)
+    implementation(libs.work.runtime)
+    implementation(libs.material.dialogs.commons)
+    implementation(libs.material.calendar.view)
+    implementation(libs.glide)
+    ksp(libs.glide.ksp)
+    implementation(libs.photoView)
+    implementation(libs.fab)
+    implementation(libs.mpAndroidChart)
+    implementation(libs.circular.progress.view)
+    implementation(libs.material)
+    implementation(libs.gson)
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.android.compiler)
+    implementation(libs.toggle.button.group)
     implementation(libs.materialdrawer) { transitive = true }
     implementation(libs.opencsv) { exclude group: 'commons-logging', module: 'commons-logging' }
-    implementation libs.retrofit
-    implementation libs.converter.gson
-    implementation libs.okhttp
-    implementation libs.circleimageview
-    implementation libs.pbkdf2
-    implementation libs.markwon.editor
-    implementation libs.markwon.image
-    implementation libs.markwon.html
-    implementation libs.markwon.ext.tables
-    implementation libs.osmdroid.android
-    implementation libs.kotlin.stdlib
-    implementation libs.kotlinx.serialization.json
-    implementation libs.kotlinx.coroutines.android
-    implementation libs.android.gif.drawable
-    testImplementation libs.junit
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
+    implementation(libs.okhttp)
+    implementation(libs.circleimageview)
+    implementation(libs.pbkdf2)
+    implementation(libs.markwon.editor)
+    implementation(libs.markwon.image)
+    implementation(libs.markwon.html)
+    implementation(libs.markwon.ext.tables)
+    implementation(libs.osmdroid.android)
+    implementation(libs.kotlin.stdlib)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.android.gif.drawable)
 }
 realm {
     syncEnabled = true
