@@ -229,7 +229,7 @@ class UploadManager @Inject constructor(
         e.printStackTrace()
         listener.onSuccess("Error during result sync: ${e.message}")
     }
-
+}
     private fun createImage(user: RealmUserModel?, imgObject: JsonObject?): JsonObject {
         val `object` = JsonObject()
         `object`.addProperty("title", getString("fileName", imgObject))
