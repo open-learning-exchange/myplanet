@@ -14,6 +14,7 @@ buildscript {
         classpath("com.google.dagger:hilt-android-gradle-plugin:2.57.2")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
         classpath("org.jetbrains.kotlin:kotlin-serialization:$kotlinVersion")
+        classpath("com.google.devtools.ksp:symbol-processing-gradle-plugin:2.2.10-2.0.2")
         // NOTE: Do not place your application dependencies here
     }
 }

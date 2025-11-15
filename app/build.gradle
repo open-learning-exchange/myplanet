@@ -1,6 +1,7 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-kapt'
+apply plugin: 'com.google.devtools.ksp'
 apply plugin: 'dagger.hilt.android.plugin'
 apply plugin: 'realm-android'
 android {
@@ -9,8 +10,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
-        versionCode = 3780
-        versionName = "0.37.80"
+        versionCode = 3781
+        versionName = "0.37.81"
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }
@@ -196,6 +197,7 @@ dependencies {
     implementation("com.afollestad.material-dialogs:commons:0.9.6.0")
     implementation("com.applandeo:material-calendar-view:1.9.2")
     implementation("com.github.bumptech.glide:glide:5.0.5")
+    ksp("com.github.bumptech.glide:ksp:5.0.5")
     implementation("com.github.chrisbanes:PhotoView:2.3.0")
     implementation("com.github.clans:fab:1.6.4")
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
@@ -203,7 +205,7 @@ dependencies {
     implementation("com.google.android.material:material:1.13.0")
     implementation("com.google.code.gson:gson:2.13.2")
     implementation("com.google.dagger:hilt-android:$dagger_hilt_version")
-    kapt("com.google.dagger:hilt-android-compiler:$dagger_hilt_version")
+    ksp("com.google.dagger:hilt-android-compiler:$dagger_hilt_version")
     implementation("com.nex3z:toggle-button-group:1.2.3")
     implementation("com.mikepenz:materialdrawer:6.1.1@aar") { transitive = true }
     implementation("com.opencsv:opencsv:5.12.0") { exclude group: 'commons-logging', module: 'commons-logging' }
