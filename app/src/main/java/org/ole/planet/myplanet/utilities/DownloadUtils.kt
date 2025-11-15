@@ -249,7 +249,7 @@ object DownloadUtils {
             return
         }
 
-        MainApplication.applicationScope.launch(Dispatchers.IO) {
+        MainApplication.applicationScope.launch {
             try {
                 libraryRepository.markResourceOfflineByLocalAddress(currentFileName)
             } catch (e: Exception) {

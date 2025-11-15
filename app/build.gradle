@@ -14,7 +14,6 @@ android {
         versionCode = 3782
         versionName = "0.37.82"
         ndkVersion = '26.3.11579264'
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
     }
     configurations.configureEach {
@@ -192,6 +191,7 @@ dependencies {
     implementation libs.material.dialogs.commons
     implementation libs.material.calendar.view
     implementation libs.glide
+    ksp libs.glide
     implementation libs.photoview
     implementation libs.fab
     implementation libs.mpandroidchart
@@ -199,7 +199,7 @@ dependencies {
     implementation libs.material
     implementation libs.gson
     implementation libs.hilt.android
-    kapt libs.hilt.android.compiler
+    ksp libs.hilt.android.compiler
     implementation libs.toggle.button.group
     implementation(libs.materialdrawer) { transitive = true }
     implementation(libs.opencsv) { exclude group: 'commons-logging', module: 'commons-logging' }
