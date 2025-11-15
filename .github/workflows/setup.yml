@@ -34,6 +34,9 @@ jobs:
       - name: Download dependencies
         run: ./gradlew dependencies
 
+      - name: Clean gradle cache from workspace
+        run: rm -rf .gradle
+
       - name: Upload workspace
         uses: actions/upload-artifact@v4
         with:
