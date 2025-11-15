@@ -39,6 +39,7 @@ kotlinx-coroutines-android = "1.10.2"
 android-gif-drawable = "1.2.29"
 junit = "4.13.2"
 kotlin-bom = "2.2.21"
+kotlin-ksp = "2.2.10-2.0.2"
 
 [libraries]
 android-gradle-plugin = { group = "com.android.tools.build", name = "gradle", version.ref = "android-gradle-plugin" }
@@ -98,6 +99,7 @@ kotlin-bom = { group = "org.jetbrains.kotlin", name = "kotlin-bom", version.ref 
 android-application = { id = "com.android.application", version.ref = "android-gradle-plugin" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }
+kotlin-ksp = { id = "com.google.devtools.ksp:symbol-processing-gradle-plugin", version.ref = "kotlin-ksp" }
 realm-android = { id = "realm-android", version.ref = "realm" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
