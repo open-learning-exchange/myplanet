@@ -1,0 +1,29 @@
+name: myPlanet setup
+
+on:
+  workflow_call:
+
+jobs:
+  setup:
+    name: myPlanet setup
+    runs-on: ubuntu-24.04
+    steps:
+      - name: checkout repository code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      - name: setup gradle
+        uses: gradle/actions/setup-gradle@v5
+
+      - name: make gradlew executable
+        run: chmod +x gradlew
+
+      - name: download dependencies
+        run: ./gradlew dependencies
+
+      - name: upload workspace
+        uses: actions/upload-artifact@v4
+        with:
+          name: workspace
+          path: .
