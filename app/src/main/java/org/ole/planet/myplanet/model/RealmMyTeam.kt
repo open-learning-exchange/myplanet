@@ -10,6 +10,8 @@ import io.realm.RealmObject
 import io.realm.RealmResults
 import io.realm.annotations.PrimaryKey
 import java.util.Date
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.DownloadUtils.extractLinks
@@ -209,18 +211,22 @@ open class RealmMyTeam : RealmObject() {
         }
 
         @JvmStatic
-        fun requestToJoin(teamId: String?, userId: String?, userPlanetCode: String?, mRealm: Realm, teamType: String?) {
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
-            val team = mRealm.createObject(RealmMyTeam::class.java, AndroidDecrypter.generateIv())
-            team.docType = "request"
-            team.createdDate = Date().time
-            team.teamType = teamType
-            team.userId = userId
-            team.teamId = teamId
-            team.updated = true
-            team.teamPlanetCode = userPlanetCode
-            team.userPlanetCode = userPlanetCode
-            mRealm.commitTransaction()
+        suspend fun requestToJoin(teamId: String?, userId: String?, userPlanetCode: String?, teamType: String?) {
+            withContext(Dispatchers.IO) {
+                Realm.getDefaultInstance().use { realm ->
+                    realm.executeTransaction {
+                        val team = it.createObject(RealmMyTeam::class.java, AndroidDecrypter.generateIv())
+                        team.docType = "request"
+                        team.createdDate = Date().time
+                        team.teamType = teamType
+                        team.userId = userId
+                        team.teamId = teamId
+                        team.updated = true
+                        team.teamPlanetCode = userPlanetCode
+                        team.userPlanetCode = userPlanetCode
+                    }
+                }
+            }
         }
 
         @JvmStatic
