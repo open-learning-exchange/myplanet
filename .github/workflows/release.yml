@@ -9,7 +9,7 @@ on:
 jobs:
   release:
     name: myPlanet release
-    runs-on: ubuntu-2404
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
