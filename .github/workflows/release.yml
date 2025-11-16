@@ -26,7 +26,7 @@ jobs:
         .aab.sha256
 
     steps:
-      - name: Download workspace
+      - name: download workspace
         uses: actions/download-artifact@v4
         with:
           name: workspace
@@ -35,7 +35,7 @@ jobs:
       - name: setup gradle
         uses: gradle/actions/setup-gradle@v5
 
-      - name: Make gradlew executable
+      - name: make gradlew executable
         run: chmod +x gradlew
 
       - name: check and diff the code to get lite
