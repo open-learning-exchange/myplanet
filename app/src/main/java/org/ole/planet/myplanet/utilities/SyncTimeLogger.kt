@@ -52,6 +52,7 @@ object SyncTimeLogger {
                     val uri = updateUrl.toUri()
                     val editor = settings.edit()
 
+
                     serverUrlMapper.updateUrlPreferences(
                         editor,
                         uri,
