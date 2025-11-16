@@ -1,4 +1,4 @@
-name: myPlanet build test
+name: myPlanet build
 
 on:
   push:
@@ -13,8 +13,8 @@ on:
 
 jobs:
   build:
-    name: myPlanet build test
-    runs-on: ubuntu-latest
+    name: myPlanet build
+    runs-on: ubuntu-2404
     strategy:
       fail-fast: false
       matrix:
@@ -33,13 +33,6 @@ jobs:
           ls -al "$file" "$lite"
           diff <(sed 's/^\s*<!--//; s/-->\s*$//' "$file") <(sed 's/^\s*<!--//; s/-->\s*$//' "$lite")
           cp "$lite" "$file"
-
-      - name: setup JDK 17
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: 17
-          cache: gradle
 
       - name: setup gradle
         uses: gradle/actions/setup-gradle@v5
