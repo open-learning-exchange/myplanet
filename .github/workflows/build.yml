@@ -1,4 +1,4 @@
-name: myPlanet build test
+name: myPlanet build
 
 on:
   push:
@@ -17,14 +17,14 @@ jobs:
 
   build:
     needs: setup
-    name: myPlanet build test
+    name: myPlanet build
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
         build: [default, lite]
     steps:
-      - name: Download workspace
+      - name: download workspace
         uses: actions/download-artifact@v4
         with:
           name: workspace
@@ -33,7 +33,7 @@ jobs:
       - name: setup gradle
         uses: gradle/actions/setup-gradle@v5
 
-      - name: Make gradlew executable
+      - name: make gradlew executable
         run: chmod +x gradlew
 
       - name: check and diff the code to get lite
