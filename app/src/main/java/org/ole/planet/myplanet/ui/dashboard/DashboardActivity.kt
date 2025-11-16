@@ -25,7 +25,9 @@ import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.MenuItemCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.navigation.NavigationBarView
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayout
@@ -147,6 +149,19 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         challengeHelper = ChallengeHelper(this, mRealm, user, settings, editor, dashboardViewModel)
         challengeHelper.evaluateChallengeDialog()
         handleNotificationIntent(intent)
+        collectUiState()
+    }
+
+    private fun collectUiState() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                dashboardViewModel.uiState.collect { state ->
+                    updateNotificationBadge(state.unreadNotifications) {
+                        openNotificationsList(user?.id ?: "")
+                    }
+                }
+            }
+        }
     }
 
     private fun initViews() {
@@ -843,9 +858,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     override fun onNotificationCountUpdated(unreadCount: Int) {
-        updateNotificationBadge(unreadCount) {
-            openNotificationsList(user?.id ?: "")
-        }
+        dashboardViewModel.setUnreadNotifications(unreadCount)
     }
 
     private fun updateNotificationBadge(count: Int, onClickListener: View.OnClickListener) {
