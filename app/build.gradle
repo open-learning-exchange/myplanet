@@ -16,7 +16,6 @@ android {
         vectorDrawables.useSupportLibrary = true
     }
     configurations.configureEach {
-        resolutionStrategy.force 'com.google.android.material:material:1.13.0'
         resolutionStrategy.force "com.google.android.material:material:${libs.versions.material.get()}"
     }
     buildTypes {
