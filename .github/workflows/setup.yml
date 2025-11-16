@@ -1,4 +1,4 @@
-name: Reusable setup
+name: myPlanet setup
 
 on:
   workflow_call:
@@ -16,16 +16,16 @@ jobs:
       - name: setup gradle
         uses: gradle/actions/setup-gradle@v5
 
-      - name: Make gradlew executable
+      - name: make gradlew executable
         run: chmod +x gradlew
 
-      - name: Download dependencies
+      - name: download dependencies
         run: ./gradlew dependencies
 
-      - name: Clean gradle cache from workspace
+      - name: clean gradle cache from workspace
         run: rm -rf .gradle
 
-      - name: Upload workspace
+      - name: upload workspace
         uses: actions/upload-artifact@v4
         with:
           name: workspace
