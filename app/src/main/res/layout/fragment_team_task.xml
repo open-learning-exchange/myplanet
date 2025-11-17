@@ -15,21 +15,21 @@
         app:singleSelection="true"
         app:checkedButton="@+id/btn_all">
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_all"
             style="?attr/materialButtonOutlinedStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/all_task" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_my"
             style="?attr/materialButtonOutlinedStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/my_task" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_completed"
             style="?attr/materialButtonOutlinedStyle"
             android:layout_width="wrap_content"
