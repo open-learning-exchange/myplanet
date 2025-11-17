@@ -39,6 +39,7 @@ import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmSearchActivity
+import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmitPhotos
 import org.ole.planet.myplanet.model.RealmTeamLog
@@ -957,6 +958,49 @@ class UploadManager @Inject constructor(
                         e.printStackTrace()
                     }
             }
+            }
+        }
+    }
+
+    fun uploadAdoptedSurveys() {
+        val apiInterface = client?.create(ApiInterface::class.java)
+        databaseService.withRealm { realm ->
+            realm.executeTransactionAsync { transactionRealm: Realm ->
+                // Find adopted surveys (those with teamSourceSurveyId but no _rev)
+                val adoptedSurveys = transactionRealm.where(RealmStepExam::class.java)
+                    .isNotNull("teamSourceSurveyId")
+                    .isNull("_rev")
+                    .findAll()
+
+                android.util.Log.d("UploadAdoptedSurveys", "Found ${adoptedSurveys.size} adopted surveys to upload")
+
+                adoptedSurveys.processInBatches { survey ->
+                    try {
+                        android.util.Log.d("UploadAdoptedSurveys", "Uploading survey: ${survey.id}, name: ${survey.name}, teamSourceSurveyId: ${survey.teamSourceSurveyId}, teamId: ${survey.teamId}")
+                        val surveyJson = RealmStepExam.serializeExam(transactionRealm, survey)
+                        android.util.Log.d("UploadAdoptedSurveys", "Serialized JSON: $surveyJson")
+
+                        val `object` = apiInterface?.postDoc(
+                            UrlUtils.header,
+                            "application/json",
+                            "${UrlUtils.getUrl()}/exams",
+                            surveyJson
+                        )?.execute()?.body()
+
+                        if (`object` != null) {
+                            survey._rev = getString("rev", `object`)
+                            android.util.Log.d("UploadAdoptedSurveys", "Successfully uploaded survey ${survey.id}, got rev: ${survey._rev}")
+                        } else {
+                            android.util.Log.e("UploadAdoptedSurveys", "Upload failed for survey ${survey.id}: response body is null")
+                        }
+                    } catch (e: IOException) {
+                        android.util.Log.e("UploadAdoptedSurveys", "Upload failed for survey ${survey.id}", e)
+                        e.printStackTrace()
+                    } catch (e: Exception) {
+                        android.util.Log.e("UploadAdoptedSurveys", "Unexpected error uploading survey ${survey.id}", e)
+                        e.printStackTrace()
+                    }
+                }
             }
         }
     }

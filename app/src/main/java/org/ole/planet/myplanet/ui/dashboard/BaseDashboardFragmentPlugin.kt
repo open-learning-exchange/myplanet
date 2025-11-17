@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.dashboard
 
 import android.os.Bundle
+import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
@@ -35,6 +36,10 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         v.setOnClickListener {
             if (homeItemClickListener != null) {
                 if (f is TeamDetailFragment) {
+                    if (!isRealmInitialized()) {
+                        Log.d("TeamDetailFragment", "Realm is not initialized: error opening item")
+                        return@setOnClickListener
+                    }
                     val teamObject = mRealm.where(RealmMyTeam::class.java)?.equalTo("_id", id)?.findFirst()
                     val optimizedFragment = TeamDetailFragment.newInstance(
                         teamId = id ?: "",
@@ -119,8 +124,12 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
 
         if (title == getString(R.string.my_survey)) {
             itemMyLifeBinding.tvCount.visibility = View.VISIBLE
-            val noOfSurvey = RealmSubmission.getNoOfSurveySubmissionByUser(user?.id, mRealm)
-            itemMyLifeBinding.tvCount.text = noOfSurvey.toString()
+            if (isRealmInitialized()) {
+                val noOfSurvey = RealmSubmission.getNoOfSurveySubmissionByUser(user?.id, mRealm)
+                itemMyLifeBinding.tvCount.text = noOfSurvey.toString()
+            } else {
+                itemMyLifeBinding.tvCount.text = "0"
+            }
         } else {
             itemMyLifeBinding.tvCount.visibility = View.GONE
         }

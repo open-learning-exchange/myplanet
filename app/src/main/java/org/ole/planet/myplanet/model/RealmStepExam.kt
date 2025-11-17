@@ -26,6 +26,7 @@ open class RealmStepExam : RealmObject() {
     var isFromNation = false
     var teamId: String? = null
     var isTeamShareAllowed = false
+    var teamSourceSurveyId: String? = null
 
     companion object {
         @JvmStatic
@@ -64,6 +65,7 @@ open class RealmStepExam : RealmObject() {
                 myExam?.isFromNation = !TextUtils.isEmpty(parentId)
                 myExam.teamId = JsonUtils.getString("teamId", exam)
                 myExam.isTeamShareAllowed = JsonUtils.getBoolean("teamShareAllowed", exam)
+                myExam.teamSourceSurveyId = JsonUtils.getString("teamSourceSurveyId", exam)
                 val oldQuestions = mRealm.where(RealmExamQuestion::class.java)
                     .equalTo("examId", JsonUtils.getString("_id", exam)).findAll()
                 if (oldQuestions == null || oldQuestions.isEmpty()) {
@@ -91,15 +93,25 @@ open class RealmStepExam : RealmObject() {
         fun serializeExam(mRealm: Realm, exam: RealmStepExam): JsonObject {
             val `object` = JsonObject()
             `object`.addProperty("_id", exam.id)
-            `object`.addProperty("_rev", exam._rev)
+            // Only include _rev if it's not null (CouchDB doesn't accept explicit null)
+            if (exam._rev != null) {
+                `object`.addProperty("_rev", exam._rev)
+            }
             `object`.addProperty("name", exam.name)
+            `object`.addProperty("description", exam.description)
             `object`.addProperty("passingPercentage", exam.passingPercentage)
             `object`.addProperty("type", exam.type)
             `object`.addProperty("updatedDate", exam.updatedDate)
             `object`.addProperty("createdDate", exam.createdDate)
             `object`.addProperty("sourcePlanet", exam.sourcePlanet)
-            `object`.addProperty("totalMarks", exam.createdDate)
+            `object`.addProperty("totalMarks", exam.totalMarks)
             `object`.addProperty("createdBy", exam.createdBy)
+            if (exam.teamSourceSurveyId != null) {
+                `object`.addProperty("teamSourceSurveyId", exam.teamSourceSurveyId)
+            }
+            if (exam.teamId != null) {
+                `object`.addProperty("teamId", exam.teamId)
+            }
             val question = mRealm.where(RealmExamQuestion::class.java).equalTo("examId", exam.id).findAll()
             `object`.add("questions", RealmExamQuestion.serializeQuestions(question))
             return `object`

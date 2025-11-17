@@ -94,6 +94,7 @@ class AutoSyncWorker(
                     uploadManager.uploadTeams()
                     uploadManager.uploadTeamTask()
                     uploadManager.uploadMeetups()
+                    uploadManager.uploadAdoptedSurveys()
                     uploadManager.uploadCrashLog()
                     uploadManager.uploadSubmissions()
                     uploadManager.uploadActivities { MainApplication.isSyncRunning = false }

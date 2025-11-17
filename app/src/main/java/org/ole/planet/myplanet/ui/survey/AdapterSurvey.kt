@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.survey
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -18,6 +19,7 @@ import org.ole.planet.myplanet.callback.SurveyAdoptListener
 import org.ole.planet.myplanet.databinding.RowSurveyBinding
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMembershipDoc
+import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -138,6 +140,49 @@ class AdapterSurvey(
 
                     val shouldAdopt = exam.isTeamShareAllowed && teamSubmission?.isValid != true
 
+                    // Log comprehensive team survey click information
+                    Log.d("TeamSurveyClick", """
+                        ============ Team Survey Clicked ============
+                        Timestamp: ${System.currentTimeMillis()}
+
+                        === Survey Details ===
+                        Survey ID: ${exam.id}
+                        Survey Name: ${exam.name}
+                        Survey Description: ${exam.description}
+                        Survey Type: ${exam.type}
+                        Created Date: ${exam.createdDate}
+                        Updated Date: ${exam.updatedDate}
+                        Created By: ${exam.createdBy}
+                        Total Marks: ${exam.totalMarks}
+                        Number of Questions: ${exam.noOfQuestions}
+                        Passing Percentage: ${exam.passingPercentage}
+                        Step ID: ${exam.stepId}
+                        Course ID: ${exam.courseId}
+                        Source Planet: ${exam.sourcePlanet}
+                        Is From Nation: ${exam.isFromNation}
+
+                        === Team Context ===
+                        Is Team Survey: $isTeam
+                        Team ID: $teamId
+                        Survey Team ID: ${exam.teamId}
+                        Is Team Share Allowed: ${exam.isTeamShareAllowed}
+
+                        === User Context ===
+                        User ID: $userId
+
+                        === Team Submission Status ===
+                        Team Submission Exists: ${teamSubmission != null}
+                        Team Submission Valid: ${teamSubmission?.isValid}
+                        Team Submission ID: ${teamSubmission?.id}
+                        Team Submission Parent ID: ${teamSubmission?.parentId}
+                        Team Submission Status: ${teamSubmission?.status}
+
+                        === Action ===
+                        Should Adopt: $shouldAdopt
+                        Action: ${if (shouldAdopt) "Adopting Survey" else "Opening/Taking Survey"}
+                        ============================================
+                    """.trimIndent())
+
                     if (shouldAdopt) {
                         adoptSurvey(exam, teamId)
                     } else {
@@ -227,6 +272,60 @@ class AdapterSurvey(
 
             try {
                 mRealm.executeTransactionAsync({ realm ->
+                    // Get team name for the new survey format
+                    val teamName = if (isTeam && teamId != null) {
+                        realm.where(RealmMyTeam::class.java)
+                            .equalTo("_id", teamId)
+                            .findFirst()?.name
+                    } else null
+
+                    // Create new survey entry with teamSourceSurveyId (new format)
+                    if (isTeam && teamId != null && teamName != null) {
+                        val newSurveyId = UUID.randomUUID().toString()
+
+                        // Check if survey already adopted by this team
+                        val existingSurvey = realm.where(RealmStepExam::class.java)
+                            .equalTo("teamSourceSurveyId", examId)
+                            .equalTo("teamId", teamId)
+                            .findFirst()
+
+                        if (existingSurvey == null) {
+                            Log.d("SurveyAdoption", "Creating new adopted survey with ID: $newSurveyId, teamSourceSurveyId: $examId, teamId: $teamId, name: ${exam.name} - $teamName")
+                            // Create new survey entry
+                            realm.createObject(RealmStepExam::class.java, newSurveyId).apply {
+                                // Copy all fields from original survey
+                                _rev = null // New document, no revision yet
+                                createdDate = System.currentTimeMillis()
+                                updatedDate = System.currentTimeMillis()
+                                createdBy = userModel?.id
+                                totalMarks = exam.totalMarks
+                                name = "${exam.name} - $teamName"
+                                description = exam.description
+                                type = exam.type
+                                stepId = exam.stepId
+                                courseId = exam.courseId
+                                sourcePlanet = exam.sourcePlanet
+                                passingPercentage = exam.passingPercentage
+                                noOfQuestions = exam.noOfQuestions
+                                isFromNation = exam.isFromNation
+
+                                // Set team-specific fields
+                                this.teamId = teamId
+                                teamSourceSurveyId = examId
+                                isTeamShareAllowed = false // Once adopted, it's not shareable anymore
+                            }
+
+                            // Copy all questions from the original survey
+                            val questions = realm.where(RealmExamQuestion::class.java)
+                                .equalTo("examId", examId)
+                                .findAll()
+
+                            val questionsArray = RealmExamQuestion.serializeQuestions(questions)
+                            RealmExamQuestion.insertExamQuestions(questionsArray, newSurveyId, realm)
+                        }
+                    }
+
+                    // Also create RealmSubmission for backward compatibility
                     val existingAdoption = if (isTeam && teamId != null) {
                         realm.where(RealmSubmission::class.java)
                             .equalTo("userId", userId)
@@ -277,9 +376,11 @@ class AdapterSurvey(
                     Snackbar.make(binding.root, context.getString(R.string.survey_adopted_successfully), Snackbar.LENGTH_LONG).show()
                     surveyAdoptListener.onSurveyAdopted()
                 }, { error ->
+                    Log.e("AdapterSurvey", "Failed to adopt survey", error)
                     Snackbar.make(binding.root, context.getString(R.string.failed_to_adopt_survey), Snackbar.LENGTH_LONG).show()
                 })
             } catch (e: Exception) {
+                Log.e("AdapterSurvey", "Failed to adopt survey", e)
                 Snackbar.make(binding.root, context.getString(R.string.failed_to_adopt_survey), Snackbar.LENGTH_LONG).show()
             }
         }

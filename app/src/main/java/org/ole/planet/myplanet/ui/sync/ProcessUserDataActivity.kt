@@ -229,6 +229,7 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
             uploadManager.uploadRating()
             uploadManager.uploadTeamTask()
             uploadManager.uploadMeetups()
+            uploadManager.uploadAdoptedSurveys()
             uploadManager.uploadSubmissions()
             uploadManager.uploadCrashLog()
 
