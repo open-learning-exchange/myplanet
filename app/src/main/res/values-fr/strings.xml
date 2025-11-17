@@ -333,7 +333,7 @@
     <string name="freeup_space">Libérer de l\'espace disque</string>
     <string name="action_disclaimer">avis de non-responsabilité</string>
     <string name="action_about">à propos de</string>
-    <string name="engilsh_dictionary">Dictionnaire anglais</string>
+    <string name="english_dictionary">Dictionnaire anglais</string>
 
     <string-array name="team_type">
         <item>Équipe locale</item>
@@ -1170,5 +1170,8 @@
     <string name="resource_has_no_attachments">La ressource n’a pas de fichiers téléchargeables</string>
     <string name="unable_to_download_resource">Impossible de télécharger la ressource</string>
     <string name="hide_new_message">Masquer le nouveau message</string>
+    <string name="cannot_assign_completed_task">Impossible d\'attribuer une tâche terminée</string>
+    <string name="assign_to">Attribuer à (Optionnel)</string>
+    <string name="click_to_assign_member">Cliquez pour attribuer un membre de l\'équipe</string>
 
 </resources>

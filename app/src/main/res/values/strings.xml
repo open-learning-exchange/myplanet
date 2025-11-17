@@ -333,7 +333,7 @@
     <string name="freeup_space">free-up disk space</string>
     <string name="action_disclaimer">disclaimer</string>
     <string name="action_about">about</string>
-    <string name="engilsh_dictionary">English Dictionary</string>
+    <string name="english_dictionary">English Dictionary</string>
 
     <string-array name="team_type">
         <item>Local Team</item>
@@ -1170,5 +1170,8 @@
     <string name="resource_has_no_attachments">Resource has no downloadable files</string>
     <string name="unable_to_download_resource">Unable to download resource</string>
     <string name="hide_new_message">Hide new message</string>
+    <string name="cannot_assign_completed_task">Cannot assign completed task</string>
+    <string name="assign_to">Assign To (Optional)</string>
+    <string name="click_to_assign_member">Click to assign a team member</string>
 
 </resources>

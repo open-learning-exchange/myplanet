@@ -12,7 +12,7 @@ interface MyPersonalRepository {
         description: String?
     )
 
-    fun getPersonalResources(userId: String?): Flow<List<RealmMyPersonal>>
+    suspend fun getPersonalResources(userId: String?): Flow<List<RealmMyPersonal>>
 
     suspend fun deletePersonalResource(id: String)
 

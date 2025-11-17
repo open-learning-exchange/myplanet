@@ -32,4 +32,3 @@ object MapTileUtils {
         `in`.copyTo(out)
     }
 }
-
