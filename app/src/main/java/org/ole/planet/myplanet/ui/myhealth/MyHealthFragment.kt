@@ -49,6 +49,7 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmMyHealthPojo
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -74,6 +75,8 @@ class MyHealthFragment : Fragment() {
     lateinit var databaseService: DatabaseService
     @Inject
     lateinit var userRepository: UserRepository
+    @Inject
+    lateinit var healthRepository: HealthRepository
     private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
     private lateinit var realtimeSyncListener: BaseRealtimeSyncListener
     private var _binding: FragmentVitalSignBinding? = null
@@ -278,7 +281,7 @@ class MyHealthFragment : Fragment() {
     }
 
     private fun selectPatient() {
-        userModelList = mRealm.where(RealmUserModel::class.java).sort("joinDate", Sort.DESCENDING).findAll()
+        userModelList = healthRepository.getSortedUsers("joinDate", Sort.DESCENDING)
         adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, userModelList)
         alertHealthListBinding = AlertHealthListBinding.inflate(LayoutInflater.from(context))
         alertHealthListBinding.btnAddMember.setOnClickListener {
@@ -325,7 +328,7 @@ class MyHealthFragment : Fragment() {
                         sort = Sort.DESCENDING
                     }
                 }
-                userModelList = mRealm.where(RealmUserModel::class.java).sort(sortBy, sort).findAll()
+                userModelList = healthRepository.getSortedUsers(sortBy, sort)
                 adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, userModelList)
                 lv.adapter = adapter
             }
@@ -343,12 +346,7 @@ class MyHealthFragment : Fragment() {
                 timer = object : CountDownTimer(1000, 1500) {
                     override fun onTick(millisUntilFinished: Long) {}
                     override fun onFinish() {
-                        val userModelList = mRealm.where(RealmUserModel::class.java)
-                            .contains("firstName", editable.toString(), Case.INSENSITIVE).or()
-                            .contains("lastName", editable.toString(), Case.INSENSITIVE).or()
-                            .contains("name", editable.toString(), Case.INSENSITIVE)
-                            .sort("joinDate", Sort.DESCENDING).findAll()
-
+                        val userModelList = healthRepository.searchUsers(editable.toString())
                         val adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, userModelList)
                         lv.adapter = adapter
                         btnAddMember.visibility = if (adapter.count == 0) View.VISIBLE else View.GONE
@@ -386,10 +384,7 @@ class MyHealthFragment : Fragment() {
         binding.txtEmail.text = Utilities.checkNA(currentUser.email)
         binding.txtLanguage.text = Utilities.checkNA(currentUser.language)
         binding.txtDob.text = Utilities.checkNA(currentUser.dob)
-        var mh = mRealm.where(RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
-        if (mh == null) {
-            mh = mRealm.where(RealmMyHealthPojo::class.java).equalTo("userId", userId).findFirst()
-        }
+        val mh = healthRepository.getHealthPojo(userId)
         if (mh != null) {
             val mm = getHealthProfile(mh)
             if (mm == null) {
@@ -448,9 +443,8 @@ class MyHealthFragment : Fragment() {
         }
     }
 
-    private fun getExaminations(mm: RealmMyHealth): List<RealmMyHealthPojo>? {
-        val healths = mRealm.where(RealmMyHealthPojo::class.java)?.equalTo("profileId", mm.userKey)?.findAll()
-        return healths
+    private fun getExaminations(mm: RealmMyHealth): List<RealmMyHealthPojo> {
+        return healthRepository.getExaminations(mm.userKey)
     }
 
     private fun getHealthProfile(mh: RealmMyHealthPojo): RealmMyHealth? {
