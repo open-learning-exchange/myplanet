@@ -79,7 +79,7 @@ class OptimizedSyncStrategy : SyncStrategy {
 
     private fun getLocalDocuments(realm: Realm, table: String): Map<String, String> {
         val modelClass = Constants.classList[table] ?: return emptyMap()
-        val dynamicRealm = Realm.getInstance(realm.configuration)
+        val dynamicRealm = DynamicRealm.getInstance(realm.configuration)
         return try {
             val results = dynamicRealm.where(modelClass.simpleName).findAll()
             results.mapNotNull { obj: DynamicRealmObject ->
@@ -130,7 +130,7 @@ class OptimizedSyncStrategy : SyncStrategy {
     private fun processDeletions(realm: Realm, table: String, deletedDocIds: List<String>) {
         if (deletedDocIds.isEmpty()) return
         val modelClass = Constants.classList[table] ?: return
-        val dynamicRealm = Realm.getInstance(realm.configuration)
+        val dynamicRealm = DynamicRealm.getInstance(realm.configuration)
         try {
             dynamicRealm.executeTransaction { r: DynamicRealm ->
                 deletedDocIds.forEach { id ->
