@@ -192,7 +192,6 @@ open class RealmSubmission : RealmObject() {
         }
 
         @JvmStatic
-        @Throws(IOException::class)
         fun getNoOfSurveySubmissionByUser(userId: String?, mRealm: Realm): Int {
             if (userId == null) return 0
 
