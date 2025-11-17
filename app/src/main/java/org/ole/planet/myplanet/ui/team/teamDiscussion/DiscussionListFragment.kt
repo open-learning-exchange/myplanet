@@ -76,30 +76,33 @@ class DiscussionListFragment : BaseTeamFragment() {
             }
             binding.etMessage.setText(R.string.empty_text)
             val map = HashMap<String?, String>()
-                map["viewInId"] = getEffectiveTeamId()
-                map["viewInSection"] = "teams"
-                map["message"] = message
-                map["messageType"] = getEffectiveTeamType()
-                map["messagePlanetCode"] = team?.teamPlanetCode ?: ""
-                map["name"] = getEffectiveTeamName()
+            map["viewInId"] = getEffectiveTeamId()
+            map["viewInSection"] = "teams"
+            map["message"] = message
+            map["messageType"] = getEffectiveTeamType()
+            map["messagePlanetCode"] = team?.teamPlanetCode ?: ""
+            map["name"] = getEffectiveTeamName()
 
             user?.let { userModel ->
-                try {
-                    createNews(map, mRealm, userModel, imageList)
-                    binding.rvDiscussion.post {
-                        binding.rvDiscussion.smoothScrollToPosition(0)
+                viewLifecycleOwner.lifecycleScope.launch {
+                    try {
+                        databaseService.executeTransactionAsync { realm ->
+                            createNews(map, realm, userModel, imageList)
+                        }
+                        binding.rvDiscussion.post {
+                            binding.rvDiscussion.smoothScrollToPosition(0)
+                        }
+                        binding.etMessage.text?.clear()
+                        imageList.clear()
+                        llImage?.removeAllViews()
+                        binding.llAddNews.visibility = View.GONE
+                        binding.tlMessage.error = null
+                        binding.addMessage.text = getString(R.string.add_message)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
                     }
-                } catch (e: Exception) {
-                    e.printStackTrace()
                 }
             }
-
-            binding.etMessage.text?.clear()
-            imageList.clear()
-            llImage?.removeAllViews()
-            binding.llAddNews.visibility = View.GONE
-            binding.tlMessage.error = null
-            binding.addMessage.text = getString(R.string.add_message)
         }
 
         if (shouldQueryTeamFromRealm()) {
