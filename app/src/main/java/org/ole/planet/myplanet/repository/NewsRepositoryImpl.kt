@@ -74,7 +74,7 @@ class NewsRepositoryImpl @Inject constructor(
             false
         }
     }
-    override fun getCommunityNews(userIdentifier: String): Flow<List<RealmNews>> {
+    override suspend fun getCommunityNews(userIdentifier: String): Flow<List<RealmNews>> {
         val allNewsFlow = queryListFlow(RealmNews::class.java) {
             isEmpty("replyTo")
             equalTo("docType", "message", Case.INSENSITIVE)

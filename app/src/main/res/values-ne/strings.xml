@@ -333,7 +333,7 @@
     <string name="freeup_space">डिस्क स्थान खाली पार्नुहोस्</string>
     <string name="action_disclaimer">अस्वीकरण</string>
     <string name="action_about">बारेमा</string>
-    <string name="engilsh_dictionary">अंग्रेजी शब्दकोश</string>
+    <string name="english_dictionary">अंग्रेजी शब्दकोश</string>
 
     <string-array name="team_type">
         <item>स्थानीय टिम</item>
@@ -1170,5 +1170,8 @@
     <string name="resource_has_no_attachments">स्रोतसँग कुनै डाउनलोड योग्य फाइलहरू छैनन्</string>
     <string name="unable_to_download_resource">स्रोत डाउनलोड गर्न असमर्थ</string>
     <string name="hide_new_message">नयाँ सन्देश लुकाउनुहोस्</string>
+    <string name="cannot_assign_completed_task">पूरा भएको कार्य सौंप्न सकिँदैन</string>
+    <string name="assign_to">सौंप्नुहोस् (वैकल्पिक)</string>
+    <string name="click_to_assign_member">टोली सदस्य सौंप्न क्लिक गर्नुहोस्</string>
 
 </resources>
