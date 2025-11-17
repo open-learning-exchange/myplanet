@@ -31,27 +31,35 @@ class SubmissionRepositoryImpl @Inject constructor(
     override suspend fun getUniquePendingSurveys(userId: String?): List<RealmSubmission> {
         if (userId == null) return emptyList()
 
-        val pendingSurveys = getPendingSurveys(userId)
-        if (pendingSurveys.isEmpty()) return emptyList()
-
-        val examIds = pendingSurveys.mapNotNull { it.examIdFromParentId() }.distinct()
-
-        if (examIds.isEmpty()) return emptyList()
-
-        val exams = queryList(RealmStepExam::class.java) {
-            `in`("id", examIds.toTypedArray())
-        }
-        val validExamIds = exams.mapNotNull { it.id }.toSet()
-
-        val uniqueSurveys = linkedMapOf<String, RealmSubmission>()
-        pendingSurveys.forEach { submission ->
-            val examId = submission.examIdFromParentId()
-            if (examId != null && validExamIds.contains(examId) && !uniqueSurveys.containsKey(examId)) {
-                uniqueSurveys[examId] = submission
+        return databaseService.withRealmAsync { realm ->
+            val pendingSurveys = realm.queryList(RealmSubmission::class.java) {
+                equalTo("userId", userId)
+                equalTo("status", "pending")
+                equalTo("type", "survey")
             }
-        }
+            if (pendingSurveys.isEmpty()) {
+                return@withRealmAsync emptyList()
+            }
 
-        return uniqueSurveys.values.toList()
+            val examIds = pendingSurveys.mapNotNull { it.examIdFromParentId() }.distinct()
+            if (examIds.isEmpty()) {
+                return@withRealmAsync emptyList()
+            }
+
+            val exams = realm.queryList(RealmStepExam::class.java) {
+                `in`("id", examIds.toTypedArray())
+            }
+            val validExamIds = exams.mapNotNull { it.id }.toSet()
+
+            val uniqueSurveys = linkedMapOf<String, RealmSubmission>()
+            pendingSurveys.forEach { submission ->
+                val examId = submission.examIdFromParentId()
+                if (examId != null && validExamIds.contains(examId) && !uniqueSurveys.containsKey(examId)) {
+                    uniqueSurveys[examId] = submission
+                }
+            }
+            uniqueSurveys.values.toList()
+        }
     }
 
     override suspend fun getSurveyTitlesFromSubmissions(
@@ -62,14 +70,16 @@ class SubmissionRepositoryImpl @Inject constructor(
             return emptyList()
         }
 
-        val exams = queryList(RealmStepExam::class.java) {
-            `in`("id", examIds.toTypedArray())
-        }
-        val examMap = exams.associate { it.id to (it.name ?: "") }
+        return databaseService.withRealmAsync { realm ->
+            val exams = realm.queryList(RealmStepExam::class.java) {
+                `in`("id", examIds.toTypedArray())
+            }
+            val examMap = exams.associate { it.id to (it.name ?: "") }
 
-        return submissions.map { submission ->
-            val examId = submission.examIdFromParentId()
-            examMap[examId] ?: ""
+            submissions.map { submission ->
+                val examId = submission.examIdFromParentId()
+                examMap[examId] ?: ""
+            }
         }
     }
 
@@ -77,20 +87,21 @@ class SubmissionRepositoryImpl @Inject constructor(
         submissions: List<RealmSubmission>
     ): Map<String?, RealmStepExam> {
         val examIds = submissions.mapNotNull { it.examIdFromParentId() }.distinct()
-
         if (examIds.isEmpty()) {
             return emptyMap()
         }
 
-        val examMap = queryList(RealmStepExam::class.java) {
-            `in`("id", examIds.toTypedArray())
-        }.associateBy { it.id }
+        return databaseService.withRealmAsync { realm ->
+            val examMap = realm.queryList(RealmStepExam::class.java) {
+                `in`("id", examIds.toTypedArray())
+            }.associateBy { it.id }
 
-        return submissions.mapNotNull { sub ->
-            val parentId = sub.parentId
-            val examId = sub.examIdFromParentId()
-            examMap[examId]?.let { parentId to it }
-        }.toMap()
+            submissions.mapNotNull { sub ->
+                val parentId = sub.parentId
+                val examId = sub.examIdFromParentId()
+                examMap[examId]?.let { parentId to it }
+            }.toMap()
+        }
     }
 
     override suspend fun getExamQuestionCount(stepId: String): Int {
