@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.userprofile
 import android.app.DatePickerDialog
 import android.content.Intent
 import android.os.Bundle
+import android.telephony.PhoneNumberUtils
 import android.text.Editable
 import android.text.TextWatcher
 import android.widget.ArrayAdapter
@@ -34,6 +35,7 @@ class BecomeMemberActivity : BaseActivity() {
     private lateinit var mRealm: Realm
     var dob: String = ""
     var guest: Boolean = false
+    private val simplePhoneRegex = Regex("^[+\\d\\s().-]{5,}$")
     
     private data class MemberInfo(
         val username: String,
@@ -49,6 +51,10 @@ class BecomeMemberActivity : BaseActivity() {
         val birthDate: String,
         val gender: String?
     )
+
+    private fun toE164OrNull(raw: String, regionIso: String = Locale.getDefault().country): String? {
+        return PhoneNumberUtils.formatNumberToE164(raw.trim(), regionIso)
+    }
 
     private fun usernameValidationError(username: String, realm: Realm? = null): String? {
         return AuthHelper.validateUsername(this, username, realm)
@@ -94,25 +100,40 @@ class BecomeMemberActivity : BaseActivity() {
             return false
         }
 
-        return when {
-            info.password.isEmpty() -> {
-                activityBecomeMemberBinding.etPassword.error = getString(R.string.please_enter_a_password)
-                false
-            }
-            info.password != info.rePassword -> {
-                activityBecomeMemberBinding.etRePassword.error = getString(R.string.password_doesn_t_match)
-                false
-            }
-            info.email.isNotEmpty() && !Utilities.isValidEmail(info.email) -> {
-                activityBecomeMemberBinding.etEmail.error = getString(R.string.invalid_email)
-                false
-            }
-            info.gender == null -> {
-                Utilities.toast(this, getString(R.string.please_select_gender))
-                false
-            }
-            else -> true
+        if (info.password.isEmpty()) {
+            activityBecomeMemberBinding.etPassword.error = getString(R.string.please_enter_a_password)
+            return false
         }
+        if (info.password != info.rePassword) {
+            activityBecomeMemberBinding.etRePassword.error = getString(R.string.password_doesn_t_match)
+            return false
+        }
+        if (info.email.isNotEmpty() && !Utilities.isValidEmail(info.email)) {
+            activityBecomeMemberBinding.etEmail.error = getString(R.string.invalid_email)
+            return false
+        }
+
+        if (info.phoneNumber.isNotBlank()) {
+            val raw = info.phoneNumber
+            if (!simplePhoneRegex.matches(raw)) {
+                activityBecomeMemberBinding.etPhone.error = "invalid phone number"
+                return false
+            }
+
+            val e164 = toE164OrNull(raw, Locale.getDefault().country)
+            if (e164 == null) {
+                activityBecomeMemberBinding.etPhone.error = "invalid phone number"
+                return false
+            } else {
+                activityBecomeMemberBinding.etPhone.error = null
+            }
+        }
+
+        if (info.gender == null) {
+            Utilities.toast(this, getString(R.string.please_select_gender))
+            return false
+        }
+        return true
     }
 
     private fun buildMemberJson(info: MemberInfo) = JsonObject().apply {
@@ -128,7 +149,13 @@ class BecomeMemberActivity : BaseActivity() {
         addProperty("parentCode", settings.getString("parentCode", ""))
         addProperty("language", info.language)
         addProperty("level", info.level)
-        addProperty("phoneNumber", info.phoneNumber)
+
+        val normalizedPhone = if (info.phoneNumber.isBlank()) {
+            ""
+        } else {
+            toE164OrNull(info.phoneNumber, Locale.getDefault().country)
+        }
+        addProperty("phoneNumber", normalizedPhone)
         addProperty("birthDate", info.birthDate)
         addProperty("gender", info.gender)
         addProperty("type", "user")
