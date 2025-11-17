@@ -16,6 +16,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.service.BroadcastService
 import org.ole.planet.myplanet.service.ImprovedSyncManager
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UploadManager
@@ -68,5 +69,11 @@ object ServiceModule {
         @AppPreferences preferences: SharedPreferences
     ): UploadToShelfService {
         return UploadToShelfService(context, databaseService, preferences)
+    }
+
+    @Provides
+    @Singleton
+    fun provideBroadcastService(): BroadcastService {
+        return BroadcastService()
     }
 }
