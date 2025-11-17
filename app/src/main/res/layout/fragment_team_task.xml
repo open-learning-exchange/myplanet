@@ -8,34 +8,34 @@
     android:background="@color/secondary_bg"
     tools:context=".ui.team.teamTask.TeamTaskFragment">
 
-    <com.nex3z.togglebuttongroup.SingleSelectToggleGroup
+    <com.google.android.material.button.MaterialButtonToggleGroup
         android:id="@+id/task_toggle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:tbgCheckedButton="@+id/btn_all">
+        app:singleSelection="true"
+        app:checkedButton="@+id/btn_all">
 
-        <com.nex3z.togglebuttongroup.button.LabelToggle
+        <Button
             android:id="@+id/btn_all"
+            style="?attr/materialButtonOutlinedStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:padding="@dimen/padding_normal"
-            android:text="@string/all_task"
-            android:textColor="@color/toggle_text_color" />
-        <com.nex3z.togglebuttongroup.button.LabelToggle
+            android:text="@string/all_task" />
+
+        <Button
             android:id="@+id/btn_my"
+            style="?attr/materialButtonOutlinedStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:padding="@dimen/padding_normal"
-            android:text="@string/my_task"
-            android:textColor="@color/toggle_text_color" />
-        <com.nex3z.togglebuttongroup.button.LabelToggle
+            android:text="@string/my_task" />
+
+        <Button
             android:id="@+id/btn_completed"
+            style="?attr/materialButtonOutlinedStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:padding="@dimen/padding_normal"
-            android:text="@string/completed"
-            android:textColor="@color/toggle_text_color" />
-    </com.nex3z.togglebuttongroup.SingleSelectToggleGroup>
+            android:text="@string/completed" />
+    </com.google.android.material.button.MaterialButtonToggleGroup>
 
     <FrameLayout
         android:layout_width="match_parent"

@@ -25,10 +25,8 @@ glide = "5.0.5"
 photoView = "2.3.0"
 fab = "1.6.4"
 mpAndroidChart = "v3.1.0"
-circularProgressView = "0.1.2"
 material = "1.13.0"
 gson = "2.13.2"
-toggleButtonGroup = "1.2.3"
 materialdrawer = "6.1.1"
 opencsv = "5.12.0"
 okhttp = "5.3.0"
@@ -37,7 +35,6 @@ pbkdf2 = "1.1.4"
 osmdroidAndroid = "6.1.20"
 kotlinxSerializationJson = "1.9.0"
 kotlinxCoroutinesAndroid = "1.10.2"
-androidGifDrawable = "1.2.29"
 
 [libraries]
 android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "androidGradlePlugin" }
@@ -70,12 +67,10 @@ glide-ksp = { module = "com.github.bumptech.glide:ksp", version.ref = "glide" }
 photoView = { module = "com.github.chrisbanes:PhotoView", version.ref = "photoView" }
 fab = { module = "com.github.clans:fab", version.ref = "fab" }
 mpAndroidChart = { module = "com.github.PhilJay:MPAndroidChart", version.ref = "mpAndroidChart" }
-circular-progress-view = { module = "com.github.VaibhavLakhera:Circular-Progress-View", version.ref = "circularProgressView" }
 material = { module = "com.google.android.material:material", version.ref = "material" }
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
 hilt-android-compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hilt" }
-toggle-button-group = { module = "com.nex3z:toggle-button-group", version.ref = "toggleButtonGroup" }
 materialdrawer = { module = "com.mikepenz:materialdrawer", version.ref = "materialdrawer" }
 opencsv = { module = "com.opencsv:opencsv", version.ref = "opencsv" }
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit2" }
@@ -91,7 +86,6 @@ osmdroid-android = { module = "org.osmdroid:osmdroid-android", version.ref = "os
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinxCoroutinesAndroid" }
-android-gif-drawable = { module = "pl.droidsonroids.gif:android-gif-drawable", version.ref = "androidGifDrawable" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }

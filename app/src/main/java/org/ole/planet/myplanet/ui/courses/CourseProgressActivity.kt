@@ -43,11 +43,13 @@ class CourseProgressActivity : BaseActivity() {
             val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
             if (progress != null) {
                 val maxProgress = progress["max"].asInt
-                if (maxProgress != 0) {
-                    binding.progressView.setProgress((progress["current"].asInt.toDouble() / maxProgress.toDouble() * 100).toInt(), true)
+                val percentage = if (maxProgress != 0) {
+                    (progress["current"].asInt.toDouble() / maxProgress.toDouble() * 100).toInt()
                 } else {
-                    binding.progressView.setProgress(0, true)
+                    0
                 }
+                binding.progressView.progress = percentage
+                binding.progressText.text = "$percentage%"
             }
             binding.tvCourse.text = course?.courseTitle
             binding.tvProgress.text = getString(
