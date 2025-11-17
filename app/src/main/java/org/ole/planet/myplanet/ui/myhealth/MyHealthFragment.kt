@@ -419,7 +419,8 @@ class MyHealthFragment : Fragment() {
                 binding.tvDataPlaceholder.visibility = View.VISIBLE
 
                 val userMap = mRealm.where(RealmUserModel::class.java).findAll()
-                    .associate { it.id to it.getFullName() }
+                    .mapNotNull { user -> user.id?.let { id -> id to user.getFullName() } }
+                    .toMap()
                 val adap = AdapterHealthExamination(requireActivity(), list, mh, currentUser, userMap)
                 binding.rvRecords.apply {
                     layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
