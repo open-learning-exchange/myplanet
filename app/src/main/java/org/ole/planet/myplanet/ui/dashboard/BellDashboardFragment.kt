@@ -18,20 +18,15 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import io.realm.Realm
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentHomeBellBinding
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.TimeoutCancellationException
-import kotlinx.coroutines.withTimeoutOrNull
 import org.ole.planet.myplanet.model.RealmCertification
-import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
@@ -60,7 +55,6 @@ class BellDashboardFragment : BaseDashboardFragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentHomeBellBinding.inflate(inflater, container, false)
         val view = binding.root
-        initView(view)
         declareElements()
         onLoaded(view)
         user = profileDbHandler?.userModel
@@ -69,6 +63,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        initView(view)
         binding.cardProfileBell.txtCommunityName.text = model?.planetCode
         setupNetworkStatusMonitoring()
         (activity as DashboardActivity?)?.supportActionBar?.hide()

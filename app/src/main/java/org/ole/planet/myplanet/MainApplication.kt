@@ -24,8 +24,6 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -36,6 +34,7 @@ import org.ole.planet.myplanet.callback.TeamPageListener
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.di.ApiClientEntryPoint
 import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.di.ApplicationScopeEntryPoint
 import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.di.WorkerDependenciesEntryPoint
 import org.ole.planet.myplanet.model.RealmApkLog
@@ -88,11 +87,11 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             }
             return "0"
         }
-        val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        lateinit var applicationScope: CoroutineScope
         lateinit var defaultPref: SharedPreferences
 
         fun createLog(type: String, error: String = "") {
-            applicationScope.launch(Dispatchers.IO) {
+            applicationScope.launch {
                 val entryPoint = EntryPointAccessors.fromApplication(
                     context,
                     WorkerDependenciesEntryPoint::class.java
@@ -180,8 +179,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
     override fun onCreate() {
         super.onCreate()
-        initApp()
         setupCriticalProperties()
+        initApp()
         ensureApiClientInitialized()
         setupStrictMode()
         registerExceptionHandler()
@@ -207,6 +206,10 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         preferences = appPreferences
         service = databaseService
         defaultPref = defaultPreferences
+        applicationScope = EntryPointAccessors.fromApplication(
+            this,
+            ApplicationScopeEntryPoint::class.java
+        ).applicationScope()
     }
 
     private fun ensureApiClientInitialized() {
@@ -397,6 +400,5 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         }
         super.onTerminate()
         stopListenNetworkState()
-        applicationScope.cancel()
     }
 }

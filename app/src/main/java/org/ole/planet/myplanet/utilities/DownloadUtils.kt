@@ -18,7 +18,6 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
 import java.util.regex.Pattern
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
@@ -249,7 +248,7 @@ object DownloadUtils {
             return
         }
 
-        MainApplication.applicationScope.launch(Dispatchers.IO) {
+        MainApplication.applicationScope.launch {
             try {
                 libraryRepository.markResourceOfflineByLocalAddress(currentFileName)
             } catch (e: Exception) {

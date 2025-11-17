@@ -13,6 +13,10 @@ import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.UserRepository
 
+data class DashboardUiState(
+    val unreadNotifications: Int = 0,
+)
+
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     private val userRepository: UserRepository,
@@ -21,11 +25,11 @@ class DashboardViewModel @Inject constructor(
     private val submissionRepository: SubmissionRepository,
     private val notificationRepository: NotificationRepository
 ) : ViewModel() {
-    private val _surveyWarning = MutableStateFlow(false)
-    val surveyWarning: StateFlow<Boolean> = _surveyWarning.asStateFlow()
-
-    private val _unreadNotifications = MutableStateFlow(0)
-    val unreadNotifications: StateFlow<Int> = _unreadNotifications.asStateFlow()
+    private val _uiState = MutableStateFlow(DashboardUiState())
+    val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
+    fun setUnreadNotifications(count: Int) {
+        _uiState.value = _uiState.value.copy(unreadNotifications = count)
+    }
     fun calculateIndividualProgress(voiceCount: Int, hasUnfinishedSurvey: Boolean): Int {
         val earnedDollarsVoice = minOf(voiceCount, 5) * 2
         val earnedDollarsSurvey = if (!hasUnfinishedSurvey) 1 else 0
