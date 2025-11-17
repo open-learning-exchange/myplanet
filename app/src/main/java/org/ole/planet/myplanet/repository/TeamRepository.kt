@@ -94,4 +94,6 @@ interface TeamRepository {
         planetCode: String?,
     ): Result<Unit>
     suspend fun respondToMemberRequest(teamId: String, userId: String, accept: Boolean): Result<Unit>
+    suspend fun getTeams(fromDashboard: Boolean, type: String?, userId: String): Flow<List<RealmMyTeam>>
+    suspend fun searchTeams(query: String, fromDashboard: Boolean, type: String?, userId: String): List<RealmMyTeam>
 }

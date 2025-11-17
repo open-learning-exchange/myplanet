@@ -11,6 +11,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
@@ -643,5 +644,56 @@ class TeamRepositoryImpl @Inject constructor(
             isNotNull("resourceId")
             isNotEmpty("resourceId")
         }.mapNotNull { it.resourceId }
+    }
+
+    override suspend fun getTeams(fromDashboard: Boolean, type: String?, userId: String): Flow<List<RealmMyTeam>> {
+        return if (fromDashboard) {
+            queryListFlow(RealmMyTeam::class.java) {
+                equalTo("userId", userId)
+                equalTo("docType", "membership")
+            }.flatMapLatest { teams ->
+                val teamIds = teams.map { it.teamId }.toTypedArray()
+                queryListFlow(RealmMyTeam::class.java) {
+                    `in`("_id", teamIds)
+                    notEqualTo("status", "archived")
+                }
+            }
+        } else {
+            queryListFlow(RealmMyTeam::class.java) {
+                isEmpty("teamId")
+                notEqualTo("status", "archived")
+                if (type == "enterprise") {
+                    equalTo("type", "enterprise")
+                } else {
+                    notEqualTo("type", "enterprise")
+                }
+            }
+        }
+    }
+
+    override suspend fun searchTeams(query: String, fromDashboard: Boolean, type: String?, userId: String): List<RealmMyTeam> {
+        return if (fromDashboard) {
+            val teams = queryList(RealmMyTeam::class.java) {
+                equalTo("userId", userId)
+                equalTo("docType", "membership")
+            }
+            val teamIds = teams.map { it.teamId }.toTypedArray()
+            queryList(RealmMyTeam::class.java) {
+                `in`("_id", teamIds)
+                notEqualTo("status", "archived")
+                contains("name", query, io.realm.Case.INSENSITIVE)
+            }
+        } else {
+            queryList(RealmMyTeam::class.java) {
+                isEmpty("teamId")
+                notEqualTo("status", "archived")
+                contains("name", query, io.realm.Case.INSENSITIVE)
+                if (type == "enterprise") {
+                    equalTo("type", "enterprise")
+                } else {
+                    notEqualTo("type", "enterprise")
+                }
+            }
+        }
     }
 }
