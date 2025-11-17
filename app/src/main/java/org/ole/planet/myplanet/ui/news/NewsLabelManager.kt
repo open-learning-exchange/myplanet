@@ -4,28 +4,36 @@ import android.content.Context
 import android.view.MenuItem
 import android.view.View
 import fisk.chipcloud.ChipCloud
+import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmList
-import java.util.Locale
-import java.util.concurrent.atomic.AtomicBoolean
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNewsBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Utilities
+import java.util.Locale
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.coroutines.cancellation.CancellationException
 
-class NewsLabelManager(private val context: Context, private val realm: Realm) {
+class NewsLabelManager(
+    private val context: Context,
+    private val realm: Realm,
+    private val scope: CoroutineScope,
+) {
     fun setupAddLabelMenu(binding: RowNewsBinding, news: RealmNews?, canManageLabels: Boolean) {
         binding.btnAddLabel.setOnClickListener(null)
         binding.btnAddLabel.isEnabled = canManageLabels
         if (!canManageLabels) {
             return
         }
-
         binding.btnAddLabel.setOnClickListener {
             val usedLabels = news?.labels?.toSet() ?: emptySet()
             val availableLabels = Constants.LABELS.filterValues { it !in usedLabels }
-
             val wrapper = androidx.appcompat.view.ContextThemeWrapper(context, R.style.CustomPopupMenu)
             val menu = android.widget.PopupMenu(wrapper, binding.btnAddLabel)
             availableLabels.keys.forEach { labelName ->
@@ -38,7 +46,6 @@ class NewsLabelManager(private val context: Context, private val realm: Realm) {
                     if (news?.labels?.contains(selectedLabel) == true) {
                         return@setOnMenuItemClickListener true
                     }
-
                     val labelAdded = AtomicBoolean(false)
                     realm.executeTransactionAsync({ transactionRealm ->
                         val managedNews = transactionRealm.where(RealmNews::class.java)
@@ -56,17 +63,26 @@ class NewsLabelManager(private val context: Context, private val realm: Realm) {
                             }
                         }
                     }, {
-                        if (labelAdded.get()) {
-                            val managedNews = realm.where(RealmNews::class.java)
-                                .equalTo("id", newsId)
-                                .findFirst()
-                            val managedLabels = managedNews?.labels
-                            val newLabels = RealmList<String>().apply {
-                                managedLabels?.forEach { add(it) }
+                        scope.launch {
+                            try {
+                                if (labelAdded.get()) {
+                                    val newLabels = withContext(Dispatchers.IO) {
+                                        Realm.getDefaultInstance().use { realm ->
+                                            val managedNews = realm.where(RealmNews::class.java)
+                                                .equalTo("id", newsId, Case.SENSITIVE).findFirst()
+                                            managedNews?.labels?.toList() ?: emptyList()
+                                        }
+                                    }
+                                    withContext(Dispatchers.Main) {
+                                        news?.labels = RealmList<String>().apply { addAll(newLabels) }
+                                        Utilities.toast(context, context.getString(R.string.label_added))
+                                        news?.let { showChips(binding, it, canManageLabels) }
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                if (e is CancellationException) throw e
+                                e.printStackTrace()
                             }
-                            news?.labels = newLabels
-                            Utilities.toast(context, context.getString(R.string.label_added))
-                            news?.let { showChips(binding, it, canManageLabels) }
                         }
                     }, { error ->
                         error.printStackTrace()
@@ -81,15 +97,12 @@ class NewsLabelManager(private val context: Context, private val realm: Realm) {
 
     fun showChips(binding: RowNewsBinding, news: RealmNews, canManageLabels: Boolean) {
         binding.fbChips.removeAllViews()
-
         for (label in news.labels ?: emptyList()) {
             val chipConfig = Utilities.getCloudConfig().apply {
                 selectMode(if (canManageLabels) ChipCloud.SelectMode.close else ChipCloud.SelectMode.none)
             }
-
             val chipCloud = ChipCloud(context, binding.fbChips, chipConfig)
             chipCloud.addChip(getLabel(label))
-
             if (canManageLabels) {
                 chipCloud.setDeleteListener { _: Int, labelText: String? ->
                     val selectedLabel = when {
@@ -115,16 +128,25 @@ class NewsLabelManager(private val context: Context, private val realm: Realm) {
                                 }
                             }
                         }, {
-                            if (labelRemoved.get()) {
-                                val managedNews = realm.where(RealmNews::class.java)
-                                    .equalTo("id", newsId)
-                                    .findFirst()
-                                val managedLabels = managedNews?.labels
-                                val newLabels = RealmList<String>().apply {
-                                    managedLabels?.forEach { add(it) }
+                            scope.launch {
+                                try {
+                                    if (labelRemoved.get()) {
+                                        val newLabels = withContext(Dispatchers.IO) {
+                                            Realm.getDefaultInstance().use { realm ->
+                                                val managedNews = realm.where(RealmNews::class.java)
+                                                    .equalTo("id", newsId, Case.SENSITIVE).findFirst()
+                                                managedNews?.labels?.toList() ?: emptyList()
+                                            }
+                                        }
+                                        withContext(Dispatchers.Main) {
+                                            news.labels = RealmList<String>().apply { addAll(newLabels) }
+                                            showChips(binding, news, canManageLabels)
+                                        }
+                                    }
+                                } catch (e: Exception) {
+                                    if (e is CancellationException) throw e
+                                    e.printStackTrace()
                                 }
-                                news.labels = newLabels
-                                showChips(binding, news, canManageLabels)
                             }
                         }, { error ->
                             error.printStackTrace()
@@ -145,7 +167,6 @@ class NewsLabelManager(private val context: Context, private val realm: Realm) {
             binding.btnAddLabel.visibility = View.GONE
             return
         }
-
         val usedLabels = news?.labels?.toSet() ?: emptySet()
         val labels = Constants.LABELS.values.toSet()
         binding.btnAddLabel.visibility =
