@@ -15,14 +15,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
-import io.realm.Realm
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmMyLife
-import org.ole.planet.myplanet.model.RealmMyLife.Companion.updateVisibility
-import org.ole.planet.myplanet.model.RealmMyLife.Companion.updateWeight
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment
 import org.ole.planet.myplanet.ui.myhealth.MyHealthFragment
 import org.ole.planet.myplanet.ui.mylife.helper.ItemTouchHelperAdapter
@@ -36,7 +33,13 @@ import org.ole.planet.myplanet.ui.submission.MySubmissionFragment.Companion.newI
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment
 import org.ole.planet.myplanet.utilities.Utilities
 
-class AdapterMyLife(private val context: Context, private val myLifeList: List<RealmMyLife>, private var mRealm: Realm, private val mDragStartListener: OnStartDragListener) : RecyclerView.Adapter<RecyclerView.ViewHolder>(), ItemTouchHelperAdapter {
+class AdapterMyLife(
+    private val context: Context,
+    private val myLifeList: List<RealmMyLife>,
+    private val mDragStartListener: OnStartDragListener,
+    private val updateVisibilityCallback: (String, Boolean) -> Unit,
+    private val updateWeightCallback: (String, Int, String) -> Unit
+) : RecyclerView.Adapter<RecyclerView.ViewHolder>(), ItemTouchHelperAdapter {
     private val hide = 0.5f
     private val show = 1f
 
@@ -65,8 +68,13 @@ class AdapterMyLife(private val context: Context, private val myLifeList: List<R
                 false
             }
             holder.visibility.setOnClickListener {
-                holder.visibility.contentDescription = context.getString(R.string.visibility_of, myLifeList[position].title)
-                updateVisibility(holder, holder.bindingAdapterPosition, myLifeList[holder.bindingAdapterPosition].isVisible)
+                holder.visibility.contentDescription =
+                    context.getString(R.string.visibility_of, myLifeList[position].title)
+                updateVisibility(
+                    holder,
+                    holder.bindingAdapterPosition,
+                    myLifeList[holder.bindingAdapterPosition].isVisible
+                )
             }
             if (!myLifeList[position].isVisible) {
                 changeVisibility(holder, R.drawable.ic_visibility, hide)
@@ -77,21 +85,24 @@ class AdapterMyLife(private val context: Context, private val myLifeList: List<R
     }
 
     private fun updateVisibility(holder: RecyclerView.ViewHolder, position: Int, isVisible: Boolean) {
-        mRealm.executeTransactionAsync({ realm: Realm? ->
-            realm?.let {
-                updateVisibility(!isVisible, myLifeList[position]._id)
-            }
-        }, {
+        myLifeList[position]._id?.let {
+            updateVisibilityCallback(it, !isVisible)
             MainApplication.applicationScope.launch(Dispatchers.Main) {
                 if (isVisible) {
                     changeVisibility(holder, R.drawable.ic_visibility, hide)
-                    Utilities.toast(context, myLifeList[position].title + context.getString(R.string.is_now_hidden))
+                    Utilities.toast(
+                        context,
+                        myLifeList[position].title + context.getString(R.string.is_now_hidden)
+                    )
                 } else {
                     changeVisibility(holder, R.drawable.ic_visibility_off, show)
-                    Utilities.toast(context, myLifeList[position].title + context.getString(R.string.is_now_shown))
+                    Utilities.toast(
+                        context,
+                        myLifeList[position].title + context.getString(R.string.is_now_shown)
+                    )
                 }
             }
-        }) { }
+        }
     }
 
     private fun changeVisibility(holder: RecyclerView.ViewHolder, imageId: Int, alpha: Float) {
@@ -104,7 +115,15 @@ class AdapterMyLife(private val context: Context, private val myLifeList: List<R
     }
 
     override fun onItemMove(fromPosition: Int, toPosition: Int): Boolean {
-        updateWeight(toPosition + 1, myLifeList[fromPosition]._id, myLifeList[fromPosition].userId)
+        myLifeList[fromPosition]._id?.let {
+            myLifeList[fromPosition].userId?.let { it1 ->
+                updateWeightCallback(
+                    it,
+                    toPosition + 1,
+                    it1
+                )
+            }
+        }
         notifyItemMoved(fromPosition, toPosition)
         return true
     }

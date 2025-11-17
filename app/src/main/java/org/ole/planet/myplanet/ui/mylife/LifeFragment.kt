@@ -10,16 +10,21 @@ import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.databinding.FragmentLifeBinding
+import dagger.hilt.android.AndroidEntryPoint
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyLife.Companion.getMyLifeByUserId
 import org.ole.planet.myplanet.ui.mylife.helper.OnStartDragListener
 import org.ole.planet.myplanet.ui.mylife.helper.SimpleItemTouchHelperCallback
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
     private lateinit var adapterMyLife: AdapterMyLife
     private var mItemTouchHelper: ItemTouchHelper? = null
     private var _binding: FragmentLifeBinding? = null
+    @Inject
+    lateinit var myLifeRepo: MyLifeRepo
     private val binding get() = checkNotNull(_binding)
     override fun getLayout(): Int = R.layout.fragment_life
 
@@ -37,7 +42,13 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
         val myLifeList = getMyLifeByUserId(mRealm, model?.id)
-        adapterMyLife = AdapterMyLife(requireContext(), myLifeList, mRealm, this)
+        adapterMyLife = AdapterMyLife(
+            requireContext(),
+            myLifeList,
+            this,
+            { id, isVisible -> myLifeRepo.updateVisibility(id, isVisible) },
+            { id, weight, userId -> myLifeRepo.updateWeight(id, weight, userId) }
+        )
         return adapterMyLife
     }
 
