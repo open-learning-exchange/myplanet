@@ -1170,5 +1170,8 @@
     <string name="resource_has_no_attachments">Kheyraadka ma laha faylal la soo dejisan karo</string>
     <string name="unable_to_download_resource">Lama soo dejin karo kheyraadka</string>
     <string name="hide_new_message">Qari fariinta cusub</string>
+    <string name="cannot_assign_completed_task">Lama xil saari karo shaqo la dhammeeyay</string>
+    <string name="assign_to">U xilsaar (Ikhtiyaari)</string>
+    <string name="click_to_assign_member">Guji si aad u doorato xubin koox</string>
 
 </resources>
