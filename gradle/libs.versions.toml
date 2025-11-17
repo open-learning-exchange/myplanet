@@ -1,5 +1,5 @@
 [versions]
-kotlin = "2.2.10"
+kotlin = "2.2.21"
 androidGradlePlugin = "8.13.1"
 realmGradlePlugin = "10.19.0"
 hilt = "2.57.2"
