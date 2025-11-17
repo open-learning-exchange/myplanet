@@ -70,10 +70,4 @@ object ServiceModule {
     ): UploadToShelfService {
         return UploadToShelfService(context, databaseService, preferences)
     }
-
-    @Provides
-    @Singleton
-    fun provideBroadcastService(): BroadcastService {
-        return BroadcastService()
-    }
 }
