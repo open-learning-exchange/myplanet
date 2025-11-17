@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.service
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.os.Trace
 import android.text.TextUtils
 import android.util.Base64
 import com.google.gson.Gson
@@ -16,6 +17,7 @@ import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.datamanager.ApiClient.client
@@ -133,38 +135,76 @@ class UploadToShelfService @Inject constructor(
 
     private fun uploadNewUser(apiInterface: ApiInterface?, realm: Realm, model: RealmUserModel) {
         try {
+            Trace.beginSection("UploadToShelfService.uploadNewUser")
             val obj = model.serialize()
-            val createResponse = apiInterface?.putDoc(null, "application/json", "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", obj)?.execute()
+            val createResponse = apiInterface?.putDoc(
+                null,
+                "application/json",
+                "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}",
+                obj
+            )?.execute()
 
             if (createResponse?.isSuccessful == true) {
                 val id = createResponse.body()?.get("id")?.asString
                 val rev = createResponse.body()?.get("rev")?.asString
                 model._id = id
                 model._rev = rev
-                processUserAfterCreation(apiInterface, realm, model, obj)
-            }
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
-    }
-
-    private fun processUserAfterCreation(apiInterface: ApiInterface?, realm: Realm, model: RealmUserModel, obj: JsonObject) {
-        try {
-            val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
-            val header = "Basic ${Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
-            val fetchDataResponse = apiInterface?.getJsonObject(header, "${replacedUrl(model)}/_users/${model._id}")?.execute()
-            if (fetchDataResponse?.isSuccessful == true) {
-                model.password_scheme = getString("password_scheme", fetchDataResponse.body())
-                model.derived_key = getString("derived_key", fetchDataResponse.body())
-                model.salt = getString("salt", fetchDataResponse.body())
-                model.iterations = getString("iterations", fetchDataResponse.body())
-
-                if (saveKeyIv(apiInterface, model, obj)) {
-                    updateHealthData(realm, model)
+                MainApplication.applicationScope.launch {
+                    processUserAfterCreationAsync(apiInterface, model.id, obj)
                 }
             }
         } catch (e: IOException) {
             e.printStackTrace()
+        } finally {
+            Trace.endSection()
+        }
+    }
+
+
+    private suspend fun processUserAfterCreationAsync(
+        apiInterface: ApiInterface?,
+        modelId: String?,
+        obj: JsonObject
+    ) {
+        try {
+            Trace.beginSection("UploadToShelfService.processUserAfterCreationAsync")
+            dbService.withRealm { realm ->
+                val model = realm.where(RealmUserModel::class.java)
+                    .equalTo("id", modelId)
+                    .findFirst()
+                if (model != null) {
+                    try {
+                        val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
+                        val header = "Basic ${
+                            Base64.encodeToString(
+                                ("${model.name}:${password}").toByteArray(),
+                                Base64.NO_WRAP
+                            )
+                        }"
+                        val fetchDataResponse = withContext(Dispatchers.IO) {
+                            apiInterface?.getJsonObject(
+                                header,
+                                "${replacedUrl(model)}/_users/${model._id}"
+                            )
+                                ?.execute()
+                        }
+                        if (fetchDataResponse?.isSuccessful == true) {
+                            model.password_scheme =
+                                getString("password_scheme", fetchDataResponse.body())
+                            model.derived_key = getString("derived_key", fetchDataResponse.body())
+                            model.salt = getString("salt", fetchDataResponse.body())
+                            model.iterations = getString("iterations", fetchDataResponse.body())
+                            if (saveKeyIv(apiInterface, model, obj)) {
+                                updateHealthData(realm, model)
+                            }
+                        }
+                    } catch (e: IOException) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+        } finally {
+            Trace.endSection()
         }
     }
 
