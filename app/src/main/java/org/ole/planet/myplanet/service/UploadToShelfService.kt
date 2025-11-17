@@ -137,21 +137,14 @@ class UploadToShelfService @Inject constructor(
         try {
             Trace.beginSection("UploadToShelfService.uploadNewUser")
             val obj = model.serialize()
-            val createResponse = apiInterface?.putDoc(
-                null,
-                "application/json",
-                "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}",
-                obj
-            )?.execute()
+            val createResponse = apiInterface?.putDoc(null, "application/json", "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", obj)?.execute()
 
             if (createResponse?.isSuccessful == true) {
                 val id = createResponse.body()?.get("id")?.asString
                 val rev = createResponse.body()?.get("rev")?.asString
                 model._id = id
                 model._rev = rev
-                MainApplication.applicationScope.launch {
-                    processUserAfterCreationAsync(apiInterface, model.id, obj)
-                }
+                processUserAfterCreation(apiInterface, realm, model, obj)
             }
         } catch (e: IOException) {
             e.printStackTrace()
@@ -160,49 +153,42 @@ class UploadToShelfService @Inject constructor(
         }
     }
 
+    private fun processUserAfterCreation(apiInterface: ApiInterface?, realm: Realm, model: RealmUserModel, obj: JsonObject) {
+        val unmanagedModel = realm.copyFromRealm(model)
+        MainApplication.applicationScope.launch {
+            processUserAfterCreationAsync(apiInterface, unmanagedModel, obj)
+        }
+    }
 
-    private suspend fun processUserAfterCreationAsync(
-        apiInterface: ApiInterface?,
-        modelId: String?,
-        obj: JsonObject
-    ) {
+    private suspend fun processUserAfterCreationAsync(apiInterface: ApiInterface?, model: RealmUserModel, obj: JsonObject) {
         try {
             Trace.beginSection("UploadToShelfService.processUserAfterCreationAsync")
-            dbService.withRealm { realm ->
-                val model = realm.where(RealmUserModel::class.java)
-                    .equalTo("id", modelId)
-                    .findFirst()
-                if (model != null) {
-                    try {
-                        val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
-                        val header = "Basic ${
-                            Base64.encodeToString(
-                                ("${model.name}:${password}").toByteArray(),
-                                Base64.NO_WRAP
-                            )
-                        }"
-                        val fetchDataResponse = withContext(Dispatchers.IO) {
-                            apiInterface?.getJsonObject(
-                                header,
-                                "${replacedUrl(model)}/_users/${model._id}"
-                            )
-                                ?.execute()
+            val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
+            val header = "Basic ${Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
+            val fetchDataResponse = withContext(Dispatchers.IO) {
+                apiInterface?.getJsonObject(header, "${replacedUrl(model)}/_users/${model._id}")?.execute()
+            }
+            if (fetchDataResponse?.isSuccessful == true) {
+                val passwordScheme = getString("password_scheme", fetchDataResponse.body())
+                val derivedKey = getString("derived_key", fetchDataResponse.body())
+                val salt = getString("salt", fetchDataResponse.body())
+                val iterations = getString("iterations", fetchDataResponse.body())
+                val success = saveKeyIvAsync(apiInterface, model, obj)
+                if (success) {
+                    dbService.withRealm { realm ->
+                        val managedModel = realm.where(RealmUserModel::class.java).equalTo("id", model.id).findFirst()
+                        if (managedModel != null) {
+                            managedModel.password_scheme = passwordScheme
+                            managedModel.derived_key = derivedKey
+                            managedModel.salt = salt
+                            managedModel.iterations = iterations
+                            updateHealthData(realm, managedModel)
                         }
-                        if (fetchDataResponse?.isSuccessful == true) {
-                            model.password_scheme =
-                                getString("password_scheme", fetchDataResponse.body())
-                            model.derived_key = getString("derived_key", fetchDataResponse.body())
-                            model.salt = getString("salt", fetchDataResponse.body())
-                            model.iterations = getString("iterations", fetchDataResponse.body())
-                            if (saveKeyIv(apiInterface, model, obj)) {
-                                updateHealthData(realm, model)
-                            }
-                        }
-                    } catch (e: IOException) {
-                        e.printStackTrace()
                     }
                 }
             }
+        } catch (e: IOException) {
+            e.printStackTrace()
         } finally {
             Trace.endSection()
         }
@@ -252,8 +238,7 @@ class UploadToShelfService @Inject constructor(
         }
     }
 
-    @Throws(IOException::class)
-    fun saveKeyIv(apiInterface: ApiInterface?, model: RealmUserModel, obj: JsonObject): Boolean {
+    suspend fun saveKeyIvAsync(apiInterface: ApiInterface?, model: RealmUserModel, obj: JsonObject): Boolean {
         val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
         val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
         val ob = JsonObject()
@@ -271,7 +256,7 @@ class UploadToShelfService @Inject constructor(
         val maxAttempts = 3
         val retryDelayMs = 2000L
 
-        val response = runBlocking {
+        val response = withContext(Dispatchers.IO) {
             RetryUtils.retry(
                 maxAttempts = maxAttempts,
                 delayMs = retryDelayMs,
@@ -282,14 +267,19 @@ class UploadToShelfService @Inject constructor(
         }
 
         if (response?.isSuccessful == true && response.body() != null) {
-            model.key = keyString
-            model.iv = iv
+            dbService.withRealm { realm ->
+                val managedModel = realm.where(RealmUserModel::class.java).equalTo("id", model.id).findFirst()
+                if (managedModel != null) {
+                    managedModel.key = keyString
+                    managedModel.iv = iv
+                }
+            }
         } else {
             val errorMessage = "Failed to save key/IV after $maxAttempts attempts"
             throw IOException(errorMessage)
         }
 
-        changeUserSecurity(model, obj)
+        changeUserSecurityAsync(model, obj)
         return true
     }
 
@@ -467,12 +457,14 @@ class UploadToShelfService @Inject constructor(
     }
 
     companion object {
-        private fun changeUserSecurity(model: RealmUserModel, obj: JsonObject) {
+        private suspend fun changeUserSecurityAsync(model: RealmUserModel, obj: JsonObject) {
             val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
             val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
             val apiInterface = client?.create(ApiInterface::class.java)
             try {
-                val response: Response<JsonObject?>? = apiInterface?.getJsonObject(header, "${UrlUtils.getUrl()}/${table}/_security")?.execute()
+                val response = withContext(Dispatchers.IO) {
+                    apiInterface?.getJsonObject(header, "${UrlUtils.getUrl()}/${table}/_security")?.execute()
+                }
                 if (response?.body() != null) {
                     val jsonObject = response.body()
                     val members = jsonObject?.getAsJsonObject("members")
@@ -484,7 +476,9 @@ class UploadToShelfService @Inject constructor(
                     rolesArray.add("health")
                     members?.add("roles", rolesArray)
                     jsonObject?.add("members", members)
-                    apiInterface.putDoc(header, "application/json", "${UrlUtils.getUrl()}/${table}/_security", jsonObject).execute()
+                    withContext(Dispatchers.IO) {
+                        apiInterface?.putDoc(header, "application/json", "${UrlUtils.getUrl()}/${table}/_security", jsonObject)?.execute()
+                    }
                 }
             } catch (e: IOException) {
                 e.printStackTrace()

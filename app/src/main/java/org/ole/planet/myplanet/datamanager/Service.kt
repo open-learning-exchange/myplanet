@@ -16,6 +16,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.MainApplication
@@ -343,7 +344,9 @@ class Service @Inject constructor(
                 if (res.body() != null) {
                     val model = populateUsersTable(res.body(), realm1, settings)
                     if (model != null) {
-                        getUploadToShelfService().saveKeyIv(retrofitInterface, model, obj)
+                        runBlocking {
+                            getUploadToShelfService().saveKeyIvAsync(retrofitInterface, model, obj)
+                        }
                     }
                 }
             } catch (e: IOException) {
