@@ -5,10 +5,12 @@ import io.realm.RealmChangeListener
 import io.realm.RealmObject
 import io.realm.RealmQuery
 import io.realm.RealmResults
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.ProducerScope
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.applyEqualTo
 import org.ole.planet.myplanet.datamanager.findCopyByField
@@ -43,10 +45,10 @@ open class RealmRepository(protected val databaseService: DatabaseService) {
             realm.where(clazz).apply(builder).count()
         }
 
-    protected fun <T : RealmObject> queryListFlow(
+    protected suspend fun <T : RealmObject> queryListFlow(
         clazz: Class<T>,
         builder: RealmQuery<T>.() -> Unit = {},
-    ): Flow<List<T>> =
+    ): Flow<List<T>> = withContext(Dispatchers.Main) {
         withRealmFlow { realm, scope ->
             val results = realm.where(clazz).apply(builder).findAllAsync()
             val listener =
@@ -61,6 +63,7 @@ open class RealmRepository(protected val databaseService: DatabaseService) {
             }
             return@withRealmFlow { results.removeChangeListener(listener) }
         }
+    }
 
     protected suspend fun <T : RealmObject, V : Any> findByField(
         clazz: Class<T>,

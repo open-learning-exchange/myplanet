@@ -32,7 +32,7 @@ class MyPersonalRepositoryImpl @Inject constructor(
         save(personal)
     }
 
-    override fun getPersonalResources(userId: String?): Flow<List<RealmMyPersonal>> {
+    override suspend fun getPersonalResources(userId: String?): Flow<List<RealmMyPersonal>> {
         if (userId.isNullOrBlank()) {
             return flowOf(emptyList())
         }

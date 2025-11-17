@@ -14,7 +14,7 @@ interface FeedbackRepository {
         item: String? = null,
         state: String? = null,
     ): RealmFeedback
-    fun getFeedback(userModel: RealmUserModel?): Flow<List<RealmFeedback>>
+    suspend fun getFeedback(userModel: RealmUserModel?): Flow<List<RealmFeedback>>
     suspend fun getFeedbackById(id: String?): RealmFeedback?
     suspend fun closeFeedback(id: String?)
     suspend fun addReply(id: String?, obj: JsonObject)
