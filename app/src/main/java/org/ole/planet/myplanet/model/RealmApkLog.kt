@@ -20,7 +20,7 @@ open class RealmApkLog : RealmObject() {
     var createdOn: String? = null
     var time: String? = null
 
-fun setError(e: Throwable) {
+    fun setError(e: Throwable) {
         error += "--------- Stack trace ---------\n\n"
         appendReport(e)
         error += "--------- Cause ---------\n\n"
