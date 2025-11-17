@@ -20,6 +20,30 @@ open class RealmApkLog : RealmObject() {
     var createdOn: String? = null
     var time: String? = null
 
+fun setError(e: Throwable) {
+        error += "--------- Stack trace ---------\n\n"
+        appendReport(e)
+        error += "--------- Cause ---------\n\n"
+        val cause = e.cause
+        appendReport(cause)
+    }
+
+    private fun appendReport(cause: Throwable?) {
+        if (cause != null) {
+            error += """
+                $cause
+                
+                
+                """.trimIndent()
+            val arr = cause.stackTrace
+            for (i in arr.indices) {
+                error += """    ${arr[i]}
+"""
+            }
+        }
+        error += "-------------------------------\n\n"
+    }
+
     companion object {
         @Ignore
         const val ERROR_TYPE_CRASH = "crash"
