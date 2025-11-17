@@ -24,9 +24,9 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
@@ -67,7 +67,6 @@ class SyncManager @Inject constructor(
     private val improvedSyncManager: Lazy<ImprovedSyncManager>,
     @ApplicationScope private val syncScope: CoroutineScope
 ) {
-    private var td: Thread? = null
     lateinit var mRealm: Realm
     private var isSyncing = false
     private val stringArray = arrayOfNulls<String>(4)
@@ -97,7 +96,9 @@ class SyncManager @Inject constructor(
                 } else if (!useImproved) {
                     createLog("sync_manager_route", "legacy")
                 }
-                authenticateAndSync(type, syncTables)
+                syncScope.launch {
+                    authenticateAndSync(type, syncTables)
+                }
             }
         }
     }
@@ -135,28 +136,23 @@ class SyncManager @Inject constructor(
             if (!betaSync) {
                 if (::mRealm.isInitialized && !mRealm.isClosed) {
                     mRealm.close()
-                    td?.interrupt()
                 }
-            } else {
-                td?.interrupt()
             }
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
-    private fun authenticateAndSync(type: String, syncTables: List<String>?) {
-        td = Thread {
-            if (TransactionSyncManager.authenticate()) {
-                runBlocking {
-                    startSync(type, syncTables)
-                }
-            } else {
-                handleException(context.getString(R.string.invalid_configuration))
-                cleanupMainSync()
-            }
+    private suspend fun authenticateAndSync(type: String, syncTables: List<String>?) {
+        val isAuthenticated = withContext(Dispatchers.IO) {
+            TransactionSyncManager.authenticate()
         }
-        td?.start()
+        if (isAuthenticated) {
+            startSync(type, syncTables)
+        } else {
+            handleException(context.getString(R.string.invalid_configuration))
+            cleanupMainSync()
+        }
     }
 
     private suspend fun startSync(type: String, syncTables: List<String>?) {
@@ -487,9 +483,6 @@ class SyncManager @Inject constructor(
             } catch (e: Exception) {
                 e.printStackTrace()
             }
-            td?.interrupt()
-        } else {
-            td?.interrupt()
         }
     }
 
