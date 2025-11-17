@@ -486,7 +486,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     if (
                         syncedUrl != null &&
                         serverListAddresses.isNotEmpty() &&
-                        serverListAddresses.any { it.url.replace(Regex("^https?://"), "") == syncedUrl }
+                        serverListAddresses.any { it.url.replace(urlProtocolRegex, "") == syncedUrl }
                     ) {
                         editor.putString("pinnedServerUrl", syncedUrl).apply()
                     }
@@ -608,7 +608,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 val lastSyncMillis = settings.getLong(getString(R.string.last_syncs), 0)
                 var relativeTime = TimeUtils.getRelativeTime(lastSyncMillis)
 
-                if (relativeTime.matches(Regex("^\\d{1,2} seconds ago$"))) {
+                if (relativeTime.matches(secondsAgoRegex)) {
                     relativeTime = getString(R.string.a_few_seconds_ago)
                 }
 
@@ -838,6 +838,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     companion object {
         lateinit var cal_today: Calendar
         lateinit var cal_last_Sync: Calendar
+        private val secondsAgoRegex by lazy { Regex("^\\d{1,2} seconds ago$") }
+        private val urlProtocolRegex by lazy { Regex("^https?://") }
 
         suspend fun clearRealmDb() {
             withContext(Dispatchers.IO) {

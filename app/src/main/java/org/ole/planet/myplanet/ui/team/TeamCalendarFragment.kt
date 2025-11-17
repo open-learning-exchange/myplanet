@@ -270,7 +270,6 @@ class TeamCalendarFragment : BaseTeamFragment() {
         val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.meetup_dialog, null)
         val recyclerView = dialogView.findViewById<RecyclerView>(R.id.rvMeetups)
         val dialogTitle = dialogView.findViewById< TextView>(R.id.tvTitle)
-        val dateFormat = SimpleDateFormat("EEE, MMM d, yyyy", Locale.getDefault())
         dialogTitle.text = dateFormat.format(clickedCalendar.time)
         val extraHeight = TypedValue.applyDimension(
             TypedValue.COMPLEX_UNIT_DIP, 12f, resources.displayMetrics
@@ -334,5 +333,9 @@ class TeamCalendarFragment : BaseTeamFragment() {
         }
     }
 
-
+    companion object {
+        private val dateFormat by lazy {
+            SimpleDateFormat("EEE, MMM d, yyyy", Locale.getDefault())
+        }
+    }
 }
