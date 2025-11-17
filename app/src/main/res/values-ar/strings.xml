@@ -333,7 +333,7 @@
     <string name="freeup_space">تحرير مساحة القرص</string>
     <string name="action_disclaimer">تنصل</string>
     <string name="action_about">حول</string>
-    <string name="engilsh_dictionary">قاموس الإنجليزية</string>
+    <string name="english_dictionary">قاموس الإنجليزية</string>
 
     <string-array name="team_type">
         <item>فريق محلي</item>

@@ -333,7 +333,7 @@
     <string name="freeup_space">free-up disk space</string>
     <string name="action_disclaimer">disclaimer</string>
     <string name="action_about">about</string>
-    <string name="engilsh_dictionary">English Dictionary</string>
+    <string name="english_dictionary">English Dictionary</string>
 
     <string-array name="team_type">
         <item>Local Team</item>

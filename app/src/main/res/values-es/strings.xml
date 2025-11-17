@@ -333,7 +333,7 @@
     <string name="freeup_space">Liberar espacio en disco</string>
     <string name="action_disclaimer">descargo de responsabilidad</string>
     <string name="action_about">acerca de</string>
-    <string name="engilsh_dictionary">Diccionario inglés</string>
+    <string name="english_dictionary">Diccionario inglés</string>
 
     <string-array name="team_type">
         <item>Equipo local</item>
