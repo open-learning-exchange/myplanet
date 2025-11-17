@@ -19,13 +19,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.nex3z.togglebuttongroup.SingleSelectToggleGroup
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Sort
-import java.util.Calendar
-import java.util.Date
-import java.util.UUID
-import javax.inject.Inject
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
@@ -36,7 +30,6 @@ import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMember
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.ui.myhealth.UserListArrayAdapter
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.ui.team.teamTask.AdapterTask.OnCompletedListener
@@ -44,6 +37,9 @@ import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDateTZ
 import org.ole.planet.myplanet.utilities.Utilities
+import java.util.Calendar
+import java.util.Date
+import java.util.UUID
 
 @AndroidEntryPoint
 class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
@@ -93,19 +89,72 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
     private fun showTaskAlert(t: RealmTeamTask?) {
         val alertTaskBinding = AlertTaskBinding.inflate(layoutInflater)
         datePicker = alertTaskBinding.tvPick
+        var selectedAssignee: RealmUserModel? = null
+
         if (t != null) {
             alertTaskBinding.etTask.setText(t.title)
             alertTaskBinding.etDescription.setText(t.description)
             datePicker?.text = formatDate(t.deadline)
             deadline = Calendar.getInstance()
             deadline?.time = Date(t.deadline)
+
+            if (!t.assignee.isNullOrBlank()) {
+                val assigneeUser = mRealm.where(RealmUserModel::class.java)
+                    .equalTo("id", t.assignee)
+                    .findFirst()
+                if (assigneeUser != null) {
+                    selectedAssignee = assigneeUser
+                    val displayName = assigneeUser.getFullName().ifBlank {
+                        assigneeUser.name ?: getString(R.string.no_assignee)
+                    }
+                    alertTaskBinding.tvAssignMember.text = displayName
+                    alertTaskBinding.tvAssignMember.setTextColor(requireContext().getColor(R.color.daynight_textColor))
+                }
+            }
         }
+
         val myCalendar = Calendar.getInstance()
         datePicker?.setOnClickListener {
             val datePickerDialog = DatePickerDialog(requireContext(), listener, myCalendar[Calendar.YEAR], myCalendar[Calendar.MONTH], myCalendar[Calendar.DAY_OF_MONTH])
             datePickerDialog.datePicker.minDate = myCalendar.timeInMillis
             datePickerDialog.show()
         }
+
+        // Handle member assignment
+        alertTaskBinding.tvAssignMember.setOnClickListener {
+            val userList: List<RealmUserModel> = getJoinedMember(teamId, mRealm)
+            val filteredUserList = userList.filter { user -> user.getFullName().isNotBlank() || !user.name.isNullOrBlank() }
+
+            if (filteredUserList.isEmpty()) {
+                Toast.makeText(context, R.string.no_members_task, Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            val alertUsersSpinnerBinding = AlertUsersSpinnerBinding.inflate(LayoutInflater.from(requireActivity()))
+            val adapter: ArrayAdapter<RealmUserModel> = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, filteredUserList)
+            alertUsersSpinnerBinding.spnUser.adapter = adapter
+
+            AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
+                .setTitle(R.string.select_member)
+                .setView(alertUsersSpinnerBinding.root)
+                .setCancelable(false)
+                .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
+                    val selectedItem = alertUsersSpinnerBinding.spnUser.selectedItem
+                    if (selectedItem != null) {
+                        selectedAssignee = selectedItem as RealmUserModel
+                        val displayName = selectedAssignee.getFullName().ifBlank {
+                            selectedAssignee.name ?: getString(R.string.no_assignee)
+                        }
+                        alertTaskBinding.tvAssignMember.text = displayName
+                        alertTaskBinding.tvAssignMember.setTextColor(requireContext().getColor(R.color.daynight_textColor))
+                    }
+                }
+                .setNegativeButton(R.string.cancel) { dialog: DialogInterface, _: Int ->
+                    dialog.dismiss()
+                }
+                .show()
+        }
+
         val titleView = TextView(requireActivity()).apply {
             text = getString(R.string.add_task)
             setTextColor(context.getColor(R.color.daynight_textColor))
@@ -129,14 +178,14 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
             } else if (deadline == null) {
                 Utilities.toast(activity, getString(R.string.deadline_is_required))
             } else {
-                createOrUpdateTask(task, desc, t)
+                createOrUpdateTask(task, desc, t, selectedAssignee?.id)
                 alertDialog.dismiss()
             }
         }
         alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
     }
 
-    private fun createOrUpdateTask(task: String, desc: String, teamTask: RealmTeamTask?) {
+    private fun createOrUpdateTask(task: String, desc: String, teamTask: RealmTeamTask?, assigneeId: String? = null) {
         val isCreate = teamTask == null
         val realmTeamTask = teamTask?.let { mRealm.copyFromRealm(it) } ?: RealmTeamTask().apply {
             id = UUID.randomUUID().toString()
@@ -145,6 +194,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
         realmTeamTask.description = desc
         realmTeamTask.deadline = deadline?.timeInMillis!!
         realmTeamTask.teamId = teamId
+        realmTeamTask.assignee = assigneeId
         realmTeamTask.isUpdated = true
         lifecycleScope.launch {
             teamRepository.upsertTask(realmTeamTask)
@@ -260,9 +310,13 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
     }
 
     override fun onClickMore(realmTeamTask: RealmTeamTask?) {
+        if (realmTeamTask?.completed == true) {
+            Toast.makeText(context, R.string.cannot_assign_completed_task, Toast.LENGTH_SHORT).show()
+            return
+        }
         val alertUsersSpinnerBinding = AlertUsersSpinnerBinding.inflate(LayoutInflater.from(requireActivity()))
         val userList: List<RealmUserModel> = getJoinedMember(teamId, mRealm)
-        val filteredUserList = userList.filter { user -> user.getFullName().isNotBlank() }
+        val filteredUserList = userList.filter { user -> user.getFullName().isNotBlank() || !user.name.isNullOrBlank() }
         if (filteredUserList.isEmpty()) {
             Toast.makeText(context, R.string.no_members_task, Toast.LENGTH_SHORT).show()
             return
@@ -290,7 +344,11 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
                     adapter.notifyDataSetChanged()
                     setAdapter()
                 }
-            }.show()
+            }
+            .setNegativeButton(R.string.cancel) { dialog: DialogInterface, _: Int ->
+                dialog.dismiss()
+            }
+            .show()
     }
 
     override fun onDestroyView() {
