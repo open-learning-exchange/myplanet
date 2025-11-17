@@ -141,7 +141,7 @@ class DownloadWorker(val context: Context, workerParams: WorkerParameters) : Cor
         notificationManager.notify(COMPLETION_NOTIFICATION_ID, notification)
     }
 
-    private fun sendDownloadUpdate(url: String, success: Boolean, isComplete: Boolean, fromSync: Boolean) {
+    private suspend fun sendDownloadUpdate(url: String, success: Boolean, isComplete: Boolean, fromSync: Boolean) {
         val download = Download().apply {
             fileName = getFileNameFromUrl(url)
             fileUrl = url
