@@ -6,6 +6,8 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
@@ -17,11 +19,10 @@ import org.ole.planet.myplanet.ui.team.teamCourse.AdapterTeamCourse.ViewHolderTe
 
 class AdapterTeamCourse(
     private val context: Context,
-    private var list: MutableList<RealmMyCourse>,
     mRealm: Realm?,
     teamId: String?,
     settings: SharedPreferences
-) : RecyclerView.Adapter<ViewHolderTeamCourse>() {
+) : ListAdapter<RealmMyCourse, ViewHolderTeamCourse>(TEAM_COURSE_DIFF_CALLBACK) {
     private var listener: OnHomeItemClickListener? = null
     private val settings: SharedPreferences
     private val teamCreator: String
@@ -33,8 +34,6 @@ class AdapterTeamCourse(
         this.settings = settings
         teamCreator = getTeamCreator(teamId, mRealm)
     }
-    
-    fun getList(): List<RealmMyCourse> = list
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderTeamCourse {
         val binding = RowTeamResourceBinding.inflate(LayoutInflater.from(context), parent, false)
@@ -42,7 +41,7 @@ class AdapterTeamCourse(
     }
 
     override fun onBindViewHolder(holder: ViewHolderTeamCourse, position: Int) {
-        val course = list[position]
+        val course = getItem(position)
         holder.binding.tvTitle.text = course.courseTitle
         holder.binding.tvDescription.text = course.description
         holder.binding.root.setOnClickListener {
@@ -57,10 +56,18 @@ class AdapterTeamCourse(
         }
     }
 
-    override fun getItemCount(): Int {
-        return list.size
-    }
-
     class ViewHolderTeamCourse(val binding: RowTeamResourceBinding) :
         RecyclerView.ViewHolder(binding.root)
+
+    companion object {
+        val TEAM_COURSE_DIFF_CALLBACK = object : DiffUtil.ItemCallback<RealmMyCourse>() {
+            override fun areItemsTheSame(oldItem: RealmMyCourse, newItem: RealmMyCourse): Boolean {
+                return oldItem.courseId == newItem.courseId
+            }
+
+            override fun areContentsTheSame(oldItem: RealmMyCourse, newItem: RealmMyCourse): Boolean {
+                return oldItem.courseTitle == newItem.courseTitle && oldItem.description == newItem.description
+            }
+        }
+    }
 }

@@ -27,9 +27,10 @@ class TeamCourseFragment : BaseTeamFragment() {
     
     private fun setupCoursesList() {
         val courses = mRealm.where(RealmMyCourse::class.java).`in`("id", team?.courses?.toTypedArray<String>()).findAll()
-        adapterTeamCourse = settings?.let { AdapterTeamCourse(requireActivity(), courses.toMutableList(), mRealm, teamId, it) }
+        adapterTeamCourse = settings?.let { AdapterTeamCourse(requireActivity(), mRealm, teamId, it) }
         binding.rvCourse.layoutManager = LinearLayoutManager(activity)
         binding.rvCourse.adapter = adapterTeamCourse
+        adapterTeamCourse?.submitList(courses)
         adapterTeamCourse?.let {
             showNoData(binding.tvNodata, it.itemCount, "teamCourses")
         }
