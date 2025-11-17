@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.team.teamMember
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
