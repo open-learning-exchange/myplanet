@@ -19,7 +19,6 @@ import org.ole.planet.myplanet.databinding.RowFinanceBinding
 import org.ole.planet.myplanet.ui.enterprises.AdapterFinance.ViewHolderFinance
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
-
 data class TransactionData(
     val id: String,
     val date: Long,

@@ -8,7 +8,6 @@ import java.util.concurrent.TimeUnit
 import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.service.UploadManager
 
@@ -51,6 +50,7 @@ object SyncTimeLogger {
                 mapping.alternativeUrl?.let { alternativeUrl ->
                     val uri = updateUrl.toUri()
                     val editor = settings.edit()
+
 
                     serverUrlMapper.updateUrlPreferences(
                         editor,

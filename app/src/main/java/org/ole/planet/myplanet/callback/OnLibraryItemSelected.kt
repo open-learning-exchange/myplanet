@@ -9,4 +9,3 @@ interface OnLibraryItemSelected {
     @JvmSuppressWildcards
     fun onTagClicked(realmTag: RealmTag)
 }
-

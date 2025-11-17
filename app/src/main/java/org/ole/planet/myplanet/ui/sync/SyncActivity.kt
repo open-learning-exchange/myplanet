@@ -35,7 +35,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.afollestad.materialdialogs.DialogAction
 import com.afollestad.materialdialogs.MaterialDialog
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
 import java.io.File
 import java.util.ArrayList
 import java.util.Calendar
@@ -668,19 +667,17 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             if (isConnected) {
                 val serverUrl = settings.getString("serverURL", "")
                 if (!serverUrl.isNullOrEmpty()) {
-                    MainApplication.applicationScope.launch(Dispatchers.IO) {
+                    MainApplication.applicationScope.launch {
                         val canReachServer = MainApplication.Companion.isServerReachable(serverUrl)
                         if (canReachServer) {
                             withContext(Dispatchers.Main) {
                                 startUpload("login")
                             }
-                            withContext(Dispatchers.Default) {
-                                val backgroundRealm = databaseService.realmInstance
-                                try {
-                                    TransactionSyncManager.syncDb(backgroundRealm, "login_activities")
-                                } finally {
-                                    backgroundRealm.close()
-                                }
+                            val backgroundRealm = databaseService.realmInstance
+                            try {
+                                TransactionSyncManager.syncDb(backgroundRealm, "login_activities")
+                            } finally {
+                                backgroundRealm.close()
                             }
                         }
                     }
