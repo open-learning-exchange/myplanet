@@ -13,7 +13,6 @@ import androidx.core.graphics.drawable.toDrawable
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
 import com.google.gson.JsonObject
-import io.realm.Realm
 import java.util.Date
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertExaminationBinding
@@ -25,15 +24,13 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 
-class AdapterHealthExamination(private val context: Context, private val list: List<RealmMyHealthPojo>?, private val mh: RealmMyHealthPojo, private val userModel: RealmUserModel?) : RecyclerView.Adapter<ViewHolderMyHealthExamination>() {
-    private lateinit var mRealm: Realm
-    private val displayNameCache = mutableMapOf<String, String>()
-    fun setmRealm(mRealm: Realm?) {
-        if (mRealm != null) {
-            this.mRealm = mRealm
-        }
-    }
-
+class AdapterHealthExamination(
+    private val context: Context,
+    private val list: List<RealmMyHealthPojo>?,
+    private val mh: RealmMyHealthPojo,
+    private val userModel: RealmUserModel?,
+    private val displayNameCache: Map<String, String>
+) : RecyclerView.Adapter<ViewHolderMyHealthExamination>() {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderMyHealthExamination {
         val rowExaminationBinding = RowExaminationBinding.inflate(
             LayoutInflater.from(context), parent, false
@@ -51,10 +48,7 @@ class AdapterHealthExamination(private val context: Context, private val list: L
 
         val createdBy = getString("createdBy", encrypted)
         if (!TextUtils.isEmpty(createdBy) && !TextUtils.equals(createdBy, userModel?.id)) {
-            val name = displayNameCache.getOrPut(createdBy) {
-                val model = mRealm.where(RealmUserModel::class.java).equalTo("id", createdBy).findFirst()
-                model?.getFullName() ?: createdBy.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray().getOrNull(1) ?: createdBy
-            }
+            val name = displayNameCache[createdBy] ?: createdBy.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray().getOrNull(1) ?: createdBy
             binding.txtDate.text = context.getString(R.string.two_strings, binding.txtDate.text, name).trimIndent()
             holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.md_grey_50))
         } else {
