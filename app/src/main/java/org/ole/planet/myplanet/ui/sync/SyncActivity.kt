@@ -20,6 +20,7 @@ import android.widget.Button
 import android.widget.CompoundButton
 import android.widget.EditText
 import android.widget.ImageView
+import android.widget.ProgressBar
 import android.widget.RadioGroup
 import android.widget.Spinner
 import android.widget.TextView
@@ -108,6 +109,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     lateinit var btnLang: Button
     lateinit var inputName: EditText
     lateinit var inputPassword: EditText
+    lateinit var loginProgress: ProgressBar
     private lateinit var intervalLabel: TextView
     lateinit var spinner: Spinner
     private lateinit var syncSwitch: SwitchCompat
