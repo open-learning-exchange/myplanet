@@ -41,12 +41,6 @@ android {
         }
     }
 
-    sourceSets {
-        getByName("lite") {
-            java.srcDirs("src/main/java")
-        }
-    }
-
     packagingOptions {
         resources {
             excludes += [

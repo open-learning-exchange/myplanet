@@ -145,7 +145,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     lateinit var syncManager: SyncManager
 
     @Inject
-    lateinit var broadcastService: BroadcastService
+    lateinit var broadcastService: org.ole.planet.myplanet.service.BroadcastService
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
