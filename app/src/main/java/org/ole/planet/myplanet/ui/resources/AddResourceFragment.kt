@@ -208,7 +208,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
         val takeVideoIntent = Intent(MediaStore.ACTION_VIDEO_CAPTURE)
         videoUri = createVideoFileUri()
         takeVideoIntent.putExtra(MediaStore.EXTRA_OUTPUT, videoUri)
-        captureVideoLauncher.launch(videoUri)
+        videoUri?.let { captureVideoLauncher.launch(it) }
     }
 
     private fun createVideoFileUri(): Uri? {
@@ -240,11 +240,13 @@ class AddResourceFragment : BottomSheetDialogFragment() {
     }
 
     private fun handleUri(uri: Uri?, requestCode: Int) {
-        val path = when (requestCode) {
-            REQUEST_CAPTURE_PICTURE, REQUEST_VIDEO_CAPTURE ->
-                FileUtils.getRealPathFromURI(requireContext(), uri)
-            REQUEST_FILE_SELECTION -> FileUtils.getPathFromURI(requireContext(), uri)
-            else -> null
+        val path = uri?.let {
+            when (requestCode) {
+                REQUEST_CAPTURE_PICTURE, REQUEST_VIDEO_CAPTURE ->
+                    FileUtils.getRealPathFromURI(requireContext(), it)
+                REQUEST_FILE_SELECTION -> FileUtils.getPathFromURI(requireContext(), it)
+                else -> null
+            }
         }
         processResource(path)
     }
