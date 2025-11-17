@@ -179,7 +179,6 @@ dependencies {
     implementation(libs.core.ktx)
     implementation(libs.hilt.work)
     kapt(libs.hilt.compiler)
-    implementation(libs.localbroadcastmanager)
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.ui)
     implementation(libs.media3.common)
