@@ -132,23 +132,33 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         mRealm = databaseService.realmInstance
-        checkUser()
         initViews()
-        updateAppTitle()
-        notificationManager = NotificationUtils.getInstance(this)
-        if (handleGuestAccess()) return
-        setupNavigation()
-        handleInitialFragment()
-        setupToolbarActions()
-        hideWifi()
-        setupRealmListeners()
-        setupSystemNotificationReceiver()
-        checkIfShouldShowNotifications()
-        addBackPressCallback()
-        challengeHelper = ChallengeHelper(this, mRealm, user, settings, editor, dashboardViewModel)
-        challengeHelper.evaluateChallengeDialog()
-        handleNotificationIntent(intent)
-        collectUiState()
+        binding.loadingIndicator.visibility = View.VISIBLE
+
+        lifecycleScope.launch {
+            val user = checkUser()
+            if (user == null) {
+                finish()
+                return@launch
+            }
+            updateAppTitle(user)
+
+            binding.loadingIndicator.visibility = View.GONE
+            notificationManager = NotificationUtils.getInstance(this@DashboardActivity)
+            if (handleGuestAccess()) return@launch
+            setupNavigation()
+            handleInitialFragment()
+            setupToolbarActions()
+            hideWifi()
+            setupRealmListeners()
+            setupSystemNotificationReceiver()
+            checkIfShouldShowNotifications()
+            addBackPressCallback()
+            challengeHelper = ChallengeHelper(this@DashboardActivity, mRealm, user, settings, editor, dashboardViewModel)
+            challengeHelper.evaluateChallengeDialog()
+            handleNotificationIntent(intent)
+            collectUiState()
+        }
     }
 
     private fun collectUiState() {
@@ -184,26 +194,29 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    private fun updateAppTitle() {
-        try {
-            val userProfileModel = profileDbHandler.userModel
-            if (userProfileModel != null) {
-                var name: String? = userProfileModel.getFullName()
-                if (name.isNullOrBlank()) {
-                    name = profileDbHandler.userModel?.name
-                }
-                val communityName = settings.getString("communityName", "")
-                binding.appBarBell.appTitleName.text = if (user?.planetCode == "") {
-                    "${getString(R.string.planet)} $communityName"
+    private suspend fun updateAppTitle(user: RealmUserModel) {
+        val title = withContext(Dispatchers.IO) {
+            try {
+                val userProfileModel = profileDbHandler.userModel
+                if (userProfileModel != null) {
+                    var name: String? = userProfileModel.getFullName()
+                    if (name.isNullOrBlank()) {
+                        name = profileDbHandler.userModel?.name
+                    }
+                    val communityName = settings.getString("communityName", "")
+                    if (user.planetCode == "") {
+                        "${getString(R.string.planet)} $communityName"
+                    } else {
+                        "${getString(R.string.planet)} ${user.planetCode}"
+                    }
                 } else {
-                    "${getString(R.string.planet)} ${user?.planetCode}"
+                    getString(R.string.app_project_name)
                 }
-            } else {
-                binding.appBarBell.appTitleName.text = getString(R.string.app_project_name)
+            } catch (err: Exception) {
+                throw RuntimeException(err)
             }
-        } catch (err: Exception) {
-            throw RuntimeException(err)
         }
+        binding.appBarBell.appTitleName.text = title
     }
 
     private fun handleGuestAccess(): Boolean {
@@ -882,38 +895,46 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             .setVisible(isBetaWifiFeatureEnabled(this))
     }
 
-    private fun checkUser() {
-        user = userProfileDbHandler.userModel
-        if (user == null) {
-            toast(this, getString(R.string.session_expired))
-            logout()
-            return
-        }
-        if (user?.id?.startsWith("guest") == true && profileDbHandler.offlineVisits >= 3) {
-            val builder = AlertDialog.Builder(this, R.style.AlertDialogTheme)
-            builder.setTitle(getString(R.string.become_a_member))
-            builder.setMessage(getString(R.string.trial_period_ended))
-            builder.setCancelable(false)
-            builder.setPositiveButton(getString(R.string.become_a_member), null)
-            builder.setNegativeButton(getString(R.string.menu_logout), null)
-            val dialog = builder.create()
-            dialog.show()
-            val becomeMember = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-            val logout = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
-            becomeMember.contentDescription = getString(R.string.confirm_membership)
-            logout.contentDescription = getString(R.string.menu_logout)
-            becomeMember.setOnClickListener {
-                val guest = true
-                val intent = Intent(this, BecomeMemberActivity::class.java)
-                intent.putExtra("username", profileDbHandler.userModel?.name)
-                intent.putExtra("guest", guest)
-                setResult(RESULT_OK, intent)
-                startActivity(intent)
+    private suspend fun checkUser(): RealmUserModel? {
+        return withContext(Dispatchers.IO) {
+            user = userProfileDbHandler.userModel
+            if (user == null) {
+                withContext(Dispatchers.Main) {
+                    toast(this@DashboardActivity, getString(R.string.session_expired))
+                    logout()
+                }
+                return@withContext null
             }
-            logout.setOnClickListener {
-                dialog.dismiss()
-                logout()
+
+            if (user?.id?.startsWith("guest") == true && profileDbHandler.offlineVisits >= 3) {
+                withContext(Dispatchers.Main) {
+                    val builder = AlertDialog.Builder(this@DashboardActivity, R.style.AlertDialogTheme)
+                    builder.setTitle(getString(R.string.become_a_member))
+                    builder.setMessage(getString(R.string.trial_period_ended))
+                    builder.setCancelable(false)
+                    builder.setPositiveButton(getString(R.string.become_a_member), null)
+                    builder.setNegativeButton(getString(R.string.menu_logout), null)
+                    val dialog = builder.create()
+                    dialog.show()
+                    val becomeMember = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                    val logout = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
+                    becomeMember.contentDescription = getString(R.string.confirm_membership)
+                    logout.contentDescription = getString(R.string.menu_logout)
+                    becomeMember.setOnClickListener {
+                        val guest = true
+                        val intent = Intent(this@DashboardActivity, BecomeMemberActivity::class.java)
+                        intent.putExtra("username", profileDbHandler.userModel?.name)
+                        intent.putExtra("guest", guest)
+                        setResult(RESULT_OK, intent)
+                        startActivity(intent)
+                    }
+                    logout.setOnClickListener {
+                        dialog.dismiss()
+                        logout()
+                    }
+                }
             }
+            user
         }
     }
 
