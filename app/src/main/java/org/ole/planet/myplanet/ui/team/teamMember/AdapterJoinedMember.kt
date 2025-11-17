@@ -224,4 +224,3 @@ class AdapterJoinedMember(
     class ViewHolderUser(val binding: RowJoinedUserBinding) :
         RecyclerView.ViewHolder(binding.root)
 }
-

@@ -231,4 +231,3 @@ class JoinedMemberFragment : BaseMemberFragment() {
         llImage?.removeAllViews()
     }
 }
-

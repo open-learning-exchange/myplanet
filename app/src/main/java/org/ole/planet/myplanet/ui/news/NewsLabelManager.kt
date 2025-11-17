@@ -178,4 +178,3 @@ class NewsLabelManager(private val context: Context, private val realm: Realm) {
         }
     }
 }
-
