@@ -32,11 +32,12 @@ class SubmissionRepositoryImpl @Inject constructor(
         if (userId == null) return emptyList()
 
         return databaseService.withRealmAsync { realm ->
-            val pendingSurveys = realm.queryList(RealmSubmission::class.java) {
-                equalTo("userId", userId)
-                equalTo("status", "pending")
-                equalTo("type", "survey")
-            }
+            val pendingSurveys = realm.where(RealmSubmission::class.java)
+                .equalTo("userId", userId)
+                .equalTo("status", "pending")
+                .equalTo("type", "survey")
+                .findAll()
+
             if (pendingSurveys.isEmpty()) {
                 return@withRealmAsync emptyList()
             }
@@ -46,9 +47,9 @@ class SubmissionRepositoryImpl @Inject constructor(
                 return@withRealmAsync emptyList()
             }
 
-            val exams = realm.queryList(RealmStepExam::class.java) {
-                `in`("id", examIds.toTypedArray())
-            }
+            val exams = realm.where(RealmStepExam::class.java)
+                .`in`("id", examIds.toTypedArray())
+                .findAll()
             val validExamIds = exams.mapNotNull { it.id }.toSet()
 
             val uniqueSurveys = linkedMapOf<String, RealmSubmission>()
@@ -71,9 +72,9 @@ class SubmissionRepositoryImpl @Inject constructor(
         }
 
         return databaseService.withRealmAsync { realm ->
-            val exams = realm.queryList(RealmStepExam::class.java) {
-                `in`("id", examIds.toTypedArray())
-            }
+            val exams = realm.where(RealmStepExam::class.java)
+                .`in`("id", examIds.toTypedArray())
+                .findAll()
             val examMap = exams.associate { it.id to (it.name ?: "") }
 
             submissions.map { submission ->
@@ -92,9 +93,10 @@ class SubmissionRepositoryImpl @Inject constructor(
         }
 
         return databaseService.withRealmAsync { realm ->
-            val examMap = realm.queryList(RealmStepExam::class.java) {
-                `in`("id", examIds.toTypedArray())
-            }.associateBy { it.id }
+            val examMap = realm.where(RealmStepExam::class.java)
+                .`in`("id", examIds.toTypedArray())
+                .findAll()
+                .associateBy { it.id }
 
             submissions.mapNotNull { sub ->
                 val parentId = sub.parentId
