@@ -23,6 +23,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.repository.NotificationRepository
+import org.ole.planet.myplanet.service.getBroadcastService
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 
 object NotificationUtils {
@@ -479,8 +480,6 @@ object NotificationUtils {
         }
     }
 }
-
-import org.ole.planet.myplanet.service.getBroadcastService
 
 @AndroidEntryPoint
 class NotificationActionReceiver : BroadcastReceiver() {
