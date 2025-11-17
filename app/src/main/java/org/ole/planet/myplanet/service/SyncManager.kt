@@ -25,7 +25,9 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.withPermit
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
@@ -67,11 +69,12 @@ class SyncManager @Inject constructor(
     private val improvedSyncManager: Lazy<ImprovedSyncManager>,
     @ApplicationScope private val syncScope: CoroutineScope
 ) {
-    private var td: Thread? = null
+    private var syncJob: Job? = null
     lateinit var mRealm: Realm
     private var isSyncing = false
     private val stringArray = arrayOfNulls<String>(4)
     private var listener: SyncListener? = null
+    private var syncStartTime: Long = 0
     private var backgroundSync: Job? = null
     private var betaSync = false
     private val initializationJob: Job by lazy {
@@ -122,6 +125,11 @@ class SyncManager @Inject constructor(
     }
 
     private fun destroy() {
+        if (syncStartTime > 0) {
+            val syncDuration = System.currentTimeMillis() - syncStartTime
+            createLog("sync_duration", "duration=${syncDuration}ms")
+            syncStartTime = 0
+        }
         if (betaSync) {
             syncScope.cancel()
             ThreadSafeRealmHelper.closeThreadRealm()
@@ -130,33 +138,44 @@ class SyncManager @Inject constructor(
         cancel(context, 111)
         isSyncing = false
         settings.edit { putLong("LastSync", Date().time) }
-        listener?.onSyncComplete()
+        syncScope.launch {
+            withContext(Dispatchers.Main) {
+                listener?.onSyncComplete()
+            }
+        }
         try {
             if (!betaSync) {
                 if (::mRealm.isInitialized && !mRealm.isClosed) {
                     mRealm.close()
-                    td?.interrupt()
                 }
-            } else {
-                td?.interrupt()
             }
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
+    fun cancelSync() {
+        syncJob?.cancel()
+    }
     private fun authenticateAndSync(type: String, syncTables: List<String>?) {
-        td = Thread {
-            if (TransactionSyncManager.authenticate()) {
-                runBlocking {
+        syncStartTime = System.currentTimeMillis()
+        syncJob = syncScope.launch {
+            val authenticated = withContext(Dispatchers.IO) {
+                TransactionSyncManager.authenticate()
+            }
+            if (authenticated) {
+                val result = withTimeoutOrNull(300_000L) { // 5 minutes timeout
                     startSync(type, syncTables)
+                }
+                if (result == null) {
+                    handleException("Sync process timed out after 5 minutes.")
                 }
             } else {
                 handleException(context.getString(R.string.invalid_configuration))
-                cleanupMainSync()
+                isSyncing = false
+                cancel(context, 111)
             }
         }
-        td?.start()
     }
 
     private suspend fun startSync(type: String, syncTables: List<String>?) {
@@ -476,23 +495,6 @@ class SyncManager @Inject constructor(
         }
     }
 
-    private fun cleanupMainSync() {
-        cancel(context, 111)
-        isSyncing = false
-        if (!betaSync) {
-            try {
-                if (::mRealm.isInitialized) {
-                    mRealm.close()
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-            td?.interrupt()
-        } else {
-            td?.interrupt()
-        }
-    }
-
     private fun initializeSync() {
         val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
         val wifiInfo = wifiManager.connectionInfo
@@ -654,7 +656,11 @@ class SyncManager @Inject constructor(
         if (listener != null) {
             isSyncing = false
             MainApplication.syncFailedCount++
-            listener?.onSyncFailed(message)
+            syncScope.launch {
+                withContext(Dispatchers.Main) {
+                    listener?.onSyncFailed(message)
+                }
+            }
         }
     }
 
