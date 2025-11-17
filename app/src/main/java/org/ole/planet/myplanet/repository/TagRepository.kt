@@ -8,4 +8,3 @@ interface TagRepository {
     suspend fun getTagsForResource(resourceId: String): List<RealmTag>
     suspend fun getTagsForCourse(courseId: String): List<RealmTag>
 }
-

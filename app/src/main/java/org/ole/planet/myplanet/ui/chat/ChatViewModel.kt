@@ -42,4 +42,3 @@ class ChatViewModel : ViewModel() {
         _selectedAiProvider.value = null
     }
 }
-
