@@ -204,10 +204,9 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
             }
 
             if (binding.rvTask.adapter != null) {
-                binding.rvTask.adapter?.notifyDataSetChanged()
                 showNoData(binding.tvNodata, binding.rvTask.adapter?.itemCount, "tasks")
             }
-            setAdapter()
+            updateTasks()
             Utilities.toast(
                 activity,
                 String.format(
@@ -221,10 +220,12 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.rvTask.layoutManager = LinearLayoutManager(activity)
-        setAdapter()
-        binding.taskToggle.setOnCheckedChangeListener { _, checkedId: Int ->
+        adapterTask = AdapterTask(requireContext(), !isMemberFlow.value, viewLifecycleOwner.lifecycleScope, userRepository)
+        adapterTask.setListener(this)
+        binding.rvTask.adapter = adapterTask
+        binding.taskToggle.setOnCheckedChangeListener { _: SingleSelectToggleGroup?, checkedId: Int ->
             currentTab = checkedId
-            setAdapter()
+            updateTasks()
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
@@ -232,13 +233,14 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
                 launch {
                     isMemberFlow.collectLatest { isMember ->
                         binding.fab.isVisible = isMember
-                        setAdapter()
+                        adapterTask.nonTeamMember = !isMember
+                        updateTasks()
                     }
                 }
                 launch {
                     teamRepository.getTasksByTeamId(teamId).collect { tasks ->
                         list = tasks
-                        setAdapter()
+                        updateTasks()
                     }
                 }
             }
@@ -263,17 +265,15 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
         llImage?.removeAllViews()
     }
 
-    private fun setAdapter() {
+    private fun updateTasks() {
         if (isAdded) {
             val taskList = when (currentTab) {
                 R.id.btn_my -> myTasks()
                 R.id.btn_completed -> completedTasks()
                 else -> allTasks()
             }
+            adapterTask.submitList(taskList)
             showNoData(binding.tvNodata, taskList.size, "tasks")
-            adapterTask = AdapterTask(requireContext(), taskList, !isMemberFlow.value, viewLifecycleOwner.lifecycleScope, userRepository)
-            adapterTask.setListener(this)
-            binding.rvTask.adapter = adapterTask
         }
     }
 
@@ -286,7 +286,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
                 mRealm.refresh()
             }
 
-            setAdapter()
+            updateTasks()
         }
     }
 
@@ -304,7 +304,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
             }
 
             Utilities.toast(activity, getString(R.string.task_deleted_successfully))
-            setAdapter()
+            updateTasks()
             showNoData(binding.tvNodata, binding.rvTask.adapter?.itemCount, "tasks")
         }
     }
@@ -342,7 +342,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
                     teamRepository.assignTask(taskId, user.id)
                     Utilities.toast(activity, getString(R.string.assign_task_to) + " " + user.name)
                     adapter.notifyDataSetChanged()
-                    setAdapter()
+                    updateTasks()
                 }
             }
             .setNegativeButton(R.string.cancel) { dialog: DialogInterface, _: Int ->
