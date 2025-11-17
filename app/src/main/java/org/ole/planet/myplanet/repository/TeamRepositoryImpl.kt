@@ -645,4 +645,3 @@ class TeamRepositoryImpl @Inject constructor(
         }.mapNotNull { it.resourceId }
     }
 }
-
