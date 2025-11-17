@@ -92,6 +92,7 @@ class MyHealthFragment : Fragment() {
     private val serverUrlMapper = ServerUrlMapper()
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
+    private var textWatcher: TextWatcher? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -334,7 +335,7 @@ class MyHealthFragment : Fragment() {
 
     private fun setTextWatcher(etSearch: EditText, btnAddMember: Button, lv: ListView) {
         var timer: CountDownTimer? = null
-        etSearch.addTextChangedListener(object : TextWatcher {
+        textWatcher = object : TextWatcher {
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
             override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
 
@@ -355,7 +356,8 @@ class MyHealthFragment : Fragment() {
                     }
                 }.start()
             }
-        })
+        }
+        etSearch.addTextChangedListener(textWatcher)
     }
 
     override fun onResume() {
@@ -477,6 +479,8 @@ class MyHealthFragment : Fragment() {
         if (::realtimeSyncListener.isInitialized) {
             syncCoordinator.removeListener(realtimeSyncListener)
         }
+        alertHealthListBinding.etSearch.removeTextChangedListener(textWatcher)
+        textWatcher = null
         _binding = null
         super.onDestroyView()
     }
