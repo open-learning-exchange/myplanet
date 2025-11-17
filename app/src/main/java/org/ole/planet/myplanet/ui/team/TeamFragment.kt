@@ -223,22 +223,10 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
                 }
                 adapterTeamList.setData(filteredList)
                 adapterTeamList.updateList()
+                showNoResultsMessage(filteredList.isEmpty(), charSequence.toString())
             }
             override fun afterTextChanged(editable: Editable) {}
         })
-    }
-
-    private fun setTeamList(teams: List<RealmMyTeam>) {
-        adapterTeamList.setType(type)
-        adapterTeamList.setTeamListener(this@TeamFragment)
-        adapterTeamList.setUpdateCompleteListener(this@TeamFragment)
-        requireView().findViewById<View>(R.id.type).visibility =
-            if (type == null) {
-                View.GONE
-            } else {
-                View.VISIBLE
-            }
-        adapterTeamList.updateList()
     }
 
     override fun onEditTeam(team: RealmMyTeam?) {
