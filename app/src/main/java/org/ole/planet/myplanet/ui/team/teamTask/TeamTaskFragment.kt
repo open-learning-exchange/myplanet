@@ -21,8 +21,6 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.nex3z.togglebuttongroup.SingleSelectToggleGroup
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.RealmResults
-import io.realm.Sort
 import java.util.Calendar
 import java.util.Date
 import java.util.UUID
@@ -52,8 +50,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
     private val binding get() = _binding!!
     private var deadline: Calendar? = null
     private var datePicker: TextView? = null
-    var list: List<RealmTeamTask>? = null
-    private var teamTaskList: RealmResults<RealmTeamTask>? = null
+    var list: List<RealmTeamTask> = emptyList()
     private var currentTab = R.id.btn_all
 
     private lateinit var adapterTask: AdapterTask
@@ -89,13 +86,6 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
         _binding = FragmentTeamTaskBinding.inflate(inflater, container, false)
         binding.fab.isVisible = false
         binding.fab.setOnClickListener { showTaskAlert(null) }
-        teamTaskList = mRealm.where(RealmTeamTask::class.java).equalTo("teamId", teamId)
-            .notEqualTo("status", "archived").findAllAsync()
-
-        teamTaskList?.addChangeListener { results ->
-            updatedTeamTaskList(results)
-        }
-
         return binding.root
     }
 
@@ -182,9 +172,6 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
         adapterTask = AdapterTask(requireContext(), !isMemberFlow.value, viewLifecycleOwner.lifecycleScope, userRepository)
         adapterTask.setListener(this)
         binding.rvTask.adapter = adapterTask
-        list = mRealm.where(RealmTeamTask::class.java).equalTo("teamId", teamId).findAll()
-        updateTasks()
-        showNoData(binding.tvNodata, list?.size, "tasks")
         binding.taskToggle.setOnCheckedChangeListener { _: SingleSelectToggleGroup?, checkedId: Int ->
             currentTab = checkedId
             updateTasks()
@@ -192,33 +179,33 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                isMemberFlow.collectLatest { isMember ->
-                    binding.fab.isVisible = isMember
-                    adapterTask.nonTeamMember = !isMember
-                    updateTasks()
+                launch {
+                    isMemberFlow.collectLatest { isMember ->
+                        binding.fab.isVisible = isMember
+                        adapterTask.nonTeamMember = !isMember
+                        updateTasks()
+                    }
+                }
+                launch {
+                    teamRepository.getTasksByTeamId(teamId).collect { tasks ->
+                        list = tasks
+                        updateTasks()
+                    }
                 }
             }
         }
     }
 
-    private fun allTasks() {
-        list = mRealm.where(RealmTeamTask::class.java)
-            .equalTo("teamId", teamId)
-            .notEqualTo("status", "archived")
-            .sort(arrayOf("completed", "deadline"), arrayOf(Sort.ASCENDING, Sort.DESCENDING))
-            .findAll()
+    private fun allTasks(): List<RealmTeamTask> {
+        return list.sortedWith(compareBy<RealmTeamTask> { it.completed }.thenByDescending { it.deadline })
     }
 
-    private fun completedTasks() {
-        list = mRealm.where(RealmTeamTask::class.java).equalTo("teamId", teamId)
-            .notEqualTo("status", "archived").equalTo("completed", true)
-            .sort("deadline", Sort.DESCENDING).findAll()
+    private fun completedTasks(): List<RealmTeamTask> {
+        return list.filter { it.completed }.sortedByDescending { it.deadline }
     }
 
-    private fun myTasks() {
-        list = mRealm.where(RealmTeamTask::class.java).equalTo("teamId", teamId)
-            .notEqualTo("status", "archived").equalTo("completed", false)
-            .equalTo("assignee", user?.id).sort("deadline", Sort.DESCENDING).findAll()
+    private fun myTasks(): List<RealmTeamTask> {
+        return list.filter { !it.completed && it.assignee == user?.id }.sortedByDescending { it.deadline }
     }
 
     override fun onNewsItemClick(news: RealmNews?) {}
@@ -229,14 +216,13 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
 
     private fun updateTasks() {
         if (isAdded) {
-            when (currentTab) {
+            val taskList = when (currentTab) {
                 R.id.btn_my -> myTasks()
                 R.id.btn_completed -> completedTasks()
-                R.id.btn_all -> allTasks()
+                else -> allTasks()
             }
-            val unmanagedList = if (mRealm.isClosed) list!! else mRealm.copyFromRealm(list!!)
-            adapterTask.submitList(unmanagedList)
-            showNoData(binding.tvNodata, unmanagedList.size, "tasks")
+            adapterTask.submitList(taskList)
+            showNoData(binding.tvNodata, taskList.size, "tasks")
         }
     }
 
@@ -306,21 +292,9 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
             }.show()
     }
 
-    private fun updatedTeamTaskList(updatedList: RealmResults<RealmTeamTask>) {
-        val unmanagedList = if (!mRealm.isClosed) mRealm.copyFromRealm(updatedList) else updatedList
-        adapterTask.submitList(unmanagedList)
-        showNoData(binding.tvNodata, unmanagedList.size, "tasks")
-    }
-
     override fun onDestroyView() {
-        teamTaskList?.removeAllChangeListeners()
-        teamTaskList = null
-        list = null
-        binding.rvTask.adapter = null
-        if (isRealmInitialized()) {
-            mRealm.close()
-        }
-        _binding = null
         super.onDestroyView()
+        binding.rvTask.adapter = null
+        _binding = null
     }
 }
