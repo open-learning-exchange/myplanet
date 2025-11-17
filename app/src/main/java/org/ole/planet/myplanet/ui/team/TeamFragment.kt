@@ -194,6 +194,8 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
             user,
             viewLifecycleOwner.lifecycleScope,
         )
+        adapterTeamList.setTeamListener(this)
+        adapterTeamList.setUpdateCompleteListener(this)
         binding.rvTeamList.adapter = adapterTeamList
 
         viewLifecycleOwner.lifecycleScope.launch {
