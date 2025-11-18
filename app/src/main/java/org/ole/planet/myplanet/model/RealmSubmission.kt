@@ -165,10 +165,13 @@ open class RealmSubmission : RealmObject() {
             val prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
             `object`.addProperty("source", prefs.getString("planetCode", ""))
             `object`.addProperty("parentCode", prefs.getString("parentCode", ""))
-            val parent = Gson().fromJson(sub.parent, JsonObject::class.java)
-            `object`.add("parent", parent)
             `object`.add("answers", RealmAnswer.serializeRealmAnswer(sub.answers ?: RealmList()))
-            if (exam != null && parent == null) `object`.add("parent", RealmStepExam.serializeExam(mRealm, exam))
+            if (exam != null) {
+                `object`.add("parent", RealmStepExam.serializeExam(mRealm, exam))
+            } else {
+                val parent = Gson().fromJson(sub.parent, JsonObject::class.java)
+                `object`.add("parent", parent)
+            }
             if (TextUtils.isEmpty(sub.user)) {
                 `object`.add("user", user?.serialize())
             } else {
