@@ -18,7 +18,6 @@ import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
-import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
@@ -81,7 +80,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         btnLang = binding.btnLang
         inputName = binding.inputName
         inputPassword = binding.inputPassword
-        loginProgress = binding.loginProgress!!
         service = Service(this)
 
         binding.tvAvailableSpace.text = buildString {
@@ -181,7 +179,8 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 } else {
                     val enterUserName = binding.inputName.text.toString().trimEnd()
                     binding.btnSignin.isEnabled = false
-                    loginProgress.visibility = View.VISIBLE
+                    customProgressDialog.setText(getString(R.string.please_wait))
+                    customProgressDialog.show()
                     lifecycleScope.launch {
                         val user = withContext(Dispatchers.IO) {
                             databaseService.withRealm { realm ->
@@ -205,7 +204,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                             dialog.show()
                         }
                         binding.btnSignin.isEnabled = true
-                        loginProgress.visibility = View.GONE
+                        customProgressDialog.dismiss()
                     }
                 }
             } else {

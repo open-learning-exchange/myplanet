@@ -109,7 +109,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     lateinit var btnLang: Button
     lateinit var inputName: EditText
     lateinit var inputPassword: EditText
-    lateinit var loginProgress: ProgressBar
     private lateinit var intervalLabel: TextView
     lateinit var spinner: Spinner
     private lateinit var syncSwitch: SwitchCompat
