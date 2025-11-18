@@ -115,6 +115,7 @@ class AdapterCourses(
     }
 
     fun setCourseList(courseList: List<RealmMyCourse?>) {
+        if (this.courseList === courseList) return
         dispatchDiff(courseList)
     }
 
