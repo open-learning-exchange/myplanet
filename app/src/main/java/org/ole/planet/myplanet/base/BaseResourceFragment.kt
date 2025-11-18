@@ -90,6 +90,18 @@ abstract class BaseResourceFragment : Fragment() {
     private var pendingSurveyDialog: AlertDialog? = null
     private var stayOnlineDialog: AlertDialog? = null
 
+    /**
+     * Ensures a valid Realm instance is available for subclasses.
+     * If the existing instance was closed, it reopens a new instance
+     * from the injected [databaseService].
+     */
+    protected fun requireRealmInstance(): Realm {
+        if (!isRealmInitialized()) {
+            mRealm = databaseService.realmInstance
+        }
+        return mRealm
+    }
+
     protected fun isRealmInitialized(): Boolean {
         return ::mRealm.isInitialized && !mRealm.isClosed
     }
