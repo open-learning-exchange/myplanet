@@ -314,7 +314,7 @@ class Service @Inject constructor(
                 val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                 serviceScope.launch {
                     val existingUser = userRepository.getUserByName(obj["name"].asString)
-                    if (existingUser != null && !existingUser._id.startsWith("guest")) {
+                    if (existingUser != null && existingUser._id?.startsWith("guest") != true) {
                         withContext(Dispatchers.Main) {
                             callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
                         }
