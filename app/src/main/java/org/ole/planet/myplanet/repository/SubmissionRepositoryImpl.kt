@@ -59,7 +59,7 @@ class SubmissionRepositoryImpl @Inject constructor(
                     uniqueSurveys[examId] = submission
                 }
             }
-            uniqueSurveys.values.toList()
+            realm.copyFromRealm(uniqueSurveys.values)
         }
     }
 
@@ -98,11 +98,12 @@ class SubmissionRepositoryImpl @Inject constructor(
                 .findAll()
                 .associateBy { it.id }
 
-            submissions.mapNotNull { sub ->
+            val resultMap = submissions.mapNotNull { sub ->
                 val parentId = sub.parentId
                 val examId = sub.examIdFromParentId()
-                examMap[examId]?.let { parentId to it }
+                examMap[examId]?.let { parentId to realm.copyFromRealm(it) }
             }.toMap()
+            resultMap
         }
     }
 
