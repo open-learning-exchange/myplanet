@@ -479,6 +479,10 @@ class MyHealthFragment : Fragment() {
         if (::realtimeSyncListener.isInitialized) {
             syncCoordinator.removeListener(realtimeSyncListener)
         }
+        if (this::alertHealthListBinding.isInitialized) {
+            alertHealthListBinding.etSearch.removeTextChangedListener(null)
+        }
+
         _binding = null
         super.onDestroyView()
     }
