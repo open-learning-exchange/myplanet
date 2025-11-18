@@ -1,4 +1,3 @@
-
 package org.ole.planet.myplanet.ui.enterprises
 
 import android.content.DialogInterface
