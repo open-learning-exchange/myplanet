@@ -19,9 +19,9 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.realm.RealmList
+import org.ole.planet.myplanet.utilities.GsonUtils
 import java.io.File
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
@@ -144,7 +144,7 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
         val `object` = JsonObject()
         `object`.addProperty("imageUrl", path)
         `object`.addProperty("fileName", getFileNameFromUrl(path))
-        imageList.add(Gson().toJson(`object`))
+        imageList.add(GsonUtils.gson.toJson(`object`))
 
         try {
             llImage?.visibility = View.VISIBLE

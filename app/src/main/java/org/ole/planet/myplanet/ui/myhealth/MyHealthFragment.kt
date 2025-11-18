@@ -26,8 +26,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.snackbar.Snackbar
-import com.google.gson.Gson
 import dagger.hilt.android.AndroidEntryPoint
+import org.ole.planet.myplanet.utilities.GsonUtils
 import io.realm.Case
 import io.realm.Realm
 import io.realm.Sort
@@ -459,7 +459,7 @@ class MyHealthFragment : Fragment() {
             null
         } else {
             try {
-                Gson().fromJson(json, RealmMyHealth::class.java)
+                GsonUtils.gson.fromJson(json, RealmMyHealth::class.java)
             } catch (e: Exception) {
                 e.printStackTrace()
                 null

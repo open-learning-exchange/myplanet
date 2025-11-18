@@ -17,6 +17,7 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.DialogUtils.CustomProgressDialog
+import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.IntentUtils
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.NetworkUtils.extractProtocol
@@ -162,7 +163,7 @@ class ConfigurationManager(
                 .associate { it.key to it.value.asString }
 
             withContext(Dispatchers.IO) {
-                preferences.edit { putString("ai_models", Gson().toJson(modelsMap)) }
+                preferences.edit { putString("ai_models", GsonUtils.gson.toJson(modelsMap)) }
             }
         }
 
