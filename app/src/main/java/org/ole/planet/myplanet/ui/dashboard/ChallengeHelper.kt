@@ -92,6 +92,7 @@ class ChallengeHelper(
     }
 
     private fun getDateFromTimestamp(timestamp: Long): String {
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
         return dateFormat.format(Date(timestamp))
     }
 
@@ -174,12 +175,6 @@ class ChallengeHelper(
     """.trimIndent()
             MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount, allVoiceCount, hasUnfinishedSurvey)
                 .show(fragmentManager, "markdown_dialog")
-        }
-    }
-
-    companion object {
-        private val dateFormat by lazy {
-            SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
         }
     }
 }

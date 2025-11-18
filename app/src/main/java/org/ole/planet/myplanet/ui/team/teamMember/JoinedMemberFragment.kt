@@ -47,7 +47,8 @@ class JoinedMemberFragment : BaseMemberFragment() {
             members.map { member ->
                 val lastVisitTimestamp = RealmTeamLog.getLastVisit(realm, member.name, teamId)
                 val lastVisitDate = if (lastVisitTimestamp != null) {
-                    dateFormat.format(Date(lastVisitTimestamp))
+                    val sdf = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
+                    sdf.format(Date(lastVisitTimestamp))
                 } else {
                     getString(R.string.no_visit)
                 }
@@ -228,11 +229,5 @@ class JoinedMemberFragment : BaseMemberFragment() {
     override fun clearImages() {
         imageList.clear()
         llImage?.removeAllViews()
-    }
-
-    companion object {
-        private val dateFormat by lazy {
-            SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
-        }
     }
 }
