@@ -360,7 +360,6 @@ class MyHealthFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        showRecords()
     }
 
     private fun showRecords() {
