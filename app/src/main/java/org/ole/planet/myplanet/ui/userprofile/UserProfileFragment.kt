@@ -29,6 +29,10 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.core.view.children
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
@@ -39,7 +43,6 @@ import com.bumptech.glide.request.RequestOptions
 import com.bumptech.glide.request.target.Target
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
 import java.lang.String.format
 import java.util.ArrayList
 import java.util.Calendar
@@ -55,7 +58,6 @@ import org.ole.planet.myplanet.R.array.subject_level
 import org.ole.planet.myplanet.databinding.EditProfileDialogBinding
 import org.ole.planet.myplanet.databinding.FragmentUserProfileBinding
 import org.ole.planet.myplanet.databinding.RowStatBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
@@ -66,14 +68,13 @@ import org.ole.planet.myplanet.utilities.Utilities
 class UserProfileFragment : Fragment() {
     private var _binding: FragmentUserProfileBinding? = null
     private val binding get() = _binding!!
+    private val viewModel: UserProfileViewModel by viewModels()
     private lateinit var rowStatBinding: RowStatBinding
     private lateinit var settings: SharedPreferences
     @Inject
-    lateinit var databaseService: DatabaseService
-    @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
-    private lateinit var mRealm: Realm
     private var model: RealmUserModel? = null
+    private var editProfileDialog: Dialog? = null
     private lateinit var pickImageLauncher: ActivityResultLauncher<Intent>
     private var selectedGender: String? = null
     var selectedLevel: String? = null
@@ -82,13 +83,6 @@ class UserProfileFragment : Fragment() {
     private var photoURI: Uri? = null
     private lateinit var captureImageLauncher: ActivityResultLauncher<Uri>
     private lateinit var requestCameraLauncher: ActivityResultLauncher<String>
-
-    override fun onDestroy() {
-        if (this::mRealm.isInitialized) {
-            mRealm.close()
-        }
-        super.onDestroy()
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -140,23 +134,55 @@ class UserProfileFragment : Fragment() {
         _binding = FragmentUserProfileBinding.inflate(inflater, container, false)
         initializeDependencies()
         binding.btProfilePic.setOnClickListener { searchForPhoto() }
-        model = userProfileDbHandler.userModel
-
-        setupProfile()
-        loadProfileImage()
-
         binding.btEditProfile.setOnClickListener { openEditProfileDialog() }
-        configureGuestView()
         setupStatsRecycler()
+        observeUserProfile()
+        viewModel.loadUserProfile(settings.getString("userId", ""))
 
         return binding.root
     }
 
     private fun initializeDependencies() {
         settings = requireContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        mRealm = databaseService.realmInstance
         binding.rvStat.layoutManager = LinearLayoutManager(activity)
         binding.rvStat.isNestedScrollingEnabled = false
+    }
+
+    private fun observeUserProfile() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.userModel.collect { userModel ->
+                    model = userModel
+                    if (userModel != null) {
+                        setupProfile()
+                        loadProfileImage()
+                        configureGuestView()
+                    }
+                }
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.updateState.collect { state ->
+                    when (state) {
+                        ProfileUpdateState.Success -> {
+                            Utilities.toast(requireContext(), "User details updated successfully")
+                            editProfileDialog?.dismiss()
+                            editProfileDialog = null
+                            viewModel.resetUpdateState()
+                        }
+
+                        is ProfileUpdateState.Error -> {
+                            Utilities.toast(requireContext(), state.message)
+                            viewModel.resetUpdateState()
+                        }
+
+                        ProfileUpdateState.Idle -> Unit
+                    }
+                }
+            }
+        }
     }
 
     private fun setupProfile() {
@@ -220,6 +246,7 @@ class UserProfileFragment : Fragment() {
 
     private fun openEditProfileDialog() {
         val dialog = Dialog(requireContext()).apply { setCancelable(false) }
+        editProfileDialog = dialog
         val binding = EditProfileDialogBinding.inflate(LayoutInflater.from(requireContext()))
         dialog.setContentView(binding.root)
         dialog.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
@@ -231,7 +258,10 @@ class UserProfileFragment : Fragment() {
         setupDatePicker(binding)
         setupSaveButton(dialog, binding)
 
-        binding.btnCancel.setOnClickListener { dialog.dismiss() }
+        binding.btnCancel.setOnClickListener {
+            dialog.dismiss()
+            editProfileDialog = null
+        }
         dialog.show()
     }
 
@@ -348,21 +378,20 @@ class UserProfileFragment : Fragment() {
             val email = binding.email.text.toString()
             val phoneNumber = binding.phoneNumber.text.toString()
             val dob = date ?: model?.dob
-
-            val realm = databaseService.realmInstance
             val userId = settings.getString("userId", "")
 
-            RealmUserModel.updateUserDetails(
-                realm, userId, firstName, lastName, middleName, email, phoneNumber, selectedLevel,
-                selectedLanguage.takeUnless { it == getString(R.string.language) }, selectedGender, dob
-            ) {
-                mRealm.refresh()
-                val updatedModel = userProfileDbHandler.userModel
-                model = updatedModel
-                updateUIWithUserData(updatedModel)
-                realm.close()
-                dialog.dismiss()
-            }
+            viewModel.updateUserProfile(
+                userId = userId,
+                firstName = firstName,
+                lastName = lastName,
+                middleName = middleName,
+                email = email,
+                phoneNumber = phoneNumber,
+                level = selectedLevel,
+                language = selectedLanguage.takeUnless { it == getString(R.string.language) },
+                gender = selectedGender,
+                dob = dob,
+            )
         }
     }
 
@@ -405,10 +434,10 @@ class UserProfileFragment : Fragment() {
     private fun createStatsMap(): LinkedHashMap<String, String?> {
         return linkedMapOf(
             getString(R.string.community_name) to Utilities.checkNA(model?.planetCode),
-            getString(R.string.last_login) to userProfileDbHandler.lastVisit?.let { TimeUtils.getRelativeTime(it) },
-            getString(R.string.total_visits_overall) to userProfileDbHandler.offlineVisits.toString(),
-            getString(R.string.most_opened_resource) to Utilities.checkNA(userProfileDbHandler.maxOpenedResource),
-            getString(R.string.number_of_resources_opened) to Utilities.checkNA(userProfileDbHandler.numberOfResourceOpen)
+            getString(R.string.last_login) to viewModel.lastVisit?.let { TimeUtils.getRelativeTime(it) },
+            getString(R.string.total_visits_overall) to viewModel.offlineVisits.toString(),
+            getString(R.string.most_opened_resource) to Utilities.checkNA(viewModel.maxOpenedResource),
+            getString(R.string.number_of_resources_opened) to Utilities.checkNA(viewModel.numberOfResourceOpen)
         )
     }
 
@@ -486,35 +515,15 @@ class UserProfileFragment : Fragment() {
     }
 
     private fun startIntent(uri: Uri?) {
-        var path: String? = null
-        path = uri?.toString()
-
-        mRealm.let {
-            if (!it.isInTransaction) {
-                it.beginTransaction()
-            }
-            model?.userImage = path
-            model?.isUpdated = true
-            it.commitTransaction()
-        }
-    }
-
-    private fun updateUIWithUserData(model: RealmUserModel?) {
-        val currentBinding = _binding ?: return
-        model?.let {
-            currentBinding.txtName.text = String.format("%s %s %s", it.firstName, it.middleName, it.lastName)
-            currentBinding.txtEmail.text = getString(R.string.two_strings, getString(R.string.email_colon), Utilities.checkNA(it.email))
-            val dob = if (TextUtils.isEmpty(it.dob)) "N/A" else TimeUtils.getFormattedDate(it.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
-            currentBinding.txtDob.text = getString(R.string.two_strings, getString(R.string.date_of_birth), dob)
-            currentBinding.txtGender.text = getString(R.string.gender_colon, Utilities.checkNA(it.gender))
-            currentBinding.txtLanguage.text = getString(R.string.two_strings, getString(R.string.language_colon), Utilities.checkNA(it.language))
-            currentBinding.txtLevel.text = getString(R.string.level_colon, Utilities.checkNA(it.level))
-        }
+        val path = uri?.toString()
+        viewModel.updateProfileImage(settings.getString("userId", ""), path)
     }
 
     inner class ViewHolderRowStat(rowStatBinding: RowStatBinding) : RecyclerView.ViewHolder(rowStatBinding.root)
 
     override fun onDestroyView() {
+        editProfileDialog?.dismiss()
+        editProfileDialog = null
         _binding = null
         super.onDestroyView()
     }
