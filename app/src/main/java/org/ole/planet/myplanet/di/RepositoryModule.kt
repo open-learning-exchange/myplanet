@@ -2,11 +2,9 @@ package org.ole.planet.myplanet.di
 
 import dagger.Binds
 import dagger.Module
-import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.ChatRepositoryImpl
 import org.ole.planet.myplanet.repository.CourseRepository
@@ -23,7 +21,6 @@ import org.ole.planet.myplanet.repository.NewsRepository
 import org.ole.planet.myplanet.repository.NewsRepositoryImpl
 import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.repository.NotificationRepositoryImpl
-import org.ole.planet.myplanet.repository.RealmRepository
 import org.ole.planet.myplanet.repository.RatingRepository
 import org.ole.planet.myplanet.repository.RatingRepositoryImpl
 import org.ole.planet.myplanet.repository.SubmissionRepository
@@ -40,15 +37,6 @@ import org.ole.planet.myplanet.repository.UserRepositoryImpl
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class RepositoryModule {
-
-    companion object {
-        @Provides
-        @Singleton
-        fun provideRealmRepository(databaseService: DatabaseService): RealmRepository {
-            return RealmRepository(databaseService)
-        }
-    }
-
     @Binds
     @Singleton
     abstract fun bindChatRepository(impl: ChatRepositoryImpl): ChatRepository

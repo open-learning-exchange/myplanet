@@ -5,8 +5,6 @@ import io.realm.RealmChangeListener
 import io.realm.RealmObject
 import io.realm.RealmQuery
 import io.realm.RealmResults
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.ProducerScope
 import kotlinx.coroutines.channels.awaitClose
@@ -18,8 +16,7 @@ import org.ole.planet.myplanet.datamanager.applyEqualTo
 import org.ole.planet.myplanet.datamanager.findCopyByField
 import org.ole.planet.myplanet.datamanager.queryList
 
-@Singleton
-open class RealmRepository @Inject constructor(protected val databaseService: DatabaseService) {
+open class RealmRepository(protected val databaseService: DatabaseService) {
     protected suspend fun <T : RealmObject> queryList(
         clazz: Class<T>,
         builder: RealmQuery<T>.() -> Unit = {},
