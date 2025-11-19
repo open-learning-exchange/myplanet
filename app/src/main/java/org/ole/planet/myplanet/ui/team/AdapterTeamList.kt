@@ -423,6 +423,10 @@ class AdapterTeamList(
         visitCountsCache.clear()
     }
 
+    fun clearStatusCache() {
+        teamStatusCache.clear()
+    }
+
     override fun getItemCount(): Int = filteredList.size
 
     class ViewHolderTeam(val binding: ItemTeamListBinding) : RecyclerView.ViewHolder(binding.root)

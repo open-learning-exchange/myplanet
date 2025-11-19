@@ -149,6 +149,9 @@ class TeamFragment : Fragment() {
                                     binding.etSearch.visibility = View.VISIBLE
                                     binding.tableTitle.visibility = View.VISIBLE
                                     Utilities.toast(activity, getString(R.string.team_created))
+                                    if (::adapterTeamList.isInitialized) {
+                                        adapterTeamList.clearStatusCache()
+                                    }
                                     dialog.dismiss()
                                 }.onFailure {
                                     Utilities.toast(activity, failureMessage)
