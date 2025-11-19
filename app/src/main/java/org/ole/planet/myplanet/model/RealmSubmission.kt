@@ -77,6 +77,7 @@ open class RealmSubmission : RealmObject() {
                 sub?.parent = GsonUtils.gson.toJson(JsonUtils.getJsonObject("parent", submission))
                 sub?.user = GsonUtils.gson.toJson(JsonUtils.getJsonObject("user", submission))
                 sub.team = JsonUtils.getString("team", submission)
+                sub.isUpdated = false
 
                 val userJson = JsonUtils.getJsonObject("user", submission)
                 if (userJson.has("membershipDoc")) {

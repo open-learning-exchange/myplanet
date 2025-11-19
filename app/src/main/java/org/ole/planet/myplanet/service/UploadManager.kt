@@ -525,12 +525,21 @@ class UploadManager @Inject constructor(
                         list.processInBatches { submission ->
                             try {
                                 val requestJson = RealmSubmission.serialize(transactionRealm, submission)
-                                val response = apiInterface?.postDoc(
-                                    UrlUtils.header,
-                                    "application/json",
-                                    "${UrlUtils.getUrl()}/submissions",
-                                    requestJson
-                                )?.execute()
+                                val response = if (TextUtils.isEmpty(submission._id)) {
+                                    apiInterface?.postDoc(
+                                        UrlUtils.header,
+                                        "application/json",
+                                        "${UrlUtils.getUrl()}/submissions",
+                                        requestJson
+                                    )?.execute()
+                                } else {
+                                    apiInterface?.putDoc(
+                                        UrlUtils.header,
+                                        "application/json",
+                                        "${UrlUtils.getUrl()}/submissions/${submission._id}",
+                                        requestJson
+                                    )?.execute()
+                                }
 
                                 val jsonObject = response?.body()
                                 if (jsonObject != null) {
@@ -553,12 +562,21 @@ class UploadManager @Inject constructor(
                         list.processInBatches { submission ->
                             try {
                                 val requestJson = RealmSubmission.serialize(transactionRealm, submission)
-                                val response = apiInterface?.postDoc(
-                                    UrlUtils.header,
-                                    "application/json",
-                                    "${UrlUtils.getUrl()}/submissions",
-                                    requestJson
-                                )?.execute()
+                                val response = if (TextUtils.isEmpty(submission._id)) {
+                                    apiInterface?.postDoc(
+                                        UrlUtils.header,
+                                        "application/json",
+                                        "${UrlUtils.getUrl()}/submissions",
+                                        requestJson
+                                    )?.execute()
+                                } else {
+                                    apiInterface?.putDoc(
+                                        UrlUtils.header,
+                                        "application/json",
+                                        "${UrlUtils.getUrl()}/submissions/${submission._id}",
+                                        requestJson
+                                    )?.execute()
+                                }
 
                                 val jsonObject = response?.body()
                                 if (jsonObject != null) {
