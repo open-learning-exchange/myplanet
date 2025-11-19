@@ -58,6 +58,13 @@ import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 
+private data class CourseData(
+    val ratings: HashMap<String, JsonObject>,
+    val progress: HashMap<String, JsonObject>,
+    val courses: List<RealmMyCourse?>,
+    val resources: List<RealmMyLibrary>?
+)
+
 @AndroidEntryPoint
 class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelected, TagClickListener, RealtimeSyncMixin {
 
@@ -190,77 +197,72 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         return courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
     }
 
-    private fun refreshCoursesData() {
-        if (!isAdded || requireActivity().isFinishing) return
+    private suspend fun loadCourseDataAsync(): CourseData = withContext(Dispatchers.IO) {
+        databaseService.withRealm { realm ->
+            val ratings = getRatings(realm, "course", model?.id)
+            val progress = getCourseProgress(realm, model?.id)
+            val courseList = getList(RealmMyCourse::class.java)
+                .filterIsInstance<RealmMyCourse?>()
+                .filter { !it?.courseTitle.isNullOrBlank() }
+            val sortedCourses = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
 
-        try {
-            if (!mRealm.isInTransaction) {
-                mRealm.refresh()
-            }
-            val map = getRatings(mRealm, "course", model?.id)
-            val progressMap = getCourseProgress(mRealm, model?.id)
-            val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>().filter { !it?.courseTitle.isNullOrBlank() }
-            val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
-
-            recyclerView.adapter = null
-            adapterCourses = AdapterCourses(
-                requireActivity(),
-                sortedCourseList,
-                map,
-                userProfileDbHandler,
-                tagRepository,
-                this@CoursesFragment
-            )
-            adapterCourses.setProgressMap(progressMap)
-            adapterCourses.setListener(this)
-            adapterCourses.setRatingChangeListener(this)
-            recyclerView.adapter = adapterCourses
-
-            if (isMyCourseLib) {
-                val courseIds = courseList.mapNotNull { it?.id }
-                resources = mRealm.where(RealmMyLibrary::class.java)
-                    .`in`("courseId", courseIds.toTypedArray())
+            val resources: List<RealmMyLibrary>? = if (isMyCourseLib) {
+                val courseIds = courseList.mapNotNull { it?.id }.toTypedArray()
+                realm.where(RealmMyLibrary::class.java)
+                    .`in`("courseId", courseIds)
                     .equalTo("resourceOffline", false)
                     .isNotNull("resourceLocalAddress")
                     .findAll()
+            } else {
+                null
             }
-            checkList()
-            showNoData(tvMessage, adapterCourses.itemCount, "courses")
-        } catch (e: Exception) {
-            e.printStackTrace()
+            CourseData(
+                ratings = ratings,
+                progress = progress,
+                courses = realm.copyFromRealm(sortedCourses),
+                resources = resources?.let { realm.copyFromRealm(it) }
+            )
+        }
+    }
+
+    private fun refreshCoursesData() {
+        if (!isAdded || requireActivity().isFinishing) return
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val data = loadCourseDataAsync()
+                adapterCourses = AdapterCourses(
+                    requireActivity(),
+                    data.courses,
+                    data.ratings,
+                    userProfileDbHandler,
+                    tagRepository,
+                    this@CoursesFragment
+                ).apply {
+                    setProgressMap(data.progress)
+                    setListener(this@CoursesFragment)
+                    setRatingChangeListener(this@CoursesFragment)
+                }
+                recyclerView.adapter = adapterCourses
+                if (isMyCourseLib) {
+                    resources = data.resources
+                }
+                checkList()
+                showNoData(tvMessage, adapterCourses.itemCount, "courses")
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
-        if (!mRealm.isInTransaction) {
-            mRealm.refresh()
-        }
-
-        val map = getRatings(mRealm, "course", model?.id)
-        val progressMap = getCourseProgress(mRealm, model?.id)
-        val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>().filter { !it?.courseTitle.isNullOrBlank() }
-        val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
         adapterCourses = AdapterCourses(
             requireActivity(),
-            sortedCourseList,
-            map,
+            emptyList(),
+            HashMap(),
             userProfileDbHandler,
             tagRepository,
             this@CoursesFragment
         )
-        adapterCourses.setProgressMap(progressMap)
-        adapterCourses.setListener(this)
-        adapterCourses.setRatingChangeListener(this)
-
-        if (isMyCourseLib) {
-            val courseIds = courseList.mapNotNull { it?.id }
-            resources = mRealm.where(RealmMyLibrary::class.java)
-                .`in`("courseId", courseIds.toTypedArray())
-                .equalTo("resourceOffline", false)
-                .isNotNull("resourceLocalAddress")
-                .findAll()
-            courseLib = "courses"
-        }
         return adapterCourses
     }
 
@@ -269,6 +271,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         userModel = userProfileDbHandler.userModel
         searchTags = ArrayList()
         initializeView()
+        refreshCoursesData()
         updateCheckBoxState(false)
         setupButtonVisibility()
         setupEventListeners()
@@ -728,25 +731,31 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             return
         }
 
-        if (!mRealm.isInTransaction) {
-            mRealm.refresh()
-        }
-        val map = getRatings(mRealm, "course", model?.id)
-        val progressMap = getCourseProgress(mRealm, model?.id)
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val data = loadCourseDataAsync()
+                val filteredCourseList = if (etSearch.text.toString().isEmpty() && searchTags.isEmpty() && gradeLevel.isEmpty() && subjectLevel.isEmpty()) {
+                    data.courses
+                } else {
+                    filterCourseByTag(etSearch.text.toString(), searchTags)
+                }
 
-        val filteredCourseList = if (etSearch.text.toString().isEmpty() && searchTags.isEmpty() && gradeLevel.isEmpty() && subjectLevel.isEmpty()) {
-            getFullCourseList()
-        } else {
-            filterCourseByTag(etSearch.text.toString(), searchTags)
+                adapterCourses = AdapterCourses(
+                    requireActivity(),
+                    filteredCourseList,
+                    data.ratings,
+                    userProfileDbHandler,
+                    tagRepository,
+                    this@CoursesFragment
+                ).apply {
+                    setProgressMap(data.progress)
+                    setListener(this@CoursesFragment)
+                    setRatingChangeListener(this@CoursesFragment)
+                }
+                recyclerView.adapter = adapterCourses
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
-
-        adapterCourses = AdapterCourses(
-            requireActivity(), filteredCourseList, map, userProfileDbHandler,
-            tagRepository, this@CoursesFragment
-        )
-        adapterCourses.setProgressMap(progressMap)
-        adapterCourses.setListener(this)
-        adapterCourses.setRatingChangeListener(this)
-        recyclerView.adapter = adapterCourses
     }
 }
