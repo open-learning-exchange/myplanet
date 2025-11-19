@@ -4,10 +4,6 @@ import android.content.SharedPreferences
 import com.google.gson.JsonObject
 import java.util.Calendar
 import javax.inject.Inject
-import android.content.SharedPreferences
-import com.google.gson.JsonObject
-import java.util.Calendar
-import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmOfflineActivity
@@ -152,7 +148,7 @@ class UserRepositoryImpl @Inject constructor(
 
     override fun getUserModel(): RealmUserModel? {
         val userId = settings.getString("userId", null)?.takeUnless { it.isBlank() } ?: return null
-        return withRealm { realm ->
+        return databaseService.withRealm { realm ->
             realm.where(RealmUserModel::class.java)
                 .equalTo("id", userId)
                 .or()
