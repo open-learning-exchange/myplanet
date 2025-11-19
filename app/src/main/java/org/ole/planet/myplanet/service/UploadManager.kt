@@ -304,55 +304,61 @@ class UploadManager @Inject constructor(
         }
     }
 
-    fun uploadFeedback(listener: SuccessListener) {
+    suspend fun uploadFeedback(): Boolean {
         val apiInterface = client.create(ApiInterface::class.java)
-        databaseService.withRealm { realm ->
-            realm.executeTransactionAsync(Realm.Transaction { transactionRealm: Realm ->
-                val feedbacks: List<RealmFeedback> =
-                    transactionRealm.where(RealmFeedback::class.java).findAll()
-
-                if (feedbacks.isEmpty()) {
-                    return@Transaction
+        var success = true
+        try {
+            val feedbacksToUpload = withContext(Dispatchers.IO) {
+                databaseService.withRealm { realm ->
+                    realm.copyFromRealm(realm.where(RealmFeedback::class.java).findAll())
                 }
+            }
 
-                var successCount = 0
-                var errorCount = 0
+            if (feedbacksToUpload.isEmpty()) {
+                return true
+            }
 
-                feedbacks.processInBatches { feedback ->
-                    try {
-                        val res: Response<JsonObject>? = apiInterface?.postDoc(
-                            UrlUtils.header,
-                            "application/json",
-                            "${UrlUtils.getUrl()}/feedback",
-                            RealmFeedback.serializeFeedback(feedback)
-                        )?.execute()
+            feedbacksToUpload.forEach { feedback ->
+                try {
+                    val res = apiInterface.postDocSuspend(
+                        UrlUtils.header,
+                        "application/json",
+                        "${UrlUtils.getUrl()}/feedback",
+                        RealmFeedback.serializeFeedback(feedback)
+                    )
 
-                        val r = res?.body()
-                        if (r != null) {
-                            val revElement = r["rev"]
-                            val idElement = r["id"]
-                            if (revElement != null && idElement != null) {
-                                feedback._rev = revElement.asString
-                                feedback._id = idElement.asString
-                                successCount++
-                            } else {
-                                errorCount++
+                    val r = res.body()
+                    if (res.isSuccessful && r != null) {
+                        val revElement = r["rev"]
+                        val idElement = r["id"]
+                        if (revElement != null && idElement != null) {
+                            withContext(Dispatchers.IO) {
+                                databaseService.withRealm { realm ->
+                                    realm.executeTransaction { transactionRealm ->
+                                        val realmFeedback = transactionRealm.where(RealmFeedback::class.java).equalTo("id", feedback.id).findFirst()
+                                        realmFeedback?.let {
+                                            it._rev = revElement.asString
+                                            it._id = idElement.asString
+                                        }
+                                    }
+                                }
                             }
                         } else {
-                            errorCount++
+                            success = false
                         }
-                    } catch (e: IOException) {
-                        errorCount++
-                        e.printStackTrace()
+                    } else {
+                        success = false
                     }
+                } catch (e: IOException) {
+                    success = false
+                    e.printStackTrace()
                 }
-            }, {
-                listener.onSuccess("Feedback sync completed successfully")
-            }, { error ->
-                listener.onSuccess("Feedback sync failed: ${error.message}")
-                error.printStackTrace()
-            })
+            }
+        } catch (e: Exception) {
+            success = false
+            e.printStackTrace()
         }
+        return success
     }
 
     fun uploadSubmitPhotos(listener: SuccessListener?) {
