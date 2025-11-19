@@ -29,17 +29,21 @@ data class JoinedMemberData(
 
 class AdapterJoinedMember(
     private val context: Context,
-    private var list: List<JoinedMemberData>,
+    private var list: MutableList<JoinedMemberData>,
     private var isLoggedInUserTeamLeader: Boolean,
     private val actionListener: MemberActionListener
 ) : RecyclerView.Adapter<AdapterJoinedMember.ViewHolderUser>() {
 
     fun updateMembers(newMembers: List<JoinedMemberData>) {
         val oldList = ArrayList(list)
-        list = newMembers
-        DiffUtils.calculateDiff(oldList, newMembers) { old, new ->
-            old.user.id == new.user.id
-        }.dispatchUpdatesTo(this)
+        list.clear()
+        list.addAll(newMembers)
+        DiffUtils.calculateDiff(
+            oldList,
+            newMembers,
+            areItemsTheSame = { old, new -> old.user.id == new.user.id },
+            areContentsTheSame = { old, new -> old == new }
+        ).dispatchUpdatesTo(this)
     }
 
     interface MemberActionListener {
@@ -185,49 +189,6 @@ class AdapterJoinedMember(
         this.list.clear()
         this.list.addAll(newList)
         diffResult.dispatchUpdatesTo(this)
-    }
-
-    fun removeMember(memberId: String) {
-        val position = list.indexOfFirst { it.user.id == memberId }
-        if (position != -1) {
-            list.removeAt(position)
-            notifyItemRemoved(position)
-
-            if (list.isNotEmpty()) {
-                notifyItemRangeChanged(0, list.size)
-            }
-        }
-    }
-
-    fun updateLeadership(loggedInUserId: String?, newLeaderId: String) {
-        var oldLeaderPos = -1
-        var newLeaderPos = -1
-
-        list.forEachIndexed { index, memberData ->
-            if (memberData.isLeader) {
-                memberData.isLeader = false
-                oldLeaderPos = index
-            }
-            if (memberData.user.id == newLeaderId) {
-                memberData.isLeader = true
-                newLeaderPos = index
-            }
-        }
-
-        isLoggedInUserTeamLeader = (loggedInUserId == newLeaderId)
-
-        if (newLeaderPos > 0) {
-            val newLeader = list.removeAt(newLeaderPos)
-            list.add(0, newLeader)
-            notifyItemMoved(newLeaderPos, 0)
-        }
-
-        if (oldLeaderPos != -1) notifyItemChanged(if (oldLeaderPos == 0) 1 else oldLeaderPos)
-        notifyItemChanged(0)
-
-        if (list.size > 2) {
-            notifyItemRangeChanged(1, list.size - 1)
-        }
     }
 
     class ViewHolderUser(val binding: RowJoinedUserBinding) :

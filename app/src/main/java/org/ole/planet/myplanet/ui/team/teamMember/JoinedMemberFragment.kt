@@ -1,6 +1,8 @@
 package org.ole.planet.myplanet.ui.team.teamMember
 
 import android.content.res.Configuration
+import android.os.Bundle
+import android.view.View
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
