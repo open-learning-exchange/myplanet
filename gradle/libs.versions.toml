@@ -24,7 +24,6 @@ glide = "5.0.5"
 photoView = "2.3.0"
 fab = "1.6.4"
 mpAndroidChart = "v3.1.0"
-circularProgressView = "0.1.2"
 material = "1.13.0"
 gson = "2.13.2"
 toggleButtonGroup = "1.2.3"
@@ -68,7 +67,6 @@ glide-ksp = { module = "com.github.bumptech.glide:ksp", version.ref = "glide" }
 photoView = { module = "com.github.chrisbanes:PhotoView", version.ref = "photoView" }
 fab = { module = "com.github.clans:fab", version.ref = "fab" }
 mpAndroidChart = { module = "com.github.PhilJay:MPAndroidChart", version.ref = "mpAndroidChart" }
-circular-progress-view = { module = "com.github.VaibhavLakhera:Circular-Progress-View", version.ref = "circularProgressView" }
 material = { module = "com.google.android.material:material", version.ref = "material" }
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
