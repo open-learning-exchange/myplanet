@@ -32,8 +32,7 @@ import org.ole.planet.myplanet.datamanager.MyDownloadService
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.datamanager.Service.PlanetAvailableListener
 import org.ole.planet.myplanet.di.AppPreferences
-import org.ole.planet.myplanet.model.Download
-import org.ole.planet.myplanet.model.RealmMyCourse
+import org.ole.planet.myplanet.model.Download#9273import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRemovedLog
@@ -90,11 +89,6 @@ abstract class BaseResourceFragment : Fragment() {
     private var pendingSurveyDialog: AlertDialog? = null
     private var stayOnlineDialog: AlertDialog? = null
 
-    /**
-     * Ensures a valid Realm instance is available for subclasses.
-     * If the existing instance was closed, it reopens a new instance
-     * from the injected [databaseService].
-     */
     protected fun requireRealmInstance(): Realm {
         if (!isRealmInitialized()) {
             mRealm = databaseService.realmInstance
