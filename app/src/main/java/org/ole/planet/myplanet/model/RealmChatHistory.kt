@@ -1,8 +1,8 @@
 package org.ole.planet.myplanet.model
 
-import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import org.ole.planet.myplanet.utilities.GsonUtils
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
@@ -43,7 +43,7 @@ open class RealmChatHistory : RealmObject() {
         private fun parseConversations(realm: Realm, jsonArray: JsonArray): RealmList<Conversation> {
             val conversations = RealmList<Conversation>()
             for (element in jsonArray) {
-                val conversation = Gson().fromJson(element, Conversation::class.java)
+                val conversation = GsonUtils.gson.fromJson(element, Conversation::class.java)
                 val realmConversation = realm.copyToRealm(conversation)
                 conversations.add(realmConversation)
             }

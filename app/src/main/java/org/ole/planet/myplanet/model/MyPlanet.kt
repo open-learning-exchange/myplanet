@@ -5,8 +5,8 @@ import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Build
-import com.google.gson.Gson
 import com.google.gson.JsonArray
+import org.ole.planet.myplanet.utilities.GsonUtils
 import com.google.gson.JsonObject
 import java.io.Serializable
 import java.util.Calendar
@@ -32,7 +32,7 @@ class MyPlanet : Serializable {
         fun getMyPlanetActivities(context: Context, pref: SharedPreferences, model: RealmUserModel): JsonObject {
             val postJSON = JsonObject()
             val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            val planet = Gson().fromJson(preferences.getString("versionDetail", ""), MyPlanet::class.java)
+            val planet = GsonUtils.gson.fromJson(preferences.getString("versionDetail", ""), MyPlanet::class.java)
             if (planet != null) postJSON.addProperty("planetVersion", planet.planetVersion)
             postJSON.addProperty("_id", VersionUtils.getAndroidId(MainApplication.context) + "@" + NetworkUtils.getUniqueIdentifier())
             postJSON.addProperty("last_synced", pref.getLong("LastSync", 0))
@@ -47,7 +47,7 @@ class MyPlanet : Serializable {
         fun getNormalMyPlanetActivities(context: Context, pref: SharedPreferences, model: RealmUserModel): JsonObject {
             val postJSON = JsonObject()
             val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            val planet = Gson().fromJson(preferences.getString("versionDetail", ""), MyPlanet::class.java)
+            val planet = GsonUtils.gson.fromJson(preferences.getString("versionDetail", ""), MyPlanet::class.java)
             if (planet != null) postJSON.addProperty("planetVersion", planet.planetVersion)
             postJSON.addProperty("last_synced", pref.getLong("LastSync", 0))
             postJSON.addProperty("parentCode", model.parentCode)

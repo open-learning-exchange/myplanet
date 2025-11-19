@@ -10,8 +10,8 @@ import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import com.google.gson.Gson
 import com.google.gson.JsonArray
+import org.ole.planet.myplanet.utilities.GsonUtils
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.RealmResults
@@ -76,30 +76,33 @@ class DiscussionListFragment : BaseTeamFragment() {
             }
             binding.etMessage.setText(R.string.empty_text)
             val map = HashMap<String?, String>()
-                map["viewInId"] = getEffectiveTeamId()
-                map["viewInSection"] = "teams"
-                map["message"] = message
-                map["messageType"] = getEffectiveTeamType()
-                map["messagePlanetCode"] = team?.teamPlanetCode ?: ""
-                map["name"] = getEffectiveTeamName()
+            map["viewInId"] = getEffectiveTeamId()
+            map["viewInSection"] = "teams"
+            map["message"] = message
+            map["messageType"] = getEffectiveTeamType()
+            map["messagePlanetCode"] = team?.teamPlanetCode ?: ""
+            map["name"] = getEffectiveTeamName()
 
             user?.let { userModel ->
-                try {
-                    createNews(map, mRealm, userModel, imageList)
-                    binding.rvDiscussion.post {
-                        binding.rvDiscussion.smoothScrollToPosition(0)
+                viewLifecycleOwner.lifecycleScope.launch {
+                    try {
+                        databaseService.executeTransactionAsync { realm ->
+                            createNews(map, realm, userModel, imageList)
+                        }
+                        binding.rvDiscussion.post {
+                            binding.rvDiscussion.smoothScrollToPosition(0)
+                        }
+                        binding.etMessage.text?.clear()
+                        imageList.clear()
+                        llImage?.removeAllViews()
+                        binding.llAddNews.visibility = View.GONE
+                        binding.tlMessage.error = null
+                        binding.addMessage.text = getString(R.string.add_message)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
                     }
-                } catch (e: Exception) {
-                    e.printStackTrace()
                 }
             }
-
-            binding.etMessage.text?.clear()
-            imageList.clear()
-            llImage?.removeAllViews()
-            binding.llAddNews.visibility = View.GONE
-            binding.tlMessage.error = null
-            binding.addMessage.text = getString(R.string.add_message)
         }
 
         if (shouldQueryTeamFromRealm()) {
@@ -189,7 +192,7 @@ class DiscussionListFragment : BaseTeamFragment() {
             if (!TextUtils.isEmpty(news.viewableBy) && news.viewableBy.equals("teams", ignoreCase = true) && news.viewableId.equals(effectiveTeamId, ignoreCase = true)) {
                 filteredList.add(news)
             } else if (!TextUtils.isEmpty(news.viewIn)) {
-                val ar = Gson().fromJson(news.viewIn, JsonArray::class.java)
+                val ar = GsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
                 for (e in ar) {
                     val ob = e.asJsonObject
                     if (ob["_id"].asString.equals(effectiveTeamId, ignoreCase = true)) {
@@ -211,7 +214,7 @@ class DiscussionListFragment : BaseTeamFragment() {
                 if (!TextUtils.isEmpty(news.viewableBy) && news.viewableBy.equals("teams", ignoreCase = true) && news.viewableId.equals(effectiveTeamId, ignoreCase = true)) {
                     list.add(news)
                 } else if (!TextUtils.isEmpty(news.viewIn)) {
-                    val ar = Gson().fromJson(news.viewIn, JsonArray::class.java)
+                    val ar = GsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
                     for (e in ar) {
                         val ob = e.asJsonObject
                         if (ob["_id"].asString.equals(effectiveTeamId, ignoreCase = true)) {

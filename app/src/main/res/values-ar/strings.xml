@@ -19,10 +19,8 @@
     <string name="hint_name">اسم المستخدم</string>
     <string name="btn_back">رجع</string>
     <string name="btn_sign_in">تسجيل الدخول</string>
-    <string name="btn_sync">مزامنة</string>
     <string name="select_team">حدد الفريق</string>
     <string name="btn_sync_save">حفظ</string>
-    <string name="btn_sync_cancel">إلغاء</string>
     <string name="err_msg_name">الرجاء إدخال اسم المستخدم</string>
     <string name="err_msg_password">الرجاء إدخال كلمة المرور</string>
     <string name="err_msg_login">اسم المستخدم و/أو كلمة المرور غير متطابقة</string>
@@ -83,7 +81,6 @@
     <string name="middle_name">الاسم الأوسط</string>
     <string name="first_name">الاسم الأول</string>
     <string name="search_dots">بحث…</string>
-    <string name="btn_remove_lib">إزالة</string>
     <string name="download">تحميل</string>
     <string name="published_by">نشر بواسطة:</string>
     <string name="author">المؤلف:</string>
@@ -190,6 +187,7 @@
     <string name="nepali">नेपाली</string>
     <string name="arabic">عربى</string>
     <string name="french">français</string>
+
     <string-array name="open_With">
         <item>HTML</item>
         <item>PDF.js</item>
@@ -252,10 +250,10 @@
         <item>مقروء</item>
         <item>غير مقروء</item>
     </string-array>
+
     <string name="myhealth">صحتي</string>
     <string name="action">إجراء</string>
     <string name="created_on">تم الإنشاء في</string>
-    <string name="name_normal">الاسم</string>
     <string name="mypersonals">معلوماتي الشخصية</string>
     <string name="capture_image">التقاط صورة</string>
     <string name="resources">موارد</string>
@@ -279,7 +277,6 @@
     <string name="team">الفرق</string>
     <string name="applicants">المتقدمون</string>
     <string name="finances">المالية</string>
-    <string name="nodata">لا توجد بيانات متاحة</string>
     <string name="note">ملاحظة *</string>
     <string name="amount">المبلغ</string>
     <string name="debit">مدين</string>
@@ -336,7 +333,7 @@
     <string name="freeup_space">تحرير مساحة القرص</string>
     <string name="action_disclaimer">تنصل</string>
     <string name="action_about">حول</string>
-    <string name="engilsh_dictionary">قاموس الإنجليزية</string>
+    <string name="english_dictionary">قاموس الإنجليزية</string>
 
     <string-array name="team_type">
         <item>فريق محلي</item>
@@ -462,6 +459,7 @@
         <item>نقص فيتامين A</item>
         <item>زيكا</item>
     </string-array>
+
     <string name="more_action">تصفية</string>
     <string name="my_progress">تقدمي</string>
     <string name="my_activity">نشاطي</string>
@@ -494,14 +492,9 @@
     <string name="last_sync_date">%s :تاريخ آخر مزامنة</string>
     <string name="no_assignee">لا يوجد مُعيَّن</string>
     <string name="note_">ملاحظات</string>
-    <string name="diagno">التشخيص</string>
-    <string name="treat">العلاجات</string>
-    <string name="medicay">الأدوية</string>
     <string name="immunizations">التحصينات</string>
-    <string name="allergy">الحساسية</string>
     <string name="xrays">الأشعة السينية</string>
     <string name="tests">الفحوصات</string>
-    <string name="referral">الإحالات</string>
     <string name="other_diagnosis">تشخيصات أخرى</string>
     <string name="close">يغلق</string>
     <string name="negative_balance">الرصيد الحالي سالب!</string>
@@ -650,27 +643,29 @@
     <string name="pending_survey_notification">لديك استطلاع قيد الانتظار:</string>
     <string name="task_notification">%1$s مستحق في %2$s</string>
     <string name="resource_notification">لديك %1$d موارد لم يتم تنزيلها</string>
+
     <string name="vitals_format">
-    درجة الحرارة: %1$s\n
-    النبض: %2$s\n
-    ضغط الدم: %3$s\n
-    الطول: %4$s\n
-    الوزن: %5$s\n
-    الرؤية: %6$s\n
-    السمع: %7$s\n
-</string>
+        درجة الحرارة: %1$s\n
+        النبض: %2$s\n
+        ضغط الدم: %3$s\n
+        الطول: %4$s\n
+        الوزن: %5$s\n
+        الرؤية: %6$s\n
+        السمع: %7$s\n
+    </string>
 
     <string name="observations_notes_colon">
-    الملاحظات والتحليلات: %1$s\n
-    %2$s\n
-    %3$s\n
-    %4$s\n
-    %5$s\n
-    الحساسية: %6$s\n
-    الأشعة السينية: %7$s\n
-    اختبارات مختبرية: %8$s\n
-    الدراسات: %9$s\n
-</string>
+        الملاحظات والتحليلات: %1$s\n
+        %2$s\n
+        %3$s\n
+        %4$s\n
+        %5$s\n
+        الحساسية: %6$s\n
+        الأشعة السينية: %7$s\n
+        اختبارات مختبرية: %8$s\n
+        الدراسات: %9$s\n
+    </string>
+
     <string name="blood_pressure_should_be_numeric_systolic_diastolic">يجب أن يكون ضغط الدم عبارة عن أرقام نبضية/انبساطية</string>
     <string name="blood_pressure_should_be_systolic_diastolic">يجب أن يكون ضغط الدم عبارة عن نبضي/انبساطي</string>
     <string name="bp_must_be_between_60_40_and_300_200">يجب أن يكون ضغط الدم بين 60/40 و 300/200</string>
@@ -872,10 +867,12 @@
     <string name="available_space_colon">المساحة المتوفرة: </string>
     <string name="community_leaders">قادة المجتمع</string>
     <string name="services">الخدمات</string>
+
     <plurals name="survey_taken_count">
         <item quantity="one">تم أخذ الاستبيان %d مرة</item>
         <item quantity="other">تم أخذ الاستبيان %d مرات</item>
     </plurals>
+
     <string name="ai_chat">AI Chat</string>
     <string name="kindly_give_a_rating">يرجى التقييم</string>
     <string name="must_start_with_letter_or_number">يجب أن تبدأ بحرف أو رقم</string>
@@ -1173,5 +1170,8 @@
     <string name="resource_has_no_attachments">المورد لا يحتوي على ملفات قابلة للتنزيل</string>
     <string name="unable_to_download_resource">غير قادر على تنزيل المورد</string>
     <string name="hide_new_message">إخفاء الرسالة الجديدة</string>
+    <string name="cannot_assign_completed_task">لا يمكن تعيين مهمة مكتملة</string>
+    <string name="assign_to">تعيين إلى (اختياري)</string>
+    <string name="click_to_assign_member">انقر لتعيين عضو الفريق</string>
 
 </resources>

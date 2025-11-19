@@ -25,7 +25,9 @@ import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.MenuItemCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.navigation.NavigationBarView
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayout
@@ -50,7 +52,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.json.JSONObject
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
@@ -147,6 +148,19 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         challengeHelper = ChallengeHelper(this, mRealm, user, settings, editor, dashboardViewModel)
         challengeHelper.evaluateChallengeDialog()
         handleNotificationIntent(intent)
+        collectUiState()
+    }
+
+    private fun collectUiState() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                dashboardViewModel.uiState.collect { state ->
+                    updateNotificationBadge(state.unreadNotifications) {
+                        openNotificationsList(user?.id ?: "")
+                    }
+                }
+            }
+        }
     }
 
     private fun initViews() {
@@ -209,41 +223,42 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun setupNavigation() {
+        headerResult = accountHeader
+        createDrawer()
+        supportFragmentManager.addOnBackStackChangedListener {
+            val frag = supportFragmentManager.findFragmentById(R.id.fragment_container)
+            val idToSelect = when (frag) {
+                is BellDashboardFragment -> 0L
+                is ResourcesFragment -> {
+                    val isMy = frag.arguments?.getBoolean("isMyCourseLib", false) == true
+                    if (isMy) 1L else 3L
+                }
+                is CoursesFragment -> {
+                    val isMy = frag.arguments?.getBoolean("isMyCourseLib", false) == true
+                    if (isMy) 2L else 4L
+                }
+                is TeamFragment -> {
+                    val isDashboard = frag.arguments?.getBoolean("fromDashboard", false) == true
+                    val isEnterprise = frag.arguments?.getString("type") == "enterprise"
+                    if (isDashboard) 0L else if (isEnterprise) 6L else 5L
+                }
+                is CommunityTabFragment -> 7L
+                is SurveyFragment -> 8L
+                else -> null
+            }
+            idToSelect?.let { result?.setSelection(it, false) }
+        }
+        result?.actionBarDrawerToggle?.isDrawerIndicatorEnabled = true
+        dl = result?.drawerLayout
+        topbarSetting()
+
         lifecycleScope.launch {
             delay(50)
-            headerResult = accountHeader
-            createDrawer()
-            supportFragmentManager.addOnBackStackChangedListener {
-                val frag = supportFragmentManager.findFragmentById(R.id.fragment_container)
-                val idToSelect = when (frag) {
-                    is BellDashboardFragment -> 0L
-                    is ResourcesFragment -> {
-                        val isMy = frag.arguments?.getBoolean("isMyCourseLib", false) == true
-                        if (isMy) 1L else 3L
-                    }
-                    is CoursesFragment -> {
-                        val isMy = frag.arguments?.getBoolean("isMyCourseLib", false) == true
-                        if (isMy) 2L else 4L
-                    }
-                    is TeamFragment -> {
-                        val isDashboard = frag.arguments?.getBoolean("fromDashboard", false) == true
-                        val isEnterprise = frag.arguments?.getString("type") == "enterprise"
-                        if (isDashboard) 0L else if (isEnterprise) 6L else 5L
-                    }
-                    is CommunityTabFragment -> 7L
-                    is SurveyFragment -> 8L
-                    else -> null
-                }
-                idToSelect?.let { result?.setSelection(it, false) }
-            }
             if (!(user?.id?.startsWith("guest") == true && profileDbHandler.offlineVisits >= 3) &&
                 resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
             ) {
                 result?.openDrawer()
             }
-            result?.actionBarDrawerToggle?.isDrawerIndicatorEnabled = true
-            dl = result?.drawerLayout
-            topbarSetting()
         }
     }
 
@@ -593,9 +608,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
             withContext(Dispatchers.Main) {
                 try {
-                    updateNotificationBadge(unreadCount) {
-                        openNotificationsList(userId ?: "")
-                    }
+                    onNotificationCountUpdated(unreadCount)
 
                     val groupedNotifications = newNotifications.groupBy { it.type }
                     
@@ -842,9 +855,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     override fun onNotificationCountUpdated(unreadCount: Int) {
-        updateNotificationBadge(unreadCount) {
-            openNotificationsList(user?.id ?: "")
-        }
+        dashboardViewModel.setUnreadNotifications(unreadCount)
     }
 
     private fun updateNotificationBadge(count: Int, onClickListener: View.OnClickListener) {

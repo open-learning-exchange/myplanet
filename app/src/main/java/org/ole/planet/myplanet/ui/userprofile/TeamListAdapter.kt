@@ -39,6 +39,7 @@ class TeamListAdapter(
     }
 
     fun updateList(newUserList: MutableList<User>) {
+        if (membersList === newUserList) return
         val diffResult = DiffUtils.calculateDiff(
             membersList,
             newUserList,

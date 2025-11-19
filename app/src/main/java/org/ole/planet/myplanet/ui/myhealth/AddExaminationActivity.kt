@@ -12,8 +12,8 @@ import android.widget.CompoundButton
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import com.google.gson.Gson
 import com.google.gson.JsonObject
+import org.ole.planet.myplanet.utilities.GsonUtils
 import dagger.hilt.android.AndroidEntryPoint
 import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
@@ -60,7 +60,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
     var allowSubmission = true
     private lateinit var config: ChipCloudConfig
     private var examination: RealmMyHealthPojo? = null
-    private val gson = Gson()
+    private var textWatcher: TextWatcher? = null
     private fun initViews() {
         config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.close)
         binding.btnAddDiag.setOnClickListener {
@@ -95,7 +95,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
             mRealm.commitTransaction()
         }
         if (pojo != null && !TextUtils.isEmpty(pojo?.data)) {
-            health = gson.fromJson(decrypt(pojo?.data, user?.key, user?.iv), RealmMyHealth::class.java)
+            health = GsonUtils.gson.fromJson(decrypt(pojo?.data, user?.key, user?.iv), RealmMyHealth::class.java)
         }
         if (health == null) {
             initHealth()
@@ -125,14 +125,14 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
             binding.etHearing.setText(examination?.hearing)
             val encrypted = user?.let { examination?.getEncryptedDataAsJson(it) }
             binding.etObservation.setText(getString(getString(R.string.note_), encrypted))
-            binding.etDiag.setText(getString(getString(R.string.diagno), encrypted))
-            binding.etTreatments.setText(getString(getString(R.string.treat), encrypted))
-            binding.etMedications.setText(getString(getString(R.string.medicay), encrypted))
+            binding.etDiag.setText(getString(getString(R.string.diagnosis), encrypted))
+            binding.etTreatments.setText(getString(getString(R.string.treatments), encrypted))
+            binding.etMedications.setText(getString(getString(R.string.medications), encrypted))
             binding.etImmunization.setText(getString(getString(R.string.immunizations), encrypted))
-            binding.etAllergies.setText(getString(getString(R.string.allergy), encrypted))
+            binding.etAllergies.setText(getString(getString(R.string.allergies), encrypted))
             binding.etXray.setText(getString(getString(R.string.xrays), encrypted))
             binding.etLabtest.setText(getString(getString(R.string.tests), encrypted))
-            binding.etReferrals.setText(getString(getString(R.string.referral), encrypted))
+            binding.etReferrals.setText(getString(getString(R.string.referrals), encrypted))
         }
         showCheckbox(examination)
         showOtherDiagnosis()
@@ -140,8 +140,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
 
     private fun validateFields() {
         allowSubmission = true
-        binding.etBloodpressure.addTextChangedListener(object :
-            TextWatcher {
+        textWatcher = object : TextWatcher {
             override fun afterTextChanged(s: Editable) {}
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
@@ -172,7 +171,8 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
                     }
                 }
             }
-        })
+        }
+        binding.etBloodpressure.addTextChangedListener(textWatcher)
     }
 
     private fun showOtherDiagnosis() {
@@ -193,7 +193,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         val arr = resources.getStringArray(R.array.diagnosis_list)
         val mainList = listOf(*arr)
         if (customDiag?.isEmpty() == true && examination != null) {
-            val conditions = gson.fromJson(examination?.conditions, JsonObject::class.java)
+            val conditions = GsonUtils.gson.fromJson(examination?.conditions, JsonObject::class.java)
             for (s in conditions.keySet()) {
                 if (!mainList.contains(s) && getBoolean(s, conditions)) {
                     chipCloud.addChip(s)
@@ -215,7 +215,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
             c.setTextColor(ContextCompat.getColor(this, R.color.daynight_textColor))
 
             if (examination != null) {
-                val conditions = gson.fromJson(examination.conditions, JsonObject::class.java)
+                val conditions = GsonUtils.gson.fromJson(examination.conditions, JsonObject::class.java)
                 c.isChecked = getBoolean(s, conditions)
             }
             c.setPadding(dpToPx(8), dpToPx(8), dpToPx(8), dpToPx(8))
@@ -267,7 +267,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         examination?.setWeight(getFloat("${binding.etWeight.text}".trim { it <= ' ' }))
         examination?.height = getFloat("${binding.etHeight.text}".trim { it <= ' ' })
         otherConditions
-        examination?.conditions = gson.toJson(mapConditions)
+        examination?.conditions = GsonUtils.gson.toJson(mapConditions)
         examination?.hearing = "${binding.etHearing.text}".trim { it <= ' ' }
         sign.immunizations = "${binding.etImmunization.text}".trim { it <= ' ' }
         sign.tests = "${binding.etLabtest.text}".trim { it <= ' ' }
@@ -285,7 +285,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         try {
             val key = user?.key ?: generateKey().also { user?.key = it }
             val iv = user?.iv ?: generateIv().also { user?.iv = it }
-            examination?.data = encrypt(gson.toJson(sign), key, iv)
+            examination?.data = encrypt(GsonUtils.gson.toJson(sign), key, iv)
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -378,7 +378,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
             val userKey = user?.key
             val userIv = user?.iv
             if (userKey != null && userIv != null) {
-                pojo?.data = encrypt(gson.toJson(health), userKey, userIv)
+                pojo?.data = encrypt(GsonUtils.gson.toJson(health), userKey, userIv)
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -410,6 +410,8 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         if (this::mRealm.isInitialized && !mRealm.isClosed) {
             mRealm.close()
         }
+        binding.etBloodpressure.removeTextChangedListener(textWatcher)
+        textWatcher = null
         super.onDestroy()
     }
 }

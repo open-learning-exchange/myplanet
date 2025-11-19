@@ -19,10 +19,8 @@
     <string name="hint_name">Nombre</string>
     <string name="btn_back">Volver</string>
     <string name="btn_sign_in">Iniciar sesión</string>
-    <string name="btn_sync">Sincronizar</string>
     <string name="select_team">seleccionar equipo</string>
     <string name="btn_sync_save">Guardar</string>
-    <string name="btn_sync_cancel">Cancelar</string>
     <string name="err_msg_name">Ingresa tu nombre de usuario</string>
     <string name="err_msg_password">Ingresa la contraseña</string>
     <string name="err_msg_login">El nombre de usuario y/o la contraseña no coinciden</string>
@@ -83,7 +81,6 @@
     <string name="middle_name">Segundo nombre</string>
     <string name="first_name">Nombre de Pila</string>
     <string name="search_dots">Buscar…</string>
-    <string name="btn_remove_lib">Eliminar</string>
     <string name="download">Descargar</string>
     <string name="published_by">Publicado por:</string>
     <string name="author">Autor:</string>
@@ -190,6 +187,7 @@
     <string name="nepali">नेपाली</string>
     <string name="arabic">عربى</string>
     <string name="french">français</string>
+
     <string-array name="open_With">
         <item>HTML</item>
         <item>PDF.js</item>
@@ -252,10 +250,10 @@
         <item>leído</item>
         <item>no leído</item>
     </string-array>
+
     <string name="myhealth">miSalud</string>
     <string name="action">Acción</string>
     <string name="created_on">Creado en</string>
-    <string name="name_normal">Nombre</string>
     <string name="mypersonals">misPersonales</string>
     <string name="capture_image">Capturar imagen</string>
     <string name="resources">Recursos</string>
@@ -279,7 +277,6 @@
     <string name="team">Equipos</string>
     <string name="applicants">Solicitantes</string>
     <string name="finances">Finanzas</string>
-    <string name="nodata">No hay datos disponibles</string>
     <string name="note">Nota *</string>
     <string name="amount">Cantidad</string>
     <string name="debit">Débito</string>
@@ -336,7 +333,7 @@
     <string name="freeup_space">Liberar espacio en disco</string>
     <string name="action_disclaimer">descargo de responsabilidad</string>
     <string name="action_about">acerca de</string>
-    <string name="engilsh_dictionary">Diccionario inglés</string>
+    <string name="english_dictionary">Diccionario inglés</string>
 
     <string-array name="team_type">
         <item>Equipo local</item>
@@ -462,6 +459,7 @@
         <item>Deficiencia de vitamina A</item>
         <item>Zika</item>
     </string-array>
+
     <string name="more_action">Filtrar</string>
     <string name="my_progress">miProgreso</string>
     <string name="my_activity">miActividad</string>
@@ -494,14 +492,9 @@
     <string name="last_sync_date">Fecha de última sincronización: %s</string>
     <string name="no_assignee">Sin asignado/a</string>
     <string name="note_">notas</string>
-    <string name="diagno">diagnósticos</string>
-    <string name="treat">tratamientos</string>
-    <string name="medicay">medicamentos</string>
     <string name="immunizations">inmunizaciones</string>
-    <string name="allergy">alergias</string>
     <string name="xrays">radiografías</string>
     <string name="tests">pruebas</string>
-    <string name="referral">referencias</string>
     <string name="other_diagnosis">Otros diagnósticos</string>
     <string name="close">Cerrar</string>
     <string name="negative_balance">¡El saldo actual es negativo!</string>
@@ -650,27 +643,29 @@
     <string name="pending_survey_notification">tienes una encuesta pendiente:</string>
     <string name="task_notification">%1$s vence en %2$s</string>
     <string name="resource_notification">Tienes %1$d recursos no descargados</string>
+
     <string name="vitals_format">
-    Temperatura: %1$s\n
-    Pulso: %2$s\n
-    Presión arterial: %3$s\n
-    Altura: %4$s\n
-    Peso: %5$s\n
-    Visión: %6$s\n
-    Audición: %7$s\n
-</string>
+        Temperatura: %1$s\n
+        Pulso: %2$s\n
+        Presión arterial: %3$s\n
+        Altura: %4$s\n
+        Peso: %5$s\n
+        Visión: %6$s\n
+        Audición: %7$s\n
+    </string>
 
     <string name="observations_notes_colon">
-    Observaciones y análisis: %1$s\n
-    %2$s\n
-    %3$s\n
-    %4$s\n
-    %5$s\n
-    Alergias: %6$s\n
-    Radiografía: %7$s\n
-    Pruebas de laboratorio: %8$s\n
-    Estudios: %9$s\n
-</string>
+        Observaciones y análisis: %1$s\n
+        %2$s\n
+        %3$s\n
+        %4$s\n
+        %5$s\n
+        Alergias: %6$s\n
+        Radiografía: %7$s\n
+        Pruebas de laboratorio: %8$s\n
+        Estudios: %9$s\n
+    </string>
+
     <string name="blood_pressure_should_be_numeric_systolic_diastolic">La presión arterial debe ser numérica sistólica/diastólica</string>
     <string name="blood_pressure_should_be_systolic_diastolic">La presión arterial debe ser sistólica/diastólica</string>
     <string name="bp_must_be_between_60_40_and_300_200">La presión arterial debe estar entre 60/40 y 300/200</string>
@@ -872,10 +867,12 @@
     <string name="available_space_colon">Espacio disponible: </string>
     <string name="community_leaders">Líderes comunitarios</string>
     <string name="services">Servicios</string>
+
     <plurals name="survey_taken_count">
         <item quantity="one">Encuesta realizada %d vez</item>
         <item quantity="other">Encuesta realizada %d veces</item>
     </plurals>
+
     <string name="ai_chat">Chat IA</string>
     <string name="kindly_give_a_rating">Por favor, dé una calificación</string>
     <string name="must_start_with_letter_or_number">Debe comenzar con una letra o número</string>
@@ -1173,5 +1170,8 @@
     <string name="resource_has_no_attachments">El recurso no tiene archivos descargables</string>
     <string name="unable_to_download_resource">No se puede descargar el recurso</string>
     <string name="hide_new_message">Ocultar nuevo mensaje</string>
+    <string name="cannot_assign_completed_task">No se puede asignar una tarea completada</string>
+    <string name="assign_to">Asignar a (Opcional)</string>
+    <string name="click_to_assign_member">Haz clic para asignar un miembro del equipo</string>
 
 </resources>

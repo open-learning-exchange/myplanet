@@ -18,16 +18,13 @@ import com.bumptech.glide.Glide
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayout
 import io.realm.Case
-import io.realm.Realm
 import io.realm.RealmChangeListener
 import io.realm.RealmObject
 import io.realm.RealmResults
 import io.realm.Sort
 import java.util.Calendar
 import java.util.UUID
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.NotificationCallback
 import org.ole.planet.myplanet.callback.SyncListener
@@ -259,7 +256,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
     private fun setUpMyLife(userId: String?) {
         databaseService.withRealm { realm ->
-            val realmObjects = RealmMyLife.getMyLifeByUserId(mRealm, settings)
+            val realmObjects = RealmMyLife.getMyLifeByUserId(realm, settings)
             if (realmObjects.isEmpty()) {
                 if (!realm.isInTransaction) {
                     realm.beginTransaction()

@@ -10,31 +10,35 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowFinanceBinding
-import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.ui.enterprises.AdapterFinance.ViewHolderFinance
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
+data class TransactionData(
+    val id: String,
+    val date: Long,
+    val description: String?,
+    val type: String?,
+    val amount: Int,
+    val balance: Int
+)
+
 class AdapterFinance(
     private val context: Context,
-    list: List<RealmMyTeam>,
-) : RecyclerView.Adapter<ViewHolderFinance>() {
-    private val balances = mutableListOf<Int>()
-    private var list: List<RealmMyTeam> = list.toList()
+) : ListAdapter<TransactionData, ViewHolderFinance>(TransactionDataDiffCallback()) {
 
-    init {
-        recomputeBalances()
-    }
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderFinance {
         val binding = RowFinanceBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ViewHolderFinance(binding)
     }
 
     override fun onBindViewHolder(holder: ViewHolderFinance, position: Int) {
-        val item = list[position]
+        val item = getItem(position)
         val binding = holder.binding
         binding.date.text = formatDate(item.date, "MMM dd, yyyy")
         binding.note.text = item.description
@@ -47,34 +51,8 @@ class AdapterFinance(
             binding.credit.text = context.getString(R.string.number_placeholder, item.amount)
             binding.debit.text = context.getString(R.string.message_placeholder, " -")
         }
-        binding.balance.text = getBalance(position)
+        binding.balance.text = item.balance.toString()
         updateBackgroundColor(binding.llayout, position)
-    }
-
-    private fun getBalance(position: Int): String {
-        return balances.getOrNull(position)?.toString() ?: ""
-    }
-
-    fun updateData(results: List<RealmMyTeam>) {
-        list = results.toList()
-        recomputeBalances()
-    }
-
-    override fun getItemCount(): Int {
-        return list.size
-    }
-
-    private fun recomputeBalances() {
-        balances.clear()
-        var balance = 0
-        for (team in list) {
-            balance += if ("debit".equals(team.type, ignoreCase = true)) {
-                -team.amount
-            } else {
-                team.amount
-            }
-            balances.add(balance)
-        }
     }
 
     private fun updateBackgroundColor(layout: LinearLayout, position: Int) {
@@ -93,4 +71,14 @@ class AdapterFinance(
     class ViewHolderFinance(val binding: RowFinanceBinding) : RecyclerView.ViewHolder(
         binding.root
     )
+
+    private class TransactionDataDiffCallback : DiffUtil.ItemCallback<TransactionData>() {
+        override fun areItemsTheSame(oldItem: TransactionData, newItem: TransactionData): Boolean {
+            return oldItem.id == newItem.id
+        }
+
+        override fun areContentsTheSame(oldItem: TransactionData, newItem: TransactionData): Boolean {
+            return oldItem == newItem
+        }
+    }
 }

@@ -29,13 +29,11 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SwitchCompat
 import androidx.core.content.edit
 import androidx.lifecycle.lifecycleScope
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.RecyclerView
 import com.afollestad.materialdialogs.DialogAction
 import com.afollestad.materialdialogs.MaterialDialog
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
 import java.io.File
 import java.util.ArrayList
 import java.util.Calendar
@@ -141,10 +139,12 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     var serverAddressAdapter: ServerAddressAdapter? = null
     var serverListAddresses: List<ServerAddressesModel> = emptyList()
     private var isProgressDialogShowing = false
-    private lateinit var bManager: LocalBroadcastManager
 
     @Inject
     lateinit var syncManager: SyncManager
+
+    @Inject
+    lateinit var broadcastService: org.ole.planet.myplanet.service.BroadcastService
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -487,7 +487,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     if (
                         syncedUrl != null &&
                         serverListAddresses.isNotEmpty() &&
-                        serverListAddresses.any { it.url.replace(Regex("^https?://"), "") == syncedUrl }
+                        serverListAddresses.any { it.url.replace(urlProtocolRegex, "") == syncedUrl }
                     ) {
                         editor.putString("pinnedServerUrl", syncedUrl).apply()
                     }
@@ -609,7 +609,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 val lastSyncMillis = settings.getLong(getString(R.string.last_syncs), 0)
                 var relativeTime = TimeUtils.getRelativeTime(lastSyncMillis)
 
-                if (relativeTime.matches(Regex("^\\d{1,2} seconds ago$"))) {
+                if (relativeTime.matches(secondsAgoRegex)) {
                     relativeTime = getString(R.string.a_few_seconds_ago)
                 }
 
@@ -668,19 +668,17 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             if (isConnected) {
                 val serverUrl = settings.getString("serverURL", "")
                 if (!serverUrl.isNullOrEmpty()) {
-                    MainApplication.applicationScope.launch(Dispatchers.IO) {
+                    MainApplication.applicationScope.launch {
                         val canReachServer = MainApplication.Companion.isServerReachable(serverUrl)
                         if (canReachServer) {
                             withContext(Dispatchers.Main) {
                                 startUpload("login")
                             }
-                            withContext(Dispatchers.Default) {
-                                val backgroundRealm = databaseService.realmInstance
-                                try {
-                                    TransactionSyncManager.syncDb(backgroundRealm, "login_activities")
-                                } finally {
-                                    backgroundRealm.close()
-                                }
+                            val backgroundRealm = databaseService.realmInstance
+                            try {
+                                TransactionSyncManager.syncDb(backgroundRealm, "login_activities")
+                            } finally {
+                                backgroundRealm.close()
                             }
                         }
                     }
@@ -696,8 +694,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         val contextWrapper = ContextThemeWrapper(this, R.style.AlertDialogTheme)
         val dialog = MaterialDialog.Builder(contextWrapper)
             .customView(binding.root, true)
-            .positiveText(R.string.btn_sync)
-            .negativeText(R.string.btn_sync_cancel)
+            .positiveText(R.string.sync)
+            .negativeText(R.string.txt_cancel)
             .neutralText(R.string.btn_sync_save)
             .onPositive { d: MaterialDialog, _: DialogAction? -> performSync(d) }
             .build()
@@ -788,10 +786,13 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     fun registerReceiver() {
-        bManager = LocalBroadcastManager.getInstance(this)
-        val intentFilter = IntentFilter()
-        intentFilter.addAction(DashboardActivity.MESSAGE_PROGRESS)
-        bManager.registerReceiver(broadcastReceiver, intentFilter)
+        lifecycleScope.launch {
+            broadcastService.events.collect { intent ->
+                if (intent.action == DashboardActivity.MESSAGE_PROGRESS) {
+                    broadcastReceiver.onReceive(this@SyncActivity, intent)
+                }
+            }
+        }
     }
 
     override fun onError(msg: String, blockSync: Boolean) {
@@ -833,14 +834,13 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     override fun onDestroy() {
-        if (this::bManager.isInitialized) {
-            bManager.unregisterReceiver(broadcastReceiver)
-        }
         super.onDestroy()
     }
     companion object {
         lateinit var cal_today: Calendar
         lateinit var cal_last_Sync: Calendar
+        private val secondsAgoRegex by lazy { Regex("^\\d{1,2} seconds ago$") }
+        private val urlProtocolRegex by lazy { Regex("^https?://") }
 
         suspend fun clearRealmDb() {
             withContext(Dispatchers.IO) {

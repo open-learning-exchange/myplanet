@@ -47,6 +47,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
     private var loadSurveysJob: Job? = null
     private var currentSurveys: List<RealmStepExam> = emptyList()
     private val surveyInfoMap = mutableMapOf<String, SurveyInfo>()
+    private var textWatcher: TextWatcher? = null
 
     @Inject
     lateinit var syncManager: SyncManager
@@ -169,14 +170,15 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         realtimeSyncHelper = RealtimeSyncHelper(this, this)
         realtimeSyncHelper.setupRealtimeSync()
         initializeViews()
-        binding.layoutSearch.etSearch.addTextChangedListener(object : TextWatcher {
+        textWatcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
                 applySearchFilter()
             }
 
             override fun afterTextChanged(s: Editable) {}
-        })
+        }
+        binding.layoutSearch.etSearch.addTextChangedListener(textWatcher)
         setupRecyclerView()
         setupListeners()
         updateAdapterData(isTeamShareAllowed = false)
@@ -328,6 +330,8 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         loadSurveysJob?.cancel()
         loadSurveysJob = null
         currentSurveys = emptyList()
+        _binding?.layoutSearch?.etSearch?.removeTextChangedListener(textWatcher)
+        textWatcher = null
         super.onDestroyView()
         _binding = null
     }

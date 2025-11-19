@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.datamanager
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
@@ -18,6 +17,7 @@ import okio.sink
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.di.ApiInterfaceEntryPoint
 import org.ole.planet.myplanet.model.Download
+import org.ole.planet.myplanet.service.getBroadcastService
 import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
@@ -141,7 +141,7 @@ class DownloadWorker(val context: Context, workerParams: WorkerParameters) : Cor
         notificationManager.notify(COMPLETION_NOTIFICATION_ID, notification)
     }
 
-    private fun sendDownloadUpdate(url: String, success: Boolean, isComplete: Boolean, fromSync: Boolean) {
+    private suspend fun sendDownloadUpdate(url: String, success: Boolean, isComplete: Boolean, fromSync: Boolean) {
         val download = Download().apply {
             fileName = getFileNameFromUrl(url)
             fileUrl = url
@@ -157,7 +157,8 @@ class DownloadWorker(val context: Context, workerParams: WorkerParameters) : Cor
             putExtra("download", download)
             putExtra("fromSync", fromSync)
         }
-        LocalBroadcastManager.getInstance(applicationContext).sendBroadcast(intent)
+        val broadcastService = getBroadcastService(applicationContext)
+        broadcastService.sendBroadcast(intent)
     }
 
 

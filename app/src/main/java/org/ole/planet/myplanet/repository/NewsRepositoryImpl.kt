@@ -6,6 +6,8 @@ import io.realm.Case
 import io.realm.Sort
 import java.util.HashMap
 import javax.inject.Inject
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.findCopyByField
 import org.ole.planet.myplanet.model.RealmNews
@@ -70,6 +72,18 @@ class NewsRepositoryImpl @Inject constructor(
             } == true
         } catch (throwable: Throwable) {
             false
+        }
+    }
+    override suspend fun getCommunityNews(userIdentifier: String): Flow<List<RealmNews>> {
+        val allNewsFlow = queryListFlow(RealmNews::class.java) {
+            isEmpty("replyTo")
+            equalTo("docType", "message", Case.INSENSITIVE)
+            sort("time", Sort.DESCENDING)
+        }
+        return allNewsFlow.map { allNews ->
+            allNews.filter { news ->
+                isVisibleToUser(news, userIdentifier)
+            }
         }
     }
 }

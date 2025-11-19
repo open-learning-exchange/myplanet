@@ -2,25 +2,26 @@ package org.ole.planet.myplanet.service
 
 import android.content.Context
 import android.content.SharedPreferences
+import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.di.ApplicationScope
+import org.ole.planet.myplanet.di.ServiceEntryPoint
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import kotlinx.coroutines.CoroutineScope
-import org.ole.planet.myplanet.di.ApplicationScope
+import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Utilities
 
 class UserProfileDbHandler @Inject constructor(
@@ -31,12 +32,13 @@ class UserProfileDbHandler @Inject constructor(
 ) {
     private val fullName: String
 
-    // Backward compatibility constructor
     constructor(context: Context) : this(
         context,
         DatabaseService(context),
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-        CoroutineScope(Dispatchers.IO)
+        context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE),
+        EntryPointAccessors.fromApplication(
+            context.applicationContext, ServiceEntryPoint::class.java
+        ).applicationScope()
     )
 
     init {
@@ -66,7 +68,7 @@ class UserProfileDbHandler @Inject constructor(
     }
 
     fun onLoginAsync(callback: (() -> Unit)? = null, onError: ((Throwable) -> Unit)? = null) {
-        applicationScope.launch {
+        applicationScope.launch(Dispatchers.IO) {
             try {
                 val model = getUserModelCopy()
                 val userId = model?.id
@@ -98,7 +100,7 @@ class UserProfileDbHandler @Inject constructor(
     }
 
     fun logoutAsync() {
-        applicationScope.launch {
+        applicationScope.launch(Dispatchers.IO) {
             try {
                 realmService.executeTransactionAsync { realm ->
                     RealmOfflineActivity.getRecentLogin(realm)
@@ -112,8 +114,8 @@ class UserProfileDbHandler @Inject constructor(
 
 
     val lastVisit: Long? get() = realmService.withRealm { realm ->
-            realm.where(RealmOfflineActivity::class.java).max("loginTime") as Long?
-        }
+        realm.where(RealmOfflineActivity::class.java).max("loginTime") as Long?
+    }
     val offlineVisits: Int get() = getOfflineVisits(userModel)
 
     fun getOfflineVisits(m: RealmUserModel?): Int {
@@ -152,7 +154,7 @@ class UserProfileDbHandler @Inject constructor(
         val itemTitle = item.title
         val itemResourceId = item.resourceId
 
-        applicationScope.launch {
+        applicationScope.launch(Dispatchers.IO) {
             try {
                 val model = getUserModelCopy()
                 if (model?.id?.startsWith("guest") == true) {

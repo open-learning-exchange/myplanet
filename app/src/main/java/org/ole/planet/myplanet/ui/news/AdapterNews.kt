@@ -22,8 +22,8 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.github.chrisbanes.photoview.PhotoView
-import com.google.gson.Gson
 import com.google.gson.JsonArray
+import org.ole.planet.myplanet.utilities.GsonUtils
 import com.google.gson.JsonObject
 import io.realm.Case
 import io.realm.Realm
@@ -34,8 +34,8 @@ import java.util.Calendar
 import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNewsBinding
-import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
@@ -96,7 +96,6 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     private var recyclerView: RecyclerView? = null
     var user: RealmUserModel? = null
     private var labelManager: NewsLabelManager? = null
-    private val gson = Gson()
     private val profileDbHandler = userProfileDbHandler
     lateinit var settings: SharedPreferences
     private val userCache = mutableMapOf<String, RealmUserModel?>()
@@ -206,7 +205,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
 
     private fun extractSharedTeamName(news: RealmNews): String {
         if (!TextUtils.isEmpty(news.viewIn)) {
-            val ar = gson.fromJson(news.viewIn, JsonArray::class.java)
+            val ar = GsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
             if (ar.size() > 1) {
                 val ob = ar[0].asJsonObject
                 if (ob.has("name") && !ob.get("name").isJsonNull) {
@@ -345,7 +344,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
 
     private fun handleChat(holder: ViewHolderNews, news: RealmNews) {
         if (news.newsId?.isNotEmpty() == true) {
-            val conversations = gson.fromJson(news.conversations, Array<Conversation>::class.java).toList()
+            val conversations = GsonUtils.gson.fromJson(news.conversations, Array<Conversation>::class.java).toList()
             val chatAdapter = ChatAdapter(context, holder.binding.recyclerGchat)
 
             if (user?.id?.startsWith("guest") == false) {
@@ -592,7 +591,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
                 .setTitle(R.string.share_with_community)
                 .setMessage(R.string.confirm_share_community)
                 .setPositiveButton(R.string.yes) { _, _ ->
-                    val array = gson.fromJson(news?.viewIn, JsonArray::class.java)
+                    val array = GsonUtils.gson.fromJson(news?.viewIn, JsonArray::class.java)
                     val firstElement = array.get(0)
                     val obj = firstElement.asJsonObject
                     if(!obj.has("name")){
@@ -618,7 +617,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
                     }
                     
                     managedNews?.sharedBy = currentUser?.id
-                    managedNews?.viewIn = gson.toJson(array)
+                    managedNews?.viewIn = GsonUtils.gson.toJson(array)
                     mRealm.commitTransaction()
                     Utilities.toast(context, context.getString(R.string.shared_to_community))
                     viewHolder.binding.btnShare.visibility = View.GONE
@@ -647,13 +646,13 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         if (!imageUrls.isNullOrEmpty()) {
             try {
                 if (imageUrls.size == 1) {
-                    val imgObject = gson.fromJson(imageUrls[0], JsonObject::class.java)
+                    val imgObject = GsonUtils.gson.fromJson(imageUrls[0], JsonObject::class.java)
                     val path = JsonUtils.getString("imageUrl", imgObject)
                     loadSingleImage(binding, path)
                 } else {
                     binding.llNewsImages.visibility = View.VISIBLE
                     for (imageUrl in imageUrls) {
-                        val imgObject = gson.fromJson(imageUrl, JsonObject::class.java)
+                        val imgObject = GsonUtils.gson.fromJson(imageUrl, JsonObject::class.java)
                         val path = JsonUtils.getString("imageUrl", imgObject)
                         addImageToContainer(binding, path)
                     }

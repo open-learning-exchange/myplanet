@@ -18,17 +18,15 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import io.realm.Realm
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentHomeBellBinding
 import org.ole.planet.myplanet.model.RealmCertification
-import org.ole.planet.myplanet.model.RealmCourseProgress
-import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
@@ -57,7 +55,6 @@ class BellDashboardFragment : BaseDashboardFragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentHomeBellBinding.inflate(inflater, container, false)
         val view = binding.root
-        initView(view)
         declareElements()
         onLoaded(view)
         user = profileDbHandler?.userModel
@@ -66,10 +63,11 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        initView(view)
         binding.cardProfileBell.txtCommunityName.text = model?.planetCode
         setupNetworkStatusMonitoring()
         (activity as DashboardActivity?)?.supportActionBar?.hide()
-        showBadges()
+        observeCompletedCourses()
         if((user?.id?.startsWith("guest") != true) && !DashboardActivity.isFromNotificationAction) {
             checkPendingSurveys()
         }
@@ -323,12 +321,12 @@ class BellDashboardFragment : BaseDashboardFragment() {
             .setNegativeButton(getString(R.string.cancel)) { dialog, _ -> dialog.dismiss() }
             .create()
 
-        val adapter = SurveyAdapter(surveyTitles, { position ->
+        val adapter = SurveyAdapter({ position ->
             val selectedSurvey = pendingSurveys[position].id
             AdapterMySubmission.openSurvey(homeItemClickListener, selectedSurvey, true, false, "")
         }, surveyListDialog!!)
-
         recyclerView.adapter = adapter
+        adapter.submitList(surveyTitles)
         surveyListDialog?.show()
         surveyListDialog?.window?.setBackgroundDrawableResource(R.color.card_bg)
 
@@ -338,9 +336,32 @@ class BellDashboardFragment : BaseDashboardFragment() {
         }
     }
 
-    private fun showBadges() {
+    private fun observeCompletedCourses() {
+        binding.cardProfileBell.progressBarBadges?.visibility = View.VISIBLE
+        viewModel.loadCompletedCourses(user?.id)
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.completedCourses.collectLatest { courses ->
+                    if (courses.isNotEmpty()) {
+                        showBadges(courses)
+                        binding.cardProfileBell.progressBarBadges?.visibility = View.GONE
+                    }
+                }
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            delay(2000)
+            if (binding.cardProfileBell.progressBarBadges?.visibility == View.VISIBLE) {
+                binding.cardProfileBell.progressBarBadges?.visibility = View.GONE
+            }
+        }
+    }
+
+
+    private fun showBadges(completedCourses: List<CourseCompletion>) {
         binding.cardProfileBell.llBadges.removeAllViews()
-        val completedCourses = getCompletedCourses(mRealm, user?.id)
         completedCourses.forEachIndexed { index, course ->
             val rootView = requireActivity().findViewById<ViewGroup>(android.R.id.content)
             val star = LayoutInflater.from(activity).inflate(R.layout.image_start, rootView, false) as ImageView
@@ -353,23 +374,11 @@ class BellDashboardFragment : BaseDashboardFragment() {
         }
     }
 
-    private fun getCompletedCourses(realm: Realm, userId: String?): List<RealmMyCourse> {
-        val myCourses = RealmMyCourse.getMyCourseByUserId(userId, realm.where(RealmMyCourse::class.java).findAll())
-        val courseProgress = RealmCourseProgress.getCourseProgress(realm, userId)
-
-        return myCourses.filter { course ->
-            val progress = courseProgress[course.id]
-            progress?.let {
-                it.asJsonObject["current"].asInt == it.asJsonObject["max"].asInt
-            } == true
-        }
-    }
-
-    private fun openCourse(realmMyCourses: RealmMyCourse?, position: Int) {
+    private fun openCourse(course: CourseCompletion, position: Int) {
         if (homeItemClickListener != null) {
             val f: Fragment = TakeCourseFragment()
             val b = Bundle()
-            b.putString("id", realmMyCourses?.courseId)
+            b.putString("id", course.courseId)
             b.putInt("position", position)
             f.arguments = b
             homeItemClickListener?.openCallFragment(f)
