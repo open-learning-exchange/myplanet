@@ -3,8 +3,8 @@ package org.ole.planet.myplanet.ui.dictionary
 import android.os.Bundle
 import androidx.core.text.HtmlCompat
 import androidx.lifecycle.lifecycleScope
-import com.google.gson.Gson
 import com.google.gson.JsonArray
+import org.ole.planet.myplanet.utilities.GsonUtils
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Case
 import java.util.UUID
@@ -63,7 +63,7 @@ class DictionaryActivity : BaseActivity() {
                     val data = FileUtils.getStringFromFile(
                         FileUtils.getSDPathFromUrl(context, Constants.DICTIONARY_URL)
                     )
-                    Gson().fromJson(data, JsonArray::class.java)
+                    GsonUtils.gson.fromJson(data, JsonArray::class.java)
                 } catch (e: Exception) {
                     e.printStackTrace()
                     null

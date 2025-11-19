@@ -13,7 +13,6 @@ import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
@@ -30,6 +29,7 @@ import okhttp3.ResponseBody
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.Download
+import org.ole.planet.myplanet.service.getBroadcastService
 import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.FileUtils.availableExternalMemorySize
@@ -212,7 +212,10 @@ class MyDownloadService : Service() {
         if (!fromSync) {
             if (message == "File Not Found") {
                 val intent = Intent(RESOURCE_NOT_FOUND_ACTION)
-                LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
+                downloadScope.launch {
+                    val broadcastService = getBroadcastService(this@MyDownloadService)
+                    broadcastService.sendBroadcast(intent)
+                }
             }
         }
     }
@@ -301,7 +304,10 @@ class MyDownloadService : Service() {
             putExtra("download", download)
             putExtra("fromSync", fromSync)
         }
-        LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
+        downloadScope.launch {
+            val broadcastService = getBroadcastService(this@MyDownloadService)
+            broadcastService.sendBroadcast(intent)
+        }
     }
 
     private fun onDownloadComplete(url: String) {
