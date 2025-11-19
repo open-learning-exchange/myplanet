@@ -17,6 +17,8 @@ import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayout
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import io.realm.Case
 import io.realm.RealmChangeListener
 import io.realm.RealmObject
@@ -104,8 +106,13 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             .equalTo("type", KEY_LOGIN)
             .findAllAsync()
         v.findViewById<TextView>(R.id.txtRole).text = getString(R.string.user_role, model?.getRoleAsString())
-        val offlineVisits = profileDbHandler.offlineVisits
-        v.findViewById<TextView>(R.id.txtFullName).text = getString(R.string.user_name, fullName, offlineVisits)
+        viewLifecycleOwner.lifecycleScope.launch {
+            val offlineVisits = withContext(Dispatchers.IO) {
+                profileDbHandler.offlineVisits
+            }
+            v.findViewById<TextView>(R.id.txtFullName).text =
+                getString(R.string.user_name, fullName, offlineVisits)
+        }
     }
 
     override fun forceDownloadNewsImages() {
@@ -115,11 +122,19 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             now[Calendar.YEAR] = i
             now[Calendar.MONTH] = i1
             now[Calendar.DAY_OF_MONTH] = i2
-            val imageList = realm.where(RealmMyLibrary::class.java).equalTo("isPrivate", true)
-                .greaterThan("createdDate", now.timeInMillis).equalTo("mediaType", "image")
-                .findAll()
-            val urls = ArrayList<String>()
-            getUrlsAndStartDownload(imageList, urls) },
+            viewLifecycleOwner.lifecycleScope.launch {
+                val imageList = databaseService.withRealmAsync { realm ->
+                    val results = realm.where(RealmMyLibrary::class.java)
+                        .equalTo("isPrivate", true)
+                        .greaterThan("createdDate", now.timeInMillis)
+                        .equalTo("mediaType", "image")
+                        .findAll()
+                    realm.copyFromRealm(results)
+                }
+                val urls = ArrayList<String>()
+                getUrlsAndStartDownload(imageList, urls)
+            }
+        },
             now[Calendar.YEAR], now[Calendar.MONTH], now[Calendar.DAY_OF_MONTH]
         )
         dpd.setTitle(getString(R.string.read_offline_news_from))
@@ -221,29 +236,42 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
                 name.setTypeface(null, Typeface.BOLD)
             }
             handleClick(ob._id, ob.name, TeamDetailFragment(), name)
-            showNotificationIcons(ob, v, userId)
+            viewLifecycleOwner.lifecycleScope.launch {
+                showNotificationIcons(ob, v, userId)
+            }
             name.text = ob.name
             flexboxLayout.addView(v, params)
         }
         return dbMyTeam.size
     }
 
-    private fun showNotificationIcons(ob: RealmObject, v: View, userId: String?) {
+    private suspend fun showNotificationIcons(ob: RealmObject, v: View, userId: String?) {
         val current = Calendar.getInstance().timeInMillis
         val tomorrow = Calendar.getInstance()
         tomorrow.add(Calendar.DAY_OF_YEAR, 1)
         val imgTask = v.findViewById<ImageView>(R.id.img_task)
         val imgChat = v.findViewById<ImageView>(R.id.img_chat)
-        val notification: RealmTeamNotification? = realm.where(RealmTeamNotification::class.java)
-            .equalTo("parentId", (ob as RealmMyTeam)._id).equalTo("type", "chat").findFirst()
-        val chatCount: Long = realm.where(RealmNews::class.java).equalTo("viewableBy", "teams")
-            .equalTo("viewableId", ob._id).count()
+
+        val (notification, chatCount, tasks) = databaseService.withRealmAsync { realm ->
+            val notification = realm.where(RealmTeamNotification::class.java)
+                .equalTo("parentId", (ob as RealmMyTeam)._id)
+                .equalTo("type", "chat")
+                .findFirst()?.let { realm.copyFromRealm(it) }
+            val chatCount = realm.where(RealmNews::class.java)
+                .equalTo("viewableBy", "teams")
+                .equalTo("viewableId", ob._id)
+                .count()
+            val tasks = realm.where(RealmTeamTask::class.java)
+                .equalTo("assignee", userId)
+                .between("deadline", current, tomorrow.timeInMillis)
+                .findAll()?.let { realm.copyFromRealm(it) }
+            Triple(notification, chatCount, tasks)
+        }
+
         if (notification != null) {
             imgChat.visibility = if (notification.lastCount < chatCount) View.VISIBLE else View.GONE
         }
-        val tasks = realm.where(RealmTeamTask::class.java).equalTo("assignee", userId)
-            .between("deadline", current, tomorrow.timeInMillis).findAll()
-        imgTask.visibility = if (tasks.isNotEmpty()) View.VISIBLE else View.GONE
+        imgTask.visibility = if (tasks?.isNotEmpty() == true) View.VISIBLE else View.GONE
     }
 
     private fun myLifeListInit(flexboxLayout: FlexboxLayout) {
