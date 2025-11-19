@@ -60,6 +60,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
     var allowSubmission = true
     private lateinit var config: ChipCloudConfig
     private var examination: RealmMyHealthPojo? = null
+    private var textWatcher: TextWatcher? = null
     private val gson = Gson()
     private fun initViews() {
         config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.close)
@@ -140,8 +141,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
 
     private fun validateFields() {
         allowSubmission = true
-        binding.etBloodpressure.addTextChangedListener(object :
-            TextWatcher {
+        textWatcher = object : TextWatcher {
             override fun afterTextChanged(s: Editable) {}
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
@@ -172,7 +172,8 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
                     }
                 }
             }
-        })
+        }
+        binding.etBloodpressure.addTextChangedListener(textWatcher)
     }
 
     private fun showOtherDiagnosis() {
@@ -410,6 +411,8 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         if (this::mRealm.isInitialized && !mRealm.isClosed) {
             mRealm.close()
         }
+        binding.etBloodpressure.removeTextChangedListener(textWatcher)
+        textWatcher = null
         super.onDestroy()
     }
 }
