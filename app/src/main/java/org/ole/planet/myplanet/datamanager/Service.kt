@@ -3,12 +3,15 @@ package org.ole.planet.myplanet.datamanager
 import android.content.Context
 import android.content.SharedPreferences
 import android.text.TextUtils
+import android.util.Base64
 import androidx.core.content.edit
 import androidx.core.net.toUri
 import com.google.gson.Gson
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.hilt.android.EntryPointAccessors
 import java.io.IOException
+import java.util.Date
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import javax.inject.Inject
@@ -30,10 +33,12 @@ import org.ole.planet.myplanet.di.AutoSyncEntryPoint
 import org.ole.planet.myplanet.di.RepositoryEntryPoint
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmCommunity
+import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.UploadToShelfService
 import org.ole.planet.myplanet.ui.sync.ProcessUserDataActivity
 import org.ole.planet.myplanet.ui.sync.SyncActivity
+import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateIv
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateKey
 import org.ole.planet.myplanet.utilities.Constants.KEY_UPGRADE_MAX
@@ -43,6 +48,7 @@ import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
+import org.ole.planet.myplanet.utilities.RetryUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.Sha256Utils
 import org.ole.planet.myplanet.utilities.UrlUtils
@@ -353,7 +359,7 @@ class Service @Inject constructor(
 
                 val userModel = result.body()?.let { userRepository.saveUser(it, settings) }
                 if (userModel != null) {
-                    getUploadToShelfService().saveKeyIv(retrofitInterface, userModel, obj)
+                    saveKeyIv(retrofitInterface, userModel, obj)
                 }
 
                 withContext(Dispatchers.Main) {
@@ -498,6 +504,84 @@ class Service @Inject constructor(
                     callback.onError(context.getString(R.string.planet_is_up_to_date), false)
                 }
             }
+        }
+    }
+
+    private suspend fun saveKeyIv(apiInterface: ApiInterface, model: RealmUserModel, obj: JsonObject): Boolean {
+        val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
+        val header = "Basic ${
+            Base64.encodeToString(
+                ("${obj["name"].asString}:${obj["password"].asString}").toByteArray(),
+                Base64.NO_WRAP
+            )
+        }"
+        val ob = JsonObject()
+        var keyString = AndroidDecrypter.generateKey()
+        var iv: String? = AndroidDecrypter.generateIv()
+        if (!TextUtils.isEmpty(model.iv)) {
+            iv = model.iv
+        }
+        if (!TextUtils.isEmpty(model.key)) {
+            keyString = model.key
+        }
+        ob.addProperty("key", keyString)
+        ob.addProperty("iv", iv)
+        ob.addProperty("createdOn", Date().time)
+        val maxAttempts = 3
+        val retryDelayMs = 2000L
+
+        val response = withContext(Dispatchers.IO) {
+            RetryUtils.retry(
+                maxAttempts = maxAttempts,
+                delayMs = retryDelayMs,
+                shouldRetry = { resp -> resp == null || !resp.isSuccessful || resp.body() == null }
+            ) {
+                apiInterface.postDoc(header, "application/json", "${UrlUtils.getUrl()}/$table", ob)?.execute()
+            }
+        }
+
+        if (response?.isSuccessful == true && response.body() != null) {
+            model.key = keyString
+            model.iv = iv
+            userRepository.updateUser(model)
+        } else {
+            val errorMessage = "Failed to save key/IV after $maxAttempts attempts"
+            throw IOException(errorMessage)
+        }
+
+        changeUserSecurityAsync(model, obj)
+        return true
+    }
+
+    private suspend fun changeUserSecurityAsync(model: RealmUserModel, obj: JsonObject) {
+        val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
+        val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
+        try {
+            val response = withContext(Dispatchers.IO) {
+                retrofitInterface.getJsonObject(header, "${UrlUtils.getUrl()}/${table}/_security")?.execute()
+            }
+            if (response?.body() != null) {
+                val jsonObject = response.body()!!
+                val members = jsonObject.getAsJsonObject("members")
+                val rolesArray: JsonArray = if (members?.has("roles") == true) {
+                    members.getAsJsonArray("roles")
+                } else {
+                    JsonArray()
+                }
+                rolesArray.add("health")
+                members.add("roles", rolesArray)
+                jsonObject.add("members", members)
+                withContext(Dispatchers.IO) {
+                    retrofitInterface.putDoc(
+                        header,
+                        "application/json",
+                        "${UrlUtils.getUrl()}/${table}/_security",
+                        jsonObject
+                    )?.execute()
+                }
+            }
+        } catch (e: IOException) {
+            e.printStackTrace()
         }
     }
 

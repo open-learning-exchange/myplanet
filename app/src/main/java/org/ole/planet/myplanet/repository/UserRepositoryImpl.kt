@@ -143,4 +143,12 @@ class UserRepositoryImpl @Inject constructor(
 
         return getUserByAnyId(userId)
     }
+
+    override suspend fun updateUser(model: RealmUserModel) {
+        withRealm { realm ->
+            realm.executeTransaction {
+                it.insertOrUpdate(model)
+            }
+        }
+    }
 }

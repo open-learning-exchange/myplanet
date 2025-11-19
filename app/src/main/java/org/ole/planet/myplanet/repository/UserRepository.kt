@@ -42,4 +42,6 @@ interface UserRepository {
         userId: String?,
         imagePath: String?,
     ): RealmUserModel?
+
+    suspend fun updateUser(model: RealmUserModel)
 }
