@@ -51,10 +51,13 @@ import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.repeatOnLifecycle
 
 open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCallback,
     SyncListener {
     private val realm get() = requireRealmInstance()
+    private val dashboardViewModel: DashboardViewModel by viewModels()
     private var fullName: String? = null
     private var params = LinearLayout.LayoutParams(250, 100)
     private var di: DialogUtils.CustomProgressDialog? = null
@@ -186,8 +189,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
                 RealmMyCourse.getMyByUserId(realm, settings).filter { !it.courseTitle.isNullOrBlank() }
             }
             RealmMyTeam::class.java -> {
-                val i = myTeamInit(flexboxLayout)
-                setCountText(i, RealmMyTeam::class.java, view)
+                setCountText(0, RealmMyTeam::class.java, view)
                 return
             }
             RealmMyLife::class.java -> {
@@ -210,8 +212,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         }
     }
 
-    private fun myTeamInit(flexboxLayout: FlexboxLayout): Int {
-        val dbMyTeam = RealmMyTeam.getMyTeamsByUserId(realm, settings)
+    private fun myTeamInit(flexboxLayout: FlexboxLayout, dbMyTeam: List<RealmMyTeam>) {
         val userId = profileDbHandler.userModel?.id
         for ((count, ob) in dbMyTeam.withIndex()) {
             val v = LayoutInflater.from(activity).inflate(R.layout.item_home_my_team, flexboxLayout, false)
@@ -225,7 +226,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             name.text = ob.name
             flexboxLayout.addView(v, params)
         }
-        return dbMyTeam.size
     }
 
     private fun showNotificationIcons(ob: RealmObject, v: View, userId: String?) {
@@ -333,6 +333,17 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         }
         viewLifecycleOwner.lifecycleScope.launch {
             myLibraryDiv(view)
+        }
+        dashboardViewModel.loadMyTeams()
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
+                dashboardViewModel.uiState.collect {
+                    val flexboxLayout: FlexboxLayout = view.findViewById(R.id.flexboxLayoutTeams)
+                    flexboxLayout.removeAllViews()
+                    myTeamInit(flexboxLayout, it.myTeams)
+                    setCountText(it.myTeams.size, RealmMyTeam::class.java, view)
+                }
+            }
         }
         initializeFlexBoxView(view, R.id.flexboxLayoutCourse, RealmMyCourse::class.java)
         initializeFlexBoxView(view, R.id.flexboxLayoutTeams, RealmMyTeam::class.java)

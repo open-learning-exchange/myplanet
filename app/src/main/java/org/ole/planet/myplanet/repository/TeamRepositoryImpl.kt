@@ -46,6 +46,17 @@ class TeamRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getMyTeams(): List<RealmMyTeam> {
+        return withRealm { realm ->
+            val user = userProfileDbHandler.userModel
+            val query = realm.where(RealmMyTeam::class.java)
+                .equalTo("docType", "membership")
+                .equalTo("userId", user?.id)
+            val teams = query.findAll()
+            realm.copyFromRealm(teams)
+        }
+    }
+
     override suspend fun getShareableEnterprises(): List<RealmMyTeam> {
         return queryList(RealmMyTeam::class.java) {
             isEmpty("teamId")
