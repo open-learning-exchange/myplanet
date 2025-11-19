@@ -27,18 +27,33 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.SecurePrefs
 import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.Utilities
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeout
 import retrofit2.Response
 
 object TransactionSyncManager {
-    fun authenticate(): Boolean {
+    suspend fun authenticate(): Boolean {
         val apiInterface = client?.create(ApiInterface::class.java)
-        try {
-            val response: Response<DocumentResponse>? = apiInterface?.getDocuments(UrlUtils.header, "${UrlUtils.getUrl()}/tablet_users/_all_docs")?.execute()
-            if (response != null) {
-                return response.code() == 200
+        var attempt = 0
+        while (attempt < 3) {
+            try {
+                return withTimeout(10_000) {
+                    val response = apiInterface?.authenticate(
+                        UrlUtils.header,
+                        "${UrlUtils.getUrl()}/tablet_users/_all_docs"
+                    )
+                    response?.code() == 200
+                }
+            } catch (e: TimeoutCancellationException) {
+                // Handle timeout
+            } catch (e: IOException) {
+                // Handle IO exception
             }
-        } catch (e: IOException) {
-            e.printStackTrace()
+            attempt++
+            if (attempt < 3) {
+                delay(1000L * (1 shl (attempt - 1)))
+            }
         }
         return false
     }
