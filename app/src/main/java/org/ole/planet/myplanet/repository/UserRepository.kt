@@ -42,4 +42,6 @@ interface UserRepository {
         userId: String?,
         imagePath: String?,
     ): RealmUserModel?
+
+    fun getUserModel(): RealmUserModel?
 }
