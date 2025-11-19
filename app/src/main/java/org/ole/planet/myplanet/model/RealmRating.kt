@@ -1,8 +1,8 @@
 package org.ole.planet.myplanet.model
 
-import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.realm.Realm
+import org.ole.planet.myplanet.utilities.GsonUtils
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication.Companion.context
@@ -89,7 +89,7 @@ open class RealmRating : RealmObject() {
             val ob = JsonObject()
             if (realmRating._id != null) ob.addProperty("_id", realmRating._id)
             if (realmRating._rev != null) ob.addProperty("_rev", realmRating._rev)
-            ob.add("user", Gson().fromJson(realmRating.user, JsonObject::class.java))
+            ob.add("user", GsonUtils.gson.fromJson(realmRating.user, JsonObject::class.java))
             ob.addProperty("item", realmRating.item)
             ob.addProperty("type", realmRating.type)
             ob.addProperty("title", realmRating.title)
@@ -121,7 +121,7 @@ open class RealmRating : RealmObject() {
                 rating.rate = JsonUtils.getInt("rate", act)
                 rating.isUpdated = false
                 rating.comment = JsonUtils.getString("comment", act)
-                rating.user = Gson().toJson(JsonUtils.getJsonObject("user", act))
+                rating.user = GsonUtils.gson.toJson(JsonUtils.getJsonObject("user", act))
                 rating.userId = JsonUtils.getString("_id", JsonUtils.getJsonObject("user", act))
                 rating.parentCode = JsonUtils.getString("parentCode", act)
                 rating.parentCode = JsonUtils.getString("planetCode", act)

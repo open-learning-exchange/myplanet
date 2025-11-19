@@ -27,6 +27,7 @@ class AdapterMyPersonal(private val context: Context, private var list: MutableL
     }
 
     fun updateList(newList: List<RealmMyPersonal>) {
+        if (list === newList) return
         val previousItems = list.toList()
         val diffResult = DiffUtils.calculateDiff(
             previousItems,

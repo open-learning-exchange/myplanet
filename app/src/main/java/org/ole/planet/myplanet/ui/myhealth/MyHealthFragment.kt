@@ -26,8 +26,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.snackbar.Snackbar
-import com.google.gson.Gson
 import dagger.hilt.android.AndroidEntryPoint
+import org.ole.planet.myplanet.utilities.GsonUtils
 import io.realm.Case
 import io.realm.Realm
 import io.realm.Sort
@@ -64,7 +64,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 class MyHealthFragment : Fragment() {
-    
+
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
 
@@ -79,12 +79,13 @@ class MyHealthFragment : Fragment() {
     private var _binding: FragmentVitalSignBinding? = null
     private val binding get() = _binding!!
     private lateinit var alertMyPersonalBinding: AlertMyPersonalBinding
-    private lateinit var alertHealthListBinding: AlertHealthListBinding
+    private var alertHealthListBinding: AlertHealthListBinding? = null
     var userId: String? = null
     lateinit var mRealm: Realm
     var userModel: RealmUserModel? = null
     lateinit var userModelList: List<RealmUserModel>
     lateinit var adapter: UserListArrayAdapter
+    private lateinit var healthAdapter: AdapterHealthExamination
     var dialog: AlertDialog? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     lateinit var prefManager: SharedPrefManager
@@ -282,23 +283,25 @@ class MyHealthFragment : Fragment() {
         userModelList = mRealm.where(RealmUserModel::class.java).sort("joinDate", Sort.DESCENDING).findAll()
         adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, userModelList)
         alertHealthListBinding = AlertHealthListBinding.inflate(LayoutInflater.from(context))
-        alertHealthListBinding.btnAddMember.setOnClickListener {
+        alertHealthListBinding?.btnAddMember?.setOnClickListener {
             startActivity(Intent(requireContext(), BecomeMemberActivity::class.java))
         }
 
-        setTextWatcher(alertHealthListBinding.etSearch, alertHealthListBinding.btnAddMember, alertHealthListBinding.list)
-        alertHealthListBinding.list.adapter = adapter
-        alertHealthListBinding.list.onItemClickListener = OnItemClickListener { _: AdapterView<*>?, _: View, i: Int, _: Long ->
-            val selected = alertHealthListBinding.list.adapter.getItem(i) as RealmUserModel
-            userId = if (selected._id.isNullOrEmpty()) selected.id else selected._id
-            getHealthRecords(userId)
-            dialog?.dismiss()
+        alertHealthListBinding?.let { binding ->
+            setTextWatcher(binding.etSearch, binding.btnAddMember, binding.list)
+            binding.list.adapter = adapter
+            binding.list.onItemClickListener = OnItemClickListener { _: AdapterView<*>?, _: View, i: Int, _: Long ->
+                val selected = binding.list.adapter.getItem(i) as RealmUserModel
+                userId = if (selected._id.isNullOrEmpty()) selected.id else selected._id
+                getHealthRecords(userId)
+                dialog?.dismiss()
+            }
+            sortList(binding.spnSort, binding.list)
+            dialog = AlertDialog.Builder(requireActivity(),R.style.AlertDialogTheme)
+                .setTitle(getString(R.string.select_health_member)).setView(binding.root)
+                .setCancelable(false).setNegativeButton(R.string.dismiss, null).create()
+            dialog?.show()
         }
-        sortList(alertHealthListBinding.spnSort, alertHealthListBinding.list)
-        dialog = AlertDialog.Builder(requireActivity(),R.style.AlertDialogTheme)
-            .setTitle(getString(R.string.select_health_member)).setView(alertHealthListBinding.root)
-            .setCancelable(false).setNegativeButton(R.string.dismiss, null).create()
-        dialog?.show()
     }
 
     private fun sortList(spnSort: AppCompatSpinner, lv: ListView) {
@@ -420,13 +423,14 @@ class MyHealthFragment : Fragment() {
                 binding.tvNoRecords.visibility = View.GONE
                 binding.tvDataPlaceholder.visibility = View.VISIBLE
 
-                val adap = AdapterHealthExamination(requireActivity(), list, mh, currentUser)
-                adap.setmRealm(mRealm)
+                healthAdapter = AdapterHealthExamination(requireActivity(), mh, currentUser)
+                healthAdapter.setmRealm(mRealm)
                 binding.rvRecords.apply {
                     layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
                     isNestedScrollingEnabled = false
-                    adapter = adap
+                    adapter = healthAdapter
                 }
+                healthAdapter.submitList(list)
                 binding.rvRecords.post {
                     val lastPosition = list.size - 1
                     if (lastPosition >= 0) {
@@ -461,7 +465,7 @@ class MyHealthFragment : Fragment() {
             null
         } else {
             try {
-                Gson().fromJson(json, RealmMyHealth::class.java)
+                GsonUtils.gson.fromJson(json, RealmMyHealth::class.java)
             } catch (e: Exception) {
                 e.printStackTrace()
                 null
@@ -479,7 +483,7 @@ class MyHealthFragment : Fragment() {
         if (::realtimeSyncListener.isInitialized) {
             syncCoordinator.removeListener(realtimeSyncListener)
         }
-        alertHealthListBinding.etSearch.removeTextChangedListener(textWatcher)
+        alertHealthListBinding?.etSearch?.removeTextChangedListener(textWatcher)
         textWatcher = null
         _binding = null
         super.onDestroyView()
