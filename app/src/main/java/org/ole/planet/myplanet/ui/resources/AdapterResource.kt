@@ -72,6 +72,7 @@ class AdapterResource(
     }
 
     fun setLibraryList(libraryList: List<RealmMyLibrary?>) {
+        if (this.libraryList === libraryList) return
         updateList(libraryList)
     }
 
