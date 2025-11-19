@@ -15,6 +15,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayout
 import io.realm.Case
@@ -88,6 +89,9 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         if (!TextUtils.isEmpty(model?.userImage)) {
             Glide.with(requireActivity())
                 .load(model?.userImage)
+                .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .override(200, 200)
+                .circleCrop()
                 .placeholder(R.drawable.profile)
                 .error(R.drawable.profile)
                 .into(imageView)
