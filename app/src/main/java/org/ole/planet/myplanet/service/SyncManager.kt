@@ -72,6 +72,7 @@ class SyncManager @Inject constructor(
     private val stringArray = arrayOfNulls<String>(4)
     private var listener: SyncListener? = null
     private var backgroundSync: Job? = null
+    private var syncJob: Job? = null
     private var betaSync = false
     private val initializationJob: Job by lazy {
         syncScope.launch {
@@ -96,7 +97,7 @@ class SyncManager @Inject constructor(
                 } else if (!useImproved) {
                     createLog("sync_manager_route", "legacy")
                 }
-                syncScope.launch {
+                syncJob = syncScope.launch {
                     authenticateAndSync(type, syncTables)
                 }
             }
@@ -127,6 +128,7 @@ class SyncManager @Inject constructor(
             syncScope.cancel()
             ThreadSafeRealmHelper.closeThreadRealm()
         }
+        syncJob?.cancel()
         cancelBackgroundSync()
         cancel(context, 111)
         isSyncing = false
