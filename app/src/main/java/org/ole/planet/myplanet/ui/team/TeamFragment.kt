@@ -54,6 +54,9 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
     private lateinit var adapterTeamList: AdapterTeamList
     private var conditionApplied: Boolean = false
     private var textWatcher: TextWatcher? = null
+    private val teamListListener = RealmChangeListener<RealmResults<RealmMyTeam>> { _ ->
+        updatedTeamList()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -99,9 +102,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
             }
         }
 
-        teamList?.addChangeListener { _ ->
-            updatedTeamList()
-        }
+        teamList?.addChangeListener(teamListListener)
         return binding.root
     }
 
@@ -309,7 +310,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
 
     private fun refreshTeamList() {
         mRealm.refresh()
-        teamList?.removeAllChangeListeners()
+        teamList?.removeChangeListener(teamListListener)
 
         if (fromDashboard) {
             teamList = getMyTeamsByUserId(mRealm, settings)
@@ -326,9 +327,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
             }
         }
 
-        teamList?.addChangeListener { _ ->
-            updatedTeamList()
-        }
+        teamList?.addChangeListener(teamListListener)
         setTeamList()
     }
 
@@ -389,7 +388,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
     }
 
     override fun onDestroyView() {
-        teamList?.removeAllChangeListeners()
+        teamList?.removeChangeListener(teamListListener)
         if (this::mRealm.isInitialized && !mRealm.isClosed) {
             mRealm.close()
         }
