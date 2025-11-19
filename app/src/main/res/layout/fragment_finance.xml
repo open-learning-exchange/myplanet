@@ -281,6 +281,6 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|right"
         android:layout_margin="@dimen/padding_large"
-        android:src="@drawable/ic_add"
+        android:src="@drawable/ic_add_white"
         app:fab_label="Add Transaction" />
 </FrameLayout>

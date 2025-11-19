@@ -53,6 +53,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
     private var teamList: RealmResults<RealmMyTeam>? = null
     private lateinit var adapterTeamList: AdapterTeamList
     private var conditionApplied: Boolean = false
+    private var textWatcher: TextWatcher? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -216,7 +217,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
         super.onViewCreated(view, savedInstanceState)
         binding.rvTeamList.layoutManager = LinearLayoutManager(activity)
         setTeamList()
-        binding.etSearch.addTextChangedListener(object : TextWatcher {
+        textWatcher = object : TextWatcher {
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
             override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {
                 if (TextUtils.isEmpty(charSequence)) {
@@ -264,7 +265,8 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
             }
 
             override fun afterTextChanged(editable: Editable) {}
-        })
+        }
+        binding.etSearch.addTextChangedListener(textWatcher)
     }
 
     private fun getList(query: RealmQuery<RealmMyTeam>): Pair<List<RealmMyTeam>, Boolean> {
@@ -391,6 +393,8 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
         if (this::mRealm.isInitialized && !mRealm.isClosed) {
             mRealm.close()
         }
+        _binding?.etSearch?.removeTextChangedListener(textWatcher)
+        textWatcher = null
         _binding = null
         super.onDestroyView()
     }

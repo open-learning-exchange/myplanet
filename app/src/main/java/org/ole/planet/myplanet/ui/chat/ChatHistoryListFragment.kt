@@ -72,6 +72,8 @@ class ChatHistoryListFragment : Fragment() {
     lateinit var teamRepository: TeamRepository
     @Inject
     lateinit var newsRepository: NewsRepository
+    @Inject
+    lateinit var chatApiHelper: ChatApiHelper
     private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
     private lateinit var realtimeSyncListener: BaseRealtimeSyncListener
     private val serverUrl: String
@@ -96,6 +98,7 @@ class ChatHistoryListFragment : Fragment() {
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, ChatHistoryListOnBackPressedCallback(slidingPaneLayout))
 
         setupRealtimeSync()
+        checkAiProvidersIfNeeded()
         binding.toggleGroup.visibility = View.GONE
         binding.newChat.setOnClickListener {
             sharedViewModel.clearChatState()
@@ -328,6 +331,32 @@ class ChatHistoryListFragment : Fragment() {
             (binding.recyclerView.adapter as? ChatHistoryListAdapter)?.let { adapter ->
                 adapter.updateCachedData(currentUser, sharedNewsMessages)
                 adapter.notifyChatShared(chatHistory._id)
+            }
+        }
+    }
+
+    private fun checkAiProvidersIfNeeded() {
+        if (!sharedViewModel.shouldFetchAiProviders()) {
+            return
+        }
+
+        sharedViewModel.setAiProvidersLoading(true)
+        sharedViewModel.setAiProvidersError(false)
+
+        val mapping = serverUrlMapper.processUrl(serverUrl)
+
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+            updateServerIfNecessary(mapping)
+            withContext(Dispatchers.Main) {
+                chatApiHelper.fetchAiProviders { providers ->
+                    sharedViewModel.setAiProvidersLoading(false)
+                    if (providers == null || providers.values.all { !it }) {
+                        sharedViewModel.setAiProvidersError(true)
+                        sharedViewModel.setAiProviders(null)
+                    } else {
+                        sharedViewModel.setAiProviders(providers)
+                    }
+                }
             }
         }
     }
