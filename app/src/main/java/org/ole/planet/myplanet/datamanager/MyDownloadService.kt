@@ -28,8 +28,8 @@ import kotlinx.coroutines.launch
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.service.getBroadcastService
 import org.ole.planet.myplanet.model.Download
+import org.ole.planet.myplanet.service.getBroadcastService
 import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.FileUtils.availableExternalMemorySize
