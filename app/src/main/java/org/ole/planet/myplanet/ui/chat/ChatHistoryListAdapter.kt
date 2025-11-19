@@ -9,7 +9,7 @@ import androidx.core.graphics.drawable.toDrawable
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.google.gson.Gson
+import org.ole.planet.myplanet.utilities.GsonUtils
 import java.text.Normalizer
 import java.util.Date
 import java.util.Locale
@@ -293,7 +293,7 @@ class ChatHistoryListAdapter(
             serializedMap["aiProvider"] = chatHistory.aiProvider ?: ""
             serializedMap["createdDate"] = "${Date().time}"
             serializedMap["updatedDate"] = "${Date().time}"
-            serializedMap["conversations"] = Gson().toJson(serializedConversations)
+            serializedMap["conversations"] = GsonUtils.gson.toJson(serializedConversations)
 
             val map = HashMap<String?, String>()
             map["message"] = "${addNoteDialogBinding.editText.text}"
@@ -302,7 +302,7 @@ class ChatHistoryListAdapter(
             map["messageType"] = team?.teamType ?: ""
             map["messagePlanetCode"] = team?.teamPlanetCode ?: ""
             map["chat"] = "true"
-            map["news"] = Gson().toJson(serializedMap)
+            map["news"] = GsonUtils.gson.toJson(serializedMap)
 
             onShareChat(map, chatHistory)
             dialog.dismiss()

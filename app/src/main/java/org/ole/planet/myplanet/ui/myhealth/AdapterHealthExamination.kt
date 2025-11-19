@@ -13,8 +13,8 @@ import androidx.core.graphics.drawable.toDrawable
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.google.gson.Gson
 import com.google.gson.JsonObject
+import org.ole.planet.myplanet.utilities.GsonUtils
 import io.realm.Realm
 import java.util.Date
 import org.ole.planet.myplanet.R
@@ -115,7 +115,7 @@ class AdapterHealthExamination(private val context: Context, private val mh: Rea
     }
 
     private fun showConditions(tvCondition: TextView, realmExamination: RealmMyHealthPojo?) {
-        val conditionsMap = Gson().fromJson(realmExamination?.conditions, JsonObject::class.java)
+        val conditionsMap = GsonUtils.gson.fromJson(realmExamination?.conditions, JsonObject::class.java)
         val keys = conditionsMap.keySet()
         val conditions = StringBuilder()
         for (key in keys) {

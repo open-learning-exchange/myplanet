@@ -1,8 +1,8 @@
 package org.ole.planet.myplanet.model
 
 import android.text.TextUtils
-import com.google.gson.Gson
 import com.google.gson.JsonArray
+import org.ole.planet.myplanet.utilities.GsonUtils
 import com.google.gson.JsonObject
 import io.realm.Case
 import io.realm.Realm
@@ -136,7 +136,7 @@ open class RealmMeetup : RealmObject() {
             `object`.addProperty("sync", meetup.sync)
 
             if (!meetup.link.isNullOrEmpty()) {
-                val linksJson = Gson().fromJson(meetup.link, JsonObject::class.java)
+                val linksJson = GsonUtils.gson.fromJson(meetup.link, JsonObject::class.java)
                 `object`.add("link", linksJson)
             }
 

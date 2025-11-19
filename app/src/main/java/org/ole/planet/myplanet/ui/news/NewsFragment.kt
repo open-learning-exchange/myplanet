@@ -11,8 +11,8 @@ import android.widget.EditText
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView.AdapterDataObserver
-import com.google.gson.Gson
 import com.google.gson.JsonArray
+import org.ole.planet.myplanet.utilities.GsonUtils
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.flow.debounce
@@ -49,7 +49,6 @@ class NewsFragment : BaseNewsFragment() {
     private var filteredNewsList: List<RealmNews?> = listOf()
     private var searchFilteredList: List<RealmNews?> = listOf()
     private var labelFilteredList: List<RealmNews?> = listOf()
-    private val gson = Gson()
     private lateinit var etSearch: EditText
     private var selectedLabel: String = "All"
     private val labelDisplayToValue = mutableMapOf<String, String>()
@@ -253,7 +252,7 @@ class NewsFragment : BaseNewsFragment() {
         if (news == null) return 0
         try {
             if (!news.viewIn.isNullOrEmpty()) {
-                val ar = gson.fromJson(news.viewIn, JsonArray::class.java)
+                val ar = GsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
                 for (elem in ar) {
                     val obj = elem.asJsonObject
                     if (obj.has("section") && obj.get("section").asString.equals("community", true) && obj.has("sharedDate")) {
@@ -343,7 +342,7 @@ class NewsFragment : BaseNewsFragment() {
         list.forEach { news ->
             if (!news?.viewIn.isNullOrEmpty()) {
                 try {
-                    val ar = gson.fromJson(news.viewIn, JsonArray::class.java)
+                    val ar = GsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
                     if (ar.size() > 1) {
                         val ob = ar[0].asJsonObject
                         if (ob.has("name") && !ob.get("name").isJsonNull) {
@@ -393,7 +392,7 @@ class NewsFragment : BaseNewsFragment() {
     private fun extractSharedTeamName(news: RealmNews?): String {
         if (!news?.viewIn.isNullOrEmpty()) {
             try {
-                val ar = gson.fromJson(news.viewIn, JsonArray::class.java)
+                val ar = GsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
                 if (ar.size() > 1) {
                     val ob = ar[0].asJsonObject
                     if (ob.has("name") && !ob.get("name").isJsonNull) {

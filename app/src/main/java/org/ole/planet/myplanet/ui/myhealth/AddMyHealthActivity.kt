@@ -10,8 +10,8 @@ import android.widget.ImageView
 import android.widget.Spinner
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import com.google.gson.Gson
 import dagger.hilt.android.AndroidEntryPoint
+import org.ole.planet.myplanet.utilities.GsonUtils
 import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
@@ -116,7 +116,7 @@ class AddMyHealthActivity : AppCompatActivity() {
                 try {
                     val key = userModel?.key ?: generateKey().also { newKey -> userModel?.key = newKey }
                     val iv = userModel?.iv ?: generateIv().also { newIv -> userModel?.iv = newIv }
-                    healthPojo.data = encrypt(Gson().toJson(myHealth), key, iv)
+                    healthPojo.data = encrypt(GsonUtils.gson.toJson(myHealth), key, iv)
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
@@ -135,7 +135,7 @@ class AddMyHealthActivity : AppCompatActivity() {
             val healthPojo = realm.where(RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
                 ?: realm.where(RealmMyHealthPojo::class.java).equalTo("userId", userId).findFirst()
             if (healthPojo != null && !TextUtils.isEmpty(healthPojo.data)) {
-                myHealth = Gson().fromJson(
+                myHealth = GsonUtils.gson.fromJson(
                     decrypt(healthPojo.data, userModel?.key, userModel?.iv),
                     RealmMyHealth::class.java
                 )
