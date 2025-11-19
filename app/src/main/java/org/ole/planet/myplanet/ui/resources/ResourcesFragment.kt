@@ -181,8 +181,14 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         lifecycleScope.launch {
             try {
                 val (filteredLibraryList, ratingsMap) = withContext(Dispatchers.IO) {
-                    val map = getRatings(mRealm, "resource", model?.id)
-                    val libraryList: List<RealmMyLibrary?> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary?>()
+                    lateinit var ratings: HashMap<String?, JsonObject>
+                    lateinit var library: List<RealmMyLibrary>
+                    databaseService.withRealm { realm ->
+                        ratings = getRatings(realm, "resource", model?.id)
+                        val results = realm.where(RealmMyLibrary::class.java).findAll()
+                        library = realm.copyFromRealm(results)
+                    }
+                    val libraryList = library.filterIsInstance<RealmMyLibrary?>()
                     val currentSearchTags = if (::searchTags.isInitialized) searchTags else emptyList()
                     val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
                     val filteredList: List<RealmMyLibrary?> =
@@ -191,7 +197,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                         } else {
                             applyFilter(filterLibraryByTag(searchQuery, currentSearchTags)).map { it }
                         }
-                    Pair(filteredList, map)
+                    Pair(filteredList, ratings)
                 }
 
                 map = ratingsMap
