@@ -292,7 +292,9 @@ class Service @Inject constructor(
                                  override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
                                      if (response.body() != null && response.body()?.has("id") == true) {
                                         uploadToShelf(obj)
-                                        saveUserToDb("${response.body()?.get("id")?.asString}", obj, callback, securityCallback)
+                                         serviceScope.launch {
+                                             saveUserToDb("${response.body()?.get("id")?.asString}", obj, callback, securityCallback)
+                                         }
                                      } else {
                                          callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
                                      }
@@ -342,38 +344,36 @@ class Service @Inject constructor(
         })
     }
 
-    private fun saveUserToDb(id: String, obj: JsonObject, callback: CreateUserCallback, securityCallback: SecurityDataCallback? = null) {
+    private suspend fun saveUserToDb(id: String, obj: JsonObject, callback: CreateUserCallback, securityCallback: SecurityDataCallback? = null) {
         val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        serviceScope.launch {
-            try {
-                val result = withContext(Dispatchers.IO) {
-                    retrofitInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/_users/$id").execute()
-                }
+        try {
+            val result = withContext(Dispatchers.IO) {
+                retrofitInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/_users/$id").execute()
+            }
 
-                val userModel = result.body()?.let { userRepository.saveUser(it, settings) }
-                if (userModel != null) {
-                    getUploadToShelfService().saveKeyIv(retrofitInterface, userModel, obj)
-                }
+            val userModel = result.body()?.let { userRepository.saveUser(it, settings) }
+            if (userModel != null) {
+                getUploadToShelfService().saveKeyIv(retrofitInterface, userModel, obj)
+            }
 
-                withContext(Dispatchers.Main) {
-                    callback.onSuccess(context.getString(R.string.user_created_successfully))
-                    if (context is ProcessUserDataActivity) {
-                        val userName = "${obj["name"].asString}"
-                        context.startUpload("becomeMember", userName, securityCallback)
-                    }
+            withContext(Dispatchers.Main) {
+                callback.onSuccess(context.getString(R.string.user_created_successfully))
+                if (context is ProcessUserDataActivity) {
+                    val userName = "${obj["name"].asString}"
+                    context.startUpload("becomeMember", userName, securityCallback)
                 }
-            } catch (e: IOException) {
-                e.printStackTrace()
-                withContext(Dispatchers.Main) {
-                    callback.onSuccess(context.getString(R.string.unable_to_save_user_please_sync))
-                    securityCallback?.onSecurityDataUpdated()
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                withContext(Dispatchers.Main) {
-                    callback.onSuccess(context.getString(R.string.unable_to_save_user_please_sync))
-                    securityCallback?.onSecurityDataUpdated()
-                }
+            }
+        } catch (e: IOException) {
+            e.printStackTrace()
+            withContext(Dispatchers.Main) {
+                callback.onSuccess(context.getString(R.string.unable_to_save_user_please_sync))
+                securityCallback?.onSecurityDataUpdated()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            withContext(Dispatchers.Main) {
+                callback.onSuccess(context.getString(R.string.unable_to_save_user_please_sync))
+                securityCallback?.onSecurityDataUpdated()
             }
         }
     }
