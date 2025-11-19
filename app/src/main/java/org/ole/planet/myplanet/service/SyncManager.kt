@@ -67,7 +67,7 @@ class SyncManager @Inject constructor(
     private val improvedSyncManager: Lazy<ImprovedSyncManager>,
     @ApplicationScope private val syncScope: CoroutineScope
 ) {
-    private var td: Thread? = null
+    private var td: Job? = null
     lateinit var mRealm: Realm
     private var isSyncing = false
     private val stringArray = arrayOfNulls<String>(4)
@@ -130,15 +130,17 @@ class SyncManager @Inject constructor(
         cancel(context, 111)
         isSyncing = false
         settings.edit { putLong("LastSync", Date().time) }
-        listener?.onSyncComplete()
+        syncScope.launch(Dispatchers.Main) {
+            listener?.onSyncComplete()
+        }
         try {
             if (!betaSync) {
                 if (::mRealm.isInitialized && !mRealm.isClosed) {
                     mRealm.close()
-                    td?.interrupt()
+                    td?.cancel()
                 }
             } else {
-                td?.interrupt()
+                td?.cancel()
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -146,17 +148,14 @@ class SyncManager @Inject constructor(
     }
 
     private fun authenticateAndSync(type: String, syncTables: List<String>?) {
-        td = Thread {
+        td = syncScope.launch(Dispatchers.IO) {
             if (TransactionSyncManager.authenticate()) {
-                runBlocking {
-                    startSync(type, syncTables)
-                }
+                startSync(type, syncTables)
             } else {
                 handleException(context.getString(R.string.invalid_configuration))
                 cleanupMainSync()
             }
         }
-        td?.start()
     }
 
     private suspend fun startSync(type: String, syncTables: List<String>?) {
@@ -487,9 +486,9 @@ class SyncManager @Inject constructor(
             } catch (e: Exception) {
                 e.printStackTrace()
             }
-            td?.interrupt()
+            td?.cancel()
         } else {
-            td?.interrupt()
+            td?.cancel()
         }
     }
 
@@ -651,10 +650,12 @@ class SyncManager @Inject constructor(
     }
 
     private fun handleException(message: String?) {
-        if (listener != null) {
-            isSyncing = false
-            MainApplication.syncFailedCount++
-            listener?.onSyncFailed(message)
+        syncScope.launch(Dispatchers.Main) {
+            if (listener != null) {
+                isSyncing = false
+                MainApplication.syncFailedCount++
+                listener?.onSyncFailed(message)
+            }
         }
     }
 
