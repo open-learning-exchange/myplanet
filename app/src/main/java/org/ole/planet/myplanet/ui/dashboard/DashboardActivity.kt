@@ -11,6 +11,7 @@ import android.graphics.PorterDuff
 import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.Bundle
+import android.os.Trace
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
@@ -113,7 +114,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     lateinit var userProfileDbHandler: UserProfileDbHandler
     @Inject
     lateinit var teamRepository: TeamRepository
-    private lateinit var challengeHelper: ChallengeHelper
+    private val challengeHelper: ChallengeHelper by lazy {
+        ChallengeHelper(this, mRealm, user, settings, editor, dashboardViewModel)
+    }
     private lateinit var notificationManager: NotificationUtils.NotificationManager
     private var notificationsShownThisSession = false
     private var lastNotificationCheckTime = 0L
@@ -141,14 +144,19 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         handleInitialFragment()
         setupToolbarActions()
         hideWifi()
-        setupRealmListeners()
-        setupSystemNotificationReceiver()
-        checkIfShouldShowNotifications()
         addBackPressCallback()
-        challengeHelper = ChallengeHelper(this, mRealm, user, settings, editor, dashboardViewModel)
-        challengeHelper.evaluateChallengeDialog()
         handleNotificationIntent(intent)
         collectUiState()
+
+        binding.root.post {
+            Trace.beginSection("DashboardActivity.postLayout")
+            setupSystemNotificationReceiver()
+            checkIfShouldShowNotifications()
+            setupRealmListeners()
+            challengeHelper.evaluateChallengeDialog()
+            reportFullyDrawn()
+            Trace.endSection()
+        }
     }
 
     private fun collectUiState() {
