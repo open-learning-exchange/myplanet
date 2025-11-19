@@ -18,8 +18,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
-import com.google.gson.Gson
 import com.google.gson.JsonObject
+import org.ole.planet.myplanet.utilities.GsonUtils
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.RealmList
 import java.io.File
@@ -47,7 +47,6 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     lateinit var databaseService: DatabaseService
     var id: String? = null
     private lateinit var newsAdapter: AdapterNews
-    private val gson = Gson()
     var user: RealmUserModel? = null
 
     private val viewModel: ReplyViewModel by viewModels()
@@ -161,7 +160,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         val jsonObject = JsonObject()
         jsonObject.addProperty("imageUrl", path)
         jsonObject.addProperty("fileName", getFileNameFromUrl(path))
-        imageList.add(gson.toJson(jsonObject))
+        imageList.add(GsonUtils.gson.toJson(jsonObject))
 
         try {
             showSelectedImages()
@@ -174,7 +173,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         llImage?.removeAllViews()
         llImage?.visibility = View.VISIBLE
         for (img in imageList) {
-            val ob = gson.fromJson(img, JsonObject::class.java)
+            val ob = GsonUtils.gson.fromJson(img, JsonObject::class.java)
             val inflater = LayoutInflater.from(this).inflate(R.layout.image_thumb, llImage, false)
             val imgView = inflater.findViewById<ImageView>(R.id.thumb)
             Glide.with(this)

@@ -169,13 +169,13 @@ class NewsLabelManager(private val context: Context, private val realm: Realm) {
             }
             return cleaned
                 .trim()
-                .split(Regex("\\s+"))
+                .split(whitespaceRegex)
                 .joinToString(" ") { part ->
                     part.lowercase(Locale.getDefault()).replaceFirstChar { ch ->
                         if (ch.isLowerCase()) ch.titlecase(Locale.getDefault()) else ch.toString()
                     }
                 }
         }
+        private val whitespaceRegex by lazy { Regex("\\s+") }
     }
 }
-

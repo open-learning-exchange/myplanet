@@ -36,13 +36,14 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
-        val myLifeList = getMyLifeByUserId(mRealm, model?.id)
-        adapterMyLife = AdapterMyLife(requireContext(), myLifeList, mRealm, this)
+        adapterMyLife = AdapterMyLife(requireContext(), this)
         return adapterMyLife
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        val myLifeList = getMyLifeByUserId(mRealm, model?.id)
+        adapterMyLife.submitList(myLifeList)
         recyclerView.setHasFixedSize(true)
         setupUI(binding.myLifeParentLayout, requireActivity())
         val callback: ItemTouchHelper.Callback = SimpleItemTouchHelperCallback(adapterMyLife)

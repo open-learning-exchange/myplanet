@@ -52,4 +52,3 @@ class FeedbackDetailViewModel @Inject constructor(
         object CloseFeedbackSuccess : FeedbackDetailEvent()
     }
 }
-
