@@ -29,11 +29,11 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.NotificationCallback
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
-import org.ole.planet.myplanet.databinding.ItemLibraryHomeBinding
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.MyLibraryItem
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmTeamNotification
@@ -53,7 +53,7 @@ import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCallback,
-    SyncListener {
+    SyncListener, LibraryListAdapter.OnLibraryItemClickListener {
     private val realm get() = requireRealmInstance()
     private var fullName: String? = null
     private var params = LinearLayout.LayoutParams(250, 100)
@@ -143,31 +143,17 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             realm.copyFromRealm(results)
         }
 
-        view.findViewById<FlexboxLayout>(R.id.flexboxLayout).flexDirection = FlexDirection.ROW
+        val libraryRecyclerView = view.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.library_recycler_view)
+        val libraryListAdapter = LibraryListAdapter(this)
+        libraryRecyclerView.adapter = libraryListAdapter
+        val myLibraryItems = dbMylibrary.map {
+            MyLibraryItem(it._id, it.title ?: "", it.description ?: "", it.resourceId ?: "")
+        }
+        libraryListAdapter.submitList(myLibraryItems)
         if (dbMylibrary.isEmpty()) {
             view.findViewById<TextView>(R.id.count_library).visibility = View.GONE
         } else {
             view.findViewById<TextView>(R.id.count_library).text = getString(R.string.number_placeholder, dbMylibrary.size)
-        }
-        for ((itemCnt, items) in dbMylibrary.withIndex()) {
-            val itemLibraryHomeBinding = ItemLibraryHomeBinding.inflate(LayoutInflater.from(activity))
-            val v = itemLibraryHomeBinding.root
-            setTextColor(itemLibraryHomeBinding.title, itemCnt)
-            val colorResId = if (itemCnt % 2 == 0) R.color.card_bg else R.color.dashboard_item_alternative
-            val color = context?.let { ContextCompat.getColor(it, colorResId) }
-            if (color != null) {
-                v.setBackgroundColor(color)
-            }
-
-            itemLibraryHomeBinding.title.text = items.title
-            itemLibraryHomeBinding.detail.setOnClickListener {
-                if (homeItemClickListener != null) {
-                    homeItemClickListener?.openLibraryDetailFragment(items)
-                }
-            }
-
-            myLibraryItemClickAction(itemLibraryHomeBinding.title, items)
-            view.findViewById<FlexboxLayout>(R.id.flexboxLayout).addView(v, params)
         }
     }
 
@@ -279,11 +265,17 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         }
     }
 
-    private fun myLibraryItemClickAction(textView: TextView, items: RealmMyLibrary?) {
-        textView.setOnClickListener {
-            items?.let {
-                openResource(it)
-            }
+    override fun onLibraryItemClicked(item: MyLibraryItem) {
+        val selectedLibrary = realm.where(RealmMyLibrary::class.java).equalTo("_id", item.id).findFirst()
+        selectedLibrary?.let {
+            openResource(it)
+        }
+    }
+
+    override fun onLibraryItemDetailClicked(item: MyLibraryItem) {
+        val selectedLibrary = realm.where(RealmMyLibrary::class.java).equalTo("_id", item.id).findFirst()
+        if (homeItemClickListener != null) {
+            homeItemClickListener?.openLibraryDetailFragment(selectedLibrary)
         }
     }
 
