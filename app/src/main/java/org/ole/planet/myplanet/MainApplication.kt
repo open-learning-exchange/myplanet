@@ -98,8 +98,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                 )
                 val userProfileDbHandler = entryPoint.userProfileDbHandler()
                 val settings = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-                service.withRealm { realm ->
-                    realm.executeTransaction { r ->
+                try {
+                    service.executeTransactionAsync { r ->
                         val log = r.createObject(RealmApkLog::class.java, "${UUID.randomUUID()}")
                         val model = userProfileDbHandler.userModel
                         log.parentCode = settings.getString("parentCode", "")
@@ -113,6 +113,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                             log.error = error
                         }
                     }
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
             }
         }
