@@ -106,7 +106,7 @@ class ChatDetailFragment : Fragment() {
         initChatComponents()
         val newsRev = arguments?.getString("newsRev")
         val newsConversations = arguments?.getString("conversations")
-        checkAiProviders()
+        observeAiProviders()
         setupSendButton()
         setupMessageInputListeners()
         if (newsId != null) {
@@ -205,6 +205,41 @@ class ChatDetailFragment : Fragment() {
         }
     }
 
+    private fun observeAiProviders() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    sharedViewModel.aiProviders.collect { providers ->
+                        if (providers != null) {
+                            if (providers.values.all { !it }) {
+                                onFailError()
+                            } else {
+                                updateAIButtons(providers)
+                            }
+                        }
+                    }
+                }
+                launch {
+                    sharedViewModel.aiProvidersLoading.collect { isLoading ->
+                        if (isLoading) {
+                            customProgressDialog.setText("${context?.getString(R.string.fetching_ai_providers)}")
+                            customProgressDialog.show()
+                        } else {
+                            customProgressDialog.dismiss()
+                        }
+                    }
+                }
+                launch {
+                    sharedViewModel.aiProvidersError.collect { hasError ->
+                        if (hasError && sharedViewModel.aiProviders.value == null) {
+                            onFailError()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     private fun observeViewModelData() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -254,20 +289,26 @@ class ChatDetailFragment : Fragment() {
         }
     }
 
-    private fun checkAiProviders() {
+    fun checkAiProviders() {
+        if (!sharedViewModel.shouldFetchAiProviders()) {
+            return
+        }
+
+        sharedViewModel.setAiProvidersLoading(true)
+        sharedViewModel.setAiProvidersError(false)
+
         val mapping = serverUrlMapper.processUrl(serverUrl)
 
         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             updateServerIfNecessary(mapping)
             withContext(Dispatchers.Main) {
-                customProgressDialog.setText("${context?.getString(R.string.fetching_ai_providers)}")
-                customProgressDialog.show()
                 chatApiHelper.fetchAiProviders { providers ->
-                    customProgressDialog.dismiss()
+                    sharedViewModel.setAiProvidersLoading(false)
                     if (providers == null || providers.values.all { !it }) {
-                        onFailError()
+                        sharedViewModel.setAiProvidersError(true)
+                        sharedViewModel.setAiProviders(null)
                     } else {
-                        updateAIButtons(providers)
+                        sharedViewModel.setAiProviders(providers)
                     }
                 }
             }
