@@ -10,8 +10,8 @@ import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import com.google.gson.Gson
 import com.google.gson.JsonArray
+import org.ole.planet.myplanet.utilities.GsonUtils
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.RealmResults
@@ -192,7 +192,7 @@ class DiscussionListFragment : BaseTeamFragment() {
             if (!TextUtils.isEmpty(news.viewableBy) && news.viewableBy.equals("teams", ignoreCase = true) && news.viewableId.equals(effectiveTeamId, ignoreCase = true)) {
                 filteredList.add(news)
             } else if (!TextUtils.isEmpty(news.viewIn)) {
-                val ar = Gson().fromJson(news.viewIn, JsonArray::class.java)
+                val ar = GsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
                 for (e in ar) {
                     val ob = e.asJsonObject
                     if (ob["_id"].asString.equals(effectiveTeamId, ignoreCase = true)) {
@@ -214,7 +214,7 @@ class DiscussionListFragment : BaseTeamFragment() {
                 if (!TextUtils.isEmpty(news.viewableBy) && news.viewableBy.equals("teams", ignoreCase = true) && news.viewableId.equals(effectiveTeamId, ignoreCase = true)) {
                     list.add(news)
                 } else if (!TextUtils.isEmpty(news.viewIn)) {
-                    val ar = Gson().fromJson(news.viewIn, JsonArray::class.java)
+                    val ar = GsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
                     for (e in ar) {
                         val ob = e.asJsonObject
                         if (ob["_id"].asString.equals(effectiveTeamId, ignoreCase = true)) {

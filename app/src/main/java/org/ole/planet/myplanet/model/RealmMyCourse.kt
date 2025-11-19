@@ -5,8 +5,8 @@ import android.content.SharedPreferences
 import android.text.TextUtils
 import android.util.Base64
 import androidx.core.content.edit
-import com.google.gson.Gson
 import com.google.gson.JsonArray
+import org.ole.planet.myplanet.utilities.GsonUtils
 import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmList
@@ -67,7 +67,6 @@ open class RealmMyCourse : RealmObject() {
     }
 
     companion object {
-        private val gson = Gson()
         private val concatenatedLinks = ArrayList<String>()
 
         @JvmStatic
@@ -129,7 +128,7 @@ open class RealmMyCourse : RealmObject() {
             val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             val existingJsonLinks = settings.getString("concatenated_links", null)
             val existingConcatenatedLinks = if (existingJsonLinks != null) {
-                gson.fromJson(existingJsonLinks, Array<String>::class.java).toMutableList()
+                GsonUtils.gson.fromJson(existingJsonLinks, Array<String>::class.java).toMutableList()
             } else {
                 mutableListOf()
             }
@@ -142,7 +141,7 @@ open class RealmMyCourse : RealmObject() {
                     existingConcatenatedLinks.add(link)
                 }
             }
-            val jsonConcatenatedLinks = gson.toJson(existingConcatenatedLinks)
+            val jsonConcatenatedLinks = GsonUtils.gson.toJson(existingConcatenatedLinks)
             settings.edit { putString("concatenated_links", jsonConcatenatedLinks) }
         }
 

@@ -1,10 +1,13 @@
 package org.ole.planet.myplanet.repository
 
+import android.content.SharedPreferences
+import com.google.gson.JsonObject
 import java.util.Calendar
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
 
 class UserRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
@@ -16,6 +19,10 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun getUserByAnyId(id: String): RealmUserModel? {
         return findByField(RealmUserModel::class.java, "_id", id)
             ?: findByField(RealmUserModel::class.java, "id", id)
+    }
+
+    override suspend fun getUserByName(name: String): RealmUserModel? {
+        return findByField(RealmUserModel::class.java, "name", name)
     }
 
     override suspend fun getAllUsers(): List<RealmUserModel> {
@@ -49,6 +56,27 @@ class UserRepositoryImpl @Inject constructor(
             .groupingBy { it }
             .eachCount()
             .toSortedMap()
+    }
+
+    override suspend fun saveUser(
+        jsonDoc: JsonObject?,
+        settings: SharedPreferences,
+        key: String?,
+        iv: String?,
+    ): RealmUserModel? {
+        if (jsonDoc == null) return null
+
+        return withRealm { realm ->
+            val managedUser = populateUsersTable(jsonDoc, realm, settings)
+            if (managedUser != null && (key != null || iv != null)) {
+                realm.executeTransaction {
+                    key?.let { managedUser.key = it }
+                    iv?.let { managedUser.iv = it }
+                }
+            }
+
+            managedUser?.let { realm.copyFromRealm(it) }
+        }
     }
 
     override suspend fun updateSecurityData(
