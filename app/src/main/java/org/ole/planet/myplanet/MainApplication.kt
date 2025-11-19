@@ -16,7 +16,6 @@ import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.android.HiltAndroidApp
-import org.ole.planet.myplanet.di.ApplicationScopeEntryPoint
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Date
@@ -25,8 +24,6 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -37,6 +34,7 @@ import org.ole.planet.myplanet.callback.TeamPageListener
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.di.ApiClientEntryPoint
 import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.di.ApplicationScopeEntryPoint
 import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.di.WorkerDependenciesEntryPoint
 import org.ole.planet.myplanet.model.RealmApkLog
@@ -100,8 +98,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                 )
                 val userProfileDbHandler = entryPoint.userProfileDbHandler()
                 val settings = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-                service.withRealm { realm ->
-                    realm.executeTransaction { r ->
+                try {
+                    service.executeTransactionAsync { r ->
                         val log = r.createObject(RealmApkLog::class.java, "${UUID.randomUUID()}")
                         val model = userProfileDbHandler.userModel
                         log.parentCode = settings.getString("parentCode", "")
@@ -115,6 +113,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                             log.error = error
                         }
                     }
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
             }
         }

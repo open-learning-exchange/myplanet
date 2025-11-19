@@ -333,7 +333,7 @@
     <string name="freeup_space">تحرير مساحة القرص</string>
     <string name="action_disclaimer">تنصل</string>
     <string name="action_about">حول</string>
-    <string name="engilsh_dictionary">قاموس الإنجليزية</string>
+    <string name="english_dictionary">قاموس الإنجليزية</string>
 
     <string-array name="team_type">
         <item>فريق محلي</item>
@@ -1170,5 +1170,8 @@
     <string name="resource_has_no_attachments">المورد لا يحتوي على ملفات قابلة للتنزيل</string>
     <string name="unable_to_download_resource">غير قادر على تنزيل المورد</string>
     <string name="hide_new_message">إخفاء الرسالة الجديدة</string>
+    <string name="cannot_assign_completed_task">لا يمكن تعيين مهمة مكتملة</string>
+    <string name="assign_to">تعيين إلى (اختياري)</string>
+    <string name="click_to_assign_member">انقر لتعيين عضو الفريق</string>
 
 </resources>

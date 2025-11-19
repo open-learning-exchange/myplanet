@@ -1,0 +1,150 @@
+name: myPlanet release
+
+on: 
+  push:
+    branches:
+      - 'master'
+  workflow_dispatch:
+
+jobs:
+  release:
+    name: myPlanet release
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        build: [default, lite]
+    env:
+      OUTPUTS: |
+        .apk
+        .apk.sha256
+        .aab
+        .aab.sha256
+
+    steps:
+      - name: checkout repository code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      - name: check and diff the code to get lite
+        if: matrix.build == 'lite'
+        run: |
+          file="app/src/main/AndroidManifest.xml"
+          lite="app/src/lite/AndroidManifest.xml"
+          ls -al "$file" "$lite"
+          diff <(sed 's/^\s*<!--//; s/-->\s*$//' "$file") <(sed 's/^\s*<!--//; s/-->\s*$//' "$lite")
+          cp "$lite" "$file"
+
+      - name: setup gradle
+        uses: gradle/actions/setup-gradle@v5
+        with:
+          gradle-version: wrapper
+          cache-disabled: false
+          cache-read-only: false
+          cache-write-only: false
+
+      - name: set release version
+        run: echo ANDROID_VERSION=$(grep -oP 'versionName = "\K[^\"]+' app/build.gradle) >> $GITHUB_ENV
+
+      - name: set lite version name
+        if: matrix.build == 'lite'
+        run: sed -i 's/\(versionName = "[0-9.]\+\)"/\1-lite"/' app/build.gradle
+
+      - name: build release APK and AAB
+        run: |
+          FLAVOR=${{ matrix.build }}
+          ./gradlew assemble${FLAVOR^}Release bundle${FLAVOR^}Release --warning-mode all --stacktrace
+          ls -alR app/build/outputs
+          mkdir -p sign
+          cp app/build/outputs/bundle/${FLAVOR}Release/app-${FLAVOR}-release.aab sign/.
+          cp app/build/outputs/apk/${FLAVOR}/release/app-${FLAVOR}-release-unsigned.apk sign/.
+          echo ANDROID_VERSION_NAME=$(grep -oP 'versionName = "\K[^\"]+' app/build.gradle) >> $GITHUB_ENV
+          echo ANDROID_VERSION_CODE=$(grep versionCode app/build.gradle | sed 's/[^0-9]//g') >> $GITHUB_ENV
+
+      - name: sign release APK and AAB
+        uses: dogi/sign-android-release@v5.1
+        with:
+          releaseDirectory: sign
+          signingKeyBase64: ${{ secrets.SIGNING_KEY }}
+          alias: ${{ secrets.ALIAS }}
+          keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
+          keyPassword: ${{ secrets.KEY_PASSWORD }}
+
+      - name: copy builds to output and generate sha256
+        run: |
+          mkdir -p output
+          FLAVOR=${{ matrix.build }}
+          cp sign/app-${FLAVOR}-release-unsigned-signed.apk output/myPlanet.apk
+          cp sign/app-${FLAVOR}-release.aab output/myPlanet.aab
+          sha256sum output/myPlanet.apk > output/myPlanet.apk.sha256
+          sha256sum output/myPlanet.aab > output/myPlanet.aab.sha256
+          ls -alR output
+
+      - name: publish AAB to playstore
+        id: playstore
+        if: github.event_name != 'workflow_dispatch' && matrix.build == 'lite'
+        continue-on-error: true
+        uses: dogi/upload-google-play@v1.1.4
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
+          packageName: org.ole.planet.myplanet
+          releaseFiles: output/myPlanet.aab
+          track: internal
+          releaseName: "${{ env.ANDROID_VERSION_CODE }} (${{ env.ANDROID_VERSION_NAME }})"
+          status: completed
+
+      - name: publish AAB to playstore fallback
+        if: github.event_name != 'workflow_dispatch' && matrix.build == 'lite' && steps.playstore.outcome == 'failure'
+        continue-on-error: true
+        uses: dogi/upload-google-play@v1.1.4
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
+          packageName: org.ole.planet.myplanet
+          releaseFiles: output/myPlanet.aab
+          track: internal
+          releaseName: "${{ env.ANDROID_VERSION_CODE }} (${{ env.ANDROID_VERSION_NAME }})"
+          status: completed
+          changesNotSentForReview: true
+
+      - name: rename APK and AAB with version and branch for artifact
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          echo "${{ env.OUTPUTS }}" | xargs -n 1 | while read type; do
+            mv "output/myPlanet${type}" "output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${GITHUB_REF##*/}${type}"
+          done
+          ls -alR output
+          echo "BRANCHNAME=${GITHUB_REF##*/}" >> $GITHUB_ENV
+
+      - name: upload APK and AAB as build artifact
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v5
+        with:
+          name: myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}
+          path: output/*
+          retention-days: 9
+
+      - name: pre-process files and tag for lite version
+        if: github.event_name != 'workflow_dispatch' && matrix.build == 'lite'
+        run: |
+          echo "${{ env.OUTPUTS }}" | xargs -n 1 | while read type; do
+            mv "output/myPlanet${type}" "output/myPlanet-lite${type}"
+          done
+
+      - name: release APK and AAB on GitHub
+        if: github.event_name != 'workflow_dispatch'
+        uses: dogi/upload-release-action@v2.9.0
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: output/*
+          tag: v${{ env.ANDROID_VERSION }}
+          overwrite: 'true'
+          file_glob: 'true'
+
+      - name: send success message to discord
+        if: github.event_name != 'workflow_dispatch' && matrix.build != 'lite'
+        run: |
+          sudo npm install -g @treehouses/cli
+          export discord_channel="${{ secrets.CHANNEL }}" #remote
+          echo "https://github.com/open-learning-exchange/myplanet/releases/tag/v${{ env.ANDROID_VERSION_NAME }}"
+          treehouses feedback "new myplanet app: <https://github.com/open-learning-exchange/myplanet/releases/tag/v${{ env.ANDROID_VERSION_NAME }}>"

@@ -28,8 +28,10 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
 import java.util.Locale
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityLoginBinding
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
@@ -176,22 +178,33 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                     binding.inputPassword.error = getString(R.string.err_msg_password)
                 } else {
                     val enterUserName = binding.inputName.text.toString().trimEnd()
-                    val user = databaseService.withRealm { realm ->
-                        realm.where(RealmUserModel::class.java).equalTo("name", enterUserName).findFirst()?.let { realm.copyFromRealm(it) }
-                    }
-                    if (user == null || !user.isArchived) {
-                        submitForm(enterUserName, binding.inputPassword.text.toString())
-                    } else {
-                        val builder = AlertDialog.Builder(this)
-                        builder.setMessage("member ${binding.inputName.text} is archived")
-                        builder.setCancelable(false)
-                        builder.setPositiveButton("ok") { dialog: DialogInterface, _: Int ->
-                            dialog.dismiss()
-                            binding.inputName.setText(R.string.empty_text)
-                            binding.inputPassword.setText(R.string.empty_text)
+                    binding.btnSignin.isEnabled = false
+                    customProgressDialog.setText(getString(R.string.please_wait))
+                    customProgressDialog.show()
+                    lifecycleScope.launch {
+                        val user = withContext(Dispatchers.IO) {
+                            databaseService.withRealm { realm ->
+                                realm.where(RealmUserModel::class.java)
+                                    .equalTo("name", enterUserName).findFirst()
+                                    ?.let { realm.copyFromRealm(it) }
+                            }
                         }
-                        val dialog = builder.create()
-                        dialog.show()
+                        if (user == null || !user.isArchived) {
+                            submitForm(enterUserName, binding.inputPassword.text.toString())
+                        } else {
+                            val builder = AlertDialog.Builder(this@LoginActivity)
+                            builder.setMessage("member ${binding.inputName.text} is archived")
+                            builder.setCancelable(false)
+                            builder.setPositiveButton("ok") { dialog: DialogInterface, _: Int ->
+                                dialog.dismiss()
+                                binding.inputName.setText(R.string.empty_text)
+                                binding.inputPassword.setText(R.string.empty_text)
+                            }
+                            val dialog = builder.create()
+                            dialog.show()
+                        }
+                        binding.btnSignin.isEnabled = true
+                        customProgressDialog.dismiss()
                     }
                 }
             } else {

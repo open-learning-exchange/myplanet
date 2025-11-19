@@ -19,6 +19,15 @@ class ChatViewModel : ViewModel() {
     private val _selectedAiProvider = MutableStateFlow<String?>(null)
     val selectedAiProvider: StateFlow<String?> = _selectedAiProvider.asStateFlow()
 
+    private val _aiProviders = MutableStateFlow<Map<String, Boolean>?>(null)
+    val aiProviders: StateFlow<Map<String, Boolean>?> = _aiProviders.asStateFlow()
+
+    private val _aiProvidersLoading = MutableStateFlow(false)
+    val aiProvidersLoading: StateFlow<Boolean> = _aiProvidersLoading.asStateFlow()
+
+    private val _aiProvidersError = MutableStateFlow(false)
+    val aiProvidersError: StateFlow<Boolean> = _aiProvidersError.asStateFlow()
+
     fun setSelectedChatHistory(conversations: List<Conversation>) {
         _selectedChatHistory.value = conversations
     }
@@ -35,11 +44,26 @@ class ChatViewModel : ViewModel() {
         _selectedAiProvider.value = aiProvider
     }
 
+    fun setAiProviders(providers: Map<String, Boolean>?) {
+        _aiProviders.value = providers
+    }
+
+    fun setAiProvidersLoading(isLoading: Boolean) {
+        _aiProvidersLoading.value = isLoading
+    }
+
+    fun setAiProvidersError(hasError: Boolean) {
+        _aiProvidersError.value = hasError
+    }
+
     fun clearChatState() {
         _selectedChatHistory.value = null
         _selectedId.value = ""
         _selectedRev.value = ""
         _selectedAiProvider.value = null
     }
-}
 
+    fun shouldFetchAiProviders(): Boolean {
+        return _aiProviders.value == null && !_aiProvidersLoading.value
+    }
+}

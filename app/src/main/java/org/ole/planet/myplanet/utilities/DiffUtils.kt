@@ -36,4 +36,3 @@ object DiffUtils {
         return RecyclerDiffUtil.calculateDiff(callback)
     }
 }
-

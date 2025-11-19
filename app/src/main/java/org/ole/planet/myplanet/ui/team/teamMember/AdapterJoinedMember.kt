@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.team.teamMember
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -159,6 +158,7 @@ class AdapterJoinedMember(
     override fun getItemCount(): Int = list.size
 
     fun updateData(newList: List<JoinedMemberData>, isLoggedInUserTeamLeader: Boolean) {
+        if (this.list === newList) return
         this.isLoggedInUserTeamLeader = isLoggedInUserTeamLeader
         val oldList = ArrayList(this.list)
         val diffResult = DiffUtils.calculateDiff(
@@ -225,4 +225,3 @@ class AdapterJoinedMember(
     class ViewHolderUser(val binding: RowJoinedUserBinding) :
         RecyclerView.ViewHolder(binding.root)
 }
-

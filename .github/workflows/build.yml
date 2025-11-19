@@ -1,0 +1,48 @@
+name: myPlanet build
+
+on:
+  push:
+    branches:
+      - '*'
+      - '!master'
+      - 'claude/**'
+      - 'codex/**'
+      - 'dependabot/**'
+      - 'jules/**'
+      - '*-codex/**'
+
+jobs:
+  build:
+    name: myPlanet build
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        build: [default, lite]
+    steps:
+      - name: checkout repository code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      - name: check and diff the code to get lite
+        if: matrix.build == 'lite'
+        run: |
+          file="app/src/main/AndroidManifest.xml"
+          lite="app/src/lite/AndroidManifest.xml"
+          ls -al "$file" "$lite"
+          diff <(sed 's/^\s*<!--//; s/-->\s*$//' "$file") <(sed 's/^\s*<!--//; s/-->\s*$//' "$lite")
+          cp "$lite" "$file"
+
+      - name: setup gradle
+        uses: gradle/actions/setup-gradle@v5
+        with:
+          gradle-version: wrapper
+          cache-disabled: false
+          cache-read-only: false
+          cache-write-only: false
+
+      - name: build debug as test
+        run: |
+          FLAVOR=${{ matrix.build }}
+          ./gradlew assemble${FLAVOR^}Debug --warning-mode all --stacktrace

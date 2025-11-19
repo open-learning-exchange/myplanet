@@ -6,8 +6,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CompoundButton
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import io.realm.Realm
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -16,18 +16,17 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowTaskBinding
 import org.ole.planet.myplanet.model.RealmTeamTask
-import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.ui.team.teamTask.AdapterTask.ViewHolderTask
+import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
 class AdapterTask(
     private val context: Context,
-    private val list: List<RealmTeamTask>?,
-    private val nonTeamMember: Boolean,
+    var nonTeamMember: Boolean,
     private val coroutineScope: CoroutineScope,
     private val userRepository: UserRepository
-) : RecyclerView.Adapter<ViewHolderTask>() {
+) : ListAdapter<RealmTeamTask, ViewHolderTask>(diffCallback) {
     private val assigneeCache: MutableMap<String, String> = mutableMapOf()
     private var listener: OnCompletedListener? = null
     fun setListener(listener: OnCompletedListener?) {
@@ -41,51 +40,50 @@ class AdapterTask(
 
     override fun onBindViewHolder(holder: ViewHolderTask, position: Int) {
         holder.assigneeJob?.cancel()
-        list?.get(position)?.let {
-            val binding = holder.binding
-            binding.checkbox.setOnCheckedChangeListener(null)
-            binding.checkbox.text = it.title
-            binding.checkbox.isChecked = it.completed
-            if (!it.completed) {
-                binding.deadline.text = context.getString(R.string.deadline_colon, formatDate(it.deadline))
-            } else {
-                binding.deadline.text = context.getString(
-                    R.string.two_strings,
-                    context.getString(R.string.deadline_colon, formatDate(it.deadline)),
-                    context.getString(R.string.completed_colon, formatDate(it.deadline))
-                )
-            }
-            holder.assigneeJob = showAssignee(binding, it)
-            binding.icMore.setOnClickListener {
-                listener?.onClickMore(list[position])
-            }
-            binding.editTask.setOnClickListener {
-                listener?.onEdit(list[position])
-            }
-            binding.deleteTask.setOnClickListener {
-                listener?.onDelete(list[position])
-            }
-            holder.itemView.setOnClickListener {
-                val alertDialog = AlertDialog.Builder(context, R.style.AlertDialogTheme)
-                    .setTitle(list[position].title)
-                    .setMessage(list[position].description)
-                    .setNegativeButton("Cancel") { dialog, _ ->
-                        dialog.dismiss()
-                    }
-                    .create()
-                
-                alertDialog.show()
-            }
-            if (nonTeamMember) {
-                binding.editTask.visibility = View.GONE
-                binding.deleteTask.visibility = View.GONE
-                binding.icMore.visibility = View.GONE
-                binding.checkbox.isClickable = false
-                binding.checkbox.isFocusable = false
-            } else {
-                binding.checkbox.setOnCheckedChangeListener { _: CompoundButton?, b: Boolean ->
-                    listener?.onCheckChange(it, b)
-                }
+        val it = getItem(position)
+        val binding = holder.binding
+        binding.checkbox.setOnCheckedChangeListener(null)
+        binding.checkbox.text = it.title
+        binding.checkbox.isChecked = it.completed
+        if (!it.completed) {
+            binding.deadline.text =
+                context.getString(R.string.deadline_colon, formatDate(it.deadline))
+        } else {
+            binding.deadline.text = context.getString(
+                R.string.two_strings,
+                context.getString(R.string.deadline_colon, formatDate(it.deadline)),
+                context.getString(R.string.completed_colon, formatDate(it.deadline))
+            )
+        }
+        holder.assigneeJob = showAssignee(binding, it)
+        binding.icMore.setOnClickListener {
+            listener?.onClickMore(getItem(position))
+        }
+        binding.editTask.setOnClickListener {
+            listener?.onEdit(getItem(position))
+        }
+        binding.deleteTask.setOnClickListener {
+            listener?.onDelete(getItem(position))
+        }
+        holder.itemView.setOnClickListener {
+            val alertDialog = AlertDialog.Builder(context, R.style.AlertDialogTheme)
+                .setTitle(getItem(position).title)
+                .setMessage(getItem(position).description)
+                .setNegativeButton("Cancel") { dialog, _ ->
+                    dialog.dismiss()
+                }.create()
+
+            alertDialog.show()
+        }
+        if (nonTeamMember) {
+            binding.editTask.visibility = View.GONE
+            binding.deleteTask.visibility = View.GONE
+            binding.icMore.visibility = View.GONE
+            binding.checkbox.isClickable = false
+            binding.checkbox.isFocusable = false
+        } else {
+            binding.checkbox.setOnCheckedChangeListener { _: CompoundButton?, b: Boolean ->
+                listener?.onCheckChange(it, b)
             }
         }
     }
@@ -116,10 +114,6 @@ class AdapterTask(
         }
     }
 
-    override fun getItemCount(): Int {
-        return list?.size ?: 0
-    }
-
     interface OnCompletedListener {
         fun onCheckChange(realmTeamTask: RealmTeamTask?, b: Boolean)
         fun onEdit(task: RealmTeamTask?)
@@ -129,5 +123,12 @@ class AdapterTask(
 
     class ViewHolderTask(val binding: RowTaskBinding) : RecyclerView.ViewHolder(binding.root) {
         var assigneeJob: Job? = null
+    }
+
+    companion object {
+        val diffCallback = DiffUtils.itemCallback<RealmTeamTask>(
+            areItemsTheSame = { old, new -> old.id == new.id },
+            areContentsTheSame = { old, new -> old == new }
+        )
     }
 }

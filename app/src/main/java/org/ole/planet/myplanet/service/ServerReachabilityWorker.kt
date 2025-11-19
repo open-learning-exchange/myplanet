@@ -204,10 +204,7 @@ class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters)
                     // No UI updates required for background sync completion.
                 }
             }
-
-            withContext(Dispatchers.IO) {
-                uploadManager.uploadExamResult(successListener)
-            }
+            uploadManager.uploadExamResult(successListener)
         } catch (e: Exception) {
             e.printStackTrace()
         }

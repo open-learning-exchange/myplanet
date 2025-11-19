@@ -54,7 +54,7 @@ class FeedbackRepositoryImpl @Inject constructor(
         return feedback
     }
 
-    override fun getFeedback(userModel: RealmUserModel?): Flow<List<RealmFeedback>> =
+    override suspend fun getFeedback(userModel: RealmUserModel?): Flow<List<RealmFeedback>> =
         queryListFlow(RealmFeedback::class.java) {
             if (userModel?.isManager() == true) {
                 sort("openTime", Sort.DESCENDING)

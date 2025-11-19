@@ -34,6 +34,7 @@ class CollectionsFragment : DialogFragment(), TagExpandableAdapter.OnClickTagIte
     private var dbType: String? = null
     private var listener: TagClickListener? = null
     private var selectedItemsList: ArrayList<RealmTag> = ArrayList()
+    private var textWatcher: TextWatcher? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,13 +59,14 @@ class CollectionsFragment : DialogFragment(), TagExpandableAdapter.OnClickTagIte
             listener?.onOkClicked(selectedItemsList)
             dismiss()
         }
-        binding.etFilter.addTextChangedListener(object : TextWatcher {
+        textWatcher = object : TextWatcher {
             override fun beforeTextChanged(charSequence: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(charSequence: CharSequence?, start: Int, before: Int, count: Int) {
                 charSequence?.let { filterTags(it.toString()) }
             }
             override fun afterTextChanged(editable: Editable?) {}
-        })
+        }
+        binding.etFilter.addTextChangedListener(textWatcher)
     }
 
     private fun filterTags(charSequence: String) {
@@ -118,6 +120,8 @@ class CollectionsFragment : DialogFragment(), TagExpandableAdapter.OnClickTagIte
 
     override fun onDestroyView() {
         super.onDestroyView()
+        _binding?.etFilter?.removeTextChangedListener(textWatcher)
+        textWatcher = null
         _binding = null
     }
 
