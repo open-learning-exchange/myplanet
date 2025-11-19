@@ -13,6 +13,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.google.android.flexbox.FlexDirection
@@ -47,13 +48,16 @@ import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.ui.userprofile.UserProfileFragment
 import org.ole.planet.myplanet.utilities.Constants
+import dagger.hilt.android.AndroidEntryPoint
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCallback,
     SyncListener {
+    private val viewModel: DashboardViewModel by viewModels()
     private val realm get() = requireRealmInstance()
     private var fullName: String? = null
     private var params = LinearLayout.LayoutParams(250, 100)
@@ -137,23 +141,31 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         }
     }
 
-    private suspend fun myLibraryDiv(view: View) {
-        val dbMylibrary = databaseService.withRealmAsync { realm ->
-            val results = RealmMyLibrary.getMyLibraryByUserId(realm, settings)
-            realm.copyFromRealm(results)
+    private fun observeLibraryData() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.uiState.collect {
+                renderMyLibrary(it.library)
+            }
         }
+    }
 
-        view.findViewById<FlexboxLayout>(R.id.flexboxLayout).flexDirection = FlexDirection.ROW
+    private fun renderMyLibrary(dbMylibrary: List<RealmMyLibrary>) {
+        val flexboxLayout = view?.findViewById<FlexboxLayout>(R.id.flexboxLayout)
+        flexboxLayout?.removeAllViews()
+        flexboxLayout?.flexDirection = FlexDirection.ROW
         if (dbMylibrary.isEmpty()) {
-            view.findViewById<TextView>(R.id.count_library).visibility = View.GONE
+            view?.findViewById<TextView>(R.id.count_library)?.visibility = View.GONE
         } else {
-            view.findViewById<TextView>(R.id.count_library).text = getString(R.string.number_placeholder, dbMylibrary.size)
+            view?.findViewById<TextView>(R.id.count_library)?.text =
+                getString(R.string.number_placeholder, dbMylibrary.size)
         }
         for ((itemCnt, items) in dbMylibrary.withIndex()) {
-            val itemLibraryHomeBinding = ItemLibraryHomeBinding.inflate(LayoutInflater.from(activity))
+            val itemLibraryHomeBinding =
+                ItemLibraryHomeBinding.inflate(LayoutInflater.from(activity))
             val v = itemLibraryHomeBinding.root
             setTextColor(itemLibraryHomeBinding.title, itemCnt)
-            val colorResId = if (itemCnt % 2 == 0) R.color.card_bg else R.color.dashboard_item_alternative
+            val colorResId =
+                if (itemCnt % 2 == 0) R.color.card_bg else R.color.dashboard_item_alternative
             val color = context?.let { ContextCompat.getColor(it, colorResId) }
             if (color != null) {
                 v.setBackgroundColor(color)
@@ -167,7 +179,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             }
 
             myLibraryItemClickAction(itemLibraryHomeBinding.title, items)
-            view.findViewById<FlexboxLayout>(R.id.flexboxLayout).addView(v, params)
+            flexboxLayout?.addView(v, params)
         }
     }
 
@@ -332,8 +344,9 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             homeItemClickListener?.openCallFragment(UserProfileFragment())
         }
         viewLifecycleOwner.lifecycleScope.launch {
-            myLibraryDiv(view)
+            viewModel.fetchMyLibrary(settings?.getString("userId", "--"))
         }
+        observeLibraryData()
         initializeFlexBoxView(view, R.id.flexboxLayoutCourse, RealmMyCourse::class.java)
         initializeFlexBoxView(view, R.id.flexboxLayoutTeams, RealmMyTeam::class.java)
         initializeFlexBoxView(view, R.id.flexboxLayoutMyLife, RealmMyLife::class.java)
