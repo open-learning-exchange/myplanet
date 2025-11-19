@@ -53,7 +53,7 @@ interface ApiInterface {
     fun getChecksum(@Url url: String?): Call<ResponseBody>
 
     @GET
-    fun isPlanetAvailable(@Url serverUrl: String?): Call<ResponseBody>
+    suspend fun isPlanetAvailable(@Url serverUrl: String?): Response<ResponseBody>
 
     @POST
     fun chatGpt(@Url url: String?, @Body requestBody: RequestBody?): Call<ChatModel>

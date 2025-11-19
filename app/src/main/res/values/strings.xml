@@ -1173,5 +1173,7 @@
     <string name="cannot_assign_completed_task">Cannot assign completed task</string>
     <string name="assign_to">Assign To (Optional)</string>
     <string name="click_to_assign_member">Click to assign a team member</string>
+    <string name="server_check_timeout">The server check timed out. Please try again.</string>
+    <string name="server_check_cancelled">The server check was cancelled.</string>
 
 </resources>

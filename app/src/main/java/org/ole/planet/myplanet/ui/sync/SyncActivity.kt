@@ -45,9 +45,11 @@ import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.Json
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
@@ -139,6 +141,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     var serverAddressAdapter: ServerAddressAdapter? = null
     var serverListAddresses: List<ServerAddressesModel> = emptyList()
     private var isProgressDialogShowing = false
+    private var serverCheckJob: Job? = null
 
     @Inject
     lateinit var syncManager: SyncManager
@@ -262,59 +265,68 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
     }
 
-    suspend fun isServerReachable(processedUrl: String?, type: String): Boolean {
-        return withContext(Dispatchers.IO) {
-            val apiInterface = client?.create(ApiInterface::class.java)
+    private suspend fun isServerReachable(processedUrl: String?, type: String): Boolean {
+        val apiInterface = client?.create(ApiInterface::class.java)
+        val timeout = 15000L
+
+        val result = withTimeoutOrNull(timeout) {
             try {
-                val response = if (settings.getBoolean("isAlternativeUrl", false)){
+                val response = if (settings.getBoolean("isAlternativeUrl", false)) {
                     if (processedUrl?.contains("/db") == true) {
                         val processedUrlWithoutDb = processedUrl.replace("/db", "")
-                        apiInterface?.isPlanetAvailable("$processedUrlWithoutDb/db/_all_dbs")?.execute()
+                        apiInterface?.isPlanetAvailable("$processedUrlWithoutDb/db/_all_dbs")
                     } else {
-                        apiInterface?.isPlanetAvailable("$processedUrl/db/_all_dbs")?.execute()
+                        apiInterface?.isPlanetAvailable("$processedUrl/db/_all_dbs")
                     }
                 } else {
-                    apiInterface?.isPlanetAvailable("$processedUrl/_all_dbs")?.execute()
+                    apiInterface?.isPlanetAvailable("$processedUrl/_all_dbs")
                 }
 
-                when {
-                    response?.isSuccessful == true -> {
-                        val ss = response.body()?.string()
-                        val myList = ss?.split(",")?.dropLastWhile { it.isEmpty() }
+                if (response?.isSuccessful == true) {
+                    val ss = response.body()?.string()
+                    val myList = ss?.split(",")?.dropLastWhile { it.isEmpty() }
 
-                        if ((myList?.size ?: 0) < 8) {
-                            withContext(Dispatchers.Main) {
-                                customProgressDialog.dismiss()
-                                alertDialogOkay(context.getString(R.string.check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server))
-                            }
-                            false
-                        } else {
-                            withContext(Dispatchers.Main) {
-                                startSync(type)
-                            }
-                            true
-                        }
-                    }
-                    else -> {
-                        syncFailed = true
-                        val protocol = extractProtocol("$processedUrl")
-                        val errorMessage = when (protocol) {
-                            context.getString(R.string.http_protocol) -> context.getString(R.string.device_couldn_t_reach_local_server)
-                            context.getString(R.string.https_protocol) -> context.getString(R.string.device_couldn_t_reach_nation_server)
-                            else -> ""
-                        }
+                    if ((myList?.size ?: 0) < 8) {
                         withContext(Dispatchers.Main) {
                             customProgressDialog.dismiss()
-                            alertDialogOkay(errorMessage)
+                            alertDialogOkay(context.getString(R.string.check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server))
                         }
                         false
+                    } else {
+                        withContext(Dispatchers.Main) {
+                            startSync(type)
+                        }
+                        true
                     }
+                } else {
+                    syncFailed = true
+                    val protocol = extractProtocol("$processedUrl")
+                    val errorMessage = when (protocol) {
+                        context.getString(R.string.http_protocol) -> context.getString(R.string.device_couldn_t_reach_local_server)
+                        context.getString(R.string.https_protocol) -> context.getString(R.string.device_couldn_t_reach_nation_server)
+                        else -> ""
+                    }
+                    withContext(Dispatchers.Main) {
+                        customProgressDialog.dismiss()
+                        alertDialogOkay(errorMessage)
+                    }
+                    false
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
                 false
             }
         }
+
+        if (result == null) {
+            withContext(Dispatchers.Main) {
+                customProgressDialog.dismiss()
+                alertDialogOkay(getString(R.string.server_check_timeout))
+            }
+            return false
+        }
+
+        return result
     }
 
     private fun dateCheck(dialog: MaterialDialog) {
@@ -808,8 +820,12 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     private fun continueSyncProcess() {
+        customProgressDialog.setText(getString(R.string.checking_server))
+        customProgressDialog.show()
+        isProgressDialogShowing = true
+
         try {
-            lifecycleScope.launch {
+            serverCheckJob = lifecycleScope.launch(Dispatchers.IO) {
                 if (isSync) {
                     isServerReachable(processedUrl, "sync")
                 } else if (forceSync) {
@@ -819,6 +835,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             }
         } catch (e: Exception) {
             e.printStackTrace()
+            customProgressDialog.dismiss()
         }
     }
 
@@ -831,6 +848,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             }
         }
         override fun afterTextChanged(editable: Editable) {}
+    }
+
+    override fun onPause() {
+        super.onPause()
+        if (isProgressDialogShowing) {
+            customProgressDialog.dismiss()
+        }
+        serverCheckJob?.cancel()
     }
 
     override fun onDestroy() {
