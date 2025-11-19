@@ -29,10 +29,18 @@ data class JoinedMemberData(
 
 class AdapterJoinedMember(
     private val context: Context,
-    private val list: MutableList<JoinedMemberData>,
+    private var list: List<JoinedMemberData>,
     private var isLoggedInUserTeamLeader: Boolean,
     private val actionListener: MemberActionListener
 ) : RecyclerView.Adapter<AdapterJoinedMember.ViewHolderUser>() {
+
+    fun updateMembers(newMembers: List<JoinedMemberData>) {
+        val oldList = ArrayList(list)
+        list = newMembers
+        DiffUtils.calculateDiff(oldList, newMembers) { old, new ->
+            old.user.id == new.user.id
+        }.dispatchUpdatesTo(this)
+    }
 
     interface MemberActionListener {
         fun onRemoveMember(member: JoinedMemberData, position: Int)

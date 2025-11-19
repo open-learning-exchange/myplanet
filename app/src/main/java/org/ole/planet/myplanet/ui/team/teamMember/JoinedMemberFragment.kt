@@ -9,7 +9,9 @@ import io.realm.Realm
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseMemberFragment
 import org.ole.planet.myplanet.callback.MemberChangeListener
@@ -25,49 +27,65 @@ class JoinedMemberFragment : BaseMemberFragment() {
             // fallback listener to prevent crash
         }
     }
-
     private var adapterJoined: AdapterJoinedMember? = null
+    private var cachedJoinedMembers: List<JoinedMemberData>? = null
 
     fun setMemberChangeListener(listener: MemberChangeListener) {
         this.memberChangeListener = listener
     }
 
-    private val joinedMembers: List<JoinedMemberData>
-        get() = databaseService.withRealm { realm ->
-            val members = getJoinedMember(teamId, realm).map { realm.copyFromRealm(it) }.toMutableList()
-            val leaderId = realm.where(RealmMyTeam::class.java)
-                .equalTo("teamId", teamId)
-                .equalTo("isLeader", true)
-                .findFirst()?.userId
-            val leader = members.find { it.id == leaderId }
-            if (leader != null) {
-                members.remove(leader)
-                members.add(0, leader)
-            }
-            members.map { member ->
-                val lastVisitTimestamp = RealmTeamLog.getLastVisit(realm, member.name, teamId)
-                val lastVisitDate = if (lastVisitTimestamp != null) {
-                    val sdf = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
-                    sdf.format(Date(lastVisitTimestamp))
-                } else {
-                    getString(R.string.no_visit)
+    private suspend fun loadAndDisplayJoinedMembers() {
+        val joinedMembersData = withContext(Dispatchers.IO) {
+            databaseService.withRealm { realm ->
+                val members = getJoinedMember(teamId, realm).map { realm.copyFromRealm(it) }.toMutableList()
+                val leaderId = realm.where(RealmMyTeam::class.java)
+                    .equalTo("teamId", teamId)
+                    .equalTo("isLeader", true)
+                    .findFirst()?.userId
+                val leader = members.find { it.id == leaderId }
+                if (leader != null) {
+                    members.remove(leader)
+                    members.add(0, leader)
                 }
-                val visitCount = RealmTeamLog.getVisitCount(realm, member.name, teamId)
-                val offlineVisits = profileDbHandler?.getOfflineVisits(member)?.toString() ?: "0"
-                val profileLastVisit = profileDbHandler?.getLastVisit(member) ?: ""
-                JoinedMemberData(
-                    member,
-                    visitCount,
-                    lastVisitDate,
-                    offlineVisits,
-                    profileLastVisit,
-                    member.id == leaderId
-                )
+                members.map { member ->
+                    val lastVisitTimestamp = RealmTeamLog.getLastVisit(realm, member.name, teamId)
+                    val lastVisitDate = if (lastVisitTimestamp != null) {
+                        val sdf = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
+                        sdf.format(Date(lastVisitTimestamp))
+                    } else {
+                        getString(R.string.no_visit)
+                    }
+                    val visitCount = RealmTeamLog.getVisitCount(realm, member.name, teamId)
+                    val offlineVisits = profileDbHandler?.getOfflineVisits(member)?.toString() ?: "0"
+                    val profileLastVisit = profileDbHandler?.getLastVisit(member) ?: ""
+                    JoinedMemberData(
+                        member,
+                        visitCount,
+                        lastVisitDate,
+                        offlineVisits,
+                        profileLastVisit,
+                        member.id == leaderId
+                    )
+                }
             }
         }
+        cachedJoinedMembers = joinedMembersData
+        adapterJoined?.updateMembers(joinedMembersData)
+        showNoData(binding.tvNodata, joinedMembersData.size, "members")
+    }
+
+    private val joinedMembers: List<JoinedMemberData>
+        get() = cachedJoinedMembers ?: emptyList()
 
     override val list: List<RealmUserModel>
         get() = joinedMembers.map { it.user }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        viewLifecycleOwner.lifecycleScope.launch {
+            loadAndDisplayJoinedMembers()
+        }
+    }
 
     override val adapter: RecyclerView.Adapter<*>
         get() {
@@ -133,15 +151,8 @@ class JoinedMemberFragment : BaseMemberFragment() {
                     }
 
                     teamRepository.removeMember(teamId, memberId)
-
-                    adapterJoined?.removeMember(memberId)
-
-                    removalResult.newLeaderId?.let { newLeaderId ->
-                        adapterJoined?.updateLeadership(currentUserId, newLeaderId)
-                    }
-
+                    loadAndDisplayJoinedMembers()
                     memberChangeListener.onMemberChanged()
-                    showNoData(binding.tvNodata, adapterJoined?.itemCount ?: 0, "members")
                 } else {
                     Toast.makeText(requireContext(), R.string.cannot_remove_user, Toast.LENGTH_SHORT).show()
                 }
@@ -159,9 +170,7 @@ class JoinedMemberFragment : BaseMemberFragment() {
                 databaseService.executeTransactionAsync { realm ->
                     makeLeaderSync(realm, userId)
                 }
-
-                val currentUserId = user?.id
-                adapterJoined?.updateLeadership(currentUserId, userId)
+                loadAndDisplayJoinedMembers()
                 Toast.makeText(requireContext(), getString(R.string.leader_selected), Toast.LENGTH_SHORT).show()
                 memberChangeListener.onMemberChanged()
             } catch (e: Exception) {
