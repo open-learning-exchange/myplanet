@@ -85,14 +85,14 @@
             android:textColor="@color/daynight_textColor"
             android:textColorHint="@color/hint_color"
             tools:ignore="Autofill" />
-        <pl.droidsonroids.gif.GifImageView
+        <ProgressBar
             android:id="@+id/image_gchat_loading"
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:layout_centerVertical="true"
             android:layout_marginEnd="4dp"
             android:layout_toStartOf="@+id/button_gchat_send"
-            android:src="@drawable/ic_loading"
+            android:indeterminate="true"
             android:visibility="invisible" />
         <ImageView
             android:id="@+id/button_gchat_send"
