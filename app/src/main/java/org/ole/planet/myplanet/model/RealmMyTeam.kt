@@ -154,15 +154,6 @@ open class RealmMyTeam : RealmObject() {
         }
 
         @JvmStatic
-        fun updateReports(doc: JsonObject, mRealm: Realm) {
-            mRealm.executeTransactionAsync { realm ->
-                val reportId = JsonUtils.getString("_id", doc)
-                val report = realm.where(RealmMyTeam::class.java).equalTo("_id", reportId).findFirst()
-                report?.let { populateReportFields(doc, it) }
-            }
-        }
-
-        @JvmStatic
         fun getResourceIds(teamId: String?, realm: Realm): MutableList<String> {
             val teams = realm.where(RealmMyTeam::class.java).equalTo("teamId", teamId).findAll()
             val ids = mutableListOf<String>()

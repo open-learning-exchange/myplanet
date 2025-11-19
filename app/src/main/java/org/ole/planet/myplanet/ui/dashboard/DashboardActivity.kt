@@ -608,9 +608,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
             withContext(Dispatchers.Main) {
                 try {
-                    updateNotificationBadge(unreadCount) {
-                        openNotificationsList(userId ?: "")
-                    }
+                    onNotificationCountUpdated(unreadCount)
 
                     val groupedNotifications = newNotifications.groupBy { it.type }
                     

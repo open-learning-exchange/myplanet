@@ -10,6 +10,8 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toDrawable
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.JsonObject
 import org.ole.planet.myplanet.utilities.GsonUtils
@@ -25,7 +27,7 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 
-class AdapterHealthExamination(private val context: Context, private val list: List<RealmMyHealthPojo>?, private val mh: RealmMyHealthPojo, private val userModel: RealmUserModel?) : RecyclerView.Adapter<ViewHolderMyHealthExamination>() {
+class AdapterHealthExamination(private val context: Context, private val mh: RealmMyHealthPojo, private val userModel: RealmUserModel?) : ListAdapter<RealmMyHealthPojo, ViewHolderMyHealthExamination>(HealthExaminationDiffCallback()) {
     private lateinit var mRealm: Realm
     private val displayNameCache = mutableMapOf<String, String>()
     fun setmRealm(mRealm: Realm?) {
@@ -43,11 +45,12 @@ class AdapterHealthExamination(private val context: Context, private val list: L
 
     override fun onBindViewHolder(holder: ViewHolderMyHealthExamination, position: Int) {
         val binding = holder.binding
-        binding.txtTemp.text = list?.get(position)?.let { checkEmpty(it.temperature) }
-        val formattedDate = list?.get(position)?.let { formatDate(it.date, "MMM dd, yyyy") }
+        val item = getItem(position)
+        binding.txtTemp.text = item.let { checkEmpty(it.temperature) }
+        val formattedDate = item.let { formatDate(it.date, "MMM dd, yyyy") }
         binding.txtDate.text = formattedDate
         binding.txtDate.tag = formattedDate
-        val encrypted = userModel?.let { it1 -> list?.get(position)?.getEncryptedDataAsJson(it1) }
+        val encrypted = userModel?.let { it1 -> item.getEncryptedDataAsJson(it1) }
 
         val createdBy = getString("createdBy", encrypted)
         if (!TextUtils.isEmpty(createdBy) && !TextUtils.equals(createdBy, userModel?.id)) {
@@ -62,12 +65,12 @@ class AdapterHealthExamination(private val context: Context, private val list: L
             holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.md_green_50))
         }
 
-        binding.txtPulse.text = list?.get(position)?.let { checkEmptyInt(it.pulse) }
-        binding.txtBp.text = list?.get(position)?.bp
-        binding.txtHearing.text = list?.get(position)?.hearing
-        binding.txtHeight.text = list?.get(position)?.let { checkEmpty(it.height) }
-        binding.txtWeight.text = list?.get(position)?.let { checkEmpty(it.weight) }
-        binding.txtVision.text = list?.get(position)?.vision
+        binding.txtPulse.text = item.let { checkEmptyInt(it.pulse) }
+        binding.txtBp.text = item.bp
+        binding.txtHearing.text = item.hearing
+        binding.txtHeight.text = item.let { checkEmpty(it.height) }
+        binding.txtWeight.text = item.let { checkEmpty(it.weight) }
+        binding.txtVision.text = item.vision
         holder.itemView.setOnClickListener {
             if (encrypted != null) {
                 showAlert(binding, position, encrypted)
@@ -84,7 +87,7 @@ class AdapterHealthExamination(private val context: Context, private val list: L
     }
 
     private fun showAlert(binding: RowExaminationBinding, position: Int, encrypted: JsonObject) {
-        val realmExamination = list?.get(position)
+        val realmExamination = getItem(position)
         val alertExaminationBinding = AlertExaminationBinding.inflate(LayoutInflater.from(context))
         if (realmExamination != null) {
             alertExaminationBinding.tvVitals.text = context.getString(R.string.vitals_format, checkEmpty(realmExamination.temperature),
@@ -103,7 +106,7 @@ class AdapterHealthExamination(private val context: Context, private val list: L
         if (realmExamination != null) {
             if (realmExamination.date >= time) { dialog.setButton(DialogInterface.BUTTON_NEUTRAL, context.getString(R.string.edit)) { _: DialogInterface?, _: Int ->
                 context.startActivity(Intent(context, AddExaminationActivity::class.java)
-                    .putExtra("id", list[position]._id)
+                    .putExtra("id", getItem(position)._id)
                     .putExtra("userId", mh._id))
             }
             }
@@ -131,9 +134,15 @@ class AdapterHealthExamination(private val context: Context, private val list: L
             Utilities.checkNA(getString("tests", encrypted)), Utilities.checkNA(getString("referrals", encrypted)))
     }
 
-    override fun getItemCount(): Int {
-        return list?.size ?: 0
+    class ViewHolderMyHealthExamination(val binding: RowExaminationBinding) : RecyclerView.ViewHolder(binding.root)
+}
+
+class HealthExaminationDiffCallback : DiffUtil.ItemCallback<RealmMyHealthPojo>() {
+    override fun areItemsTheSame(oldItem: RealmMyHealthPojo, newItem: RealmMyHealthPojo): Boolean {
+        return oldItem._id == newItem._id
     }
 
-    class ViewHolderMyHealthExamination(val binding: RowExaminationBinding) : RecyclerView.ViewHolder(binding.root)
+    override fun areContentsTheSame(oldItem: RealmMyHealthPojo, newItem: RealmMyHealthPojo): Boolean {
+        return oldItem == newItem
+    }
 }

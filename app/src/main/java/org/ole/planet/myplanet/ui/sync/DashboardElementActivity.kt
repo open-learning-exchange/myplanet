@@ -18,7 +18,6 @@ import androidx.core.graphics.drawable.DrawableCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.afollestad.materialdialogs.MaterialDialog
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import kotlinx.coroutines.delay
@@ -205,7 +204,9 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
                 netId = tmp.networkId
                 wifiManager.enableNetwork(netId, true)
                 Toast.makeText(this, R.string.you_are_now_connected + netId, Toast.LENGTH_SHORT).show()
-                LocalBroadcastManager.getInstance(this).sendBroadcast(Intent("ACTION_NETWORK_CHANGED"))
+                lifecycleScope.launch {
+                    broadcastService.sendBroadcast(Intent("ACTION_NETWORK_CHANGED"))
+                }
                 break
             }
         }
