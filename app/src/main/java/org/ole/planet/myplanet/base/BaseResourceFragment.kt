@@ -32,7 +32,8 @@ import org.ole.planet.myplanet.datamanager.MyDownloadService
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.datamanager.Service.PlanetAvailableListener
 import org.ole.planet.myplanet.di.AppPreferences
-import org.ole.planet.myplanet.model.Download#9273import org.ole.planet.myplanet.model.RealmMyCourse
+import org.ole.planet.myplanet.model.Download
+import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRemovedLog
