@@ -12,8 +12,8 @@ import android.widget.CompoundButton
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import com.google.gson.Gson
 import com.google.gson.JsonObject
+import org.ole.planet.myplanet.utilities.GsonUtils
 import dagger.hilt.android.AndroidEntryPoint
 import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
@@ -61,7 +61,6 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
     private lateinit var config: ChipCloudConfig
     private var examination: RealmMyHealthPojo? = null
     private var textWatcher: TextWatcher? = null
-    private val gson = Gson()
     private fun initViews() {
         config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.close)
         binding.btnAddDiag.setOnClickListener {
@@ -96,7 +95,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
             mRealm.commitTransaction()
         }
         if (pojo != null && !TextUtils.isEmpty(pojo?.data)) {
-            health = gson.fromJson(decrypt(pojo?.data, user?.key, user?.iv), RealmMyHealth::class.java)
+            health = GsonUtils.gson.fromJson(decrypt(pojo?.data, user?.key, user?.iv), RealmMyHealth::class.java)
         }
         if (health == null) {
             initHealth()
@@ -194,7 +193,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         val arr = resources.getStringArray(R.array.diagnosis_list)
         val mainList = listOf(*arr)
         if (customDiag?.isEmpty() == true && examination != null) {
-            val conditions = gson.fromJson(examination?.conditions, JsonObject::class.java)
+            val conditions = GsonUtils.gson.fromJson(examination?.conditions, JsonObject::class.java)
             for (s in conditions.keySet()) {
                 if (!mainList.contains(s) && getBoolean(s, conditions)) {
                     chipCloud.addChip(s)
@@ -216,7 +215,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
             c.setTextColor(ContextCompat.getColor(this, R.color.daynight_textColor))
 
             if (examination != null) {
-                val conditions = gson.fromJson(examination.conditions, JsonObject::class.java)
+                val conditions = GsonUtils.gson.fromJson(examination.conditions, JsonObject::class.java)
                 c.isChecked = getBoolean(s, conditions)
             }
             c.setPadding(dpToPx(8), dpToPx(8), dpToPx(8), dpToPx(8))
@@ -268,7 +267,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         examination?.setWeight(getFloat("${binding.etWeight.text}".trim { it <= ' ' }))
         examination?.height = getFloat("${binding.etHeight.text}".trim { it <= ' ' })
         otherConditions
-        examination?.conditions = gson.toJson(mapConditions)
+        examination?.conditions = GsonUtils.gson.toJson(mapConditions)
         examination?.hearing = "${binding.etHearing.text}".trim { it <= ' ' }
         sign.immunizations = "${binding.etImmunization.text}".trim { it <= ' ' }
         sign.tests = "${binding.etLabtest.text}".trim { it <= ' ' }
@@ -286,7 +285,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         try {
             val key = user?.key ?: generateKey().also { user?.key = it }
             val iv = user?.iv ?: generateIv().also { user?.iv = it }
-            examination?.data = encrypt(gson.toJson(sign), key, iv)
+            examination?.data = encrypt(GsonUtils.gson.toJson(sign), key, iv)
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -379,7 +378,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
             val userKey = user?.key
             val userIv = user?.iv
             if (userKey != null && userIv != null) {
-                pojo?.data = encrypt(gson.toJson(health), userKey, userIv)
+                pojo?.data = encrypt(GsonUtils.gson.toJson(health), userKey, userIv)
             }
         } catch (e: Exception) {
             e.printStackTrace()

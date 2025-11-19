@@ -2,8 +2,8 @@ package org.ole.planet.myplanet.model
 
 import android.content.Context
 import android.text.TextUtils
-import com.google.gson.Gson
 import com.google.gson.JsonObject
+import org.ole.planet.myplanet.utilities.GsonUtils
 import com.google.gson.JsonParser
 import io.realm.Case
 import io.realm.Realm
@@ -74,8 +74,8 @@ open class RealmSubmission : RealmObject() {
                 sub?.sender = JsonUtils.getString("sender", submission)
                 sub?.source = JsonUtils.getString("source", submission)
                 sub?.parentCode = JsonUtils.getString("parentCode", submission)
-                sub?.parent = Gson().toJson(JsonUtils.getJsonObject("parent", submission))
-                sub?.user = Gson().toJson(JsonUtils.getJsonObject("user", submission))
+                sub?.parent = GsonUtils.gson.toJson(JsonUtils.getJsonObject("parent", submission))
+                sub?.user = GsonUtils.gson.toJson(JsonUtils.getJsonObject("user", submission))
                 sub.team = JsonUtils.getString("team", submission)
 
                 val userJson = JsonUtils.getJsonObject("user", submission)
@@ -161,7 +161,7 @@ open class RealmSubmission : RealmObject() {
             val prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
             `object`.addProperty("source", prefs.getString("planetCode", ""))
             `object`.addProperty("parentCode", prefs.getString("parentCode", ""))
-            val parent = Gson().fromJson(sub.parent, JsonObject::class.java)
+            val parent = GsonUtils.gson.fromJson(sub.parent, JsonObject::class.java)
             `object`.add("parent", parent)
             `object`.add("answers", RealmAnswer.serializeRealmAnswer(sub.answers ?: RealmList()))
             if (exam != null && parent == null) `object`.add("parent", RealmStepExam.serializeExam(mRealm, exam))

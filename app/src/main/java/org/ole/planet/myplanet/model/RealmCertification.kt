@@ -1,8 +1,8 @@
 package org.ole.planet.myplanet.model
 
-import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import org.ole.planet.myplanet.utilities.GsonUtils
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
@@ -16,7 +16,7 @@ open class RealmCertification : RealmObject() {
     private var courseIds: String? = null
 
     fun setCourseIds(courseIds: JsonArray?) {
-        this.courseIds = Gson().toJson(courseIds)
+        this.courseIds = GsonUtils.gson.toJson(courseIds)
     }
 
     companion object {

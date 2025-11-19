@@ -20,9 +20,9 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
-import com.google.gson.Gson
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
+import org.ole.planet.myplanet.utilities.GsonUtils
 import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
@@ -653,7 +653,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             filter.add("tags", getTagsArray(searchTags.toList()))
             filter.addProperty("doc.gradeLevel", gradeLevel)
             filter.addProperty("doc.subjectLevel", subjectLevel)
-            activity.filter = Gson().toJson(filter)
+            activity.filter = GsonUtils.gson.toJson(filter)
             mRealm.commitTransaction()
         }
     }
