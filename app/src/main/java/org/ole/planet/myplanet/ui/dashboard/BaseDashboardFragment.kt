@@ -146,8 +146,10 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         val libraryRecyclerView = view.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.library_recycler_view)
         val libraryListAdapter = LibraryListAdapter(this)
         libraryRecyclerView.adapter = libraryListAdapter
-        val myLibraryItems = dbMylibrary.map {
-            MyLibraryItem(it._id, it.title ?: "", it.description ?: "", it.resourceId ?: "")
+        val myLibraryItems = dbMylibrary.mapNotNull { library ->
+            library._id?.let { id ->
+                MyLibraryItem(id, library.title ?: "", library.description ?: "", library.resourceId ?: "")
+            }
         }
         libraryListAdapter.submitList(myLibraryItems)
         if (dbMylibrary.isEmpty()) {
@@ -274,8 +276,8 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
     override fun onLibraryItemDetailClicked(item: MyLibraryItem) {
         val selectedLibrary = realm.where(RealmMyLibrary::class.java).equalTo("_id", item.id).findFirst()
-        if (homeItemClickListener != null) {
-            homeItemClickListener?.openLibraryDetailFragment(selectedLibrary)
+        selectedLibrary?.let {
+            homeItemClickListener?.openLibraryDetailFragment(it)
         }
     }
 
