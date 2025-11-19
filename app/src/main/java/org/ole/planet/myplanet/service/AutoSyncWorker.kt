@@ -9,8 +9,10 @@ import androidx.work.Worker
 import androidx.work.WorkerParameters
 import dagger.hilt.android.EntryPointAccessors
 import java.util.Date
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.callback.SyncListener
@@ -32,8 +34,7 @@ class AutoSyncWorker(
     private lateinit var syncManager: SyncManager
     private lateinit var uploadManager: UploadManager
     private lateinit var uploadToShelfService: UploadToShelfService
-    private val backgroundExecutor: ExecutorService = Executors.newSingleThreadExecutor()
-    
+    private val workerScope = CoroutineScope(Dispatchers.IO)
     override fun doWork(): Result {
         preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         
@@ -80,7 +81,7 @@ class AutoSyncWorker(
             }
             if (!MainApplication.isSyncRunning) {
                 MainApplication.isSyncRunning = true
-                backgroundExecutor.execute {
+                workerScope.launch {
                     uploadManager.uploadExamResult(this@AutoSyncWorker)
                     uploadManager.uploadFeedback(this@AutoSyncWorker)
                     uploadManager.uploadAchievement()
@@ -109,7 +110,7 @@ class AutoSyncWorker(
 
     override fun onStopped() {
         super.onStopped()
-        backgroundExecutor.shutdown()
+        workerScope.cancel()
     }
 
     private fun isAppInForeground(context: Context): Boolean {

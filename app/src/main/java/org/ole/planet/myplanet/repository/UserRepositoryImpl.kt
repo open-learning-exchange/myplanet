@@ -98,4 +98,49 @@ class UserRepositoryImpl @Inject constructor(
             user.isUpdated = false
         }
     }
+
+    override suspend fun updateUserDetails(
+        userId: String?,
+        firstName: String?,
+        lastName: String?,
+        middleName: String?,
+        email: String?,
+        phoneNumber: String?,
+        level: String?,
+        language: String?,
+        gender: String?,
+        dob: String?,
+    ): RealmUserModel? {
+        if (userId.isNullOrBlank()) {
+            return null
+        }
+
+        update(RealmUserModel::class.java, "id", userId) { user ->
+            user.firstName = firstName
+            user.lastName = lastName
+            user.middleName = middleName
+            user.email = email
+            user.phoneNumber = phoneNumber
+            user.level = level
+            user.language = language
+            user.gender = gender
+            user.dob = dob
+            user.isUpdated = true
+        }
+
+        return getUserByAnyId(userId)
+    }
+
+    override suspend fun updateUserImage(userId: String?, imagePath: String?): RealmUserModel? {
+        if (userId.isNullOrBlank()) {
+            return null
+        }
+
+        update(RealmUserModel::class.java, "id", userId) { user ->
+            user.userImage = imagePath
+            user.isUpdated = true
+        }
+
+        return getUserByAnyId(userId)
+    }
 }

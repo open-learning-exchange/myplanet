@@ -24,4 +24,22 @@ interface UserRepository {
         passwordScheme: String?,
         iterations: String?,
     )
+
+    suspend fun updateUserDetails(
+        userId: String?,
+        firstName: String?,
+        lastName: String?,
+        middleName: String?,
+        email: String?,
+        phoneNumber: String?,
+        level: String?,
+        language: String?,
+        gender: String?,
+        dob: String?,
+    ): RealmUserModel?
+
+    suspend fun updateUserImage(
+        userId: String?,
+        imagePath: String?,
+    ): RealmUserModel?
 }
