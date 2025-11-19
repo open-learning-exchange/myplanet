@@ -67,7 +67,7 @@ class SyncManager @Inject constructor(
     private val improvedSyncManager: Lazy<ImprovedSyncManager>,
     @ApplicationScope private val syncScope: CoroutineScope
 ) {
-    private var td: Thread? = null
+    private var syncJob: Job? = null
     lateinit var mRealm: Realm
     private var isSyncing = false
     private val stringArray = arrayOfNulls<String>(4)
@@ -135,28 +135,31 @@ class SyncManager @Inject constructor(
             if (!betaSync) {
                 if (::mRealm.isInitialized && !mRealm.isClosed) {
                     mRealm.close()
-                    td?.interrupt()
+                    syncJob?.cancel()
                 }
             } else {
-                td?.interrupt()
+                syncJob?.cancel()
             }
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
+    fun cancel() {
+        if (syncJob?.isActive == true) {
+            syncJob?.cancel()
+        }
+    }
+
     private fun authenticateAndSync(type: String, syncTables: List<String>?) {
-        td = Thread {
+        syncJob = syncScope.launch(Dispatchers.IO) {
             if (TransactionSyncManager.authenticate()) {
-                runBlocking {
-                    startSync(type, syncTables)
-                }
+                startSync(type, syncTables)
             } else {
                 handleException(context.getString(R.string.invalid_configuration))
                 cleanupMainSync()
             }
         }
-        td?.start()
     }
 
     private suspend fun startSync(type: String, syncTables: List<String>?) {
@@ -487,9 +490,9 @@ class SyncManager @Inject constructor(
             } catch (e: Exception) {
                 e.printStackTrace()
             }
-            td?.interrupt()
+            syncJob?.cancel()
         } else {
-            td?.interrupt()
+            syncJob?.cancel()
         }
     }
 
