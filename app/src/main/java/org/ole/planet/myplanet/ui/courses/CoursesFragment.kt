@@ -59,8 +59,8 @@ import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 
 private data class CourseData(
-    val ratings: HashMap<String, JsonObject>,
-    val progress: HashMap<String, JsonObject>,
+    val ratings: HashMap<String?, JsonObject>,
+    val progress: HashMap<String?, JsonObject>,
     val courses: List<RealmMyCourse?>,
     val resources: List<RealmMyLibrary>?
 )
@@ -258,7 +258,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         adapterCourses = AdapterCourses(
             requireActivity(),
             emptyList(),
-            HashMap(),
+            HashMap<String?, JsonObject>(),
             userProfileDbHandler,
             tagRepository,
             this@CoursesFragment
