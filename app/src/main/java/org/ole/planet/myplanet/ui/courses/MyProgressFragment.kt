@@ -1,17 +1,20 @@
 package org.ole.planet.myplanet.ui.courses
 
 import android.os.Bundle
+import android.os.Trace
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.google.gson.JsonArray
-import org.ole.planet.myplanet.utilities.GsonUtils
-import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.RealmResults
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import org.ole.planet.myplanet.databinding.FragmentMyProgressBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -31,6 +34,7 @@ class MyProgressFragment : Fragment() {
     lateinit var databaseService: DatabaseService
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
+    private var progressJob: Job? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentMyProgressBinding.inflate(inflater, container, false)
@@ -42,29 +46,43 @@ class MyProgressFragment : Fragment() {
         initializeData()
     }
 
+    override fun onStop() {
+        super.onStop()
+        progressJob?.cancel()
+    }
+
     private fun initializeData() {
-        databaseService.withRealm { realm ->
-            val user = userProfileDbHandler.userModel
-            val courseData = fetchCourseData(realm, user?.id)
+        progressJob = viewLifecycleOwner.lifecycleScope.launch {
+            val courseData = withContext(Dispatchers.IO) {
+                Trace.beginSection("fetchCourseProgress")
+                try {
+                    databaseService.withRealm { realm ->
+                        val user = userProfileDbHandler.userModel
+                        fetchCourseData(realm, user?.id)
+                    }
+                } finally {
+                    Trace.endSection()
+                }
+            }
             binding.rvMyprogress.layoutManager = LinearLayoutManager(requireActivity())
             binding.rvMyprogress.adapter = AdapterMyProgress(requireActivity(), courseData)
         }
     }
 
     companion object {
-        fun fetchCourseData(realm: Realm, userId: String?): JsonArray {
+        fun fetchCourseData(realm: Realm, userId: String?): List<CourseProgress> {
             val mycourses = RealmMyCourse.getMyCourseByUserId(
                 userId,
                 realm.where(RealmMyCourse::class.java).findAll()
             )
-            val arr = JsonArray()
             val courseProgress = RealmCourseProgress.getCourseProgress(realm, userId)
-
-            mycourses.forEach { course ->
-                val obj = JsonObject()
-                obj.addProperty("courseName", course.courseTitle)
-                obj.addProperty("courseId", course.courseId)
-                obj.add("progress", courseProgress[course.id])
+            return mycourses.map { course ->
+                val progress = courseProgress[course.id]?.asJsonObject?.let {
+                    mapOf(
+                        "current" to it["current"].asInt,
+                        "max" to it["max"].asInt
+                    )
+                }
 
                 val submissions = course.courseId?.let { courseId ->
                     realm.where(RealmSubmission::class.java)
@@ -78,49 +96,50 @@ class MyProgressFragment : Fragment() {
                     .findAll()
                 val examIds: List<String> = exams.map { it.id as String }
 
+                var totalMistakes = 0
+                val stepMistakes = mutableMapOf<String, Int>()
                 if (submissions != null) {
-                    submissionMap(submissions, realm, examIds, obj)
+                    val (mistakes, steps) = submissionMap(submissions, realm, examIds)
+                    totalMistakes = mistakes
+                    stepMistakes.putAll(steps)
                 }
-                arr.add(obj)
+
+                CourseProgress(
+                    courseName = course.courseTitle,
+                    courseId = course.courseId,
+                    progress = progress,
+                    mistakes = totalMistakes,
+                    stepMistake = stepMistakes
+                )
             }
-            return arr
         }
 
-        private fun submissionMap(submissions: RealmResults<RealmSubmission>, realm: Realm, examIds: List<String>, obj: JsonObject) {
+        private fun submissionMap(
+            submissions: RealmResults<RealmSubmission>,
+            realm: Realm,
+            examIds: List<String>
+        ): Pair<Int, Map<String, Int>> {
             var totalMistakes = 0
+            val mistakesMap = HashMap<String, Int>()
             submissions.forEach {
                 val answers = realm.where(RealmAnswer::class.java)
                     .equalTo("submissionId", it.id)
                     .findAll()
-                val mistakesMap = HashMap<String, Int>()
                 answers.forEach { r ->
                     val question = realm.where(RealmExamQuestion::class.java)
                         .equalTo("id", r.questionId)
                         .findFirst()
                     if (examIds.contains(question?.examId)) {
                         totalMistakes += r.mistakes
-                        if (mistakesMap.containsKey(question?.examId)) {
-                            mistakesMap["${examIds.indexOf(question?.examId)}"] = mistakesMap[question?.examId]!!.plus(r.mistakes)
-                        } else {
-                            mistakesMap["${examIds.indexOf(question?.examId)}"] = r.mistakes
+                        question?.examId?.let { examId ->
+                            val examIndex = examIds.indexOf(examId).toString()
+                            mistakesMap[examIndex] = (mistakesMap[examIndex] ?: 0) + r.mistakes
                         }
                     }
                 }
-                obj.add("stepMistake", GsonUtils.gson.fromJson(GsonUtils.gson.toJson(mistakesMap), JsonObject::class.java))
-                obj.addProperty("mistakes", totalMistakes)
             }
+            return Pair(totalMistakes, mistakesMap)
         }
-
-        fun getCourseProgress(courseData: JsonArray, courseId: String): JsonObject? {
-            courseData.forEach { element ->
-                val course = element.asJsonObject
-                if (course.get("courseId").asString == courseId) {
-                    return course.getAsJsonObject("progress")
-                }
-            }
-            return null
-        }
-
     }
 
     override fun onDestroyView() {
