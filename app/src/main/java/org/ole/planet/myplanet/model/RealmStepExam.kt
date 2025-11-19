@@ -93,7 +93,6 @@ open class RealmStepExam : RealmObject() {
         fun serializeExam(mRealm: Realm, exam: RealmStepExam): JsonObject {
             val `object` = JsonObject()
             `object`.addProperty("_id", exam.id)
-            // Only include _rev if it's not null (CouchDB doesn't accept explicit null)
             if (exam._rev != null) {
                 `object`.addProperty("_rev", exam._rev)
             }

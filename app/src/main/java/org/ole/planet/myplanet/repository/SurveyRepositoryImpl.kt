@@ -22,25 +22,15 @@ class SurveyRepositoryImpl @Inject constructor(
         if (teamId.isNullOrEmpty()) return emptyList()
 
         val teamSubmissionIds = getTeamSubmissionExamIds(teamId)
-
-        // Get IDs of original surveys that have been adopted in new format
-        // These should be excluded even if they have submissions
         val adoptedSourceSurveyIds = queryList(RealmStepExam::class.java, ensureLatest = true) {
             equalTo("teamId", teamId)
             isNotNull("teamSourceSurveyId")
         }.mapNotNull { it.teamSourceSurveyId }.toSet()
 
-        android.util.Log.d("SurveyRepository", "getTeamOwnedSurveys - teamId: $teamId, teamSubmissionIds: $teamSubmissionIds, adoptedSourceSurveyIds: $adoptedSourceSurveyIds")
-
-        // Filter out submission IDs that are original surveys already adopted
         val filteredSubmissionIds = teamSubmissionIds.filterNot { adoptedSourceSurveyIds.contains(it) }
 
-        android.util.Log.d("SurveyRepository", "getTeamOwnedSurveys - filteredSubmissionIds: $filteredSubmissionIds")
-
-        // Use ensureLatest = true to refresh Realm and see newly adopted surveys
         val result = queryList(RealmStepExam::class.java, ensureLatest = true) {
             equalTo("type", "surveys")
-
             beginGroup()
             equalTo("teamId", teamId)
             if (filteredSubmissionIds.isNotEmpty()) {
@@ -50,21 +40,12 @@ class SurveyRepositoryImpl @Inject constructor(
             endGroup()
         }
 
-        android.util.Log.d("SurveyRepository", "getTeamOwnedSurveys - Found ${result.size} surveys")
-        result.forEach {
-            android.util.Log.d("SurveyRepository", "  - Survey: id=${it.id}, name=${it.name}, teamSourceSurveyId=${it.teamSourceSurveyId}, _rev=${it._rev}")
-        }
-
         return result
     }
 
     override suspend fun getAdoptableTeamSurveys(teamId: String?): List<RealmStepExam> {
         if (teamId.isNullOrEmpty()) return emptyList()
-
         val teamSubmissionIds = getTeamSubmissionExamIds(teamId)
-
-        // Get IDs of surveys already adopted in new format (with teamSourceSurveyId)
-        // Use ensureLatest = true to refresh Realm and see newly adopted surveys
         val adoptedSurveyIds = queryList(RealmStepExam::class.java, ensureLatest = true) {
             equalTo("teamId", teamId)
             isNotNull("teamSourceSurveyId")
@@ -112,7 +93,7 @@ class SurveyRepositoryImpl @Inject constructor(
         }
         return try {
             JSONObject(parent).optString("_id").takeIf { it.isNotEmpty() }
-        } catch (error: JSONException) {
+        } catch (_: JSONException) {
             null
         }
     }
@@ -127,8 +108,6 @@ class SurveyRepositoryImpl @Inject constructor(
         val submissions = queryList(RealmSubmission::class.java) {
             `in`("parentId", surveyIds.toTypedArray())
         }
-        // Filter out adoption-only submissions (status = "")
-        // These are created for backward compatibility but don't represent actual survey responses
         val actualSubmissions = submissions.filter { !it.status.isNullOrEmpty() }
 
         val surveyInfos = mutableMapOf<String, SurveyInfo>()
@@ -146,7 +125,7 @@ class SurveyRepositoryImpl @Inject constructor(
                 actualSubmissions.filter { it.parentId == surveyId && it.userId == userId }
                     .maxByOrNull { it.startTime }?.startTime?.let { getFormattedDateWithTime(it) } ?: ""
             }
-            val creationDate = survey.createdDate.let { formatDate(it, "MMM dd, yyyy") } ?: ""
+            val creationDate = formatDate(survey.createdDate, "MMM dd, yyyy")
             surveyInfos[surveyId] = SurveyInfo(
                 surveyId = surveyId,
                 submissionCount = context.resources.getQuantityString(

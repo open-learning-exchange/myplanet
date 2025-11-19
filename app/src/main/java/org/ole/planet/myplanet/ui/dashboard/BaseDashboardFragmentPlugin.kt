@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.dashboard
 
 import android.os.Bundle
-import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
@@ -37,7 +36,6 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
             if (homeItemClickListener != null) {
                 if (f is TeamDetailFragment) {
                     if (!isRealmInitialized()) {
-                        Log.d("TeamDetailFragment", "Realm is not initialized: error opening item")
                         return@setOnClickListener
                     }
                     val teamObject = mRealm.where(RealmMyTeam::class.java)?.equalTo("_id", id)?.findFirst()
