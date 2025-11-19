@@ -24,8 +24,8 @@ class SurveyRepositoryImpl @Inject constructor(
         val teamSubmissionIds = getTeamSubmissionExamIds(teamId)
         val adoptedSourceSurveyIds = queryList(RealmStepExam::class.java, ensureLatest = true) {
             equalTo("teamId", teamId)
-            isNotNull("teamSourceSurveyId")
-        }.mapNotNull { it.teamSourceSurveyId }.toSet()
+            isNotNull("sourceSurveyId")
+        }.mapNotNull { it.sourceSurveyId }.toSet()
 
         val filteredSubmissionIds = teamSubmissionIds.filterNot { adoptedSourceSurveyIds.contains(it) }
 
@@ -48,8 +48,8 @@ class SurveyRepositoryImpl @Inject constructor(
         val teamSubmissionIds = getTeamSubmissionExamIds(teamId)
         val adoptedSurveyIds = queryList(RealmStepExam::class.java, ensureLatest = true) {
             equalTo("teamId", teamId)
-            isNotNull("teamSourceSurveyId")
-        }.mapNotNull { it.teamSourceSurveyId }.toSet()
+            isNotNull("sourceSurveyId")
+        }.mapNotNull { it.sourceSurveyId }.toSet()
 
         val allExcludedIds = (teamSubmissionIds + adoptedSurveyIds).toTypedArray()
 

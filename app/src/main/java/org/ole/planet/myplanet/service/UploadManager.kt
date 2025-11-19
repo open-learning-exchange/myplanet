@@ -963,11 +963,11 @@ class UploadManager @Inject constructor(
     }
 
     fun uploadAdoptedSurveys() {
-        val apiInterface = client?.create(ApiInterface::class.java)
+        val apiInterface = client.create(ApiInterface::class.java)
         databaseService.withRealm { realm ->
             realm.executeTransactionAsync { transactionRealm: Realm ->
                 val adoptedSurveys = transactionRealm.where(RealmStepExam::class.java)
-                    .isNotNull("teamSourceSurveyId")
+                    .isNotNull("sourceSurveyId")
                     .isNull("_rev")
                     .findAll()
 

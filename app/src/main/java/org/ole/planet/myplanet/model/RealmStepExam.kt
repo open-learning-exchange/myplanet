@@ -26,7 +26,7 @@ open class RealmStepExam : RealmObject() {
     var isFromNation = false
     var teamId: String? = null
     var isTeamShareAllowed = false
-    var teamSourceSurveyId: String? = null
+    var sourceSurveyId: String? = null
 
     companion object {
         @JvmStatic
@@ -65,7 +65,7 @@ open class RealmStepExam : RealmObject() {
                 myExam?.isFromNation = !TextUtils.isEmpty(parentId)
                 myExam.teamId = JsonUtils.getString("teamId", exam)
                 myExam.isTeamShareAllowed = JsonUtils.getBoolean("teamShareAllowed", exam)
-                myExam.teamSourceSurveyId = JsonUtils.getString("teamSourceSurveyId", exam)
+                myExam.sourceSurveyId = JsonUtils.getString("sourceSurveyId", exam)
                 val oldQuestions = mRealm.where(RealmExamQuestion::class.java)
                     .equalTo("examId", JsonUtils.getString("_id", exam)).findAll()
                 if (oldQuestions == null || oldQuestions.isEmpty()) {
@@ -105,8 +105,8 @@ open class RealmStepExam : RealmObject() {
             `object`.addProperty("sourcePlanet", exam.sourcePlanet)
             `object`.addProperty("totalMarks", exam.totalMarks)
             `object`.addProperty("createdBy", exam.createdBy)
-            if (exam.teamSourceSurveyId != null) {
-                `object`.addProperty("teamSourceSurveyId", exam.teamSourceSurveyId)
+            if (exam.sourceSurveyId != null) {
+                `object`.addProperty("sourceSurveyId", exam.sourceSurveyId)
             }
             if (exam.teamId != null) {
                 `object`.addProperty("teamId", exam.teamId)

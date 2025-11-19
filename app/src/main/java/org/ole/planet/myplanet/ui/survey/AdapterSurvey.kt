@@ -234,7 +234,7 @@ class AdapterSurvey(
                         val newSurveyId = UUID.randomUUID().toString()
 
                         val existingSurvey = realm.where(RealmStepExam::class.java)
-                            .equalTo("teamSourceSurveyId", examId)
+                            .equalTo("sourceSurveyId", examId)
                             .equalTo("teamId", teamId)
                             .findFirst()
 
@@ -256,7 +256,7 @@ class AdapterSurvey(
                                 isFromNation = exam.isFromNation
 
                                 this.teamId = teamId
-                                teamSourceSurveyId = examId
+                                sourceSurveyId = examId
                                 isTeamShareAllowed = false
                             }
 
