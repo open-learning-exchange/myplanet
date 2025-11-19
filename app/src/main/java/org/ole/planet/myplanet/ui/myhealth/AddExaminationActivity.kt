@@ -60,6 +60,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
     var allowSubmission = true
     private lateinit var config: ChipCloudConfig
     private var examination: RealmMyHealthPojo? = null
+    private var textWatcher: TextWatcher? = null
     private fun initViews() {
         config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.close)
         binding.btnAddDiag.setOnClickListener {
