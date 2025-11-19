@@ -25,6 +25,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
@@ -122,7 +123,9 @@ class MyDownloadService : Service() {
                 return
             }
             val response = try {
-                retrofitInterface.downloadFile(authHeader, url)
+                withContext(Dispatchers.IO) {
+                    retrofitInterface.downloadFile(authHeader, url)
+                }
             } catch (e: java.net.UnknownHostException) {
                 downloadFailed("Server not reachable. Check internet connection.", fromSync)
                 return

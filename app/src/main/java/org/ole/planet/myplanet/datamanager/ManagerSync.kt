@@ -133,60 +133,59 @@ class ManagerSync private constructor(
     }
 
     fun syncAdmin() {
-        try {
-            val `object` = JsonObject()
-            val selector = JsonObject()
-            selector.addProperty("isUserAdmin", true)
-            `object`.add("selector", selector)
-            
-            val apiInterface = ApiClient.client.create(ApiInterface::class.java)
-            if (apiInterface == null) {
-                return
-            }
-            
-            val header = UrlUtils.header
-            if (header.isBlank()) {
-                return
-            }
-            
-            val url = try {
-                UrlUtils.getUrl() + "/_users/_find"
+        MainApplication.applicationScope.launch {
+            try {
+                val `object` = JsonObject()
+                val selector = JsonObject()
+                selector.addProperty("isUserAdmin", true)
+                `object`.add("selector", selector)
+
+                val apiInterface = ApiClient.client.create(ApiInterface::class.java)
+
+                val header = UrlUtils.header
+                if (header.isBlank()) {
+                    return@launch
+                }
+
+                val url = try {
+                    UrlUtils.getUrl() + "/_users/_find"
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    return@launch
+                }
+
+                val response = withContext(Dispatchers.IO) {
+                    ApiClient.executeWithRetryAndWrap {
+                        apiInterface.findDocs(
+                            header,
+                            "application/json",
+                            url,
+                            `object`
+                        ).execute()
+                    }
+                }
+
+                if (response?.isSuccessful == true && response.body() != null) {
+                    val responseBody = response.body()
+                    settings.edit { putString("communityLeaders", "$responseBody") }
+
+                    val array = JsonUtils.getJsonArray("docs", responseBody)
+                    if (array != null && array.size() > 0) {
+                        try {
+                            settings.edit {
+                                putString(
+                                    "user_admin",
+                                    GsonUtils.gson.toJson(array[0])
+                                )
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
-                return
             }
-
-            apiInterface.findDocs(header, "application/json", url, `object`).enqueue(object : Callback<JsonObject?> {
-                override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
-                    try {
-                        if (response.isSuccessful && response.body() != null) {
-                            val responseBody = response.body()
-                            settings.edit { putString("communityLeaders", "$responseBody") }
-
-                            val array = JsonUtils.getJsonArray("docs", responseBody)
-                            if (array != null && array.size() > 0) {
-                                try {
-                                    settings.edit { putString("user_admin", GsonUtils.gson.toJson(array[0])) }
-                                } catch (e: Exception) {
-                                    e.printStackTrace()
-                                }
-                            }
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
-
-                override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
-                    try {
-                        t.printStackTrace()
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
-            })
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
     }
 

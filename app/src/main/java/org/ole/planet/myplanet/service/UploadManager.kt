@@ -355,130 +355,164 @@ class UploadManager @Inject constructor(
         }
     }
 
-    fun uploadSubmitPhotos(listener: SuccessListener?) {
+    suspend fun uploadSubmitPhotos(listener: SuccessListener?) {
         val apiInterface = client.create(ApiInterface::class.java)
-        databaseService.withRealm { realm ->
-            realm.executeTransactionAsync { transactionRealm: Realm ->
-                val data: List<RealmSubmitPhotos> =
-                    transactionRealm.where(RealmSubmitPhotos::class.java).equalTo("uploaded", false).findAll()
-                data.processInBatches { sub ->
-                    try {
-                        val `object` = apiInterface?.postDoc(
-                            UrlUtils.header,
-                            "application/json",
-                            "${UrlUtils.getUrl()}/submissions",
-                            RealmSubmitPhotos.serializeRealmSubmitPhotos(sub)
-                        )?.execute()?.body()
-                        if (`object` != null) {
-                            val rev = getString("rev", `object`)
-                            val id = getString("id", `object`)
-                            sub.uploaded = true
-                            sub._rev = rev
-                            sub._id = id
-                            listener?.let { uploadAttachment(id, rev, sub, it) }
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
-                if (data.isEmpty()) {
-                    listener?.onSuccess("No photos to upload")
-                }
-            }
+        val photosToUpload = databaseService.withRealm { realm ->
+            realm.where(RealmSubmitPhotos::class.java)
+                .equalTo("uploaded", false)
+                .findAll()
+                .let { realm.copyFromRealm(it) }
         }
-    }
 
-    fun uploadResource(listener: SuccessListener?) {
-        val apiInterface = client?.create(ApiInterface::class.java)
-
-        databaseService.withRealm { realm ->
-            realm.executeTransactionAsync({ transactionRealm: Realm ->
-                val user = transactionRealm.where(RealmUserModel::class.java)
-                    .equalTo("id", pref.getString("userId", ""))
-                    .findFirst()
-
-                val data: List<RealmMyLibrary> = transactionRealm.where(RealmMyLibrary::class.java)
-                    .isNull("_rev")
-                    .findAll()
-
-                if (data.isEmpty()) {
-                    return@executeTransactionAsync
-                }
-
-                data.processInBatches { sub ->
-                    try {
-                        val `object` = apiInterface?.postDoc(
-                            UrlUtils.header,
-                            "application/json",
-                            "${UrlUtils.getUrl()}/resources",
-                            RealmMyLibrary.serialize(sub, user)
-                        )?.execute()?.body()
-
-                        if (`object` != null) {
-                            val rev = getString("rev", `object`)
-                            val id = getString("id", `object`)
-                            sub._rev = rev
-                            sub._id = id
-                            listener?.let { uploadAttachment(id, rev, sub, it) }
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
-            }, {
-                listener?.onSuccess("No resources to upload")
-            }) { error ->
-                listener?.onSuccess("Resource upload failed: ${error.message}")
-            }
+        if (photosToUpload.isEmpty()) {
+            withContext(Dispatchers.Main) { listener?.onSuccess("No photos to upload") }
+            return
         }
-    }
 
-    fun uploadMyPersonal(personal: RealmMyPersonal, listener: SuccessListener) {
-        val apiInterface = client?.create(ApiInterface::class.java)
+        var failedCount = 0
+        withContext(Dispatchers.IO) {
+            photosToUpload.forEach { sub ->
+                try {
+                    val `object` = apiInterface.postDoc(
+                        UrlUtils.header,
+                        "application/json",
+                        "${UrlUtils.getUrl()}/submissions",
+                        RealmSubmitPhotos.serializeRealmSubmitPhotos(sub)
+                    ).execute().body()
 
-        if (!personal.isUploaded) {
-            apiInterface?.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/resources", RealmMyPersonal.serialize(personal, context))?.enqueue(object : Callback<JsonObject?> {
-                override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
-                    val `object` = response.body()
                     if (`object` != null) {
                         val rev = getString("rev", `object`)
                         val id = getString("id", `object`)
-                        databaseService.withRealm { updateRealm ->
-                            updateRealm.executeTransactionAsync({ transactionRealm ->
-                                val managedPersonal = personal.id?.takeIf { it.isNotEmpty() }?.let { personalId ->
-                                    transactionRealm.where(RealmMyPersonal::class.java)
-                                        .equalTo("id", personalId)
-                                        .findFirst()
-                                } ?: personal._id?.takeIf { it.isNotEmpty() }?.let { existingId ->
-                                    transactionRealm.where(RealmMyPersonal::class.java)
-                                        .equalTo("_id", existingId)
-                                        .findFirst()
-                                }
-
-                                managedPersonal?.let { realmPersonal ->
-                                    realmPersonal.isUploaded = true
-                                    realmPersonal._rev = rev
-                                    realmPersonal._id = id
-                                } ?: throw IllegalStateException("Personal resource not found")
-                            }, {
-                                uploadAttachment(id, rev, personal, listener)
-                            }) { error ->
-                                listener.onSuccess(
-                                    "Error updating personal resource: ${error.message ?: "Unknown error"}"
-                                )
+                        listener?.let { uploadAttachment(id, rev, sub, it) }
+                        databaseService.withRealm { realm ->
+                            realm.executeTransaction {
+                                val realmSub = it.where(RealmSubmitPhotos::class.java).equalTo("_id", sub._id).findFirst()
+                                realmSub?.uploaded = true
+                                realmSub?._rev = rev
+                                realmSub?._id = id
                             }
                         }
                     } else {
+                        failedCount++
+                    }
+                } catch (e: Exception) {
+                    failedCount++
+                    e.printStackTrace()
+                }
+            }
+        }
+        withContext(Dispatchers.Main) {
+            if (failedCount > 0) {
+                listener?.onSuccess("$failedCount photos failed to upload.")
+            } else {
+                listener?.onSuccess("Photos upload complete.")
+            }
+        }
+    }
+
+    suspend fun uploadResource(listener: SuccessListener?) {
+        val apiInterface = client?.create(ApiInterface::class.java)
+        val resourcesToUpload = databaseService.withRealm { realm ->
+            realm.where(RealmMyLibrary::class.java).isNull("_rev").findAll().let { realm.copyFromRealm(it) }
+        }
+        val user = databaseService.withRealm { realm ->
+            realm.where(RealmUserModel::class.java).equalTo("id", pref.getString("userId", "")).findFirst()?.let { realm.copyFromRealm(it) }
+        }
+
+        if (resourcesToUpload.isEmpty()) {
+            withContext(Dispatchers.Main) { listener?.onSuccess("No resources to upload") }
+            return
+        }
+
+        var failedCount = 0
+        withContext(Dispatchers.IO) {
+            resourcesToUpload.forEach { sub ->
+                try {
+                    val `object` = apiInterface?.postDoc(
+                        UrlUtils.header,
+                        "application/json",
+                        "${UrlUtils.getUrl()}/resources",
+                        RealmMyLibrary.serialize(sub, user)
+                    )?.execute()?.body()
+
+                    if (`object` != null) {
+                        val rev = getString("rev", `object`)
+                        val id = getString("id", `object`)
+                        listener?.let { uploadAttachment(id, rev, sub, it) }
+                        databaseService.withRealm { realm ->
+                            realm.executeTransaction {
+                                val realmSub = it.where(RealmMyLibrary::class.java).equalTo("_id", sub._id).findFirst()
+                                realmSub?._rev = rev
+                                realmSub?._id = id
+                            }
+                        }
+                    } else {
+                        failedCount++
+                    }
+                } catch (e: Exception) {
+                    failedCount++
+                    e.printStackTrace()
+                }
+            }
+        }
+        withContext(Dispatchers.Main) {
+            if (failedCount > 0) {
+                listener?.onSuccess("$failedCount resources failed to upload.")
+            } else {
+                listener?.onSuccess("Resource upload complete")
+            }
+        }
+    }
+
+    suspend fun uploadMyPersonal(personal: RealmMyPersonal, listener: SuccessListener) {
+        val apiInterface = client?.create(ApiInterface::class.java)
+
+        if (!personal.isUploaded) {
+            try {
+                val response = withContext(Dispatchers.IO) {
+                    apiInterface?.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/resources", RealmMyPersonal.serialize(personal, context))?.execute()
+                }
+
+                val `object` = response?.body()
+                if (`object` != null) {
+                    val rev = getString("rev", `object`)
+                    val id = getString("id", `object`)
+
+                    databaseService.withRealm { updateRealm ->
+                        updateRealm.executeTransaction { transactionRealm ->
+                            val managedPersonal = personal.id?.takeIf { it.isNotEmpty() }?.let { personalId ->
+                                transactionRealm.where(RealmMyPersonal::class.java)
+                                    .equalTo("id", personalId)
+                                    .findFirst()
+                            } ?: personal._id?.takeIf { it.isNotEmpty() }?.let { existingId ->
+                                transactionRealm.where(RealmMyPersonal::class.java)
+                                    .equalTo("_id", existingId)
+                                    .findFirst()
+                            }
+
+                            managedPersonal?.let { realmPersonal ->
+                                realmPersonal.isUploaded = true
+                                realmPersonal._rev = rev
+                                realmPersonal._id = id
+                            } ?: throw IllegalStateException("Personal resource not found")
+                        }
+                    }
+                    uploadAttachment(id, rev, personal, listener)
+                } else {
+                    withContext(Dispatchers.Main) {
                         listener.onSuccess("Failed to upload personal resource: No response")
                     }
                 }
-
-                override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
-                    listener.onSuccess("Unable to upload resource: ${t.message}")
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    listener.onSuccess("Unable to upload resource: ${e.message}")
                 }
-            })
+            }
         } else {
-            listener.onSuccess("Resource already uploaded")
+            withContext(Dispatchers.Main) {
+                listener.onSuccess("Resource already uploaded")
+            }
         }
     }
 

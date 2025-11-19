@@ -25,6 +25,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import org.ole.planet.myplanet.MainApplication
@@ -665,8 +666,10 @@ class SyncManager @Inject constructor(
             return cachedShelves
         }
 
-        val allShelves = ApiClient.executeWithRetryAndWrap {
-            apiInterface.getDocuments(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/_all_docs").execute()
+        val allShelves = withContext(Dispatchers.IO) {
+            ApiClient.executeWithRetryAndWrap {
+                apiInterface.getDocuments(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/_all_docs").execute()
+            }
         }?.body()?.rows ?: return emptyList()
 
         coroutineScope {

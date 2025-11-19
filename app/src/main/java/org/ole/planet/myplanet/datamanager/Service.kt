@@ -437,27 +437,25 @@ class Service @Inject constructor(
         return false
     }
 
-    private suspend fun fetchVersionInfo(settings: SharedPreferences): MyPlanet? =
-        withContext(Dispatchers.IO) {
-            val result = ApiClient.executeWithResult {
-                retrofitInterface.checkVersion(UrlUtils.getUpdateUrl(settings))
-            }
-            when (result) {
-                is NetworkResult.Success -> result.data
-                else -> null
-            }
+    private suspend fun fetchVersionInfo(settings: SharedPreferences): MyPlanet? = withContext(Dispatchers.IO) {
+        val result = ApiClient.executeWithResult {
+            retrofitInterface.checkVersion(UrlUtils.getUpdateUrl(settings))
         }
+        when (result) {
+            is NetworkResult.Success -> result.data
+            else -> null
+        }
+    }
 
-    private suspend fun fetchApkVersionString(settings: SharedPreferences): String? =
-        withContext(Dispatchers.IO) {
-            val result = ApiClient.executeWithResult {
-                retrofitInterface.getApkVersion(UrlUtils.getApkVersionUrl(settings))
-            }
-            when (result) {
-                is NetworkResult.Success -> result.data.string()
-                else -> null
-            }
+    private suspend fun fetchApkVersionString(settings: SharedPreferences): String? = withContext(Dispatchers.IO) {
+        val result = ApiClient.executeWithResult {
+            retrofitInterface.getApkVersion(UrlUtils.getApkVersionUrl(settings))
         }
+        when (result) {
+            is NetworkResult.Success -> result.data.string()
+            else -> null
+        }
+    }
 
     private fun parseApkVersionString(raw: String?): Int? {
         if (raw.isNullOrEmpty()) return null
