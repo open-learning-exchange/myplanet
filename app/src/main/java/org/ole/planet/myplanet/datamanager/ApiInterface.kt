@@ -62,5 +62,5 @@ interface ApiInterface {
     fun checkAiProviders(@Url url: String?): Call<ResponseBody>
 
     @GET
-    fun getConfiguration(@Url url: String?): Call<JsonObject>
+    suspend fun getConfiguration(@Url url: String?): Response<JsonObject>
 }
