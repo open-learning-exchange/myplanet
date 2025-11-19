@@ -142,5 +142,5 @@
         android:layout_gravity="bottom|end"
         android:contentDescription="@string/add"
         android:padding="@dimen/padding_normal"
-        app:srcCompat="@drawable/ic_add" />
+        app:srcCompat="@drawable/ic_add_white" />
 </FrameLayout>

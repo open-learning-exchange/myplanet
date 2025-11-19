@@ -320,34 +320,34 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
                         serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, settings)
                     }
                 }
-
-                uploadSubmissions()
-            } catch (e: Exception) {
-                uploadSubmissions()
-            }
-        }
-    }
-
-    private fun uploadSubmissions() {
-        MainApplication.applicationScope.launch {
-            try {
-                withContext(Dispatchers.IO) {
-                    uploadManager.uploadSubmissions()
-                    uploadExamResultWrapper()
-                }
             } catch (e: Exception) {
                 e.printStackTrace()
+            } finally {
+                uploadSubmissions()
             }
         }
     }
 
-    private fun uploadExamResultWrapper() {
-        val successListener = object : SuccessListener {
-            override fun onSuccess(success: String?) {
+    private suspend fun uploadSubmissions() {
+        try {
+            withContext(Dispatchers.IO) {
+                uploadManager.uploadSubmissions()
             }
+            uploadExamResultWrapper()
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
+    }
 
-        uploadManager.uploadExamResult(successListener)
+    private suspend fun uploadExamResultWrapper() {
+        try {
+            val successListener = object : SuccessListener {
+                override fun onSuccess(success: String?) {}
+            }
+            uploadManager.uploadExamResult(successListener)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     private fun showDatePickerDialog() {

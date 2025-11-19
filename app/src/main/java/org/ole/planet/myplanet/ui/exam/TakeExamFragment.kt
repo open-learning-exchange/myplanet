@@ -15,8 +15,8 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.snackbar.Snackbar
-import com.google.gson.Gson
 import com.google.gson.JsonObject
+import org.ole.planet.myplanet.utilities.GsonUtils
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.RealmList
@@ -49,7 +49,6 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     private var _binding: FragmentTakeExamBinding? = null
     private val binding get() = _binding!!
     private var isCertified = false
-    private val gson = Gson()
 
     private val answerCache = mutableMapOf<String, AnswerData>()
 
@@ -458,7 +457,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         }
 
         if (question?.hasOtherOption == true) {
-            val otherChoice = gson.fromJson("""{"text":"Other","id":"other"}""", JsonObject::class.java)
+            val otherChoice = GsonUtils.gson.fromJson("""{"text":"Other","id":"other"}""", JsonObject::class.java)
 
             addCompoundButton(otherChoice, false, oldAnswer)
         }
@@ -478,7 +477,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
         if (question?.hasOtherOption == true) {
             if (choices.size() > 0 && choices[0].isJsonObject) {
-                val otherChoice = gson.fromJson("""{"text":"Other","id":"other"}""", JsonObject::class.java)
+                val otherChoice = GsonUtils.gson.fromJson("""{"text":"Other","id":"other"}""", JsonObject::class.java)
 
                 addCompoundButton(otherChoice, isRadio, oldAnswer)
             } else {

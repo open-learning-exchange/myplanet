@@ -1,8 +1,8 @@
 package org.ole.planet.myplanet.model
 
-import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import org.ole.planet.myplanet.utilities.GsonUtils
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
@@ -68,7 +68,7 @@ open class RealmExamQuestion : RealmObject() {
                     header = JsonUtils.getString("title", question)
                     marks = JsonUtils.getString("marks", question)
                     choices = if (question.has("choices")) {
-                        Gson().toJson(JsonUtils.getJsonArray("choices", question))
+                        GsonUtils.gson.toJson(JsonUtils.getJsonArray("choices", question))
                     } else {
                         "[]"
                     }

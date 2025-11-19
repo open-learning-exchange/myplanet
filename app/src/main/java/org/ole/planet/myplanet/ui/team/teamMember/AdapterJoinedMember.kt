@@ -158,6 +158,7 @@ class AdapterJoinedMember(
     override fun getItemCount(): Int = list.size
 
     fun updateData(newList: List<JoinedMemberData>, isLoggedInUserTeamLeader: Boolean) {
+        if (this.list === newList) return
         this.isLoggedInUserTeamLeader = isLoggedInUserTeamLeader
         val oldList = ArrayList(this.list)
         val diffResult = DiffUtils.calculateDiff(

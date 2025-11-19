@@ -2,25 +2,21 @@ package org.ole.planet.myplanet.model
 
 import android.content.Context
 import android.text.TextUtils
-import com.google.gson.Gson
 import com.google.gson.JsonObject
+import org.ole.planet.myplanet.utilities.GsonUtils
 import com.google.gson.JsonParser
 import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
-import io.realm.Sort
 import io.realm.annotations.PrimaryKey
 import java.io.IOException
 import java.util.Date
 import java.util.UUID
-import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
-import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.UrlUtils
 
 open class RealmSubmission : RealmObject() {
@@ -78,9 +74,10 @@ open class RealmSubmission : RealmObject() {
                 sub?.sender = JsonUtils.getString("sender", submission)
                 sub?.source = JsonUtils.getString("source", submission)
                 sub?.parentCode = JsonUtils.getString("parentCode", submission)
-                sub?.parent = Gson().toJson(JsonUtils.getJsonObject("parent", submission))
-                sub?.user = Gson().toJson(JsonUtils.getJsonObject("user", submission))
+                sub?.parent = GsonUtils.gson.toJson(JsonUtils.getJsonObject("parent", submission))
+                sub?.user = GsonUtils.gson.toJson(JsonUtils.getJsonObject("user", submission))
                 sub.team = JsonUtils.getString("team", submission)
+                sub.isUpdated = false
 
                 val userJson = JsonUtils.getJsonObject("user", submission)
                 if (userJson.has("membershipDoc")) {
@@ -165,7 +162,7 @@ open class RealmSubmission : RealmObject() {
             val prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
             `object`.addProperty("source", prefs.getString("planetCode", ""))
             `object`.addProperty("parentCode", prefs.getString("parentCode", ""))
-            val parent = Gson().fromJson(sub.parent, JsonObject::class.java)
+            val parent = GsonUtils.gson.fromJson(sub.parent, JsonObject::class.java)
             `object`.add("parent", parent)
             `object`.add("answers", RealmAnswer.serializeRealmAnswer(sub.answers ?: RealmList()))
             if (exam != null && parent == null) `object`.add("parent", RealmStepExam.serializeExam(mRealm, exam))
@@ -196,61 +193,6 @@ open class RealmSubmission : RealmObject() {
         }
 
         @JvmStatic
-        @Throws(IOException::class)
-        fun continueResultUpload(sub: RealmSubmission, apiInterface: ApiInterface?, realm: Realm, context: Context) {
-            if (!TextUtils.isEmpty(sub.userId) && sub.userId?.startsWith("guest") == true) return
-            val `object`: JsonObject? = if (TextUtils.isEmpty(sub._id)) {
-                apiInterface?.postDoc(UrlUtils.header, "application/json", UrlUtils.getUrl() + "/submissions", serializeExamResult(realm, sub, context))?.execute()?.body()
-            } else {
-                apiInterface?.putDoc(UrlUtils.header, "application/json", UrlUtils.getUrl() + "/submissions/" + sub._id, serializeExamResult(realm, sub, context))?.execute()?.body()
-            }
-            if (`object` != null) {
-                sub._id = JsonUtils.getString("id", `object`)
-                sub._rev = JsonUtils.getString("rev", `object`)
-            }
-        }
-
-        fun generateParentId(courseId: String?, examId: String?): String? {
-            return if (!examId.isNullOrEmpty()) {
-                if (!courseId.isNullOrEmpty()) {
-                    "$examId@$courseId"
-                } else {
-                    examId
-                }
-            } else {
-                null
-            }
-        }
-
-        @JvmStatic
-        fun getNoOfSubmissionByUser(id: String?, courseId: String?, userId: String?, mRealm: Realm): String {
-            if (id == null || userId == null) return "No Submissions Found"
-
-            val submissionParentId = generateParentId(courseId, id)
-            if (submissionParentId.isNullOrEmpty()) return "No Submissions Found"
-
-            val submissionCount = mRealm.where(RealmSubmission::class.java)
-                .equalTo("parentId", submissionParentId)
-                .equalTo("userId", userId)
-                .`in`("status", arrayOf("complete", "pending"))
-                .count().toInt()
-
-            return context.resources.getQuantityString(R.plurals.survey_taken_count, submissionCount, submissionCount)
-        }
-
-        @JvmStatic
-        fun getNoOfSubmissionByTeam(teamId: String?, examId: String?, mRealm: Realm): String {
-            val submissionCount = mRealm.where(RealmSubmission::class.java)
-                .equalTo("team", teamId)
-                .equalTo("type", "survey")
-                .equalTo("parentId", examId)
-                .equalTo("status", "complete")
-                .count().toInt()
-
-            return context.resources.getQuantityString(R.plurals.survey_taken_count, submissionCount, submissionCount)
-        }
-
-        @JvmStatic
         fun getNoOfSurveySubmissionByUser(userId: String?, mRealm: Realm): Int {
             if (userId == null) return 0
 
@@ -259,19 +201,6 @@ open class RealmSubmission : RealmObject() {
                 .equalTo("type", "survey")
                 .equalTo("status", "pending", Case.INSENSITIVE)
                 .count().toInt()
-        }
-
-        @JvmStatic
-        fun getRecentSubmissionDate(id: String?, courseId:String?, userId: String?, mRealm: Realm): String {
-            if (id == null || userId == null) return ""
-            val submissionParentId= generateParentId(courseId, id)
-            if(submissionParentId.isNullOrEmpty())  return ""
-            val recentSubmission = mRealm.where(RealmSubmission::class.java)
-                .equalTo("parentId", submissionParentId)
-                .equalTo("userId", userId)
-                .sort("startTime", Sort.DESCENDING)
-                .findFirst()
-            return recentSubmission?.startTime?.let { TimeUtils.getFormattedDateWithTime(it) } ?: ""
         }
 
         @JvmStatic
