@@ -34,7 +34,7 @@ import org.ole.planet.myplanet.utilities.TimeUtils
 
 class AdapterTeamList(
     private val context: Context,
-    private val list: List<RealmMyTeam>,
+    private var list: List<RealmMyTeam>,
     private val fragmentManager: FragmentManager,
     private val teamRepository: TeamRepository,
     private val currentUser: RealmUserModel?,
@@ -410,6 +410,11 @@ class AdapterTeamList(
 
     fun setType(type: String?) {
         this.type = type
+    }
+
+    fun setTeamList(list: List<RealmMyTeam>) {
+        this.list = list
+        updateList()
     }
 
     fun cleanup() {
