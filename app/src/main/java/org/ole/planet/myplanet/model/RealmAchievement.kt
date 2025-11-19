@@ -2,8 +2,8 @@ package org.ole.planet.myplanet.model
 
 import android.text.TextUtils
 import android.widget.EditText
-import com.google.gson.Gson
 import com.google.gson.JsonArray
+import org.ole.planet.myplanet.utilities.GsonUtils
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import io.realm.Realm
@@ -27,7 +27,7 @@ open class RealmAchievement : RealmObject() {
         get() {
             val array = JsonArray()
             for (s in achievements ?: emptyList()) {
-                val ob = Gson().fromJson(s, JsonElement::class.java)
+                val ob = GsonUtils.gson.fromJson(s, JsonElement::class.java)
                 array.add(ob)
             }
             return array
@@ -36,7 +36,7 @@ open class RealmAchievement : RealmObject() {
     fun getReferencesArray(): JsonArray {
         val array = JsonArray()
         for (s in references ?: emptyList()) {
-            val ob = Gson().fromJson(s, JsonElement::class.java)
+            val ob = GsonUtils.gson.fromJson(s, JsonElement::class.java)
             array.add(ob)
         }
         return array
@@ -45,7 +45,7 @@ open class RealmAchievement : RealmObject() {
     fun setAchievements(ac: JsonArray) {
         achievements = RealmList()
         for (el in ac) {
-            val achievement = Gson().toJson(el)
+            val achievement = GsonUtils.gson.toJson(el)
             if (achievements?.contains(achievement) != true) {
                 achievements?.add(achievement)
             }
@@ -56,7 +56,7 @@ open class RealmAchievement : RealmObject() {
         references = RealmList()
         if (of == null) return
         for (el in of) {
-            val e = Gson().toJson(el)
+            val e = GsonUtils.gson.toJson(el)
             if (references?.contains(e) != true) {
                 references?.add(e)
             }

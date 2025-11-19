@@ -22,9 +22,9 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.snackbar.Snackbar
-import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import org.ole.planet.myplanet.utilities.GsonUtils
 import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Date
@@ -84,7 +84,6 @@ class ChatDetailFragment : Fragment() {
     lateinit var chatApiHelper: ChatApiHelper
     @Inject
     lateinit var userRepository: UserRepository
-    private val gson = Gson()
     private val serverUrlMapper = ServerUrlMapper()
     private val jsonMediaType = "application/json".toMediaTypeOrNull()
     private val serverUrl: String
@@ -106,7 +105,7 @@ class ChatDetailFragment : Fragment() {
         initChatComponents()
         val newsRev = arguments?.getString("newsRev")
         val newsConversations = arguments?.getString("conversations")
-        checkAiProviders()
+        observeAiProviders()
         setupSendButton()
         setupMessageInputListeners()
         if (newsId != null) {
@@ -197,11 +196,46 @@ class ChatDetailFragment : Fragment() {
     private fun loadNewsConversations(newsId: String?, newsRev: String?, newsConversations: String?) {
         _id = newsId ?: ""
         _rev = newsRev ?: ""
-        val conversations = gson.fromJson(newsConversations, Array<Conversation>::class.java).toList()
+        val conversations = GsonUtils.gson.fromJson(newsConversations, Array<Conversation>::class.java).toList()
         for (conversation in conversations) {
             conversation.query?.let { mAdapter.addQuery(it) }
             mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_SHARED_VIEW_MODEL
             conversation.response?.let { mAdapter.addResponse(it) }
+        }
+    }
+
+    private fun observeAiProviders() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    sharedViewModel.aiProviders.collect { providers ->
+                        if (providers != null) {
+                            if (providers.values.all { !it }) {
+                                onFailError()
+                            } else {
+                                updateAIButtons(providers)
+                            }
+                        }
+                    }
+                }
+                launch {
+                    sharedViewModel.aiProvidersLoading.collect { isLoading ->
+                        if (isLoading) {
+                            customProgressDialog.setText("${context?.getString(R.string.fetching_ai_providers)}")
+                            customProgressDialog.show()
+                        } else {
+                            customProgressDialog.dismiss()
+                        }
+                    }
+                }
+                launch {
+                    sharedViewModel.aiProvidersError.collect { hasError ->
+                        if (hasError && sharedViewModel.aiProviders.value == null) {
+                            onFailError()
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -254,20 +288,26 @@ class ChatDetailFragment : Fragment() {
         }
     }
 
-    private fun checkAiProviders() {
+    fun checkAiProviders() {
+        if (!sharedViewModel.shouldFetchAiProviders()) {
+            return
+        }
+
+        sharedViewModel.setAiProvidersLoading(true)
+        sharedViewModel.setAiProvidersError(false)
+
         val mapping = serverUrlMapper.processUrl(serverUrl)
 
         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             updateServerIfNecessary(mapping)
             withContext(Dispatchers.Main) {
-                customProgressDialog.setText("${context?.getString(R.string.fetching_ai_providers)}")
-                customProgressDialog.show()
                 chatApiHelper.fetchAiProviders { providers ->
-                    customProgressDialog.dismiss()
+                    sharedViewModel.setAiProvidersLoading(false)
                     if (providers == null || providers.values.all { !it }) {
-                        onFailError()
+                        sharedViewModel.setAiProvidersError(true)
+                        sharedViewModel.setAiProviders(null)
                     } else {
-                        updateAIButtons(providers)
+                        sharedViewModel.setAiProviders(providers)
                     }
                 }
             }
@@ -416,7 +456,7 @@ class ChatDetailFragment : Fragment() {
     private fun getModelsMap(): Map<String, String> {
         val modelsString = settings.getString("ai_models", null)
         return if (modelsString != null) {
-            gson.fromJson(modelsString, object : TypeToken<Map<String, String>>() {}.type)
+            GsonUtils.gson.fromJson(modelsString, object : TypeToken<Map<String, String>>() {}.type)
         } else {
             emptyMap()
         }
@@ -427,13 +467,13 @@ class ChatDetailFragment : Fragment() {
 
     private fun createContinueChatRequest(message: String, aiProvider: AiProvider, id: String, rev: String): RequestBody {
         val continueChatData = ContinueChatModel(data = Data("${user?.name}", message, aiProvider, id, rev), save = true)
-        val jsonContent = gson.toJson(continueChatData)
+        val jsonContent = GsonUtils.gson.toJson(continueChatData)
         return jsonRequestBody(jsonContent)
     }
 
     private fun createChatRequest(message: String, aiProvider: AiProvider): RequestBody {
         val chatData = ChatRequestModel(data = ContentData("${user?.name}", message, aiProvider), save = true)
-        val jsonContent = gson.toJson(chatData)
+        val jsonContent = GsonUtils.gson.toJson(chatData)
         return jsonRequestBody(jsonContent)
     }
 

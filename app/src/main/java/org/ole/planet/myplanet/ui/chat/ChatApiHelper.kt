@@ -1,8 +1,8 @@
 package org.ole.planet.myplanet.ui.chat
 
 import android.content.Context
-import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import org.ole.planet.myplanet.utilities.GsonUtils
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -51,7 +51,7 @@ class ChatApiHelper @Inject constructor(
                             return
                         }
 
-                        val providers: Map<String, Boolean> = Gson().fromJson(
+                        val providers: Map<String, Boolean> = GsonUtils.gson.fromJson(
                             responseString,
                             object : TypeToken<Map<String, Boolean>>() {}.type
                         )

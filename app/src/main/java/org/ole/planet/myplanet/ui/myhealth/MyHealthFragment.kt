@@ -26,8 +26,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.snackbar.Snackbar
-import com.google.gson.Gson
 import dagger.hilt.android.AndroidEntryPoint
+import org.ole.planet.myplanet.utilities.GsonUtils
 import io.realm.Case
 import io.realm.Realm
 import io.realm.Sort
@@ -64,7 +64,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 class MyHealthFragment : Fragment() {
-    
+
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
 
@@ -85,6 +85,7 @@ class MyHealthFragment : Fragment() {
     var userModel: RealmUserModel? = null
     lateinit var userModelList: List<RealmUserModel>
     lateinit var adapter: UserListArrayAdapter
+    private lateinit var healthAdapter: AdapterHealthExamination
     var dialog: AlertDialog? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     lateinit var prefManager: SharedPrefManager
@@ -92,6 +93,7 @@ class MyHealthFragment : Fragment() {
     private val serverUrlMapper = ServerUrlMapper()
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
+    private var textWatcher: TextWatcher? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -334,7 +336,7 @@ class MyHealthFragment : Fragment() {
 
     private fun setTextWatcher(etSearch: EditText, btnAddMember: Button, lv: ListView) {
         var timer: CountDownTimer? = null
-        etSearch.addTextChangedListener(object : TextWatcher {
+        textWatcher = object : TextWatcher {
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
             override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
 
@@ -355,7 +357,8 @@ class MyHealthFragment : Fragment() {
                     }
                 }.start()
             }
-        })
+        }
+        etSearch.addTextChangedListener(textWatcher)
     }
 
     override fun onResume() {
@@ -418,13 +421,14 @@ class MyHealthFragment : Fragment() {
                 binding.tvNoRecords.visibility = View.GONE
                 binding.tvDataPlaceholder.visibility = View.VISIBLE
 
-                val adap = AdapterHealthExamination(requireActivity(), list, mh, currentUser)
-                adap.setmRealm(mRealm)
+                healthAdapter = AdapterHealthExamination(requireActivity(), mh, currentUser)
+                healthAdapter.setmRealm(mRealm)
                 binding.rvRecords.apply {
                     layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
                     isNestedScrollingEnabled = false
-                    adapter = adap
+                    adapter = healthAdapter
                 }
+                healthAdapter.submitList(list)
                 binding.rvRecords.post {
                     val lastPosition = list.size - 1
                     if (lastPosition >= 0) {
@@ -459,7 +463,7 @@ class MyHealthFragment : Fragment() {
             null
         } else {
             try {
-                Gson().fromJson(json, RealmMyHealth::class.java)
+                GsonUtils.gson.fromJson(json, RealmMyHealth::class.java)
             } catch (e: Exception) {
                 e.printStackTrace()
                 null
@@ -477,6 +481,8 @@ class MyHealthFragment : Fragment() {
         if (::realtimeSyncListener.isInitialized) {
             syncCoordinator.removeListener(realtimeSyncListener)
         }
+        alertHealthListBinding.etSearch.removeTextChangedListener(textWatcher)
+        textWatcher = null
         _binding = null
         super.onDestroyView()
     }

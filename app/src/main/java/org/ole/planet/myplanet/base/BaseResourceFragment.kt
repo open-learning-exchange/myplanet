@@ -19,7 +19,6 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.RealmObject
@@ -84,6 +83,8 @@ abstract class BaseResourceFragment : Fragment() {
     @Inject
     @AppPreferences
     lateinit var settings: SharedPreferences
+    @Inject
+    lateinit var broadcastService: org.ole.planet.myplanet.service.BroadcastService
     private var resourceNotFoundDialog: AlertDialog? = null
     private var downloadSuggestionDialog: AlertDialog? = null
     private var pendingSurveyDialog: AlertDialog? = null
@@ -340,31 +341,16 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     private fun registerReceiver() {
-        val bManager = LocalBroadcastManager.getInstance(requireActivity())
-
-        val intentFilter = IntentFilter()
-        intentFilter.addAction(DashboardActivity.MESSAGE_PROGRESS)
-        bManager.registerReceiver(broadcastReceiver, intentFilter)
-
-        val intentFilter2 = IntentFilter()
-        intentFilter2.addAction("ACTION_NETWORK_CHANGED")
-        bManager.registerReceiver(receiver, intentFilter2)
-
-        val intentFilter3 = IntentFilter()
-        intentFilter3.addAction("SHOW_WIFI_ALERT")
-        bManager.registerReceiver(stateReceiver, intentFilter3)
-
-        val resourceNotFoundFilter = IntentFilter(MyDownloadService.RESOURCE_NOT_FOUND_ACTION)
-        bManager.registerReceiver(resourceNotFoundReceiver, resourceNotFoundFilter)
-    }
-
-    private fun unregisterReceiver() {
-        val fragmentActivity = activity ?: return
-        val bManager = LocalBroadcastManager.getInstance(fragmentActivity)
-        bManager.unregisterReceiver(receiver)
-        bManager.unregisterReceiver(broadcastReceiver)
-        bManager.unregisterReceiver(stateReceiver)
-        bManager.unregisterReceiver(resourceNotFoundReceiver)
+        lifecycleScope.launch {
+            broadcastService.events.collect { intent ->
+                when (intent.action) {
+                    DashboardActivity.MESSAGE_PROGRESS -> broadcastReceiver.onReceive(requireContext(), intent)
+                    "ACTION_NETWORK_CHANGED" -> receiver.onReceive(requireContext(), intent)
+                    "SHOW_WIFI_ALERT" -> stateReceiver.onReceive(requireContext(), intent)
+                    MyDownloadService.RESOURCE_NOT_FOUND_ACTION -> resourceNotFoundReceiver.onReceive(requireContext(), intent)
+                }
+            }
+        }
     }
 
     suspend fun getLibraryList(mRealm: Realm): List<RealmMyLibrary> {
@@ -382,7 +368,6 @@ abstract class BaseResourceFragment : Fragment() {
 
     override fun onPause() {
         super.onPause()
-        unregisterReceiver()
     }
 
     override fun onDetach() {
