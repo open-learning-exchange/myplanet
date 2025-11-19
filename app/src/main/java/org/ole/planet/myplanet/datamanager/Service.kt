@@ -233,50 +233,43 @@ class Service @Inject constructor(
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
         serviceScope.launch {
-            withContext(Dispatchers.IO) {
-                val primaryReachable = isServerReachable(mapping.primaryUrl)
-                val alternativeReachable = mapping.alternativeUrl?.let { isServerReachable(it) } == true
+            val primaryReachable = isServerReachable(mapping.primaryUrl)
+            val alternativeReachable = mapping.alternativeUrl?.let { isServerReachable(it) } == true
 
-                if (!primaryReachable && alternativeReachable) {
-                    mapping.alternativeUrl?.let { alternativeUrl ->
-                        val uri = updateUrl.toUri()
-                        val editor = preferences.edit()
+            if (!primaryReachable && alternativeReachable) {
+                mapping.alternativeUrl?.let { alternativeUrl ->
+                    val uri = updateUrl.toUri()
+                    val editor = preferences.edit()
 
-                        serverUrlMapper.updateUrlPreferences(
-                            editor,
-                            uri,
-                            alternativeUrl,
-                            mapping.primaryUrl,
-                            preferences
-                        )
-                    }
+                    serverUrlMapper.updateUrlPreferences(
+                        editor,
+                        uri,
+                        alternativeUrl,
+                        mapping.primaryUrl,
+                        preferences
+                    )
                 }
             }
 
-            retrofitInterface.isPlanetAvailable(UrlUtils.getUpdateUrl(preferences)).enqueue(object : Callback<ResponseBody?> {
-                override fun onResponse(call: Call<ResponseBody?>, response: Response<ResponseBody?>) {
-                    val isAvailable = callback != null && response.code() == 200
-                    serverAvailabilityCache[updateUrl] = Pair(isAvailable, System.currentTimeMillis())
-                    serviceScope.launch {
-                        withContext(Dispatchers.Main) {
-                            if (isAvailable) {
-                                callback.isAvailable()
-                            } else {
-                                callback?.notAvailable()
-                            }
-                        }
+            try {
+                val response = withContext(Dispatchers.IO) {
+                    retrofitInterface.isPlanetAvailable(UrlUtils.getUpdateUrl(preferences))
+                }
+                val isAvailable = callback != null && response.code() == 200
+                serverAvailabilityCache[updateUrl] = Pair(isAvailable, System.currentTimeMillis())
+                withContext(Dispatchers.Main) {
+                    if (isAvailable) {
+                        callback.isAvailable()
+                    } else {
+                        callback?.notAvailable()
                     }
                 }
-
-                override fun onFailure(call: Call<ResponseBody?>, t: Throwable) {
-                    serverAvailabilityCache[updateUrl] = Pair(false, System.currentTimeMillis())
-                    serviceScope.launch {
-                        withContext(Dispatchers.Main) {
-                            callback?.notAvailable()
-                        }
-                    }
+            } catch (e: Exception) {
+                serverAvailabilityCache[updateUrl] = Pair(false, System.currentTimeMillis())
+                withContext(Dispatchers.Main) {
+                    callback?.notAvailable()
                 }
-            })
+            }
         }
     }
 
