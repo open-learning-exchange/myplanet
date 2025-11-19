@@ -64,7 +64,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 class MyHealthFragment : Fragment() {
-    
+
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
 
@@ -85,6 +85,7 @@ class MyHealthFragment : Fragment() {
     var userModel: RealmUserModel? = null
     lateinit var userModelList: List<RealmUserModel>
     lateinit var adapter: UserListArrayAdapter
+    private lateinit var healthAdapter: AdapterHealthExamination
     var dialog: AlertDialog? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     lateinit var prefManager: SharedPrefManager
@@ -420,13 +421,14 @@ class MyHealthFragment : Fragment() {
                 binding.tvNoRecords.visibility = View.GONE
                 binding.tvDataPlaceholder.visibility = View.VISIBLE
 
-                val adap = AdapterHealthExamination(requireActivity(), list, mh, currentUser)
-                adap.setmRealm(mRealm)
+                healthAdapter = AdapterHealthExamination(requireActivity(), mh, currentUser)
+                healthAdapter.setmRealm(mRealm)
                 binding.rvRecords.apply {
                     layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
                     isNestedScrollingEnabled = false
-                    adapter = adap
+                    adapter = healthAdapter
                 }
+                healthAdapter.submitList(list)
                 binding.rvRecords.post {
                     val lastPosition = list.size - 1
                     if (lastPosition >= 0) {
