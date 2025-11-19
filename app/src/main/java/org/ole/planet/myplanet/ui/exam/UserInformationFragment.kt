@@ -330,9 +330,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
 
     private suspend fun uploadSubmissions() {
         try {
-            withContext(Dispatchers.IO) {
-                uploadManager.uploadSubmissions()
-            }
+            uploadManager.uploadSubmissions()
             uploadExamResultWrapper()
         } catch (e: Exception) {
             e.printStackTrace()

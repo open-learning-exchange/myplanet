@@ -183,9 +183,7 @@ class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters)
     private suspend fun uploadSubmissions() {
         try {
             if (submissionRepository.hasPendingOfflineSubmissions()) {
-                withContext(Dispatchers.IO) {
-                    uploadManager.uploadSubmissions()
-                }
+                uploadManager.uploadSubmissions()
             }
             uploadExamResultWrapper()
         } catch (e: Exception) {

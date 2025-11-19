@@ -37,6 +37,7 @@ import org.ole.planet.myplanet.model.RealmMyPersonal
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNewsLog
+import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmResourceActivity
@@ -514,91 +515,77 @@ class UploadManager @Inject constructor(
         }
     }
 
-    fun uploadSubmissions() {
+    suspend fun uploadSubmissions() {
         val apiInterface = client?.create(ApiInterface::class.java)
 
-        try {
-            val hasLooper = Looper.myLooper() != null
+        withContext(Dispatchers.IO) {
+            try {
+                val submissionsToUpload = databaseService.withRealm { realm ->
+                    realm.where(RealmSubmission::class.java)
+                        .equalTo("isUpdated", true).or().isEmpty("_id")
+                        .findAll()
+                        .map { submission ->
+                            Submission(
+                                id = submission.id,
+                                _id = submission._id,
+                                _rev = submission._rev,
+                                requestBody = RealmSubmission.serialize(realm, submission)
+                            )
+                        }
+                }
 
-            databaseService.withRealm { realm ->
-                if (hasLooper) {
-                    realm.executeTransactionAsync { transactionRealm: Realm ->
-                        val list: List<RealmSubmission> = transactionRealm.where(RealmSubmission::class.java)
-                            .equalTo("isUpdated", true).or().isEmpty("_id").findAll()
+                val successfulUploads = mutableListOf<Triple<String, String, String>>()
 
-                        list.processInBatches { submission ->
-                            try {
-                                val requestJson = RealmSubmission.serialize(transactionRealm, submission)
-                                val response = if (TextUtils.isEmpty(submission._id)) {
-                                    apiInterface?.postDoc(
-                                        UrlUtils.header,
-                                        "application/json",
-                                        "${UrlUtils.getUrl()}/submissions",
-                                        requestJson
-                                    )?.execute()
-                                } else {
-                                    apiInterface?.putDoc(
-                                        UrlUtils.header,
-                                        "application/json",
-                                        "${UrlUtils.getUrl()}/submissions/${submission._id}",
-                                        requestJson
-                                    )?.execute()
-                                }
+                submissionsToUpload.processInBatches { submission ->
+                    try {
+                        val response = if (TextUtils.isEmpty(submission._id)) {
+                            apiInterface?.postDoc(
+                                UrlUtils.header,
+                                "application/json",
+                                "${UrlUtils.getUrl()}/submissions",
+                                submission.requestBody
+                            )?.execute()
+                        } else {
+                            apiInterface?.putDoc(
+                                UrlUtils.header,
+                                "application/json",
+                                "${UrlUtils.getUrl()}/submissions/${submission._id}",
+                                submission.requestBody
+                            )?.execute()
+                        }
 
-                                val jsonObject = response?.body()
-                                if (jsonObject != null) {
-                                    val rev = getString("rev", jsonObject)
-                                    val id = getString("id", jsonObject)
-                                    submission._rev = rev
-                                    submission._id = id
-                                    submission.isUpdated = false
-                                }
-                            } catch (e: IOException) {
-                                e.printStackTrace()
+                        val jsonObject = response?.body()
+                        if (jsonObject != null) {
+                            val rev = getString("rev", jsonObject)
+                            val id = getString("id", jsonObject)
+                            submission.id?.let { originalId ->
+                                successfulUploads.add(Triple(originalId, id, rev))
                             }
                         }
+                    } catch (e: IOException) {
+                        e.printStackTrace()
                     }
-                } else {
-                    realm.executeTransaction { transactionRealm: Realm ->
-                        val list: List<RealmSubmission> = transactionRealm.where(RealmSubmission::class.java)
-                            .equalTo("isUpdated", true).or().isEmpty("_id").findAll()
+                }
 
-                        list.processInBatches { submission ->
-                            try {
-                                val requestJson = RealmSubmission.serialize(transactionRealm, submission)
-                                val response = if (TextUtils.isEmpty(submission._id)) {
-                                    apiInterface?.postDoc(
-                                        UrlUtils.header,
-                                        "application/json",
-                                        "${UrlUtils.getUrl()}/submissions",
-                                        requestJson
-                                    )?.execute()
-                                } else {
-                                    apiInterface?.putDoc(
-                                        UrlUtils.header,
-                                        "application/json",
-                                        "${UrlUtils.getUrl()}/submissions/${submission._id}",
-                                        requestJson
-                                    )?.execute()
+                if (successfulUploads.isNotEmpty()) {
+                    databaseService.withRealm { realm ->
+                        realm.executeTransaction {
+                            successfulUploads.forEach { (originalId, newId, newRev) ->
+                                val submissionToUpdate = realm.where(RealmSubmission::class.java)
+                                    .equalTo("id", originalId)
+                                    .findFirst()
+                                submissionToUpdate?.let {
+                                    it._id = newId
+                                    it._rev = newRev
+                                    it.isUpdated = false
                                 }
-
-                                val jsonObject = response?.body()
-                                if (jsonObject != null) {
-                                    val rev = getString("rev", jsonObject)
-                                    val id = getString("id", jsonObject)
-                                    submission._rev = rev
-                                    submission._id = id
-                                    submission.isUpdated = false
-                                }
-                            } catch (e: IOException) {
-                                e.printStackTrace()
                             }
                         }
                     }
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
     }
 
