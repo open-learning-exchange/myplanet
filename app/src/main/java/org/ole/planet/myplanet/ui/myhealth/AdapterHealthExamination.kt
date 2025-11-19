@@ -56,7 +56,7 @@ class AdapterHealthExamination(private val context: Context, private val mh: Rea
         if (!TextUtils.isEmpty(createdBy) && !TextUtils.equals(createdBy, userModel?.id)) {
             val name = displayNameCache.getOrPut(createdBy) {
                 val model = mRealm.where(RealmUserModel::class.java).equalTo("id", createdBy).findFirst()
-                model?.getFullName() ?: createdBy.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray().getOrNull(1) ?: createdBy
+                model?.getFullName() ?: createdBy.split(colonRegex).dropLastWhile { it.isEmpty() }.toTypedArray().getOrNull(1) ?: createdBy
             }
             binding.txtDate.text = context.getString(R.string.two_strings, binding.txtDate.text, name).trimIndent()
             holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.md_grey_50))
@@ -135,6 +135,10 @@ class AdapterHealthExamination(private val context: Context, private val mh: Rea
     }
 
     class ViewHolderMyHealthExamination(val binding: RowExaminationBinding) : RecyclerView.ViewHolder(binding.root)
+
+    companion object {
+        private val colonRegex by lazy { ":".toRegex() }
+    }
 }
 
 class HealthExaminationDiffCallback : DiffUtil.ItemCallback<RealmMyHealthPojo>() {
