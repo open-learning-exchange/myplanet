@@ -9,6 +9,7 @@ import android.view.ViewGroup
 import android.widget.CompoundButton
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Locale
 import javax.inject.Inject
@@ -88,11 +89,11 @@ class CollectionsFragment : DialogFragment(), TagExpandableAdapter.OnClickTagIte
             list = tagRepository.getTags(dbType)
             selectedItemsList = ArrayList(recentList)
             val childMap = tagRepository.buildChildMap()
-            binding.listTags.setGroupIndicator(null)
+            binding.listTags.layoutManager = LinearLayoutManager(requireContext())
             adapter = TagExpandableAdapter(list, childMap, selectedItemsList)
             adapter.setSelectMultiple(true)
             adapter.setClickListener(this@CollectionsFragment)
-            binding.listTags.setAdapter(adapter)
+            binding.listTags.adapter = adapter
             binding.btnOk.visibility = View.VISIBLE
         }
     }
