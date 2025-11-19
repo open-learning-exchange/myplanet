@@ -5,6 +5,7 @@ import com.google.gson.JsonObject
 import org.ole.planet.myplanet.model.RealmUserModel
 
 interface UserRepository {
+    fun getUserId(): String?
     suspend fun getUserById(userId: String): RealmUserModel?
     suspend fun getUserByAnyId(id: String): RealmUserModel?
     suspend fun getUserByName(name: String): RealmUserModel?

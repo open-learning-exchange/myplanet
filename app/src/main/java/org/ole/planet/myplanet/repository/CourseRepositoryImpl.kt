@@ -7,11 +7,17 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmStepExam
+import io.realm.Sort
 
 class CourseRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
 ) : RealmRepository(databaseService), CourseRepository {
-
+    override suspend fun getMyCourses(userId: String?): List<RealmMyCourse> {
+        return queryList(RealmMyCourse::class.java) {
+            equalTo("userId", userId)
+            sort("courseTitle", Sort.ASCENDING)
+        }
+    }
     override suspend fun getCourseByCourseId(courseId: String?): RealmMyCourse? {
         if (courseId.isNullOrBlank()) {
             return null

@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
+import io.realm.Sort
 
 class TeamRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
@@ -38,6 +39,13 @@ class TeamRepositoryImpl @Inject constructor(
     private val serverUrlMapper: ServerUrlMapper,
 ) : RealmRepository(databaseService), TeamRepository {
 
+    override suspend fun getMyTeams(userId: String?): List<RealmMyTeam> {
+        return queryList(RealmMyTeam::class.java) {
+            equalTo("userId", userId)
+            equalTo("docType", "membership")
+            sort("name", Sort.ASCENDING)
+        }
+    }
     override suspend fun getShareableTeams(): List<RealmMyTeam> {
         return queryList(RealmMyTeam::class.java) {
             isEmpty("teamId")

@@ -8,10 +8,16 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
+import org.ole.planet.myplanet.service.UserProfileDbHandler
 
 class UserRepositoryImpl @Inject constructor(
+    private val userProfileDbHandler: UserProfileDbHandler,
     databaseService: DatabaseService
 ) : RealmRepository(databaseService), UserRepository {
+
+    override fun getUserId(): String? {
+        return userProfileDbHandler.userModel?.id
+    }
     override suspend fun getUserById(userId: String): RealmUserModel? {
         return findByField(RealmUserModel::class.java, "id", userId)
     }

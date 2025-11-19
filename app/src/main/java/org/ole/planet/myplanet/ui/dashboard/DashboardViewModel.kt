@@ -10,11 +10,16 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.repository.CourseRepository
 import org.ole.planet.myplanet.repository.LibraryRepository
 import org.ole.planet.myplanet.repository.NotificationRepository
+import org.ole.planet.myplanet.model.RealmMyCourse
+import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.repository.SubmissionRepository
+import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.repository.UserRepository
 
 data class DashboardUiState(
     val unreadNotifications: Int = 0,
+    val myCourses: List<RealmMyCourse> = emptyList(),
+    val myTeams: List<RealmMyTeam> = emptyList(),
 )
 
 @HiltViewModel
@@ -23,10 +28,23 @@ class DashboardViewModel @Inject constructor(
     private val libraryRepository: LibraryRepository,
     private val courseRepository: CourseRepository,
     private val submissionRepository: SubmissionRepository,
-    private val notificationRepository: NotificationRepository
+    private val notificationRepository: NotificationRepository,
+    private val teamRepository: TeamRepository
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
+
+    suspend fun loadMyCourses() {
+        val userId = userRepository.getUserId()
+        val myCourses = courseRepository.getMyCourses(userId)
+        _uiState.value = _uiState.value.copy(myCourses = myCourses)
+    }
+
+    suspend fun loadMyTeams() {
+        val userId = userRepository.getUserId()
+        val myTeams = teamRepository.getMyTeams(userId)
+        _uiState.value = _uiState.value.copy(myTeams = myTeams)
+    }
     fun setUnreadNotifications(count: Int) {
         _uiState.value = _uiState.value.copy(unreadNotifications = count)
     }
