@@ -1,9 +1,9 @@
 package org.ole.planet.myplanet.model
 
 import android.content.SharedPreferences
-import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import org.ole.planet.myplanet.utilities.GsonUtils
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
@@ -154,15 +154,6 @@ open class RealmMyTeam : RealmObject() {
         }
 
         @JvmStatic
-        fun updateReports(doc: JsonObject, mRealm: Realm) {
-            mRealm.executeTransactionAsync { realm ->
-                val reportId = JsonUtils.getString("_id", doc)
-                val report = realm.where(RealmMyTeam::class.java).equalTo("_id", reportId).findFirst()
-                report?.let { populateReportFields(doc, it) }
-            }
-        }
-
-        @JvmStatic
         fun getResourceIds(teamId: String?, realm: Realm): MutableList<String> {
             val teams = realm.where(RealmMyTeam::class.java).equalTo("teamId", teamId).findAll()
             val ids = mutableListOf<String>()
@@ -274,7 +265,6 @@ open class RealmMyTeam : RealmObject() {
 
         @JvmStatic
         fun serialize(team: RealmMyTeam): JsonObject {
-            val gson = Gson()
             val `object` = JsonObject()
 
             JsonUtils.addString(`object`, "_id", team._id)
@@ -319,7 +309,7 @@ open class RealmMyTeam : RealmObject() {
                 `object`.addProperty("type", team.teamType)
             }
 
-            return JsonParser.parseString(gson.toJson(`object`)).asJsonObject
+            return JsonParser.parseString(GsonUtils.gson.toJson(`object`)).asJsonObject
         }
 
         fun getMyTeamsByUserId(mRealm: Realm, settings: SharedPreferences?): RealmResults<RealmMyTeam> {

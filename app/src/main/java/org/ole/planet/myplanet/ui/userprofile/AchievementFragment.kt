@@ -9,8 +9,8 @@ import androidx.core.view.isGone
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.snackbar.Snackbar
-import com.google.gson.Gson
 import com.google.gson.JsonArray
+import org.ole.planet.myplanet.utilities.GsonUtils
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
@@ -228,7 +228,7 @@ class AchievementFragment : BaseContainerFragment() {
     private fun populateAchievements() {
         binding.llAchievement.removeAllViews()
         achievement?.achievements?.forEach { json ->
-            val element = Gson().fromJson(json, JsonElement::class.java)
+            val element = GsonUtils.gson.fromJson(json, JsonElement::class.java)
             val view = if (element is JsonObject) createAchievementView(element) else null
             view?.let {
                 // Ensure the view is properly detached from any previous parent

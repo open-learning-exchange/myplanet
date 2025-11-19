@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.androidDecrypter
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.UrlUtils
 import retrofit2.Call
@@ -162,7 +163,7 @@ class ManagerSync private constructor(
                             val array = JsonUtils.getJsonArray("docs", responseBody)
                             if (array != null && array.size() > 0) {
                                 try {
-                                    settings.edit { putString("user_admin", Gson().toJson(array[0])) }
+                                    settings.edit { putString("user_admin", GsonUtils.gson.toJson(array[0])) }
                                 } catch (e: Exception) {
                                     e.printStackTrace()
                                 }

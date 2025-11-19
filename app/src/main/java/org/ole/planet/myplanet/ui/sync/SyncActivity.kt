@@ -29,7 +29,6 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SwitchCompat
 import androidx.core.content.edit
 import androidx.lifecycle.lifecycleScope
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.RecyclerView
 import com.afollestad.materialdialogs.DialogAction
@@ -140,10 +139,12 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     var serverAddressAdapter: ServerAddressAdapter? = null
     var serverListAddresses: List<ServerAddressesModel> = emptyList()
     private var isProgressDialogShowing = false
-    private lateinit var bManager: LocalBroadcastManager
 
     @Inject
     lateinit var syncManager: SyncManager
+
+    @Inject
+    lateinit var broadcastService: org.ole.planet.myplanet.service.BroadcastService
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -785,10 +786,13 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     fun registerReceiver() {
-        bManager = LocalBroadcastManager.getInstance(this)
-        val intentFilter = IntentFilter()
-        intentFilter.addAction(DashboardActivity.MESSAGE_PROGRESS)
-        bManager.registerReceiver(broadcastReceiver, intentFilter)
+        lifecycleScope.launch {
+            broadcastService.events.collect { intent ->
+                if (intent.action == DashboardActivity.MESSAGE_PROGRESS) {
+                    broadcastReceiver.onReceive(this@SyncActivity, intent)
+                }
+            }
+        }
     }
 
     override fun onError(msg: String, blockSync: Boolean) {
@@ -830,9 +834,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     override fun onDestroy() {
-        if (this::bManager.isInitialized) {
-            bManager.unregisterReceiver(broadcastReceiver)
-        }
         super.onDestroy()
     }
     companion object {

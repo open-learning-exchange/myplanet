@@ -40,6 +40,7 @@ import org.ole.planet.myplanet.utilities.Constants.KEY_UPGRADE_MAX
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.FileUtils
+import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
@@ -178,11 +179,11 @@ class Service @Inject constructor(
                 preferences.edit {
                     putLong("last_version_check_timestamp", System.currentTimeMillis())
                     putInt("LastWifiID", NetworkUtils.getCurrentNetworkId(context))
-                    putString("versionDetail", Gson().toJson(planetInfo))
+                    putString("versionDetail", GsonUtils.gson.toJson(planetInfo))
                 }
 
                 val rawApkVersion = fetchApkVersionString(settings)
-                val versionStr = Gson().fromJson(rawApkVersion, String::class.java)
+                val versionStr = GsonUtils.gson.fromJson(rawApkVersion, String::class.java)
                 if (versionStr.isNullOrEmpty()) {
                     withContext(Dispatchers.Main) {
                         callback.onError(context.getString(R.string.planet_is_up_to_date), false)
