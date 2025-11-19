@@ -100,16 +100,19 @@ class NewsFragment : BaseNewsFragment() {
         super.onViewCreated(view, savedInstanceState)
         viewLifecycleOwner.lifecycleScope.launch {
             newsRepository.getCommunityNews(getUserIdentifier()).collect { news ->
-                val filtered = news.map { it as RealmNews? }
-                val labels = collectAllLabels(filtered)
-                val labelFiltered = applyLabelFilter(filtered)
-                val searchFiltered = applySearchFilter(labelFiltered, etSearch.text.toString().trim())
-                if (_binding != null) {
-                    filteredNewsList = filtered
-                    labelFilteredList = labelFiltered
-                    searchFilteredList = searchFiltered
-                    setupLabelFilter(labels)
-                    setData(searchFilteredList)
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    val filtered = news.map { it as RealmNews? }
+                    val labels = collectAllLabels(filtered)
+                    val labelFiltered = applyLabelFilter(filtered)
+                    val searchFiltered =
+                        applySearchFilter(labelFiltered, etSearch.text.toString().trim())
+                    if (_binding != null) {
+                        filteredNewsList = filtered
+                        labelFilteredList = labelFiltered
+                        searchFilteredList = searchFiltered
+                        setupLabelFilter(labels)
+                        setData(searchFilteredList)
+                    }
                 }
             }
         }
