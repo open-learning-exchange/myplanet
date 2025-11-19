@@ -90,6 +90,13 @@ abstract class BaseResourceFragment : Fragment() {
     private var pendingSurveyDialog: AlertDialog? = null
     private var stayOnlineDialog: AlertDialog? = null
 
+    protected fun requireRealmInstance(): Realm {
+        if (!isRealmInitialized()) {
+            mRealm = databaseService.realmInstance
+        }
+        return mRealm
+    }
+
     protected fun isRealmInitialized(): Boolean {
         return ::mRealm.isInitialized && !mRealm.isClosed
     }
