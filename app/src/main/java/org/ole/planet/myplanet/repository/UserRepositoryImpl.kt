@@ -4,13 +4,19 @@ import android.content.SharedPreferences
 import com.google.gson.JsonObject
 import java.util.Calendar
 import javax.inject.Inject
+import android.content.SharedPreferences
+import com.google.gson.JsonObject
+import java.util.Calendar
+import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
 
 class UserRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService
+    databaseService: DatabaseService,
+    @AppPreferences private val settings: SharedPreferences,
 ) : RealmRepository(databaseService), UserRepository {
     override suspend fun getUserById(userId: String): RealmUserModel? {
         return findByField(RealmUserModel::class.java, "id", userId)
@@ -142,5 +148,17 @@ class UserRepositoryImpl @Inject constructor(
         }
 
         return getUserByAnyId(userId)
+    }
+
+    override fun getUserModel(): RealmUserModel? {
+        val userId = settings.getString("userId", null)?.takeUnless { it.isBlank() } ?: return null
+        return withRealm { realm ->
+            realm.where(RealmUserModel::class.java)
+                .equalTo("id", userId)
+                .or()
+                .equalTo("_id", userId)
+                .findFirst()
+                ?.let { realm.copyFromRealm(it) }
+        }
     }
 }
