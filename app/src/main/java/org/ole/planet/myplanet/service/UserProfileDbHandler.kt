@@ -32,15 +32,6 @@ class UserProfileDbHandler @Inject constructor(
 ) {
     private val fullName: String
 
-    constructor(context: Context) : this(
-        context,
-        DatabaseService(context),
-        context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE),
-        EntryPointAccessors.fromApplication(
-            context.applicationContext, ServiceEntryPoint::class.java
-        ).applicationScope()
-    )
-
     init {
         try {
             fullName = Utilities.getUserName(settings)
