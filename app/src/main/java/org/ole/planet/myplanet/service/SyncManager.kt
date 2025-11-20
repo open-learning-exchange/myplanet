@@ -67,6 +67,7 @@ class SyncManager @Inject constructor(
     private val improvedSyncManager: Lazy<ImprovedSyncManager>,
     @ApplicationScope private val syncScope: CoroutineScope
 ) {
+    private val realmSyncDispatcher = Dispatchers.IO.limitedParallelism(1)
     private var td: Job? = null
     lateinit var mRealm: Realm
     private var isSyncing = false
@@ -148,7 +149,7 @@ class SyncManager @Inject constructor(
     }
 
     private fun authenticateAndSync(type: String, syncTables: List<String>?) {
-        td = syncScope.launch(Dispatchers.IO) {
+        td = syncScope.launch(realmSyncDispatcher) {
             if (TransactionSyncManager.authenticate()) {
                 startSync(type, syncTables)
             } else {
