@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -38,6 +39,9 @@ class DashboardViewModel @Inject constructor(
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
+
+    private var userContentJob: Job? = null
+
     fun setUnreadNotifications(count: Int) {
         _uiState.update { it.copy(unreadNotifications = count) }
     }
@@ -83,20 +87,23 @@ class DashboardViewModel @Inject constructor(
 
     fun loadUserContent(userId: String?) {
         if (userId == null) return
-        viewModelScope.launch {
-            val myLibrary = libraryRepository.getMyLibrary(userId)
-            _uiState.update { it.copy(library = myLibrary) }
-        }
-
-        viewModelScope.launch {
-            courseRepository.getMyCoursesFlow(userId).collect { courses ->
-                _uiState.update { it.copy(courses = courses) }
+        userContentJob?.cancel()
+        userContentJob = viewModelScope.launch {
+            launch {
+                val myLibrary = libraryRepository.getMyLibrary(userId)
+                _uiState.update { it.copy(library = myLibrary) }
             }
-        }
 
-        viewModelScope.launch {
-            teamRepository.getMyTeamsFlow(userId).collect { teams ->
-                _uiState.update { it.copy(teams = teams) }
+            launch {
+                courseRepository.getMyCoursesFlow(userId).collect { courses ->
+                    _uiState.update { it.copy(courses = courses) }
+                }
+            }
+
+            launch {
+                teamRepository.getMyTeamsFlow(userId).collect { teams ->
+                    _uiState.update { it.copy(teams = teams) }
+                }
             }
         }
     }
