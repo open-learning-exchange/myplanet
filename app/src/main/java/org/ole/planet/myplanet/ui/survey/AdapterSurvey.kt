@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.callback.SurveyAdoptListener
 import org.ole.planet.myplanet.databinding.RowSurveyBinding
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMembershipDoc
+import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -131,12 +132,8 @@ class AdapterSurvey(
                 }
 
                 var teamSubmission = getTeamSubmission()
-
                 startSurvey.setOnClickListener {
-                    teamSubmission = getTeamSubmission()
-
                     val shouldAdopt = exam.isTeamShareAllowed && teamSubmission?.isValid != true
-
                     if (shouldAdopt) {
                         adoptSurvey(exam, teamId)
                     } else {
@@ -226,6 +223,51 @@ class AdapterSurvey(
 
             try {
                 mRealm.executeTransactionAsync({ realm ->
+                    val teamName = if (isTeam && teamId != null) {
+                        realm.where(RealmMyTeam::class.java)
+                            .equalTo("_id", teamId)
+                            .findFirst()?.name
+                    } else null
+
+                    if (isTeam && teamId != null && teamName != null) {
+                        val newSurveyId = UUID.randomUUID().toString()
+
+                        val existingSurvey = realm.where(RealmStepExam::class.java)
+                            .equalTo("sourceSurveyId", examId)
+                            .equalTo("teamId", teamId)
+                            .findFirst()
+
+                        if (existingSurvey == null) {
+                            realm.createObject(RealmStepExam::class.java, newSurveyId).apply {
+                                _rev = null
+                                createdDate = System.currentTimeMillis()
+                                updatedDate = System.currentTimeMillis()
+                                createdBy = userModel?.id
+                                totalMarks = exam.totalMarks
+                                name = "${exam.name} - $teamName"
+                                description = exam.description
+                                type = exam.type
+                                stepId = exam.stepId
+                                courseId = exam.courseId
+                                sourcePlanet = exam.sourcePlanet
+                                passingPercentage = exam.passingPercentage
+                                noOfQuestions = exam.noOfQuestions
+                                isFromNation = exam.isFromNation
+
+                                this.teamId = teamId
+                                sourceSurveyId = examId
+                                isTeamShareAllowed = false
+                            }
+
+                            val questions = realm.where(RealmExamQuestion::class.java)
+                                .equalTo("examId", examId)
+                                .findAll()
+
+                            val questionsArray = RealmExamQuestion.serializeQuestions(questions)
+                            RealmExamQuestion.insertExamQuestions(questionsArray, newSurveyId, realm)
+                        }
+                    }
+
                     val existingAdoption = if (isTeam && teamId != null) {
                         realm.where(RealmSubmission::class.java)
                             .equalTo("userId", userId)
@@ -266,7 +308,6 @@ class AdapterSurvey(
                     }
                 }, {
                     mRealm.refresh()
-
                     adoptedSurveyIds.add("$examId")
                     val position = currentList.indexOfFirst { it.id == examId }
                     if (position != -1) {
