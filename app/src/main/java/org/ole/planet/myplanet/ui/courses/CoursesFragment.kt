@@ -640,21 +640,29 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     private fun saveSearchActivity() {
         if (filterApplied()) {
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
-            val activity = mRealm.createObject(RealmSearchActivity::class.java, UUID.randomUUID().toString())
-            activity.user = "${model?.name}"
-            activity.time = Calendar.getInstance().timeInMillis
-            activity.createdOn = "${model?.planetCode}"
-            activity.parentCode = "${model?.parentCode}"
-            activity.text = etSearch.text.toString()
-            activity.type = "courses"
-            val filter = JsonObject()
+            val searchText = etSearch.text.toString()
+            val userName = "${model?.name}"
+            val planetCode = "${model?.planetCode}"
+            val parentCode = "${model?.parentCode}"
+            val tags = searchTags.toList()
+            val grade = gradeLevel
+            val subject = subjectLevel
 
-            filter.add("tags", getTagsArray(searchTags.toList()))
-            filter.addProperty("doc.gradeLevel", gradeLevel)
-            filter.addProperty("doc.subjectLevel", subjectLevel)
-            activity.filter = GsonUtils.gson.toJson(filter)
-            mRealm.commitTransaction()
+            mRealm.executeTransactionAsync { realm ->
+                val activity = realm.createObject(RealmSearchActivity::class.java, UUID.randomUUID().toString())
+                activity.user = userName
+                activity.time = Calendar.getInstance().timeInMillis
+                activity.createdOn = planetCode
+                activity.parentCode = parentCode
+                activity.text = searchText
+                activity.type = "courses"
+                val filter = JsonObject()
+
+                filter.add("tags", getTagsArray(tags))
+                filter.addProperty("doc.gradeLevel", grade)
+                filter.addProperty("doc.subjectLevel", subject)
+                activity.filter = GsonUtils.gson.toJson(filter)
+            }
         }
     }
 
