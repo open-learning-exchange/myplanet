@@ -230,19 +230,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val data = loadCourseDataAsync()
-                adapterCourses = AdapterCourses(
-                    requireActivity(),
-                    data.courses,
-                    data.ratings,
-                    userProfileDbHandler,
-                    tagRepository,
-                    this@CoursesFragment
-                ).apply {
-                    setProgressMap(data.progress)
-                    setListener(this@CoursesFragment)
-                    setRatingChangeListener(this@CoursesFragment)
-                }
-                recyclerView.adapter = adapterCourses
+                adapterCourses.setRatingsMap(data.ratings)
+                adapterCourses.setProgressMap(data.progress)
+                adapterCourses.setCourseList(data.courses)
                 if (isMyCourseLib) {
                     resources = data.resources
                 }
@@ -739,20 +729,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 } else {
                     filterCourseByTag(etSearch.text.toString(), searchTags)
                 }
-
-                adapterCourses = AdapterCourses(
-                    requireActivity(),
-                    filteredCourseList,
-                    data.ratings,
-                    userProfileDbHandler,
-                    tagRepository,
-                    this@CoursesFragment
-                ).apply {
-                    setProgressMap(data.progress)
-                    setListener(this@CoursesFragment)
-                    setRatingChangeListener(this@CoursesFragment)
-                }
-                recyclerView.adapter = adapterCourses
+                adapterCourses.setRatingsMap(data.ratings)
+                adapterCourses.setProgressMap(data.progress)
+                adapterCourses.setCourseList(filteredCourseList)
             } catch (e: Exception) {
                 e.printStackTrace()
             }

@@ -41,7 +41,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 class AdapterCourses(
     private val context: Context,
     private var courseList: List<RealmMyCourse?>,
-    private val map: HashMap<String?, JsonObject>,
+    private var map: HashMap<String?, JsonObject>,
     private val userProfileDbHandler: UserProfileDbHandler,
     private val tagRepository: TagRepository,
     private val lifecycleOwner: LifecycleOwner
@@ -149,6 +149,10 @@ class AdapterCourses(
         isAscending = !isAscending
         val sortedList = sortCourseList(courseList)
         dispatchDiff(sortedList)
+    }
+
+    fun setRatingsMap(ratingsMap: HashMap<String?, JsonObject>) {
+        this.map = ratingsMap
     }
 
     fun setProgressMap(progressMap: HashMap<String?, JsonObject>?) {
