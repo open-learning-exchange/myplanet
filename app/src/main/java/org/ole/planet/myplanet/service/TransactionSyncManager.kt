@@ -110,7 +110,7 @@ object TransactionSyncManager {
     }
 
     fun syncDb(realm: Realm, table: String) {
-        realm.executeTransactionAsync { mRealm: Realm ->
+        realm.executeTransaction { mRealm: Realm ->
             val apiInterface = client?.create(ApiInterface::class.java)
             val allDocs = apiInterface?.getJsonObject(UrlUtils.header, UrlUtils.getUrl() + "/" + table + "/_all_docs?include_doc=false")
             try {
