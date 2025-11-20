@@ -46,7 +46,13 @@ class ImageViewerActivity : AppCompatActivity() {
                     val basePath = getExternalFilesDir(null)
                     File(basePath, "ole/$fileName")
                 }
-                Glide.with(applicationContext).load(imageFile).into(binding.imageViewer)
+                Glide.with(applicationContext)
+                    .load(imageFile)
+                    .diskCacheStrategy(DiskCacheStrategy.ALL)
+                    .fitCenter()
+                    .placeholder(R.drawable.ole_logo)
+                    .error(R.drawable.ole_logo)
+                    .into(binding.imageViewer)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -61,12 +67,13 @@ class ImageViewerActivity : AppCompatActivity() {
                 fileName = fileName?.substring(matcher.group().length)
             }
         }
-        val requestOptions = RequestOptions()
-            .diskCacheStrategy(DiskCacheStrategy.NONE)
-            .skipMemoryCache(true)
         Glide.with(this)
             .load(fileName)
-            .apply(requestOptions)
+            .diskCacheStrategy(DiskCacheStrategy.ALL)
+            .skipMemoryCache(true)
+            .fitCenter()
+            .placeholder(R.drawable.ole_logo)
+            .error(R.drawable.ole_logo)
             .into(binding.imageViewer)
     }
 }
