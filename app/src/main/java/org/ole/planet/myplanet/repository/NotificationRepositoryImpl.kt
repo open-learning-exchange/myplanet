@@ -128,4 +128,50 @@ class NotificationRepositoryImpl @Inject constructor(
             sort("isRead", io.realm.Sort.ASCENDING, "createdAt", io.realm.Sort.DESCENDING)
         }
     }
+
+    override suspend fun getSurveyId(relatedId: String?): String? {
+        return relatedId?.let {
+            withRealm { realm ->
+                realm.where(org.ole.planet.myplanet.model.RealmStepExam::class.java)
+                    .equalTo("name", it)
+                    .findFirst()?.id
+            }
+        }
+    }
+
+    override suspend fun getTaskDetails(relatedId: String?): Triple<String, String?, String?>? {
+        return relatedId?.let {
+            withRealm { realm ->
+                val task = realm.where(org.ole.planet.myplanet.model.RealmTeamTask::class.java)
+                    .equalTo("id", it)
+                    .findFirst()
+                val linkJson = org.json.JSONObject(task?.link ?: "{}")
+                val teamId = linkJson.optString("teams")
+                if (teamId.isNotEmpty()) {
+                    val teamObject = realm.where(org.ole.planet.myplanet.model.RealmMyTeam::class.java)
+                        .equalTo("_id", teamId)
+                        .findFirst()
+                    Triple(teamId, teamObject?.name, teamObject?.type)
+                } else {
+                    null
+                }
+            }
+        }
+    }
+
+    override suspend fun getJoinRequestTeamId(relatedId: String?): String? {
+        return relatedId?.let {
+            val actualJoinRequestId = if (it.startsWith("join_request_")) {
+                it.removePrefix("join_request_")
+            } else {
+                it
+            }
+            withRealm { realm ->
+                realm.where(org.ole.planet.myplanet.model.RealmMyTeam::class.java)
+                    .equalTo("_id", actualJoinRequestId)
+                    .equalTo("docType", "request")
+                    .findFirst()?.teamId
+            }
+        }
+    }
 }
