@@ -420,7 +420,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         if (model?.getRoleAsString()?.contains("health") == true) {
             settings?.let { TransactionSyncManager.syncAllHealthData(realm, it, this) }
         } else {
-            settings?.let { TransactionSyncManager.syncKeyIv(realm, it, this) }
+            settings?.let { TransactionSyncManager.syncKeyIv(realm, it, this, profileDbHandler) }
         }
     }
 
