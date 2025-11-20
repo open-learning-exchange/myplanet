@@ -15,6 +15,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayout
 import io.realm.Case
@@ -88,6 +89,9 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         if (!TextUtils.isEmpty(model?.userImage)) {
             Glide.with(requireActivity())
                 .load(model?.userImage)
+                .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .override(200, 200)
+                .circleCrop()
                 .placeholder(R.drawable.profile)
                 .error(R.drawable.profile)
                 .into(imageView)
@@ -95,14 +99,16 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             imageView.setImageResource(R.drawable.profile)
         }
 
-        if (realm.isInTransaction) {
-            realm.commitTransaction()
+        if (isRealmInitialized() && mRealm.isInTransaction) {
+            mRealm.commitTransaction()
         }
 
-        offlineActivitiesResults = realm.where(RealmOfflineActivity::class.java)
-            .equalTo("userName", profileDbHandler.userModel?.name)
-            .equalTo("type", KEY_LOGIN)
-            .findAllAsync()
+        if (isRealmInitialized()) {
+            offlineActivitiesResults = mRealm.where(RealmOfflineActivity::class.java)
+                .equalTo("userName", profileDbHandler.userModel?.name)
+                .equalTo("type", KEY_LOGIN)
+                .findAllAsync()
+        }
         v.findViewById<TextView>(R.id.txtRole).text = getString(R.string.user_role, model?.getRoleAsString())
         val offlineVisits = profileDbHandler.offlineVisits
         v.findViewById<TextView>(R.id.txtFullName).text = getString(R.string.user_name, fullName, offlineVisits)
@@ -338,14 +344,16 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         initializeFlexBoxView(view, R.id.flexboxLayoutTeams, RealmMyTeam::class.java)
         initializeFlexBoxView(view, R.id.flexboxLayoutMyLife, RealmMyLife::class.java)
 
-        if (realm.isInTransaction) {
-            realm.commitTransaction()
+        if (isRealmInitialized() && mRealm.isInTransaction) {
+            mRealm.commitTransaction()
         }
-        myCoursesResults = RealmMyCourse.getMyByUserId(realm, settings)
-        myTeamsResults = RealmMyTeam.getMyTeamsByUserId(realm, settings)
+        if (isRealmInitialized()) {
+            myCoursesResults = RealmMyCourse.getMyByUserId(mRealm, settings)
+            myTeamsResults = RealmMyTeam.getMyTeamsByUserId(mRealm, settings)
 
-        myCoursesResults.addChangeListener(myCoursesChangeListener)
-        myTeamsResults.addChangeListener(myTeamsChangeListener)
+            myCoursesResults.addChangeListener(myCoursesChangeListener)
+            myTeamsResults.addChangeListener(myTeamsChangeListener)
+        }
     }
 
     private fun updateMyCoursesUI() {
