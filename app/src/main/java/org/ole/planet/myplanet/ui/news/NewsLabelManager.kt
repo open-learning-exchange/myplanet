@@ -4,17 +4,24 @@ import android.content.Context
 import android.view.MenuItem
 import android.view.View
 import fisk.chipcloud.ChipCloud
-import io.realm.Realm
 import io.realm.RealmList
 import java.util.Locale
-import java.util.concurrent.atomic.AtomicBoolean
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNewsBinding
+import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Utilities
 
-class NewsLabelManager(private val context: Context, private val realm: Realm) {
+class NewsLabelManager(
+    private val context: Context,
+    private val databaseService: DatabaseService,
+    private val lifecycleScope: CoroutineScope
+) {
     fun setupAddLabelMenu(binding: RowNewsBinding, news: RealmNews?, canManageLabels: Boolean) {
         binding.btnAddLabel.setOnClickListener(null)
         binding.btnAddLabel.isEnabled = canManageLabels
@@ -39,38 +46,44 @@ class NewsLabelManager(private val context: Context, private val realm: Realm) {
                         return@setOnMenuItemClickListener true
                     }
 
-                    val labelAdded = AtomicBoolean(false)
-                    realm.executeTransactionAsync({ transactionRealm ->
-                        val managedNews = transactionRealm.where(RealmNews::class.java)
-                            .equalTo("id", newsId)
-                            .findFirst()
-                        if (managedNews != null) {
-                            var managedLabels = managedNews.labels
-                            if (managedLabels == null) {
-                                managedLabels = RealmList()
-                                managedNews.labels = managedLabels
+                    lifecycleScope.launch {
+                        val updatedLabels = withContext(Dispatchers.IO) {
+                            var labels: RealmList<String>? = null
+                            databaseService.withRealm { realm ->
+                                realm.executeTransaction { transactionRealm ->
+                                    val managedNews =
+                                        transactionRealm.where(RealmNews::class.java)
+                                            .equalTo("id", newsId)
+                                            .findFirst()
+                                    if (managedNews != null) {
+                                        var managedLabels = managedNews.labels
+                                        if (managedLabels == null) {
+                                            managedLabels = RealmList()
+                                            managedNews.labels = managedLabels
+                                        }
+                                        if (!managedLabels.contains(selectedLabel)) {
+                                            managedLabels.add(selectedLabel)
+                                            labels = RealmList<String>().apply {
+                                                managedLabels.forEach { add(it) }
+                                            }
+                                        }
+                                    }
+                                }
                             }
-                            if (!managedLabels.contains(selectedLabel)) {
-                                managedLabels.add(selectedLabel)
-                                labelAdded.set(true)
+                            labels
+                        }
+
+                        if (updatedLabels != null) {
+                            withContext(Dispatchers.Main) {
+                                news?.labels = updatedLabels
+                                Utilities.toast(
+                                    context,
+                                    context.getString(R.string.label_added)
+                                )
+                                news?.let { showChips(binding, it, canManageLabels) }
                             }
                         }
-                    }, {
-                        if (labelAdded.get()) {
-                            val managedNews = realm.where(RealmNews::class.java)
-                                .equalTo("id", newsId)
-                                .findFirst()
-                            val managedLabels = managedNews?.labels
-                            val newLabels = RealmList<String>().apply {
-                                managedLabels?.forEach { add(it) }
-                            }
-                            news?.labels = newLabels
-                            Utilities.toast(context, context.getString(R.string.label_added))
-                            news?.let { showChips(binding, it, canManageLabels) }
-                        }
-                    }, { error ->
-                        error.printStackTrace()
-                    })
+                    }
                     return@setOnMenuItemClickListener false
                 }
                 true
@@ -99,36 +112,35 @@ class NewsLabelManager(private val context: Context, private val realm: Realm) {
                     }
                     val newsId = news.id
                     if (selectedLabel != null && newsId != null) {
-                        val labelRemoved = AtomicBoolean(false)
-                        realm.executeTransactionAsync({ transactionRealm ->
-                            val managedNews = transactionRealm.where(RealmNews::class.java)
-                                .equalTo("id", newsId)
-                                .findFirst()
-                            if (managedNews != null) {
-                                var managedLabels = managedNews.labels
-                                if (managedLabels == null) {
-                                    managedLabels = RealmList()
-                                    managedNews.labels = managedLabels
+                        lifecycleScope.launch {
+                            val updatedLabels = withContext(Dispatchers.IO) {
+                                var labels: RealmList<String>? = null
+                                databaseService.withRealm { realm ->
+                                    realm.executeTransaction { transactionRealm ->
+                                        val managedNews =
+                                            transactionRealm.where(RealmNews::class.java)
+                                                .equalTo("id", newsId)
+                                                .findFirst()
+                                        if (managedNews != null) {
+                                            val managedLabels = managedNews.labels
+                                            if (managedLabels?.remove(selectedLabel) == true) {
+                                                labels = RealmList<String>().apply {
+                                                    managedLabels.forEach { add(it) }
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
-                                if (managedLabels.remove(selectedLabel)) {
-                                    labelRemoved.set(true)
+                                labels
+                            }
+
+                            if (updatedLabels != null) {
+                                withContext(Dispatchers.Main) {
+                                    news.labels = updatedLabels
+                                    showChips(binding, news, canManageLabels)
                                 }
                             }
-                        }, {
-                            if (labelRemoved.get()) {
-                                val managedNews = realm.where(RealmNews::class.java)
-                                    .equalTo("id", newsId)
-                                    .findFirst()
-                                val managedLabels = managedNews?.labels
-                                val newLabels = RealmList<String>().apply {
-                                    managedLabels?.forEach { add(it) }
-                                }
-                                news.labels = newLabels
-                                showChips(binding, news, canManageLabels)
-                            }
-                        }, { error ->
-                            error.printStackTrace()
-                        })
+                        }
                     }
                 }
             }

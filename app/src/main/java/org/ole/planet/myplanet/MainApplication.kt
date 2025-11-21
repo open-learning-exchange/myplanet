@@ -240,6 +240,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         val builder = VmPolicy.Builder()
         StrictMode.setVmPolicy(builder.build())
         builder.detectFileUriExposure()
+        builder.detectLeakedSqlLiteObjects()
+        builder.detectLeakedClosableObjects()
     }
 
     private suspend fun setupAnrWatchdog() {

@@ -187,7 +187,8 @@ class NewsFragment : BaseNewsFragment() {
             })
             adapterNews = AdapterNews(requireActivity(), user, null, "", null, userProfileDbHandler, databaseService)
 
-            adapterNews?.setmRealm(mRealm)
+            adapterNews?.initLabelManager(viewLifecycleOwner.lifecycleScope)
+            adapterNews?.setRealm(mRealm)
             adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
             adapterNews?.setListener(this)
             adapterNews?.registerAdapterDataObserver(observer)

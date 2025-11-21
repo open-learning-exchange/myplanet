@@ -16,7 +16,6 @@ import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
-import androidx.core.graphics.drawable.toDrawable
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -31,6 +30,7 @@ import io.realm.Realm
 import io.realm.RealmList
 import io.realm.Sort
 import java.io.File
+import kotlinx.coroutines.CoroutineScope
 import java.util.Calendar
 import java.util.Locale
 import org.ole.planet.myplanet.R
@@ -135,11 +135,12 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         this.listener = listener
     }
 
-    fun setmRealm(mRealm: Realm?) {
-        if (mRealm != null) {
-            this.mRealm = mRealm
-            labelManager = NewsLabelManager(context, this.mRealm)
-        }
+    fun setRealm(realm: Realm) {
+        mRealm = realm
+    }
+
+    fun initLabelManager(lifecycleScope: CoroutineScope) {
+        labelManager = NewsLabelManager(context, databaseService, lifecycleScope)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
@@ -147,9 +148,6 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         sharedPreferences = SharedPrefManager(context)
         user = userProfileDbHandler.userModel
         settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        if (::mRealm.isInitialized) {
-            if (labelManager == null) labelManager = NewsLabelManager(context, mRealm)
-        }
         return ViewHolderNews(binding)
     }
 
