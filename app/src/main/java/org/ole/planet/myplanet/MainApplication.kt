@@ -7,9 +7,11 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.content.res.Configuration
 import android.os.Bundle
+import android.os.Debug
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
+import android.util.Log
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequest
@@ -45,6 +47,7 @@ import org.ole.planet.myplanet.service.TaskNotificationWorker
 import org.ole.planet.myplanet.utilities.ANRWatchdog
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
+import org.ole.planet.myplanet.utilities.trace
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utilities.NetworkUtils.startListenNetworkState
@@ -180,20 +183,22 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     private lateinit var anrWatchdog: ANRWatchdog
 
     override fun onCreate() {
-        super.onCreate()
-        setupCriticalProperties()
-        initApp()
-        ensureApiClientInitialized()
-        setupStrictMode()
-        registerExceptionHandler()
-        setupLifecycleCallbacks()
-        configureTheme()
+        trace("MainApplication.onCreate") {
+            super.onCreate()
+            setupCriticalProperties()
+            initApp()
+            ensureApiClientInitialized()
+            setupStrictMode()
+            registerExceptionHandler()
+            setupLifecycleCallbacks()
+            configureTheme()
 
-        applicationScope.launch {
-            initializeDatabaseConnection()
-            setupAnrWatchdog()
-            scheduleWorkersOnStart()
-            observeNetworkForDownloads()
+            applicationScope.launch {
+                initializeDatabaseConnection()
+                setupAnrWatchdog()
+                scheduleWorkersOnStart()
+                observeNetworkForDownloads()
+            }
         }
     }
 
@@ -237,14 +242,20 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                 .build()
             StrictMode.setThreadPolicy(threadPolicy)
         }
-        val builder = VmPolicy.Builder()
-        StrictMode.setVmPolicy(builder.build())
-        builder.detectFileUriExposure()
+        if (BuildConfig.DEBUG) {
+            val builder = VmPolicy.Builder()
+                .detectLeakedSqlLiteObjects()
+                .detectLeakedClosableObjects()
+                .detectLeakedRegistrationObjects()
+                .detectFileUriExposure()
+                .penaltyLog()
+            StrictMode.setVmPolicy(builder.build())
+        }
     }
 
     private suspend fun setupAnrWatchdog() {
         withContext(Dispatchers.Default) {
-            anrWatchdog = ANRWatchdog(timeout = 5000L, listener = object : ANRWatchdog.ANRListener {
+            anrWatchdog = ANRWatchdog(timeout = 3000L, listener = object : ANRWatchdog.ANRListener {
                 override fun onAppNotResponding(message: String, blockedThread: Thread, duration: Long) {
                     applicationScope.launch {
                         createLog("anr", "ANR detected! Duration: ${duration}ms\n $message")

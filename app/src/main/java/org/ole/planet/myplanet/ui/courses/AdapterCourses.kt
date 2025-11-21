@@ -2,6 +2,8 @@ package org.ole.planet.myplanet.ui.courses
 
 import android.content.Context
 import android.os.Bundle
+import android.os.Debug
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -34,6 +36,7 @@ import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getInt
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
+import org.ole.planet.myplanet.utilities.trace
 import org.ole.planet.myplanet.utilities.SelectionUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
@@ -165,42 +168,44 @@ class AdapterCourses(
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        if (holder !is ViewHoldercourse) return
+        trace("AdapterCourses.onBindViewHolder") {
+            if (holder !is ViewHoldercourse) return@trace
 
-        holder.bind(position)
-        val course = courseList[position] ?: return
+            holder.bind(position)
+            val course = courseList[position] ?: return@trace
 
-        updateVisibilityForMyCourse(holder, course)
-        holder.rowCourseBinding.title.text = course.courseTitle
-        configureDescription(holder, course, position)
-        configureDateViews(holder, course)
-        setTextViewContent(
-            holder.rowCourseBinding.gradLevel,
-            course.gradeLevel,
-            holder.rowCourseBinding.gradLevel,
-            context.getString(R.string.grade_level_colon)
-        )
-        setTextViewContent(
-            holder.rowCourseBinding.subjectLevel,
-            course.subjectLevel,
-            holder.rowCourseBinding.subjectLevel,
-            context.getString(R.string.subject_level_colon)
-        )
-        holder.rowCourseBinding.courseProgress.max = course.getNumberOfSteps()
-        displayTagCloud(holder, position)
+            updateVisibilityForMyCourse(holder, course)
+            holder.rowCourseBinding.title.text = course.courseTitle
+            configureDescription(holder, course, position)
+            configureDateViews(holder, course)
+            setTextViewContent(
+                holder.rowCourseBinding.gradLevel,
+                course.gradeLevel,
+                holder.rowCourseBinding.gradLevel,
+                context.getString(R.string.grade_level_colon)
+            )
+            setTextViewContent(
+                holder.rowCourseBinding.subjectLevel,
+                course.subjectLevel,
+                holder.rowCourseBinding.subjectLevel,
+                context.getString(R.string.subject_level_colon)
+            )
+            holder.rowCourseBinding.courseProgress.max = course.getNumberOfSteps()
+            displayTagCloud(holder, position)
 
-        userModel = userProfileDbHandler.userModel
-        val isGuest = userModel?.isGuest() ?: true
-        if (!isGuest) setupRatingBar(holder, course)
-        setupCheckbox(holder, course, position, isGuest)
+            userModel = userProfileDbHandler.userModel
+            val isGuest = userModel?.isGuest() ?: true
+            if (!isGuest) setupRatingBar(holder, course)
+            setupCheckbox(holder, course, position, isGuest)
 
-        updateRatingViews(holder, position)
-        updateProgressViews(holder, position)
+            updateRatingViews(holder, position)
+            updateProgressViews(holder, position)
 
-        holder.rowCourseBinding.root.setOnClickListener {
-            val newPosition = holder.bindingAdapterPosition
-            if (newPosition != RecyclerView.NO_POSITION) {
-                openCourse(courseList[newPosition], 0)
+            holder.rowCourseBinding.root.setOnClickListener {
+                val newPosition = holder.bindingAdapterPosition
+                if (newPosition != RecyclerView.NO_POSITION) {
+                    openCourse(courseList[newPosition], 0)
+                }
             }
         }
     }

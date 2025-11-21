@@ -5,6 +5,8 @@ import android.content.DialogInterface
 import android.graphics.PorterDuff
 import android.graphics.Typeface
 import android.os.Bundle
+import android.os.Debug
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -31,6 +33,7 @@ import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils
+import org.ole.planet.myplanet.utilities.trace
 
 class AdapterTeamList(
     private val context: Context,
@@ -90,54 +93,62 @@ class AdapterTeamList(
     }
 
     override fun onBindViewHolder(holder: ViewHolderTeam, position: Int) {
-        val team = filteredList[position]
-        val user: RealmUserModel? = currentUser
+        trace("AdapterTeamList.onBindViewHolder") {
+            val team = filteredList[position]
+            val user: RealmUserModel? = currentUser
 
-        with(holder.binding) {
-            created.text = TimeUtils.getFormattedDate(team.createdDate)
-            type.text = team.teamType
-            type.visibility = if (team.teamType == null) View.GONE else View.VISIBLE
-            name.text = team.name
-            val visitCount = visitCounts[team._id.orEmpty()] ?: 0L
-            noOfVisits.text = context.getString(R.string.number_placeholder, visitCount)
+            with(holder.binding) {
+                created.text = TimeUtils.getFormattedDate(team.createdDate)
+                type.text = team.teamType
+                type.visibility = if (team.teamType == null) View.GONE else View.VISIBLE
+                name.text = team.name
+                val visitCount = visitCounts[team._id.orEmpty()] ?: 0L
+                noOfVisits.text = context.getString(R.string.number_placeholder, visitCount)
 
-            val teamId = team._id.orEmpty()
-            val userId = user?.id
-            val cacheKey = "${teamId}_${userId}"
-            val teamStatus = teamStatusCache[cacheKey] ?: TeamStatus(
-                isMember = false,
-                isLeader = false,
-                hasPendingRequest = false
-            )
-
-            showActionButton(teamStatus.isMember, teamStatus.isLeader, teamStatus.hasPendingRequest, team, user)
-
-            root.setOnClickListener {
-                val activity = context as? AppCompatActivity ?: return@setOnClickListener
-                val fragment = TeamDetailFragment.newInstance(
-                    teamId = "${team._id}",
-                    teamName = "${team.name}",
-                    teamType = "${team.type}",
-                    isMyTeam = teamStatus.isMember
+                val teamId = team._id.orEmpty()
+                val userId = user?.id
+                val cacheKey = "${teamId}_${userId}"
+                val teamStatus = teamStatusCache[cacheKey] ?: TeamStatus(
+                    isMember = false,
+                    isLeader = false,
+                    hasPendingRequest = false
                 )
-                NavigationHelper.replaceFragment(
-                    activity.supportFragmentManager,
-                    R.id.fragment_container,
-                    fragment,
-                    addToBackStack = true,
-                    tag = "TeamDetailFragment"
+
+                showActionButton(
+                    teamStatus.isMember,
+                    teamStatus.isLeader,
+                    teamStatus.hasPendingRequest,
+                    team,
+                    user
                 )
-                prefData.setTeamName(team.name)
-            }
 
-            btnFeedback.setOnClickListener {
-                val feedbackFragment = FeedbackFragment()
-                feedbackFragment.show(fragmentManager, "")
-                feedbackFragment.arguments = getBundle(team)
-            }
+                root.setOnClickListener {
+                    val activity = context as? AppCompatActivity ?: return@setOnClickListener
+                    val fragment = TeamDetailFragment.newInstance(
+                        teamId = "${team._id}",
+                        teamName = "${team.name}",
+                        teamType = "${team.type}",
+                        isMyTeam = teamStatus.isMember
+                    )
+                    NavigationHelper.replaceFragment(
+                        activity.supportFragmentManager,
+                        R.id.fragment_container,
+                        fragment,
+                        addToBackStack = true,
+                        tag = "TeamDetailFragment"
+                    )
+                    prefData.setTeamName(team.name)
+                }
 
-            joinLeave.setOnClickListener {
-                handleJoinLeaveClick(team, user)
+                btnFeedback.setOnClickListener {
+                    val feedbackFragment = FeedbackFragment()
+                    feedbackFragment.show(fragmentManager, "")
+                    feedbackFragment.arguments = getBundle(team)
+                }
+
+                joinLeave.setOnClickListener {
+                    handleJoinLeaveClick(team, user)
+                }
             }
         }
     }
