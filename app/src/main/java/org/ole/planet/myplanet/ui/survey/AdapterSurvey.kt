@@ -300,6 +300,18 @@ class AdapterSurvey(
                             isUpdated = true
 
                             if (isTeam && teamId != null) {
+                                val team = realm.where(RealmMyTeam::class.java)
+                                    .equalTo("_id", teamId)
+                                    .findFirst()
+
+                                if (team != null) {
+                                    val teamRef = realm.createObject(org.ole.planet.myplanet.model.RealmTeamReference::class.java)
+                                    teamRef._id = team._id
+                                    teamRef.name = team.name
+                                    teamRef.type = team.type ?: "team"
+                                    teamObject = teamRef
+                                }
+
                                 membershipDoc = realm.createObject(RealmMembershipDoc::class.java).apply {
                                     this.teamId = teamId
                                 }
