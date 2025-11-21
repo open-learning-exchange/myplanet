@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.text.TextUtils
 import android.util.Base64
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -46,9 +47,9 @@ object TransactionSyncManager {
                     response?.code() == 200
                 }
             } catch (e: TimeoutCancellationException) {
-                // Handle timeout
+                Log.w("SyncManager", "Authentication timeout, attempt ${attempt + 1}")
             } catch (e: IOException) {
-                // Handle IO exception
+                Log.w("SyncManager", "Authentication IO exception, attempt ${attempt + 1}", e)
             }
             attempt++
             if (attempt < 3) {
@@ -110,33 +111,31 @@ object TransactionSyncManager {
     }
 
     fun syncDb(realm: Realm, table: String) {
-        realm.executeTransaction { mRealm: Realm ->
-            val apiInterface = client?.create(ApiInterface::class.java)
-            val allDocs = apiInterface?.getJsonObject(UrlUtils.header, UrlUtils.getUrl() + "/" + table + "/_all_docs?include_doc=false")
-            try {
-                val all = allDocs?.execute()
-                val rows = getJsonArray("rows", all?.body())
-                val keys: MutableList<String> = ArrayList()
-                for (i in 0 until rows.size()) {
-                    val `object` = rows[i].asJsonObject
-                    if (!TextUtils.isEmpty(getString("id", `object`))) keys.add(getString("key", `object`))
-                    if (i == rows.size() - 1 || keys.size == 1000) {
-                        val obj = JsonObject()
-                        obj.add("keys", Gson().fromJson(Gson().toJson(keys), JsonArray::class.java))
-                        val response = apiInterface?.findDocs(UrlUtils.header, "application/json", UrlUtils.getUrl() + "/" + table + "/_all_docs?include_docs=true", obj)?.execute()
-                        if (response?.body() != null) {
-                            val arr = getJsonArray("rows", response.body())
-                            if (table == "chat_history") {
-                                insertToChat(arr, mRealm)
-                            }
-                            insertDocs(arr, mRealm, table)
+        val apiInterface = client?.create(ApiInterface::class.java)
+        val allDocs = apiInterface?.getJsonObject(UrlUtils.header, UrlUtils.getUrl() + "/" + table + "/_all_docs?include_doc=false")
+        try {
+            val all = allDocs?.execute()
+            val rows = getJsonArray("rows", all?.body())
+            val keys: MutableList<String> = ArrayList()
+            for (i in 0 until rows.size()) {
+                val `object` = rows[i].asJsonObject
+                if (!TextUtils.isEmpty(getString("id", `object`))) keys.add(getString("key", `object`))
+                if (i == rows.size() - 1 || keys.size == 1000) {
+                    val obj = JsonObject()
+                    obj.add("keys", Gson().fromJson(Gson().toJson(keys), JsonArray::class.java))
+                    val response = apiInterface?.findDocs(UrlUtils.header, "application/json", UrlUtils.getUrl() + "/" + table + "/_all_docs?include_docs=true", obj)?.execute()
+                    if (response?.body() != null) {
+                        val arr = getJsonArray("rows", response.body())
+                        if (table == "chat_history") {
+                            insertToChat(arr, realm)
                         }
-                        keys.clear()
+                        insertDocs(arr, realm, table)
                     }
+                    keys.clear()
                 }
-            } catch (e: IOException) {
-                e.printStackTrace()
             }
+        } catch (e: IOException) {
+            e.printStackTrace()
         }
     }
 
