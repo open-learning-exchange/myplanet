@@ -48,17 +48,21 @@ class AdapterSurvey(
         }
     }
 
-    fun updateData(newList: List<RealmStepExam>) {
-        submitList(newList)
+    fun updateData(newList: List<RealmStepExam>, onComplete: (() -> Unit)? = null) {
+        submitList(newList) {
+            onComplete?.invoke()
+        }
     }
 
-    fun updateDataAfterSearch(newList: List<RealmStepExam>) {
+    fun updateDataAfterSearch(newList: List<RealmStepExam>, onComplete: (() -> Unit)? = null) {
         val sortedList = if (currentList.isEmpty()) {
             sortSurveyList(false, newList)
         } else {
             sortStrategy(newList)
         }
-        submitList(sortedList)
+        submitList(sortedList) {
+            onComplete?.invoke()
+        }
     }
 
     private fun sortSurveyList(
