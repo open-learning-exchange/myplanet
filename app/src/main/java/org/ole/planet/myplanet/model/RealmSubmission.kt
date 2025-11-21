@@ -31,7 +31,7 @@ open class RealmSubmission : RealmObject() {
     var startTime: Long = 0
     var lastUpdateTime: Long = 0
     var answers: RealmList<RealmAnswer>? = null
-    var team: String? = null
+    var teamObject: RealmTeamReference? = null
     var grade: Long = 0
     var status: String? = null
     var uploaded = false
@@ -76,7 +76,16 @@ open class RealmSubmission : RealmObject() {
                 sub?.parentCode = JsonUtils.getString("parentCode", submission)
                 sub?.parent = GsonUtils.gson.toJson(JsonUtils.getJsonObject("parent", submission))
                 sub?.user = GsonUtils.gson.toJson(JsonUtils.getJsonObject("user", submission))
-                sub.team = JsonUtils.getString("team", submission)
+                
+                if (submission.has("team") && submission.get("team").isJsonObject) {
+                    val teamJson = submission.getAsJsonObject("team")
+                    val teamRef = mRealm.createObject(RealmTeamReference::class.java)
+                    teamRef._id = JsonUtils.getString("_id", teamJson)
+                    teamRef.name = JsonUtils.getString("name", teamJson)
+                    teamRef.type = JsonUtils.getString("type", teamJson)
+                    sub.teamObject = teamRef
+                }
+
                 sub.isUpdated = false
 
                 val userJson = JsonUtils.getJsonObject("user", submission)
@@ -150,7 +159,15 @@ open class RealmSubmission : RealmObject() {
             }
             `object`.addProperty("parentId", sub.parentId)
             `object`.addProperty("type", sub.type)
-            `object`.addProperty("team", sub.team)
+
+            if (sub.teamObject != null) {
+                val teamJson = JsonObject()
+                teamJson.addProperty("_id", sub.teamObject?._id)
+                teamJson.addProperty("name", sub.teamObject?.name)
+                teamJson.addProperty("type", sub.teamObject?.type)
+                `object`.add("team", teamJson)
+            }
+
             `object`.addProperty("grade", sub.grade)
             `object`.addProperty("startTime", sub.startTime)
             `object`.addProperty("lastUpdateTime", sub.lastUpdateTime)
@@ -242,7 +259,15 @@ open class RealmSubmission : RealmObject() {
                 jsonObject.addProperty("type", submission.type ?: "survey")
                 jsonObject.addProperty("userId", submission.userId ?: "")
                 jsonObject.addProperty("status", submission.status ?: "pending")
-                jsonObject.addProperty("team", submission.team ?: "")
+
+                if (submission.teamObject != null) {
+                    val teamJson = JsonObject()
+                    teamJson.addProperty("_id", submission.teamObject?._id)
+                    teamJson.addProperty("name", submission.teamObject?.name)
+                    teamJson.addProperty("type", submission.teamObject?.type)
+                    jsonObject.add("team", teamJson)
+                }
+
                 jsonObject.addProperty("uploaded", submission.uploaded)
                 jsonObject.addProperty("sender", submission.sender ?: "")
                 jsonObject.addProperty("source", submission.source ?: "")
@@ -284,4 +309,10 @@ open class RealmSubmission : RealmObject() {
 
 open class RealmMembershipDoc : RealmObject() {
     var teamId: String? = null
+}
+
+open class RealmTeamReference : RealmObject() {
+    var _id: String? = null
+    var name: String? = null
+    var type: String? = null
 }

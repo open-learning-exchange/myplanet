@@ -48,17 +48,21 @@ class AdapterSurvey(
         }
     }
 
-    fun updateData(newList: List<RealmStepExam>) {
-        submitList(newList)
+    fun updateData(newList: List<RealmStepExam>, onComplete: (() -> Unit)? = null) {
+        submitList(newList) {
+            onComplete?.invoke()
+        }
     }
 
-    fun updateDataAfterSearch(newList: List<RealmStepExam>) {
+    fun updateDataAfterSearch(newList: List<RealmStepExam>, onComplete: (() -> Unit)? = null) {
         val sortedList = if (currentList.isEmpty()) {
             sortSurveyList(false, newList)
         } else {
             sortStrategy(newList)
         }
-        submitList(sortedList)
+        submitList(sortedList) {
+            onComplete?.invoke()
+        }
     }
 
     private fun sortSurveyList(
@@ -300,6 +304,18 @@ class AdapterSurvey(
                             isUpdated = true
 
                             if (isTeam && teamId != null) {
+                                val team = realm.where(RealmMyTeam::class.java)
+                                    .equalTo("_id", teamId)
+                                    .findFirst()
+
+                                if (team != null) {
+                                    val teamRef = realm.createObject(org.ole.planet.myplanet.model.RealmTeamReference::class.java)
+                                    teamRef._id = team._id
+                                    teamRef.name = team.name
+                                    teamRef.type = team.type ?: "team"
+                                    teamObject = teamRef
+                                }
+
                                 membershipDoc = realm.createObject(RealmMembershipDoc::class.java).apply {
                                     this.teamId = teamId
                                 }
