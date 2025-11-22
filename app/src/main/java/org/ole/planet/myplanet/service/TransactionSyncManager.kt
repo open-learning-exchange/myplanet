@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.text.TextUtils
 import android.util.Base64
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -27,18 +28,33 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.SecurePrefs
 import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.Utilities
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeout
 import retrofit2.Response
 
 object TransactionSyncManager {
-    fun authenticate(): Boolean {
+    suspend fun authenticate(): Boolean {
         val apiInterface = client?.create(ApiInterface::class.java)
-        try {
-            val response: Response<DocumentResponse>? = apiInterface?.getDocuments(UrlUtils.header, "${UrlUtils.getUrl()}/tablet_users/_all_docs")?.execute()
-            if (response != null) {
-                return response.code() == 200
+        var attempt = 0
+        while (attempt < 3) {
+            try {
+                return withTimeout(10_000) {
+                    val response = apiInterface?.authenticate(
+                        UrlUtils.header,
+                        "${UrlUtils.getUrl()}/tablet_users/_all_docs"
+                    )
+                    response?.code() == 200
+                }
+            } catch (e: TimeoutCancellationException) {
+                Log.w("SyncManager", "Authentication timeout, attempt ${attempt + 1}")
+            } catch (e: IOException) {
+                Log.w("SyncManager", "Authentication IO exception, attempt ${attempt + 1}", e)
             }
-        } catch (e: IOException) {
-            e.printStackTrace()
+            attempt++
+            if (attempt < 3) {
+                delay(1000L * (1 shl (attempt - 1)))
+            }
         }
         return false
     }
@@ -95,33 +111,31 @@ object TransactionSyncManager {
     }
 
     fun syncDb(realm: Realm, table: String) {
-        realm.executeTransactionAsync { mRealm: Realm ->
-            val apiInterface = client?.create(ApiInterface::class.java)
-            val allDocs = apiInterface?.getJsonObject(UrlUtils.header, UrlUtils.getUrl() + "/" + table + "/_all_docs?include_doc=false")
-            try {
-                val all = allDocs?.execute()
-                val rows = getJsonArray("rows", all?.body())
-                val keys: MutableList<String> = ArrayList()
-                for (i in 0 until rows.size()) {
-                    val `object` = rows[i].asJsonObject
-                    if (!TextUtils.isEmpty(getString("id", `object`))) keys.add(getString("key", `object`))
-                    if (i == rows.size() - 1 || keys.size == 1000) {
-                        val obj = JsonObject()
-                        obj.add("keys", Gson().fromJson(Gson().toJson(keys), JsonArray::class.java))
-                        val response = apiInterface?.findDocs(UrlUtils.header, "application/json", UrlUtils.getUrl() + "/" + table + "/_all_docs?include_docs=true", obj)?.execute()
-                        if (response?.body() != null) {
-                            val arr = getJsonArray("rows", response.body())
-                            if (table == "chat_history") {
-                                insertToChat(arr, mRealm)
-                            }
-                            insertDocs(arr, mRealm, table)
+        val apiInterface = client?.create(ApiInterface::class.java)
+        val allDocs = apiInterface?.getJsonObject(UrlUtils.header, UrlUtils.getUrl() + "/" + table + "/_all_docs?include_doc=false")
+        try {
+            val all = allDocs?.execute()
+            val rows = getJsonArray("rows", all?.body())
+            val keys: MutableList<String> = ArrayList()
+            for (i in 0 until rows.size()) {
+                val `object` = rows[i].asJsonObject
+                if (!TextUtils.isEmpty(getString("id", `object`))) keys.add(getString("key", `object`))
+                if (i == rows.size() - 1 || keys.size == 1000) {
+                    val obj = JsonObject()
+                    obj.add("keys", Gson().fromJson(Gson().toJson(keys), JsonArray::class.java))
+                    val response = apiInterface?.findDocs(UrlUtils.header, "application/json", UrlUtils.getUrl() + "/" + table + "/_all_docs?include_docs=true", obj)?.execute()
+                    if (response?.body() != null) {
+                        val arr = getJsonArray("rows", response.body())
+                        if (table == "chat_history") {
+                            insertToChat(arr, realm)
                         }
-                        keys.clear()
+                        insertDocs(arr, realm, table)
                     }
+                    keys.clear()
                 }
-            } catch (e: IOException) {
-                e.printStackTrace()
             }
+        } catch (e: IOException) {
+            e.printStackTrace()
         }
     }
 

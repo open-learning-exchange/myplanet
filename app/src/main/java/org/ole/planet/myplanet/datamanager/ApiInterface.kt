@@ -26,6 +26,9 @@ interface ApiInterface {
     fun getDocuments(@Header("Authorization") header: String?, @Url url: String?): Call<DocumentResponse>
 
     @GET
+    suspend fun authenticate(@Header("Authorization") header: String?, @Url url: String?): Response<DocumentResponse>
+
+    @GET
     fun getJsonObject(@Header("Authorization") header: String?, @Url url: String?): Call<JsonObject>
 
     @POST
