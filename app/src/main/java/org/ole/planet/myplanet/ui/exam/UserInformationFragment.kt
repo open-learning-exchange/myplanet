@@ -35,6 +35,7 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.SubmissionRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
@@ -51,6 +52,8 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     lateinit var databaseService: DatabaseService
     @Inject
     lateinit var submissionRepository: SubmissionRepository
+    @Inject
+    lateinit var userRepository: UserRepository
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     var userModel: RealmUserModel? = null
@@ -227,26 +230,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             val userId = userModel?.id
             viewLifecycleOwner.lifecycleScope.launch {
                 try {
-                    databaseService.executeTransactionAsync { realm ->
-                        val model = realm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
-                        if (model != null) {
-                            user.keySet().forEach { key ->
-                                when (key) {
-                                    "firstName" -> model.firstName = user.get(key).asString
-                                    "lastName" -> model.lastName = user.get(key).asString
-                                    "middleName" -> model.middleName = user.get(key).asString
-                                    "email" -> model.email = user.get(key).asString
-                                    "language" -> model.language = user.get(key).asString
-                                    "phoneNumber" -> model.phoneNumber = user.get(key).asString
-                                    "birthDate" -> model.birthPlace = user.get(key).asString
-                                    "level" -> model.level = user.get(key).asString
-                                    "gender" -> model.gender = user.get(key).asString
-                                    "age" -> model.age = user.get(key).asString
-                                }
-                            }
-                            model.isUpdated = true
-                        }
-                    }
+                    userRepository.updateProfileFields(userId, user)
                     Utilities.toast(MainApplication.context, getString(R.string.user_profile_updated))
                     if (isAdded) dialog?.dismiss()
                 } catch (_: Exception) {
@@ -262,27 +246,23 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     private fun saveSubmission(user: JsonObject) {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                if (id.isNullOrEmpty()) {
-                    Utilities.toast(MainApplication.context, "Error: Unable to save submission - no ID provided")
+                val submissionId = id
+                if (submissionId.isNullOrEmpty()) {
+                    Utilities.toast(
+                        MainApplication.context,
+                        "Error: Unable to save submission - no ID provided"
+                    )
                     if (isAdded) dialog?.dismiss()
                     return@launch
                 }
 
-                databaseService.executeTransactionAsync { realm ->
-                    val sub = realm.where(RealmSubmission::class.java)
-                        .equalTo("id", id)
-                        .findFirst()
-
-                    if (sub != null) {
-                        sub.user = user.toString()
-                        sub.status = "complete"
-                    } else {
-                        throw IllegalStateException("Submission not found with id: $id")
-                    }
-                }
+                submissionRepository.markSubmissionComplete(submissionId, user)
 
                 withContext(Dispatchers.Main) {
-                    Utilities.toast(MainApplication.context, getString(R.string.thank_you_for_taking_this_survey))
+                    Utilities.toast(
+                        MainApplication.context,
+                        getString(R.string.thank_you_for_taking_this_survey)
+                    )
                     if (isAdded) {
                         dialog?.dismiss()
                     }
