@@ -230,16 +230,18 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     private fun setupStrictMode() {
         if (BuildConfig.DEBUG) {
             val threadPolicy = StrictMode.ThreadPolicy.Builder()
-                .detectDiskReads()
-                .detectDiskWrites()
-                .detectNetwork()
+                .detectAll()
                 .penaltyLog()
+                .penaltyDeath()
                 .build()
             StrictMode.setThreadPolicy(threadPolicy)
+
+            val vmPolicy = VmPolicy.Builder()
+                .detectAll()
+                .penaltyLog()
+                .build()
+            StrictMode.setVmPolicy(vmPolicy)
         }
-        val builder = VmPolicy.Builder()
-        StrictMode.setVmPolicy(builder.build())
-        builder.detectFileUriExposure()
     }
 
     private suspend fun setupAnrWatchdog() {
