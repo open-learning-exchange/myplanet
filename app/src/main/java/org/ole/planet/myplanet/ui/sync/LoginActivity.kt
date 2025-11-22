@@ -285,8 +285,10 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         }
         setUpLanguageButton()
         if (NetworkUtils.isNetworkConnected) {
-            service.syncPlanetServers { success: String? ->
-                toast(this, success)
+            lifecycleScope.launch {
+                service.syncPlanetServers { success: String? ->
+                    toast(this@LoginActivity, success)
+                }
             }
         }
         binding.inputName.addTextChangedListener(object : TextWatcher {
