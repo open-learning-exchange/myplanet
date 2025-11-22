@@ -9,6 +9,7 @@ import android.content.res.Configuration
 import android.os.Bundle
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
+import android.os.Trace
 import android.provider.Settings
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -181,20 +182,23 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
     override fun onCreate() {
         super.onCreate()
+        Trace.beginSection("MainApplication.onCreate")
+
         setupCriticalProperties()
         initApp()
-        ensureApiClientInitialized()
         setupStrictMode()
         registerExceptionHandler()
         setupLifecycleCallbacks()
         configureTheme()
 
         applicationScope.launch {
+            ensureApiClientInitialized()
             initializeDatabaseConnection()
             setupAnrWatchdog()
             scheduleWorkersOnStart()
             observeNetworkForDownloads()
         }
+        Trace.endSection()
     }
 
     private fun initApp() {
@@ -236,10 +240,12 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                 .penaltyLog()
                 .build()
             StrictMode.setThreadPolicy(threadPolicy)
+
+            val builder = VmPolicy.Builder()
+            builder.detectFileUriExposure()
+            builder.detectUntaggedSockets()
+            StrictMode.setVmPolicy(builder.build())
         }
-        val builder = VmPolicy.Builder()
-        StrictMode.setVmPolicy(builder.build())
-        builder.detectFileUriExposure()
     }
 
     private suspend fun setupAnrWatchdog() {
