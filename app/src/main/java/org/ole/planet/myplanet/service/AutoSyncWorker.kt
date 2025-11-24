@@ -83,7 +83,7 @@ class AutoSyncWorker(
                 MainApplication.isSyncRunning = true
                 workerScope.launch {
                     uploadManager.uploadExamResult(this@AutoSyncWorker)
-                    uploadManager.uploadFeedback(this@AutoSyncWorker)
+                    uploadManager.uploadFeedback()
                     uploadManager.uploadAchievement()
                     uploadManager.uploadResourceActivities("")
                     uploadManager.uploadUserActivities(this@AutoSyncWorker)
@@ -95,6 +95,7 @@ class AutoSyncWorker(
                     uploadManager.uploadTeams()
                     uploadManager.uploadTeamTask()
                     uploadManager.uploadMeetups()
+                    uploadManager.uploadAdoptedSurveys()
                     uploadManager.uploadCrashLog()
                     uploadManager.uploadSubmissions()
                     uploadManager.uploadActivities { MainApplication.isSyncRunning = false }

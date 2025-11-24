@@ -183,13 +183,13 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         super.onCreate()
         setupCriticalProperties()
         initApp()
-        ensureApiClientInitialized()
         setupStrictMode()
         registerExceptionHandler()
         setupLifecycleCallbacks()
         configureTheme()
 
         applicationScope.launch {
+            ensureApiClientInitialized()
             initializeDatabaseConnection()
             setupAnrWatchdog()
             scheduleWorkersOnStart()
@@ -214,11 +214,13 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         ).applicationScope()
     }
 
-    private fun ensureApiClientInitialized() {
-        EntryPointAccessors.fromApplication(
-            this,
-            ApiClientEntryPoint::class.java
-        ).apiClient()
+    private suspend fun ensureApiClientInitialized() {
+        withContext(Dispatchers.IO) {
+            EntryPointAccessors.fromApplication(
+                this@MainApplication,
+                ApiClientEntryPoint::class.java
+            ).apiClient()
+        }
     }
     
     private suspend fun initializeDatabaseConnection() {
@@ -230,16 +232,16 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     private fun setupStrictMode() {
         if (BuildConfig.DEBUG) {
             val threadPolicy = StrictMode.ThreadPolicy.Builder()
-                .detectDiskReads()
-                .detectDiskWrites()
-                .detectNetwork()
+                .detectAll()
                 .penaltyLog()
                 .build()
             StrictMode.setThreadPolicy(threadPolicy)
+
+            val builder = VmPolicy.Builder()
+            builder.detectFileUriExposure()
+            builder.detectUntaggedSockets()
+            StrictMode.setVmPolicy(builder.build())
         }
-        val builder = VmPolicy.Builder()
-        StrictMode.setVmPolicy(builder.build())
-        builder.detectFileUriExposure()
     }
 
     private suspend fun setupAnrWatchdog() {

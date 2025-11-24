@@ -12,4 +12,7 @@ interface NotificationRepository {
         relatedId: String?,
         userId: String?,
     )
+    suspend fun getSurveyId(relatedId: String?): String?
+    suspend fun getTaskDetails(relatedId: String?): Triple<String, String?, String?>?
+    suspend fun getJoinRequestTeamId(relatedId: String?): String?
 }

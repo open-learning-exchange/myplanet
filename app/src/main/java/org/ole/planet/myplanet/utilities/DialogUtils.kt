@@ -33,8 +33,7 @@ object DialogUtils {
         return prgDialog
     }
 
-    fun guestDialog(context: Context) {
-        val profileDbHandler = UserProfileDbHandler(context)
+    fun guestDialog(context: Context, profileDbHandler: UserProfileDbHandler) {
         val builder = android.app.AlertDialog.Builder(context, R.style.CustomAlertDialog)
         builder.setTitle(context.getString(R.string.become_a_member))
         builder.setMessage(context.getString(R.string.to_access_this_feature_become_a_member))

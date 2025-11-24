@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowJoinedUserBinding
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -92,6 +93,8 @@ class AdapterJoinedMember(
         )
         Glide.with(binding.memberImage.context)
             .load(member.userImage)
+            .diskCacheStrategy(DiskCacheStrategy.ALL)
+            .circleCrop()
             .placeholder(R.drawable.profile)
             .error(R.drawable.profile)
             .into(binding.memberImage)
