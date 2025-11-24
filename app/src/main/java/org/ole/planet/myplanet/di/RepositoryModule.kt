@@ -21,6 +21,8 @@ import org.ole.planet.myplanet.repository.NewsRepository
 import org.ole.planet.myplanet.repository.NewsRepositoryImpl
 import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.repository.NotificationRepositoryImpl
+import org.ole.planet.myplanet.repository.ProgressRepository
+import org.ole.planet.myplanet.repository.ProgressRepositoryImpl
 import org.ole.planet.myplanet.repository.RatingRepository
 import org.ole.planet.myplanet.repository.RatingRepositoryImpl
 import org.ole.planet.myplanet.repository.SubmissionRepository
