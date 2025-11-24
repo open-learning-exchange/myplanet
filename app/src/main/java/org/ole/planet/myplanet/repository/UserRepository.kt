@@ -2,9 +2,15 @@ package org.ole.planet.myplanet.repository
 
 import android.content.SharedPreferences
 import com.google.gson.JsonObject
+import io.realm.Sort
 import org.ole.planet.myplanet.model.RealmUserModel
 
 interface UserRepository {
+    suspend fun getAllUsersSorted(
+        sortBy: String = "joinDate",
+        sort: Sort = Sort.DESCENDING,
+        query: String = ""
+    ): List<RealmUserModel>
     suspend fun getUserById(userId: String): RealmUserModel?
     suspend fun getUserByAnyId(id: String): RealmUserModel?
     suspend fun getUserByName(name: String): RealmUserModel?

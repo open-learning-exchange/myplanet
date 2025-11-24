@@ -2,6 +2,8 @@ package org.ole.planet.myplanet.repository
 
 import android.content.SharedPreferences
 import com.google.gson.JsonObject
+import io.realm.Case
+import io.realm.Sort
 import java.util.Calendar
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -29,6 +31,30 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun getAllUsers(): List<RealmUserModel> {
         return queryList(RealmUserModel::class.java)
+    }
+
+    override suspend fun getAllUsersSorted(
+        sortBy: String,
+        sort: Sort,
+        query: String
+    ): List<RealmUserModel> {
+        return withRealm { realm ->
+            val results = if (query.isEmpty()) {
+                realm.where(RealmUserModel::class.java)
+                    .sort(sortBy, sort)
+                    .findAll()
+            } else {
+                realm.where(RealmUserModel::class.java)
+                    .contains("firstName", query, Case.INSENSITIVE)
+                    .or()
+                    .contains("lastName", query, Case.INSENSITIVE)
+                    .or()
+                    .contains("name", query, Case.INSENSITIVE)
+                    .sort(sortBy, sort)
+                    .findAll()
+            }
+            realm.copyFromRealm(results)
+        }
     }
 
     override suspend fun getMonthlyLoginCounts(
