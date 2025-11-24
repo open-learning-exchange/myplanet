@@ -181,8 +181,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
     override fun onCreate() {
         super.onCreate()
-        Trace.beginSection("MainApplication.onCreate")
-
         setupCriticalProperties()
         initApp()
         setupStrictMode()
