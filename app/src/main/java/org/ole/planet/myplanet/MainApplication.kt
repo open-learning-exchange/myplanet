@@ -183,13 +183,13 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         super.onCreate()
         setupCriticalProperties()
         initApp()
-        ensureApiClientInitialized()
         setupStrictMode()
         registerExceptionHandler()
         setupLifecycleCallbacks()
         configureTheme()
 
         applicationScope.launch {
+            ensureApiClientInitialized()
             initializeDatabaseConnection()
             setupAnrWatchdog()
             scheduleWorkersOnStart()
@@ -236,10 +236,12 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                 .penaltyLog()
                 .build()
             StrictMode.setThreadPolicy(threadPolicy)
+
+            val builder = VmPolicy.Builder()
+            builder.detectFileUriExposure()
+            builder.detectUntaggedSockets()
+            StrictMode.setVmPolicy(builder.build())
         }
-        val builder = VmPolicy.Builder()
-        StrictMode.setVmPolicy(builder.build())
-        builder.detectFileUriExposure()
     }
 
     private suspend fun setupAnrWatchdog() {
