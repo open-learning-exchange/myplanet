@@ -85,7 +85,7 @@ class AdapterMyLife(
         val myLife = getItem(position)
         myLife._id?.let {
             MainApplication.applicationScope.launch(Dispatchers.IO) {
-                myLifeRepository.updateVisibility(!isVisible, it)
+                lifeRepository.updateVisibility(!isVisible, it)
                 launch(Dispatchers.Main) {
                     if (isVisible) {
                         changeVisibility(holder, R.drawable.ic_visibility, hide)
