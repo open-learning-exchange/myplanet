@@ -42,4 +42,11 @@ interface UserRepository {
         userId: String?,
         imagePath: String?,
     ): RealmUserModel?
+
+    suspend fun updateProfileFields(
+        userId: String?,
+        payload: JsonObject
+    )
+
+    fun getUserModel(): RealmUserModel?
 }

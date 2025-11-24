@@ -286,7 +286,18 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     private fun addTeamInformation(realm: Realm) {
-        sub?.team = teamId
+        val team = realm.where(org.ole.planet.myplanet.model.RealmMyTeam::class.java)
+            .equalTo("_id", teamId)
+            .findFirst()
+
+        if (team != null) {
+            val teamRef = realm.createObject(org.ole.planet.myplanet.model.RealmTeamReference::class.java)
+            teamRef._id = team._id
+            teamRef.name = team.name
+            teamRef.type = team.type ?: "team"
+            sub?.teamObject = teamRef
+        }
+
         val membershipDoc = realm.createObject(RealmMembershipDoc::class.java)
         membershipDoc.teamId = teamId
         sub?.membershipDoc = membershipDoc

@@ -7,18 +7,24 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.databinding.FragmentLifeBinding
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyLife.Companion.getMyLifeByUserId
+import org.ole.planet.myplanet.repository.LifeRepository
 import org.ole.planet.myplanet.ui.mylife.helper.OnStartDragListener
 import org.ole.planet.myplanet.ui.mylife.helper.SimpleItemTouchHelperCallback
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 
+@AndroidEntryPoint
 class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
     private lateinit var adapterMyLife: AdapterMyLife
     private var mItemTouchHelper: ItemTouchHelper? = null
+    @Inject
+    lateinit var lifeRepository: LifeRepository
     private var _binding: FragmentLifeBinding? = null
     private val binding get() = checkNotNull(_binding)
     override fun getLayout(): Int = R.layout.fragment_life
@@ -36,7 +42,7 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
-        adapterMyLife = AdapterMyLife(requireContext(), this)
+        adapterMyLife = AdapterMyLife(requireContext(), this, lifeRepository)
         return adapterMyLife
     }
 
