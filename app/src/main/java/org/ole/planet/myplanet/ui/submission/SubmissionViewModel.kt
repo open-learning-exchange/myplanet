@@ -14,7 +14,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import javax.inject.Inject
 
 @HiltViewModel
-class MySubmissionViewModel @Inject constructor(
+class SubmissionViewModel @Inject constructor(
     private val submissionRepository: SubmissionRepository,
     private val userRepository: UserRepository,
     private val userProfileDbHandler: UserProfileDbHandler
