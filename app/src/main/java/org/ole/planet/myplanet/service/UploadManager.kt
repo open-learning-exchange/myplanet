@@ -41,6 +41,7 @@ import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmSearchActivity
+import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmitPhotos
 import org.ole.planet.myplanet.model.RealmTeamLog
@@ -979,6 +980,33 @@ class UploadManager @Inject constructor(
                         e.printStackTrace()
                     }
             }
+            }
+        }
+    }
+
+    fun uploadAdoptedSurveys() {
+        val apiInterface = client.create(ApiInterface::class.java)
+        databaseService.withRealm { realm ->
+            realm.executeTransactionAsync { transactionRealm: Realm ->
+                val adoptedSurveys = transactionRealm.where(RealmStepExam::class.java)
+                    .isNotNull("sourceSurveyId")
+                    .isNull("_rev")
+                    .findAll()
+
+                adoptedSurveys.processInBatches { survey ->
+                    try {
+                        val surveyJson = RealmStepExam.serializeExam(transactionRealm, survey)
+                        val `object` = apiInterface?.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/exams", surveyJson)?.execute()?.body()
+
+                        if (`object` != null) {
+                            survey._rev = getString("rev", `object`)
+                        }
+                    } catch (e: IOException) {
+                        e.printStackTrace()
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
             }
         }
     }

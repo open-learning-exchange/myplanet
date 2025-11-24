@@ -20,7 +20,9 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -58,6 +60,22 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     var shouldHideElements: Boolean? = null
     @Inject
     lateinit var uploadManager: UploadManager
+
+    companion object {
+        fun getInstance(id: String?, teamId: String?, shouldHideElements: Boolean): UserInformationFragment {
+            val f = UserInformationFragment()
+            setArgs(f, id, teamId, shouldHideElements)
+            return f
+        }
+
+        private fun setArgs(f: UserInformationFragment, id: String?, teamId: String?, shouldHideElements: Boolean) {
+            val b = Bundle()
+            b.putString("sub_id", id)
+            b.putString("teamId", teamId)
+            b.putBoolean("shouldHideElements", shouldHideElements)
+            f.arguments = b
+        }
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentUserInformationBinding = FragmentUserInformationBinding.inflate(inflater, container, false)
@@ -277,33 +295,46 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         }
     }
 
+    @OptIn(DelicateCoroutinesApi::class)
     private fun checkAvailableServer(settings: SharedPreferences) {
         val updateUrl = "${settings.getString("serverURL", "")}"
         val serverUrlMapper = ServerUrlMapper()
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            try {
-                val primaryAvailable = withTimeoutOrNull(15000) {
-                    MainApplication.isServerReachable(mapping.primaryUrl)
-                } ?: false
+        GlobalScope.launch(Dispatchers.IO) {
+            var primaryAvailable = false
+            var alternativeAvailable = false
 
-                val alternativeAvailable = withTimeoutOrNull(15000) {
-                    mapping.alternativeUrl?.let { MainApplication.isServerReachable(it) } == true
-                } ?: false
+            try {
+                primaryAvailable = try {
+                    withTimeoutOrNull(15000) {
+                        MainApplication.isServerReachable(mapping.primaryUrl)
+                    } ?: false
+                } catch (e: Exception) {
+                    false
+                }
+
+                alternativeAvailable = try {
+                    withTimeoutOrNull(15000) {
+                        mapping.alternativeUrl?.let { MainApplication.isServerReachable(it) } == true
+                    } ?: false
+                } catch (e: Exception) {
+                    false
+                }
 
                 if (!primaryAvailable && alternativeAvailable) {
                     mapping.alternativeUrl?.let { alternativeUrl ->
                         val uri = updateUrl.toUri()
                         val editor = settings.edit()
-
                         serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, settings)
                     }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {
-                uploadSubmissions()
+                if (primaryAvailable || alternativeAvailable) {
+                    uploadSubmissions()
+                }
             }
         }
     }
@@ -345,20 +376,4 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
 
     override val key: String
         get() = "sub_id"
-
-    companion object {
-        fun getInstance(id: String?, teamId: String?, shouldHideElements: Boolean): UserInformationFragment {
-            val f = UserInformationFragment()
-            setArgs(f, id, teamId, shouldHideElements)
-            return f
-        }
-
-        private fun setArgs(f: UserInformationFragment, id: String?, teamId: String?, shouldHideElements: Boolean) {
-            val b = Bundle()
-            b.putString("sub_id", id)
-            b.putString("teamId", teamId)
-            b.putBoolean("shouldHideElements", shouldHideElements)
-            f.arguments = b
-        }
-    }
 }

@@ -22,33 +22,46 @@ class SurveyRepositoryImpl @Inject constructor(
         if (teamId.isNullOrEmpty()) return emptyList()
 
         val teamSubmissionIds = getTeamSubmissionExamIds(teamId)
-        return queryList(RealmStepExam::class.java) {
-            equalTo("type", "surveys")
+        val adoptedSourceSurveyIds = queryList(RealmStepExam::class.java, ensureLatest = true) {
+            equalTo("teamId", teamId)
+            isNotNull("sourceSurveyId")
+        }.mapNotNull { it.sourceSurveyId }.toSet()
 
+        val filteredSubmissionIds = teamSubmissionIds.filterNot { adoptedSourceSurveyIds.contains(it) }
+
+        val result = queryList(RealmStepExam::class.java, ensureLatest = true) {
+            equalTo("type", "surveys")
             beginGroup()
             equalTo("teamId", teamId)
-            if (teamSubmissionIds.isNotEmpty()) {
+            if (filteredSubmissionIds.isNotEmpty()) {
                 or()
-                `in`("id", teamSubmissionIds.toTypedArray())
+                `in`("id", filteredSubmissionIds.toTypedArray())
             }
             endGroup()
         }
+
+        return result
     }
 
     override suspend fun getAdoptableTeamSurveys(teamId: String?): List<RealmStepExam> {
         if (teamId.isNullOrEmpty()) return emptyList()
-
         val teamSubmissionIds = getTeamSubmissionExamIds(teamId)
+        val adoptedSurveyIds = queryList(RealmStepExam::class.java, ensureLatest = true) {
+            equalTo("teamId", teamId)
+            isNotNull("sourceSurveyId")
+        }.mapNotNull { it.sourceSurveyId }.toSet()
 
-        return queryList(RealmStepExam::class.java) {
+        val allExcludedIds = (teamSubmissionIds + adoptedSurveyIds).toTypedArray()
+
+        return queryList(RealmStepExam::class.java, ensureLatest = true) {
             equalTo("type", "surveys")
 
-            if (teamSubmissionIds.isNotEmpty()) {
+            if (allExcludedIds.isNotEmpty()) {
                 beginGroup()
                 equalTo("isTeamShareAllowed", true)
                 and()
                 not()
-                `in`("id", teamSubmissionIds.toTypedArray())
+                `in`("id", allExcludedIds)
                 endGroup()
             } else {
                 equalTo("isTeamShareAllowed", true)
@@ -80,7 +93,7 @@ class SurveyRepositoryImpl @Inject constructor(
         }
         return try {
             JSONObject(parent).optString("_id").takeIf { it.isNotEmpty() }
-        } catch (error: JSONException) {
+        } catch (_: JSONException) {
             null
         }
     }
@@ -95,22 +108,24 @@ class SurveyRepositoryImpl @Inject constructor(
         val submissions = queryList(RealmSubmission::class.java) {
             `in`("parentId", surveyIds.toTypedArray())
         }
+        val actualSubmissions = submissions.filter { !it.status.isNullOrEmpty() }
+
         val surveyInfos = mutableMapOf<String, SurveyInfo>()
         for (survey in surveys) {
             val surveyId = survey.id ?: continue
             val submissionCount = if (isTeam) {
-                submissions.count { it.parentId == surveyId && it.membershipDoc?.teamId == teamId }.toString()
+                actualSubmissions.count { it.parentId == surveyId && it.membershipDoc?.teamId == teamId }.toString()
             } else {
-                submissions.count { it.parentId == surveyId && it.userId == userId }.toString()
+                actualSubmissions.count { it.parentId == surveyId && it.userId == userId }.toString()
             }
             val lastSubmissionDate = if (isTeam) {
-                submissions.filter { it.parentId == surveyId && it.membershipDoc?.teamId == teamId }
+                actualSubmissions.filter { it.parentId == surveyId && it.membershipDoc?.teamId == teamId }
                     .maxByOrNull { it.startTime }?.startTime?.let { getFormattedDateWithTime(it) } ?: ""
             } else {
-                submissions.filter { it.parentId == surveyId && it.userId == userId }
+                actualSubmissions.filter { it.parentId == surveyId && it.userId == userId }
                     .maxByOrNull { it.startTime }?.startTime?.let { getFormattedDateWithTime(it) } ?: ""
             }
-            val creationDate = survey.createdDate.let { formatDate(it, "MMM dd, yyyy") } ?: ""
+            val creationDate = formatDate(survey.createdDate, "MMM dd, yyyy")
             surveyInfos[surveyId] = SurveyInfo(
                 surveyId = surveyId,
                 submissionCount = context.resources.getQuantityString(
