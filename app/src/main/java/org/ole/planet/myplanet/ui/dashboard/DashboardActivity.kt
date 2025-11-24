@@ -122,7 +122,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     @Inject
     lateinit var progressRepository: ProgressRepository
     private val challengeHelper: ChallengeHelper by lazy {
-        ChallengeHelper(this, mRealm, user, settings, editor, dashboardViewModel)
+        ChallengeHelper(this, mRealm, user, settings, editor, dashboardViewModel, progressRepository)
     }
     private lateinit var notificationManager: NotificationUtils.NotificationManager
     private var notificationsShownThisSession = false
