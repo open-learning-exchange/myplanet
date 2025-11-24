@@ -27,6 +27,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
@@ -72,6 +73,7 @@ class SyncManager @Inject constructor(
     private val stringArray = arrayOfNulls<String>(4)
     private var listener: SyncListener? = null
     private var backgroundSync: Job? = null
+    private var syncJob: Job? = null
     private var betaSync = false
     private val initializationJob: Job by lazy {
         syncScope.launch {
@@ -121,6 +123,7 @@ class SyncManager @Inject constructor(
     }
 
     private fun destroy() {
+        syncJob?.cancel()
         if (betaSync) {
             syncScope.cancel()
             ThreadSafeRealmHelper.closeThreadRealm()
@@ -142,7 +145,7 @@ class SyncManager @Inject constructor(
     }
 
     private fun authenticateAndSync(type: String, syncTables: List<String>?) {
-        syncScope.launch {
+        syncJob = syncScope.launch {
             val authenticated = withContext(Dispatchers.IO) {
                 TransactionSyncManager.authenticate()
             }
@@ -473,6 +476,7 @@ class SyncManager @Inject constructor(
     }
 
     private fun cleanupMainSync() {
+        syncJob?.cancel()
         cancel(context, 111)
         isSyncing = false
         if (!betaSync) {
