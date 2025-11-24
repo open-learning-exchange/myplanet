@@ -51,6 +51,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
@@ -530,36 +531,51 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun setupSystemNotificationReceiver() {
         systemNotificationReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
-                if (intent?.action == "org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM") {
-                    val userId = user?.id
-                    if (userId != null) {
-                        val fragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
-                        if (fragment is NotificationsFragment) {
-                            fragment.view?.post {
-                                fragment.refreshNotificationsList()
-                            }
-                        } else {
-                            lifecycleScope.launch {
-                                delay(300)
-                                try {
-                                    mRealm.refresh()
-                                    val unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
-                                    onNotificationCountUpdated(unreadCount)
-                                } catch (e: Exception) {
-                                    e.printStackTrace()
-                                    delay(300)
-                                    try {
-                                        mRealm.refresh()
-                                        val unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
-                                        onNotificationCountUpdated(unreadCount)
-                                    } catch (e2: Exception) {
-                                        e2.printStackTrace()
+                val pendingResult = goAsync()
+                lifecycleScope.launch {
+                    try {
+                        kotlinx.coroutines.withTimeout(10000) {
+                            if (intent?.action == "org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM") {
+                                val userId = user?.id
+                                if (userId != null) {
+                                    val fragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
+                                    if (fragment is NotificationsFragment) {
+                                        withContext(Dispatchers.Main) {
+                                            fragment.view?.post {
+                                                fragment.refreshNotificationsList()
+                                            }
+                                        }
+                                    } else {
+                                        withContext(Dispatchers.IO) {
+                                            delay(300)
+                                            try {
+                                                mRealm.refresh()
+                                                val unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
+                                                withContext(Dispatchers.Main) {
+                                                    onNotificationCountUpdated(unreadCount)
+                                                }
+                                            } catch (e: Exception) {
+                                                e.printStackTrace()
+                                                delay(300)
+                                                try {
+                                                    mRealm.refresh()
+                                                    val unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
+                                                    withContext(Dispatchers.Main) {
+                                                        onNotificationCountUpdated(unreadCount)
+                                                    }
+                                                } catch (e2: Exception) {
+                                                    e2.printStackTrace()
+                                                }
+                                            }
+                                        }
                                     }
+                                } else {
+                                    android.util.Log.w("DashboardActivity", "SystemNotificationReceiver: User ID is null")
                                 }
                             }
                         }
-                    } else {
-                        android.util.Log.w("DashboardActivity", "SystemNotificationReceiver: User ID is null")
+                    } finally {
+                        pendingResult.finish()
                     }
                 }
             }
