@@ -304,6 +304,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
             }
 
         binding.rvTeamList.adapter = adapterTeamList
+        adapterTeamList.updateList()
         listContentDescription(conditionApplied)
     }
 

@@ -229,6 +229,7 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
             uploadManager.uploadRating()
             uploadManager.uploadTeamTask()
             uploadManager.uploadMeetups()
+            uploadManager.uploadAdoptedSurveys()
             uploadManager.uploadSubmissions()
             uploadManager.uploadCrashLog()
 
@@ -249,11 +250,12 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
                 }
             })
 
-            uploadManager.uploadFeedback(object : SuccessListener {
-                override fun onSuccess(success: String?) {
+            lifecycleScope.launch(Dispatchers.IO) {
+                val success = uploadManager.uploadFeedback()
+                withContext(Dispatchers.Main) {
                     checkAllOperationsComplete()
                 }
-            })
+            }
 
             uploadManager.uploadResource(object : SuccessListener {
                 override fun onSuccess(success: String?) {
