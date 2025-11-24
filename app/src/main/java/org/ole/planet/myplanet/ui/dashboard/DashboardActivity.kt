@@ -11,7 +11,6 @@ import android.graphics.PorterDuff
 import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.Bundle
-import android.os.Trace
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
@@ -157,14 +156,12 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         collectUiState()
 
         binding.root.post {
-            Trace.beginSection("DashboardActivity.postLayout")
             setupSystemNotificationReceiver()
             checkIfShouldShowNotifications()
             setupRealmListeners()
             challengeHelper = ChallengeHelper(this, mRealm, user, settings, editor, dashboardViewModel, progressRepository)
             challengeHelper.evaluateChallengeDialog()
             reportFullyDrawn()
-            Trace.endSection()
         }
     }
 
