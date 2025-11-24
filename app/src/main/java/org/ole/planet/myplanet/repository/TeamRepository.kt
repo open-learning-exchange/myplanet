@@ -94,4 +94,6 @@ interface TeamRepository {
         planetCode: String?,
     ): Result<Unit>
     suspend fun respondToMemberRequest(teamId: String, userId: String, accept: Boolean): Result<Unit>
+    suspend fun getJoinedMembers(teamId: String): List<RealmUserModel>
+    suspend fun getAssignee(userId: String): RealmUserModel?
 }
