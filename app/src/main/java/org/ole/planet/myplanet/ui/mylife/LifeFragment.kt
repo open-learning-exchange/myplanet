@@ -14,7 +14,7 @@ import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.databinding.FragmentLifeBinding
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyLife.Companion.getMyLifeByUserId
-import org.ole.planet.myplanet.repository.lifeRepository
+import org.ole.planet.myplanet.repository.LifeRepository
 import org.ole.planet.myplanet.ui.mylife.helper.OnStartDragListener
 import org.ole.planet.myplanet.ui.mylife.helper.SimpleItemTouchHelperCallback
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
@@ -24,7 +24,7 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
     private lateinit var adapterMyLife: AdapterMyLife
     private var mItemTouchHelper: ItemTouchHelper? = null
     @Inject
-    lateinit var lifeRepository: lifeRepository
+    lateinit var lifeRepository: LifeRepository
     private var _binding: FragmentLifeBinding? = null
     private val binding get() = checkNotNull(_binding)
     override fun getLayout(): Int = R.layout.fragment_life
