@@ -8,36 +8,29 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.CompoundButton
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.databinding.FragmentMySubmissionBinding
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.SubmissionRepository
-import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
     private var _binding: FragmentMySubmissionBinding? = null
     private val binding get() = _binding!!
-    @Inject
-    lateinit var submissionRepository: SubmissionRepository
-    @Inject
-    lateinit var userRepository: UserRepository
+    private val viewModel: SubmissionViewModel by viewModels()
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     var type: String? = ""
-    var exams: HashMap<String?, RealmStepExam>? = null
-    private var submissions: List<RealmSubmission>? = null
-    private var allSubmissions: List<RealmSubmission> = emptyList()
-    var user: RealmUserModel? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,8 +39,6 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentMySubmissionBinding.inflate(inflater, container, false)
-        exams = HashMap()
-        user = userProfileDbHandler.userModel
         return binding.root
     }
 
@@ -57,19 +48,20 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
         binding.rvMysurvey.addItemDecoration(
             DividerItemDecoration(activity, DividerItemDecoration.VERTICAL)
         )
+        viewModel.loadSubmissions(type ?: "", "")
+
         viewLifecycleOwner.lifecycleScope.launch {
-            val subs = submissionRepository.getSubmissionsByUserId(user?.id ?: "")
-            allSubmissions = subs
-            exams = HashMap(submissionRepository.getExamMapForSubmissions(subs))
-            setData("")
+            viewModel.submissions.collectLatest { submissions ->
+                val exams = viewModel.exams.value
+                val userNames = viewModel.userNames.value
+                setData(submissions, exams, userNames)
+            }
         }
+
         binding.etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
             override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {
-                val cleanString = charSequence.toString()
-                viewLifecycleOwner.lifecycleScope.launch {
-                    setData(cleanString)
-                }
+                viewModel.loadSubmissions(type ?: "", charSequence.toString())
             }
             override fun afterTextChanged(editable: Editable) {}
         })
@@ -94,49 +86,14 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
         } else {
             "exam"
         }
-        viewLifecycleOwner.lifecycleScope.launch {
-            setData("")
-        }
+        viewModel.loadSubmissions(type ?: "", binding.etSearch.text.toString())
     }
 
-    private suspend fun setData(s: String) {
-        var filtered = allSubmissions
-
-        filtered = when (type) {
-            "survey" -> filtered.filter { it.userId == user?.id && it.type == "survey" }
-            "survey_submission" -> filtered.filter {
-                it.userId == user?.id && it.type == "survey" && it.status != "pending"
-            }
-            else -> filtered.filter { it.userId == user?.id && it.type != "survey" }
-        }.sortedByDescending { it.lastUpdateTime ?: 0 }
-
-        if (s.isNotEmpty()) {
-            val examIds = exams?.filter { (_, exam) ->
-                exam?.name?.contains(s, ignoreCase = true) == true
-            }?.keys ?: emptySet()
-            filtered = filtered.filter { examIds.contains(it.parentId) }
-        }
-
-        val uniqueSubmissions = filtered
-            .groupBy { it.parentId }
-            .mapValues { entry -> entry.value.maxByOrNull { it.lastUpdateTime ?: 0 } }
-            .values
-            .filterNotNull()
-            .toList()
-
-        submissions = uniqueSubmissions
-
-        val submitterIds = uniqueSubmissions.mapNotNull { it.userId }.toSet()
-        val userNameMap = submitterIds.mapNotNull { id ->
-            val userModel = userRepository.getUserById(id)
-            val displayName = userModel?.name
-            if (displayName.isNullOrBlank()) {
-                null
-            } else {
-                id to displayName
-            }
-        }.toMap()
-
+    private fun setData(
+        submissions: List<RealmSubmission>,
+        exams: HashMap<String?, RealmStepExam>,
+        userNameMap: Map<String, String>
+    ) {
         val adapter = AdapterMySubmission(
             requireActivity(),
             submissions,
@@ -144,6 +101,7 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
             nameResolver = { userId -> userId?.let { userNameMap[it] } }
         )
         val itemCount = adapter.itemCount
+        val s = binding.etSearch.text.toString()
 
         if (s.isEmpty()) {
             binding.llSearch.visibility = View.VISIBLE
