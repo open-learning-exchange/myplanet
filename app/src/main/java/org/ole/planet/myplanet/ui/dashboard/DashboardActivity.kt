@@ -148,7 +148,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         setupSystemNotificationReceiver()
         checkIfShouldShowNotifications()
         addBackPressCallback()
-        challengeHelper = ChallengeHelper(this, mRealm, user, settings, editor, dashboardViewModel, myProgressRepository)
+        challengeHelper = ChallengeHelper(this, mRealm, user, settings, editor, dashboardViewModel, progressRepository)
         challengeHelper.evaluateChallengeDialog()
         handleNotificationIntent(intent)
         collectUiState()
