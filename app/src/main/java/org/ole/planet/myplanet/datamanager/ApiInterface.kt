@@ -28,11 +28,17 @@ interface ApiInterface {
     @GET
     fun getJsonObject(@Header("Authorization") header: String?, @Url url: String?): Call<JsonObject>
 
+    @GET
+    suspend fun getJsonObjectSuspended(@Header("Authorization") header: String?, @Url url: String?): Response<JsonObject>
+
     @POST
     fun findDocs(@Header("Authorization") header: String?, @Header("Content-Type") c: String?, @Url url: String?, @Body s: JsonObject?): Call<JsonObject>
 
     @POST
     fun postDoc(@Header("Authorization") header: String?, @Header("Content-Type") c: String?, @Url url: String?, @Body s: JsonObject?): Call<JsonObject>
+
+    @POST
+    suspend fun postDocSuspend(@Header("Authorization") header: String?, @Header("Content-Type") c: String?, @Url url: String?, @Body s: JsonObject?): Response<JsonObject>
 
     @PUT
     fun uploadResource(@HeaderMap headerMap: Map<String, String>, @Url url: String?, @Body body: RequestBody?): Call<JsonObject>
@@ -62,5 +68,5 @@ interface ApiInterface {
     fun checkAiProviders(@Url url: String?): Call<ResponseBody>
 
     @GET
-    fun getConfiguration(@Url url: String?): Call<JsonObject>
+    suspend fun getConfiguration(@Url url: String?): Response<JsonObject>
 }

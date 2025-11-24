@@ -16,6 +16,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.graphics.drawable.toDrawable
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.github.chrisbanes.photoview.PhotoView
 import io.noties.markwon.AbstractMarkwonPlugin
 import io.noties.markwon.Markwon
@@ -97,6 +98,8 @@ object Markdown {
 
         Glide.with(photoView.context)
             .load(imageUrl)
+            .diskCacheStrategy(DiskCacheStrategy.ALL)
+            .fitCenter()
             .error(R.drawable.ic_loading)
             .into(photoView)
 

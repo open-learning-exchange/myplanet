@@ -11,6 +11,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
@@ -37,6 +39,23 @@ class TeamRepositoryImpl @Inject constructor(
     @AppPreferences private val preferences: SharedPreferences,
     private val serverUrlMapper: ServerUrlMapper,
 ) : RealmRepository(databaseService), TeamRepository {
+
+    override suspend fun getMyTeamsFlow(userId: String): Flow<List<RealmMyTeam>> {
+        return queryListFlow(RealmMyTeam::class.java) {
+            equalTo("userId", userId)
+            equalTo("docType", "membership")
+        }.flatMapLatest { memberships ->
+            val teamIds = memberships.mapNotNull { it.teamId }.toTypedArray()
+            if (teamIds.isEmpty()) {
+                flowOf(emptyList())
+            } else {
+                queryListFlow(RealmMyTeam::class.java) {
+                    `in`("_id", teamIds)
+                    notEqualTo("status", "archived")
+                }
+            }
+        }
+    }
 
     override suspend fun getShareableTeams(): List<RealmMyTeam> {
         return queryList(RealmMyTeam::class.java) {
@@ -643,5 +662,20 @@ class TeamRepositoryImpl @Inject constructor(
             isNotNull("resourceId")
             isNotEmpty("resourceId")
         }.mapNotNull { it.resourceId }
+    }
+
+    override suspend fun getJoinedMembers(teamId: String): List<RealmUserModel> {
+        val teamMembers = queryList(RealmMyTeam::class.java) {
+            equalTo("teamId", teamId)
+            equalTo("docType", "membership")
+        }.mapNotNull { it.userId }
+
+        return queryList(RealmUserModel::class.java) {
+            `in`("_id", teamMembers.toTypedArray())
+        }
+    }
+
+    override suspend fun getAssignee(userId: String): RealmUserModel? {
+        return findByField(RealmUserModel::class.java, "id", userId)
     }
 }

@@ -102,53 +102,13 @@ class NotificationsFragment : Fragment() {
 
     private fun handleNotificationClick(notification: RealmNotification) {
         viewLifecycleOwner.lifecycleScope.launch {
-            val result = withContext(Dispatchers.IO) {
-                when (notification.type) {
-                    "survey" -> {
-                        databaseService.withRealm { realm ->
-                            realm.where(RealmStepExam::class.java)
-                                .equalTo("name", notification.relatedId)
-                                .findFirst()?.id
-                        }
-                    }
-                    "task" -> {
-                        databaseService.withRealm { realm ->
-                            val taskId = notification.relatedId
-                            val task = realm.where(RealmTeamTask::class.java)
-                                .equalTo("id", taskId)
-                                .findFirst()
-                            val linkJson = JSONObject(task?.link ?: "{}")
-                            val teamId = linkJson.optString("teams")
-                            if (teamId.isNotEmpty()) {
-                                val teamObject = realm.where(RealmMyTeam::class.java)
-                                    .equalTo("_id", teamId)
-                                    .findFirst()
-                                Triple(teamId, teamObject?.name, teamObject?.type)
-                            } else {
-                                null
-                            }
-                        }
-                    }
-                    "join_request" -> {
-                        val joinRequestId = notification.relatedId
-                        if (joinRequestId?.isNotEmpty() == true) {
-                            val actualJoinRequestId = if (joinRequestId.startsWith("join_request_")) {
-                                joinRequestId.removePrefix("join_request_")
-                            } else {
-                                joinRequestId
-                            }
-                            databaseService.withRealm { realm ->
-                                realm.where(RealmMyTeam::class.java)
-                                    .equalTo("_id", actualJoinRequestId)
-                                    .equalTo("docType", "request")
-                                    .findFirst()?.teamId
-                            }
-                        } else {
-                            null
-                        }
-                    }
-                    else -> null
+            val result = when (notification.type) {
+                "survey" -> notificationRepository.getSurveyId(notification.relatedId)
+                "task" -> notificationRepository.getTaskDetails(notification.relatedId)
+                "join_request" -> notification.relatedId?.let {
+                    notificationRepository.getJoinRequestTeamId(it)
                 }
+                else -> null
             }
 
             when (notification.type) {

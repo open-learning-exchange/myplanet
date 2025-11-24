@@ -24,6 +24,8 @@ import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.RealmResults
 import javax.inject.Inject
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
@@ -89,6 +91,7 @@ abstract class BaseResourceFragment : Fragment() {
     private var downloadSuggestionDialog: AlertDialog? = null
     private var pendingSurveyDialog: AlertDialog? = null
     private var stayOnlineDialog: AlertDialog? = null
+    private var broadcastJob: Job? = null
 
     protected fun requireRealmInstance(): Realm {
         if (!isRealmInitialized()) {
@@ -348,13 +351,16 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     private fun registerReceiver() {
-        lifecycleScope.launch {
+        broadcastJob?.cancel()
+        broadcastJob = lifecycleScope.launch {
             broadcastService.events.collect { intent ->
-                when (intent.action) {
-                    DashboardActivity.MESSAGE_PROGRESS -> broadcastReceiver.onReceive(requireContext(), intent)
-                    "ACTION_NETWORK_CHANGED" -> receiver.onReceive(requireContext(), intent)
-                    "SHOW_WIFI_ALERT" -> stateReceiver.onReceive(requireContext(), intent)
-                    MyDownloadService.RESOURCE_NOT_FOUND_ACTION -> resourceNotFoundReceiver.onReceive(requireContext(), intent)
+                if (isActive) {
+                    when (intent.action) {
+                        DashboardActivity.MESSAGE_PROGRESS -> broadcastReceiver.onReceive(requireContext(), intent)
+                        "ACTION_NETWORK_CHANGED" -> receiver.onReceive(requireContext(), intent)
+                        "SHOW_WIFI_ALERT" -> stateReceiver.onReceive(requireContext(), intent)
+                        MyDownloadService.RESOURCE_NOT_FOUND_ACTION -> resourceNotFoundReceiver.onReceive(requireContext(), intent)
+                    }
                 }
             }
         }
@@ -375,6 +381,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     override fun onPause() {
         super.onPause()
+        broadcastJob?.cancel()
     }
 
     override fun onDetach() {
@@ -477,6 +484,7 @@ abstract class BaseResourceFragment : Fragment() {
         resourceNotFoundDialog?.dismiss()
         resourceNotFoundDialog = null
         convertView = null
+        broadcastJob?.cancel()
         super.onDestroyView()
     }
 
