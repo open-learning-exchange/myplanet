@@ -214,11 +214,13 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         ).applicationScope()
     }
 
-    private fun ensureApiClientInitialized() {
-        EntryPointAccessors.fromApplication(
-            this,
-            ApiClientEntryPoint::class.java
-        ).apiClient()
+    private suspend fun ensureApiClientInitialized() {
+        withContext(Dispatchers.IO) {
+            EntryPointAccessors.fromApplication(
+                this@MainApplication,
+                ApiClientEntryPoint::class.java
+            ).apiClient()
+        }
     }
     
     private suspend fun initializeDatabaseConnection() {
