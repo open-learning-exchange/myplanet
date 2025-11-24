@@ -8,6 +8,7 @@ import io.realm.RealmQuery
 import io.realm.log.LogLevel
 import io.realm.log.RealmLog
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.BuildConfig
 
@@ -53,6 +54,7 @@ class DatabaseService(context: Context) {
 
     suspend fun executeTransactionAsync(transaction: (Realm) -> Unit) {
         withContext(Dispatchers.IO) {
+            ensureActive()
             Realm.getDefaultInstance().use { realm ->
                 realm.executeTransaction { transactionRealm ->
                     transaction(transactionRealm)

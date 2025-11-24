@@ -13,9 +13,9 @@ import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
-import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.yield
 import kotlinx.coroutines.withTimeout
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.MainApplication
@@ -402,39 +402,50 @@ class Service @Inject constructor(
     suspend fun syncPlanetServers(callback: SuccessListener) {
         try {
             val response = withContext(Dispatchers.IO) {
-                retrofitInterface.getJsonObject("", "https://planet.earth.ole.org/db/communityregistrationrequests/_all_docs?include_docs=true").execute()
+                retrofitInterface.getJsonObject(
+                    "",
+                    "https://planet.earth.ole.org/db/communityregistrationrequests/_all_docs?include_docs=true"
+                ).execute()
             }
 
             if (response.isSuccessful && response.body() != null) {
                 val arr = JsonUtils.getJsonArray("rows", response.body())
-                val startTime = System.currentTimeMillis()
-                println("Realm transaction started")
+                val chunks = arr.chunked(100)
+                val totalStartTime = System.currentTimeMillis()
+                println("Realm processing started")
 
                 val transactionResult = runCatching {
-                    withContext(Dispatchers.IO) {
-                        MainApplication.service.withRealm { backgroundRealm ->
-                            backgroundRealm.executeTransaction { realm1 ->
-                                realm1.delete(RealmCommunity::class.java)
-                                for (j in arr) {
-                                    var jsonDoc = j.asJsonObject
-                                    jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-                                    val id = JsonUtils.getString("_id", jsonDoc)
-                                    val community = realm1.createObject(RealmCommunity::class.java, id)
-                                    if (JsonUtils.getString("name", jsonDoc) == "learning") {
-                                        community.weight = 0
-                                    }
-                                    community.localDomain = JsonUtils.getString("localDomain", jsonDoc)
-                                    community.name = JsonUtils.getString("name", jsonDoc)
-                                    community.parentDomain = JsonUtils.getString("parentDomain", jsonDoc)
-                                    community.registrationRequest = JsonUtils.getString("registrationRequest", jsonDoc)
-                                }
+                    MainApplication.service.executeTransactionAsync {
+                        it.delete(RealmCommunity::class.java)
+                    }
+
+                    for ((index, chunk) in chunks.withIndex()) {
+                        yield()
+                        val communities = chunk.map { j ->
+                            var jsonDoc = j.asJsonObject
+                            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
+                            val community = JsonObject()
+                            community.addProperty("id", JsonUtils.getString("_id", jsonDoc))
+                            if (JsonUtils.getString("name", jsonDoc) == "learning") {
+                                community.addProperty("weight", 0)
                             }
+                            community.addProperty("localDomain", JsonUtils.getString("localDomain", jsonDoc))
+                            community.addProperty("name", JsonUtils.getString("name", jsonDoc))
+                            community.addProperty("parentDomain", JsonUtils.getString("parentDomain", jsonDoc))
+                            community.addProperty("registrationRequest", JsonUtils.getString("registrationRequest", jsonDoc))
+                            community
                         }
+                        val chunkStartTime = System.currentTimeMillis()
+                        MainApplication.service.executeTransactionAsync { realm1 ->
+                            realm1.createOrUpdateAllFromJson(RealmCommunity::class.java, GsonUtils.gson.toJson(communities))
+                        }
+                        val chunkEndTime = System.currentTimeMillis()
+                        println("Chunk ${index + 1} processed in ${chunkEndTime - chunkStartTime}ms")
                     }
                 }
 
-                val endTime = System.currentTimeMillis()
-                println("Realm transaction finished in ${endTime - startTime}ms")
+                val totalEndTime = System.currentTimeMillis()
+                println("Realm processing finished in ${totalEndTime - totalStartTime}ms")
 
                 withContext(Dispatchers.Main) {
                     transactionResult.onSuccess {
