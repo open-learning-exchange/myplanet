@@ -67,7 +67,7 @@ open class RealmRepository(protected val databaseService: DatabaseService) {
                 realm.close()
             }
         }
-    }.flowOn(Dispatchers.Main)
+    }
 
     protected suspend fun <T : RealmObject, V : Any> findByField(
         clazz: Class<T>,
