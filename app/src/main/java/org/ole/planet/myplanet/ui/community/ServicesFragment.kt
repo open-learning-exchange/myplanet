@@ -9,6 +9,7 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentServicesBinding
+import org.ole.planet.myplanet.model.NewsItem
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper.replaceFragment
@@ -67,7 +68,7 @@ class ServicesFragment : BaseTeamFragment() {
         }
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {}
+    override fun onNewsItemClick(news: NewsItem?) {}
 
     override fun clearImages() {
         imageList.clear()

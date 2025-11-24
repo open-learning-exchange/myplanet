@@ -25,6 +25,7 @@ import java.io.File
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ImageThumbBinding
+import org.ole.planet.myplanet.model.NewsItem
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
@@ -84,7 +85,7 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
         if (context is OnHomeItemClickListener) homeItemClickListener = context
     }
 
-    override fun showReply(news: RealmNews?, fromLogin: Boolean, nonTeamMember: Boolean) {
+    override fun showReply(news: NewsItem?, fromLogin: Boolean, nonTeamMember: Boolean) {
         if (news != null) {
             val intent = Intent(activity, ReplyActivity::class.java).putExtra("id", news.id)
                 .putExtra("fromLogin", fromLogin)
@@ -105,7 +106,7 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
         )
     }
 
-    abstract fun setData(list: List<RealmNews?>?)
+    abstract fun setData(list: List<NewsItem>?)
     fun showNoData(v: View?, count: Int?, source: String) {
         count?.let { BaseRecyclerFragment.showNoData(v, it, source) }
     }

@@ -23,6 +23,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.TeamPageListener
 import org.ole.planet.myplanet.databinding.FragmentTeamResourceBinding
 import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding
+import org.ole.planet.myplanet.model.NewsItem
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
@@ -54,7 +55,7 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdat
         }
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {}
+    override fun onNewsItemClick(news: NewsItem?) {}
     override fun clearImages() {
         imageList.clear()
         llImage?.removeAllViews()

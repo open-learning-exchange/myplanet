@@ -35,6 +35,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AddMeetupBinding
 import org.ole.planet.myplanet.databinding.FragmentEnterpriseCalendarBinding
+import org.ole.planet.myplanet.model.NewsItem
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.repository.MeetupRepository
@@ -251,7 +252,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
         refreshCalendarView()
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {}
+    override fun onNewsItemClick(news: NewsItem?) {}
     override fun clearImages() {
         imageList.clear()
         llImage?.removeAllViews()

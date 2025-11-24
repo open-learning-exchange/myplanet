@@ -17,11 +17,15 @@ import io.realm.RealmResults
 import io.realm.Sort
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentDiscussionListBinding
+import org.ole.planet.myplanet.model.NewsItem
+import org.ole.planet.myplanet.model.NewsMapper
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
@@ -42,7 +46,7 @@ class DiscussionListFragment : BaseTeamFragment() {
     
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
-    private var filteredNewsList: List<RealmNews?> = listOf()
+    private var filteredNewsList: List<NewsItem> = listOf()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentDiscussionListBinding.inflate(inflater, container, false)
@@ -125,8 +129,21 @@ class DiscussionListFragment : BaseTeamFragment() {
         updatedNewsList = mRealm.where(RealmNews::class.java).isEmpty("replyTo").sort("time", Sort.DESCENDING).findAllAsync()
 
         updatedNewsList?.addChangeListener { results ->
-            filteredNewsList = filterNewsList(results)
-            setData(filteredNewsList)
+            val filtered = filterNewsList(results)
+            // Need to detach from Realm to pass to background thread
+            val detached = mRealm.copyFromRealm(filtered)
+
+            viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                val mapped = databaseService.withRealm { realm ->
+                    NewsMapper.map(realm, detached, user, requireContext())
+                }
+                withContext(Dispatchers.Main) {
+                    if (_binding != null) {
+                        filteredNewsList = mapped
+                        setData(mapped)
+                    }
+                }
+            }
         }
         return binding.root
     }
@@ -145,7 +162,43 @@ class DiscussionListFragment : BaseTeamFragment() {
             notification?.lastCount = count
         }
         changeLayoutManager(resources.configuration.orientation, binding.rvDiscussion)
-        showRecyclerView(realmNewsList)
+
+        // Initial show - map synchronously or async?
+        // realmNewsList is detached copy in `news` property getter? No, check getter.
+        // `news` getter queries and returns list.
+
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+             // detach inside getter? getter returns List<RealmNews>.
+             // Checking getter logic below. It returns list.
+             // But if it returns managed objects, we can't map in IO.
+             // Getter uses findAll(), which returns managed objects.
+             // Then it adds to ArrayList. The objects in ArrayList are managed.
+
+             // So we should detach in Main then map in IO.
+             // But `news` property is accessed on Main in `onViewCreated`.
+             // I'll refactor `showRecyclerView` to handle mapping.
+
+             // Actually, `showRecyclerView` is called with `realmNewsList`.
+             // I'll do the mapping here.
+
+             // Wait, `news` getter performs query on `mRealm`. `mRealm` is Main thread.
+             // So `realmNewsList` are managed Main thread objects.
+        }
+
+        // Current implementation of `showRecyclerView` calls `adapterNews.updateList`.
+        // I'll make `showRecyclerView` accept `List<NewsItem>`.
+        // But here I have `realmNewsList`.
+
+        // I will map it asynchronously.
+        val detachedNews = mRealm.copyFromRealm(realmNewsList)
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+             val mapped = databaseService.withRealm { realm ->
+                 NewsMapper.map(realm, detachedNews, user, requireContext())
+             }
+             withContext(Dispatchers.Main) {
+                 showRecyclerView(mapped)
+             }
+        }
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -162,9 +215,9 @@ class DiscussionListFragment : BaseTeamFragment() {
         }
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {
+    override fun onNewsItemClick(news: NewsItem?) {
         val bundle = Bundle()
-        bundle.putString("newsId", news?.newsId)
+        bundle.putString("newsId", news?.id)
         bundle.putString("newsRev", news?.newsRev)
         bundle.putString("conversations", news?.conversations)
 
@@ -184,8 +237,8 @@ class DiscussionListFragment : BaseTeamFragment() {
         llImage?.removeAllViews()
     }
 
-    private fun filterNewsList(results: RealmResults<RealmNews>): List<RealmNews?> {
-        val filteredList: MutableList<RealmNews?> = ArrayList()
+    private fun filterNewsList(results: RealmResults<RealmNews>): List<RealmNews> {
+        val filteredList: MutableList<RealmNews> = ArrayList()
         val effectiveTeamId = getEffectiveTeamId()
 
         for (news in results) {
@@ -231,7 +284,7 @@ class DiscussionListFragment : BaseTeamFragment() {
         changeLayoutManager(newConfig.orientation, binding.rvDiscussion)
     }
 
-    private fun showRecyclerView(realmNewsList: List<RealmNews?>?) {
+    private fun showRecyclerView(newsList: List<NewsItem>?) {
         val existingAdapter = binding.rvDiscussion.adapter
         if (existingAdapter == null) {
             val adapterNews = activity?.let {
@@ -240,14 +293,14 @@ class DiscussionListFragment : BaseTeamFragment() {
             adapterNews?.setmRealm(mRealm)
             adapterNews?.setListener(this)
             if (!isMemberFlow.value) adapterNews?.setNonTeamMember(true)
-            realmNewsList?.let { adapterNews?.updateList(it) }
+            newsList?.let { adapterNews?.updateList(it) }
             binding.rvDiscussion.adapter = adapterNews
             adapterNews?.let {
                 showNoData(binding.tvNodata, it.itemCount, "discussions")
             }
         } else {
             (existingAdapter as? AdapterNews)?.let { adapter ->
-                realmNewsList?.let {
+                newsList?.let {
                     adapter.updateList(it)
                     showNoData(binding.tvNodata, adapter.itemCount, "discussions")
                 }
@@ -255,7 +308,7 @@ class DiscussionListFragment : BaseTeamFragment() {
         }
     }
 
-    override fun setData(list: List<RealmNews?>?) {
+    override fun setData(list: List<NewsItem>?) {
         showRecyclerView(list)
     }
 

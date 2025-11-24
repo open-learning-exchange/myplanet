@@ -17,6 +17,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.TeamUpdateListener
 import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
 import org.ole.planet.myplanet.databinding.FragmentPlanBinding
+import org.ole.planet.myplanet.model.NewsItem
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
@@ -237,7 +238,7 @@ class PlanFragment : BaseTeamFragment() {
         val formattedDetail = detail?.replace("\n", "<br/>")
         return "<b>$title</b><br/>$formattedDetail<br/><br/>"    }
 
-    override fun onNewsItemClick(news: RealmNews?) {}
+    override fun onNewsItemClick(news: NewsItem?) {}
     override fun clearImages() {
         imageList.clear()
         llImage?.removeAllViews()

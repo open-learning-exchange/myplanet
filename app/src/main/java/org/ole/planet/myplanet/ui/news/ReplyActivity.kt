@@ -27,6 +27,8 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityReplyBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.model.NewsItem
+import org.ole.planet.myplanet.model.NewsMapper
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -86,13 +88,16 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         lifecycleScope.launch {
             val (news, list) = viewModel.getNewsWithReplies(id)
             databaseService.withRealm { realm ->
-                newsAdapter = AdapterNews(this@ReplyActivity, user, news, "", null, userProfileDbHandler, databaseService)
+                val parentItem = news?.let { NewsMapper.map(realm, listOf(it), user, this@ReplyActivity).firstOrNull() }
+                val mappedList = NewsMapper.map(realm, list, user, this@ReplyActivity)
+
+                newsAdapter = AdapterNews(this@ReplyActivity, user, parentItem, "", null, userProfileDbHandler, databaseService)
                 newsAdapter.setListener(this@ReplyActivity)
                 newsAdapter.setmRealm(realm)
                 newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
                 newsAdapter.setNonTeamMember(intent.getBooleanExtra("nonTeamMember", false))
                 newsAdapter.setImageList(imageList)
-                newsAdapter.updateList(list)
+                newsAdapter.updateList(mappedList)
                 activityReplyBinding.rvReply.adapter = newsAdapter
             }
         }
@@ -111,7 +116,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         refreshData()
     }
 
-    override fun showReply(news: RealmNews?, fromLogin: Boolean, nonTeamMember: Boolean) {
+    override fun showReply(news: NewsItem?, fromLogin: Boolean, nonTeamMember: Boolean) {
         startActivity(Intent(this, ReplyActivity::class.java).putExtra("id", news?.id))
     }
 
@@ -122,7 +127,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         openFolderLauncher.launch(Intent.createChooser(intent, "Select Image"))
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {}
+    override fun onNewsItemClick(news: NewsItem?) {}
 
     override fun onMemberSelected(userModel: RealmUserModel?) {
         val fragment = NewsActions.showMemberDetails(userModel, userProfileDbHandler) ?: return
