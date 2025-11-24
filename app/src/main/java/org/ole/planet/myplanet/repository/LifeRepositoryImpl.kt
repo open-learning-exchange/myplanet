@@ -1,10 +1,10 @@
-package org.ole.planet.myplanet.ui.mylife.repository
+package org.ole.planet.myplanet.repository
 
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLife
 import javax.inject.Inject
 
-class MyLifeRepository @Inject constructor(private val databaseService: DatabaseService) {
+class LifeRepositoryImpl @Inject constructor(private val databaseService: DatabaseService) {
     suspend fun updateVisibility(isVisible: Boolean, myLifeId: String) {
         databaseService.withRealmAsync { realm ->
             val myLife = realm.where(RealmMyLife::class.java).equalTo("_id", myLifeId).findFirst()
