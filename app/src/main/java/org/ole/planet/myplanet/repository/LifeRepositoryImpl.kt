@@ -1,8 +1,8 @@
 package org.ole.planet.myplanet.repository
 
+import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLife
-import javax.inject.Inject
 
 class LifeRepositoryImpl @Inject constructor(private val databaseService: DatabaseService) : LifeRepository {
     override suspend fun updateVisibility(isVisible: Boolean, myLifeId: String) {

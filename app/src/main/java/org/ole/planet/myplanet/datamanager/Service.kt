@@ -5,9 +5,11 @@ import android.content.SharedPreferences
 import android.text.TextUtils
 import androidx.core.content.edit
 import androidx.core.net.toUri
-import com.google.gson.Gson
 import com.google.gson.JsonObject
 import dagger.hilt.android.EntryPointAccessors
+import java.io.IOException
+import java.util.concurrent.ConcurrentHashMap
+import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
@@ -47,10 +49,6 @@ import org.ole.planet.myplanet.utilities.VersionUtils
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import java.io.IOException
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.Executors
-import javax.inject.Inject
 
 class Service @Inject constructor(
     private val context: Context,
