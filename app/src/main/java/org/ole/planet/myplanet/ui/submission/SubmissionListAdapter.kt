@@ -18,17 +18,11 @@ import org.ole.planet.myplanet.utilities.TimeUtils
 
 class SubmissionListAdapter(
     private val context: Context,
-    private val submissions: List<RealmSubmission>
+    private val submissions: List<RealmSubmission>,
+    private val listener: OnHomeItemClickListener?
 ) : RecyclerView.Adapter<SubmissionListAdapter.ViewHolder>() {
 
-    private var listener: OnHomeItemClickListener? = null
     private val mRealm = Realm.getDefaultInstance()
-
-    init {
-        if (context is OnHomeItemClickListener) {
-            listener = context
-        }
-    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = ItemSubmissionBinding.inflate(LayoutInflater.from(context), parent, false)
@@ -47,6 +41,9 @@ class SubmissionListAdapter(
             binding.tvSubmissionNumber.text = "#$number"
             binding.tvSubmissionDate.text = TimeUtils.getFormattedDateWithTime(submission.lastUpdateTime)
             binding.tvSubmissionStatus.text = submission.status
+
+            // Show sync status indicator
+            binding.tvSyncStatus.text = if (submission.uploaded) "✅" else "❌"
 
             binding.btnViewDetails.setOnClickListener {
                 openSubmissionDetail(submission.id)

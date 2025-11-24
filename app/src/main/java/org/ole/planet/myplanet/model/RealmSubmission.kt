@@ -82,7 +82,8 @@ open class RealmSubmission : RealmObject() {
                 sub?._rev = JsonUtils.getString("_rev", submission)
                 sub?.grade = JsonUtils.getLong("grade", submission)
                 sub?.type = JsonUtils.getString("type", submission)
-                sub?.uploaded = JsonUtils.getString("status", submission) == "graded"
+                // If submission has _rev, it came from server and is synced
+                sub?.uploaded = !JsonUtils.getString("_rev", submission).isNullOrEmpty()
                 sub?.startTime = JsonUtils.getLong("startTime", submission)
                 sub?.lastUpdateTime = JsonUtils.getLong("lastUpdateTime", submission)
                 sub?.parentId = JsonUtils.getString("parentId", submission)

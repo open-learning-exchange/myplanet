@@ -12,6 +12,7 @@ import io.realm.Realm
 import io.realm.Sort
 import java.io.File
 import javax.inject.Inject
+import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentSubmissionListBinding
 import org.ole.planet.myplanet.model.RealmSubmission
 
@@ -49,6 +50,12 @@ class SubmissionListFragment : Fragment() {
         loadSubmissions()
     }
 
+    override fun onResume() {
+        super.onResume()
+        // Reload submissions when returning to this fragment
+        loadSubmissions()
+    }
+
     private fun setupRecyclerView() {
         binding.rvSubmissions.layoutManager = LinearLayoutManager(context)
         binding.rvSubmissions.addItemDecoration(
@@ -63,9 +70,11 @@ class SubmissionListFragment : Fragment() {
             .sort("lastUpdateTime", Sort.DESCENDING)
             .findAll()
 
+        val listener = activity as? OnHomeItemClickListener
         val adapter = SubmissionListAdapter(
             requireContext(),
-            submissions.toList()
+            submissions.toList(),
+            listener
         )
         binding.rvSubmissions.adapter = adapter
 

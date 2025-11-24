@@ -105,7 +105,8 @@ class SurveyRepositoryImpl @Inject constructor(
         surveys: List<RealmStepExam>
     ): Map<String, SurveyInfo> {
         val surveyIds = surveys.map { it.id }
-        val submissions = queryList(RealmSubmission::class.java) {
+        // Ensure we get the latest submissions from Realm
+        val submissions = queryList(RealmSubmission::class.java, ensureLatest = true) {
             `in`("parentId", surveyIds.toTypedArray())
         }
         val actualSubmissions = submissions.filter { !it.status.isNullOrEmpty() }

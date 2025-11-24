@@ -65,12 +65,8 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
         binding.rvMysurvey.addItemDecoration(
             DividerItemDecoration(activity, DividerItemDecoration.VERTICAL)
         )
-        viewLifecycleOwner.lifecycleScope.launch {
-            val subs = submissionRepository.getSubmissionsByUserId(user?.id ?: "")
-            allSubmissions = subs
-            exams = HashMap(submissionRepository.getExamMapForSubmissions(subs))
-            setData("")
-        }
+        // Initial load
+        loadSubmissions()
         binding.etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
             override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {
@@ -82,6 +78,21 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
             override fun afterTextChanged(editable: Editable) {}
         })
         showHideRadioButton()
+    }
+
+    private fun loadSubmissions() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val subs = submissionRepository.getSubmissionsByUserId(user?.id ?: "")
+            allSubmissions = subs
+            exams = HashMap(submissionRepository.getExamMapForSubmissions(subs))
+            setData(binding.etSearch.text.toString())
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Reload submissions when returning to this fragment
+        loadSubmissions()
     }
 
     private fun showHideRadioButton() {

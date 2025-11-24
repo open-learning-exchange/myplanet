@@ -131,6 +131,14 @@ object SubmissionPdfGenerator {
                 textSize = 20f
                 isFakeBoldText = true
             }
+            val headerPaint = Paint().apply {
+                textSize = 16f
+                isFakeBoldText = true
+            }
+            val subHeaderPaint = Paint().apply {
+                textSize = 14f
+                isFakeBoldText = true
+            }
             val normalPaint = Paint().apply {
                 textSize = 12f
             }
@@ -145,9 +153,16 @@ object SubmissionPdfGenerator {
             canvas.drawText("Generated: ${SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date())}", MARGIN, yPosition, normalPaint)
             yPosition += LINE_HEIGHT * 3
 
-            // List each submission with summary
-            submissions.forEachIndexed { index, submission ->
-                if (yPosition > PAGE_HEIGHT - MARGIN - 50) {
+            // Get questions once (they're the same for all submissions)
+            val examId = getExamId(submissions.firstOrNull()?.parentId)
+            val questions = realm.where(RealmExamQuestion::class.java)
+                .equalTo("examId", examId)
+                .findAll()
+
+            // List each submission with full details
+            submissions.forEachIndexed { submissionIndex, submission ->
+                // Check if we need a new page for submission header
+                if (yPosition > PAGE_HEIGHT - MARGIN - 100) {
                     document.finishPage(page)
                     pageNumber++
                     pageInfo = PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber).create()
@@ -156,13 +171,39 @@ object SubmissionPdfGenerator {
                     yPosition = MARGIN
                 }
 
-                canvas.drawText("Submission #${index + 1}", MARGIN, yPosition, normalPaint)
-                yPosition += LINE_HEIGHT
+                // Submission header
+                canvas.drawText("Submission #${submissionIndex + 1}", MARGIN, yPosition, subHeaderPaint)
+                yPosition += LINE_HEIGHT * 1.5f
                 canvas.drawText("Date: ${TimeUtils.getFormattedDateWithTime(submission.lastUpdateTime)}", MARGIN + 20, yPosition, normalPaint)
                 yPosition += LINE_HEIGHT
                 canvas.drawText("Status: ${submission.status}", MARGIN + 20, yPosition, normalPaint)
-                yPosition += LINE_HEIGHT
-                canvas.drawText("Answers: ${submission.answers?.size ?: 0}", MARGIN + 20, yPosition, normalPaint)
+                yPosition += LINE_HEIGHT * 2
+
+                // Questions and answers for this submission
+                questions.forEachIndexed { index, question ->
+                    // Check if we need a new page
+                    if (yPosition > PAGE_HEIGHT - MARGIN - 100) {
+                        document.finishPage(page)
+                        pageNumber++
+                        pageInfo = PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber).create()
+                        page = document.startPage(pageInfo)
+                        canvas = page.canvas
+                        yPosition = MARGIN
+                    }
+
+                    // Question
+                    val questionText = "Q${index + 1}: ${question.body ?: ""}"
+                    yPosition = drawMultilineText(canvas, questionText, MARGIN + 20, yPosition, normalPaint, PAGE_WIDTH - (2 * MARGIN) - 20)
+                    yPosition += LINE_HEIGHT / 2
+
+                    // Answer
+                    val answer = submission.answers?.find { it.questionId == question.id }
+                    val answerText = formatAnswer(answer, question)
+                    yPosition = drawMultilineText(canvas, "A: $answerText", MARGIN + 40, yPosition, normalPaint, PAGE_WIDTH - (2 * MARGIN) - 40)
+                    yPosition += LINE_HEIGHT * 1.5f
+                }
+
+                // Add extra space between submissions
                 yPosition += LINE_HEIGHT * 2
             }
 

@@ -88,7 +88,15 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         isCertified = isCourseCertified(mRealm, courseId)
 
         if ((questions?.size ?: 0) > 0) {
-            clearAllExistingAnswers {
+            // Only clear previous submissions for exams, not surveys
+            // Surveys should allow multiple submissions
+            if (type == "exam") {
+                clearAllExistingAnswers {
+                    createSubmission()
+                    startExam(questions?.get(currentIndex))
+                    updateNavButtons()
+                }
+            } else {
                 createSubmission()
                 startExam(questions?.get(currentIndex))
                 updateNavButtons()
