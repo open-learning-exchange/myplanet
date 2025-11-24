@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.submission
 
 import android.content.Context
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -14,7 +13,6 @@ import org.json.JSONObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.RowMysurveyBinding
-import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.ui.exam.TakeExamFragment
@@ -27,7 +25,6 @@ class AdapterMySubmission(
     list: List<RealmSubmission>?,
     private val examHashMap: HashMap<String?, RealmStepExam>?,
     private val submissionCountMap: Map<String?, Int> = emptyMap(),
-    private val allSubmissionsMap: Map<String?, List<RealmSubmission>> = emptyMap(),
     private val nameResolver: (String?) -> String?,
 ) : ListAdapter<RealmSubmission, ViewHolderMySurvey>(
     DiffUtils.itemCallback(
@@ -73,7 +70,6 @@ class AdapterMySubmission(
             binding.title.text = examHashMap[submission.parentId]?.name
         }
 
-        // Show submission count if there are multiple submissions
         val count = submissionCountMap[submission.id] ?: 1
         if (count > 1) {
             binding.submissionCount.visibility = View.VISIBLE
@@ -83,12 +79,9 @@ class AdapterMySubmission(
         }
 
         holder.itemView.setOnClickListener {
-            logSubmissionResponses(submission)
             if (count > 1) {
-                // Show all submissions for this exam/survey
                 showAllSubmissions(submission)
             } else {
-                // Single submission - open directly
                 if (type == "survey") {
                     openSurvey(listener, submission.id, true, false, "")
                 } else {
@@ -114,30 +107,6 @@ class AdapterMySubmission(
             binding.submittedBy.visibility = View.VISIBLE
             binding.submittedBy.text = resolvedName
         }
-    }
-
-    private fun logSubmissionResponses(submission: RealmSubmission) {
-        val submissionTitle = examHashMap?.get(submission.parentId)?.name ?: "Unknown"
-        val answerCount = submission.answers?.size ?: 0
-
-        Log.d("SubmissionResponses", "=== Submission Clicked ===")
-        Log.d("SubmissionResponses", "Title: $submissionTitle")
-        Log.d("SubmissionResponses", "Submission ID: ${submission.id}")
-        Log.d("SubmissionResponses", "Status: ${submission.status}")
-        Log.d("SubmissionResponses", "Total Answers: $answerCount")
-        Log.d("SubmissionResponses", "")
-
-        submission.answers?.forEachIndexed { index, answer ->
-            Log.d("SubmissionResponses", "Answer ${index + 1}:")
-            Log.d("SubmissionResponses", "  Question ID: ${answer.questionId}")
-            Log.d("SubmissionResponses", "  Value: ${answer.value}")
-            Log.d("SubmissionResponses", "  Value Choices: ${answer.valueChoices?.joinToString(", ")}")
-            Log.d("SubmissionResponses", "  Passed: ${answer.isPassed}")
-            Log.d("SubmissionResponses", "  Mistakes: ${answer.mistakes}")
-            Log.d("SubmissionResponses", "")
-        }
-
-        Log.d("SubmissionResponses", "=== End of Submission ===")
     }
 
     private fun openSubmissionDetail(listener: OnHomeItemClickListener?, id: String?) {

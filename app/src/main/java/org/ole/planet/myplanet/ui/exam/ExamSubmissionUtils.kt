@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.exam
 
-import android.util.Log
 import io.realm.Realm
 import io.realm.RealmList
 import java.util.Date
@@ -15,8 +14,6 @@ object ExamSubmissionUtils {
         ans: String, listAns: Map<String, String>?, otherText: String?, otherVisible: Boolean,
         type: String, index: Int, total: Int
     ): Boolean {
-        // Basic logging for answer saving
-        Log.d("RealmAnswerSave", "Saving Q${index+1}/${total}: ${question.type} - ${if (ans.isNotEmpty()) "text" else if (!listAns.isNullOrEmpty()) "choices" else "empty"}")
         val submissionId = try {
             submission?.id
         } catch (e: IllegalStateException) {
@@ -52,8 +49,8 @@ object ExamSubmissionUtils {
             }
         }, {
             // Success
-        }, { error ->
-            Log.e("RealmAnswerSave", "Failed to save answer", error)
+        }, { _ ->
+            // Error
         })
 
         val result = if (type == "exam") {

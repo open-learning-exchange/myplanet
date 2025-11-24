@@ -65,7 +65,6 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
         binding.rvMysurvey.addItemDecoration(
             DividerItemDecoration(activity, DividerItemDecoration.VERTICAL)
         )
-        // Initial load
         loadSubmissions()
         binding.etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
@@ -91,7 +90,6 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
 
     override fun onResume() {
         super.onResume()
-        // Reload submissions when returning to this fragment
         loadSubmissions()
     }
 
@@ -127,20 +125,19 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
                 it.userId == user?.id && it.type == "survey" && it.status != "pending"
             }
             else -> filtered.filter { it.userId == user?.id && it.type != "survey" }
-        }.sortedByDescending { it.lastUpdateTime ?: 0 }
+        }.sortedByDescending { it.lastUpdateTime }
 
         if (s.isNotEmpty()) {
             val examIds = exams?.filter { (_, exam) ->
-                exam?.name?.contains(s, ignoreCase = true) == true
+                exam.name?.contains(s, ignoreCase = true) == true
             }?.keys ?: emptySet()
             filtered = filtered.filter { examIds.contains(it.parentId) }
         }
 
-        // Group submissions by parentId and keep track of counts
         val groupedSubmissions = filtered.groupBy { it.parentId }
 
-        val submissionsWithCount = groupedSubmissions.map { (parentId, submissions) ->
-            val latestSubmission = submissions.maxByOrNull { it.lastUpdateTime ?: 0 }
+        val submissionsWithCount = groupedSubmissions.map { (_, submissions) ->
+            val latestSubmission = submissions.maxByOrNull { it.lastUpdateTime }
             SubmissionWithCount(
                 submission = latestSubmission!!,
                 count = submissions.size,
@@ -162,14 +159,12 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
         }?.toMap()
 
         val submissionCountMap = submissionsWithCount.associate { it.submission.id to it.count }
-        val allSubmissionsMap = submissionsWithCount.associate { it.submission.id to it.allSubmissions }
 
         val adapter = AdapterMySubmission(
             requireActivity(),
             submissions,
             exams,
             submissionCountMap,
-            allSubmissionsMap,
             nameResolver = { userId -> userId?.let { userNameMap?.get(it) } }
         )
         val itemCount = adapter.itemCount

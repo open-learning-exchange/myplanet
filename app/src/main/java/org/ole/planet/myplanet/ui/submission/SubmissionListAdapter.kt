@@ -42,7 +42,6 @@ class SubmissionListAdapter(
             binding.tvSubmissionDate.text = TimeUtils.getFormattedDateWithTime(submission.lastUpdateTime)
             binding.tvSubmissionStatus.text = submission.status
 
-            // Show sync status indicator
             binding.tvSyncStatus.text = if (submission.uploaded) "✅" else "❌"
 
             binding.btnViewDetails.setOnClickListener {

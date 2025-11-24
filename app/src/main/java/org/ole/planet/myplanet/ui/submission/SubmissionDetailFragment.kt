@@ -1,8 +1,6 @@
 package org.ole.planet.myplanet.ui.submission
 
-import android.content.Context
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -12,7 +10,6 @@ import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
 import org.json.JSONObject
 import org.ole.planet.myplanet.databinding.FragmentSubmissionDetailBinding
-import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
@@ -54,18 +51,14 @@ class SubmissionDetailFragment : Fragment() {
                 // Use state.itemCount for more reliable count
                 val count = state.itemCount
                 if (count == 0 || adapter.itemCount == 0) {
-                    // No items, use default measurement
                     super.onMeasure(recycler, state, widthSpec, heightSpec)
                     return
                 }
 
-                // Calculate total height for all items
                 var totalHeight = 0
                 try {
                     for (i in 0 until count) {
-                        // Double-check position is still valid to handle race conditions
                         if (i >= adapter.itemCount) {
-                            Log.w("RecyclerViewDebug", "Adapter changed during measurement, falling back to default")
                             super.onMeasure(recycler, state, widthSpec, heightSpec)
                             return
                         }
@@ -79,9 +72,7 @@ class SubmissionDetailFragment : Fragment() {
 
                     val width = View.MeasureSpec.getSize(widthSpec)
                     setMeasuredDimension(width, totalHeight)
-                    Log.d("RecyclerViewDebug", "Calculated total height: $totalHeight for $count items")
                 } catch (e: Exception) {
-                    Log.e("RecyclerViewDebug", "Error calculating height, falling back to default", e)
                     super.onMeasure(recycler, state, widthSpec, heightSpec)
                 }
             }
@@ -150,21 +141,9 @@ class SubmissionDetailFragment : Fragment() {
     private fun loadQuestionsAndAnswers(submission: RealmSubmission) {
         val examId = getExamId(submission.parentId)
 
-        Log.d("RecyclerViewDebug", "Loading Q&A: parentId=${submission.parentId}, examId=$examId, answersCount=${submission.answers?.size ?: 0}")
-
-        submission.answers?.forEachIndexed { index, answer ->
-            Log.d("RecyclerViewDebug", "  Answer $index: questionId=${answer.questionId}, value=${answer.value}, valueChoices=${answer.valueChoices?.size}")
-        }
-
         val questions = mRealm.where(RealmExamQuestion::class.java)
             .equalTo("examId", examId)
             .findAll()
-
-        Log.d("RecyclerViewDebug", "Found ${questions.size} questions for examId=$examId")
-
-        questions.forEachIndexed { index, question ->
-            Log.d("RecyclerViewDebug", "  Question $index: id=${question.id}, body=${question.body?.take(50)}")
-        }
 
         val questionAnswerPairs = questions.map { question ->
             val answer = submission.answers?.find { it.questionId == question.id }
@@ -172,30 +151,6 @@ class SubmissionDetailFragment : Fragment() {
         }
 
         adapter.updateData(questionAnswerPairs)
-        Log.d("RecyclerViewDebug", "Adapter updated with ${questionAnswerPairs.size} items")
-    }
-
-
-    private fun formatAnswerForDisplay(question: RealmExamQuestion, answer: RealmAnswer?): String {
-        return when {
-            answer == null -> "No answer provided"
-            question.type == "selectMultiple" -> {
-                if (answer.valueChoices != null && answer.valueChoices!!.isNotEmpty()) {
-                    answer.valueChoices!!.joinToString(", ") { choice ->
-                        try {
-                            val choiceObj = org.json.JSONObject(choice)
-                            choiceObj.optString("text", choice)
-                        } catch (e: Exception) {
-                            choice
-                        }
-                    }
-                } else {
-                    "No selections made"
-                }
-            }
-            !answer.value.isNullOrEmpty() -> answer.value!!
-            else -> "No answer"
-        }
     }
 
     private fun getExamId(parentId: String?): String? {

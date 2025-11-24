@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -11,7 +12,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.Sort
 import java.io.File
-import javax.inject.Inject
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentSubmissionListBinding
 import org.ole.planet.myplanet.model.RealmSubmission
@@ -52,7 +52,6 @@ class SubmissionListFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        // Reload submissions when returning to this fragment
         loadSubmissions()
     }
 
@@ -78,7 +77,6 @@ class SubmissionListFragment : Fragment() {
         )
         binding.rvSubmissions.adapter = adapter
 
-        // Setup download all button
         binding.btnDownloadReport.setOnClickListener {
             generateReport(submissions.toList())
         }
@@ -93,20 +91,10 @@ class SubmissionListFragment : Fragment() {
         )
 
         if (file != null) {
-            android.widget.Toast.makeText(
-                context,
-                "Report saved to ${file.absolutePath}",
-                android.widget.Toast.LENGTH_LONG
-            ).show()
-
-            // Open the PDF
+            Toast.makeText(context, "Report saved to ${file.absolutePath}", Toast.LENGTH_LONG).show()
             openPdf(file)
         } else {
-            android.widget.Toast.makeText(
-                context,
-                "Failed to generate report",
-                android.widget.Toast.LENGTH_SHORT
-            ).show()
+            Toast.makeText(context, "Failed to generate report", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -124,11 +112,7 @@ class SubmissionListFragment : Fragment() {
             startActivity(intent)
         } catch (e: Exception) {
             e.printStackTrace()
-            android.widget.Toast.makeText(
-                context,
-                "Could not open PDF. File saved at: ${file.absolutePath}",
-                android.widget.Toast.LENGTH_LONG
-            ).show()
+            Toast.makeText(context, "Could not open PDF. File saved at: ${file.absolutePath}", Toast.LENGTH_LONG).show()
         }
     }
 

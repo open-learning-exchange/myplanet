@@ -50,7 +50,6 @@ open class RealmAnswer : RealmObject() {
             }
             `object`.addProperty("mistakes", ans.mistakes)
             `object`.addProperty("passed", ans.isPassed)
-            // Include questionId so it can be matched when syncing back
             if (!TextUtils.isEmpty(ans.questionId)) {
                 `object`.addProperty("questionId", ans.questionId)
             }
