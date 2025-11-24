@@ -2,10 +2,10 @@ package org.ole.planet.myplanet.model
 
 import android.text.TextUtils
 import com.google.gson.JsonObject
-import org.ole.planet.myplanet.utilities.GsonUtils
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
+import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 
 open class RealmTeamTask : RealmObject() {

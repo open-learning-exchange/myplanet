@@ -3,21 +3,18 @@ package org.ole.planet.myplanet.model
 import android.content.Context
 import android.text.TextUtils
 import com.google.gson.JsonObject
-import org.ole.planet.myplanet.utilities.GsonUtils
 import com.google.gson.JsonParser
 import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
-import java.io.IOException
 import java.util.Date
 import java.util.UUID
-import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.utilities.Constants
+import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
-import org.ole.planet.myplanet.utilities.UrlUtils
 
 open class RealmSubmission : RealmObject() {
     @PrimaryKey

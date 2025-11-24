@@ -14,8 +14,8 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowStepsBinding
 import org.ole.planet.myplanet.model.RealmCourseStep
-import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.repository.SubmissionRepository
+import org.ole.planet.myplanet.utilities.DiffUtils
 
 class AdapterSteps(
     private val context: Context,

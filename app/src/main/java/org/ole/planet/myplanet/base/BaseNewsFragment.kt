@@ -21,7 +21,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.google.gson.JsonObject
 import io.realm.RealmList
-import org.ole.planet.myplanet.utilities.GsonUtils
 import java.io.File
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
@@ -36,6 +35,7 @@ import org.ole.planet.myplanet.ui.news.ReplyActivity
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getRealPathFromURI
+import org.ole.planet.myplanet.utilities.GsonUtils
 
 @RequiresApi(api = Build.VERSION_CODES.O)
 abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListener {

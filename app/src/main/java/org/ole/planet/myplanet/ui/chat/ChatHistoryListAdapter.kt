@@ -9,7 +9,6 @@ import androidx.core.graphics.drawable.toDrawable
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import org.ole.planet.myplanet.utilities.GsonUtils
 import java.text.Normalizer
 import java.util.Date
 import java.util.Locale
@@ -26,6 +25,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.news.ExpandableListAdapter
 import org.ole.planet.myplanet.ui.news.GrandChildAdapter
 import org.ole.planet.myplanet.utilities.DiffUtils
+import org.ole.planet.myplanet.utilities.GsonUtils
 
 data class ChatShareTargets(
     val community: RealmMyTeam?,

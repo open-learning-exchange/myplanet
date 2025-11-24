@@ -3,13 +3,13 @@ package org.ole.planet.myplanet.model
 import android.text.TextUtils
 import android.widget.EditText
 import com.google.gson.JsonArray
-import org.ole.planet.myplanet.utilities.GsonUtils
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
+import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 
 open class RealmAchievement : RealmObject() {
