@@ -74,6 +74,10 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
+    abstract fun bindProgressRepository(impl: ProgressRepositoryImpl): ProgressRepository
+
+    @Binds
+    @Singleton
     abstract fun bindRatingRepository(impl: RatingRepositoryImpl): RatingRepository
 
     @Binds
