@@ -181,7 +181,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
     override fun onCreate() {
         super.onCreate()
-        android.os.Trace.beginSection("MainApplication.onCreate")
         setupCriticalProperties()
         initApp()
         setupStrictMode()
@@ -196,7 +195,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             scheduleWorkersOnStart()
             observeNetworkForDownloads()
         }
-        android.os.Trace.endSection()
     }
 
     private fun initApp() {
@@ -224,7 +222,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                 ApiClientEntryPoint::class.java
             ).apiClient()
         }
-        android.os.Trace.endSection()
     }
     
     private suspend fun initializeDatabaseConnection() {
