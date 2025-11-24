@@ -10,7 +10,6 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import org.json.JSONObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.RowMysurveyBinding
@@ -24,8 +23,9 @@ import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
 class AdapterMySubmission(
     private val context: Context,
     list: List<RealmSubmission>?,
-    private val examHashMap: HashMap<String?, RealmStepExam>?,
-    private val nameResolver: (String?) -> String?,
+    private var examHashMap: HashMap<String?, RealmStepExam>?,
+    private var submissionUserNames: Map<String, String> = emptyMap(),
+    private var nameResolver: (String?) -> String?,
 ) : ListAdapter<RealmSubmission, ViewHolderMySurvey>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem ->
@@ -67,7 +67,7 @@ class AdapterMySubmission(
         binding.date.text = getFormattedDate(submission.startTime)
         showSubmittedBy(binding, submission)
         if (examHashMap?.containsKey(submission.parentId) == true) {
-            binding.title.text = examHashMap[submission.parentId]?.name
+            binding.title.text = examHashMap?.get(submission.parentId)?.name
         }
         holder.itemView.setOnClickListener {
             logSubmissionResponses(submission)
@@ -80,13 +80,7 @@ class AdapterMySubmission(
     }
 
     private fun showSubmittedBy(binding: RowMysurveyBinding, submission: RealmSubmission) {
-        val embeddedName = runCatching {
-            submission.user?.takeIf { it.isNotBlank() }?.let { userJson ->
-                JSONObject(userJson).optString("name").takeIf { name -> name.isNotBlank() }
-            }
-        }.getOrNull()
-
-        val resolvedName = embeddedName ?: nameResolver(submission.userId)
+        val resolvedName = submissionUserNames[submission.id] ?: nameResolver?.invoke(submission.userId)
 
         if (resolvedName.isNullOrBlank()) {
             binding.submittedBy.visibility = View.GONE
@@ -135,6 +129,18 @@ class AdapterMySubmission(
         if (type != null) {
             this.type = type
         }
+    }
+
+    fun updateData(
+        list: List<RealmSubmission>,
+        exams: HashMap<String?, RealmStepExam>,
+        submissionNames: Map<String, String>,
+        nameResolver: (String?) -> String?
+    ) {
+        this.examHashMap = exams
+        this.submissionUserNames = submissionNames
+        this.nameResolver = nameResolver
+        submitList(list)
     }
 
     class ViewHolderMySurvey(val binding: RowMysurveyBinding) : RecyclerView.ViewHolder(binding.root)

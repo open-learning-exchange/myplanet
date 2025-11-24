@@ -15,6 +15,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.databinding.FragmentMySubmissionBinding
@@ -50,10 +51,15 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
         viewModel.loadSubmissions(type ?: "", "")
 
         viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.submissions.collectLatest { submissions ->
-                val exams = viewModel.exams.value
-                val userNames = viewModel.userNames.value
-                setData(submissions, exams, userNames)
+            combine(
+                viewModel.submissions,
+                viewModel.exams,
+                viewModel.userNames,
+                viewModel.submissionUserNames
+            ) { submissions, exams, userNames, submissionNames ->
+                DataWrapper(submissions, exams, userNames, submissionNames)
+            }.collectLatest { data ->
+                setData(data.submissions, data.exams, data.userNames, data.submissionNames)
             }
         }
 
@@ -66,6 +72,13 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
         })
         showHideRadioButton()
     }
+
+    data class DataWrapper(
+        val submissions: List<RealmSubmission>,
+        val exams: HashMap<String?, RealmStepExam>,
+        val userNames: Map<String, String>,
+        val submissionNames: Map<String, String>
+    )
 
     private fun showHideRadioButton() {
         if (type != "survey") {
@@ -91,15 +104,10 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
     private fun setData(
         submissions: List<RealmSubmission>,
         exams: HashMap<String?, RealmStepExam>,
-        userNameMap: Map<String, String>
+        userNameMap: Map<String, String>,
+        submissionNames: Map<String, String>
     ) {
-        val adapter = AdapterMySubmission(
-            requireActivity(),
-            submissions,
-            exams,
-            nameResolver = { userId -> userId?.let { userNameMap[it] } }
-        )
-        val itemCount = adapter.itemCount
+        val itemCount = submissions.size
         val s = binding.etSearch.text.toString()
 
         if (s.isEmpty()) {
@@ -123,8 +131,26 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
             }
         }
 
-        adapter.setType(type)
-        binding.rvMysurvey.adapter = adapter
+        val existingAdapter = binding.rvMysurvey.adapter as? AdapterMySubmission
+        if (existingAdapter != null) {
+            existingAdapter.updateData(
+                submissions,
+                exams,
+                submissionNames,
+                nameResolver = { userId -> userId?.let { userNameMap[it] } }
+            )
+            existingAdapter.setType(type)
+        } else {
+            val adapter = AdapterMySubmission(
+                requireActivity(),
+                submissions,
+                exams,
+                submissionNames,
+                nameResolver = { userId -> userId?.let { userNameMap[it] } }
+            )
+            adapter.setType(type)
+            binding.rvMysurvey.adapter = adapter
+        }
     }
 
     override fun onDestroyView() {
