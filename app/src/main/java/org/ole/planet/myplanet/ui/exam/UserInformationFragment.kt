@@ -20,9 +20,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
-import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -294,13 +292,12 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         }
     }
 
-    @OptIn(DelicateCoroutinesApi::class)
     private fun checkAvailableServer(settings: SharedPreferences) {
         val updateUrl = "${settings.getString("serverURL", "")}"
         val serverUrlMapper = ServerUrlMapper()
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
-        GlobalScope.launch(Dispatchers.IO) {
+        viewLifecycleOwnerLiveData.value?.lifecycleScope?.launch(Dispatchers.IO) {
             var primaryAvailable = false
             var alternativeAvailable = false
 
