@@ -11,8 +11,8 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import javax.inject.Inject
 
 @HiltViewModel
-class MyProgressViewModel @Inject constructor(
-    private val myProgressRepository: MyProgressRepository,
+class ProgressViewModel @Inject constructor(
+    private val progressRepository: ProgressRepository,
     private val userProfileDbHandler: UserProfileDbHandler
 ) : ViewModel() {
 
@@ -22,7 +22,7 @@ class MyProgressViewModel @Inject constructor(
     fun loadCourseData() {
         viewModelScope.launch {
             val user = userProfileDbHandler.userModel
-            _courseData.value = myProgressRepository.fetchCourseData(user?.id)
+            _courseData.value = progressRepository.fetchCourseData(user?.id)
         }
     }
 }
