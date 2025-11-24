@@ -8,14 +8,13 @@ import androidx.core.net.toUri
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import dagger.hilt.android.EntryPointAccessors
-import java.io.IOException
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.Executors
-import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
@@ -29,15 +28,13 @@ import org.ole.planet.myplanet.di.AutoSyncEntryPoint
 import org.ole.planet.myplanet.di.RepositoryEntryPoint
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmCommunity
+import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.UploadToShelfService
 import org.ole.planet.myplanet.ui.sync.ProcessUserDataActivity
 import org.ole.planet.myplanet.ui.sync.SyncActivity
-import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateIv
-import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateKey
-import org.ole.planet.myplanet.utilities.Constants.KEY_UPGRADE_MAX
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
+import org.ole.planet.myplanet.utilities.AndroidDecrypter
+import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
@@ -50,6 +47,10 @@ import org.ole.planet.myplanet.utilities.VersionUtils
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import java.io.IOException
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Executors
+import javax.inject.Inject
 
 class Service @Inject constructor(
     private val context: Context,
@@ -73,7 +74,7 @@ class Service @Inject constructor(
         ).userRepository(),
     )
 
-    private val preferences: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    private val preferences: SharedPreferences = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
     private val configurationManager =
         ConfigurationManager(context, preferences, retrofitInterface)
@@ -291,8 +292,21 @@ class Service @Inject constructor(
                              retrofitInterface.putDoc(null, "application/json", "${UrlUtils.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}", obj).enqueue(object : Callback<JsonObject> {
                                  override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
                                      if (response.body() != null && response.body()?.has("id") == true) {
-                                        uploadToShelf(obj)
-                                        saveUserToDb("${response.body()?.get("id")?.asString}", obj, callback, securityCallback)
+                                         uploadToShelf(obj)
+                                         serviceScope.launch {
+                                             val result = saveUserToDb(
+                                                 "${response.body()?.get("id")?.asString}",
+                                                 obj,
+                                                 securityCallback
+                                             )
+                                             withContext(Dispatchers.Main) {
+                                                 if (result.isSuccess) {
+                                                     callback.onSuccess(context.getString(R.string.user_created_successfully))
+                                                 } else {
+                                                     callback.onSuccess(context.getString(R.string.unable_to_save_user_please_sync))
+                                                 }
+                                             }
+                                         }
                                      } else {
                                          callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
                                      }
@@ -312,7 +326,7 @@ class Service @Inject constructor(
             }
 
             override fun notAvailable() {
-                val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                val settings = MainApplication.context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
                 serviceScope.launch {
                     val existingUser = userRepository.getUserByName(obj["name"].asString)
                     if (existingUser != null && existingUser._id?.startsWith("guest") != true) {
@@ -322,8 +336,8 @@ class Service @Inject constructor(
                         return@launch
                     }
 
-                    val keyString = generateKey()
-                    val iv = generateIv()
+                    val keyString = AndroidDecrypter.generateKey()
+                    val iv = AndroidDecrypter.generateIv()
                     userRepository.saveUser(obj, settings, keyString, iv)
                     withContext(Dispatchers.Main) {
                         Utilities.toast(MainApplication.context, context.getString(R.string.not_connect_to_planet_created_user_offline))
@@ -342,39 +356,48 @@ class Service @Inject constructor(
         })
     }
 
-    private fun saveUserToDb(id: String, obj: JsonObject, callback: CreateUserCallback, securityCallback: SecurityDataCallback? = null) {
-        val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        serviceScope.launch {
-            try {
-                val result = withContext(Dispatchers.IO) {
-                    retrofitInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/_users/$id").execute()
-                }
+    private suspend fun saveUserToDb(id: String, obj: JsonObject, securityCallback: SecurityDataCallback? = null): Result<RealmUserModel?> {
+        val settings = MainApplication.context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+        return try {
+            val userModel = withTimeout(20000) {
+                val response = retrofitInterface.getJsonObjectSuspended(
+                    UrlUtils.header,
+                    "${UrlUtils.getUrl()}/_users/$id"
+                )
 
-                val userModel = result.body()?.let { userRepository.saveUser(it, settings) }
-                if (userModel != null) {
-                    getUploadToShelfService().saveKeyIv(retrofitInterface, userModel, obj)
-                }
+                ensureActive()
 
+                if (response.isSuccessful) {
+                    response.body()?.let { userRepository.saveUser(it, settings) }
+                } else {
+                    null
+                }
+            }
+
+            if (userModel != null) {
+                getUploadToShelfService().saveKeyIv(retrofitInterface, userModel, obj)
                 withContext(Dispatchers.Main) {
-                    callback.onSuccess(context.getString(R.string.user_created_successfully))
                     if (context is ProcessUserDataActivity) {
-                        val userName = "${obj["name"].asString}"
+                        val userName = obj["name"].asString
                         context.startUpload("becomeMember", userName, securityCallback)
                     }
                 }
-            } catch (e: IOException) {
-                e.printStackTrace()
-                withContext(Dispatchers.Main) {
-                    callback.onSuccess(context.getString(R.string.unable_to_save_user_please_sync))
-                    securityCallback?.onSecurityDataUpdated()
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                withContext(Dispatchers.Main) {
-                    callback.onSuccess(context.getString(R.string.unable_to_save_user_please_sync))
-                    securityCallback?.onSecurityDataUpdated()
-                }
+                Result.success(userModel)
+            } else {
+                Result.failure(Exception("Failed to save user or user model was null"))
             }
+        } catch (e: TimeoutCancellationException) {
+            e.printStackTrace()
+            withContext(Dispatchers.Main) {
+                securityCallback?.onSecurityDataUpdated()
+            }
+            Result.failure(e)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            withContext(Dispatchers.Main) {
+                securityCallback?.onSecurityDataUpdated()
+            }
+            Result.failure(e)
         }
     }
 
@@ -482,7 +505,7 @@ class Service @Inject constructor(
 
     private fun handleVersionEvaluation(info: MyPlanet, apkVersion: Int, callback: CheckVersionCallback) {
         val currentVersion = VersionUtils.getVersionCode(context)
-        if (showBetaFeature(KEY_UPGRADE_MAX, context) && info.latestapkcode > currentVersion) {
+        if (Constants.showBetaFeature(Constants.KEY_UPGRADE_MAX, context) && info.latestapkcode > currentVersion) {
             serviceScope.launch {
                 withContext(Dispatchers.Main) {
                     callback.onUpdateAvailable(info, false)
