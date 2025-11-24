@@ -4,6 +4,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
@@ -66,7 +67,12 @@ class RealtimeSyncHelper(
     
     private fun refreshRecyclerView() {
         fragment.viewLifecycleOwner.lifecycleScope.launch {
-            mixin.getSyncRecyclerView()?.adapter?.notifyDataSetChanged()
+            val adapter = mixin.getSyncRecyclerView()?.adapter
+            if (adapter is ListAdapter<*, *>) {
+                (adapter as ListAdapter<Any, *>).submitList(adapter.currentList.toList())
+            } else {
+                adapter?.notifyDataSetChanged()
+            }
         }
     }
     
