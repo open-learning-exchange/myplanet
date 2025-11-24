@@ -195,7 +195,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             scheduleWorkersOnStart()
             observeNetworkForDownloads()
         }
-        Trace.endSection()
     }
 
     private fun initApp() {
