@@ -115,7 +115,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     @Inject
     lateinit var teamRepository: TeamRepository
     @Inject
-    lateinit var myProgressRepository: MyProgressRepository
+    lateinit var progressRepository: ProgressRepository
     private lateinit var challengeHelper: ChallengeHelper
     private lateinit var notificationManager: NotificationUtils.NotificationManager
     private var notificationsShownThisSession = false
