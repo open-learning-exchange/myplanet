@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentMemberDetailBinding
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
@@ -29,6 +30,8 @@ class MemberDetailFragment : Fragment() {
             binding.tvProfileName.text = if (fullName.isNullOrEmpty()) username else fullName
             Glide.with(requireContext())
                 .load(imageUrl)
+                .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .circleCrop()
                 .placeholder(R.drawable.profile)
                 .error(R.drawable.profile)
                 .into(binding.memberImage)

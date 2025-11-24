@@ -4,6 +4,7 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.UserListItemBinding
 import org.ole.planet.myplanet.model.User
@@ -66,6 +67,8 @@ class TeamListAdapter(
             }
             Glide.with(binding.userProfile.context)
                 .load(account.image)
+                .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .circleCrop()
                 .placeholder(R.drawable.profile)
                 .error(R.drawable.profile)
                 .into(binding.userProfile)

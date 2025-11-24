@@ -21,6 +21,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.github.chrisbanes.photoview.PhotoView
 import com.google.gson.JsonArray
 import org.ole.planet.myplanet.utilities.GsonUtils
@@ -688,7 +689,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         } else {
             request.load(if (File(path).exists()) File(path) else path)
         }
-        target.placeholder(R.drawable.ic_loading)
+        target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().placeholder(R.drawable.ic_loading)
             .error(R.drawable.ic_loading)
             .into(binding.imgNews)
         binding.imgNews.visibility = View.VISIBLE
@@ -713,7 +714,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         } else {
             request.load(if (File(path).exists()) File(path) else path)
         }
-        target.placeholder(R.drawable.ic_loading)
+        target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().placeholder(R.drawable.ic_loading)
             .error(R.drawable.ic_loading)
             .into(imageView)
 
@@ -741,7 +742,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
                 } else {
                     request.load(imageFile)
                 }
-                target.placeholder(R.drawable.ic_loading)
+                target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().placeholder(R.drawable.ic_loading)
                     .error(R.drawable.ic_loading)
                     .into(binding.imgNews)
                 binding.imgNews.visibility = View.VISIBLE
@@ -777,7 +778,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
                 } else {
                     request.load(imageFile)
                 }
-                target.placeholder(R.drawable.ic_loading)
+                target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().placeholder(R.drawable.ic_loading)
                     .error(R.drawable.ic_loading)
                     .into(imageView)
 
@@ -807,7 +808,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
             val file = File(imageUrl)
             if (file.exists()) request.load(file) else request.load(imageUrl)
         }
-        target.error(R.drawable.ic_loading).into(photoView)
+        target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().error(R.drawable.ic_loading).into(photoView)
 
         closeButton.setOnClickListener { dialog.dismiss() }
 

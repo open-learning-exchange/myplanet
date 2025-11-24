@@ -2,12 +2,14 @@ package org.ole.planet.myplanet.ui.dashboard
 
 import android.content.SharedPreferences
 import androidx.fragment.app.FragmentManager
+import androidx.lifecycle.lifecycleScope
 import com.google.gson.JsonObject
 import io.realm.Realm
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
@@ -16,6 +18,7 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.ui.courses.MyProgressFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.utilities.MarkdownDialog
@@ -26,7 +29,8 @@ class ChallengeHelper(
     private val user: RealmUserModel?,
     private val settings: SharedPreferences,
     private val editor: SharedPreferences.Editor,
-    private val viewModel: DashboardViewModel
+    private val viewModel: DashboardViewModel,
+    private val progressRepository: ProgressRepository
 ) {
     private val fragmentManager: FragmentManager
         get() = activity.supportFragmentManager
@@ -39,27 +43,29 @@ class ChallengeHelper(
         val allUniqueDates = fetchVoiceDates(startTime, endTime, null)
 
         val courseId = "4e6b78800b6ad18b4e8b0e1e38a98cac"
-        val courseData = MyProgressFragment.fetchCourseData(realm, user?.id)
-        val progress = MyProgressFragment.getCourseProgress(courseData, courseId)
-        val courseName = realm.where(RealmMyCourse::class.java)
-            .equalTo("courseId", courseId)
-            .findFirst()?.courseTitle
+        activity.lifecycleScope.launch {
+            val courseData = progressRepository.fetchCourseData(user?.id)
+            val progress = MyProgressFragment.getCourseProgress(courseData, courseId)
+            val courseName = realm.where(RealmMyCourse::class.java)
+                .equalTo("courseId", courseId)
+                .findFirst()?.courseTitle
 
-        val hasUnfinishedSurvey = hasPendingSurvey(courseId)
+            val hasUnfinishedSurvey = hasPendingSurvey(courseId)
 
-        val validUrls = listOf(
-            "https://${BuildConfig.PLANET_GUATEMALA_URL}",
-            "http://${BuildConfig.PLANET_XELA_URL}",
-            "http://${BuildConfig.PLANET_URIUR_URL}",
-            "http://${BuildConfig.PLANET_SANPABLO_URL}",
-            "http://${BuildConfig.PLANET_EMBAKASI_URL}",
-            "https://${BuildConfig.PLANET_VI_URL}"
-        )
+            val validUrls = listOf(
+                "https://${BuildConfig.PLANET_GUATEMALA_URL}",
+                "http://${BuildConfig.PLANET_XELA_URL}",
+                "http://${BuildConfig.PLANET_URIUR_URL}",
+                "http://${BuildConfig.PLANET_SANPABLO_URL}",
+                "http://${BuildConfig.PLANET_EMBAKASI_URL}",
+                "https://${BuildConfig.PLANET_VI_URL}"
+            )
 
-        val today = LocalDate.now()
-        if (user?.id?.startsWith("guest") == false && shouldPromptChallenge(today, validUrls)) {
-            val courseStatus = getCourseStatus(progress, courseName)
-            challengeDialog(uniqueDates.size, courseStatus, allUniqueDates.size, hasUnfinishedSurvey)
+            val today = LocalDate.now()
+            if (user?.id?.startsWith("guest") == false && shouldPromptChallenge(today, validUrls)) {
+                val courseStatus = getCourseStatus(progress, courseName)
+                challengeDialog(uniqueDates.size, courseStatus, allUniqueDates.size, hasUnfinishedSurvey)
+            }
         }
     }
 
