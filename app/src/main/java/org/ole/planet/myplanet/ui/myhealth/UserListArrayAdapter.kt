@@ -9,6 +9,7 @@ import android.widget.ArrayAdapter
 import android.widget.ImageView
 import android.widget.TextView
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.TimeUtils
@@ -45,6 +46,8 @@ class UserListArrayAdapter(activity: Activity, val view: Int, var list: List<Rea
             holder.image?.let {
                 Glide.with(it.context)
                     .load(um?.userImage)
+                    .diskCacheStrategy(DiskCacheStrategy.ALL)
+                    .circleCrop()
                     .placeholder(R.drawable.profile)
                     .error(R.drawable.profile)
                     .into(it)

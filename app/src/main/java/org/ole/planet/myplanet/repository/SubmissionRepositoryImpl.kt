@@ -210,4 +210,10 @@ class SubmissionRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun markSubmissionComplete(id: String, payload: com.google.gson.JsonObject) {
+        update(RealmSubmission::class.java, "id", id) { sub ->
+            sub.user = payload.toString()
+            sub.status = "complete"
+        }
+    }
 }

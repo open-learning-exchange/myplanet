@@ -247,7 +247,9 @@ class AdapterTeamList(
                 )
             }
 
-            val validTeams = list.filter { it.status?.isNotEmpty() == true }
+            val validTeams = list.filter {
+                !it._id.isNullOrBlank() && (it.status == null || it.status != "archived")
+            }
 
             if (validTeams.isEmpty()) {
                 val diffResult = withContext(Dispatchers.Default) {
