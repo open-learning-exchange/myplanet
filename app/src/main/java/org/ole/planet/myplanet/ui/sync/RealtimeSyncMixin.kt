@@ -5,6 +5,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.RecyclerView
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
@@ -28,12 +29,7 @@ class RealtimeSyncHelper(
     
     private val realtimeSyncListener = object : BaseRealtimeSyncListener() {
         override fun onTableDataUpdated(update: TableDataUpdate) {
-            if (mixin.getWatchedTables().contains(update.table)) {
-                mixin.onDataUpdated(update.table, update)
-                if (mixin.shouldAutoRefresh(update.table)) {
-                    refreshRecyclerView()
-                }
-            }
+            // Logic handled by dataUpdateFlow with debounce to prevent bursts
         }
         
         override fun onSyncStarted() {}
@@ -54,6 +50,7 @@ class RealtimeSyncHelper(
                         old.newItemsCount == new.newItemsCount && 
                         old.updatedItemsCount == new.updatedItemsCount 
                     }
+                    .debounce(250)
                     .collect { update ->
                         mixin.onDataUpdated(update.table, update)
                         if (mixin.shouldAutoRefresh(update.table)) {
