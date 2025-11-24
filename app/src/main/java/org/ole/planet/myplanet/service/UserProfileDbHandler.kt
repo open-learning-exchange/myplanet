@@ -22,15 +22,29 @@ import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.Constants
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utilities.Utilities
 
 class UserProfileDbHandler @Inject constructor(
     @ApplicationContext private val context: Context,
     private val realmService: DatabaseService,
     @AppPreferences private val settings: SharedPreferences,
-    @ApplicationScope private val applicationScope: CoroutineScope
+    @ApplicationScope private val applicationScope: CoroutineScope,
+    private val userRepository: UserRepository,
 ) {
     private val fullName: String
+
+    constructor(context: Context) : this(
+        context,
+        DatabaseService(context),
+        context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE),
+        EntryPointAccessors.fromApplication(
+            context.applicationContext, ServiceEntryPoint::class.java
+        ).applicationScope(),
+        EntryPointAccessors.fromApplication(
+            context.applicationContext, ServiceEntryPoint::class.java
+        ).userRepository()
+    )
 
     init {
         try {
@@ -40,18 +54,10 @@ class UserProfileDbHandler @Inject constructor(
         }
     }
 
-    val userModel: RealmUserModel? get() = getUserModelCopy()
+    val userModel: RealmUserModel? get() = userRepository.getUserModel()
 
     fun getUserModelCopy(): RealmUserModel? {
-        val userId = settings.getString("userId", null)?.takeUnless { it.isBlank() } ?: return null
-        return realmService.withRealm { realm ->
-            realm.where(RealmUserModel::class.java)
-                .equalTo("id", userId)
-                .or()
-                .equalTo("_id", userId)
-                .findFirst()
-                ?.let { realm.copyFromRealm(it) }
-        }
+        return userRepository.getUserModel()
     }
 
     fun onLogin() {
