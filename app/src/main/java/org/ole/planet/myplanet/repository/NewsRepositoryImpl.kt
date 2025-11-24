@@ -10,16 +10,18 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.findCopyByField
+import org.ole.planet.myplanet.model.NewsItem
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.utilities.NewsMapper
 
 class NewsRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     private val gson: Gson,
 ) : RealmRepository(databaseService), NewsRepository {
 
-    override suspend fun getNewsWithReplies(newsId: String): Pair<RealmNews?, List<RealmNews>> {
+    override suspend fun getNewsWithReplies(newsId: String): Pair<NewsItem?, List<NewsItem>> {
         return withRealm(ensureLatest = true) { realm ->
             val news = realm.findCopyByField(RealmNews::class.java, "id", newsId)
             val replies = realm.where(RealmNews::class.java)
@@ -27,11 +29,11 @@ class NewsRepositoryImpl @Inject constructor(
                 .sort("time", Sort.DESCENDING)
                 .findAll()
                 .let { realm.copyFromRealm(it) }
-            news to replies
+            news?.let { NewsMapper.fromRealm(it) } to replies.map { NewsMapper.fromRealm(it) }
         }
     }
 
-    override suspend fun getCommunityVisibleNews(userIdentifier: String): List<RealmNews> {
+    override suspend fun getCommunityVisibleNews(userIdentifier: String): List<NewsItem> {
         val allNews = queryList(RealmNews::class.java) {
             isEmpty("replyTo")
             equalTo("docType", "message", Case.INSENSITIVE)
@@ -43,7 +45,7 @@ class NewsRepositoryImpl @Inject constructor(
 
         return allNews.filter { news ->
             isVisibleToUser(news, userIdentifier)
-        }
+        }.map { NewsMapper.fromRealm(it) }
     }
 
     override suspend fun createNews(map: HashMap<String?, String>, user: RealmUserModel?): RealmNews {
@@ -74,7 +76,7 @@ class NewsRepositoryImpl @Inject constructor(
             false
         }
     }
-    override suspend fun getCommunityNews(userIdentifier: String): Flow<List<RealmNews>> {
+    override suspend fun getCommunityNews(userIdentifier: String): Flow<List<NewsItem>> {
         val allNewsFlow = queryListFlow(RealmNews::class.java) {
             isEmpty("replyTo")
             equalTo("docType", "message", Case.INSENSITIVE)
@@ -83,7 +85,7 @@ class NewsRepositoryImpl @Inject constructor(
         return allNewsFlow.map { allNews ->
             allNews.filter { news ->
                 isVisibleToUser(news, userIdentifier)
-            }
+            }.map { NewsMapper.fromRealm(it) }
         }
     }
 }

@@ -31,8 +31,8 @@ import org.ole.planet.myplanet.callback.TableDataUpdate
 import org.ole.planet.myplanet.databinding.FragmentChatHistoryListBinding
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.Conversation
+import org.ole.planet.myplanet.model.NewsItem
 import org.ole.planet.myplanet.model.RealmChatHistory
-import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.NewsRepository
@@ -59,7 +59,7 @@ class ChatHistoryListFragment : Fragment() {
     @AppPreferences
     lateinit var settings: SharedPreferences
     private val serverUrlMapper = ServerUrlMapper()
-    private var sharedNewsMessages: List<RealmNews> = emptyList()
+    private var sharedNewsMessages: List<NewsItem> = emptyList()
     private var shareTargets = ChatShareTargets(null, emptyList(), emptyList())
     
     @Inject
@@ -250,9 +250,14 @@ class ChatHistoryListFragment : Fragment() {
     fun refreshChatHistoryList() {
         viewLifecycleOwner.lifecycleScope.launch {
             val currentUser = loadCurrentUser()
-            sharedNewsMessages = chatRepository.getPlanetNewsMessages(currentUser?.planetCode)
             val list = chatRepository.getChatHistoryForUser(currentUser?.name)
             shareTargets = loadShareTargets()
+
+            viewLifecycleOwner.lifecycleScope.launch {
+                newsRepository.getCommunityVisibleNews(currentUser?.id ?: "").let {
+                    sharedNewsMessages = it
+                }
+            }
 
             val adapter = binding.recyclerView.adapter as? ChatHistoryListAdapter
             if (adapter == null) {
@@ -326,7 +331,7 @@ class ChatHistoryListFragment : Fragment() {
             val currentUser = loadCurrentUser()
             val createdNews = newsRepository.createNews(map, currentUser)
             if (currentUser?.planetCode != null) {
-                sharedNewsMessages = sharedNewsMessages + createdNews
+                sharedNewsMessages = sharedNewsMessages + org.ole.planet.myplanet.utilities.NewsMapper.fromRealm(createdNews)
             }
             (binding.recyclerView.adapter as? ChatHistoryListAdapter)?.let { adapter ->
                 adapter.updateCachedData(currentUser, sharedNewsMessages)

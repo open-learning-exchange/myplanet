@@ -20,6 +20,7 @@ import io.realm.RealmList
 import java.io.File
 import java.util.Locale
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.model.NewsItem
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -158,7 +159,7 @@ object NewsActions {
         currentUser: RealmUserModel?,
         listener: AdapterNews.OnNewsItemClickListener?,
         viewHolder: RecyclerView.ViewHolder,
-        updateReplyButton: (RecyclerView.ViewHolder, RealmNews?, Int) -> Unit = { _, _, _ -> }
+        updateReplyButton: (RecyclerView.ViewHolder, NewsItem?, Int) -> Unit = { _, _, _ -> }
     ) {
         val components = createEditDialogComponents(context, listener)
         val message = components.view.findViewById<TextView>(R.id.cust_msg)
@@ -180,7 +181,10 @@ object NewsActions {
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
             val currentImageList = listener?.getCurrentImageList()
             handlePositiveButton(dialog, isEdit, components, news, realm, currentUser, currentImageList, listener)
-            updateReplyButton(viewHolder,news,viewHolder.bindingAdapterPosition)
+            news?.let {
+                val newsItem = org.ole.planet.myplanet.utilities.NewsMapper.fromRealm(it)
+                updateReplyButton(viewHolder, newsItem, viewHolder.bindingAdapterPosition)
+            }
         }
     }
 
@@ -254,51 +258,28 @@ object NewsActions {
 
     fun deletePost(
         realm: Realm,
-        news: RealmNews?,
-        list: MutableList<RealmNews?>,
+        news: RealmNews,
+        list: MutableList<NewsItem>,
         teamName: String,
         listener: AdapterNews.OnNewsItemClickListener? = null
     ) {
-        val ar = GsonUtils.gson.fromJson(news?.viewIn, JsonArray::class.java)
+        val ar = GsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
         if (!realm.isInTransaction) realm.beginTransaction()
-        val position = list.indexOf(news)
+        val position = list.indexOfFirst { it.id == news.id }
         if (position != -1) {
             list.removeAt(position)
         }
         if (teamName.isNotEmpty() || ar.size() < 2) {
-            news?.let { newsItem ->
-                deleteChildPosts(realm, newsItem.id, list)
-
-                val managedNews = if (newsItem.isManaged) {
-                    newsItem
-                } else {
-                    realm.where(RealmNews::class.java)
-                        .equalTo("id", newsItem.id)
-                        .findFirst()
-                }
-                
-                managedNews?.deleteFromRealm()
-            }
+            deleteChildPosts(realm, news.id, list)
+            news.deleteFromRealm()
         } else {
-            news?.let { newsItem ->
-                val filtered = JsonArray().apply {
-                    ar.forEach { elem ->
-                        if (!elem.asJsonObject.has("sharedDate")) {
-                            add(elem)
-                        }
-                    }
+            val filtered = JsonArray()
+            ar.forEach { elem ->
+                if (!elem.asJsonObject.has("sharedDate")) {
+                    filtered.add(elem)
                 }
-                
-                val managedNews = if (newsItem.isManaged) {
-                    newsItem
-                } else {
-                    realm.where(RealmNews::class.java)
-                        .equalTo("id", newsItem.id)
-                        .findFirst()
-                }
-                
-                managedNews?.viewIn = GsonUtils.gson.toJson(filtered)
             }
+            news.viewIn = GsonUtils.gson.toJson(filtered)
         }
         realm.commitTransaction()
         listener?.onDataChanged()
@@ -307,7 +288,7 @@ object NewsActions {
     private fun deleteChildPosts(
         realm: Realm,
         parentId: String?,
-        list: MutableList<RealmNews?>
+        list: MutableList<NewsItem>
     ) {
         if (parentId == null) return
         val children = realm.where(RealmNews::class.java)
@@ -315,7 +296,7 @@ object NewsActions {
             .findAll()
         children.forEach { child ->
             deleteChildPosts(realm, child.id, list)
-            val idx = list.indexOf(child)
+            val idx = list.indexOfFirst { it.id == child.id }
             if (idx != -1) list.removeAt(idx)
             child.deleteFromRealm()
         }
