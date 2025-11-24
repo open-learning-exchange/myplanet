@@ -401,49 +401,62 @@ class Service @Inject constructor(
         }
     }
 
-    fun syncPlanetServers(callback: SuccessListener) {
-        retrofitInterface.getJsonObject("", "https://planet.earth.ole.org/db/communityregistrationrequests/_all_docs?include_docs=true")
-            .enqueue(object : Callback<JsonObject?> {
-                override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
-                    if (response.body() != null) {
-                        val arr = JsonUtils.getJsonArray("rows", response.body())
+    suspend fun syncPlanetServers(callback: SuccessListener) {
+        try {
+            val response = withContext(Dispatchers.IO) {
+                retrofitInterface.getJsonObject("", "https://planet.earth.ole.org/db/communityregistrationrequests/_all_docs?include_docs=true").execute()
+            }
 
-                        val executor = Executors.newSingleThreadExecutor()
-                        try {
-                            executor.execute {
-                                MainApplication.service.withRealm { backgroundRealm ->
-                                    try {
-                                        backgroundRealm.executeTransaction { realm1 ->
-                                            realm1.delete(RealmCommunity::class.java)
-                                            for (j in arr) {
-                                                var jsonDoc = j.asJsonObject
-                                                jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-                                                val id = JsonUtils.getString("_id", jsonDoc)
-                                                val community = realm1.createObject(RealmCommunity::class.java, id)
-                                                if (JsonUtils.getString("name", jsonDoc) == "learning") {
-                                                    community.weight = 0
-                                                }
-                                                community.localDomain = JsonUtils.getString("localDomain", jsonDoc)
-                                                community.name = JsonUtils.getString("name", jsonDoc)
-                                                community.parentDomain = JsonUtils.getString("parentDomain", jsonDoc)
-                                                community.registrationRequest = JsonUtils.getString("registrationRequest", jsonDoc)
-                                            }
-                                        }
-                                    } catch (e: Exception) {
-                                        e.printStackTrace()
+            if (response.isSuccessful && response.body() != null) {
+                val arr = JsonUtils.getJsonArray("rows", response.body())
+                val startTime = System.currentTimeMillis()
+                println("Realm transaction started")
+
+                val transactionResult = runCatching {
+                    withContext(Dispatchers.IO) {
+                        MainApplication.service.withRealm { backgroundRealm ->
+                            backgroundRealm.executeTransaction { realm1 ->
+                                realm1.delete(RealmCommunity::class.java)
+                                for (j in arr) {
+                                    var jsonDoc = j.asJsonObject
+                                    jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
+                                    val id = JsonUtils.getString("_id", jsonDoc)
+                                    val community = realm1.createObject(RealmCommunity::class.java, id)
+                                    if (JsonUtils.getString("name", jsonDoc) == "learning") {
+                                        community.weight = 0
                                     }
+                                    community.localDomain = JsonUtils.getString("localDomain", jsonDoc)
+                                    community.name = JsonUtils.getString("name", jsonDoc)
+                                    community.parentDomain = JsonUtils.getString("parentDomain", jsonDoc)
+                                    community.registrationRequest = JsonUtils.getString("registrationRequest", jsonDoc)
                                 }
                             }
-                        } finally {
-                            executor.shutdown()
                         }
                     }
                 }
 
-                override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
+                val endTime = System.currentTimeMillis()
+                println("Realm transaction finished in ${endTime - startTime}ms")
+
+                withContext(Dispatchers.Main) {
+                    transactionResult.onSuccess {
+                        callback.onSuccess(context.getString(R.string.server_sync_successfully))
+                    }.onFailure { e ->
+                        e.printStackTrace()
+                        callback.onSuccess(context.getString(R.string.server_sync_has_failed))
+                    }
+                }
+            } else {
+                withContext(Dispatchers.Main) {
                     callback.onSuccess(context.getString(R.string.server_sync_has_failed))
                 }
-            })
+            }
+        } catch (t: Throwable) {
+            t.printStackTrace()
+            withContext(Dispatchers.Main) {
+                callback.onSuccess(context.getString(R.string.server_sync_has_failed))
+            }
+        }
     }
 
     fun getMinApk(listener: ConfigurationIdListener?, url: String, pin: String, activity: SyncActivity, callerActivity: String) {

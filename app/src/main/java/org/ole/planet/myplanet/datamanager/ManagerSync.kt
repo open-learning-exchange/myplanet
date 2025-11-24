@@ -192,7 +192,9 @@ class ManagerSync private constructor(
 
     private suspend fun checkManagerAndInsert(jsonDoc: JsonObject?, listener: SyncListener) {
         if (!isManager(jsonDoc)) {
-            listener.onSyncFailed(MainApplication.context.getString(R.string.user_verification_in_progress))
+            withContext(Dispatchers.Main) {
+                listener.onSyncFailed(MainApplication.context.getString(R.string.user_verification_in_progress))
+            }
             return
         }
 

@@ -16,6 +16,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.DefaultTimeBar
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import java.io.File
 import java.util.regex.Pattern
 import org.ole.planet.myplanet.R
@@ -68,6 +69,8 @@ class AudioPlayerActivity : AppCompatActivity() {
 
         Glide.with(this)
             .load(getThemeBackground()) // or from URL or filePath
+            .diskCacheStrategy(DiskCacheStrategy.ALL)
+            .fitCenter()
             .into(blurredImageView)
 
         overlay.addView(blurredImageView, 0)

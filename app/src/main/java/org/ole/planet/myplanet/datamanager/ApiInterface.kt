@@ -37,6 +37,9 @@ interface ApiInterface {
     @POST
     fun postDoc(@Header("Authorization") header: String?, @Header("Content-Type") c: String?, @Url url: String?, @Body s: JsonObject?): Call<JsonObject>
 
+    @POST
+    suspend fun postDocSuspend(@Header("Authorization") header: String?, @Header("Content-Type") c: String?, @Url url: String?, @Body s: JsonObject?): Response<JsonObject>
+
     @PUT
     fun uploadResource(@HeaderMap headerMap: Map<String, String>, @Url url: String?, @Body body: RequestBody?): Call<JsonObject>
 
@@ -65,5 +68,5 @@ interface ApiInterface {
     fun checkAiProviders(@Url url: String?): Call<ResponseBody>
 
     @GET
-    fun getConfiguration(@Url url: String?): Call<JsonObject>
+    suspend fun getConfiguration(@Url url: String?): Response<JsonObject>
 }

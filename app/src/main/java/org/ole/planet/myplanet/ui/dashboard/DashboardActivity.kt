@@ -67,6 +67,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.SettingActivity
@@ -107,23 +108,28 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     var result: Drawer? = null
     private var tl: TabLayout? = null
     private var dl: DrawerLayout? = null
-    private val realmListeners = mutableListOf<RealmListener>()
+    private var libraryResults: RealmResults<RealmMyLibrary>? = null
+    private var submissionResults: RealmResults<RealmSubmission>? = null
+    private var taskResults: RealmResults<RealmTeamTask>? = null
     private val dashboardViewModel: DashboardViewModel by viewModels()
+    private lateinit var libraryListener: RealmChangeListener<RealmResults<RealmMyLibrary>>
+    private lateinit var submissionListener: RealmChangeListener<RealmResults<RealmSubmission>>
+    private lateinit var taskListener: RealmChangeListener<RealmResults<RealmTeamTask>>
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     @Inject
     lateinit var teamRepository: TeamRepository
-    private lateinit var challengeHelper: ChallengeHelper
+    @Inject
+    lateinit var progressRepository: ProgressRepository
+    private val challengeHelper: ChallengeHelper by lazy {
+        ChallengeHelper(this, mRealm, user, settings, editor, dashboardViewModel, progressRepository)
+    }
     private lateinit var notificationManager: NotificationUtils.NotificationManager
     private var notificationsShownThisSession = false
     private var lastNotificationCheckTime = 0L
     private val notificationCheckThrottleMs = 5000L
     private var systemNotificationReceiver: BroadcastReceiver? = null
     private lateinit var mRealm: Realm
-
-    private interface RealmListener {
-        fun removeListener()
-    }
 
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(LocaleHelper.onAttach(base))
@@ -141,14 +147,21 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         handleInitialFragment()
         setupToolbarActions()
         hideWifi()
-        setupRealmListeners()
-        setupSystemNotificationReceiver()
-        checkIfShouldShowNotifications()
+        libraryListener = RealmChangeListener { onRealmDataChanged() }
+        submissionListener = RealmChangeListener { onRealmDataChanged() }
+        taskListener = RealmChangeListener { onRealmDataChanged() }
+
         addBackPressCallback()
-        challengeHelper = ChallengeHelper(this, mRealm, user, settings, editor, dashboardViewModel)
-        challengeHelper.evaluateChallengeDialog()
         handleNotificationIntent(intent)
         collectUiState()
+
+        binding.root.post {
+            setupSystemNotificationReceiver()
+            checkIfShouldShowNotifications()
+            setupRealmListeners()
+            challengeHelper.evaluateChallengeDialog()
+            reportFullyDrawn()
+        }
     }
 
     private fun collectUiState() {
@@ -292,7 +305,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         ChatHistoryListFragment::class.java.simpleName
                     )
                 } else {
-                    guestDialog(this)
+                    guestDialog(this, userProfileDbHandler)
                 }
             }
             R.id.menu_goOnline -> wifiStatusSwitch()
@@ -304,7 +317,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         FeedbackListFragment::class.java.simpleName
                     )
                 } else {
-                    guestDialog(this)
+                    guestDialog(this, userProfileDbHandler)
                 }
             }
             R.id.action_settings -> startActivity(Intent(this@DashboardActivity, SettingActivity::class.java))
@@ -489,44 +502,30 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         if (mRealm.isInTransaction) {
             mRealm.commitTransaction()
         }
-        setupListener {
-            mRealm.where(RealmMyLibrary::class.java).findAllAsync()
-        }
-
-        setupListener {
-            mRealm.where(RealmSubmission::class.java)
-                .equalTo("userId", user?.id)
-                .equalTo("type", "survey")
-                .equalTo("status", "pending", Case.INSENSITIVE)
-                .findAllAsync()
-        }
-
-        setupListener {
-            mRealm.where(RealmTeamTask::class.java)
-                .notEqualTo("status", "archived")
-                .equalTo("completed", false)
-                .equalTo("assignee", user?.id)
-                .findAllAsync()
-        }
+        libraryResults = mRealm.where(RealmMyLibrary::class.java).findAllAsync()
+        submissionResults = mRealm.where(RealmSubmission::class.java)
+            .equalTo("userId", user?.id)
+            .equalTo("type", "survey")
+            .equalTo("status", "pending", Case.INSENSITIVE)
+            .findAllAsync()
+        taskResults = mRealm.where(RealmTeamTask::class.java)
+            .notEqualTo("status", "archived")
+            .equalTo("completed", false)
+            .equalTo("assignee", user?.id)
+            .findAllAsync()
+        libraryResults?.addChangeListener(libraryListener)
+        submissionResults?.addChangeListener(submissionListener)
+        taskResults?.addChangeListener(taskListener)
     }
 
-    private inline fun <reified T : RealmObject> setupListener(crossinline query: () -> RealmResults<T>) {
-        val results = query()
-        val listener = RealmChangeListener<RealmResults<T>> { _ ->
-            if (notificationsShownThisSession) {
-                val currentTime = System.currentTimeMillis()
-                if (currentTime - lastNotificationCheckTime > notificationCheckThrottleMs) {
-                    lastNotificationCheckTime = currentTime
-                    checkAndCreateNewNotifications()
-                }
+    private fun onRealmDataChanged() {
+        if (notificationsShownThisSession) {
+            val currentTime = System.currentTimeMillis()
+            if (currentTime - lastNotificationCheckTime > notificationCheckThrottleMs) {
+                lastNotificationCheckTime = currentTime
+                checkAndCreateNewNotifications()
             }
         }
-        results.addChangeListener(listener)
-        realmListeners.add(object : RealmListener {
-            override fun removeListener() {
-                results.removeChangeListener(listener)
-            }
-        })
     }
 
     private fun setupSystemNotificationReceiver() {
@@ -1051,7 +1050,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             R.string.menu_community -> openCallFragment(CommunityTabFragment())
             R.string.txt_myLibrary -> {
                 if (user?.id?.startsWith("guest") == true) {
-                    guestDialog(this)
+                    guestDialog(this, userProfileDbHandler)
                 } else {
                     openMyFragment(ResourcesFragment())
                 }
@@ -1063,7 +1062,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             })
             R.string.txt_myCourses -> {
                 if (user?.id?.startsWith("guest") == true) {
-                    guestDialog(this)
+                    guestDialog(this, userProfileDbHandler)
                 } else {
                     openMyFragment(CoursesFragment())
                 }
@@ -1099,8 +1098,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     override fun onDestroy() {
-        realmListeners.forEach { it.removeListener() }
-        realmListeners.clear()
+        libraryResults?.removeChangeListener(libraryListener)
+        submissionResults?.removeChangeListener(submissionListener)
+        taskResults?.removeChangeListener(taskListener)
 
         systemNotificationReceiver?.let {
             unregisterReceiver(it)
@@ -1188,14 +1188,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
             R.id.menu_mycourses -> {
                 if (user?.id?.startsWith("guest") == true) {
-                    guestDialog(this)
+                    guestDialog(this, userProfileDbHandler)
                 } else {
                     openMyFragment(CoursesFragment())
                 }
             }
             R.id.menu_mylibrary -> {
                 if (user?.id?.startsWith("guest") == true) {
-                    guestDialog(this)
+                    guestDialog(this, userProfileDbHandler)
                 } else {
                     openMyFragment(ResourcesFragment())
                 }

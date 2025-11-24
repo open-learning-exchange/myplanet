@@ -29,11 +29,8 @@ class MyMeetupDetailFragment : Fragment(), View.OnClickListener {
     private var _binding: FragmentMyMeetupDetailBinding? = null
     private val binding get() = _binding!!
     private var meetups: RealmMeetup? = null
-    private var userProfileDbHandler: UserProfileDbHandler? = null
     @Inject
-    fun setUserProfileDbHandler(handler: UserProfileDbHandler) {
-        userProfileDbHandler = handler
-    }
+    lateinit var userProfileDbHandler: UserProfileDbHandler
     @Inject
     lateinit var meetupRepository: MeetupRepository
     private var meetUpId: String? = null
@@ -56,7 +53,7 @@ class MyMeetupDetailFragment : Fragment(), View.OnClickListener {
         binding.btnInvite.visibility = if (showBetaFeature(Constants.KEY_MEETUPS, requireContext())) View.VISIBLE else View.GONE
         binding.btnLeave.visibility = if (showBetaFeature(Constants.KEY_MEETUPS, requireContext())) View.VISIBLE else View.GONE
         binding.btnLeave.setOnClickListener(this)
-        user = userProfileDbHandler?.getUserModelCopy()
+        user = userProfileDbHandler.getUserModelCopy()
         return binding.root
     }
 
@@ -129,7 +126,6 @@ class MyMeetupDetailFragment : Fragment(), View.OnClickListener {
     }
 
     override fun onDestroy() {
-        userProfileDbHandler = null
         super.onDestroy()
     }
 }

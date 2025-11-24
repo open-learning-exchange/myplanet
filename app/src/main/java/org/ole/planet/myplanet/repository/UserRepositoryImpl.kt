@@ -5,12 +5,14 @@ import com.google.gson.JsonObject
 import java.util.Calendar
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
 
 class UserRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService
+    databaseService: DatabaseService,
+    @AppPreferences private val settings: SharedPreferences,
 ) : RealmRepository(databaseService), UserRepository {
     override suspend fun getUserById(userId: String): RealmUserModel? {
         return findByField(RealmUserModel::class.java, "id", userId)
@@ -142,5 +144,41 @@ class UserRepositoryImpl @Inject constructor(
         }
 
         return getUserByAnyId(userId)
+    }
+
+    override suspend fun updateProfileFields(userId: String?, payload: JsonObject) {
+        if (userId.isNullOrBlank()) {
+            return
+        }
+
+        update(RealmUserModel::class.java, "id", userId) { model ->
+            payload.keySet().forEach { key ->
+                when (key) {
+                    "firstName" -> model.firstName = payload.get(key).asString
+                    "lastName" -> model.lastName = payload.get(key).asString
+                    "middleName" -> model.middleName = payload.get(key).asString
+                    "email" -> model.email = payload.get(key).asString
+                    "language" -> model.language = payload.get(key).asString
+                    "phoneNumber" -> model.phoneNumber = payload.get(key).asString
+                    "birthDate" -> model.dob = payload.get(key).asString
+                    "level" -> model.level = payload.get(key).asString
+                    "gender" -> model.gender = payload.get(key).asString
+                    "age" -> model.age = payload.get(key).asString
+                }
+            }
+            model.isUpdated = true
+        }
+    }
+
+    override fun getUserModel(): RealmUserModel? {
+        val userId = settings.getString("userId", null)?.takeUnless { it.isBlank() } ?: return null
+        return databaseService.withRealm { realm ->
+            realm.where(RealmUserModel::class.java)
+                .equalTo("id", userId)
+                .or()
+                .equalTo("_id", userId)
+                .findFirst()
+                ?.let { realm.copyFromRealm(it) }
+        }
     }
 }
