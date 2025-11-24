@@ -13,6 +13,8 @@ import org.ole.planet.myplanet.repository.FeedbackRepository
 import org.ole.planet.myplanet.repository.FeedbackRepositoryImpl
 import org.ole.planet.myplanet.repository.LibraryRepository
 import org.ole.planet.myplanet.repository.LibraryRepositoryImpl
+import org.ole.planet.myplanet.repository.LifeRepository
+import org.ole.planet.myplanet.repository.LifeRepositoryImpl
 import org.ole.planet.myplanet.repository.MeetupRepository
 import org.ole.planet.myplanet.repository.MeetupRepositoryImpl
 import org.ole.planet.myplanet.repository.MyPersonalRepository
