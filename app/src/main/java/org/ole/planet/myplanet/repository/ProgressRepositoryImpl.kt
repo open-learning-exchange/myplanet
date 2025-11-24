@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.courses
+package org.ole.planet.myplanet.repository
 
 import com.google.gson.Gson
 import com.google.gson.JsonArray
