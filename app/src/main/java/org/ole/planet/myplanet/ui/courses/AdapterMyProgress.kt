@@ -6,57 +6,80 @@ import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.LinearLayout
+import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.JsonArray
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.databinding.ItemProgressBinding
 import org.ole.planet.myplanet.databinding.RowMyProgressBinding
 
 class AdapterMyProgress(private val context: Context, private val list: JsonArray) :
     RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-    private lateinit var rowMyProgressBinding: RowMyProgressBinding
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-        rowMyProgressBinding = RowMyProgressBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return ViewHolderMyProgress(rowMyProgressBinding)
+        val binding = RowMyProgressBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        return ViewHolderMyProgress(binding)
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         if (holder is ViewHolderMyProgress) {
-            holder.tvTitle.text = list[position].asJsonObject["courseName"].asString
+            holder.binding.tvTitle.text = list[position].asJsonObject["courseName"].asString
             if (list[position].asJsonObject.has("progress")) {
-                holder.tvDescription.text = context.getString(R.string.step_progress, list[position].asJsonObject["progress"].asJsonObject["current"].asInt, list[position].asJsonObject["progress"].asJsonObject["max"].asInt)
+                holder.binding.tvDescription.text = context.getString(R.string.step_progress, list[position].asJsonObject["progress"].asJsonObject["current"].asInt, list[position].asJsonObject["progress"].asJsonObject["max"].asInt)
                 holder.itemView.setOnClickListener {
                     context.startActivity(Intent(context, CourseProgressActivity::class.java).putExtra("courseId", list[position].asJsonObject["courseId"].asString))
                 }
             }
-            if (list[position].asJsonObject.has("mistakes")) holder.tvTotal.text =
+            if (list[position].asJsonObject.has("mistakes")) holder.binding.tvTotal.text =
                 list[position].asJsonObject["mistakes"].asString
-            else holder.tvTotal.text = context.getString(R.string.message_placeholder, "0")
-            showStepMistakes(position)
+            else holder.binding.tvTotal.text = context.getString(R.string.message_placeholder, "0")
+            showStepMistakes(position, holder.binding)
         }
     }
 
-    private fun showStepMistakes(position: Int) {
+    private fun showStepMistakes(position: Int, binding: RowMyProgressBinding) {
         if (list[position].asJsonObject.has("stepMistake")) {
             val stepMistake = list[position].asJsonObject["stepMistake"].asJsonObject
-            rowMyProgressBinding.llProgress.removeAllViews()
+            binding.llProgress.removeAllViews()
 
             if (stepMistake.keySet().isNotEmpty()) {
-                rowMyProgressBinding.llHeader.visibility = View.VISIBLE
+                binding.llHeader.visibility = View.VISIBLE
+                val textColor = ContextCompat.getColor(context, R.color.daynight_textColor)
                 stepMistake.keySet().forEach { stepKey ->
-                    val dataBinding = ItemProgressBinding.inflate(LayoutInflater.from(context))
-                    dataBinding.step.text = "${stepKey.toInt().plus(1)}"
-                    dataBinding.step.gravity = Gravity.CENTER
-                    dataBinding.mistake.text = "${stepMistake[stepKey].asInt}"
-                    dataBinding.mistake.gravity = Gravity.CENTER
-                    rowMyProgressBinding.llProgress.addView(dataBinding.root)
+                    val row = LinearLayout(context).apply {
+                        layoutParams = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT
+                        )
+                        orientation = LinearLayout.HORIZONTAL
+                        gravity = Gravity.CENTER
+                    }
+
+                    val stepView = TextView(context).apply {
+                        layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                        text = "${stepKey.toInt().plus(1)}"
+                        gravity = Gravity.CENTER
+                        setTextColor(textColor)
+                    }
+
+                    val mistakeView = TextView(context).apply {
+                        layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                        text = "${stepMistake[stepKey].asInt}"
+                        gravity = Gravity.CENTER
+                        setTextColor(textColor)
+                    }
+
+                    row.addView(stepView)
+                    row.addView(mistakeView)
+
+                    binding.llProgress.addView(row)
                 }
             } else {
-                rowMyProgressBinding.llHeader.visibility = View.GONE
+                binding.llHeader.visibility = View.GONE
             }
         } else {
-            rowMyProgressBinding.llHeader.visibility = View.GONE
+            binding.llHeader.visibility = View.GONE
         }
     }
 
@@ -64,10 +87,9 @@ class AdapterMyProgress(private val context: Context, private val list: JsonArra
         return list.size()
     }
 
-    internal inner class ViewHolderMyProgress(rowMyProgressBinding: RowMyProgressBinding) : RecyclerView.ViewHolder(rowMyProgressBinding.root) {
-        var tvTitle = rowMyProgressBinding.tvTitle
-        var tvTotal = rowMyProgressBinding.tvTotal
-        //var llProgress = rowMyProgressBinding.llProgress
-        var tvDescription = rowMyProgressBinding.tvDescription
+    internal inner class ViewHolderMyProgress(val binding: RowMyProgressBinding) : RecyclerView.ViewHolder(binding.root) {
+        val tvTitle = binding.tvTitle
+        val tvTotal = binding.tvTotal
+        val tvDescription = binding.tvDescription
     }
 }

@@ -9,10 +9,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -23,7 +20,6 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.listToString
 import org.ole.planet.myplanet.model.RealmRating.Companion.getRatingsById
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.FileUtils.getFileExtension
 import org.ole.planet.myplanet.utilities.Utilities
@@ -35,12 +31,9 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private var libraryId: String? = null
     private lateinit var library: RealmMyLibrary
     var userModel: RealmUserModel? = null
-    private val fragmentScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
-
     private suspend fun fetchLibrary(libraryId: String): RealmMyLibrary? {
         return libraryRepository.getLibraryItemById(libraryId)
             ?: libraryRepository.getLibraryItemByResourceId(libraryId)
-            ?: libraryRepository.getAllLibraryItems().firstOrNull { it.resourceId == libraryId }
     }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,29 +47,33 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         if (!::library.isInitialized) {
             return
         }
-        fragmentScope.launch {
-            val userId = withContext(Dispatchers.Main) {
-                profileDbHandler?.userModel?.id
+        val binding = _binding ?: return
+        viewLifecycleOwner.lifecycleScope.launch {
+            if (!isAdded) {
+                return@launch
             }
-            withContext(Dispatchers.IO) {
-                try {
+            val userId = profileDbHandler.userModel?.id
+            try {
+                val updatedLibrary = withContext(Dispatchers.IO) {
                     val backgroundLibrary = fetchLibrary(libraryId!!)
-                    if (backgroundLibrary != null && backgroundLibrary.userId?.contains(userId) != true && userId != null) {
-                        library = libraryRepository.updateUserLibrary(libraryId!!, userId, true)!!
-                    } else if (backgroundLibrary != null) {
-                        library = backgroundLibrary
+                    when {
+                        backgroundLibrary == null -> null
+                        backgroundLibrary.userId?.contains(userId) != true && userId != null ->
+                            libraryRepository.updateUserLibrary(libraryId!!, userId, true)
+                        else -> backgroundLibrary
                     }
-                } catch (e: Exception) {
-                    e.printStackTrace()
                 }
+                if (updatedLibrary != null) {
+                    library = updatedLibrary
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-            withContext(Dispatchers.Main) {
-                binding.btnDownload.setImageResource(R.drawable.ic_play)
-                val currentUserId = profileDbHandler?.userModel?.id
-                if (currentUserId != null && library.userId?.contains(currentUserId) != true) {
-                    Utilities.toast(activity, getString(R.string.added_to_my_library))
-                    binding.btnRemove.setImageResource(R.drawable.close_x)
-                }
+            binding.btnDownload.setImageResource(R.drawable.ic_play)
+            val currentUserId = profileDbHandler.userModel?.id
+            if (currentUserId != null && library.userId?.contains(currentUserId) != true) {
+                Utilities.toast(activity, getString(R.string.added_to_my_library))
+                binding.btnRemove.setImageResource(R.drawable.close_x)
             }
         }
     }
@@ -84,7 +81,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         super.onCreateView(inflater, container, savedInstanceState)
         _binding = FragmentLibraryDetailBinding.inflate(inflater, container, false)
-        userModel = UserProfileDbHandler(requireContext()).userModel!!
+        userModel = profileDbHandler.userModel
         setLoadingState(true)
         return binding.root
     }
@@ -98,9 +95,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                 return@launch
             }
 
-            val fetchedLibrary = withContext(Dispatchers.IO) {
-                fetchLibrary(id)
-            }
+            val fetchedLibrary = fetchLibrary(id)
 
             if (fetchedLibrary == null) {
                 handleLibraryNotFound()
@@ -140,28 +135,32 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             setTextViewVisibility(tvResource, llResource, listToString(library.resourceFor))
             setTextViewVisibility(tvType, llType, library.resourceType)
         }
-        fragmentScope.launch {
-            withContext(Dispatchers.Main) {
-                try {
-                    profileDbHandler?.setResourceOpenCount(library)
-                } catch (ex: Exception) {
-                    ex.printStackTrace()
-                }
+        viewLifecycleOwner.lifecycleScope.launch {
+            if (!isAdded) {
+                return@launch
             }
-            withContext(Dispatchers.Main) {
-                try {
-                    onRatingChanged()
-                } catch (ex: Exception) {
-                    ex.printStackTrace()
+            try {
+                withContext(Dispatchers.IO) {
+                    profileDbHandler.setResourceOpenCount(library)
                 }
-                setupDownloadButton()
-                setClickListeners()
+            } catch (ex: Exception) {
+                ex.printStackTrace()
             }
+            try {
+                onRatingChanged()
+            } catch (ex: Exception) {
+                ex.printStackTrace()
+            }
+            setupDownloadButton()
+            setClickListeners()
         }
     }
 
     private fun setupDownloadButton() {
-        binding.btnDownload.visibility = if (TextUtils.isEmpty(library.resourceLocalAddress)) View.GONE else View.VISIBLE
+        val isHtmlResource = library.mediaType == "HTML"
+        val shouldShowButton = isHtmlResource || !TextUtils.isEmpty(library.resourceLocalAddress)
+
+        binding.btnDownload.visibility = if (shouldShowButton) View.VISIBLE else View.GONE
         binding.btnDownload.setImageResource(
             if (!library.resourceOffline || library.isResourceOffline()) {
                 R.drawable.ic_eye
@@ -190,13 +189,14 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
 
     private fun setClickListeners() {
         binding.btnDownload.setOnClickListener {
-            if (TextUtils.isEmpty(library.resourceLocalAddress)) {
+            val isHtmlResource = library.mediaType == "HTML"
+            if (!isHtmlResource && TextUtils.isEmpty(library.resourceLocalAddress)) {
                 Toast.makeText(activity, getString(R.string.link_not_available), Toast.LENGTH_LONG).show()
                 return@setOnClickListener
             }
             openResource(library)
         }
-        val userId = profileDbHandler?.userModel?.id
+        val userId = profileDbHandler.userModel?.id
         val isAdd = userId?.let { library.userId?.contains(it) } != true
         if (userModel?.isGuest() != true) {
             binding.btnRemove.setImageResource(
@@ -210,29 +210,40 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                 if (isAdd) {
                     getString(R.string.add_to_mylib)
                 } else {
-                    getString(R.string.btn_remove_lib)
+                    getString(R.string.remove)
                 }
         } else {
             binding.btnRemove.visibility = View.GONE
         }
         binding.btnRemove.setOnClickListener {
-            val userId = profileDbHandler?.userModel?.id
-            fragmentScope.launch {
-                withContext(Dispatchers.IO) {
+            val userId = profileDbHandler.userModel?.id
+            viewLifecycleOwner.lifecycleScope.launch {
+                if (!isAdded) {
+                    return@launch
+                }
+                val updatedLibrary = withContext(Dispatchers.IO) {
                     try {
                         if (userId != null) {
-                            library = libraryRepository.updateUserLibrary(libraryId!!, userId, isAdd)!!
+                            libraryRepository.updateUserLibrary(libraryId!!, userId, isAdd)
+                        } else {
+                            null
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()
+                        null
                     }
                 }
-                withContext(Dispatchers.Main) {
-                    Utilities.toast(activity, getString(R.string.resources) + " " +
-                            if (isAdd) getString(R.string.added_to_my_library)
-                            else getString(R.string.removed_from_mylibrary))
-                    setLibraryData()
+                try {
+                    if (updatedLibrary != null) {
+                        library = updatedLibrary
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
+                Utilities.toast(activity, getString(R.string.resources) + " " +
+                        if (isAdd) getString(R.string.added_to_my_library)
+                        else getString(R.string.removed_from_mylibrary))
+                setLibraryData()
             }
         }
         binding.btnBack.setOnClickListener {
@@ -252,7 +263,6 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         setRatings(`object`)
     }
     override fun onDestroy() {
-        fragmentScope.cancel()
         try {
             if (!mRealm.isClosed) {
                 mRealm.close()

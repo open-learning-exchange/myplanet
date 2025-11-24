@@ -10,69 +10,49 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import io.realm.RealmResults
 import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowFinanceBinding
-import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.ui.enterprises.AdapterFinance.ViewHolderFinance
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
-class AdapterFinance(private val context: Context, private var list: RealmResults<RealmMyTeam>) : RecyclerView.Adapter<ViewHolderFinance>() {
-    private lateinit var rowFinanceBinding: RowFinanceBinding
-    private val balances = mutableListOf<Int>()
+data class TransactionData(
+    val id: String,
+    val date: Long,
+    val description: String?,
+    val type: String?,
+    val amount: Int,
+    val balance: Int
+)
 
-    init {
-        recomputeBalances()
-    }
+class AdapterFinance(
+    private val context: Context,
+) : ListAdapter<TransactionData, ViewHolderFinance>(TransactionDataDiffCallback()) {
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderFinance {
-        rowFinanceBinding = RowFinanceBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return ViewHolderFinance(rowFinanceBinding)
+        val binding = RowFinanceBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        return ViewHolderFinance(binding)
     }
 
     override fun onBindViewHolder(holder: ViewHolderFinance, position: Int) {
-        list[position]?.let {
-            rowFinanceBinding.date.text = formatDate(it.date, "MMM dd, yyyy")
-            rowFinanceBinding.note.text = it.description
-            if (TextUtils.equals(it.type?.lowercase(Locale.getDefault()), "debit")) {
-                rowFinanceBinding.debit.text = context.getString(R.string.number_placeholder, it.amount)
-                rowFinanceBinding.credit.text = context.getString(R.string.message_placeholder, " -")
-                rowFinanceBinding.credit.setTextColor(Color.BLACK)
-            } else {
-                rowFinanceBinding.credit.text = context.getString(R.string.number_placeholder, it.amount)
-                rowFinanceBinding.debit.text = context.getString(R.string.message_placeholder, " -")
-                rowFinanceBinding.debit.setTextColor(Color.BLACK)
-            }
-            rowFinanceBinding.balance.text = getBalance(position)
-            updateBackgroundColor(rowFinanceBinding.llayout, position)
+        val item = getItem(position)
+        val binding = holder.binding
+        binding.date.text = formatDate(item.date, "MMM dd, yyyy")
+        binding.note.text = item.description
+        binding.debit.setTextColor(Color.BLACK)
+        binding.credit.setTextColor(Color.BLACK)
+        if (TextUtils.equals(item.type?.lowercase(Locale.getDefault()), "debit")) {
+            binding.debit.text = context.getString(R.string.number_placeholder, item.amount)
+            binding.credit.text = context.getString(R.string.message_placeholder, " -")
+        } else {
+            binding.credit.text = context.getString(R.string.number_placeholder, item.amount)
+            binding.debit.text = context.getString(R.string.message_placeholder, " -")
         }
-    }
-
-    private fun getBalance(position: Int): String {
-        return balances.getOrNull(position)?.toString() ?: ""
-    }
-
-    fun updateData(results: RealmResults<RealmMyTeam>) {
-        list = results
-        recomputeBalances()
-    }
-
-    override fun getItemCount(): Int {
-        return list.size
-    }
-
-    private fun recomputeBalances() {
-        balances.clear()
-        var balance = 0
-        for (team in list) {
-            balance += if ("debit".equals(team.type, ignoreCase = true)) {
-                -team.amount
-            } else {
-                team.amount
-            }
-            balances.add(balance)
-        }
+        binding.balance.text = item.balance.toString()
+        updateBackgroundColor(binding.llayout, position)
     }
 
     private fun updateBackgroundColor(layout: LinearLayout, position: Int) {
@@ -88,7 +68,17 @@ class AdapterFinance(private val context: Context, private var list: RealmResult
         }
     }
 
-    class ViewHolderFinance(rowFinanceBinding: RowFinanceBinding) : RecyclerView.ViewHolder(
-        rowFinanceBinding.root
+    class ViewHolderFinance(val binding: RowFinanceBinding) : RecyclerView.ViewHolder(
+        binding.root
     )
+
+    private class TransactionDataDiffCallback : DiffUtil.ItemCallback<TransactionData>() {
+        override fun areItemsTheSame(oldItem: TransactionData, newItem: TransactionData): Boolean {
+            return oldItem.id == newItem.id
+        }
+
+        override fun areContentsTheSame(oldItem: TransactionData, newItem: TransactionData): Boolean {
+            return oldItem == newItem
+        }
+    }
 }

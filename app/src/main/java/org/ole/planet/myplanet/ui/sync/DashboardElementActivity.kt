@@ -18,7 +18,6 @@ import androidx.core.graphics.drawable.DrawableCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.afollestad.materialdialogs.MaterialDialog
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import kotlinx.coroutines.delay
@@ -27,8 +26,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createActionAsync
-import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.dashboard.BellDashboardFragment
@@ -39,7 +36,7 @@ import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.team.TeamFragment
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
+import org.ole.planet.myplanet.utilities.Constants.isBetaWifiFeatureEnabled
 import org.ole.planet.myplanet.utilities.NotificationUtils
 import org.ole.planet.myplanet.utilities.SecurePrefs
 import org.ole.planet.myplanet.utilities.SharedPrefManager
@@ -52,7 +49,6 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        profileDbHandler = UserProfileDbHandler(this)
         settings = applicationContext.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         prefData = SharedPrefManager(this)
         supportFragmentManager.addOnBackStackChangedListener(this)
@@ -71,10 +67,9 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         }
     }
 
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.menu_dashboard, menu)
+    protected fun bindGoOnlineMenu(menu: Menu) {
         goOnline = menu.findItem(R.id.menu_goOnline)
-        return true
+        updateGoOnlineVisibility()
     }
 
     fun openCallFragment(newFragment: Fragment, tag: String?) {
@@ -121,9 +116,10 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
             }
         }
     }
-    override fun onPrepareOptionsMenu(menu: Menu): Boolean {
-        goOnline.isVisible = showBetaFeature(Constants.KEY_SYNC, this)
-        return super.onPrepareOptionsMenu(menu)
+    protected fun updateGoOnlineVisibility() {
+        if (::goOnline.isInitialized) {
+            goOnline.isVisible = isBetaWifiFeatureEnabled(this)
+        }
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -132,14 +128,11 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
                 wifiStatusSwitch()
                 return true
             }
-            R.id.menu_logout -> {
+            R.id.action_logout -> {
                 logout()
             }
             R.id.action_feedback -> {
                 openCallFragment(FeedbackFragment(), getString(R.string.menu_feedback))
-            }
-            R.id.action_setting -> {
-                startActivity(Intent(this, SettingActivity::class.java))
             }
             R.id.action_sync -> {
                 logSyncInSharedPrefs()
@@ -168,7 +161,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         val dialog = builder.build()
         currentDialog = dialog
         service.getMinApk(this, url, serverPin, this, "DashboardActivity")
-        createActionAsync(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
+        createActionAsync("${profileDbHandler.userModel?.id}", null, "sync")
     }
 
     @SuppressLint("RestrictedApi")
@@ -211,7 +204,9 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
                 netId = tmp.networkId
                 wifiManager.enableNetwork(netId, true)
                 Toast.makeText(this, R.string.you_are_now_connected + netId, Toast.LENGTH_SHORT).show()
-                LocalBroadcastManager.getInstance(this).sendBroadcast(Intent("ACTION_NETWORK_CHANGED"))
+                lifecycleScope.launch {
+                    broadcastService.sendBroadcast(Intent("ACTION_NETWORK_CHANGED"))
+                }
                 break
             }
         }
@@ -227,6 +222,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
             
             val loginScreen = Intent(this@DashboardElementActivity, LoginActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
+                .putExtra("fromLogout", true)
             startActivity(loginScreen)
             doubleBackToExitPressedOnce = true
             finish()

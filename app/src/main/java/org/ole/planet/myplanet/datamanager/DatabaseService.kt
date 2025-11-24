@@ -31,7 +31,14 @@ class DatabaseService(context: Context) {
         get() = Realm.getDefaultInstance()
 
     private inline fun <T> withRealmInstance(block: (Realm) -> T): T {
-        return realmInstance.use(block)
+        val realm = Realm.getDefaultInstance()
+        return try {
+            block(realm)
+        } finally {
+            if (!realm.isClosed) {
+                realm.close()
+            }
+        }
     }
 
     fun <T> withRealm(operation: (Realm) -> T): T {
@@ -46,18 +53,9 @@ class DatabaseService(context: Context) {
 
     suspend fun executeTransactionAsync(transaction: (Realm) -> Unit) {
         withContext(Dispatchers.IO) {
-            withRealmInstance { realm ->
-                try {
-                    if (realm.isClosed) {
-                        return@withRealmInstance
-                    }
-                    realm.executeTransaction { transaction(it) }
-                } catch (e: IllegalStateException) {
-                    if (e.message?.contains("non-existing write transaction") == true ||
-                        e.message?.contains("not currently in a transaction") == true) {
-                        return@withRealmInstance
-                    }
-                    throw e
+            Realm.getDefaultInstance().use { realm ->
+                realm.executeTransaction { transactionRealm ->
+                    transaction(transactionRealm)
                 }
             }
         }

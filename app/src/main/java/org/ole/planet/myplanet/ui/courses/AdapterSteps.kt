@@ -14,17 +14,19 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowStepsBinding
 import org.ole.planet.myplanet.model.RealmCourseStep
+import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.repository.SubmissionRepository
 
 class AdapterSteps(
     private val context: Context,
-    private val list: List<RealmCourseStep>,
+    private var list: List<RealmCourseStep>,
     private val submissionRepository: SubmissionRepository
 ) : RecyclerView.Adapter<AdapterSteps.ViewHolder>() {
     private val descriptionVisibilityList: MutableList<Boolean> = ArrayList()
     private var currentlyVisiblePosition = RecyclerView.NO_POSITION
     private val job = SupervisorJob()
     private val coroutineScope = CoroutineScope(job + Dispatchers.Main)
+    private val examQuestionCountCache = mutableMapOf<String, Int>()
 
     init {
         for (i in list.indices) {
@@ -38,7 +40,31 @@ class AdapterSteps(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.bind(position)
+        holder.bind(list[position])
+    }
+
+    override fun onBindViewHolder(holder: ViewHolder, position: Int, payloads: MutableList<Any>) {
+        if (payloads.isEmpty()) {
+            super.onBindViewHolder(holder, position, payloads)
+        } else {
+            if (payloads.first() is Boolean) {
+                holder.updateDescriptionVisibility(position)
+            }
+        }
+    }
+
+    fun setData(newList: List<RealmCourseStep>) {
+        val diffResult = DiffUtils.calculateDiff(list, newList, areItemsTheSame = { old, new ->
+            old.id == new.id
+        }, areContentsTheSame = { old, new ->
+            old == new
+        })
+        list = newList
+        descriptionVisibilityList.clear()
+        for (i in list.indices) {
+            descriptionVisibilityList.add(false)
+        }
+        diffResult.dispatchUpdatesTo(this)
     }
 
     override fun getItemCount(): Int {
@@ -57,31 +83,41 @@ class AdapterSteps(
             }
         }
 
-        fun bind(position: Int) {
-            val step = list[position]
+        fun bind(step: RealmCourseStep) {
             rowStepsBinding.tvTitle.text = step.stepTitle
             rowStepsBinding.tvDescription.text = context.getString(R.string.test_size, 0)
             loadJob?.cancel()
 
             val stepId = step.id
             if (!stepId.isNullOrEmpty()) {
-                val currentPosition = position
-                loadJob = coroutineScope.launch {
-                    val size = submissionRepository.getExamQuestionCount(stepId)
-                    if (bindingAdapterPosition == RecyclerView.NO_POSITION) {
-                        return@launch
-                    }
-                    val adapterPosition = bindingAdapterPosition
-                    val currentStepId = list.getOrNull(adapterPosition)?.id
-                    if (currentStepId == stepId && currentPosition == adapterPosition) {
-                        rowStepsBinding.tvDescription.text = context.getString(R.string.test_size, size)
+                val cachedCount = examQuestionCountCache[stepId]
+                if (cachedCount != null) {
+                    rowStepsBinding.tvDescription.text = context.getString(R.string.test_size, cachedCount)
+                } else {
+                    loadJob = coroutineScope.launch {
+                        val size = submissionRepository.getExamQuestionCount(stepId)
+                        examQuestionCountCache[stepId] = size
+                        if (bindingAdapterPosition == RecyclerView.NO_POSITION) {
+                            return@launch
+                        }
+                        val adapterPosition = bindingAdapterPosition
+                        val currentStepId = list.getOrNull(adapterPosition)?.id
+                        if (currentStepId == stepId) {
+                            rowStepsBinding.tvDescription.text = context.getString(R.string.test_size, size)
+                        }
                     }
                 }
             }
-            if (descriptionVisibilityList[position]) {
-                rowStepsBinding.tvDescription.visibility = View.VISIBLE
-            } else {
-                rowStepsBinding.tvDescription.visibility = View.GONE
+            updateDescriptionVisibility(bindingAdapterPosition)
+        }
+
+        fun updateDescriptionVisibility(position: Int) {
+            if (position != RecyclerView.NO_POSITION) {
+                if (descriptionVisibilityList[position]) {
+                    rowStepsBinding.tvDescription.visibility = View.VISIBLE
+                } else {
+                    rowStepsBinding.tvDescription.visibility = View.GONE
+                }
             }
         }
 
@@ -92,12 +128,12 @@ class AdapterSteps(
     }
 
     private fun toggleDescriptionVisibility(position: Int) {
-        if (currentlyVisiblePosition != RecyclerView.NO_POSITION) {
+        if (currentlyVisiblePosition != RecyclerView.NO_POSITION && currentlyVisiblePosition != position) {
             descriptionVisibilityList[currentlyVisiblePosition] = false
-            notifyItemChanged(currentlyVisiblePosition)
+            notifyItemChanged(currentlyVisiblePosition, false)
         }
         descriptionVisibilityList[position] = !descriptionVisibilityList[position]
-        notifyItemChanged(position)
+        notifyItemChanged(position, descriptionVisibilityList[position])
         currentlyVisiblePosition = if (descriptionVisibilityList[position]) position else RecyclerView.NO_POSITION
     }
 

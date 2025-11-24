@@ -32,7 +32,7 @@ class MyPersonalRepositoryImpl @Inject constructor(
         save(personal)
     }
 
-    override fun getPersonalResources(userId: String?): Flow<List<RealmMyPersonal>> {
+    override suspend fun getPersonalResources(userId: String?): Flow<List<RealmMyPersonal>> {
         if (userId.isNullOrBlank()) {
             return flowOf(emptyList())
         }
@@ -40,5 +40,15 @@ class MyPersonalRepositoryImpl @Inject constructor(
         return queryListFlow(RealmMyPersonal::class.java) {
             equalTo("userId", userId)
         }
+    }
+
+    override suspend fun deletePersonalResource(id: String) {
+        delete(RealmMyPersonal::class.java, "_id", id)
+        delete(RealmMyPersonal::class.java, "id", id)
+    }
+
+    override suspend fun updatePersonalResource(id: String, updater: (RealmMyPersonal) -> Unit) {
+        update(RealmMyPersonal::class.java, "_id", id, updater)
+        update(RealmMyPersonal::class.java, "id", id, updater)
     }
 }

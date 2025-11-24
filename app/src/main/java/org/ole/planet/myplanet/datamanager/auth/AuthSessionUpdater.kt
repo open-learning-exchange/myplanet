@@ -1,10 +1,12 @@
 package org.ole.planet.myplanet.datamanager.auth
 
 import android.content.SharedPreferences
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import java.io.DataOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
-import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -17,8 +19,8 @@ import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.utilities.UrlUtils
 
-class AuthSessionUpdater @Inject constructor(
-    private val callback: AuthCallback,
+class AuthSessionUpdater @AssistedInject constructor(
+    @Assisted private val callback: AuthCallback,
     @AppPreferences private val settings: SharedPreferences,
     @ApplicationScope private val scope: CoroutineScope
 ) {
@@ -26,6 +28,11 @@ class AuthSessionUpdater @Inject constructor(
     interface AuthCallback {
         fun setAuthSession(responseHeader: Map<String, List<String>>)
         fun onError(s: String)
+    }
+
+    @AssistedFactory
+    interface Factory {
+        fun create(callback: AuthCallback): AuthSessionUpdater
     }
 
     private var job: Job? = null

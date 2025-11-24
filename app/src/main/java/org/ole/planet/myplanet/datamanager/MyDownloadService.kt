@@ -13,7 +13,6 @@ import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
@@ -24,11 +23,13 @@ import java.io.IOException
 import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.Download
+import org.ole.planet.myplanet.service.getBroadcastService
 import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.FileUtils.availableExternalMemorySize
@@ -49,6 +50,9 @@ class MyDownloadService : Service() {
 
     private var totalDownloadsCount = 0
     private var completedDownloadsCount = 0
+
+    private val downloadJob = SupervisorJob()
+    private val downloadScope = CoroutineScope(downloadJob + Dispatchers.IO)
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -75,7 +79,7 @@ class MyDownloadService : Service() {
 
         updateNotificationForBatchDownload()
 
-        CoroutineScope(Dispatchers.IO).launch {
+        downloadScope.launch {
             urls.forEachIndexed { index, url ->
                 currentIndex = index
                 initDownload(url, fromSync)
@@ -202,12 +206,16 @@ class MyDownloadService : Service() {
 
         if (completedDownloadsCount >= totalDownloadsCount) {
             showCompletionNotification(true)
+            stopSelf()
         }
 
         if (!fromSync) {
             if (message == "File Not Found") {
                 val intent = Intent(RESOURCE_NOT_FOUND_ACTION)
-                LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
+                downloadScope.launch {
+                    val broadcastService = getBroadcastService(this@MyDownloadService)
+                    broadcastService.sendBroadcast(intent)
+                }
             }
         }
     }
@@ -220,46 +228,44 @@ class MyDownloadService : Service() {
         val startTime = System.currentTimeMillis()
         var timeCount = 1
 
-        try {
-            BufferedInputStream(body.byteStream(), 1024 * 8).use { bis ->
-                FileOutputStream(outputFile).use { output ->
-                    while (true) {
-                        val readCount = bis.read(data)
-                        if (readCount == -1) break
+        BufferedInputStream(body.byteStream(), 1024 * 8).use { bis ->
+            FileOutputStream(outputFile).use { output ->
+                while (true) {
+                    val readCount = bis.read(data)
+                    if (readCount == -1) break
 
-                        if (readCount > 0) {
-                            total += readCount
-                            val current = (total / 1024.0).roundToInt().toDouble()
-                            val currentTime = System.currentTimeMillis() - startTime
+                    if (readCount > 0) {
+                        total += readCount
+                        val current = (total / 1024.0).roundToInt().toDouble()
+                        val currentTime = System.currentTimeMillis() - startTime
 
-                            val download = Download().apply {
-                                fileName = getFileNameFromUrl(url)
-                            }
-
-                            if (fileSize > 0) {
-                                totalFileSize = (fileSize / 1024.0).toInt()
-                                val progress = (total * 100 / fileSize).toInt()
-                                this@MyDownloadService.totalFileSize = totalFileSize
-                                download.totalFileSize = totalFileSize
-                                download.progress = progress
-                            } else {
-                                download.totalFileSize = 0
-                                download.progress = -1
-                            }
-
-                            if (currentTime > 1000 * timeCount) {
-                                download.currentFileSize = current.toInt()
-                                sendNotification(download)
-                                timeCount++
-                            }
-                            output.write(data, 0, readCount)
+                        val download = Download().apply {
+                            fileName = getFileNameFromUrl(url)
                         }
+
+                        if (fileSize > 0) {
+                            totalFileSize = (fileSize / 1024.0).toInt()
+                            val progress = (total * 100 / fileSize).toInt()
+                            this@MyDownloadService.totalFileSize = totalFileSize
+                            download.totalFileSize = totalFileSize
+                            download.progress = progress
+                        } else {
+                            download.totalFileSize = 0
+                            download.progress = -1
+                        }
+
+                        if (currentTime > 1000 * timeCount) {
+                            download.currentFileSize = current.toInt()
+                            sendNotification(download)
+                            timeCount++
+                        }
+                        output.write(data, 0, readCount)
                     }
                 }
             }
-        } finally {
-            onDownloadComplete(url)
         }
+
+        onDownloadComplete(url)
     }
 
     private fun checkStorage(fileSize: Long): Boolean {
@@ -298,7 +304,10 @@ class MyDownloadService : Service() {
             putExtra("download", download)
             putExtra("fromSync", fromSync)
         }
-        LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
+        downloadScope.launch {
+            val broadcastService = getBroadcastService(this@MyDownloadService)
+            broadcastService.sendBroadcast(intent)
+        }
     }
 
     private fun onDownloadComplete(url: String) {
@@ -344,6 +353,7 @@ class MyDownloadService : Service() {
             stopForeground(true)
         } catch (_: Exception) {
         }
+        downloadJob.cancel()
         notificationManager?.cancel(ONGOING_NOTIFICATION_ID)
         super.onDestroy()
     }

@@ -31,8 +31,11 @@ import org.ole.planet.myplanet.utilities.VersionUtils
 @AndroidEntryPoint
 class BecomeMemberActivity : BaseActivity() {
     private lateinit var activityBecomeMemberBinding: ActivityBecomeMemberBinding
+    private lateinit var mRealm: Realm
     var dob: String = ""
     var guest: Boolean = false
+    private var usernameWatcher: TextWatcher? = null
+    private var passwordWatcher: TextWatcher? = null
     
     private data class MemberInfo(
         val username: String,
@@ -146,7 +149,7 @@ class BecomeMemberActivity : BaseActivity() {
             show()
         }
 
-        Service(this).becomeMember(realm, obj, object : Service.CreateUserCallback {
+        Service(this).becomeMember(obj, object : Service.CreateUserCallback {
             override fun onSuccess(success: String) {
                 runOnUiThread { Utilities.toast(this@BecomeMemberActivity, success) }
             }
@@ -162,6 +165,7 @@ class BecomeMemberActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        mRealm = databaseService.realmInstance
         activityBecomeMemberBinding = ActivityBecomeMemberBinding.inflate(layoutInflater)
         setContentView(activityBecomeMemberBinding.root)
         EdgeToEdgeUtils.setupEdgeToEdgeWithKeyboard(this, activityBecomeMemberBinding.root)
@@ -202,9 +206,13 @@ class BecomeMemberActivity : BaseActivity() {
     }
 
     override fun onDestroy() {
-        if (!mRealm.isClosed) {
+        if (::mRealm.isInitialized && !mRealm.isClosed) {
             mRealm.close()
         }
+        activityBecomeMemberBinding.etUsername.removeTextChangedListener(usernameWatcher)
+        activityBecomeMemberBinding.etPassword.removeTextChangedListener(passwordWatcher)
+        usernameWatcher = null
+        passwordWatcher = null
         super.onDestroy()
     }
 
@@ -227,7 +235,7 @@ class BecomeMemberActivity : BaseActivity() {
     }
 
     private fun setupTextWatchers(mRealm: Realm) {
-        activityBecomeMemberBinding.etUsername.addTextChangedListener(object : TextWatcher {
+        usernameWatcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
 
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
@@ -246,9 +254,10 @@ class BecomeMemberActivity : BaseActivity() {
                     activityBecomeMemberBinding.etUsername.error = null
                 }
             }
-        })
+        }
+        activityBecomeMemberBinding.etUsername.addTextChangedListener(usernameWatcher)
 
-        activityBecomeMemberBinding.etPassword.addTextChangedListener(object : TextWatcher {
+        passwordWatcher = object : TextWatcher {
             override fun afterTextChanged(s: Editable) {
                 if (activityBecomeMemberBinding.etPassword.text.toString().isEmpty()) {
                     activityBecomeMemberBinding.etRePassword.setText("")
@@ -258,6 +267,7 @@ class BecomeMemberActivity : BaseActivity() {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
 
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {}
-        })
+        }
+        activityBecomeMemberBinding.etPassword.addTextChangedListener(passwordWatcher)
     }
 }

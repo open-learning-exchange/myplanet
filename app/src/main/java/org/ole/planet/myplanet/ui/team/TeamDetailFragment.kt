@@ -11,10 +11,7 @@ import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayoutMediator
 import dagger.hilt.android.AndroidEntryPoint
-import java.util.Date
-import java.util.UUID
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -30,7 +27,6 @@ import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMemberCount
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -86,9 +82,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
     }
 
     private fun detachCurrentUser(): RealmUserModel? {
-        val userModel = getCurrentUser() ?: return null
-        val realmInstance = userProfileDbHandler.mRealm
-        return realmInstance.copyFromRealm(userModel)
+        return userProfileDbHandler.getUserModelCopy()
     }
 
     private fun pageIndexById(pageId: String?): Int? {
@@ -145,19 +139,17 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
 
         loadTeamJob?.cancel()
         loadTeamJob = viewLifecycleOwner.lifecycleScope.launch {
-            val resolvedTeam = withContext(Dispatchers.IO) {
-                when {
-                    shouldQueryRealm(teamId) && teamId.isNotEmpty() -> {
-                        teamRepository.getTeamByDocumentIdOrTeamId(teamId)
-                    }
+            val resolvedTeam = when {
+                shouldQueryRealm(teamId) && teamId.isNotEmpty() -> {
+                    teamRepository.getTeamByDocumentIdOrTeamId(teamId)
+                }
 
-                    else -> {
-                        val effectiveTeamId = (directTeamId ?: "").ifEmpty { teamId }
-                        if (effectiveTeamId.isNotEmpty()) {
-                            teamRepository.getTeamById(effectiveTeamId)
-                        } else {
-                            null
-                        }
+                else -> {
+                    val effectiveTeamId = (directTeamId ?: "").ifEmpty { teamId }
+                    if (effectiveTeamId.isNotEmpty()) {
+                        teamRepository.getTeamById(effectiveTeamId)
+                    } else {
+                        null
                     }
                 }
             }
@@ -202,11 +194,11 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
     private fun checkServerAndStartSync() {
         val mapping = serverUrlMapper.processUrl(serverUrl)
 
-        lifecycleScope.launch(Dispatchers.IO) {
-            updateServerIfNecessary(mapping)
-            withContext(Dispatchers.Main) {
-                startSyncManager()
+        lifecycleScope.launch {
+            withContext(kotlinx.coroutines.Dispatchers.IO) {
+                updateServerIfNecessary(mapping)
             }
+            startSyncManager()
         }
     }
 
@@ -352,14 +344,14 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
         } else {
             binding.btnLeave.text = getString(R.string.join)
             binding.btnLeave.setOnClickListener {
-                val userId = user?.id
-                val userPlanetCode = user?.planetCode
-                val teamType = team?.teamType
-                RealmMyTeam.requestToJoin(teamId, userId, userPlanetCode, mRealm, teamType)
-                binding.btnLeave.text = getString(R.string.requested)
-                binding.btnLeave.isEnabled = false
                 viewLifecycleOwner.lifecycleScope.launch {
-                    teamRepository.syncTeamActivities(requireContext())
+                    val userId = user?.id
+                    val userPlanetCode = user?.planetCode
+                    val teamType = team?.teamType
+                    RealmMyTeam.requestToJoin(teamId, userId, userPlanetCode, teamType)
+                    binding.btnLeave.text = getString(R.string.requested)
+                    binding.btnLeave.isEnabled = false
+                    teamRepository.syncTeamActivities()
                 }
             }
         }
@@ -398,12 +390,10 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
             val fallbackTeamId = directTeamId ?: ""
             val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
 
-            val updatedTeam = withContext(Dispatchers.IO) {
-                when {
-                    primaryTeamId.isNotEmpty() -> teamRepository.getTeamByDocumentIdOrTeamId(primaryTeamId)
-                    fallbackTeamId.isNotEmpty() -> teamRepository.getTeamById(fallbackTeamId)
-                    else -> null
-                }
+            val updatedTeam = when {
+                primaryTeamId.isNotEmpty() -> teamRepository.getTeamByDocumentIdOrTeamId(primaryTeamId)
+                fallbackTeamId.isNotEmpty() -> teamRepository.getTeamById(fallbackTeamId)
+                else -> null
             }
 
             if (updatedTeam != null) {
@@ -475,16 +465,15 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
         val userParentCode = userModel.parentCode
         val teamType = getEffectiveTeamType()
 
-        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-            databaseService.executeTransactionAsync { r ->
-                val log = r.createObject(RealmTeamLog::class.java, "${UUID.randomUUID()}")
-                log.teamId = getEffectiveTeamId()
-                log.user = userName
-                log.createdOn = userPlanetCode
-                log.type = "teamVisit"
-                log.teamType = teamType
-                log.parentCode = userParentCode
-                log.time = Date().time
+        viewLifecycleOwner.lifecycleScope.launch {
+            withContext(kotlinx.coroutines.Dispatchers.IO) {
+                teamRepository.logTeamVisit(
+                    teamId = getEffectiveTeamId(),
+                    userName = userName,
+                    userPlanetCode = userPlanetCode,
+                    userParentCode = userParentCode,
+                    teamType = teamType,
+                )
             }
         }
     }

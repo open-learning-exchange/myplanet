@@ -12,7 +12,6 @@ import android.net.Uri
 import android.os.Build
 import android.text.TextUtils
 import android.view.View
-import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
 import android.webkit.URLUtil
 import android.widget.ImageView
@@ -22,11 +21,11 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.core.net.toUri
+import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import kotlin.math.roundToInt
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -40,6 +39,7 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UploadToShelfService
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
@@ -64,7 +64,9 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
 
     @Inject
     lateinit var uploadToShelfService: UploadToShelfService
-    
+
+    @Inject
+    lateinit var userRepository: UserRepository
     lateinit var settings: SharedPreferences
     val customProgressDialog: DialogUtils.CustomProgressDialog by lazy {
         DialogUtils.CustomProgressDialog(this)
@@ -121,12 +123,6 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
             .putExtra("from_login", true)
         startActivity(dashboard)
         finish()
-    }
-
-    private fun requestFocus(view: View) {
-        if (view.requestFocus()) {
-            window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE)
-        }
     }
 
     fun changeLogoColor() {
@@ -201,78 +197,84 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
             })
             return
         } else if (source == "login") {
-            uploadManager.uploadUserActivities(this@ProcessUserDataActivity)
+            lifecycleScope.launch(Dispatchers.IO) {
+                uploadManager.uploadUserActivities(this@ProcessUserDataActivity)
+            }
             return
         }
         customProgressDialog.setText(this.getString(R.string.uploading_data_to_server_please_wait))
         customProgressDialog.show()
 
-        uploadManager.uploadAchievement()
-        uploadManager.uploadNews()
-        uploadManager.uploadResourceActivities("")
-        uploadManager.uploadCourseActivities()
-        uploadManager.uploadSearchActivity()
-        uploadManager.uploadTeams()
-        uploadManager.uploadRating()
-        uploadManager.uploadTeamTask()
-        uploadManager.uploadMeetups()
-        uploadManager.uploadSubmissions()
-        uploadManager.uploadCrashLog()
+        lifecycleScope.launch {
+            val asyncOperationsCounter = AtomicInteger(0)
+            val totalAsyncOperations = 6
 
-        val asyncOperationsCounter = AtomicInteger(0)
-        val totalAsyncOperations = 6
-
-        fun checkAllOperationsComplete() {
-            if (asyncOperationsCounter.incrementAndGet() == totalAsyncOperations) {
-                runOnUiThread {
-                    if (!isFinishing && !isDestroyed) {
-                        customProgressDialog.dismiss()
-                        Toast.makeText(this@ProcessUserDataActivity, "upload complete", Toast.LENGTH_SHORT).show()
+            fun checkAllOperationsComplete() {
+                if (asyncOperationsCounter.incrementAndGet() == totalAsyncOperations) {
+                    runOnUiThread {
+                        if (!isFinishing && !isDestroyed) {
+                            customProgressDialog.dismiss()
+                            Toast.makeText(this@ProcessUserDataActivity, "upload complete", Toast.LENGTH_SHORT).show()
+                        }
                     }
                 }
             }
+
+            uploadManager.uploadAchievement()
+            uploadManager.uploadNews()
+            uploadManager.uploadResourceActivities("")
+            uploadManager.uploadCourseActivities()
+            uploadManager.uploadSearchActivity()
+            uploadManager.uploadTeams()
+            uploadManager.uploadRating()
+            uploadManager.uploadTeamTask()
+            uploadManager.uploadMeetups()
+            uploadManager.uploadAdoptedSurveys()
+            uploadManager.uploadSubmissions()
+            uploadManager.uploadCrashLog()
+
+            uploadToShelfService.uploadUserData {
+                uploadToShelfService.uploadHealth()
+                checkAllOperationsComplete()
+            }
+
+            uploadManager.uploadUserActivities(object : SuccessListener {
+                override fun onSuccess(success: String?) {
+                    checkAllOperationsComplete()
+                }
+            })
+
+            uploadManager.uploadExamResult(object : SuccessListener {
+                override fun onSuccess(success: String?) {
+                    checkAllOperationsComplete()
+                }
+            })
+
+            lifecycleScope.launch(Dispatchers.IO) {
+                val success = uploadManager.uploadFeedback()
+                withContext(Dispatchers.Main) {
+                    checkAllOperationsComplete()
+                }
+            }
+
+            uploadManager.uploadResource(object : SuccessListener {
+                override fun onSuccess(success: String?) {
+                    checkAllOperationsComplete()
+                }
+            })
+
+            uploadManager.uploadSubmitPhotos(object : SuccessListener {
+                override fun onSuccess(success: String?) {
+                    checkAllOperationsComplete()
+                }
+            })
+
+            uploadManager.uploadActivities(object : SuccessListener {
+                override fun onSuccess(success: String?) {
+                    checkAllOperationsComplete()
+                }
+            })
         }
-
-        uploadToShelfService.uploadUserData {
-            uploadToShelfService.uploadHealth()
-            checkAllOperationsComplete()
-        }
-
-        uploadManager.uploadUserActivities(object : SuccessListener {
-            override fun onSuccess(success: String?) {
-                checkAllOperationsComplete()
-            }
-        })
-
-        uploadManager.uploadExamResult(object : SuccessListener {
-            override fun onSuccess(success: String?) {
-                checkAllOperationsComplete()
-            }
-        })
-
-        uploadManager.uploadFeedback(object : SuccessListener {
-            override fun onSuccess(success: String?) {
-                checkAllOperationsComplete()
-            }
-        })
-
-        uploadManager.uploadResource(object : SuccessListener {
-            override fun onSuccess(success: String?) {
-                checkAllOperationsComplete()
-            }
-        })
-
-        uploadManager.uploadSubmitPhotos(object : SuccessListener {
-            override fun onSuccess(success: String?) {
-                checkAllOperationsComplete()
-            }
-        })
-
-        uploadManager.uploadActivities(object : SuccessListener {
-            override fun onSuccess(success: String?) {
-                checkAllOperationsComplete()
-            }
-        })
     }
 
     protected fun hideKeyboard(view: View?) {
@@ -325,7 +327,7 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
     }
 
     fun fetchAndLogUserSecurityData(name: String, securityCallback: SecurityDataCallback? = null) {
-        CoroutineScope(Dispatchers.IO).launch {
+        lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val apiInterface = client?.create(ApiInterface::class.java)
                 val userDocUrl = "${UrlUtils.getUrl()}/tablet_users/org.couchdb.user:$name"
@@ -339,9 +341,7 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
                     val iterations = userDoc?.get("iterations")?.asString
                     val userId = userDoc?.get("_id")?.asString
                     val rev = userDoc?.get("_rev")?.asString
-                    withContext(Dispatchers.Main) {
-                        updateRealmUserSecurityData(name, userId, rev, derivedKey, salt, passwordScheme, iterations, securityCallback)
-                    }
+                    updateRealmUserSecurityData(name, userId, rev, derivedKey, salt, passwordScheme, iterations, securityCallback)
 
                 } else {
                     withContext(Dispatchers.Main) {
@@ -358,33 +358,26 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         }
     }
 
-    private fun updateRealmUserSecurityData(name: String, userId: String?, rev: String?, derivedKey: String?, salt: String?, passwordScheme: String?, iterations: String?, securityCallback: SecurityDataCallback? = null) {
+    private suspend fun updateRealmUserSecurityData(
+        name: String,
+        userId: String?,
+        rev: String?,
+        derivedKey: String?,
+        salt: String?,
+        passwordScheme: String?,
+        iterations: String?,
+        securityCallback: SecurityDataCallback? = null,
+    ) {
         try {
-            databaseService.withRealm { realm ->
-                realm.executeTransactionAsync({ transactionRealm ->
-                    val user = transactionRealm.where(RealmUserModel::class.java)
-                        .equalTo("name", name)
-                        .findFirst()
-
-                    if (user != null) {
-                        user._id = userId
-                        user._rev = rev
-                        user.derived_key = derivedKey
-                        user.salt = salt
-                        user.password_scheme = passwordScheme
-                        user.iterations = iterations
-                        user.isUpdated = false
-                    }
-                }, {
-                    securityCallback?.onSecurityDataUpdated()
-                }) { error ->
-                    error.printStackTrace()
-                    securityCallback?.onSecurityDataUpdated()
-                }
+            userRepository.updateSecurityData(name, userId, rev, derivedKey, salt, passwordScheme, iterations)
+            withContext(Dispatchers.Main) {
+                securityCallback?.onSecurityDataUpdated()
             }
         } catch (e: Exception) {
-            e.printStackTrace()
-            securityCallback?.onSecurityDataUpdated()
+            withContext(Dispatchers.Main) {
+                e.printStackTrace()
+                securityCallback?.onSecurityDataUpdated()
+            }
         }
     }
 }

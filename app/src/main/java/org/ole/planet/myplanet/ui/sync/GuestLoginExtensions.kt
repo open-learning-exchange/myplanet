@@ -76,4 +76,3 @@ fun LoginActivity.showGuestLoginDialog() {
         cancel.setOnClickListener { dialog.dismiss() }
     }
 }
-

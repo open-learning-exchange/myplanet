@@ -13,7 +13,6 @@ import androidx.core.net.toUri
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import dagger.hilt.android.EntryPointAccessors
-import io.realm.Case
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -21,7 +20,6 @@ import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.di.WorkerDependenciesEntryPoint
-import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.NetworkUtils
@@ -32,8 +30,8 @@ class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters)
         context.applicationContext,
         WorkerDependenciesEntryPoint::class.java
     )
-    private val databaseService = workerEntryPoint.databaseService()
     private val uploadManager = workerEntryPoint.uploadManager()
+    private val submissionRepository = workerEntryPoint.submissionRepository()
     companion object {
         private const val NOTIFICATION_ID = 1001
         private const val CHANNEL_ID = "server_reachability_channel"
@@ -182,39 +180,9 @@ class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters)
         }
     }
 
-    private fun hasPendingSubmissions(): Boolean {
-        return try {
-            databaseService.withRealm { realm ->
-                val submissions = realm.where(RealmSubmission::class.java)
-                    .equalTo("isUpdated", true)
-                    .or()
-                    .isEmpty("_id")
-                    .findAll()
-                submissions.isNotEmpty()
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            false
-        }
-    }
-
-    private suspend fun hasPendingExamResults(): Boolean {
-        return try {
-            databaseService.withRealmAsync { realm ->
-                realm.where(RealmSubmission::class.java)
-                    .equalTo("status", "pending", Case.INSENSITIVE)
-                    .isNotEmpty("answers")
-                    .findFirst() != null
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            false
-        }
-    }
-
     private suspend fun uploadSubmissions() {
         try {
-            if (hasPendingSubmissions()) {
+            if (submissionRepository.hasPendingOfflineSubmissions()) {
                 withContext(Dispatchers.IO) {
                     uploadManager.uploadSubmissions()
                 }
@@ -226,7 +194,7 @@ class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters)
     }
 
     private suspend fun uploadExamResultWrapper() {
-        if (!hasPendingExamResults()) {
+        if (!submissionRepository.hasPendingExamResults()) {
             return
         }
 
@@ -236,10 +204,7 @@ class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters)
                     // No UI updates required for background sync completion.
                 }
             }
-
-            withContext(Dispatchers.IO) {
-                uploadManager.uploadExamResult(successListener)
-            }
+            uploadManager.uploadExamResult(successListener)
         } catch (e: Exception) {
             e.printStackTrace()
         }

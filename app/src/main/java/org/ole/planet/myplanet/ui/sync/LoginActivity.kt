@@ -28,8 +28,10 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
 import java.util.Locale
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityLoginBinding
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
@@ -146,7 +148,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         }
 
         getTeamMembers()
-        loadSavedProfileImage()
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -167,6 +168,9 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     private fun declareElements() {
         binding.customDeviceName.text = getCustomDeviceName()
         btnSignIn.setOnClickListener {
+            if (isFinishing || isDestroyed) {
+                return@setOnClickListener
+            }
             if (getUrl() != "/db") {
                 if (TextUtils.isEmpty(binding.inputName.text.toString())) {
                     binding.inputName.error = getString(R.string.err_msg_name)
@@ -174,20 +178,33 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                     binding.inputPassword.error = getString(R.string.err_msg_password)
                 } else {
                     val enterUserName = binding.inputName.text.toString().trimEnd()
-                    val user = mRealm.where(RealmUserModel::class.java).equalTo("name", enterUserName).findFirst()
-                    if (user == null || !user.isArchived) {
-                        submitForm(enterUserName, binding.inputPassword.text.toString())
-                    } else {
-                        val builder = AlertDialog.Builder(this)
-                        builder.setMessage("member ${binding.inputName.text} is archived")
-                        builder.setCancelable(false)
-                        builder.setPositiveButton("ok") { dialog: DialogInterface, _: Int ->
-                            dialog.dismiss()
-                            binding.inputName.setText(R.string.empty_text)
-                            binding.inputPassword.setText(R.string.empty_text)
+                    binding.btnSignin.isEnabled = false
+                    customProgressDialog.setText(getString(R.string.please_wait))
+                    customProgressDialog.show()
+                    lifecycleScope.launch {
+                        val user = withContext(Dispatchers.IO) {
+                            databaseService.withRealm { realm ->
+                                realm.where(RealmUserModel::class.java)
+                                    .equalTo("name", enterUserName).findFirst()
+                                    ?.let { realm.copyFromRealm(it) }
+                            }
                         }
-                        val dialog = builder.create()
-                        dialog.show()
+                        if (user == null || !user.isArchived) {
+                            submitForm(enterUserName, binding.inputPassword.text.toString())
+                        } else {
+                            val builder = AlertDialog.Builder(this@LoginActivity)
+                            builder.setMessage("member ${binding.inputName.text} is archived")
+                            builder.setCancelable(false)
+                            builder.setPositiveButton("ok") { dialog: DialogInterface, _: Int ->
+                                dialog.dismiss()
+                                binding.inputName.setText(R.string.empty_text)
+                                binding.inputPassword.setText(R.string.empty_text)
+                            }
+                            val dialog = builder.create()
+                            dialog.show()
+                        }
+                        binding.btnSignin.isEnabled = true
+                        customProgressDialog.dismiss()
                     }
                 }
             } else {
@@ -225,77 +242,78 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     }
 
     private fun declareMoreElements() {
-        try {
-            syncIcon.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.login_file_upload_animation))
-            syncIcon.scaleType
-            syncIconDrawable = syncIcon.drawable as AnimationDrawable
-            syncIcon.setOnClickListener {
-                if (getUrl() != "/db") {
-                    val protocol = settings.getString("serverProtocol", "")
-                    val serverUrl = "${settings.getString("serverURL", "")}"
-                    val serverPin = "${settings.getString("serverPin", "")}"
+        syncIcon.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.login_file_upload_animation))
+        syncIcon.scaleType
+        syncIconDrawable = syncIcon.drawable as AnimationDrawable
+        syncIcon.setOnClickListener {
+            if (getUrl() != "/db") {
+                val protocol = settings.getString("serverProtocol", "")
+                val serverUrl = "${settings.getString("serverURL", "")}"
+                val serverPin = "${settings.getString("serverPin", "")}"
 
-                    val url = if (serverUrl.startsWith("http://") || serverUrl.startsWith("https://")) {
-                        serverUrl
-                    } else {
-                        "$protocol$serverUrl"
-                    }
-                    syncIconDrawable.start()
-
-                    val dialogServerUrlBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this))
-                    val contextWrapper = ContextThemeWrapper(this, R.style.AlertDialogTheme)
-                    val builder = MaterialDialog.Builder(contextWrapper).customView(dialogServerUrlBinding.root, true)
-                    val dialog = builder.build()
-                    currentDialog = dialog
-                    service.getMinApk(this, url, serverPin, this, "LoginActivity")
+                val url = if (serverUrl.startsWith("http://") || serverUrl.startsWith("https://")) {
+                    serverUrl
                 } else {
-                    toast(this, getString(R.string.please_enter_server_url_first))
-                    settingDialog()
+                    "$protocol$serverUrl"
                 }
+                syncIconDrawable.start()
+
+                val dialogServerUrlBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this))
+                val contextWrapper = ContextThemeWrapper(this, R.style.AlertDialogTheme)
+                val builder = MaterialDialog.Builder(contextWrapper).customView(dialogServerUrlBinding.root, true)
+                val dialog = builder.build()
+                currentDialog = dialog
+                service.getMinApk(this, url, serverPin, this, "LoginActivity")
+            } else {
+                toast(this, getString(R.string.please_enter_server_url_first))
+                settingDialog()
             }
-            declareHideKeyboardElements()
-            binding.lblVersion.text = getString(R.string.version, resources.getText(R.string.app_version))
-            binding.inputName.addTextChangedListener(MyTextWatcher(binding.inputName))
-            binding.inputPassword.addTextChangedListener(MyTextWatcher(binding.inputPassword))
-            binding.inputPassword.setOnEditorActionListener { _: TextView?, actionId: Int, event: KeyEvent? ->
-                if (actionId == EditorInfo.IME_ACTION_DONE || event != null && event.action == KeyEvent.ACTION_DOWN && event.keyCode == KeyEvent.KEYCODE_ENTER) {
-                    btnSignIn.performClick()
-                    return@setOnEditorActionListener true
-                }
-                false
+        }
+        declareHideKeyboardElements()
+        binding.lblVersion.text = getString(R.string.version, resources.getText(R.string.app_version))
+        binding.inputName.addTextChangedListener(MyTextWatcher(binding.inputName))
+        binding.inputPassword.addTextChangedListener(MyTextWatcher(binding.inputPassword))
+        binding.inputPassword.setOnEditorActionListener { _: TextView?, actionId: Int, event: KeyEvent? ->
+            if (isFinishing || isDestroyed) {
+                return@setOnEditorActionListener false
             }
-            setUpLanguageButton()
-            if (NetworkUtils.isNetworkConnected) {
+            if (actionId == EditorInfo.IME_ACTION_DONE || event != null && event.action == KeyEvent.ACTION_DOWN && event.keyCode == KeyEvent.KEYCODE_ENTER) {
+                btnSignIn.performClick()
+                return@setOnEditorActionListener true
+            }
+            false
+        }
+        setUpLanguageButton()
+        if (NetworkUtils.isNetworkConnected) {
+            lifecycleScope.launch {
                 service.syncPlanetServers { success: String? ->
-                    toast(this, success)
+                    toast(this@LoginActivity, success)
                 }
             }
-            binding.inputName.addTextChangedListener(object : TextWatcher {
-                override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
+        }
+        binding.inputName.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
 
-                override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-                    val lowercaseText = s.toString().lowercase()
-                    if (s.toString() != lowercaseText) {
-                        binding.inputName.setText(lowercaseText)
-                        binding.inputName.setSelection(lowercaseText.length)
-                    }
+            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
+                val lowercaseText = s.toString().lowercase()
+                if (s.toString() != lowercaseText) {
+                    binding.inputName.setText(lowercaseText)
+                    binding.inputName.setSelection(lowercaseText.length)
                 }
+            }
 
-                override fun afterTextChanged(s: Editable) {}
-            })
-            if(getUrl().isNotEmpty()){
-                updateTeamDropdown()
-            }
-        } finally {
-            if (!mRealm.isClosed) {
-                mRealm.close()
-            }
+            override fun afterTextChanged(s: Editable) {}
+        })
+        if (getUrl().isNotEmpty()) {
+            updateTeamDropdown()
         }
     }
 
     fun updateTeamDropdown() {
-        val teams: List<RealmMyTeam>? = mRealm.where(RealmMyTeam::class.java)
-            ?.isEmpty("teamId")?.equalTo("status", "active")?.findAll()
+        val teams: List<RealmMyTeam>? = databaseService.withRealm { realm ->
+            realm.where(RealmMyTeam::class.java)
+                .isEmpty("teamId").equalTo("status", "active").findAll()?.let { realm.copyFromRealm(it) }
+        }
 
         if (!teams.isNullOrEmpty()) {
             binding.team.visibility = View.VISIBLE
@@ -414,7 +432,9 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     fun getTeamMembers() {
         selectedTeamId = prefData.getSelectedTeamId().toString()
         if (selectedTeamId?.isNotEmpty() == true) {
-            users = RealmMyTeam.getUsers(selectedTeamId, mRealm, "membership")
+            users = databaseService.withRealm { realm ->
+                RealmMyTeam.getUsers(selectedTeamId, realm, "membership").map { realm.copyFromRealm(it) }.toMutableList()
+            }
             val userList = (users as? MutableList<RealmUserModel>)?.map {
                 User(it.name ?: "", it.name ?: "", "", it.userImage ?: "", "team")
             } ?: emptyList()
@@ -440,18 +460,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         binding.recyclerView.isVerticalScrollBarEnabled = true
 
     }
-
-    private fun loadSavedProfileImage() {
-        val lastUserWithImage = prefData.getSavedUsers().lastOrNull { !it.image.isNullOrEmpty() }
-        lastUserWithImage?.image?.let { image ->
-            Glide.with(this)
-                .load(image)
-                .placeholder(R.drawable.profile)
-                .error(R.drawable.profile)
-                .into(binding.userProfile)
-        }
-    }
-
     override fun onItemClick(user: User) {
         if (user.password?.isEmpty() == true && user.source != "guest") {
             Glide.with(this)
@@ -463,7 +471,9 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             binding.inputName.setText(user.name)
         } else {
             if (user.source == "guest"){
-                val model = RealmUserModel.createGuestUser(user.name, mRealm, settings)?.let { mRealm.copyFromRealm(it) }
+                val model = databaseService.withRealm { realm ->
+                    RealmUserModel.createGuestUser(user.name, realm, settings)?.let { realm.copyFromRealm(it) }
+                }
                 if (model == null) {
                     toast(this, getString(R.string.unable_to_login))
                 } else {
@@ -488,7 +498,9 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         builder.setNegativeButton("cancel") { dialog: DialogInterface, _: Int -> dialog.dismiss() }
         builder.setPositiveButton("continue") { dialog: DialogInterface, _: Int ->
             dialog.dismiss()
-            val model = RealmUserModel.createGuestUser(username, mRealm, settings)?.let { mRealm.copyFromRealm(it) }
+            val model = databaseService.withRealm { realm ->
+                RealmUserModel.createGuestUser(username, realm, settings)?.let { realm.copyFromRealm(it) }
+            }
             if (model == null) {
                 toast(this, getString(R.string.unable_to_login))
             } else {
@@ -587,10 +599,12 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        binding.userProfile.setImageResource(R.drawable.profile)
+    }
+
     override fun onDestroy() {
-        if (!mRealm.isClosed) {
-            mRealm.close()
-        }
         super.onDestroy()
     }
 }

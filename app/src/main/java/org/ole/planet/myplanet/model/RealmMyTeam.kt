@@ -1,15 +1,17 @@
 package org.ole.planet.myplanet.model
 
 import android.content.SharedPreferences
-import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import org.ole.planet.myplanet.utilities.GsonUtils
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.RealmResults
 import io.realm.annotations.PrimaryKey
 import java.util.Date
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.DownloadUtils.extractLinks
@@ -60,7 +62,8 @@ open class RealmMyTeam : RealmObject() {
     companion object {
         private val concatenatedLinks = ArrayList<String>()
 
-        private fun populateTeamFields(doc: JsonObject, team: RealmMyTeam, includeCourses: Boolean = false) {
+        @JvmStatic
+        fun populateTeamFields(doc: JsonObject, team: RealmMyTeam, includeCourses: Boolean = false) {
             team.userId = JsonUtils.getString("userId", doc)
             team.teamId = JsonUtils.getString("teamId", doc)
             team._rev = JsonUtils.getString("_rev", doc)
@@ -118,7 +121,8 @@ open class RealmMyTeam : RealmObject() {
             openDownloadService(context, concatenatedLinks, true)
         }
 
-        private fun populateReportFields(doc: JsonObject, team: RealmMyTeam) {
+        @JvmStatic
+        fun populateReportFields(doc: JsonObject, team: RealmMyTeam) {
             team.description = JsonUtils.getString("description", doc)
             team.beginningBalance = JsonUtils.getInt("beginningBalance", doc)
             team.sales = JsonUtils.getInt("sales", doc)
@@ -146,29 +150,6 @@ open class RealmMyTeam : RealmObject() {
             myTeams?.let {
                 populateTeamFields(doc, it, true)
                 processDescription(it.description)
-            }
-        }
-
-        @JvmStatic
-        fun insertReports(doc: JsonObject, mRealm: Realm) {
-            if (!mRealm.isInTransaction) {
-                mRealm.beginTransaction()
-            }
-            val teamId = JsonUtils.getString("_id", doc)
-            var myTeams = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
-            if (myTeams == null) {
-                myTeams = mRealm.createObject(RealmMyTeam::class.java, teamId)
-            }
-            myTeams?.let { populateTeamFields(doc, it) }
-            mRealm.commitTransaction()
-        }
-
-        @JvmStatic
-        fun updateReports(doc: JsonObject, mRealm: Realm) {
-            mRealm.executeTransactionAsync { realm ->
-                val reportId = JsonUtils.getString("_id", doc)
-                val report = realm.where(RealmMyTeam::class.java).equalTo("_id", reportId).findFirst()
-                report?.let { populateReportFields(doc, it) }
             }
         }
 
@@ -221,18 +202,22 @@ open class RealmMyTeam : RealmObject() {
         }
 
         @JvmStatic
-        fun requestToJoin(teamId: String?, userId: String?, userPlanetCode: String?, mRealm: Realm, teamType: String?) {
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
-            val team = mRealm.createObject(RealmMyTeam::class.java, AndroidDecrypter.generateIv())
-            team.docType = "request"
-            team.createdDate = Date().time
-            team.teamType = teamType
-            team.userId = userId
-            team.teamId = teamId
-            team.updated = true
-            team.teamPlanetCode = userPlanetCode
-            team.userPlanetCode = userPlanetCode
-            mRealm.commitTransaction()
+        suspend fun requestToJoin(teamId: String?, userId: String?, userPlanetCode: String?, teamType: String?) {
+            withContext(Dispatchers.IO) {
+                Realm.getDefaultInstance().use { realm ->
+                    realm.executeTransaction {
+                        val team = it.createObject(RealmMyTeam::class.java, AndroidDecrypter.generateIv())
+                        team.docType = "request"
+                        team.createdDate = Date().time
+                        team.teamType = teamType
+                        team.userId = userId
+                        team.teamId = teamId
+                        team.updated = true
+                        team.teamPlanetCode = userPlanetCode
+                        team.userPlanetCode = userPlanetCode
+                    }
+                }
+            }
         }
 
         @JvmStatic
@@ -280,7 +265,6 @@ open class RealmMyTeam : RealmObject() {
 
         @JvmStatic
         fun serialize(team: RealmMyTeam): JsonObject {
-            val gson = Gson()
             val `object` = JsonObject()
 
             JsonUtils.addString(`object`, "_id", team._id)
@@ -325,7 +309,7 @@ open class RealmMyTeam : RealmObject() {
                 `object`.addProperty("type", team.teamType)
             }
 
-            return JsonParser.parseString(gson.toJson(`object`)).asJsonObject
+            return JsonParser.parseString(GsonUtils.gson.toJson(`object`)).asJsonObject
         }
 
         fun getMyTeamsByUserId(mRealm: Realm, settings: SharedPreferences?): RealmResults<RealmMyTeam> {

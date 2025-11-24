@@ -11,6 +11,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import java.util.Date
 import java.util.UUID
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
@@ -22,7 +23,6 @@ import org.ole.planet.myplanet.model.RealmMyCourse.Companion.isMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.exam.TakeExamFragment
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
@@ -40,6 +40,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     private lateinit var stepSurvey: List<RealmStepExam>
     var user: RealmUserModel? = null
     private var stepNumber = 0
+    private var saveInProgress: Job? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) {
@@ -50,18 +51,17 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentCourseStepBinding = FragmentCourseStepBinding.inflate(inflater, container, false)
-        user = UserProfileDbHandler(requireContext()).userModel
+        user = profileDbHandler.userModel
         fragmentCourseStepBinding.btnTakeTest.visibility = View.VISIBLE
         fragmentCourseStepBinding.btnTakeSurvey.visibility = View.VISIBLE
         return fragmentCourseStepBinding.root
     }
 
-    private fun saveCourseProgress() {
-        databaseService.withRealm { realm ->
-            if (!realm.isInTransaction) realm.beginTransaction()
+    private suspend fun saveCourseProgress(userId: String?, planetCode: String?, parentCode: String?) {
+        databaseService.executeTransactionAsync { realm ->
             var courseProgress = realm.where(RealmCourseProgress::class.java)
                 .equalTo("courseId", step.courseId)
-                .equalTo("userId", user?.id)
+                .equalTo("userId", userId)
                 .equalTo("stepNum", stepNumber)
                 .findFirst()
             if (courseProgress == null) {
@@ -73,12 +73,22 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
             if (stepExams.isEmpty()) {
                 courseProgress?.passed = true
             }
-            courseProgress?.createdOn = user?.planetCode
+            courseProgress?.createdOn = planetCode
             courseProgress?.updatedDate = Date().time
-            courseProgress?.parentCode = user?.parentCode
-            courseProgress?.userId = user?.id
-            realm.commitTransaction()
+            courseProgress?.parentCode = parentCode
+            courseProgress?.userId = userId
         }
+    }
+
+    private fun launchSaveCourseProgress() {
+        if (saveInProgress?.isActive == true) return
+        val userId = user?.id
+        val planetCode = user?.planetCode
+        val parentCode = user?.parentCode
+        saveInProgress = lifecycleScope.launch {
+            saveCourseProgress(userId, planetCode, parentCode)
+        }
+        saveInProgress?.invokeOnCompletion { saveInProgress = null }
     }
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -133,7 +143,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
             }
         }
         if (isVisible && userHasCourse) {
-            saveCourseProgress()
+            launchSaveCourseProgress()
         }
     }
 
@@ -172,7 +182,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                     isMyCourse(user?.id, step.courseId, realm)
                 }
                 if (userHasCourse) {
-                    saveCourseProgress()
+                    launchSaveCourseProgress()
                 }
             }
         } catch (e: Exception) {
@@ -181,15 +191,12 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     }
 
     private fun setListeners() {
-        val notDownloadedResources: List<RealmMyLibrary> = databaseService.withRealm { realm ->
-            realm.where(RealmMyLibrary::class.java)
-                .equalTo("stepId", stepId)
-                .equalTo("resourceOffline", false)
-                .isNotNull("resourceLocalAddress")
-                .findAll()
-                .let { realm.copyFromRealm(it) }
+        viewLifecycleOwner.lifecycleScope.launch {
+            val notDownloadedResources = libraryRepository.getStepResources(stepId, resourceOffline = false)
+            setResourceButton(notDownloadedResources, fragmentCourseStepBinding.btnResources)
+            val downloadedResources = libraryRepository.getStepResources(stepId, resourceOffline = true)
+            setOpenResourceButton(downloadedResources, fragmentCourseStepBinding.btnOpen)
         }
-        setResourceButton(notDownloadedResources, fragmentCourseStepBinding.btnResources)
         fragmentCourseStepBinding.btnTakeTest.setOnClickListener {
             if (stepExams.isNotEmpty()) {
                 val takeExam: Fragment = TakeExamFragment()
@@ -207,15 +214,6 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                 AdapterMySubmission.openSurvey(homeItemClickListener, stepSurvey[0].id, false, false, "")
             }
         }
-        val downloadedResources: List<RealmMyLibrary> = databaseService.withRealm { realm ->
-            realm.where(RealmMyLibrary::class.java)
-                .equalTo("stepId", stepId)
-                .equalTo("resourceOffline", true)
-                .isNotNull("resourceLocalAddress")
-                .findAll()
-                .let { realm.copyFromRealm(it) }
-        }
-        setOpenResourceButton(downloadedResources, fragmentCourseStepBinding.btnOpen)
         fragmentCourseStepBinding.btnResources.visibility = View.GONE
     }
 

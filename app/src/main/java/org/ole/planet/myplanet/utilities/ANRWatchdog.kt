@@ -1,10 +1,8 @@
 package org.ole.planet.myplanet.utilities
 
+import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.MainApplication
 
 class ANRWatchdog(private val timeout: Long = DEFAULT_ANR_TIMEOUT, private val listener: ANRListener? = null) {
     companion object {
@@ -13,6 +11,9 @@ class ANRWatchdog(private val timeout: Long = DEFAULT_ANR_TIMEOUT, private val l
 
     private var isWatching = false
     private var tick = 0L
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private val tickUpdater = Runnable { updateTick() }
+
 
     private fun updateTick() {
         tick = SystemClock.elapsedRealtime()
@@ -29,7 +30,7 @@ class ANRWatchdog(private val timeout: Long = DEFAULT_ANR_TIMEOUT, private val l
 
         isWatching = true
         tick = SystemClock.elapsedRealtime()
-        MainApplication.applicationScope.launch(Dispatchers.Main) { updateTick() }
+        mainHandler.post(tickUpdater)
 
         Thread({
             val threadName = Thread.currentThread().name
@@ -38,7 +39,7 @@ class ANRWatchdog(private val timeout: Long = DEFAULT_ANR_TIMEOUT, private val l
             while (isWatching) {
                 val lastTick = tick
                 val currentTime = SystemClock.elapsedRealtime()
-                MainApplication.applicationScope.launch(Dispatchers.Main) { updateTick() }
+                mainHandler.post(tickUpdater)
 
                 try {
                     Thread.sleep(timeout / 2)
@@ -68,12 +69,12 @@ class ANRWatchdog(private val timeout: Long = DEFAULT_ANR_TIMEOUT, private val l
                     }
                 }
             }
-
             Thread.currentThread().name = threadName
         }, "ANRWatchdog").start()
     }
 
     fun stop() {
         isWatching = false
+        mainHandler.removeCallbacks(tickUpdater)
     }
 }

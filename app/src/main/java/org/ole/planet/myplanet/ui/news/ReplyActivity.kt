@@ -8,8 +8,8 @@ import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
+import android.view.ViewGroup
 import android.widget.ImageView
-import android.widget.LinearLayout
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
@@ -18,8 +18,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
-import com.google.gson.Gson
 import com.google.gson.JsonObject
+import org.ole.planet.myplanet.utilities.GsonUtils
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.RealmList
 import java.io.File
@@ -47,7 +47,6 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     lateinit var databaseService: DatabaseService
     var id: String? = null
     private lateinit var newsAdapter: AdapterNews
-    private val gson = Gson()
     var user: RealmUserModel? = null
 
     private val viewModel: ReplyViewModel by viewModels()
@@ -55,7 +54,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     private lateinit var imageList: RealmList<String>
-    private var llImage: LinearLayout? = null
+    private var llImage: ViewGroup? = null
     private lateinit var openFolderLauncher: ActivityResultLauncher<Intent>
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -87,7 +86,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         lifecycleScope.launch {
             val (news, list) = viewModel.getNewsWithReplies(id)
             databaseService.withRealm { realm ->
-                newsAdapter = AdapterNews(this@ReplyActivity, user, news, "", null, userProfileDbHandler)
+                newsAdapter = AdapterNews(this@ReplyActivity, user, news, "", null, userProfileDbHandler, databaseService)
                 newsAdapter.setListener(this@ReplyActivity)
                 newsAdapter.setmRealm(realm)
                 newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
@@ -116,7 +115,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         startActivity(Intent(this, ReplyActivity::class.java).putExtra("id", news?.id))
     }
 
-    override fun addImage(llImage: LinearLayout?) {
+    override fun addImage(llImage: ViewGroup?) {
         this.llImage = llImage
         val intent = Intent(Intent.ACTION_GET_CONTENT)
         intent.type = "image/*"
@@ -161,7 +160,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         val jsonObject = JsonObject()
         jsonObject.addProperty("imageUrl", path)
         jsonObject.addProperty("fileName", getFileNameFromUrl(path))
-        imageList.add(gson.toJson(jsonObject))
+        imageList.add(GsonUtils.gson.toJson(jsonObject))
 
         try {
             showSelectedImages()
@@ -174,7 +173,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         llImage?.removeAllViews()
         llImage?.visibility = View.VISIBLE
         for (img in imageList) {
-            val ob = gson.fromJson(img, JsonObject::class.java)
+            val ob = GsonUtils.gson.fromJson(img, JsonObject::class.java)
             val inflater = LayoutInflater.from(this).inflate(R.layout.image_thumb, llImage, false)
             val imgView = inflater.findViewById<ImageView>(R.id.thumb)
             Glide.with(this)

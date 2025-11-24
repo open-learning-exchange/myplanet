@@ -6,18 +6,22 @@ import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.appcompat.app.AlertDialog
-import androidx.core.content.ContextCompat
-import com.google.gson.Gson
+import androidx.core.view.isVisible
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.google.gson.JsonArray
+import org.ole.planet.myplanet.utilities.GsonUtils
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.RealmResults
 import io.realm.Sort
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.databinding.AlertInputBinding
 import org.ole.planet.myplanet.databinding.FragmentDiscussionListBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
@@ -29,7 +33,6 @@ import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.news.AdapterNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.FileUtils
-import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 class DiscussionListFragment : BaseTeamFragment() {
@@ -43,7 +46,64 @@ class DiscussionListFragment : BaseTeamFragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentDiscussionListBinding.inflate(inflater, container, false)
-        binding.addMessage.setOnClickListener { showAddMessage() }
+        binding.addMessage.setOnClickListener {
+            binding.llAddNews.visibility = if (binding.llAddNews.isVisible) {
+                binding.etMessage.setText("")
+                binding.tlMessage.error = null
+                clearImages()
+                View.GONE
+            } else {
+                View.VISIBLE
+            }
+            binding.addMessage.text = if (binding.llAddNews.isVisible) {
+                getString(R.string.hide_new_message)
+            } else {
+                getString(R.string.add_message)
+            }
+        }
+
+        binding.addNewsImage.setOnClickListener {
+            llImage = binding.llImages
+            val openFolderIntent = FileUtils.openOleFolder(requireContext())
+            openFolderLauncher.launch(openFolderIntent)
+        }
+
+        binding.btnSubmit.setOnClickListener {
+            val message = binding.etMessage.text.toString().trim { it <= ' ' }
+            if (message.isEmpty()) {
+                binding.tlMessage.error = getString(R.string.please_enter_message)
+                return@setOnClickListener
+            }
+            binding.etMessage.setText(R.string.empty_text)
+            val map = HashMap<String?, String>()
+            map["viewInId"] = getEffectiveTeamId()
+            map["viewInSection"] = "teams"
+            map["message"] = message
+            map["messageType"] = getEffectiveTeamType()
+            map["messagePlanetCode"] = team?.teamPlanetCode ?: ""
+            map["name"] = getEffectiveTeamName()
+
+            user?.let { userModel ->
+                viewLifecycleOwner.lifecycleScope.launch {
+                    try {
+                        databaseService.executeTransactionAsync { realm ->
+                            createNews(map, realm, userModel, imageList)
+                        }
+                        binding.rvDiscussion.post {
+                            binding.rvDiscussion.smoothScrollToPosition(0)
+                        }
+                        binding.etMessage.text?.clear()
+                        imageList.clear()
+                        llImage?.removeAllViews()
+                        binding.llAddNews.visibility = View.GONE
+                        binding.tlMessage.error = null
+                        binding.addMessage.text = getString(R.string.add_message)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+        }
 
         if (shouldQueryTeamFromRealm()) {
             team = try {
@@ -61,13 +121,7 @@ class DiscussionListFragment : BaseTeamFragment() {
                 }
             }
         }
-        if (user?.id?.startsWith("guest") == true) {
-            binding.addMessage.visibility = View.GONE
-        } else if (isMember()) {
-            binding.addMessage.visibility = View.VISIBLE
-        } else if (team?.isPublic == true && !isMember()) {
-            binding.addMessage.visibility = View.VISIBLE
-        }
+        binding.addMessage.isVisible = false
         updatedNewsList = mRealm.where(RealmNews::class.java).isEmpty("replyTo").sort("time", Sort.DESCENDING).findAllAsync()
 
         updatedNewsList?.addChangeListener { results ->
@@ -92,6 +146,20 @@ class DiscussionListFragment : BaseTeamFragment() {
         }
         changeLayoutManager(resources.configuration.orientation, binding.rvDiscussion)
         showRecyclerView(realmNewsList)
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                combine(isMemberFlow, teamFlow) { isMember, teamData ->
+                    Pair(isMember, teamData?.isPublic == true)
+                }.collectLatest { (isMember, isPublicTeamFromFlow) ->
+                    val isGuest = user?.id?.startsWith("guest") == true
+                    val isPublicTeam = isPublicTeamFromFlow || team?.isPublic == true
+                    val canPost = !isGuest && (isMember || isPublicTeam)
+                    binding.addMessage.isVisible = canPost
+                    (binding.rvDiscussion.adapter as? AdapterNews)?.setNonTeamMember(!isMember)
+                }
+            }
+        }
     }
 
     override fun onNewsItemClick(news: RealmNews?) {
@@ -124,7 +192,7 @@ class DiscussionListFragment : BaseTeamFragment() {
             if (!TextUtils.isEmpty(news.viewableBy) && news.viewableBy.equals("teams", ignoreCase = true) && news.viewableId.equals(effectiveTeamId, ignoreCase = true)) {
                 filteredList.add(news)
             } else if (!TextUtils.isEmpty(news.viewIn)) {
-                val ar = Gson().fromJson(news.viewIn, JsonArray::class.java)
+                val ar = GsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
                 for (e in ar) {
                     val ob = e.asJsonObject
                     if (ob["_id"].asString.equals(effectiveTeamId, ignoreCase = true)) {
@@ -146,7 +214,7 @@ class DiscussionListFragment : BaseTeamFragment() {
                 if (!TextUtils.isEmpty(news.viewableBy) && news.viewableBy.equals("teams", ignoreCase = true) && news.viewableId.equals(effectiveTeamId, ignoreCase = true)) {
                     list.add(news)
                 } else if (!TextUtils.isEmpty(news.viewIn)) {
-                    val ar = Gson().fromJson(news.viewIn, JsonArray::class.java)
+                    val ar = GsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
                     for (e in ar) {
                         val ob = e.asJsonObject
                         if (ob["_id"].asString.equals(effectiveTeamId, ignoreCase = true)) {
@@ -167,11 +235,11 @@ class DiscussionListFragment : BaseTeamFragment() {
         val existingAdapter = binding.rvDiscussion.adapter
         if (existingAdapter == null) {
             val adapterNews = activity?.let {
-                AdapterNews(it, user, null, getEffectiveTeamName(), teamId, userProfileDbHandler)
+                AdapterNews(it, user, null, getEffectiveTeamName(), teamId, userProfileDbHandler, databaseService)
             }
             adapterNews?.setmRealm(mRealm)
             adapterNews?.setListener(this)
-            if (!isMember()) adapterNews?.setNonTeamMember(true)
+            if (!isMemberFlow.value) adapterNews?.setNonTeamMember(true)
             realmNewsList?.let { adapterNews?.updateList(it) }
             binding.rvDiscussion.adapter = adapterNews
             adapterNews?.let {
@@ -185,67 +253,6 @@ class DiscussionListFragment : BaseTeamFragment() {
                 }
             }
         }
-    }
-
-    private fun showAddMessage() {
-        val inputBinding = AlertInputBinding.inflate(layoutInflater)
-        val layout = inputBinding.tlInput
-        inputBinding.addNewsImage.setOnClickListener {
-            llImage = inputBinding.llImage
-            val openFolderIntent = FileUtils.openOleFolder(requireContext())
-            openFolderLauncher.launch(openFolderIntent)
-        }
-        layout.hint = getString(R.string.enter_message)
-        layout.editText?.setHintTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
-        inputBinding.custMsg.text = getString(R.string.add_message)
-
-        val dialog = AlertDialog.Builder(requireActivity(), R.style.CustomAlertDialog)
-            .setView(inputBinding.root)
-            .setPositiveButton(getString(R.string.save), null)
-            .setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
-                layout.editText?.text?.clear()
-                imageList.clear()
-                llImage?.removeAllViews()
-                dialog.dismiss()
-            }
-            .create()
-
-        dialog.setOnShowListener {
-            val saveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-            saveButton.setOnClickListener {
-                val msg = "${layout.editText?.text}".trim { it <= ' ' }
-                if (msg.isEmpty()) {
-                    Utilities.toast(activity, getString(R.string.message_is_required))
-                    return@setOnClickListener
-                }
-
-                val map = HashMap<String?, String>()
-                map["viewInId"] = getEffectiveTeamId()
-                map["viewInSection"] = "teams"
-                map["message"] = msg
-                map["messageType"] = getEffectiveTeamType()
-                map["messagePlanetCode"] = team?.teamPlanetCode ?: ""
-                map["name"] = getEffectiveTeamName()
-
-                user?.let { userModel ->
-                    try {
-                        createNews(map, mRealm, userModel, imageList)
-                        binding.rvDiscussion.post {
-                            binding.rvDiscussion.smoothScrollToPosition(0)
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
-
-                layout.editText?.text?.clear()
-                imageList.clear()
-                llImage?.removeAllViews()
-                dialog.dismiss()
-            }
-        }
-
-        dialog.show()
     }
 
     override fun setData(list: List<RealmNews?>?) {

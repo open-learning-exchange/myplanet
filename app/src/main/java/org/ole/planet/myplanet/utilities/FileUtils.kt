@@ -199,6 +199,7 @@ object FileUtils {
         val intent = Intent(Intent.ACTION_GET_CONTENT)
         val uri = getOlePath(context).toUri()
         intent.setDataAndType(uri, "*/*")
+        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
         return Intent.createChooser(intent, "Open folder")
     }
 
@@ -305,11 +306,7 @@ object FileUtils {
 
         return Pair(totalBytes, availableBytes)
     }
-    private fun extractFileName(filePath: String?): String? {
-        return filePath?.let { File(it).name.takeIf { name -> name.isNotEmpty() } }
-    }
-
     fun nameWithoutExtension(fileName: String?): String? {
-        return extractFileName(fileName)?.substringBeforeLast('.')
+        return fileName?.let { File(it).name.takeIf { name -> name.isNotEmpty() } }?.substringBeforeLast('.')
     }
 }

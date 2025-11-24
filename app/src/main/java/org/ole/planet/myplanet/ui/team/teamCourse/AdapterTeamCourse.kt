@@ -8,17 +8,20 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
-import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.RowTeamResourceBinding
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getTeamCreator
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.ui.team.teamCourse.AdapterTeamCourse.ViewHolderTeamCourse
-import org.ole.planet.myplanet.utilities.DiffUtils
 
-class AdapterTeamCourse(private val context: Context, private var list: MutableList<RealmMyCourse>, mRealm: Realm?, teamId: String?, settings: SharedPreferences) : RecyclerView.Adapter<ViewHolderTeamCourse>() {
-    private lateinit var rowTeamResourceBinding: RowTeamResourceBinding
+class AdapterTeamCourse(
+    private val context: Context,
+    private var list: MutableList<RealmMyCourse>,
+    mRealm: Realm?,
+    teamId: String?,
+    settings: SharedPreferences
+) : RecyclerView.Adapter<ViewHolderTeamCourse>() {
     private var listener: OnHomeItemClickListener? = null
     private val settings: SharedPreferences
     private val teamCreator: String
@@ -31,41 +34,26 @@ class AdapterTeamCourse(private val context: Context, private var list: MutableL
         teamCreator = getTeamCreator(teamId, mRealm)
     }
     
-    fun updateList(newList: List<RealmMyCourse>) {
-        val diffResult = DiffUtils.calculateDiff(
-            list,
-            newList,
-            areItemsTheSame = { old, new -> old.courseId == new.courseId },
-            areContentsTheSame = { old, new ->
-                old.courseTitle == new.courseTitle &&
-                    old.description == new.description &&
-                    old.createdDate == new.createdDate
-            }
-        )
-        list.clear()
-        list.addAll(newList)
-        diffResult.dispatchUpdatesTo(this)
-    }
-    
     fun getList(): List<RealmMyCourse> = list
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderTeamCourse {
-        rowTeamResourceBinding = RowTeamResourceBinding.inflate(LayoutInflater.from(context), parent, false)
-        return ViewHolderTeamCourse(rowTeamResourceBinding)
+        val binding = RowTeamResourceBinding.inflate(LayoutInflater.from(context), parent, false)
+        return ViewHolderTeamCourse(binding)
     }
 
     override fun onBindViewHolder(holder: ViewHolderTeamCourse, position: Int) {
-        rowTeamResourceBinding.tvTitle.text = list[position].courseTitle
-        rowTeamResourceBinding.tvDescription.text = list[position].description
-        holder.itemView.setOnClickListener {
+        val course = list[position]
+        holder.binding.tvTitle.text = course.courseTitle
+        holder.binding.tvDescription.text = course.description
+        holder.binding.root.setOnClickListener {
             if (listener != null) {
                 val b = Bundle()
-                b.putString("id", list[position].courseId)
+                b.putString("id", course.courseId)
                 listener?.openCallFragment(TakeCourseFragment.newInstance(b))
             }
         }
         if (!settings.getString("userId", "--").equals(teamCreator, ignoreCase = true)) {
-            holder.itemView.findViewById<View>(R.id.iv_remove).visibility = View.GONE
+            holder.binding.ivRemove.visibility = View.GONE
         }
     }
 
@@ -73,6 +61,6 @@ class AdapterTeamCourse(private val context: Context, private var list: MutableL
         return list.size
     }
 
-    class ViewHolderTeamCourse(rowTeamResourceBinding: RowTeamResourceBinding) :
-        RecyclerView.ViewHolder(rowTeamResourceBinding.root)
+    class ViewHolderTeamCourse(val binding: RowTeamResourceBinding) :
+        RecyclerView.ViewHolder(binding.root)
 }

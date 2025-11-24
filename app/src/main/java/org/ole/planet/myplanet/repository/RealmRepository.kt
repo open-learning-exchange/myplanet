@@ -5,53 +5,83 @@ import io.realm.RealmChangeListener
 import io.realm.RealmObject
 import io.realm.RealmQuery
 import io.realm.RealmResults
-import kotlinx.coroutines.channels.ProducerScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.applyEqualTo
 import org.ole.planet.myplanet.datamanager.findCopyByField
 import org.ole.planet.myplanet.datamanager.queryList
 
-open class RealmRepository(private val databaseService: DatabaseService) {
+open class RealmRepository(protected val databaseService: DatabaseService) {
     protected suspend fun <T : RealmObject> queryList(
         clazz: Class<T>,
         builder: RealmQuery<T>.() -> Unit = {},
+    ): List<T> = queryList(clazz, false, builder)
+
+    protected suspend fun <T : RealmObject> queryList(
+        clazz: Class<T>,
+        ensureLatest: Boolean,
+        builder: RealmQuery<T>.() -> Unit = {},
     ): List<T> =
-        databaseService.withRealmAsync { realm ->
+        withRealm(ensureLatest) { realm ->
             realm.queryList(clazz, builder)
         }
 
     protected suspend fun <T : RealmObject> count(
         clazz: Class<T>,
         builder: RealmQuery<T>.() -> Unit = {},
+    ): Long = count(clazz, false, builder)
+
+    protected suspend fun <T : RealmObject> count(
+        clazz: Class<T>,
+        ensureLatest: Boolean,
+        builder: RealmQuery<T>.() -> Unit = {},
     ): Long =
-        databaseService.withRealmAsync { realm ->
+        withRealm(ensureLatest) { realm ->
             realm.where(clazz).apply(builder).count()
         }
 
-    protected fun <T : RealmObject> queryListFlow(
+    protected suspend fun <T : RealmObject> queryListFlow(
         clazz: Class<T>,
         builder: RealmQuery<T>.() -> Unit = {},
-    ): Flow<List<T>> =
-        withRealmFlow { realm, scope ->
-            val results = realm.where(clazz).apply(builder).findAllAsync()
-            val listener =
-                RealmChangeListener<RealmResults<T>> { updatedResults ->
-                    scope.trySend(updatedResults)
-                }
-            results.addChangeListener(listener)
-            scope.trySend(results)
-            return@withRealmFlow { results.removeChangeListener(listener) }
+    ): Flow<List<T>> = callbackFlow {
+        val realm = Realm.getDefaultInstance()
+        val results = realm.where(clazz).apply(builder).findAllAsync()
+        val listener = RealmChangeListener<RealmResults<T>> { updatedResults ->
+            if (updatedResults.isLoaded && updatedResults.isValid) {
+                trySend(realm.copyFromRealm(updatedResults))
+            }
         }
+        results.addChangeListener(listener)
+
+        if (results.isLoaded && results.isValid) {
+            trySend(realm.copyFromRealm(results))
+        }
+
+        awaitClose {
+            if (!realm.isClosed) {
+                results.removeChangeListener(listener)
+                realm.close()
+            }
+        }
+    }
 
     protected suspend fun <T : RealmObject, V : Any> findByField(
         clazz: Class<T>,
         fieldName: String,
         value: V,
+    ): T? = findByField(clazz, fieldName, value, false)
+
+    protected suspend fun <T : RealmObject, V : Any> findByField(
+        clazz: Class<T>,
+        fieldName: String,
+        value: V,
+        ensureLatest: Boolean,
     ): T? =
-        databaseService.withRealmAsync { realm ->
+        withRealm(ensureLatest) { realm ->
             realm.findCopyByField(clazz, fieldName, value)
         }
 
@@ -86,28 +116,22 @@ open class RealmRepository(private val databaseService: DatabaseService) {
         }
     }
 
-    protected suspend fun <T> withRealmAsync(operation: (Realm) -> T): T {
-        return databaseService.withRealmAsync(operation)
+    protected suspend fun <T> withRealm(
+        ensureLatest: Boolean = false,
+        operation: (Realm) -> T,
+    ): T {
+        return databaseService.withRealmAsync { realm ->
+            if (ensureLatest) {
+                realm.refresh()
+            }
+            operation(realm)
+        }
     }
 
-    protected fun <T> withRealmFlow(
-        block: suspend (Realm, ProducerScope<T>) -> (() -> Unit),
-    ): Flow<T> =
-        callbackFlow {
-            val realm = Realm.getDefaultInstance()
-            val cleanup = try {
-                block(realm, this)
-            } catch (throwable: Throwable) {
-                realm.close()
-                throw throwable
-            }
-            awaitClose {
-                cleanup()
-                if (!realm.isClosed) {
-                    realm.close()
-                }
-            }
-        }
+    protected suspend fun <T> withRealmAsync(operation: (Realm) -> T): T {
+        return withRealm(false, operation)
+    }
+
 
     protected suspend fun executeTransaction(transaction: (Realm) -> Unit) {
         databaseService.executeTransactionAsync(transaction)

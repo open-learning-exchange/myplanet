@@ -17,17 +17,22 @@ object DiffUtils {
         oldList: List<T>,
         newList: List<T>,
         areItemsTheSame: (oldItem: T, newItem: T) -> Boolean,
-        areContentsTheSame: (oldItem: T, newItem: T) -> Boolean
+        areContentsTheSame: (oldItem: T, newItem: T) -> Boolean,
+        getChangePayload: ((oldItem: T, newItem: T) -> Any?)? = null
     ): RecyclerDiffUtil.DiffResult {
         val callback = object : RecyclerDiffUtil.Callback() {
             override fun getOldListSize() = oldList.size
             override fun getNewListSize() = newList.size
             override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int) =
                 areItemsTheSame(oldList[oldItemPosition], newList[newItemPosition])
+
             override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int) =
                 areContentsTheSame(oldList[oldItemPosition], newList[newItemPosition])
+
+            override fun getChangePayload(oldItemPosition: Int, newItemPosition: Int): Any? {
+                return getChangePayload?.invoke(oldList[oldItemPosition], newList[newItemPosition])
+            }
         }
         return RecyclerDiffUtil.calculateDiff(callback)
     }
 }
-

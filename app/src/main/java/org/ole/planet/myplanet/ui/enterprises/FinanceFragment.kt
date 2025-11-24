@@ -1,4 +1,3 @@
-
 package org.ole.planet.myplanet.ui.enterprises
 
 import android.content.DialogInterface
@@ -10,7 +9,6 @@ import android.widget.DatePicker
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import io.realm.RealmResults
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -31,9 +29,9 @@ class FinanceFragment : BaseTeamFragment() {
     private var _binding: FragmentFinanceBinding? = null
     private val binding get() = _binding!!
     private lateinit var addTransactionBinding: AddTransactionBinding
-    private var adapterFinance: AdapterFinance? = null
+    private lateinit var adapterFinance: AdapterFinance
     var date: Calendar? = null
-    var list: RealmResults<RealmMyTeam>? = null
+    private var transactions: List<RealmMyTeam> = emptyList()
     private var isAsc = false
     private var transactionsJob: Job? = null
     private var currentStartDate: Long? = null
@@ -88,7 +86,8 @@ class FinanceFragment : BaseTeamFragment() {
             currentStartDate = null
             currentEndDate = null
             isAsc = false
-            observeTransactions(sortAscending = isAsc)
+            binding.imgDate.rotation = 0f
+            observeTransactions(sortAscending = isAsc, startDate = null, endDate = null)
         }
         return binding.root
     }
@@ -207,6 +206,9 @@ class FinanceFragment : BaseTeamFragment() {
             binding.addTransaction.visibility = View.GONE
         }
         binding.addTransaction.setOnClickListener { addTransaction() }
+        adapterFinance = AdapterFinance(requireActivity())
+        binding.rvFinance.layoutManager = LinearLayoutManager(activity)
+        binding.rvFinance.adapter = adapterFinance
         observeTransactions()
     }
 
@@ -216,10 +218,10 @@ class FinanceFragment : BaseTeamFragment() {
         llImage?.removeAllViews()
     }
 
-    private fun calculateTotal(list: List<RealmMyTeam>?) {
+    private fun calculateTotal(list: List<RealmMyTeam>) {
         var debit = 0
         var credit = 0
-        for (team in list ?: emptyList()) {
+        for (team in list) {
             if ("credit".equals(team.type?.lowercase(Locale.getDefault()), ignoreCase = true)) {
                 credit += team.amount
             } else {
@@ -281,36 +283,55 @@ class FinanceFragment : BaseTeamFragment() {
         return addTransactionBinding.root
     }
 
-    private fun updatedFinanceList(results: RealmResults<RealmMyTeam>) {
-        if (view == null) return
-        viewLifecycleOwner.lifecycleScope.launch {
-            if (!results.isEmpty()) {
-                if (adapterFinance == null) {
-                    adapterFinance = AdapterFinance(requireActivity(), results)
-                    binding.rvFinance.layoutManager = LinearLayoutManager(activity)
-                    binding.rvFinance.adapter = adapterFinance
-                }
-                adapterFinance?.updateData(results)
-                adapterFinance?.notifyDataSetChanged()
-                calculateTotal(results)
-            } else if (binding.tvFromDateCalendar.text.isNullOrEmpty()
-                && binding.etToDate.text.isNullOrEmpty()) {
-                binding.rvFinance.adapter = null
-                binding.dataLayout.visibility = View.GONE
-                binding.tvNodata.visibility = View.VISIBLE
+    private fun mapTransactionsToPresentationModel(transactions: List<RealmMyTeam>): List<TransactionData> {
+        val transactionDataList = mutableListOf<TransactionData>()
+        var balance = 0
+        for (team in transactions.filter { it._id != null }) {
+            balance += if ("debit".equals(team.type, ignoreCase = true)) {
+                -team.amount
             } else {
-                calculateTotal(results)
-                binding.dataLayout.visibility = View.VISIBLE
-                binding.tvNodata.visibility = View.VISIBLE
-                binding.rvFinance.adapter = null
+                team.amount
             }
+            transactionDataList.add(
+                TransactionData(
+                    id = team._id!!,
+                    date = team.date,
+                    description = team.description,
+                    type = team.type,
+                    amount = team.amount,
+                    balance = balance
+                )
+            )
+        }
+        return transactionDataList
+    }
+
+    private fun updatedFinanceList(results: List<RealmMyTeam>) {
+        if (view == null) return
+
+        val transactionData = mapTransactionsToPresentationModel(results)
+        adapterFinance.submitList(transactionData)
+        calculateTotal(results)
+
+        if (results.isNotEmpty()) {
+            binding.dataLayout.visibility = View.VISIBLE
+            binding.tvNodata.visibility = View.GONE
+            binding.rvFinance.visibility = View.VISIBLE
+        } else if (binding.tvFromDateCalendar.text.isNullOrEmpty() && binding.etToDate.text.isNullOrEmpty()) {
+            binding.dataLayout.visibility = View.GONE
+            binding.tvNodata.visibility = View.VISIBLE
+            binding.rvFinance.visibility = View.GONE
+        } else {
+            binding.dataLayout.visibility = View.VISIBLE
+            binding.tvNodata.visibility = View.VISIBLE
+            binding.rvFinance.visibility = View.GONE
         }
     }
 
     override fun onDestroyView() {
         transactionsJob?.cancel()
         transactionsJob = null
-        list = null
+        transactions = emptyList()
         _binding = null
         super.onDestroyView()
     }
@@ -328,9 +349,9 @@ class FinanceFragment : BaseTeamFragment() {
                 endDate = endDate,
                 sortAscending = sortAscending,
             ).collectLatest { results ->
-                list = results
+                transactions = results
                 updatedFinanceList(results)
-                showNoData(binding.tvNodata, adapterFinance?.itemCount, "finances")
+                showNoData(binding.tvNodata, transactions.size, "finances")
             }
         }
     }

@@ -8,14 +8,12 @@ import androidx.core.net.toUri
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import dagger.hilt.android.EntryPointAccessors
-import io.realm.Realm
 import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
@@ -25,10 +23,13 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SecurityDataCallback
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.di.ApiInterfaceEntryPoint
+import org.ole.planet.myplanet.di.ApplicationScope
+import org.ole.planet.myplanet.di.ApplicationScopeEntryPoint
+import org.ole.planet.myplanet.di.AutoSyncEntryPoint
+import org.ole.planet.myplanet.di.RepositoryEntryPoint
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmCommunity
-import org.ole.planet.myplanet.model.RealmUserModel.Companion.isUserExists
-import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.UploadToShelfService
 import org.ole.planet.myplanet.ui.sync.ProcessUserDataActivity
 import org.ole.planet.myplanet.ui.sync.SyncActivity
@@ -38,6 +39,7 @@ import org.ole.planet.myplanet.utilities.Constants.KEY_UPGRADE_MAX
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.FileUtils
+import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
@@ -51,19 +53,37 @@ import retrofit2.Response
 
 class Service @Inject constructor(
     private val context: Context,
-    private val retrofitInterface: ApiInterface
+    private val retrofitInterface: ApiInterface,
+    @ApplicationScope private val serviceScope: CoroutineScope,
+    private val userRepository: UserRepository,
 ) {
     constructor(context: Context) : this(
         context,
         EntryPointAccessors.fromApplication(
             context.applicationContext,
             ApiInterfaceEntryPoint::class.java
-        ).apiInterface()
+        ).apiInterface(),
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            ApplicationScopeEntryPoint::class.java
+        ).applicationScope(),
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            RepositoryEntryPoint::class.java
+        ).userRepository(),
     )
+
     private val preferences: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
-    private val configurationManager = ConfigurationManager(context, preferences, retrofitInterface)
+    private val configurationManager =
+        ConfigurationManager(context, preferences, retrofitInterface)
+    private fun getUploadToShelfService(): UploadToShelfService {
+        val entryPoint = EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            AutoSyncEntryPoint::class.java
+        )
+        return entryPoint.uploadToShelfService()
+    }
 
     fun healthAccess(listener: SuccessListener) {
         try {
@@ -148,40 +168,50 @@ class Service @Inject constructor(
         if (shouldPromptForSettings(settings)) return
 
         serviceScope.launch {
-            callback.onCheckingVersion()
+            withContext(Dispatchers.Main) {
+                callback.onCheckingVersion()
+            }
             try {
                 val planetInfo = fetchVersionInfo(settings)
                 if (planetInfo == null) {
-                    callback.onError(context.getString(R.string.version_not_found), true)
+                    withContext(Dispatchers.Main) {
+                        callback.onError(context.getString(R.string.version_not_found), true)
+                    }
                     return@launch
                 }
 
                 preferences.edit {
                     putLong("last_version_check_timestamp", System.currentTimeMillis())
                     putInt("LastWifiID", NetworkUtils.getCurrentNetworkId(context))
-                    putString("versionDetail", Gson().toJson(planetInfo))
+                    putString("versionDetail", GsonUtils.gson.toJson(planetInfo))
                 }
 
                 val rawApkVersion = fetchApkVersionString(settings)
-                val versionStr = Gson().fromJson(rawApkVersion, String::class.java)
+                val versionStr = GsonUtils.gson.fromJson(rawApkVersion, String::class.java)
                 if (versionStr.isNullOrEmpty()) {
-                    callback.onError(context.getString(R.string.planet_is_up_to_date), false)
+                    withContext(Dispatchers.Main) {
+                        callback.onError(context.getString(R.string.planet_is_up_to_date), false)
+                    }
                     return@launch
                 }
 
                 val apkVersion = parseApkVersionString(versionStr)
                     ?: run {
-                        callback.onError(
-                            context.getString(R.string.new_apk_version_required_but_not_found_on_server),
-                            false
-                        )
+                        withContext(Dispatchers.Main) {
+                            callback.onError(
+                                context.getString(R.string.new_apk_version_required_but_not_found_on_server),
+                                false
+                            )
+                        }
                         return@launch
                     }
 
                 handleVersionEvaluation(planetInfo, apkVersion, callback)
             } catch (e: Exception) {
                 e.printStackTrace()
-                callback.onError(context.getString(R.string.connection_failed), true)
+                withContext(Dispatchers.Main) {
+                    callback.onError(context.getString(R.string.connection_failed), true)
+                }
             }
         }
     }
@@ -202,41 +232,55 @@ class Service @Inject constructor(
         val serverUrlMapper = ServerUrlMapper()
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
-        CoroutineScope(Dispatchers.IO).launch {
-            val primaryAvailable = isServerReachable(mapping.primaryUrl)
-            val alternativeAvailable = mapping.alternativeUrl?.let { isServerReachable(it) } == true
+        serviceScope.launch {
+            withContext(Dispatchers.IO) {
+                val primaryReachable = isServerReachable(mapping.primaryUrl)
+                val alternativeReachable = mapping.alternativeUrl?.let { isServerReachable(it) } == true
 
-            if (!primaryAvailable && alternativeAvailable) {
-                mapping.alternativeUrl.let { alternativeUrl ->
-                    val uri = updateUrl.toUri()
-                    val editor = preferences.edit()
+                if (!primaryReachable && alternativeReachable) {
+                    mapping.alternativeUrl?.let { alternativeUrl ->
+                        val uri = updateUrl.toUri()
+                        val editor = preferences.edit()
 
-                    serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, preferences)
+                        serverUrlMapper.updateUrlPreferences(
+                            editor,
+                            uri,
+                            alternativeUrl,
+                            mapping.primaryUrl,
+                            preferences
+                        )
+                    }
                 }
             }
 
-            withContext(Dispatchers.Main) {
-                retrofitInterface.isPlanetAvailable(UrlUtils.getUpdateUrl(preferences)).enqueue(object : Callback<ResponseBody?> {
-                    override fun onResponse(call: Call<ResponseBody?>, response: Response<ResponseBody?>) {
-                        val isAvailable = callback != null && response.code() == 200
-                        serverAvailabilityCache[updateUrl] = Pair(isAvailable, System.currentTimeMillis())
-                        if (isAvailable) {
-                            callback.isAvailable()
-                        } else {
+            retrofitInterface.isPlanetAvailable(UrlUtils.getUpdateUrl(preferences)).enqueue(object : Callback<ResponseBody?> {
+                override fun onResponse(call: Call<ResponseBody?>, response: Response<ResponseBody?>) {
+                    val isAvailable = callback != null && response.code() == 200
+                    serverAvailabilityCache[updateUrl] = Pair(isAvailable, System.currentTimeMillis())
+                    serviceScope.launch {
+                        withContext(Dispatchers.Main) {
+                            if (isAvailable) {
+                                callback.isAvailable()
+                            } else {
+                                callback?.notAvailable()
+                            }
+                        }
+                    }
+                }
+
+                override fun onFailure(call: Call<ResponseBody?>, t: Throwable) {
+                    serverAvailabilityCache[updateUrl] = Pair(false, System.currentTimeMillis())
+                    serviceScope.launch {
+                        withContext(Dispatchers.Main) {
                             callback?.notAvailable()
                         }
                     }
-
-                    override fun onFailure(call: Call<ResponseBody?>, t: Throwable) {
-                        serverAvailabilityCache[updateUrl] = Pair(false, System.currentTimeMillis())
-                        callback?.notAvailable()
-                    }
-                })
-            }
+                }
+            })
         }
     }
 
-    fun becomeMember(realm: Realm, obj: JsonObject, callback: CreateUserCallback, securityCallback: SecurityDataCallback? = null) {
+    fun becomeMember(obj: JsonObject, callback: CreateUserCallback, securityCallback: SecurityDataCallback? = null) {
         isPlanetAvailable(object : PlanetAvailableListener {
             override fun isAvailable() {
                 retrofitInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}").enqueue(object : Callback<JsonObject> {
@@ -247,8 +291,8 @@ class Service @Inject constructor(
                              retrofitInterface.putDoc(null, "application/json", "${UrlUtils.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}", obj).enqueue(object : Callback<JsonObject> {
                                  override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
                                      if (response.body() != null && response.body()?.has("id") == true) {
-                                         uploadToShelf(obj)
-                                         saveUserToDb(realm, "${response.body()?.get("id")?.asString}", obj, callback, securityCallback)
+                                        uploadToShelf(obj)
+                                        saveUserToDb("${response.body()?.get("id")?.asString}", obj, callback, securityCallback)
                                      } else {
                                          callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
                                      }
@@ -269,22 +313,24 @@ class Service @Inject constructor(
 
             override fun notAvailable() {
                 val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                if (isUserExists(realm, obj["name"].asString)) {
-                    callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
-                    return
+                serviceScope.launch {
+                    val existingUser = userRepository.getUserByName(obj["name"].asString)
+                    if (existingUser != null && existingUser._id?.startsWith("guest") != true) {
+                        withContext(Dispatchers.Main) {
+                            callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
+                        }
+                        return@launch
+                    }
+
+                    val keyString = generateKey()
+                    val iv = generateIv()
+                    userRepository.saveUser(obj, settings, keyString, iv)
+                    withContext(Dispatchers.Main) {
+                        Utilities.toast(MainApplication.context, context.getString(R.string.not_connect_to_planet_created_user_offline))
+                        callback.onSuccess(context.getString(R.string.not_connect_to_planet_created_user_offline))
+                        securityCallback?.onSecurityDataUpdated()
+                    }
                 }
-                realm.beginTransaction()
-                val model = populateUsersTable(obj, realm, settings)
-                val keyString = generateKey()
-                val iv = generateIv()
-                if (model != null) {
-                    model.key = keyString
-                    model.iv = iv
-                }
-                realm.commitTransaction()
-                Utilities.toast(MainApplication.context, context.getString(R.string.not_connect_to_planet_created_user_offline))
-                callback.onSuccess(context.getString(R.string.not_connect_to_planet_created_user_offline))
-                securityCallback?.onSecurityDataUpdated()
             }
         })
     }
@@ -296,92 +342,102 @@ class Service @Inject constructor(
         })
     }
 
-    private fun saveUserToDb(realm: Realm, id: String, obj: JsonObject, callback: CreateUserCallback, securityCallback: SecurityDataCallback? = null) {
+    private fun saveUserToDb(id: String, obj: JsonObject, callback: CreateUserCallback, securityCallback: SecurityDataCallback? = null) {
         val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        realm.executeTransactionAsync({ realm1: Realm? ->
+        serviceScope.launch {
             try {
-                val res = retrofitInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/_users/$id").execute()
-                if (res.body() != null) {
-                    val model = populateUsersTable(res.body(), realm1, settings)
-                    if (model != null) {
-                        UploadToShelfService(
-                            MainApplication.context,
-                            DatabaseService(MainApplication.context),
-                            settings
-                        ).saveKeyIv(retrofitInterface, model, obj)
+                val result = withContext(Dispatchers.IO) {
+                    retrofitInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/_users/$id").execute()
+                }
+
+                val userModel = result.body()?.let { userRepository.saveUser(it, settings) }
+                if (userModel != null) {
+                    getUploadToShelfService().saveKeyIv(retrofitInterface, userModel, obj)
+                }
+
+                withContext(Dispatchers.Main) {
+                    callback.onSuccess(context.getString(R.string.user_created_successfully))
+                    if (context is ProcessUserDataActivity) {
+                        val userName = "${obj["name"].asString}"
+                        context.startUpload("becomeMember", userName, securityCallback)
                     }
                 }
             } catch (e: IOException) {
                 e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    callback.onSuccess(context.getString(R.string.unable_to_save_user_please_sync))
+                    securityCallback?.onSecurityDataUpdated()
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
-            }
-        }, {
-            callback.onSuccess(context.getString(R.string.user_created_successfully))
-            if (context is ProcessUserDataActivity) {
-                context.runOnUiThread {
-                    val userName = "${obj["name"].asString}"
-                    context.startUpload("becomeMember", userName, securityCallback)
+                withContext(Dispatchers.Main) {
+                    callback.onSuccess(context.getString(R.string.unable_to_save_user_please_sync))
+                    securityCallback?.onSecurityDataUpdated()
                 }
             }
-        }) { error: Throwable ->
-            error.printStackTrace()
-            callback.onSuccess(context.getString(R.string.unable_to_save_user_please_sync))
-            securityCallback?.onSecurityDataUpdated()
         }
     }
 
-    fun syncPlanetServers(callback: SuccessListener) {
-        retrofitInterface.getJsonObject("", "https://planet.earth.ole.org/db/communityregistrationrequests/_all_docs?include_docs=true")
-            .enqueue(object : Callback<JsonObject?> {
-                override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
-                    if (response.body() != null) {
-                        val arr = JsonUtils.getJsonArray("rows", response.body())
+    suspend fun syncPlanetServers(callback: SuccessListener) {
+        try {
+            val response = withContext(Dispatchers.IO) {
+                retrofitInterface.getJsonObject("", "https://planet.earth.ole.org/db/communityregistrationrequests/_all_docs?include_docs=true").execute()
+            }
 
-                        val executor = Executors.newSingleThreadExecutor()
-                        try {
-                            executor.execute {
-                                MainApplication.service.withRealm { backgroundRealm ->
-                                    try {
-                                        backgroundRealm.executeTransaction { realm1 ->
-                                            realm1.delete(RealmCommunity::class.java)
-                                            for (j in arr) {
-                                                var jsonDoc = j.asJsonObject
-                                                jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-                                                val id = JsonUtils.getString("_id", jsonDoc)
-                                                val community = realm1.createObject(RealmCommunity::class.java, id)
-                                                if (JsonUtils.getString("name", jsonDoc) == "learning") {
-                                                    community.weight = 0
-                                                }
-                                                community.localDomain = JsonUtils.getString("localDomain", jsonDoc)
-                                                community.name = JsonUtils.getString("name", jsonDoc)
-                                                community.parentDomain = JsonUtils.getString("parentDomain", jsonDoc)
-                                                community.registrationRequest = JsonUtils.getString("registrationRequest", jsonDoc)
-                                            }
-                                        }
-                                    } catch (e: Exception) {
-                                        e.printStackTrace()
+            if (response.isSuccessful && response.body() != null) {
+                val arr = JsonUtils.getJsonArray("rows", response.body())
+                val startTime = System.currentTimeMillis()
+                println("Realm transaction started")
+
+                val transactionResult = runCatching {
+                    withContext(Dispatchers.IO) {
+                        MainApplication.service.withRealm { backgroundRealm ->
+                            backgroundRealm.executeTransaction { realm1 ->
+                                realm1.delete(RealmCommunity::class.java)
+                                for (j in arr) {
+                                    var jsonDoc = j.asJsonObject
+                                    jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
+                                    val id = JsonUtils.getString("_id", jsonDoc)
+                                    val community = realm1.createObject(RealmCommunity::class.java, id)
+                                    if (JsonUtils.getString("name", jsonDoc) == "learning") {
+                                        community.weight = 0
                                     }
+                                    community.localDomain = JsonUtils.getString("localDomain", jsonDoc)
+                                    community.name = JsonUtils.getString("name", jsonDoc)
+                                    community.parentDomain = JsonUtils.getString("parentDomain", jsonDoc)
+                                    community.registrationRequest = JsonUtils.getString("registrationRequest", jsonDoc)
                                 }
                             }
-                        } finally {
-                            executor.shutdown()
                         }
                     }
                 }
 
-                override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
+                val endTime = System.currentTimeMillis()
+                println("Realm transaction finished in ${endTime - startTime}ms")
+
+                withContext(Dispatchers.Main) {
+                    transactionResult.onSuccess {
+                        callback.onSuccess(context.getString(R.string.server_sync_successfully))
+                    }.onFailure { e ->
+                        e.printStackTrace()
+                        callback.onSuccess(context.getString(R.string.server_sync_has_failed))
+                    }
+                }
+            } else {
+                withContext(Dispatchers.Main) {
                     callback.onSuccess(context.getString(R.string.server_sync_has_failed))
                 }
-            })
+            }
+        } catch (t: Throwable) {
+            t.printStackTrace()
+            withContext(Dispatchers.Main) {
+                callback.onSuccess(context.getString(R.string.server_sync_has_failed))
+            }
+        }
     }
 
     fun getMinApk(listener: ConfigurationIdListener?, url: String, pin: String, activity: SyncActivity, callerActivity: String) {
         configurationManager.getMinApk(listener, url, pin, activity, callerActivity)
-    }
-
-    fun showAlertDialog(message: String?, playStoreRedirect: Boolean) {
-        configurationManager.showAlertDialog(message, playStoreRedirect)
     }
 
     private fun shouldPromptForSettings(settings: SharedPreferences): Boolean {
@@ -427,17 +483,33 @@ class Service @Inject constructor(
     private fun handleVersionEvaluation(info: MyPlanet, apkVersion: Int, callback: CheckVersionCallback) {
         val currentVersion = VersionUtils.getVersionCode(context)
         if (showBetaFeature(KEY_UPGRADE_MAX, context) && info.latestapkcode > currentVersion) {
-            callback.onUpdateAvailable(info, false)
+            serviceScope.launch {
+                withContext(Dispatchers.Main) {
+                    callback.onUpdateAvailable(info, false)
+                }
+            }
             return
         }
         if (apkVersion > currentVersion) {
-            callback.onUpdateAvailable(info, currentVersion >= info.minapkcode)
+            serviceScope.launch {
+                withContext(Dispatchers.Main) {
+                    callback.onUpdateAvailable(info, currentVersion >= info.minapkcode)
+                }
+            }
             return
         }
         if (currentVersion < info.minapkcode && apkVersion < info.minapkcode) {
-            callback.onUpdateAvailable(info, true)
+            serviceScope.launch {
+                withContext(Dispatchers.Main) {
+                    callback.onUpdateAvailable(info, true)
+                }
+            }
         } else {
-            callback.onError(context.getString(R.string.planet_is_up_to_date), false)
+            serviceScope.launch {
+                withContext(Dispatchers.Main) {
+                    callback.onError(context.getString(R.string.planet_is_up_to_date), false)
+                }
+            }
         }
     }
 

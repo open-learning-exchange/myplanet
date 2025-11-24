@@ -2,21 +2,22 @@ package org.ole.planet.myplanet.ui.dashboard
 
 import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
-import io.realm.Realm
-import java.util.Date
-import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.model.RealmNotification
+import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.repository.CourseRepository
 import org.ole.planet.myplanet.repository.LibraryRepository
 import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.UserRepository
+
+data class DashboardUiState(
+    val unreadNotifications: Int = 0,
+    val library: List<RealmMyLibrary> = emptyList(),
+)
 
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
@@ -26,11 +27,11 @@ class DashboardViewModel @Inject constructor(
     private val submissionRepository: SubmissionRepository,
     private val notificationRepository: NotificationRepository
 ) : ViewModel() {
-    private val _surveyWarning = MutableStateFlow(false)
-    val surveyWarning: StateFlow<Boolean> = _surveyWarning.asStateFlow()
-
-    private val _unreadNotifications = MutableStateFlow(0)
-    val unreadNotifications: StateFlow<Int> = _unreadNotifications.asStateFlow()
+    private val _uiState = MutableStateFlow(DashboardUiState())
+    val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
+    fun setUnreadNotifications(count: Int) {
+        _uiState.value = _uiState.value.copy(unreadNotifications = count)
+    }
     fun calculateIndividualProgress(voiceCount: Int, hasUnfinishedSurvey: Boolean): Int {
         val earnedDollarsVoice = minOf(voiceCount, 5) * 2
         val earnedDollarsSurvey = if (!hasUnfinishedSurvey) 1 else 0
@@ -46,25 +47,17 @@ class DashboardViewModel @Inject constructor(
     }
 
     suspend fun updateResourceNotification(userId: String?) {
-        notificationRepository.updateResourceNotification(userId)
+        val resourceCount = libraryRepository.countLibrariesNeedingUpdate(userId)
+        notificationRepository.updateResourceNotification(userId, resourceCount)
     }
 
-    fun createNotificationIfNotExists(realm: Realm, type: String, message: String, relatedId: String?, userId: String?) {
-        val existingNotification = realm.where(RealmNotification::class.java)
-            .equalTo("userId", userId)
-            .equalTo("type", type)
-            .equalTo("relatedId", relatedId)
-            .findFirst()
-
-        if (existingNotification == null) {
-            realm.createObject(RealmNotification::class.java, "${UUID.randomUUID()}").apply {
-                this.userId = userId ?: ""
-                this.type = type
-                this.message = message
-                this.relatedId = relatedId
-                this.createdAt = Date()
-            }
-        }
+    suspend fun createNotificationIfMissing(
+        type: String,
+        message: String,
+        relatedId: String?,
+        userId: String?,
+    ) {
+        notificationRepository.createNotificationIfMissing(type, message, relatedId, userId)
     }
 
     suspend fun getPendingSurveys(userId: String?): List<RealmSubmission> {
@@ -77,5 +70,10 @@ class DashboardViewModel @Inject constructor(
 
     suspend fun getUnreadNotificationsSize(userId: String?): Int {
         return notificationRepository.getUnreadCount(userId)
+    }
+
+    suspend fun fetchMyLibrary(userId: String?) {
+        val myLibrary = libraryRepository.getMyLibrary(userId)
+        _uiState.value = _uiState.value.copy(library = myLibrary)
     }
 }

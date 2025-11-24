@@ -29,13 +29,11 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SwitchCompat
 import androidx.core.content.edit
 import androidx.lifecycle.lifecycleScope
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.RecyclerView
 import com.afollestad.materialdialogs.DialogAction
 import com.afollestad.materialdialogs.MaterialDialog
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
 import java.io.File
 import java.util.ArrayList
 import java.util.Calendar
@@ -44,7 +42,6 @@ import java.util.HashMap
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
-import kotlin.isInitialized
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.launchIn
@@ -113,12 +110,12 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private lateinit var intervalLabel: TextView
     lateinit var spinner: Spinner
     private lateinit var syncSwitch: SwitchCompat
-    lateinit var mRealm: Realm
     lateinit var editor: SharedPreferences.Editor
     private var syncTimeInterval = intArrayOf(60 * 60, 3 * 60 * 60)
     lateinit var syncIcon: ImageView
     lateinit var syncIconDrawable: AnimationDrawable
     lateinit var prefData: SharedPrefManager
+    @Inject
     lateinit var profileDbHandler: UserProfileDbHandler
     lateinit var spnCloud: Spinner
     lateinit var protocolCheckIn: RadioGroup
@@ -140,22 +137,22 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     var serverCheck = true
     var showAdditionalServers = false
     var serverAddressAdapter: ServerAddressAdapter? = null
-    lateinit var serverListAddresses: List<ServerAddressesModel>
+    var serverListAddresses: List<ServerAddressesModel> = emptyList()
     private var isProgressDialogShowing = false
-    private lateinit var bManager: LocalBroadcastManager
 
     @Inject
     lateinit var syncManager: SyncManager
+
+    @Inject
+    lateinit var broadcastService: org.ole.planet.myplanet.service.BroadcastService
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         editor = settings.edit()
-        mRealm = databaseService.realmInstance
         requestAllPermissions()
         prefData = SharedPrefManager(this)
-        profileDbHandler = UserProfileDbHandler(this)
         defaultPref = PreferenceManager.getDefaultSharedPreferences(this)
         processedUrl = UrlUtils.getUrl()
     }
@@ -358,7 +355,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             if (settings != null) {
                 this.settings = settings
             }
-            if (mRealm.isEmpty) {
+            val isEmpty = databaseService.withRealm { realm -> realm.isEmpty }
+            if (isEmpty) {
                 alertDialogOkay(getString(R.string.server_not_configured_properly_connect_this_device_with_planet_server))
                 false
             } else {
@@ -372,7 +370,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     private fun checkName(username: String?, password: String?, isManagerMode: Boolean): Boolean {
         try {
-            val user = mRealm.where(RealmUserModel::class.java).equalTo("name", username).findFirst()
+            val user = databaseService.withRealm { realm ->
+                realm.where(RealmUserModel::class.java).equalTo("name", username).findFirst()?.let { realm.copyFromRealm(it) }
+            }
             user?.let {
                 if (it._id?.isEmpty() == true) {
                     if (username == it.name && password == it.password) {
@@ -484,7 +484,11 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 withContext(Dispatchers.Main) {
                     forceSyncTrigger()
                     val syncedUrl = settings.getString("serverURL", null)?.let { ServerConfigUtils.removeProtocol(it) }
-                    if (syncedUrl != null && serverListAddresses.any { it.url.replace(Regex("^https?://"), "") == syncedUrl }) {
+                    if (
+                        syncedUrl != null &&
+                        serverListAddresses.isNotEmpty() &&
+                        serverListAddresses.any { it.url.replace(urlProtocolRegex, "") == syncedUrl }
+                    ) {
                         editor.putString("pinnedServerUrl", syncedUrl).apply()
                     }
 
@@ -605,7 +609,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 val lastSyncMillis = settings.getLong(getString(R.string.last_syncs), 0)
                 var relativeTime = TimeUtils.getRelativeTime(lastSyncMillis)
 
-                if (relativeTime.matches(Regex("^\\d{1,2} seconds ago$"))) {
+                if (relativeTime.matches(secondsAgoRegex)) {
                     relativeTime = getString(R.string.a_few_seconds_ago)
                 }
 
@@ -651,39 +655,30 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     fun onLogin() {
-        val handler = UserProfileDbHandler(this)
-        handler.onLoginAsync(
-            callback = {
-                runOnUiThread {
-                    editor.putBoolean(Constants.KEY_LOGIN, true).commit()
-                    openDashboard()
-                }
-            },
+        profileDbHandler.onLoginAsync(
+            callback = {},
             onError = { error ->
-                runOnUiThread {
-                    Utilities.toast(this, "Login failed: ${error.message}")
-                }
+                error.printStackTrace()
             }
         )
-        handler.onDestroy()
 
+        editor.putBoolean(Constants.KEY_LOGIN, true).commit()
+        openDashboard()
         isNetworkConnectedFlow.onEach { isConnected ->
             if (isConnected) {
                 val serverUrl = settings.getString("serverURL", "")
                 if (!serverUrl.isNullOrEmpty()) {
-                    MainApplication.applicationScope.launch(Dispatchers.IO) {
+                    MainApplication.applicationScope.launch {
                         val canReachServer = MainApplication.Companion.isServerReachable(serverUrl)
                         if (canReachServer) {
                             withContext(Dispatchers.Main) {
                                 startUpload("login")
                             }
-                            withContext(Dispatchers.Default) {
-                                val backgroundRealm = databaseService.realmInstance
-                                try {
-                                    TransactionSyncManager.syncDb(backgroundRealm, "login_activities")
-                                } finally {
-                                    backgroundRealm.close()
-                                }
+                            val backgroundRealm = databaseService.realmInstance
+                            try {
+                                TransactionSyncManager.syncDb(backgroundRealm, "login_activities")
+                            } finally {
+                                backgroundRealm.close()
                             }
                         }
                     }
@@ -699,8 +694,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         val contextWrapper = ContextThemeWrapper(this, R.style.AlertDialogTheme)
         val dialog = MaterialDialog.Builder(contextWrapper)
             .customView(binding.root, true)
-            .positiveText(R.string.btn_sync)
-            .negativeText(R.string.btn_sync_cancel)
+            .positiveText(R.string.sync)
+            .negativeText(R.string.txt_cancel)
             .neutralText(R.string.btn_sync_save)
             .onPositive { d: MaterialDialog, _: DialogAction? -> performSync(d) }
             .build()
@@ -716,7 +711,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         setupFastSyncOption(binding)
 
         showAdditionalServers = false
-        if (::serverListAddresses.isInitialized && settings.getString("serverURL", "")?.isNotEmpty() == true) {
+        if (serverListAddresses.isNotEmpty() && settings.getString("serverURL", "")?.isNotEmpty() == true) {
             refreshServerList()
         }
 
@@ -769,7 +764,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 continueSyncProcess()
             }
         } else {
-            mRealm.executeTransactionAsync { realm: Realm -> realm.deleteAll() }
+            lifecycleScope.launch(Dispatchers.IO) {
+                databaseService.executeTransactionAsync { realm -> realm.deleteAll() }
+            }
         }
         builder.setCancelable(cancelable)
         builder.show()
@@ -789,10 +786,13 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     fun registerReceiver() {
-        bManager = LocalBroadcastManager.getInstance(this)
-        val intentFilter = IntentFilter()
-        intentFilter.addAction(DashboardActivity.MESSAGE_PROGRESS)
-        bManager.registerReceiver(broadcastReceiver, intentFilter)
+        lifecycleScope.launch {
+            broadcastService.events.collect { intent ->
+                if (intent.action == DashboardActivity.MESSAGE_PROGRESS) {
+                    broadcastReceiver.onReceive(this@SyncActivity, intent)
+                }
+            }
+        }
     }
 
     override fun onError(msg: String, blockSync: Boolean) {
@@ -834,17 +834,13 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     override fun onDestroy() {
-        if (this::bManager.isInitialized) {
-            bManager.unregisterReceiver(broadcastReceiver)
-        }
-        if (this::mRealm.isInitialized && !mRealm.isClosed) {
-            mRealm.close()
-        }
         super.onDestroy()
     }
     companion object {
         lateinit var cal_today: Calendar
         lateinit var cal_last_Sync: Calendar
+        private val secondsAgoRegex by lazy { Regex("^\\d{1,2} seconds ago$") }
+        private val urlProtocolRegex by lazy { Regex("^https?://") }
 
         suspend fun clearRealmDb() {
             withContext(Dispatchers.IO) {

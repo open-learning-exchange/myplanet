@@ -6,8 +6,8 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.google.gson.Gson
 import com.google.gson.JsonArray
+import org.ole.planet.myplanet.utilities.GsonUtils
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
@@ -106,7 +106,7 @@ class MyProgressFragment : Fragment() {
                         }
                     }
                 }
-                obj.add("stepMistake", Gson().fromJson(Gson().toJson(mistakesMap), JsonObject::class.java))
+                obj.add("stepMistake", GsonUtils.gson.fromJson(GsonUtils.gson.toJson(mistakesMap), JsonObject::class.java))
                 obj.addProperty("mistakes", totalMistakes)
             }
         }
@@ -125,9 +125,6 @@ class MyProgressFragment : Fragment() {
 
     override fun onDestroyView() {
         _binding = null
-        if (this::userProfileDbHandler.isInitialized) {
-            userProfileDbHandler.onDestroy()
-        }
         super.onDestroyView()
     }
 }

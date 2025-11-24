@@ -14,6 +14,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
+import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.android.HiltAndroidApp
 import java.net.HttpURLConnection
 import java.net.URL
@@ -23,8 +24,6 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -32,16 +31,17 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
 import org.ole.planet.myplanet.callback.TeamPageListener
-import org.ole.planet.myplanet.datamanager.ApiClient
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.di.ApiClientEntryPoint
 import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.di.ApplicationScopeEntryPoint
 import org.ole.planet.myplanet.di.DefaultPreferences
+import org.ole.planet.myplanet.di.WorkerDependenciesEntryPoint
 import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.service.AutoSyncWorker
 import org.ole.planet.myplanet.service.NetworkMonitorWorker
 import org.ole.planet.myplanet.service.StayOnlineWorker
 import org.ole.planet.myplanet.service.TaskNotificationWorker
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.ANRWatchdog
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
@@ -67,9 +67,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     @DefaultPreferences
     lateinit var defaultPreferences: SharedPreferences
 
-    @Inject
-    lateinit var apiClient: ApiClient
-
     companion object {
         private const val AUTO_SYNC_WORK_TAG = "autoSyncWork"
         private const val STAY_ONLINE_WORK_TAG = "stayOnlineWork"
@@ -90,16 +87,21 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             }
             return "0"
         }
-        val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        lateinit var applicationScope: CoroutineScope
         lateinit var defaultPref: SharedPreferences
 
         fun createLog(type: String, error: String = "") {
-            applicationScope.launch(Dispatchers.IO) {
+            applicationScope.launch {
+                val entryPoint = EntryPointAccessors.fromApplication(
+                    context,
+                    WorkerDependenciesEntryPoint::class.java
+                )
+                val userProfileDbHandler = entryPoint.userProfileDbHandler()
                 val settings = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-                service.withRealm { realm ->
-                    realm.executeTransaction { r ->
+                try {
+                    service.executeTransactionAsync { r ->
                         val log = r.createObject(RealmApkLog::class.java, "${UUID.randomUUID()}")
-                        val model = UserProfileDbHandler(context).userModel
+                        val model = userProfileDbHandler.userModel
                         log.parentCode = settings.getString("parentCode", "")
                         log.createdOn = settings.getString("planetCode", "")
                         model?.let { log.userId = it.id }
@@ -111,6 +113,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                             log.error = error
                         }
                     }
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
             }
         }
@@ -139,19 +143,19 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                 }
 
                 val url = URL(formattedUrl)
-                val connection = withContext(Dispatchers.IO) {
-                    url.openConnection()
-                } as HttpURLConnection
-                connection.requestMethod = "GET"
-                connection.connectTimeout = 5000
-                connection.readTimeout = 5000
-                withContext(Dispatchers.IO) {
-                    connection.connect()
+                val responseCode = withContext(Dispatchers.IO) {
+                    val connection = url.openConnection() as HttpURLConnection
+                    try {
+                        connection.requestMethod = "GET"
+                        connection.connectTimeout = 5000
+                        connection.readTimeout = 5000
+                        connection.connect()
+                        connection.responseCode
+                    } finally {
+                        connection.disconnect()
+                    }
                 }
-                val responseCode = connection.responseCode
-                connection.disconnect()
                 responseCode in 200..299
-
             } catch (e: Exception) {
                 e.printStackTrace()
                 false
@@ -177,14 +181,15 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
     override fun onCreate() {
         super.onCreate()
-        initApp()
         setupCriticalProperties()
+        initApp()
         setupStrictMode()
         registerExceptionHandler()
         setupLifecycleCallbacks()
         configureTheme()
 
         applicationScope.launch {
+            ensureApiClientInitialized()
             initializeDatabaseConnection()
             setupAnrWatchdog()
             scheduleWorkersOnStart()
@@ -203,6 +208,19 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         preferences = appPreferences
         service = databaseService
         defaultPref = defaultPreferences
+        applicationScope = EntryPointAccessors.fromApplication(
+            this,
+            ApplicationScopeEntryPoint::class.java
+        ).applicationScope()
+    }
+
+    private suspend fun ensureApiClientInitialized() {
+        withContext(Dispatchers.IO) {
+            EntryPointAccessors.fromApplication(
+                this@MainApplication,
+                ApiClientEntryPoint::class.java
+            ).apiClient()
+        }
     }
     
     private suspend fun initializeDatabaseConnection() {
@@ -212,9 +230,18 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     }
 
     private fun setupStrictMode() {
-        val builder = VmPolicy.Builder()
-        StrictMode.setVmPolicy(builder.build())
-        builder.detectFileUriExposure()
+        if (BuildConfig.DEBUG) {
+            val threadPolicy = StrictMode.ThreadPolicy.Builder()
+                .detectAll()
+                .penaltyLog()
+                .build()
+            StrictMode.setThreadPolicy(threadPolicy)
+
+            val builder = VmPolicy.Builder()
+            builder.detectFileUriExposure()
+            builder.detectUntaggedSockets()
+            StrictMode.setVmPolicy(builder.build())
+        }
     }
 
     private suspend fun setupAnrWatchdog() {
@@ -348,9 +375,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
     override fun onActivityStopped(activity: Activity) {
         isActivityChangingConfigurations = activity.isChangingConfigurations
-        if (--activityReferences == 0 && !isActivityChangingConfigurations) {
-            onAppBackgrounded()
-        }
+        --activityReferences
     }
 
     override fun onActivitySaveInstanceState(activity: Activity, bundle: Bundle) {}
@@ -367,23 +392,17 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         }
     }
 
-    private fun onAppBackgrounded() {}
-
     private fun onAppStarted() {
         applicationScope.launch {
             createLog("new login", "")
         }
     }
 
-    private fun onAppClosed() {}
-
     override fun onTerminate() {
         if (::anrWatchdog.isInitialized) {
             anrWatchdog.stop()
         }
         super.onTerminate()
-        onAppClosed()
         stopListenNetworkState()
-        applicationScope.cancel()
     }
 }

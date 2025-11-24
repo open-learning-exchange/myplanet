@@ -39,6 +39,8 @@ class PDFReaderActivity : AppCompatActivity(), AudioRecordListener {
     lateinit var myPersonalRepository: MyPersonalRepository
     @Inject
     lateinit var libraryRepository: LibraryRepository
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
     private lateinit var library: RealmMyLibrary
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -116,15 +118,16 @@ class PDFReaderActivity : AppCompatActivity(), AudioRecordListener {
         Utilities.toast(this, getString(R.string.recording_stopped))
         cancelAll(this)
         updateTranslation(outputFile)
-        val userModel = UserProfileDbHandler(this).userModel
+        val userModel = userProfileDbHandler.userModel
         if (userModel != null) {
             AddResourceFragment.showAlert(
                 this,
                 outputFile,
                 myPersonalRepository,
                 userModel.id,
-                userModel.name
-            )
+                userModel.name,
+                lifecycleScope
+            ) {}
         }
         binding.fabRecord.setImageResource(R.drawable.ic_mic)
     }

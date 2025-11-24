@@ -5,6 +5,8 @@ import android.content.SharedPreferences
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import io.realm.Realm
@@ -16,15 +18,11 @@ import org.ole.planet.myplanet.callback.SurveyAdoptListener
 import org.ole.planet.myplanet.databinding.RowSurveyBinding
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMembershipDoc
+import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmSubmission.Companion.getNoOfSubmissionByTeam
-import org.ole.planet.myplanet.model.RealmSubmission.Companion.getNoOfSubmissionByUser
-import org.ole.planet.myplanet.model.RealmSubmission.Companion.getRecentSubmissionDate
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
-import org.ole.planet.myplanet.utilities.DiffUtils
-import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
 class AdapterSurvey(
     private val context: Context,
@@ -33,13 +31,16 @@ class AdapterSurvey(
     private val isTeam: Boolean,
     val teamId: String?,
     private val surveyAdoptListener: SurveyAdoptListener,
-    private val settings: SharedPreferences
-) : RecyclerView.Adapter<AdapterSurvey.ViewHolderSurvey>() {
-    private var examList: List<RealmStepExam> = emptyList()
+    private val settings: SharedPreferences,
+    private val userProfileDbHandler: UserProfileDbHandler,
+    private val surveyInfoMap: Map<String, SurveyInfo>
+) : ListAdapter<RealmStepExam, AdapterSurvey.ViewHolderSurvey>(SurveyDiffCallback()) {
     private var listener: OnHomeItemClickListener? = null
     private val adoptedSurveyIds = mutableSetOf<String>()
     private var isTitleAscending = true
-    private var sortType = SurveySortType.DATE_DESC
+    private var sortStrategy: (List<RealmStepExam>) -> List<RealmStepExam> = { list ->
+        sortSurveyList(false, list)
+    }
 
     init {
         if (context is OnHomeItemClickListener) {
@@ -47,27 +48,26 @@ class AdapterSurvey(
         }
     }
 
-    fun updateData(newList: List<RealmStepExam>) {
-        dispatchDiff(examList, newList)
+    fun updateData(newList: List<RealmStepExam>, onComplete: (() -> Unit)? = null) {
+        submitList(newList) {
+            onComplete?.invoke()
+        }
     }
 
-    fun updateDataAfterSearch(newList: List<RealmStepExam>) {
-        val oldList = examList
-        val sortedList = if (oldList.isEmpty()) {
+    fun updateDataAfterSearch(newList: List<RealmStepExam>, onComplete: (() -> Unit)? = null) {
+        val sortedList = if (currentList.isEmpty()) {
             sortSurveyList(false, newList)
         } else {
-            when (sortType) {
-                SurveySortType.DATE_DESC -> sortSurveyList(false, newList)
-                SurveySortType.DATE_ASC -> sortSurveyList(true, newList)
-                SurveySortType.TITLE -> sortSurveyListByName(isTitleAscending, newList)
-            }
+            sortStrategy(newList)
         }
-        dispatchDiff(oldList, sortedList)
+        submitList(sortedList) {
+            onComplete?.invoke()
+        }
     }
 
     private fun sortSurveyList(
         isAscend: Boolean,
-        list: List<RealmStepExam> = examList
+        list: List<RealmStepExam>
     ): List<RealmStepExam> {
         return if (isAscend) {
             list.sortedBy { it.createdDate }
@@ -77,15 +77,14 @@ class AdapterSurvey(
     }
 
     fun sortByDate(isAscend: Boolean) {
-        sortType = if (isAscend) SurveySortType.DATE_ASC else SurveySortType.DATE_DESC
-        val oldList = examList
-        val sortedList = sortSurveyList(isAscend)
-        dispatchDiff(oldList, sortedList)
+        sortStrategy = { list -> sortSurveyList(isAscend, list) }
+        val sortedList = sortStrategy(currentList)
+        submitList(sortedList)
     }
 
     private fun sortSurveyListByName(
         isAscend: Boolean,
-        list: List<RealmStepExam> = examList
+        list: List<RealmStepExam>
     ): List<RealmStepExam> {
         return if (isAscend) {
             list.sortedBy { it.name?.lowercase() }
@@ -95,25 +94,10 @@ class AdapterSurvey(
     }
 
     fun toggleTitleSortOrder() {
-        sortType = SurveySortType.TITLE
         isTitleAscending = !isTitleAscending
-        val oldList = examList
-        val sortedList = sortSurveyListByName(isTitleAscending)
-        dispatchDiff(oldList, sortedList)
-    }
-
-    private fun dispatchDiff(
-        oldList: List<RealmStepExam>,
-        newList: List<RealmStepExam>
-    ) {
-        val diffResult = DiffUtils.calculateDiff(
-            oldList,
-            newList,
-            areItemsTheSame = { old, new -> old.id == new.id },
-            areContentsTheSame = { old, new -> old == new }
-        )
-        examList = newList
-        diffResult.dispatchUpdatesTo(this)
+        sortStrategy = { list -> sortSurveyListByName(isTitleAscending, list) }
+        val sortedList = sortStrategy(currentList)
+        submitList(sortedList)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderSurvey {
@@ -122,17 +106,15 @@ class AdapterSurvey(
     }
 
     override fun onBindViewHolder(holder: ViewHolderSurvey, position: Int) {
-        holder.bind(examList[position])
+        holder.bind(getItem(position))
     }
-
-    override fun getItemCount(): Int = examList.size
 
     inner class ViewHolderSurvey(private val binding: RowSurveyBinding) : RecyclerView.ViewHolder(binding.root) {
         init {
             binding.startSurvey.visibility = View.VISIBLE
             binding.sendSurvey.visibility = View.GONE
             binding.sendSurvey.setOnClickListener {
-                val current = examList[bindingAdapterPosition]
+                val current = getItem(bindingAdapterPosition)
                 listener?.sendSurvey(current)
             }
         }
@@ -145,13 +127,17 @@ class AdapterSurvey(
                     tvDescription.visibility = View.VISIBLE
                     tvDescription.text = exam.description
                 }
+
+                fun getTeamSubmission(): RealmSubmission? {
+                    return mRealm.where(RealmSubmission::class.java)
+                        .equalTo("parentId", exam.id)
+                        .equalTo("membershipDoc.teamId", teamId)
+                        .findFirst()
+                }
+
+                var teamSubmission = getTeamSubmission()
                 startSurvey.setOnClickListener {
-                    val isTeamSubmission = mRealm.where(RealmSubmission::class.java)
-                        .equalTo("parentId", exam.id).equalTo("membershipDoc.teamId", teamId)
-                        .findFirst() != null
-
-                    val shouldAdopt = exam.isTeamShareAllowed && !isTeamSubmission
-
+                    val shouldAdopt = exam.isTeamShareAllowed && teamSubmission?.isValid != true
                     if (shouldAdopt) {
                         adoptSurvey(exam, teamId)
                     } else {
@@ -167,11 +153,8 @@ class AdapterSurvey(
                     startSurvey.visibility = View.GONE
                 }
 
-                val isTeamSubmission = mRealm.where(RealmSubmission::class.java)
-                    .equalTo("parentId", exam.id).equalTo("membershipDoc.teamId", teamId)
-                    .findFirst() != null
-
-                val shouldShowAdopt = exam.isTeamShareAllowed && !isTeamSubmission
+                teamSubmission = getTeamSubmission()
+                val shouldShowAdopt = exam.isTeamShareAllowed && teamSubmission?.isValid != true
 
                 startSurvey.text = when {
                     shouldShowAdopt -> context.getString(R.string.adopt_survey)
@@ -183,18 +166,15 @@ class AdapterSurvey(
                     startSurvey.visibility = View.GONE
                 }
 
-                tvNoSubmissions.text = when {
-                    isTeam -> getNoOfSubmissionByTeam(teamId, exam.id, mRealm)
-                    else -> getNoOfSubmissionByUser(exam.id, exam.courseId, userId, mRealm)
-                }
-                tvDateCompleted.text = getRecentSubmissionDate(exam.id, exam.courseId, userId, mRealm)
-                val creationTime = exam.id?.let { RealmStepExam.getSurveyCreationTime(it, mRealm) }
-                tvDate.text = creationTime?.let { formatDate(it, "MMM dd, yyyy") } ?: ""
+                val surveyInfo = surveyInfoMap[exam.id]
+                tvNoSubmissions.text = surveyInfo?.submissionCount ?: ""
+                tvDateCompleted.text = surveyInfo?.lastSubmissionDate ?: ""
+                tvDate.text = surveyInfo?.creationDate ?: ""
             }
         }
 
         fun adoptSurvey(exam: RealmStepExam, teamId: String?) {
-            val userModel = UserProfileDbHandler(context).userModel
+            val userModel = userProfileDbHandler.userModel
             val sParentCode = settings.getString("parentCode", "")
             val planetCode = settings.getString("planetCode", "")
 
@@ -240,53 +220,134 @@ class AdapterSurvey(
             val examId = exam.id
             val userId = userModel?.id
 
-            mRealm.executeTransactionAsync({ realm ->
-                val existingAdoption = realm.where(RealmSubmission::class.java)
-                    .equalTo("userId", userId)
-                    .equalTo("parentId", examId)
-                    .equalTo("status", "")
-                    .findFirst()
+            if (mRealm.isClosed) {
+                Snackbar.make(binding.root, context.getString(R.string.failed_to_adopt_survey), Snackbar.LENGTH_LONG).show()
+                return
+            }
 
-                if (existingAdoption == null) {
-                    realm.createObject(RealmSubmission::class.java, adoptionId).apply {
-                        parentId = examId
-                        parent = parentJsonString
-                        this.userId = userId
-                        user = userJsonString
-                        type = "survey"
-                        status = ""
-                        uploaded = false
-                        source = planetCode ?: ""
-                        parentCode = sParentCode ?: ""
-                        startTime = System.currentTimeMillis()
-                        lastUpdateTime = System.currentTimeMillis()
-                        isUpdated = true
+            try {
+                mRealm.executeTransactionAsync({ realm ->
+                    val teamName = if (isTeam && teamId != null) {
+                        realm.where(RealmMyTeam::class.java)
+                            .equalTo("_id", teamId)
+                            .findFirst()?.name
+                    } else null
 
-                        if (isTeam && teamId != null) {
-                            membershipDoc = realm.createObject(RealmMembershipDoc::class.java).apply {
+                    if (isTeam && teamId != null && teamName != null) {
+                        val newSurveyId = UUID.randomUUID().toString()
+
+                        val existingSurvey = realm.where(RealmStepExam::class.java)
+                            .equalTo("sourceSurveyId", examId)
+                            .equalTo("teamId", teamId)
+                            .findFirst()
+
+                        if (existingSurvey == null) {
+                            realm.createObject(RealmStepExam::class.java, newSurveyId).apply {
+                                _rev = null
+                                createdDate = System.currentTimeMillis()
+                                updatedDate = System.currentTimeMillis()
+                                createdBy = userModel?.id
+                                totalMarks = exam.totalMarks
+                                name = "${exam.name} - $teamName"
+                                description = exam.description
+                                type = exam.type
+                                stepId = exam.stepId
+                                courseId = exam.courseId
+                                sourcePlanet = exam.sourcePlanet
+                                passingPercentage = exam.passingPercentage
+                                noOfQuestions = exam.noOfQuestions
+                                isFromNation = exam.isFromNation
+
                                 this.teamId = teamId
+                                sourceSurveyId = examId
+                                isTeamShareAllowed = false
+                            }
+
+                            val questions = realm.where(RealmExamQuestion::class.java)
+                                .equalTo("examId", examId)
+                                .findAll()
+
+                            val questionsArray = RealmExamQuestion.serializeQuestions(questions)
+                            RealmExamQuestion.insertExamQuestions(questionsArray, newSurveyId, realm)
+                        }
+                    }
+
+                    val existingAdoption = if (isTeam && teamId != null) {
+                        realm.where(RealmSubmission::class.java)
+                            .equalTo("userId", userId)
+                            .equalTo("parentId", examId)
+                            .equalTo("status", "")
+                            .equalTo("membershipDoc.teamId", teamId)
+                            .findFirst()
+                    } else {
+                        realm.where(RealmSubmission::class.java)
+                            .equalTo("userId", userId)
+                            .equalTo("parentId", examId)
+                            .equalTo("status", "")
+                            .isNull("membershipDoc")
+                            .findFirst()
+                    }
+
+                    if (existingAdoption == null) {
+                        realm.createObject(RealmSubmission::class.java, adoptionId).apply {
+                            parentId = examId
+                            parent = parentJsonString
+                            this.userId = userId
+                            user = userJsonString
+                            type = "survey"
+                            status = ""
+                            uploaded = false
+                            source = planetCode ?: ""
+                            parentCode = sParentCode ?: ""
+                            startTime = System.currentTimeMillis()
+                            lastUpdateTime = System.currentTimeMillis()
+                            isUpdated = true
+
+                            if (isTeam && teamId != null) {
+                                val team = realm.where(RealmMyTeam::class.java)
+                                    .equalTo("_id", teamId)
+                                    .findFirst()
+
+                                if (team != null) {
+                                    val teamRef = realm.createObject(org.ole.planet.myplanet.model.RealmTeamReference::class.java)
+                                    teamRef._id = team._id
+                                    teamRef.name = team.name
+                                    teamRef.type = team.type ?: "team"
+                                    teamObject = teamRef
+                                }
+
+                                membershipDoc = realm.createObject(RealmMembershipDoc::class.java).apply {
+                                    this.teamId = teamId
+                                }
                             }
                         }
                     }
-                }
-            }, {
-                adoptedSurveyIds.add("$examId")
-                val position = examList.indexOfFirst { it.id == examId }
-                if (position != -1) {
-                    notifyItemChanged(position)
-                }
+                }, {
+                    mRealm.refresh()
+                    adoptedSurveyIds.add("$examId")
+                    val position = currentList.indexOfFirst { it.id == examId }
+                    if (position != -1) {
+                        notifyItemChanged(position)
+                    }
 
-                Snackbar.make(binding.root, context.getString(R.string.survey_adopted_successfully), Snackbar.LENGTH_LONG).show()
-                surveyAdoptListener.onSurveyAdopted()
-            }, {
+                    Snackbar.make(binding.root, context.getString(R.string.survey_adopted_successfully), Snackbar.LENGTH_LONG).show()
+                    surveyAdoptListener.onSurveyAdopted()
+                }, { error ->
+                    Snackbar.make(binding.root, context.getString(R.string.failed_to_adopt_survey), Snackbar.LENGTH_LONG).show()
+                })
+            } catch (e: Exception) {
                 Snackbar.make(binding.root, context.getString(R.string.failed_to_adopt_survey), Snackbar.LENGTH_LONG).show()
-            })
+            }
         }
     }
 }
 
-enum class SurveySortType {
-    DATE_DESC,
-    DATE_ASC,
-    TITLE
+class SurveyDiffCallback : DiffUtil.ItemCallback<RealmStepExam>() {
+    override fun areItemsTheSame(oldItem: RealmStepExam, newItem: RealmStepExam): Boolean {
+        return oldItem.id == newItem.id
+    }
+
+    override fun areContentsTheSame(oldItem: RealmStepExam, newItem: RealmStepExam): Boolean {
+        return oldItem == newItem
+    }
 }

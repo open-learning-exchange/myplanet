@@ -20,9 +20,9 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
-import com.google.gson.Gson
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
+import org.ole.planet.myplanet.utilities.GsonUtils
 import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
@@ -77,8 +77,12 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private lateinit var confirmation: AlertDialog
     private var isUpdatingSelectAllState = false
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
+
+    @Inject
     lateinit var prefManager: SharedPrefManager
-    private val serverUrlMapper = ServerUrlMapper()
+
+    @Inject
+    lateinit var serverUrlMapper: ServerUrlMapper
 
     @Inject
     lateinit var syncManager: SyncManager
@@ -95,7 +99,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        prefManager = SharedPrefManager(requireContext())
         startCoursesSync()
     }
 
@@ -191,7 +194,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         if (!isAdded || requireActivity().isFinishing) return
 
         try {
-            mRealm.refresh()
+            if (!mRealm.isInTransaction) {
+                mRealm.refresh()
+            }
             val map = getRatings(mRealm, "course", model?.id)
             val progressMap = getCourseProgress(mRealm, model?.id)
             val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>().filter { !it?.courseTitle.isNullOrBlank() }
@@ -227,7 +232,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
-        mRealm.refresh()
+        if (!mRealm.isInTransaction) {
+            mRealm.refresh()
+        }
 
         val map = getRatings(mRealm, "course", model?.id)
         val progressMap = getCourseProgress(mRealm, model?.id)
@@ -537,7 +544,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         builder.setCancelable(true)
             .setPositiveButton(R.string.go_to_mycourses) { dialog: DialogInterface, _: Int ->
                 if (userModel?.id?.startsWith("guest") == true) {
-                    DialogUtils.guestDialog(requireContext())
+                    DialogUtils.guestDialog(requireContext(), profileDbHandler)
                 } else {
                     val fragment = CoursesFragment().apply {
                         arguments = Bundle().apply {
@@ -633,21 +640,29 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     private fun saveSearchActivity() {
         if (filterApplied()) {
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
-            val activity = mRealm.createObject(RealmSearchActivity::class.java, UUID.randomUUID().toString())
-            activity.user = "${model?.name}"
-            activity.time = Calendar.getInstance().timeInMillis
-            activity.createdOn = "${model?.planetCode}"
-            activity.parentCode = "${model?.parentCode}"
-            activity.text = etSearch.text.toString()
-            activity.type = "courses"
-            val filter = JsonObject()
+            val searchText = etSearch.text.toString()
+            val userName = "${model?.name}"
+            val planetCode = "${model?.planetCode}"
+            val parentCode = "${model?.parentCode}"
+            val tags = searchTags.toList()
+            val grade = gradeLevel
+            val subject = subjectLevel
 
-            filter.add("tags", getTagsArray(searchTags.toList()))
-            filter.addProperty("doc.gradeLevel", gradeLevel)
-            filter.addProperty("doc.subjectLevel", subjectLevel)
-            activity.filter = Gson().toJson(filter)
-            mRealm.commitTransaction()
+            mRealm.executeTransactionAsync { realm ->
+                val activity = realm.createObject(RealmSearchActivity::class.java, UUID.randomUUID().toString())
+                activity.user = userName
+                activity.time = Calendar.getInstance().timeInMillis
+                activity.createdOn = planetCode
+                activity.parentCode = parentCode
+                activity.text = searchText
+                activity.type = "courses"
+                val filter = JsonObject()
+
+                filter.add("tags", getTagsArray(tags))
+                filter.addProperty("doc.gradeLevel", grade)
+                filter.addProperty("doc.subjectLevel", subject)
+                activity.filter = GsonUtils.gson.toJson(filter)
+            }
         }
     }
 
@@ -713,5 +728,33 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             realtimeSyncHelper.cleanup()
         }
         super.onDestroyView()
+    }
+
+    override fun onRatingChanged() {
+        if (!::adapterCourses.isInitialized) {
+            super.onRatingChanged()
+            return
+        }
+
+        if (!mRealm.isInTransaction) {
+            mRealm.refresh()
+        }
+        val map = getRatings(mRealm, "course", model?.id)
+        val progressMap = getCourseProgress(mRealm, model?.id)
+
+        val filteredCourseList = if (etSearch.text.toString().isEmpty() && searchTags.isEmpty() && gradeLevel.isEmpty() && subjectLevel.isEmpty()) {
+            getFullCourseList()
+        } else {
+            filterCourseByTag(etSearch.text.toString(), searchTags)
+        }
+
+        adapterCourses = AdapterCourses(
+            requireActivity(), filteredCourseList, map, userProfileDbHandler,
+            tagRepository, this@CoursesFragment
+        )
+        adapterCourses.setProgressMap(progressMap)
+        adapterCourses.setListener(this)
+        adapterCourses.setRatingChangeListener(this)
+        recyclerView.adapter = adapterCourses
     }
 }

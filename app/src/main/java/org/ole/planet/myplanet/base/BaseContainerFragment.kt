@@ -32,7 +32,6 @@ import org.ole.planet.myplanet.base.PermissionActivity.Companion.hasInstallPermi
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_RESOURCE_DOWNLOAD
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.viewer.WebViewActivity
@@ -57,7 +56,6 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     private var shouldAutoOpenAfterDownload = false
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        profileDbHandler = UserProfileDbHandler(requireActivity())
         hasInstallPermissionValue = hasInstallPermission(requireContext())
         if (!BuildConfig.LITE) {
             installApkLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -101,10 +99,17 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             pendingAutoOpenLibrary?.let { library ->
                 shouldAutoOpenAfterDownload = false
                 pendingAutoOpenLibrary = null
-                if (library.isResourceOffline() || FileUtils.checkFileExist(requireContext(), UrlUtils.getUrl(library))) {
-                    profileDbHandler?.let {
-                        ResourceOpener.openFileType(requireActivity(), library, "offline", it)
-                    }
+
+                val isDownloaded = if (library.mediaType == "HTML") {
+                    val directory = File(context?.getExternalFilesDir(null), "ole/${library.resourceId}")
+                    val indexFile = File(directory, "index.html")
+                    indexFile.exists()
+                } else {
+                    library.isResourceOffline() || FileUtils.checkFileExist(requireContext(), UrlUtils.getUrl(library))
+                }
+
+                if (isDownloaded) {
+                    openResource(library)
                 }
             }
         }
@@ -120,7 +125,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 }
                 true
             }
-            val userModel = profileDbHandler?.userModel
+            val userModel = profileDbHandler.userModel
             if (userModel?.isGuest() == false) {
                 setOnClickListener {
                     homeItemClickListener?.showRatingDialog(type, id, title, listener)
@@ -156,7 +161,10 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
 
     private fun openHtmlResource(items: RealmMyLibrary) {
-        if (items.resourceOffline) {
+        val directory = File(context?.getExternalFilesDir(null), "ole/${items.resourceId}")
+        val indexFile = File(directory, "index.html")
+
+        if (indexFile.exists()) {
             val intent = Intent(activity, WebViewActivity::class.java)
             intent.putExtra("RESOURCE_ID", items.id)
             intent.putExtra("LOCAL_ADDRESS", items.resourceLocalAddress)
@@ -178,6 +186,13 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 
             if (downloadUrls.isNotEmpty()) {
                 startDownloadWithAutoOpen(downloadUrls, items)
+            } else {
+                val errorMessage = when {
+                    resource == null -> getString(R.string.resource_not_found_in_database)
+                    resource.attachments.isNullOrEmpty() -> getString(R.string.resource_has_no_attachments)
+                    else -> getString(R.string.unable_to_download_resource)
+                }
+                Utilities.toast(activity, errorMessage)
             }
         }
     }
@@ -199,23 +214,21 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 
             val offlineItem = matchingItems.firstOrNull { it.isResourceOffline() }
             if (offlineItem != null) {
-                profileDbHandler?.let {
-                    ResourceOpener.openFileType(requireActivity(), offlineItem, "offline", it)
-                }
+                ResourceOpener.openFileType(requireActivity(), offlineItem, "offline", profileDbHandler)
                 return@launch
             }
 
             when {
-                items.isResourceOffline() -> profileDbHandler?.let {
-                    ResourceOpener.openFileType(requireActivity(), items, "offline", it)
-                }
-                FileUtils.getFileExtension(items.resourceLocalAddress) == "mp4" -> profileDbHandler?.let {
-                    ResourceOpener.openFileType(requireActivity(), items, "online", it)
-                }
+                items.isResourceOffline() -> ResourceOpener.openFileType(
+                    requireActivity(), items, "offline", profileDbHandler
+                )
+                FileUtils.getFileExtension(items.resourceLocalAddress) == "mp4" -> ResourceOpener.openFileType(
+                    requireActivity(), items, "online", profileDbHandler
+                )
                 else -> {
                     val arrayList = arrayListOf(UrlUtils.getUrl(items))
                     startDownloadWithAutoOpen(arrayList, items)
-                    profileDbHandler?.setResourceOpenCount(items, KEY_RESOURCE_DOWNLOAD)
+                    profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_DOWNLOAD)
                 }
             }
         }
@@ -264,9 +277,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 
     private fun openFileType(items: RealmMyLibrary, videoType: String) {
         dismissProgressDialog()
-        profileDbHandler?.let {
-            ResourceOpener.openFileType(requireActivity(), items, videoType, it)
-        }
+        ResourceOpener.openFileType(requireActivity(), items, videoType, profileDbHandler)
     }
 
     private fun showResourceList(downloadedResources: List<RealmMyLibrary>) {
@@ -338,8 +349,6 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 
     override fun onDestroy() {
         dismissProgressDialog()
-        profileDbHandler?.onDestroy()
-        profileDbHandler = null
         super.onDestroy()
     }
 }

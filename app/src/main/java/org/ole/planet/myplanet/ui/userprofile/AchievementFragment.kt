@@ -9,8 +9,8 @@ import androidx.core.view.isGone
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.snackbar.Snackbar
-import com.google.gson.Gson
 import com.google.gson.JsonArray
+import org.ole.planet.myplanet.utilities.GsonUtils
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
@@ -34,7 +34,6 @@ import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
@@ -47,6 +46,7 @@ class AchievementFragment : BaseContainerFragment() {
     private var _binding: FragmentAchievementBinding? = null
     private val binding get() = _binding!!
     private lateinit var aRealm: Realm
+    private lateinit var realmChangeListener: io.realm.RealmChangeListener<Realm>
     var user: RealmUserModel? = null
     var listener: OnHomeItemClickListener? = null
     private var achievement: RealmAchievement? = null
@@ -75,7 +75,7 @@ class AchievementFragment : BaseContainerFragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentAchievementBinding.inflate(inflater, container, false)
         aRealm = databaseService.realmInstance
-        user = UserProfileDbHandler(requireContext()).userModel
+        user = profileDbHandler.userModel
         binding.btnEdit.setOnClickListener {
             if (listener != null) listener?.openCallFragment(EditAchievementFragment())
         }
@@ -83,11 +83,14 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     override fun onDestroyView() {
+        super.onDestroyView()
         if (::realtimeSyncListener.isInitialized) {
             syncCoordinator.removeListener(realtimeSyncListener)
         }
+        if (::realmChangeListener.isInitialized) {
+            aRealm.removeChangeListener(realmChangeListener)
+        }
         _binding = null
-        super.onDestroyView()
     }
 
     private fun startAchievementSync() {
@@ -194,11 +197,12 @@ class AchievementFragment : BaseContainerFragment() {
 
         achievement?.let {
             updateAchievementUI()
-            aRealm.addChangeListener {
+            realmChangeListener = io.realm.RealmChangeListener {
                 if (isAdded) {
                     populateAchievements()
                 }
             }
+            aRealm.addChangeListener(realmChangeListener)
         }
     }
 
@@ -224,7 +228,7 @@ class AchievementFragment : BaseContainerFragment() {
     private fun populateAchievements() {
         binding.llAchievement.removeAllViews()
         achievement?.achievements?.forEach { json ->
-            val element = Gson().fromJson(json, JsonElement::class.java)
+            val element = GsonUtils.gson.fromJson(json, JsonElement::class.java)
             val view = if (element is JsonObject) createAchievementView(element) else null
             view?.let {
                 // Ensure the view is properly detached from any previous parent
@@ -304,7 +308,6 @@ class AchievementFragment : BaseContainerFragment() {
         customProgressDialog?.dismiss()
         customProgressDialog = null
         if (this::aRealm.isInitialized && !aRealm.isClosed) {
-            aRealm.removeAllChangeListeners()
             aRealm.close()
         }
         try {

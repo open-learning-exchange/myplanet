@@ -26,6 +26,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
@@ -94,12 +95,20 @@ class SettingActivity : AppCompatActivity() {
         }
     }
 
+    @AndroidEntryPoint
     class SettingFragment : PreferenceFragmentCompat() {
+        @Inject
         lateinit var profileDbHandler: UserProfileDbHandler
+        @Inject
+        lateinit var databaseService: DatabaseService
+        @Inject
+        @DefaultPreferences
+        lateinit var defaultPref: SharedPreferences
+        @Inject
+        @AppPreferences
+        lateinit var settings: SharedPreferences
         var user: RealmUserModel? = null
         private lateinit var dialog: DialogUtils.CustomProgressDialog
-        private lateinit var defaultPref: SharedPreferences
-        lateinit var settings: SharedPreferences
 
         override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
             val view = super.onCreateView(inflater, container, savedInstanceState)
@@ -110,14 +119,12 @@ class SettingActivity : AppCompatActivity() {
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
             requireContext().setTheme(R.style.PreferencesTheme)
             setPreferencesFromResource(R.xml.pref, rootKey)
-            profileDbHandler = UserProfileDbHandler(requireActivity())
             user = profileDbHandler.userModel
             dialog = DialogUtils.getCustomProgressDialog(requireActivity())
-            defaultPref = (requireActivity() as SettingActivity).defaultPreferences
-            settings = (requireActivity() as SettingActivity).appPreferences
 
             setBetaToggleOn()
             setAutoSyncToggleOn()
+            setImprovedSyncToggleOn()
             val lp = findPreference<Preference>("app_language")
             lp?.setOnPreferenceClickListener {
                 context?.let { it1 -> languageChanger(it1) }
@@ -140,7 +147,7 @@ class SettingActivity : AppCompatActivity() {
             autoDownload?.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, _: Any? ->
                 if (autoDownload.isChecked == true) {
                     defaultPref.edit { putBoolean("beta_auto_download", true) }
-                    (requireActivity() as SettingActivity).databaseService.withRealm { realm ->
+                    databaseService.withRealm { realm ->
                         backgroundDownload(
                             downloadAllFiles(getAllLibraryList(realm)),
                             requireContext()
@@ -184,7 +191,7 @@ class SettingActivity : AppCompatActivity() {
                 prefFreeUp.onPreferenceClickListener = OnPreferenceClickListener {
                     AlertDialog.Builder(requireActivity()).setTitle(R.string.are_you_sure_want_to_delete_all_the_files)
                         .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                            (requireActivity() as SettingActivity).databaseService.withRealm { realm ->
+                            databaseService.withRealm { realm ->
                                 realm.executeTransactionAsync({ bgRealm ->
                                     val libraries = bgRealm.where(RealmMyLibrary::class.java).findAll()
                                     for (library in libraries) {
@@ -211,20 +218,9 @@ class SettingActivity : AppCompatActivity() {
 
         private fun setBetaToggleOn() {
             val beta = findPreference<SwitchPreference>("beta_function")
-            val course = findPreference<SwitchPreference>("beta_course")
-//            val rating = findPreference<SwitchPreference>("beta_rating")
-//            val myHealth = findPreference<SwitchPreference>("beta_myHealth")
-//            val healthWorker = findPreference<SwitchPreference>("beta_healthWorker")
 
-            if (beta != null) {
-                beta.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, _: Any? ->
-                    if (beta.isChecked) {
-                        if (course != null) {
-                            course.isChecked = true
-                        }
-                    }
-                    true
-                }
+            beta?.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, _: Any? ->
+                true
             }
         }
 
@@ -243,8 +239,8 @@ class SettingActivity : AppCompatActivity() {
             }
             autoForceSync(autoSync, autoForceWeeklySync!!, autoForceMonthlySync!!)
             autoForceSync(autoSync, autoForceMonthlySync, autoForceWeeklySync)
-            val settings = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-            val lastSynced = settings.getLong("LastSync", 0)
+            val syncPreferences = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            val lastSynced = syncPreferences.getLong("LastSync", 0)
             if (lastSynced == 0L) {
                 lastSyncDate?.setTitle(R.string.last_synced_never)
             } else if (lastSyncDate != null) {
@@ -252,10 +248,19 @@ class SettingActivity : AppCompatActivity() {
             }
         }
 
-        override fun onDestroy() {
-            if (this::profileDbHandler.isInitialized) {
-                profileDbHandler.onDestroy()
+        private fun setImprovedSyncToggleOn() {
+            val improvedSyncPreference = findPreference<SwitchPreference>("beta_improved_sync")
+            improvedSyncPreference?.isChecked = settings.getBoolean("useImprovedSync", false)
+            improvedSyncPreference?.onPreferenceChangeListener = OnPreferenceChangeListener { _, newValue ->
+                val isChecked = newValue as? Boolean ?: return@OnPreferenceChangeListener false
+                settings.edit { putBoolean("useImprovedSync", isChecked) }
+                val state = if (isChecked) "enabled" else "disabled"
+                createLog("improved_sync_toggle", state)
+                true
             }
+        }
+
+        override fun onDestroy() {
             super.onDestroy()
         }
 

@@ -6,24 +6,31 @@ import android.util.Base64
 import androidx.core.content.edit
 import com.google.gson.Gson
 import com.google.gson.JsonObject
-import io.realm.Realm
 import java.util.Locale
+import kotlin.LazyThreadSafetyMode
+import dagger.hilt.android.EntryPointAccessors
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SyncListener
-import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
+import org.ole.planet.myplanet.di.RepositoryEntryPoint
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.androidDecrypter
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.UrlUtils
+import org.ole.planet.myplanet.repository.UserRepository
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import kotlin.LazyThreadSafetyMode
 
-class ManagerSync private constructor(private val context: Context) {
+class ManagerSync private constructor(
+    private val context: Context,
+    private val userRepository: UserRepository,
+) {
     private val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    private val dbService: DatabaseService = DatabaseService(context)
 
     fun login(userName: String?, password: String?, listener: SyncListener) {
         try {
@@ -84,8 +91,8 @@ class ManagerSync private constructor(private val context: Context) {
                                 val salt = jsonDoc["salt"].asString
 
                                 if (androidDecrypter(userName, password, derivedKey, salt)) {
-                                    dbService.withRealm { realm ->
-                                        checkManagerAndInsert(jsonDoc, realm, listener)
+                                    MainApplication.applicationScope.launch {
+                                        checkManagerAndInsert(jsonDoc, listener)
                                     }
                                 } else {
                                     listener.onSyncFailed("Authentication failed. Invalid credentials.")
@@ -159,7 +166,7 @@ class ManagerSync private constructor(private val context: Context) {
                             val array = JsonUtils.getJsonArray("docs", responseBody)
                             if (array != null && array.size() > 0) {
                                 try {
-                                    settings.edit { putString("user_admin", Gson().toJson(array[0])) }
+                                    settings.edit { putString("user_admin", GsonUtils.gson.toJson(array[0])) }
                                 } catch (e: Exception) {
                                     e.printStackTrace()
                                 }
@@ -183,12 +190,17 @@ class ManagerSync private constructor(private val context: Context) {
         }
     }
 
-    private fun checkManagerAndInsert(jsonDoc: JsonObject?, realm: Realm, listener: SyncListener) {
-        if (isManager(jsonDoc)) {
-            populateUsersTable(jsonDoc, realm, settings)
+    private suspend fun checkManagerAndInsert(jsonDoc: JsonObject?, listener: SyncListener) {
+        if (!isManager(jsonDoc)) {
+            withContext(Dispatchers.Main) {
+                listener.onSyncFailed(MainApplication.context.getString(R.string.user_verification_in_progress))
+            }
+            return
+        }
+
+        userRepository.saveUser(jsonDoc, settings)
+        withContext(Dispatchers.Main) {
             listener.onSyncComplete()
-        } else {
-            listener.onSyncFailed(MainApplication.context.getString(R.string.user_verification_in_progress))
         }
     }
 
@@ -201,7 +213,12 @@ class ManagerSync private constructor(private val context: Context) {
     companion object {
         @JvmStatic
         val instance: ManagerSync by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
-            ManagerSync(MainApplication.context)
+            val entryPoint =
+                EntryPointAccessors.fromApplication(
+                    MainApplication.context.applicationContext,
+                    RepositoryEntryPoint::class.java
+                )
+            ManagerSync(MainApplication.context, entryPoint.userRepository())
         }
     }
 }

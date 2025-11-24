@@ -14,6 +14,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
 import kotlinx.coroutines.Dispatchers
@@ -24,52 +25,66 @@ import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyLife.Companion.updateVisibility
 import org.ole.planet.myplanet.model.RealmMyLife.Companion.updateWeight
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment
-import org.ole.planet.myplanet.ui.myPersonals.MyPersonalsFragment
 import org.ole.planet.myplanet.ui.myhealth.MyHealthFragment
 import org.ole.planet.myplanet.ui.mylife.helper.ItemTouchHelperAdapter
 import org.ole.planet.myplanet.ui.mylife.helper.ItemTouchHelperViewHolder
 import org.ole.planet.myplanet.ui.mylife.helper.OnStartDragListener
+import org.ole.planet.myplanet.ui.mypersonals.MyPersonalsFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
-import org.ole.planet.myplanet.ui.news.NewsFragment
 import org.ole.planet.myplanet.ui.references.ReferenceFragment
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment.Companion.newInstance
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment
+import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
-class AdapterMyLife(private val context: Context, private val myLifeList: List<RealmMyLife>, private var mRealm: Realm, private val mDragStartListener: OnStartDragListener) : RecyclerView.Adapter<RecyclerView.ViewHolder>(), ItemTouchHelperAdapter {
+class AdapterMyLife(
+    private val context: Context,
+    private val mDragStartListener: OnStartDragListener
+) : ListAdapter<RealmMyLife, RecyclerView.ViewHolder>(DIFF_CALLBACK), ItemTouchHelperAdapter {
     private val hide = 0.5f
     private val show = 1f
-
+    private lateinit var mRealm: Realm
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val v = LayoutInflater.from(context).inflate(R.layout.row_life, parent, false)
         return ViewHolderMyLife(v)
     }
 
+    override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
+        super.onAttachedToRecyclerView(recyclerView)
+        mRealm = Realm.getDefaultInstance()
+    }
+
+    override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
+        super.onDetachedFromRecyclerView(recyclerView)
+        mRealm.close()
+    }
+
     @SuppressLint("ClickableViewAccessibility")
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        val myLife = getItem(position)
         if (holder is ViewHolderMyLife) {
-            holder.title.text = myLifeList[position].title
-            holder.imageView.setImageResource(context.resources.getIdentifier(myLifeList[position].imageId, "drawable", context.packageName))
-            holder.imageView.contentDescription = context.getString(R.string.icon, myLifeList[position].title)
-            val fragment = findFragment(myLifeList[position].imageId)
+            holder.title.text = myLife.title
+            holder.imageView.setImageResource(context.resources.getIdentifier(myLife.imageId, "drawable", context.packageName))
+            holder.imageView.contentDescription = context.getString(R.string.icon, myLife.title)
+            val fragment = findFragment(myLife.imageId)
             if (fragment != null) {
                 holder.imageView.setOnClickListener { view: View ->
                     transactionFragment(fragment, view)
                 }
             }
             holder.dragImageButton.setOnTouchListener { _: View?, event: MotionEvent ->
-                holder.dragImageButton.contentDescription = context.getString(R.string.drag, myLifeList[position].title)
+                holder.dragImageButton.contentDescription = context.getString(R.string.drag, myLife.title)
                 if (event.actionMasked == MotionEvent.ACTION_DOWN) {
                     mDragStartListener.onStartDrag(holder)
                 }
                 false
             }
             holder.visibility.setOnClickListener {
-                holder.visibility.contentDescription = context.getString(R.string.visibility_of, myLifeList[position].title)
-                updateVisibility(holder, holder.bindingAdapterPosition, myLifeList[holder.bindingAdapterPosition].isVisible)
+                holder.visibility.contentDescription = context.getString(R.string.visibility_of, myLife.title)
+                updateVisibility(holder, holder.bindingAdapterPosition, myLife.isVisible)
             }
-            if (!myLifeList[position].isVisible) {
+            if (!myLife.isVisible) {
                 changeVisibility(holder, R.drawable.ic_visibility, hide)
             } else {
                 changeVisibility(holder, R.drawable.ic_visibility_off, show)
@@ -78,18 +93,19 @@ class AdapterMyLife(private val context: Context, private val myLifeList: List<R
     }
 
     private fun updateVisibility(holder: RecyclerView.ViewHolder, position: Int, isVisible: Boolean) {
+        val myLife = getItem(position)
         mRealm.executeTransactionAsync({ realm: Realm? ->
             realm?.let {
-                updateVisibility(!isVisible, myLifeList[position]._id)
+                updateVisibility(!isVisible, myLife._id)
             }
         }, {
             MainApplication.applicationScope.launch(Dispatchers.Main) {
                 if (isVisible) {
                     changeVisibility(holder, R.drawable.ic_visibility, hide)
-                    Utilities.toast(context, myLifeList[position].title + context.getString(R.string.is_now_hidden))
+                    Utilities.toast(context, myLife.title + context.getString(R.string.is_now_hidden))
                 } else {
                     changeVisibility(holder, R.drawable.ic_visibility_off, show)
-                    Utilities.toast(context, myLifeList[position].title + context.getString(R.string.is_now_shown))
+                    Utilities.toast(context, myLife.title + context.getString(R.string.is_now_shown))
                 }
             }
         }) { }
@@ -100,16 +116,9 @@ class AdapterMyLife(private val context: Context, private val myLifeList: List<R
         holder.rvItemContainer.alpha = alpha
     }
 
-    fun setmRealm(mRealm: Realm) {
-        this.mRealm = mRealm
-    }
-
-    override fun getItemCount(): Int {
-        return myLifeList.size
-    }
-
     override fun onItemMove(fromPosition: Int, toPosition: Int): Boolean {
-        updateWeight(toPosition + 1, myLifeList[fromPosition]._id, myLifeList[fromPosition].userId)
+        val fromMyLife = getItem(fromPosition)
+        updateWeight(toPosition + 1, fromMyLife._id, fromMyLife.userId)
         notifyItemMoved(fromPosition, toPosition)
         return true
     }
@@ -129,7 +138,8 @@ class AdapterMyLife(private val context: Context, private val myLifeList: List<R
         override fun onItemClear(viewHolder: RecyclerView.ViewHolder?) {
             itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.daynight_grey))
             if (viewHolder != null) {
-                if (!myLifeList[viewHolder.bindingAdapterPosition].isVisible) {
+                val myLife = getItem(viewHolder.bindingAdapterPosition)
+                if (!myLife.isVisible) {
                     (viewHolder as ViewHolderMyLife?)?.rvItemContainer?.alpha = hide
                 }
             }
@@ -137,10 +147,13 @@ class AdapterMyLife(private val context: Context, private val myLifeList: List<R
     }
 
     companion object {
+        private val DIFF_CALLBACK = DiffUtils.itemCallback<RealmMyLife>(
+            areItemsTheSame = { oldItem, newItem -> oldItem._id == newItem._id },
+            areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
+        )
         fun findFragment(frag: String?): Fragment? {
             when (frag) {
                 "ic_mypersonals" -> return MyPersonalsFragment()
-                "ic_news" -> return NewsFragment()
                 "ic_submissions" -> return MySubmissionFragment()
                 "ic_my_survey" -> return newInstance("survey")
                 "ic_myhealth" -> return MyHealthFragment()

@@ -9,14 +9,17 @@ import androidx.core.net.toUri
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.DialogUtils.CustomProgressDialog
+import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.IntentUtils
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.NetworkUtils.extractProtocol
@@ -93,7 +96,9 @@ class ConfigurationManager(
 
     private suspend fun checkConfigurationUrl(currentUrl: String, pin: String, customProgressDialog: CustomProgressDialog): UrlCheckResult {
         return try {
-            val versionsResponse = retrofitInterface?.getConfiguration("$currentUrl/versions")?.execute()
+            val versionsResponse = withTimeout(15_000) {
+                retrofitInterface?.getConfiguration("$currentUrl/versions")
+            }
 
             if (versionsResponse?.isSuccessful == true) {
                 val jsonObject = versionsResponse.body()
@@ -112,7 +117,9 @@ class ConfigurationManager(
                     }
                 }
             }
-
+            UrlCheckResult.Failure(currentUrl)
+        } catch (e: TimeoutCancellationException) {
+            e.printStackTrace()
             UrlCheckResult.Failure(currentUrl)
         } catch (e: Exception) {
             e.printStackTrace()
@@ -121,22 +128,30 @@ class ConfigurationManager(
     }
 
     private suspend fun fetchConfiguration(couchdbURL: String): Pair<String, String>? {
-        val configResponse = retrofitInterface
-            ?.getConfiguration("${getUrl(couchdbURL)}/configurations/_all_docs?include_docs=true")
-            ?.execute()
-
-        if (configResponse?.isSuccessful == true) {
-            val rows = configResponse.body()?.getAsJsonArray("rows")
-            if (rows != null && rows.size() > 0) {
-                val firstRow = rows[0].asJsonObject
-                val id = firstRow.getAsJsonPrimitive("id").asString
-                val doc = firstRow.getAsJsonObject("doc")
-                val code = doc.getAsJsonPrimitive("code").asString
-                processConfigurationDoc(doc)
-                return Pair(id, code)
+        return try {
+            val configResponse = withTimeout(15_000) {
+                retrofitInterface?.getConfiguration("${getUrl(couchdbURL)}/configurations/_all_docs?include_docs=true")
             }
+
+            if (configResponse?.isSuccessful == true) {
+                val rows = configResponse.body()?.getAsJsonArray("rows")
+                if (rows != null && rows.size() > 0) {
+                    val firstRow = rows[0].asJsonObject
+                    val id = firstRow.getAsJsonPrimitive("id").asString
+                    val doc = firstRow.getAsJsonObject("doc")
+                    val code = doc.getAsJsonPrimitive("code").asString
+                    processConfigurationDoc(doc)
+                    return Pair(id, code)
+                }
+            }
+            null
+        } catch (e: TimeoutCancellationException) {
+            e.printStackTrace()
+            null
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
         }
-        return null
     }
 
     private suspend fun processConfigurationDoc(doc: JsonObject) {
@@ -162,7 +177,7 @@ class ConfigurationManager(
                 .associate { it.key to it.value.asString }
 
             withContext(Dispatchers.IO) {
-                preferences.edit { putString("ai_models", Gson().toJson(modelsMap)) }
+                preferences.edit { putString("ai_models", GsonUtils.gson.toJson(modelsMap)) }
             }
         }
 

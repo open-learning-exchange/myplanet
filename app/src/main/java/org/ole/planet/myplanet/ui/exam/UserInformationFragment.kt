@@ -20,7 +20,9 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -33,11 +35,13 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.SubmissionRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
+import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
@@ -49,21 +53,33 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     @Inject
     lateinit var submissionRepository: SubmissionRepository
     @Inject
+    lateinit var userRepository: UserRepository
+    @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
-    private var submission: RealmSubmission? = null
     var userModel: RealmUserModel? = null
     var shouldHideElements: Boolean? = null
     @Inject
     lateinit var uploadManager: UploadManager
 
+    companion object {
+        fun getInstance(id: String?, teamId: String?, shouldHideElements: Boolean): UserInformationFragment {
+            val f = UserInformationFragment()
+            setArgs(f, id, teamId, shouldHideElements)
+            return f
+        }
+
+        private fun setArgs(f: UserInformationFragment, id: String?, teamId: String?, shouldHideElements: Boolean) {
+            val b = Bundle()
+            b.putString("sub_id", id)
+            b.putString("teamId", teamId)
+            b.putBoolean("shouldHideElements", shouldHideElements)
+            f.arguments = b
+        }
+    }
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentUserInformationBinding = FragmentUserInformationBinding.inflate(inflater, container, false)
         userModel = userProfileDbHandler.userModel
-        if (!TextUtils.isEmpty(id)) {
-            viewLifecycleOwner.lifecycleScope.launch {
-                submission = id?.let { submissionRepository.getSubmissionById(it) }
-            }
-        }
         shouldHideElements = arguments?.getBoolean("shouldHideElements") == true
         initViews()
         return fragmentUserInformationBinding.root
@@ -88,12 +104,6 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             adapterLevel.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             fragmentUserInformationBinding.spnLang.adapter = adapterLang
             fragmentUserInformationBinding.spnLevel.adapter = adapterLevel
-//        fragmentUserInformationBinding.etEmail.setText(getString(R.string.message_placeholder, userModel?.email))
-//        fragmentUserInformationBinding.etFname.setText(getString(R.string.message_placeholder, userModel?.firstName))
-//        fragmentUserInformationBinding.etLname.setText(getString(R.string.message_placeholder, userModel?.lastName))
-//        fragmentUserInformationBinding.etPhone.setText(getString(R.string.message_placeholder, userModel?.phoneNumber))
-//        fragmentUserInformationBinding.txtDob.text = getString(R.string.message_placeholder, userModel?.dob)
-//        dob = userModel?.dob
         }
         fragmentUserInformationBinding.txtDob.setOnClickListener(this)
         fragmentUserInformationBinding.btnCancel.setOnClickListener(this)
@@ -138,6 +148,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         var lname = ""
         var mName = ""
         var yob = ""
+        var calculatedAge = 0
 
         if (fragmentUserInformationBinding.llNames.isVisible) {
             fname = "${fragmentUserInformationBinding.etFname.text}".trim()
@@ -170,30 +181,31 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
                 return
             }
 
-            user.addProperty("age", yob)
+            calculatedAge = currentYear - yobInt
         }
 
-        if (fname.isNotEmpty() || lname.isNotEmpty()) {
-            user.addProperty("name", "$fname $lname")
-        }
         if (fname.isNotEmpty()) user.addProperty("firstName", fname)
-        if (lname.isNotEmpty()) user.addProperty("lastName", lname)
         if (mName.isNotEmpty()) user.addProperty("middleName", mName)
+        if (lname.isNotEmpty()) user.addProperty("lastName", lname)
+
+        if (fragmentUserInformationBinding.llEmailLang.isVisible) {
+            val email = fragmentUserInformationBinding.etEmail.text.toString().trim()
+            val lang = fragmentUserInformationBinding.spnLang.selectedItem.toString()
+            if (email.isNotEmpty()) user.addProperty("email", email)
+            if (lang.isNotEmpty()) user.addProperty("language", lang)
+        }
 
         if (fragmentUserInformationBinding.llPhoneDob.isVisible) {
             val phone = fragmentUserInformationBinding.etPhone.text.toString().trim()
             if (phone.isNotEmpty()) user.addProperty("phoneNumber", phone)
 
-            if (!dob.isNullOrEmpty()) user.addProperty("birthDate", dob)
+            if (!dob.isNullOrEmpty()) {
+                val birthDateISO = TimeUtils.convertToISO8601(dob!!)
+                user.addProperty("birthDate", birthDateISO)
+            }
         }
 
-        if (fragmentUserInformationBinding.llEmailLang.isVisible) {
-            val email = fragmentUserInformationBinding.etEmail.text.toString().trim()
-            val lang = fragmentUserInformationBinding.spnLang.selectedItem.toString()
-
-            if (email.isNotEmpty()) user.addProperty("email", email)
-            if (lang.isNotEmpty()) user.addProperty("language", lang)
-        }
+        if (yob.isNotEmpty()) user.addProperty("age", calculatedAge.toString())
 
         if (fragmentUserInformationBinding.llLevel.isVisible) {
             val level = fragmentUserInformationBinding.spnLevel.selectedItem.toString()
@@ -204,34 +216,21 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             val rbSelected = requireView().findViewById<RadioButton>(fragmentUserInformationBinding.rbGender.checkedRadioButtonId)
             if (rbSelected != null) {
                 val gender = rbSelected.tag.toString()
-                user.addProperty("gender", gender)
+                if (gender.isNotEmpty()) user.addProperty("gender", gender)
             }
         }
 
-        if (TextUtils.isEmpty(id)) {
+        user.addProperty("betaEnabled", false)
+
+        val teamId = arguments?.getString("teamId")
+
+        if (!teamId.isNullOrEmpty()) {
+            saveSubmission(user)
+        } else if (TextUtils.isEmpty(id)) {
             val userId = userModel?.id
             viewLifecycleOwner.lifecycleScope.launch {
                 try {
-                    databaseService.executeTransactionAsync { realm ->
-                        val model = realm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
-                        if (model != null) {
-                            user.keySet().forEach { key ->
-                                when (key) {
-                                    "firstName" -> model.firstName = user.get(key).asString
-                                    "lastName" -> model.lastName = user.get(key).asString
-                                    "middleName" -> model.middleName = user.get(key).asString
-                                    "email" -> model.email = user.get(key).asString
-                                    "language" -> model.language = user.get(key).asString
-                                    "phoneNumber" -> model.phoneNumber = user.get(key).asString
-                                    "birthDate" -> model.birthPlace = user.get(key).asString
-                                    "level" -> model.level = user.get(key).asString
-                                    "gender" -> model.gender = user.get(key).asString
-                                    "age" -> model.age = user.get(key).asString
-                                }
-                            }
-                            model.isUpdated = true
-                        }
-                    }
+                    userRepository.updateProfileFields(userId, user)
                     Utilities.toast(MainApplication.context, getString(R.string.user_profile_updated))
                     if (isAdded) dialog?.dismiss()
                 } catch (_: Exception) {
@@ -245,16 +244,36 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     }
 
     private fun saveSubmission(user: JsonObject) {
-        id?.let { submissionId ->
-            viewLifecycleOwner.lifecycleScope.launch {
-                val sub = submission ?: submissionRepository.getSubmissionById(submissionId)
-                sub?.let {
-                    it.user = user.toString()
-                    it.status = "complete"
-                    submissionRepository.saveSubmission(it)
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val submissionId = id
+                if (submissionId.isNullOrEmpty()) {
+                    Utilities.toast(
+                        MainApplication.context,
+                        "Error: Unable to save submission - no ID provided"
+                    )
+                    if (isAdded) dialog?.dismiss()
+                    return@launch
                 }
-                if (isAdded) {
-                    dialog?.dismiss()
+
+                submissionRepository.markSubmissionComplete(submissionId, user)
+
+                withContext(Dispatchers.Main) {
+                    Utilities.toast(
+                        MainApplication.context,
+                        getString(R.string.thank_you_for_taking_this_survey)
+                    )
+                    if (isAdded) {
+                        dialog?.dismiss()
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    Utilities.toast(MainApplication.context, "Error saving submission: ${e.message}")
+                    if (isAdded) {
+                        dialog?.dismiss()
+                    }
                 }
             }
         }
@@ -276,59 +295,70 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         }
     }
 
+    @OptIn(DelicateCoroutinesApi::class)
     private fun checkAvailableServer(settings: SharedPreferences) {
         val updateUrl = "${settings.getString("serverURL", "")}"
         val serverUrlMapper = ServerUrlMapper()
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
-        viewLifecycleOwner.lifecycleScope.launch {
+        GlobalScope.launch(Dispatchers.IO) {
+            var primaryAvailable = false
+            var alternativeAvailable = false
+
             try {
-                val primaryAvailable = withTimeoutOrNull(15000) {
-                    MainApplication.isServerReachable(mapping.primaryUrl)
-                } ?: false
-                
-                val alternativeAvailable = withTimeoutOrNull(15000) {
-                    mapping.alternativeUrl?.let { MainApplication.isServerReachable(it) } == true
-                } ?: false
+                primaryAvailable = try {
+                    withTimeoutOrNull(15000) {
+                        MainApplication.isServerReachable(mapping.primaryUrl)
+                    } ?: false
+                } catch (e: Exception) {
+                    false
+                }
+
+                alternativeAvailable = try {
+                    withTimeoutOrNull(15000) {
+                        mapping.alternativeUrl?.let { MainApplication.isServerReachable(it) } == true
+                    } ?: false
+                } catch (e: Exception) {
+                    false
+                }
 
                 if (!primaryAvailable && alternativeAvailable) {
                     mapping.alternativeUrl?.let { alternativeUrl ->
                         val uri = updateUrl.toUri()
                         val editor = settings.edit()
-
                         serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, settings)
                     }
                 }
-
-                uploadSubmissions()
-            } catch (_: Exception) {
-                uploadSubmissions()
-            }
-        }
-    }
-
-    private fun uploadSubmissions() {
-        MainApplication.applicationScope.launch {
-            try {
-                withContext(Dispatchers.IO) {
-                    uploadManager.uploadSubmissions()
-                }
-
-                withContext(Dispatchers.Main) {
-                    uploadExamResultWrapper()
-                }
             } catch (e: Exception) {
                 e.printStackTrace()
+            } finally {
+                if (primaryAvailable || alternativeAvailable) {
+                    uploadSubmissions()
+                }
             }
         }
     }
 
-    private fun uploadExamResultWrapper() {
-        val successListener = object : SuccessListener {
-            override fun onSuccess(success: String?) {}
+    private suspend fun uploadSubmissions() {
+        try {
+            withContext(Dispatchers.IO) {
+                uploadManager.uploadSubmissions()
+            }
+            uploadExamResultWrapper()
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
+    }
 
-        uploadManager.uploadExamResult(successListener)
+    private suspend fun uploadExamResultWrapper() {
+        try {
+            val successListener = object : SuccessListener {
+                override fun onSuccess(success: String?) {}
+            }
+            uploadManager.uploadExamResult(successListener)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     private fun showDatePickerDialog() {
@@ -346,20 +376,4 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
 
     override val key: String
         get() = "sub_id"
-
-    companion object {
-        fun getInstance(id: String?, teamId: String?, shouldHideElements: Boolean): UserInformationFragment {
-            val f = UserInformationFragment()
-            setArgs(f, id, teamId, shouldHideElements)
-            return f
-        }
-
-        private fun setArgs(f: UserInformationFragment, id: String?, teamId: String?, shouldHideElements: Boolean) {
-            val b = Bundle()
-            b.putString("sub_id", id)
-            b.putString("teamId", teamId)
-            b.putBoolean("shouldHideElements", shouldHideElements)
-            f.arguments = b
-        }
-    }
 }

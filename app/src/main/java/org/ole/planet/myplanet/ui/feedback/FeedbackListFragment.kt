@@ -189,7 +189,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     }
 
     override fun onFeedbackSubmitted() {
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             feedbackRepository.getFeedback(userModel).collectLatest { feedbackList ->
                 updatedFeedbackList(feedbackList)
             }
@@ -197,6 +197,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     }
 
     private fun updatedFeedbackList(updatedList: List<RealmFeedback>?) {
+        if (_binding == null) return
         adapterFeedback.submitList(updatedList)
         val itemCount = updatedList?.size ?: 0
         showNoData(binding.tvMessage, itemCount, "feedback")

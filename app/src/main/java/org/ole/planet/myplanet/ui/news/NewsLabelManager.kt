@@ -6,6 +6,7 @@ import android.view.View
 import fisk.chipcloud.ChipCloud
 import io.realm.Realm
 import io.realm.RealmList
+import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNewsBinding
@@ -91,7 +92,11 @@ class NewsLabelManager(private val context: Context, private val realm: Realm) {
 
             if (canManageLabels) {
                 chipCloud.setDeleteListener { _: Int, labelText: String? ->
-                    val selectedLabel = Constants.LABELS[labelText]
+                    val selectedLabel = when {
+                        labelText == null -> null
+                        Constants.LABELS.containsKey(labelText) -> Constants.LABELS[labelText]
+                        else -> news.labels?.firstOrNull { getLabel(it) == labelText }
+                    }
                     val newsId = news.id
                     if (selectedLabel != null && newsId != null) {
                         val labelRemoved = AtomicBoolean(false)
@@ -153,7 +158,24 @@ class NewsLabelManager(private val context: Context, private val realm: Realm) {
                 return key
             }
         }
-        return ""
+        return formatLabelValue(s)
+    }
+
+    companion object {
+        internal fun formatLabelValue(raw: String): String {
+            val cleaned = raw.replace("_", " ").replace("-", " ")
+            if (cleaned.isBlank()) {
+                return raw
+            }
+            return cleaned
+                .trim()
+                .split(whitespaceRegex)
+                .joinToString(" ") { part ->
+                    part.lowercase(Locale.getDefault()).replaceFirstChar { ch ->
+                        if (ch.isLowerCase()) ch.titlecase(Locale.getDefault()) else ch.toString()
+                    }
+                }
+        }
+        private val whitespaceRegex by lazy { Regex("\\s+") }
     }
 }
-
