@@ -125,6 +125,12 @@ class ChatAdapter(val context: Context, private val recyclerView: RecyclerView) 
         }
     }
 
+    fun setMessages(newMessages: List<String>) {
+        messages.clear()
+        messages.addAll(newMessages)
+        submitList(messages.toList())
+    }
+
     fun clearData() {
         messages.clear()
         animatedMessages.clear()

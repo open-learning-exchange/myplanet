@@ -35,6 +35,8 @@ import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.textChanges
+import org.ole.planet.myplanet.ui.news.NewsUiModel
+import org.ole.planet.myplanet.ui.news.toUiModel
 
 @AndroidEntryPoint
 class NewsFragment : BaseNewsFragment() {
@@ -133,7 +135,10 @@ class NewsFragment : BaseNewsFragment() {
             val n = user?.let { it1 -> createNews(map, mRealm, it1, imageList) }
             imageList.clear()
             llImage?.removeAllViews()
-            adapterNews?.addItem(n)
+            if (n != null) {
+                val detached = if (n.isValid && n.isManaged) mRealm.copyFromRealm(n) else n
+                adapterNews?.addItem(detached.toUiModel())
+            }
             labelFilteredList = applyLabelFilter(filteredNewsList)
             searchFilteredList = applySearchFilter(labelFilteredList)
             setData(searchFilteredList)
@@ -160,45 +165,54 @@ class NewsFragment : BaseNewsFragment() {
     override fun setData(list: List<RealmNews?>?) {
         if (!isAdded || list == null) return
 
-        if (binding.rvNews.adapter == null) {
-            changeLayoutManager(resources.configuration.orientation, binding.rvNews)
-            val resourceIds = mutableSetOf<String>()
-            list.forEach { news ->
-                if ((news?.imagesArray?.size() ?: 0) > 0) {
-                    val ob = news?.imagesArray?.get(0)?.asJsonObject
-                    val resourceId = getString("resourceId", ob?.asJsonObject)
-                    if (!resourceId.isNullOrBlank()) {
-                        resourceIds.add(resourceId)
-                    }
-                }
+        val detachedList = list.mapNotNull { news ->
+            if (news?.isValid == true) {
+                if (news.isManaged) mRealm.copyFromRealm(news) else news
+            } else {
+                null
             }
-            viewLifecycleOwner.lifecycleScope.launch {
-                if (resourceIds.isNotEmpty()) {
-                    val libraries = libraryRepository.getLibraryItemsByIds(resourceIds)
-                    getUrlsAndStartDownload(
-                        libraries.map<RealmMyLibrary, RealmMyLibrary?> { it },
-                        arrayListOf()
-                    )
-                }
-            }
-            val updatedListAsMutable: MutableList<RealmNews?> = list.toMutableList()
-            val sortedList = updatedListAsMutable.sortedWith(compareByDescending { news ->
-                getSortDate(news)
-            })
-            adapterNews = AdapterNews(requireActivity(), user, null, "", null, userProfileDbHandler, databaseService)
-
-            adapterNews?.setmRealm(mRealm)
-            adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
-            adapterNews?.setListener(this)
-            adapterNews?.registerAdapterDataObserver(observer)
-            adapterNews?.updateList(sortedList)
-            binding.rvNews.adapter = adapterNews
-        } else {
-            (binding.rvNews.adapter as? AdapterNews)?.updateList(list)
         }
-        adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, "news") }
-        binding.llAddNews.visibility = View.GONE
-        binding.btnNewVoice.text = getString(R.string.new_voice)
+
+        viewLifecycleOwner.lifecycleScope.launch(kotlinx.coroutines.Dispatchers.Default) {
+            val uiModels = detachedList.map { it.toUiModel() }.sortedByDescending { getSortDate(it.news) }
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                if (binding.rvNews.adapter == null) {
+                    changeLayoutManager(resources.configuration.orientation, binding.rvNews)
+                    val resourceIds = mutableSetOf<String>()
+                    detachedList.forEach { news ->
+                        if ((news.imagesArray.size() ?: 0) > 0) {
+                            val ob = news.imagesArray.get(0)?.asJsonObject
+                            val resourceId = getString("resourceId", ob?.asJsonObject)
+                            if (!resourceId.isNullOrBlank()) {
+                                resourceIds.add(resourceId)
+                            }
+                        }
+                    }
+                    if (resourceIds.isNotEmpty()) {
+                        launch {
+                            val libraries = libraryRepository.getLibraryItemsByIds(resourceIds)
+                            getUrlsAndStartDownload(
+                                libraries.map<RealmMyLibrary, RealmMyLibrary?> { it },
+                                arrayListOf()
+                            )
+                        }
+                    }
+                    adapterNews = AdapterNews(requireActivity(), user, null, "", null, userProfileDbHandler, databaseService)
+
+                    adapterNews?.setmRealm(mRealm)
+                    adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
+                    adapterNews?.setListener(this@NewsFragment)
+                    adapterNews?.registerAdapterDataObserver(observer)
+                    adapterNews?.updateList(uiModels)
+                    binding.rvNews.adapter = adapterNews
+                } else {
+                    (binding.rvNews.adapter as? AdapterNews)?.updateList(uiModels)
+                }
+                adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, "news") }
+                binding.llAddNews.visibility = View.GONE
+                binding.btnNewVoice.text = getString(R.string.new_voice)
+            }
+        }
     }
 
     override fun onNewsItemClick(news: RealmNews?) {

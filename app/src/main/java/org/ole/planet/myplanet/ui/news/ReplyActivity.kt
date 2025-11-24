@@ -24,12 +24,16 @@ import io.realm.RealmList
 import java.io.File
 import javax.inject.Inject
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityReplyBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.news.NewsUiModel
+import org.ole.planet.myplanet.ui.news.toUiModel
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.news.AdapterNews.OnNewsItemClickListener
 import org.ole.planet.myplanet.ui.news.NewsActions
@@ -85,14 +89,17 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         id ?: return
         lifecycleScope.launch {
             val (news, list) = viewModel.getNewsWithReplies(id)
+            val newsUiModel = withContext(Dispatchers.Default) { news?.toUiModel() }
+            val listUiModels = withContext(Dispatchers.Default) { list.map { it.toUiModel() } }
+
             databaseService.withRealm { realm ->
-                newsAdapter = AdapterNews(this@ReplyActivity, user, news, "", null, userProfileDbHandler, databaseService)
+                newsAdapter = AdapterNews(this@ReplyActivity, user, newsUiModel, "", null, userProfileDbHandler, databaseService)
                 newsAdapter.setListener(this@ReplyActivity)
                 newsAdapter.setmRealm(realm)
                 newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
                 newsAdapter.setNonTeamMember(intent.getBooleanExtra("nonTeamMember", false))
                 newsAdapter.setImageList(imageList)
-                newsAdapter.updateList(list)
+                newsAdapter.updateList(listUiModels)
                 activityReplyBinding.rvReply.adapter = newsAdapter
             }
         }

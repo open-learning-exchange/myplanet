@@ -33,6 +33,10 @@ import org.ole.planet.myplanet.ui.news.AdapterNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.GsonUtils
+import org.ole.planet.myplanet.ui.news.NewsUiModel
+import org.ole.planet.myplanet.ui.news.toUiModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @AndroidEntryPoint
 class DiscussionListFragment : BaseTeamFragment() {
@@ -232,24 +236,34 @@ class DiscussionListFragment : BaseTeamFragment() {
     }
 
     private fun showRecyclerView(realmNewsList: List<RealmNews?>?) {
-        val existingAdapter = binding.rvDiscussion.adapter
-        if (existingAdapter == null) {
-            val adapterNews = activity?.let {
-                AdapterNews(it, user, null, getEffectiveTeamName(), teamId, userProfileDbHandler, databaseService)
-            }
-            adapterNews?.setmRealm(mRealm)
-            adapterNews?.setListener(this)
-            if (!isMemberFlow.value) adapterNews?.setNonTeamMember(true)
-            realmNewsList?.let { adapterNews?.updateList(it) }
-            binding.rvDiscussion.adapter = adapterNews
-            adapterNews?.let {
-                showNoData(binding.tvNodata, it.itemCount, "discussions")
-            }
-        } else {
-            (existingAdapter as? AdapterNews)?.let { adapter ->
-                realmNewsList?.let {
-                    adapter.updateList(it)
-                    showNoData(binding.tvNodata, adapter.itemCount, "discussions")
+        val safeList = realmNewsList ?: emptyList()
+        val detachedList = safeList.mapNotNull {
+            if (it?.isValid == true) {
+                if (it.isManaged) mRealm.copyFromRealm(it) else it
+            } else null
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Default) {
+            val uiModels = detachedList.map { it.toUiModel() }
+            withContext(Dispatchers.Main) {
+                val existingAdapter = binding.rvDiscussion.adapter
+                if (existingAdapter == null) {
+                    val adapterNews = activity?.let {
+                        AdapterNews(it, user, null, getEffectiveTeamName(), teamId, userProfileDbHandler, databaseService)
+                    }
+                    adapterNews?.setmRealm(mRealm)
+                    adapterNews?.setListener(this@DiscussionListFragment)
+                    if (!isMemberFlow.value) adapterNews?.setNonTeamMember(true)
+                    adapterNews?.updateList(uiModels)
+                    binding.rvDiscussion.adapter = adapterNews
+                    adapterNews?.let {
+                        showNoData(binding.tvNodata, it.itemCount, "discussions")
+                    }
+                } else {
+                    (existingAdapter as? AdapterNews)?.let { adapter ->
+                        adapter.updateList(uiModels)
+                        showNoData(binding.tvNodata, adapter.itemCount, "discussions")
+                    }
                 }
             }
         }

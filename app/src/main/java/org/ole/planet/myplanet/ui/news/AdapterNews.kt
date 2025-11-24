@@ -54,15 +54,15 @@ import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.makeExpandable
 
-class AdapterNews(var context: Context, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userProfileDbHandler: UserProfileDbHandler, private val databaseService: DatabaseService) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
+class AdapterNews(var context: Context, private var currentUser: RealmUserModel?, private val parentNews: NewsUiModel?, private val teamName: String = "", private val teamId: String? = null, private val userProfileDbHandler: UserProfileDbHandler, private val databaseService: DatabaseService) : ListAdapter<NewsUiModel, RecyclerView.ViewHolder?>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem ->
             if (oldItem === newItem) return@itemCallback true
             if (oldItem == null || newItem == null) return@itemCallback oldItem == newItem
 
             try {
-                val oId = oldItem.takeIf { it.isValid }?.id
-                val nId = newItem.takeIf { it.isValid }?.id
+                val oId = oldItem.news.takeIf { it.isValid }?.id
+                val nId = newItem.news.takeIf { it.isValid }?.id
                 oId != null && oId == nId
             } catch (e: Exception) {
                 false
@@ -73,15 +73,18 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
             if (oldItem == null || newItem == null) return@itemCallback oldItem == newItem
 
             try {
-                if (!oldItem.isValid || !newItem.isValid) return@itemCallback false
+                val oldNews = oldItem.news
+                val newNews = newItem.news
+                if (!oldNews.isValid || !newNews.isValid) return@itemCallback false
                 
-                oldItem.id == newItem.id &&
-                    oldItem.time == newItem.time &&
-                    oldItem.isEdited == newItem.isEdited &&
-                    oldItem.message == newItem.message &&
-                    oldItem.userName == newItem.userName &&
-                    oldItem.userId == newItem.userId &&
-                    oldItem.sharedBy == newItem.sharedBy
+                oldNews.id == newNews.id &&
+                    oldNews.time == newNews.time &&
+                    oldNews.isEdited == newNews.isEdited &&
+                    oldNews.message == newNews.message &&
+                    oldNews.userName == newNews.userName &&
+                    oldNews.userId == newNews.userId &&
+                    oldNews.sharedBy == newNews.sharedBy &&
+                    oldNews.conversations == newNews.conversations
             } catch (e: Exception) {
                 false
             }
@@ -109,7 +112,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         this.imageList = imageList
     }
 
-    fun addItem(news: RealmNews?) {
+    fun addItem(news: NewsUiModel) {
         val currentList = currentList.toMutableList()
         currentList.add(0, news)
         submitListSafely(currentList) {
@@ -158,9 +161,10 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         if (holder is ViewHolderNews) {
             holder.bind(position)
-            val news = getNews(holder, position)
+            val uiModel = getNews(holder, position)
 
-            if (news?.isValid == true) {
+            if (uiModel?.news?.isValid == true) {
+                val news = uiModel.news
                 val viewHolder = holder
                 val sharedTeamName = extractSharedTeamName(news)
 
@@ -181,7 +185,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
                 labelManager?.setupAddLabelMenu(viewHolder.binding, news, canManageLabels)
                 news.let { labelManager?.showChips(viewHolder.binding, it, canManageLabels) }
 
-                handleChat(viewHolder, news)
+                handleChat(viewHolder, uiModel)
 
                 val currentLeader = getCurrentLeader(userModel, news)
                 setMemberClickListeners(viewHolder, userModel, currentLeader)
@@ -193,11 +197,11 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         if (newsId.isNullOrEmpty()) return
         val index = if (parentNews != null) {
             when {
-                parentNews.id == newsId -> 0
-                else -> currentList.indexOfFirst { it?.id == newsId }.let { if (it != -1) it + 1 else -1 }
+                parentNews.news.id == newsId -> 0
+                else -> currentList.indexOfFirst { it.news.id == newsId }.let { if (it != -1) it + 1 else -1 }
             }
         } else {
-            currentList.indexOfFirst { it?.id == newsId }
+            currentList.indexOfFirst { it.news.id == newsId }
         }
         if (index >= 0) {
             notifyItemChanged(index)
@@ -316,7 +320,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
                             currentList.removeAt(adjustedPos)
                             submitListSafely(currentList)
                         }
-                        NewsActions.deletePost(mRealm, news, currentList.toMutableList(), teamName, listener)
+                        NewsActions.deletePost(mRealm, news, currentList.map { it.news }.toMutableList(), teamName, listener)
                     }
                     .setNegativeButton(R.string.cancel, null)
                     .show()
@@ -343,10 +347,14 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         }
     }
 
-    private fun handleChat(holder: ViewHolderNews, news: RealmNews) {
+    private fun handleChat(holder: ViewHolderNews, uiModel: NewsUiModel) {
+        val news = uiModel.news
         if (news.newsId?.isNotEmpty() == true) {
-            val conversations = GsonUtils.gson.fromJson(news.conversations, Array<Conversation>::class.java).toList()
-            val chatAdapter = ChatAdapter(context, holder.binding.recyclerGchat)
+            val conversations = uiModel.conversations
+            val chatAdapter = (holder.binding.recyclerGchat.adapter as? ChatAdapter) ?: ChatAdapter(context, holder.binding.recyclerGchat).also {
+                holder.binding.recyclerGchat.adapter = it
+                holder.binding.recyclerGchat.layoutManager = LinearLayoutManager(context)
+            }
 
             if (user?.id?.startsWith("guest") == false) {
                 chatAdapter.setOnChatItemClickListener(object : ChatAdapter.OnChatItemClickListener {
@@ -356,20 +364,20 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
                 })
             }
 
+            val messages = mutableListOf<String>()
             for (conversation in conversations) {
                 val query = conversation.query
                 val response = conversation.response
                 if (query != null) {
-                    chatAdapter.addQuery(query)
+                    messages.add(query)
                 }
-                chatAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_SHARED_VIEW_MODEL
                 if (response != null) {
-                    chatAdapter.addResponse(response)
+                    messages.add(response)
                 }
             }
+            chatAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_SHARED_VIEW_MODEL
+            chatAdapter.setMessages(messages)
 
-            holder.binding.recyclerGchat.adapter = chatAdapter
-            holder.binding.recyclerGchat.layoutManager = LinearLayoutManager(context)
             holder.binding.recyclerGchat.visibility = View.VISIBLE
             holder.binding.sharedChat.visibility = View.VISIBLE
         } else {
@@ -389,7 +397,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         return null
     }
 
-    fun updateList(newList: List<RealmNews?>) {
+    fun updateList(newList: List<NewsUiModel>) {
         submitListSafely(newList)
     }
 
@@ -397,20 +405,9 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         submitListSafely(currentList.toList())
     }
 
-    private fun submitListSafely(list: List<RealmNews?>, commitCallback: Runnable? = null) {
+    private fun submitListSafely(list: List<NewsUiModel>, commitCallback: Runnable? = null) {
         userCache.clear()
-        val detachedList = list.map { news ->
-            if (news?.isValid == true && ::mRealm.isInitialized) {
-                try {
-                    mRealm.copyFromRealm(news)
-                } catch (e: Exception) {
-                    news
-                }
-            } else {
-                news
-            }
-        }
-        submitList(detachedList, commitCallback)
+        submitList(list, commitCallback)
     }
 
     private fun setMemberClickListeners(holder: ViewHolderNews, userModel: RealmUserModel?, currentLeader: RealmUserModel?) {
@@ -512,8 +509,8 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         }
     }
 
-    private fun getNews(holder: RecyclerView.ViewHolder, position: Int): RealmNews? {
-        val news: RealmNews? = if (parentNews != null) {
+    private fun getNews(holder: RecyclerView.ViewHolder, position: Int): NewsUiModel? {
+        val news: NewsUiModel? = if (parentNews != null) {
             if (position == 0) {
                 (holder.itemView as CardView).setCardBackgroundColor(ContextCompat.getColor(context, R.color.md_blue_50))
                 parentNews
