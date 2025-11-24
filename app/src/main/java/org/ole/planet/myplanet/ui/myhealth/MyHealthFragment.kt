@@ -59,8 +59,12 @@ import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
+import com.google.gson.JsonObject
+import org.ole.planet.myplanet.utilities.JsonUtils
+import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
 import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.ui.myhealth.HealthExaminationDisplayModel
 
 @AndroidEntryPoint
 class MyHealthFragment : Fragment() {
@@ -416,31 +420,32 @@ class MyHealthFragment : Fragment() {
                 Utilities.checkNA(contact)
             ).trimIndent()
 
-            val list = getExaminations(mm)
+            viewLifecycleOwner.lifecycleScope.launch {
+                val list = loadExaminations(userId ?: "", userModel?.key, userModel?.iv)
 
-            if (list != null && list.isNotEmpty()) {
-                binding.rvRecords.visibility = View.VISIBLE
-                binding.tvNoRecords.visibility = View.GONE
-                binding.tvDataPlaceholder.visibility = View.VISIBLE
+                if (list.isNotEmpty()) {
+                    binding.rvRecords.visibility = View.VISIBLE
+                    binding.tvNoRecords.visibility = View.GONE
+                    binding.tvDataPlaceholder.visibility = View.VISIBLE
 
-                healthAdapter = AdapterHealthExamination(requireActivity(), mh, currentUser)
-                healthAdapter.setmRealm(mRealm)
-                binding.rvRecords.apply {
-                    layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
-                    isNestedScrollingEnabled = false
-                    adapter = healthAdapter
-                }
-                healthAdapter.submitList(list)
-                binding.rvRecords.post {
-                    val lastPosition = list.size - 1
-                    if (lastPosition >= 0) {
-                        binding.rvRecords.scrollToPosition(lastPosition)
+                    healthAdapter = AdapterHealthExamination(requireActivity())
+                    binding.rvRecords.apply {
+                        layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
+                        isNestedScrollingEnabled = false
+                        adapter = healthAdapter
                     }
+                    healthAdapter.submitList(list)
+                    binding.rvRecords.post {
+                        val lastPosition = list.size - 1
+                        if (lastPosition >= 0) {
+                            binding.rvRecords.scrollToPosition(lastPosition)
+                        }
+                    }
+                } else {
+                    binding.rvRecords.visibility = View.GONE
+                    binding.tvNoRecords.visibility = View.GONE
+                    binding.tvDataPlaceholder.visibility = View.VISIBLE
                 }
-            } else {
-                binding.rvRecords.visibility = View.GONE
-                binding.tvNoRecords.visibility = View.GONE
-                binding.tvDataPlaceholder.visibility = View.VISIBLE
             }
         } else {
             binding.txtOtherNeed.text = getString(R.string.empty_text)
@@ -454,9 +459,115 @@ class MyHealthFragment : Fragment() {
         }
     }
 
-    private fun getExaminations(mm: RealmMyHealth): List<RealmMyHealthPojo>? {
-        val healths = mRealm.where(RealmMyHealthPojo::class.java)?.equalTo("profileId", mm.userKey)?.findAll()
-        return healths
+    private suspend fun loadExaminations(userId: String, userKey: String?, userIv: String?): List<HealthExaminationDisplayModel> {
+        val context = requireContext()
+        val greenColor = ContextCompat.getColor(context, R.color.md_green_50)
+        val greyColor = ContextCompat.getColor(context, R.color.md_grey_50)
+        val twoStrings = context.getString(R.string.two_strings)
+        val selfExamString = context.getString(R.string.self_examination)
+        val colonRegex = ":".toRegex()
+        return withContext(Dispatchers.IO) {
+            databaseService.withRealm { realm ->
+                var mh = realm.where(RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
+                if (mh == null) {
+                    mh = realm.where(RealmMyHealthPojo::class.java).equalTo("userId", userId).findFirst()
+                }
+                if (mh == null) return@withRealm emptyList()
+
+                val json = AndroidDecrypter.decrypt(mh.data, userKey, userIv)
+                if (TextUtils.isEmpty(json)) return@withRealm emptyList()
+
+                val mm = try {
+                    GsonUtils.gson.fromJson(json, RealmMyHealth::class.java)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    null
+                }
+                if (mm == null) return@withRealm emptyList()
+
+                val healths = realm.where(RealmMyHealthPojo::class.java).equalTo("profileId", mm.userKey).findAll()
+
+                val creatorIds = mutableSetOf<String>()
+                data class TempData(val exam: RealmMyHealthPojo, val encrypted: JsonObject, val createdBy: String?)
+                val tempList = mutableListOf<TempData>()
+
+                for (exam in healths) {
+                     val encrypted = if (!TextUtils.isEmpty(exam.data)) {
+                         try {
+                             GsonUtils.gson.fromJson(AndroidDecrypter.decrypt(exam.data, userKey, userIv), JsonObject::class.java)
+                         } catch (e: Exception) { JsonObject() }
+                     } else { JsonObject() }
+
+                     val createdBy = JsonUtils.getString("createdBy", encrypted)
+                     if (!TextUtils.isEmpty(createdBy)) {
+                         creatorIds.add(createdBy)
+                     }
+                     tempList.add(TempData(exam, encrypted, createdBy))
+                }
+
+                val userMap = mutableMapOf<String, String>()
+                if (creatorIds.isNotEmpty()) {
+                    val users = realm.where(RealmUserModel::class.java).`in`("id", creatorIds.toTypedArray()).findAll()
+                    for (u in users) {
+                        userMap[u.id] = u.getFullName()
+                    }
+                }
+
+                tempList.map { (exam, encrypted, createdBy) ->
+                    val dateFormatted = TimeUtils.formatDate(exam.date, "MMM dd, yyyy")
+                    var displayDate = dateFormatted
+                    var rowColor = greenColor
+
+                    if (!TextUtils.isEmpty(createdBy) && !TextUtils.equals(createdBy, userId)) {
+                         val name = userMap[createdBy] ?: createdBy?.split(colonRegex)?.dropLastWhile { it.isEmpty() }?.toTypedArray()?.getOrNull(1) ?: createdBy ?: ""
+                         displayDate = String.format(twoStrings, dateFormatted, name).trimIndent()
+                         rowColor = greyColor
+                    } else {
+                        displayDate = String.format(selfExamString, dateFormatted)
+                    }
+
+                    val conditionsBuilder = StringBuilder()
+                    if (!TextUtils.isEmpty(exam.conditions)) {
+                        try {
+                            val conditionsMap = GsonUtils.gson.fromJson(exam.conditions, JsonObject::class.java)
+                            if (conditionsMap != null) {
+                                for (key in conditionsMap.keySet()) {
+                                    if (conditionsMap[key].asBoolean) {
+                                        conditionsBuilder.append("$key, ")
+                                    }
+                                }
+                            }
+                        } catch(e: Exception) { }
+                    }
+                    val conditionsDisplay = conditionsBuilder.toString()
+
+                    HealthExaminationDisplayModel(
+                        id = exam._id,
+                        profileId = mh?._id,
+                        temperature = checkEmpty(exam.temperature),
+                        pulse = checkEmptyInt(exam.pulse),
+                        bp = exam.bp,
+                        hearing = exam.hearing,
+                        height = checkEmpty(exam.height),
+                        weight = checkEmpty(exam.weight),
+                        vision = exam.vision,
+                        displayDate = displayDate,
+                        dateLong = exam.date,
+                        rowColor = rowColor,
+                        encryptedData = encrypted,
+                        conditionsDisplay = conditionsDisplay
+                    )
+                }
+            }
+        }
+    }
+
+    private fun checkEmpty(value: Float): String {
+        return if (value == 0f) "" else value.toString() + ""
+    }
+
+    private fun checkEmptyInt(value: Int): String {
+        return if (value == 0) "" else value.toString() + ""
     }
 
     private fun getHealthProfile(mh: RealmMyHealthPojo): RealmMyHealth? {
