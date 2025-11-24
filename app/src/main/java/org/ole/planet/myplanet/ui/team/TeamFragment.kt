@@ -274,7 +274,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
         viewLifecycleOwner.lifecycleScope.launch {
             when {
                 fromDashboard -> {
-                    val user = userProfileDbHandler.getUserModel()
+                    val user = userProfileDbHandler.getUserModelCopy()
                     if (user?._id != null) {
                         teamRepository.getMyTeamsFlow(user._id!!).collectLatest {
                             teamList = it
