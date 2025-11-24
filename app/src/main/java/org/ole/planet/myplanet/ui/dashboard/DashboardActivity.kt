@@ -121,7 +121,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     lateinit var teamRepository: TeamRepository
     @Inject
     lateinit var progressRepository: ProgressRepository
-    private lateinit var challengeHelper: ChallengeHelper
+    private val challengeHelper: ChallengeHelper by lazy {
+        ChallengeHelper(this, mRealm, user, settings, editor, dashboardViewModel, progressRepository)
+    }
     private lateinit var notificationManager: NotificationUtils.NotificationManager
     private var notificationsShownThisSession = false
     private var lastNotificationCheckTime = 0L
@@ -148,14 +150,18 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         libraryListener = RealmChangeListener { onRealmDataChanged() }
         submissionListener = RealmChangeListener { onRealmDataChanged() }
         taskListener = RealmChangeListener { onRealmDataChanged() }
-        setupRealmListeners()
-        setupSystemNotificationReceiver()
-        checkIfShouldShowNotifications()
+
         addBackPressCallback()
-        challengeHelper = ChallengeHelper(this, mRealm, user, settings, editor, dashboardViewModel, progressRepository)
-        challengeHelper.evaluateChallengeDialog()
         handleNotificationIntent(intent)
         collectUiState()
+
+        binding.root.post {
+            setupSystemNotificationReceiver()
+            checkIfShouldShowNotifications()
+            setupRealmListeners()
+            challengeHelper.evaluateChallengeDialog()
+            reportFullyDrawn()
+        }
     }
 
     private fun collectUiState() {
