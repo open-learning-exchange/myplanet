@@ -30,6 +30,7 @@ import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -43,6 +44,7 @@ import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatModel
 import org.ole.planet.myplanet.model.ChatRequestModel
+import org.ole.planet.myplanet.model.ChatMessage
 import org.ole.planet.myplanet.model.ContentData
 import org.ole.planet.myplanet.model.ContinueChatModel
 import org.ole.planet.myplanet.model.Conversation
@@ -74,6 +76,7 @@ class ChatDetailFragment : Fragment() {
     private var isUserLoaded = false
     private var isAiUnavailable = false
     private var newsId: String? = null
+    private var loadingJob: Job? = null
     @Inject
     @AppPreferences
     lateinit var settings: SharedPreferences
@@ -196,11 +199,33 @@ class ChatDetailFragment : Fragment() {
     private fun loadNewsConversations(newsId: String?, newsRev: String?, newsConversations: String?) {
         _id = newsId ?: ""
         _rev = newsRev ?: ""
-        val conversations = GsonUtils.gson.fromJson(newsConversations, Array<Conversation>::class.java).toList()
-        for (conversation in conversations) {
-            conversation.query?.let { mAdapter.addQuery(it) }
-            mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_SHARED_VIEW_MODEL
-            conversation.response?.let { mAdapter.addResponse(it) }
+        loadingJob?.cancel()
+        loadingJob = viewLifecycleOwner.lifecycleScope.launch {
+            if (!isAdded) return@launch
+            customProgressDialog.setText(getString(R.string.please_wait))
+            customProgressDialog.show()
+            try {
+                val messages = withContext(Dispatchers.Default) {
+                    val conversations = GsonUtils.gson.fromJson(newsConversations, Array<Conversation>::class.java).toList()
+                    val list = mutableListOf<ChatMessage>()
+                    val limit = 20
+                    val limitedConversations = if (conversations.size > limit) conversations.takeLast(limit) else conversations
+                    for (conversation in limitedConversations) {
+                        conversation.query?.let { list.add(ChatMessage(it, ChatMessage.QUERY)) }
+                        conversation.response?.let { list.add(ChatMessage(it, ChatMessage.RESPONSE, ChatMessage.RESPONSE_SOURCE_SHARED_VIEW_MODEL)) }
+                    }
+                    list
+                }
+                mAdapter.submitList(messages) {
+                    binding.recyclerGchat.post {
+                        binding.recyclerGchat.scrollToPosition(mAdapter.itemCount - 1)
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                customProgressDialog.dismiss()
+            }
         }
     }
 
@@ -248,13 +273,15 @@ class ChatDetailFragment : Fragment() {
                         binding.editGchatMessage.text.clear()
                         binding.textGchatIndicator.visibility = View.GONE
                         if (!conversations.isNullOrEmpty()) {
+                            val messages = mutableListOf<ChatMessage>()
                             for (conversation in conversations) {
-                                conversation.query?.let { mAdapter.addQuery(it) }
-                                mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_SHARED_VIEW_MODEL
-                                conversation.response?.let { mAdapter.addResponse(it) }
+                                conversation.query?.let { messages.add(ChatMessage(it, ChatMessage.QUERY)) }
+                                conversation.response?.let { messages.add(ChatMessage(it, ChatMessage.RESPONSE, ChatMessage.RESPONSE_SOURCE_SHARED_VIEW_MODEL)) }
                             }
-                            binding.recyclerGchat.post {
-                                binding.recyclerGchat.scrollToPosition(mAdapter.itemCount - 1)
+                            mAdapter.submitList(messages) {
+                                binding.recyclerGchat.post {
+                                    binding.recyclerGchat.scrollToPosition(mAdapter.itemCount - 1)
+                                }
                             }
                         }
                     }
@@ -525,8 +552,7 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun processSuccessfulResponse(chatResponse: String, responseBody: ChatModel, query: String, id: String?) {
-        mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_NETWORK
-        mAdapter.addResponse(chatResponse)
+        mAdapter.addResponse(chatResponse, ChatMessage.RESPONSE_SOURCE_NETWORK)
         responseBody.couchDBResponse?.rev?.let { _rev = it }
         id?.let { continueConversationRealm(it, query, chatResponse) } ?: saveNewChat(query, chatResponse, responseBody)
     }
@@ -639,5 +665,10 @@ class ChatDetailFragment : Fragment() {
         }
         _binding = null
         super.onDestroyView()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        loadingJob?.cancel()
     }
 }

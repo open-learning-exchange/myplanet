@@ -16,26 +16,23 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemAiResponseMessageBinding
 import org.ole.planet.myplanet.databinding.ItemUserMessageBinding
+import org.ole.planet.myplanet.model.ChatMessage
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 class ChatAdapter(val context: Context, private val recyclerView: RecyclerView) :
-    ListAdapter<String, RecyclerView.ViewHolder>(
+    ListAdapter<ChatMessage, RecyclerView.ViewHolder>(
         DiffUtils.itemCallback(
             { old, new -> old == new },
             { old, new -> old == new }
         )
     ) {
-    var responseSource: Int = RESPONSE_SOURCE_UNKNOWN
-    private val viewTypeQuery = 1
-    private val viewTypeResponse = 2
     val animatedMessages = HashMap<Int, Boolean>()
     var lastAnimatedPosition: Int = -1
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
-    private val messages = mutableListOf<String>()
 
     interface OnChatItemClickListener {
-        fun onChatItemClick(position: Int, chatItem: String)
+        fun onChatItemClick(position: Int, chatItem: ChatMessage)
     }
 
     private var chatItemClickListener: OnChatItemClickListener? = null
@@ -64,7 +61,7 @@ class ChatAdapter(val context: Context, private val recyclerView: RecyclerView) 
     ) : RecyclerView.ViewHolder(textAiMessageBinding.root) {
         fun bind(response: String, responseSource: Int,  shouldAnimate: Boolean, markAnimated: () -> Unit) {
             textAiMessageBinding.textGchatMessageOther.visibility = View.VISIBLE
-            if (responseSource == RESPONSE_SOURCE_NETWORK) {
+            if (responseSource == ChatMessage.RESPONSE_SOURCE_NETWORK) {
                 if (shouldAnimate) {
                     textAiMessageBinding.textGchatMessageOther.text = context.getString(R.string.empty_text)
                     coroutineScope.launch {
@@ -74,7 +71,7 @@ class ChatAdapter(val context: Context, private val recyclerView: RecyclerView) 
                     textAiMessageBinding.textGchatMessageOther.text = response
                 }
 
-            } else if (responseSource == RESPONSE_SOURCE_SHARED_VIEW_MODEL) {
+            } else if (responseSource == ChatMessage.RESPONSE_SOURCE_SHARED_VIEW_MODEL) {
                 if (response.isNotEmpty()) {
                     textAiMessageBinding.textGchatMessageOther.text = response
                 } else{
@@ -111,45 +108,46 @@ class ChatAdapter(val context: Context, private val recyclerView: RecyclerView) 
     }
 
     fun addQuery(query: String) {
-        messages.add(query)
-        submitList(messages.toList()) {
+        val currentList = currentList.toMutableList()
+        currentList.add(ChatMessage(query, ChatMessage.QUERY))
+        submitList(currentList) {
             scrollToLastItem()
         }
     }
 
-    fun addResponse(response: String) {
-        messages.add(response)
-        lastAnimatedPosition = messages.size - 1
-        submitList(messages.toList()) {
+    fun addResponse(response: String, source: Int) {
+        val currentList = currentList.toMutableList()
+        currentList.add(ChatMessage(response, ChatMessage.RESPONSE, source))
+        lastAnimatedPosition = currentList.size - 1
+        submitList(currentList) {
             scrollToLastItem()
         }
     }
 
     fun clearData() {
-        messages.clear()
         animatedMessages.clear()
         lastAnimatedPosition = -1
         submitList(emptyList())
     }
 
     private fun scrollToLastItem() {
-        val lastPosition = messages.size - 1
+        val lastPosition = itemCount - 1
         if (lastPosition >= 0) {
             recyclerView.scrollToPosition(lastPosition)
         }
     }
 
     override fun getItemViewType(position: Int): Int {
-        return if (position % 2 == 0) viewTypeQuery else viewTypeResponse
+        return getItem(position).viewType
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         return when (viewType) {
-            viewTypeQuery -> {
+            ChatMessage.QUERY -> {
                 val userMessageBinding = ItemUserMessageBinding.inflate(LayoutInflater.from(context), parent, false)
                 QueryViewHolder(userMessageBinding, this::copyToClipboard)
             }
-            viewTypeResponse -> {
+            ChatMessage.RESPONSE -> {
                 val aiMessageBinding = ItemAiResponseMessageBinding.inflate(LayoutInflater.from(context), parent, false)
                 ResponseViewHolder(aiMessageBinding, this::copyToClipboard, context, recyclerView, coroutineScope)
             }
@@ -160,14 +158,14 @@ class ChatAdapter(val context: Context, private val recyclerView: RecyclerView) 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val chatItem = getItem(position)
         when (holder.itemViewType) {
-            viewTypeQuery -> {
+            ChatMessage.QUERY -> {
                 val queryViewHolder = holder as QueryViewHolder
-                queryViewHolder.bind(chatItem)
+                queryViewHolder.bind(chatItem.message)
             }
-            viewTypeResponse -> {
+            ChatMessage.RESPONSE -> {
                 val responseViewHolder = holder as ResponseViewHolder
                 val shouldAnimate = (position == lastAnimatedPosition && !animatedMessages.containsKey(position))
-                responseViewHolder.bind(chatItem,responseSource, shouldAnimate) {
+                responseViewHolder.bind(chatItem.message, chatItem.source, shouldAnimate) {
                     animatedMessages[position] = true
                 }
             }
@@ -184,8 +182,8 @@ class ChatAdapter(val context: Context, private val recyclerView: RecyclerView) 
     }
 
     companion object {
-        const val RESPONSE_SOURCE_SHARED_VIEW_MODEL = 1
-        const val RESPONSE_SOURCE_NETWORK = 2
-        const val RESPONSE_SOURCE_UNKNOWN = 0
+        const val RESPONSE_SOURCE_SHARED_VIEW_MODEL = ChatMessage.RESPONSE_SOURCE_SHARED_VIEW_MODEL
+        const val RESPONSE_SOURCE_NETWORK = ChatMessage.RESPONSE_SOURCE_NETWORK
+        const val RESPONSE_SOURCE_UNKNOWN = ChatMessage.RESPONSE_SOURCE_UNKNOWN
     }
 }
