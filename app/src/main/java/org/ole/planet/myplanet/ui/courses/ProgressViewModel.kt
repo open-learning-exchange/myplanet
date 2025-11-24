@@ -7,6 +7,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import javax.inject.Inject
 
