@@ -423,8 +423,16 @@ class MyHealthFragment : Fragment() {
                 binding.tvNoRecords.visibility = View.GONE
                 binding.tvDataPlaceholder.visibility = View.VISIBLE
 
-                healthAdapter = AdapterHealthExamination(requireActivity(), mh, currentUser)
-                healthAdapter.setmRealm(mRealm)
+                val userIds = list.mapNotNull {
+                    val encrypted = it.getEncryptedDataAsJson(currentUser)
+                    encrypted?.get("createdBy")?.asString
+                }.distinct()
+
+                val userNames = userRepository.getUsersByIds(userIds)
+                    .filter { it.id != null }
+                    .associateBy({ it.id!! }, { it.getFullName() })
+
+                healthAdapter = AdapterHealthExamination(requireActivity(), userNames, mh, currentUser)
                 binding.rvRecords.apply {
                     layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
                     isNestedScrollingEnabled = false

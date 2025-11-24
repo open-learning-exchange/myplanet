@@ -181,4 +181,13 @@ class UserRepositoryImpl @Inject constructor(
                 ?.let { realm.copyFromRealm(it) }
         }
     }
+
+    override fun getUsersByIds(userIds: List<String>): List<RealmUserModel> {
+        return databaseService.withRealm { realm ->
+            realm.where(RealmUserModel::class.java)
+                .`in`("id", userIds.toTypedArray())
+                .findAll()
+                .let { realm.copyFromRealm(it) }
+        }
+    }
 }

@@ -49,4 +49,5 @@ interface UserRepository {
     )
 
     fun getUserModel(): RealmUserModel?
+    fun getUsersByIds(userIds: List<String>): List<RealmUserModel>
 }
