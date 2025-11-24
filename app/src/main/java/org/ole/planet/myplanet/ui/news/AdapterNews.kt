@@ -17,6 +17,8 @@ import androidx.appcompat.app.AlertDialog
 import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toDrawable
+import androidx.lifecycle.findViewTreeLifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -32,6 +34,7 @@ import io.realm.Sort
 import java.io.File
 import java.util.Calendar
 import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNewsBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -104,6 +107,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         val raw = settings.getString("communityLeaders", "") ?: ""
         RealmUserModel.parseLeadersJson(raw)
     }
+    private val fileExistenceCache = ConcurrentHashMap<String, Boolean>()
 
     fun setImageList(imageList: RealmList<String>?) {
         this.imageList = imageList
@@ -649,13 +653,17 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
                 if (imageUrls.size == 1) {
                     val imgObject = GsonUtils.gson.fromJson(imageUrls[0], JsonObject::class.java)
                     val path = JsonUtils.getString("imageUrl", imgObject)
-                    loadSingleImage(binding, path)
+                    loadFile(binding, news, path) { exists ->
+                        loadSingleImage(binding, path, exists)
+                    }
                 } else {
                     binding.llNewsImages.visibility = View.VISIBLE
                     for (imageUrl in imageUrls) {
                         val imgObject = GsonUtils.gson.fromJson(imageUrl, JsonObject::class.java)
                         val path = JsonUtils.getString("imageUrl", imgObject)
-                        addImageToContainer(binding, path)
+                        loadFile(binding, news, path) { exists ->
+                            addImageToContainer(binding, path, exists)
+                        }
                     }
                 }
                 return
@@ -681,13 +689,35 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         }
     }
 
-    private fun loadSingleImage(binding: RowNewsBinding, path: String?) {
+    private fun loadFile(binding: RowNewsBinding, news: RealmNews?, path: String?, action: (Boolean) -> Unit) {
+        if (path == null) return
+        val fileExists = news?.fileExists ?: fileExistenceCache[path]
+        if (fileExists != null) {
+            action(fileExists)
+        } else {
+            binding.root.findViewTreeLifecycleOwner()?.lifecycleScope?.launch {
+                val exists = File(path).exists()
+                fileExistenceCache[path] = exists
+                if (news != null) {
+                    databaseService.withRealm { realm ->
+                        realm.executeTransaction {
+                            val managedNews = realm.where(RealmNews::class.java).equalTo("id", news.id).findFirst()
+                            managedNews?.fileExists = exists
+                        }
+                    }
+                }
+                action(exists)
+            }
+        }
+    }
+
+    private fun loadSingleImage(binding: RowNewsBinding, path: String?, fileExists: Boolean) {
         if (path == null) return
         val request = Glide.with(binding.imgNews.context)
         val target = if (path.lowercase(Locale.getDefault()).endsWith(".gif")) {
-            request.asGif().load(if (File(path).exists()) File(path) else path)
+            request.asGif().load(if (fileExists) File(path) else path)
         } else {
-            request.load(if (File(path).exists()) File(path) else path)
+            request.load(if (fileExists) File(path) else path)
         }
         target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().placeholder(R.drawable.ic_loading)
             .error(R.drawable.ic_loading)
@@ -698,7 +728,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         }
     }
 
-    private fun addImageToContainer(binding: RowNewsBinding, path: String?) {
+    private fun addImageToContainer(binding: RowNewsBinding, path: String?, fileExists: Boolean) {
         if (path == null) return
         val imageView = ImageView(context)
         val size = (100 * context.resources.displayMetrics.density).toInt()
@@ -710,9 +740,9 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
 
         val request = Glide.with(context)
         val target = if (path.lowercase(Locale.getDefault()).endsWith(".gif")) {
-            request.asGif().load(if (File(path).exists()) File(path) else path)
+            request.asGif().load(if (fileExists) File(path) else path)
         } else {
-            request.load(if (File(path).exists()) File(path) else path)
+            request.load(if (fileExists) File(path) else path)
         }
         target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().placeholder(R.drawable.ic_loading)
             .error(R.drawable.ic_loading)
@@ -734,20 +764,22 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         val basePath = context.getExternalFilesDir(null)
         if (library != null && basePath != null) {
             val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
-            if (imageFile.exists()) {
-                val request = Glide.with(binding.imgNews.context)
-                val isGif = library.resourceLocalAddress?.lowercase(Locale.getDefault())?.endsWith(".gif") == true
-                val target = if (isGif) {
-                    request.asGif().load(imageFile)
-                } else {
-                    request.load(imageFile)
-                }
-                target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().placeholder(R.drawable.ic_loading)
-                    .error(R.drawable.ic_loading)
-                    .into(binding.imgNews)
-                binding.imgNews.visibility = View.VISIBLE
-                binding.imgNews.setOnClickListener {
-                    showZoomableImage(it.context, imageFile.toString())
+            loadFile(binding, null, imageFile.absolutePath) { exists ->
+                if (exists) {
+                    val request = Glide.with(binding.imgNews.context)
+                    val isGif = library.resourceLocalAddress?.lowercase(Locale.getDefault())?.endsWith(".gif") == true
+                    val target = if (isGif) {
+                        request.asGif().load(imageFile)
+                    } else {
+                        request.load(imageFile)
+                    }
+                    target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().placeholder(R.drawable.ic_loading)
+                        .error(R.drawable.ic_loading)
+                        .into(binding.imgNews)
+                    binding.imgNews.visibility = View.VISIBLE
+                    binding.imgNews.setOnClickListener {
+                        showZoomableImage(it.context, imageFile.toString())
+                    }
                 }
             }
         }
@@ -762,31 +794,33 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         val basePath = context.getExternalFilesDir(null)
         if (library != null && basePath != null) {
             val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
-            if (imageFile.exists()) {
-                val imageView = ImageView(context)
-                val size = (100 * context.resources.displayMetrics.density).toInt()
-                val margin = (4 * context.resources.displayMetrics.density).toInt()
-                val params = ViewGroup.MarginLayoutParams(size, size)
-                params.setMargins(margin, margin, margin, margin)
-                imageView.layoutParams = params
-                imageView.scaleType = ImageView.ScaleType.CENTER_CROP
+            loadFile(binding, null, imageFile.absolutePath) { exists ->
+                if (exists) {
+                    val imageView = ImageView(context)
+                    val size = (100 * context.resources.displayMetrics.density).toInt()
+                    val margin = (4 * context.resources.displayMetrics.density).toInt()
+                    val params = ViewGroup.MarginLayoutParams(size, size)
+                    params.setMargins(margin, margin, margin, margin)
+                    imageView.layoutParams = params
+                    imageView.scaleType = ImageView.ScaleType.CENTER_CROP
 
-                val request = Glide.with(context)
-                val isGif = library.resourceLocalAddress?.lowercase(Locale.getDefault())?.endsWith(".gif") == true
-                val target = if (isGif) {
-                    request.asGif().load(imageFile)
-                } else {
-                    request.load(imageFile)
+                    val request = Glide.with(context)
+                    val isGif = library.resourceLocalAddress?.lowercase(Locale.getDefault())?.endsWith(".gif") == true
+                    val target = if (isGif) {
+                        request.asGif().load(imageFile)
+                    } else {
+                        request.load(imageFile)
+                    }
+                    target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().placeholder(R.drawable.ic_loading)
+                        .error(R.drawable.ic_loading)
+                        .into(imageView)
+
+                    imageView.setOnClickListener {
+                        showZoomableImage(context, imageFile.toString())
+                    }
+
+                    binding.llNewsImages.addView(imageView)
                 }
-                target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().placeholder(R.drawable.ic_loading)
-                    .error(R.drawable.ic_loading)
-                    .into(imageView)
-
-                imageView.setOnClickListener {
-                    showZoomableImage(context, imageFile.toString())
-                }
-
-                binding.llNewsImages.addView(imageView)
             }
         }
     }
@@ -800,15 +834,32 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         dialog.setContentView(view)
         dialog.window?.setBackgroundDrawable(Color.BLACK.toDrawable())
 
-        val request = Glide.with(photoView.context)
-        val target = if (imageUrl.lowercase(Locale.getDefault()).endsWith(".gif")) {
-            val file = File(imageUrl)
-            if (file.exists()) request.asGif().load(file) else request.asGif().load(imageUrl)
+        val fileExists = fileExistenceCache[imageUrl]
+        if (fileExists != null) {
+            val request = Glide.with(photoView.context)
+            val target = if (imageUrl.lowercase(Locale.getDefault()).endsWith(".gif")) {
+                val file = File(imageUrl)
+                if (fileExists) request.asGif().load(file) else request.asGif().load(imageUrl)
+            } else {
+                val file = File(imageUrl)
+                if (fileExists) request.load(file) else request.load(imageUrl)
+            }
+            target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().error(R.drawable.ic_loading).into(photoView)
         } else {
-            val file = File(imageUrl)
-            if (file.exists()) request.load(file) else request.load(imageUrl)
+            view.findViewTreeLifecycleOwner()?.lifecycleScope?.launch {
+                val exists = File(imageUrl).exists()
+                fileExistenceCache[imageUrl] = exists
+                val request = Glide.with(photoView.context)
+                val target = if (imageUrl.lowercase(Locale.getDefault()).endsWith(".gif")) {
+                    val file = File(imageUrl)
+                    if (exists) request.asGif().load(file) else request.asGif().load(imageUrl)
+                } else {
+                    val file = File(imageUrl)
+                    if (exists) request.load(file) else request.load(imageUrl)
+                }
+                target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().error(R.drawable.ic_loading).into(photoView)
+            }
         }
-        target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().error(R.drawable.ic_loading).into(photoView)
 
         closeButton.setOnClickListener { dialog.dismiss() }
 

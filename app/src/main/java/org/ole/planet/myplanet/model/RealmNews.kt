@@ -56,6 +56,7 @@ open class RealmNews : RealmObject() {
     var isEdited: Boolean = false
     var editedTime: Long = 0
     var sharedBy: String? = null
+    var fileExists: Boolean? = null
 
     val imagesArray: JsonArray
         get() = if (images == null) JsonArray() else GsonUtils.gson.fromJson(images, JsonArray::class.java)
