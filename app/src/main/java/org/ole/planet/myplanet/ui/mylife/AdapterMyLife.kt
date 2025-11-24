@@ -22,9 +22,9 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyLife.Companion.updateWeight
+import org.ole.planet.myplanet.repository.LifeRepository
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment
 import org.ole.planet.myplanet.ui.myhealth.MyHealthFragment
-import org.ole.planet.myplanet.ui.mylife.repository.MyLifeRepository
 import org.ole.planet.myplanet.ui.mylife.helper.ItemTouchHelperAdapter
 import org.ole.planet.myplanet.ui.mylife.helper.ItemTouchHelperViewHolder
 import org.ole.planet.myplanet.ui.mylife.helper.OnStartDragListener
@@ -40,7 +40,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 class AdapterMyLife(
     private val context: Context,
     private val mDragStartListener: OnStartDragListener,
-    private val myLifeRepository: MyLifeRepository
+    private val lifeRepository: LifeRepository
 ) : ListAdapter<RealmMyLife, RecyclerView.ViewHolder>(DIFF_CALLBACK), ItemTouchHelperAdapter {
     private val hide = 0.5f
     private val show = 1f
