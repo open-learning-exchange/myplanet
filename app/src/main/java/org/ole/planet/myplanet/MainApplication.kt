@@ -234,13 +234,15 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             val threadPolicy = StrictMode.ThreadPolicy.Builder()
                 .detectAll()
                 .penaltyLog()
+                .penaltyDeath()
                 .build()
             StrictMode.setThreadPolicy(threadPolicy)
 
-            val builder = VmPolicy.Builder()
-            builder.detectFileUriExposure()
-            builder.detectUntaggedSockets()
-            StrictMode.setVmPolicy(builder.build())
+            val vmPolicy = VmPolicy.Builder()
+                .detectAll()
+                .penaltyLog()
+                .build()
+            StrictMode.setVmPolicy(vmPolicy)
         }
     }
 
