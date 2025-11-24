@@ -159,7 +159,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             setupSystemNotificationReceiver()
             checkIfShouldShowNotifications()
             setupRealmListeners()
-            challengeHelper = ChallengeHelper(this, mRealm, user, settings, editor, dashboardViewModel, progressRepository)
             challengeHelper.evaluateChallengeDialog()
             reportFullyDrawn()
         }
