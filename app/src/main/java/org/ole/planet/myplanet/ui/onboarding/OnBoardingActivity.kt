@@ -1,7 +1,9 @@
 package org.ole.planet.myplanet.ui.onboarding
 
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Bundle
+import android.os.StrictMode
 import android.view.View
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -9,36 +11,56 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.viewpager.widget.ViewPager
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityOnBoardingBinding
+import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utilities.Constants
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.MapTileUtils.copyAssets
 import org.ole.planet.myplanet.utilities.SecurePrefs
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 
+@AndroidEntryPoint
 class OnBoardingActivity : AppCompatActivity() {
     private lateinit var binding: ActivityOnBoardingBinding
     private lateinit var mAdapter: OnBoardingAdapter
     private val onBoardItems = ArrayList<OnBoardItem>()
     private var dotsCount = 0
     private lateinit var dots: Array<ImageView?>
+
+    @Inject
     lateinit var prefData: SharedPrefManager
+
+    @Inject
+    @AppPreferences
+    lateinit var settings: SharedPreferences
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityOnBoardingBinding.inflate(layoutInflater)
         setContentView(binding.root)
         EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
-        prefData = SharedPrefManager(this)
 
         copyAssets(this)
-        val settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        val savedUser = SecurePrefs.getUserName(this, settings)
-        val savedPass = SecurePrefs.getPassword(this, settings)
+        
+        val oldPolicy = StrictMode.getThreadPolicy()
+        val permissivePolicy = StrictMode.ThreadPolicy.Builder()
+            .permitAll()
+            .build()
+        StrictMode.setThreadPolicy(permissivePolicy)
+        val savedUser: String?
+        val savedPass: String?
+        try {
+            savedUser = SecurePrefs.getUserName(this, settings)
+            savedPass = SecurePrefs.getPassword(this, settings)
+        } finally {
+            StrictMode.setThreadPolicy(oldPolicy)
+        }
+
         if (!savedUser.isNullOrEmpty() && !savedPass.isNullOrEmpty() && !settings.getBoolean(Constants.KEY_LOGIN, false)) {
             settings.edit { putBoolean(Constants.KEY_LOGIN, true) }
         }
