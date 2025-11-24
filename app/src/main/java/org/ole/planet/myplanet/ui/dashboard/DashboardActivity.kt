@@ -447,13 +447,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     
     private suspend fun handleSurveyNavigation(surveyId: String?) {
         if (surveyId != null) {
-            val currentStepExam = withContext(Dispatchers.IO) {
-                Realm.getDefaultInstance().use { realm ->
-                    realm.where(RealmStepExam::class.java).equalTo("name", surveyId)
-                        .findFirst()?.let {
-                            realm.copyFromRealm(it)
-                        }
-                }
+            val currentStepExam = databaseService.withRealmAsync { realm ->
+                realm.where(RealmStepExam::class.java).equalTo("name", surveyId)
+                    .findFirst()?.let {
+                        realm.copyFromRealm(it)
+                    }
             }
             AdapterMySubmission.openSurvey(this, currentStepExam?.id, false, false, "")
         }
