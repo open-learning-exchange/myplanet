@@ -183,13 +183,13 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         super.onCreate()
         setupCriticalProperties()
         initApp()
-        ensureApiClientInitialized()
         setupStrictMode()
         registerExceptionHandler()
         setupLifecycleCallbacks()
         configureTheme()
 
         applicationScope.launch {
+            ensureApiClientInitialized()
             initializeDatabaseConnection()
             setupAnrWatchdog()
             scheduleWorkersOnStart()
@@ -235,12 +235,10 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                 .build()
             StrictMode.setThreadPolicy(threadPolicy)
 
-            val vmPolicy = VmPolicy.Builder()
-                .detectLeakedSqlLiteObjects()
-                .detectLeakedClosableObjects()
-                .penaltyLog()
-                .build()
-            StrictMode.setVmPolicy(vmPolicy)
+            val builder = VmPolicy.Builder()
+            builder.detectFileUriExposure()
+            builder.detectUntaggedSockets()
+            StrictMode.setVmPolicy(builder.build())
         }
     }
 

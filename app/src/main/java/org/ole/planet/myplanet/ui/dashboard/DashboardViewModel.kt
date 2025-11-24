@@ -6,6 +6,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.repository.CourseRepository
 import org.ole.planet.myplanet.repository.LibraryRepository
@@ -15,6 +16,7 @@ import org.ole.planet.myplanet.repository.UserRepository
 
 data class DashboardUiState(
     val unreadNotifications: Int = 0,
+    val library: List<RealmMyLibrary> = emptyList(),
 )
 
 @HiltViewModel
@@ -68,5 +70,10 @@ class DashboardViewModel @Inject constructor(
 
     suspend fun getUnreadNotificationsSize(userId: String?): Int {
         return notificationRepository.getUnreadCount(userId)
+    }
+
+    suspend fun fetchMyLibrary(userId: String?) {
+        val myLibrary = libraryRepository.getMyLibrary(userId)
+        _uiState.value = _uiState.value.copy(library = myLibrary)
     }
 }

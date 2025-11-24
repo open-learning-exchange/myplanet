@@ -79,9 +79,9 @@ object TransactionSyncManager {
         }
     }
 
-    fun syncKeyIv(mRealm: Realm, settings: SharedPreferences, listener: SyncListener) {
+    fun syncKeyIv(mRealm: Realm, settings: SharedPreferences, listener: SyncListener, userProfileDbHandler: UserProfileDbHandler) {
         listener.onSyncStarted()
-        val model = UserProfileDbHandler(MainApplication.context).userModel
+        val model = userProfileDbHandler.userModel
         val userName = SecurePrefs.getUserName(MainApplication.context, settings) ?: ""
         val password = SecurePrefs.getPassword(MainApplication.context, settings) ?: ""
         val header = "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)
