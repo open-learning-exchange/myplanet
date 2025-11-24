@@ -27,7 +27,7 @@ import javax.inject.Inject
 class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
     private var _binding: FragmentMySubmissionBinding? = null
     private val binding get() = _binding!!
-    private val viewModel: MySubmissionViewModel by viewModels()
+    private val viewModel: SubmissionViewModel by viewModels()
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     var type: String? = ""
