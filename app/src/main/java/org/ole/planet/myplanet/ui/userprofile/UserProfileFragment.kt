@@ -36,6 +36,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.DataSource
 import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.request.RequestListener
@@ -94,6 +95,10 @@ class UserProfileFragment : Fragment() {
                 startIntent(photoURI)
                 Glide.with(this)
                     .load(uri)
+                    .diskCacheStrategy(DiskCacheStrategy.ALL)
+                    .circleCrop()
+                    .placeholder(R.drawable.profile)
+                    .error(R.drawable.profile)
                     .into(binding.image)
             }
         }
@@ -213,6 +218,8 @@ class UserProfileFragment : Fragment() {
 
         Glide.with(this)
             .load(profileImageUrl)
+            .diskCacheStrategy(DiskCacheStrategy.ALL)
+            .circleCrop()
             .apply(RequestOptions().placeholder(R.drawable.profile).error(R.drawable.profile))
             .listener(object : RequestListener<Drawable> {
                 override fun onLoadFailed(
