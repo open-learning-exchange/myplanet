@@ -4,7 +4,10 @@ import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNotification
+import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.model.RealmUserModel
 
 class NotificationRepositoryImpl @Inject constructor(
         databaseService: DatabaseService,
@@ -172,6 +175,38 @@ class NotificationRepositoryImpl @Inject constructor(
                     .equalTo("docType", "request")
                     .findFirst()?.teamId
             }
+        }
+    }
+
+    override fun getJoinRequestDetails(relatedId: String?): Pair<String, String> {
+        return databaseService.withRealm { realm ->
+            val joinRequest = realm.where(RealmMyTeam::class.java)
+                .equalTo("_id", relatedId)
+                .equalTo("docType", "request")
+                .findFirst()
+            val team = joinRequest?.teamId?.let { tid ->
+                realm.where(RealmMyTeam::class.java)
+                    .equalTo("_id", tid)
+                    .findFirst()
+            }
+            val requester = joinRequest?.userId?.let { uid ->
+                realm.where(RealmUserModel::class.java)
+                    .equalTo("id", uid)
+                    .findFirst()
+            }
+            Pair(requester?.name ?: "Unknown User", team?.name ?: "Unknown Team")
+        }
+    }
+
+    override fun getTaskTeamName(taskTitle: String): String? {
+        return databaseService.withRealm { realm ->
+            val taskObj = realm.where(RealmTeamTask::class.java)
+                .equalTo("title", taskTitle)
+                .findFirst()
+            val team = realm.where(RealmMyTeam::class.java)
+                .equalTo("_id", taskObj?.teamId)
+                .findFirst()
+            team?.name
         }
     }
 }
