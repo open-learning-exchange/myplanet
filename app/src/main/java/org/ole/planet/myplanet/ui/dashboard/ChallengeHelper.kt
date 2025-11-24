@@ -30,7 +30,7 @@ class ChallengeHelper(
     private val settings: SharedPreferences,
     private val editor: SharedPreferences.Editor,
     private val viewModel: DashboardViewModel,
-    private val myProgressRepository: MyProgressRepository
+    private val progressRepository: ProgressRepository
 ) {
     private val fragmentManager: FragmentManager
         get() = activity.supportFragmentManager
@@ -44,7 +44,7 @@ class ChallengeHelper(
 
         val courseId = "4e6b78800b6ad18b4e8b0e1e38a98cac"
         activity.lifecycleScope.launch {
-            val courseData = myProgressRepository.fetchCourseData(user?.id)
+            val courseData = progressRepository.fetchCourseData(user?.id)
             val progress = MyProgressFragment.getCourseProgress(courseData, courseId)
             val courseName = realm.where(RealmMyCourse::class.java)
                 .equalTo("courseId", courseId)
