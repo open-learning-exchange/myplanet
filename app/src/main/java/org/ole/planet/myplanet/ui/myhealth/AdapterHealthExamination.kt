@@ -14,27 +14,19 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.JsonObject
-import io.realm.Realm
 import java.util.Date
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertExaminationBinding
 import org.ole.planet.myplanet.databinding.RowExaminationBinding
-import org.ole.planet.myplanet.model.RealmMyHealthPojo
-import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.ui.myhealth.AdapterHealthExamination.ViewHolderMyHealthExamination
-import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 
-class AdapterHealthExamination(private val context: Context, private val mh: RealmMyHealthPojo, private val userModel: RealmUserModel?) : ListAdapter<RealmMyHealthPojo, ViewHolderMyHealthExamination>(HealthExaminationDiffCallback()) {
-    private lateinit var mRealm: Realm
-    private val displayNameCache = mutableMapOf<String, String>()
-    fun setmRealm(mRealm: Realm?) {
-        if (mRealm != null) {
-            this.mRealm = mRealm
-        }
-    }
+class AdapterHealthExamination(
+    private val context: Context,
+    private val profileId: String?,
+    private val currentUserModelId: String?
+) : ListAdapter<HealthExaminationItem, AdapterHealthExamination.ViewHolderMyHealthExamination>(HealthExaminationDiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderMyHealthExamination {
         val rowExaminationBinding = RowExaminationBinding.inflate(
@@ -46,18 +38,17 @@ class AdapterHealthExamination(private val context: Context, private val mh: Rea
     override fun onBindViewHolder(holder: ViewHolderMyHealthExamination, position: Int) {
         val binding = holder.binding
         val item = getItem(position)
-        binding.txtTemp.text = item.let { checkEmpty(it.temperature) }
-        val formattedDate = item.let { formatDate(it.date, "MMM dd, yyyy") }
+        binding.txtTemp.text = checkEmpty(item.temperature)
+        val formattedDate = formatDate(item.date, "MMM dd, yyyy")
         binding.txtDate.text = formattedDate
         binding.txtDate.tag = formattedDate
-        val encrypted = userModel?.let { it1 -> item.getEncryptedDataAsJson(it1) }
+        val encrypted = item.encryptedData
 
-        val createdBy = getString("createdBy", encrypted)
-        if (!TextUtils.isEmpty(createdBy) && !TextUtils.equals(createdBy, userModel?.id)) {
-            val name = displayNameCache.getOrPut(createdBy) {
-                val model = mRealm.where(RealmUserModel::class.java).equalTo("id", createdBy).findFirst()
-                model?.getFullName() ?: createdBy.split(colonRegex).dropLastWhile { it.isEmpty() }.toTypedArray().getOrNull(1) ?: createdBy
-            }
+        val createdBy = item.createdBy
+        val createdByName = item.createdByName
+
+        if (!TextUtils.isEmpty(createdBy) && !TextUtils.equals(createdBy, currentUserModelId)) {
+            val name = createdByName ?: createdBy!!.split(colonRegex).dropLastWhile { it.isEmpty() }.toTypedArray().getOrNull(1) ?: createdBy
             binding.txtDate.text = context.getString(R.string.two_strings, binding.txtDate.text, name).trimIndent()
             holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.md_grey_50))
         } else {
@@ -65,11 +56,11 @@ class AdapterHealthExamination(private val context: Context, private val mh: Rea
             holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.md_green_50))
         }
 
-        binding.txtPulse.text = item.let { checkEmptyInt(it.pulse) }
+        binding.txtPulse.text = checkEmptyInt(item.pulse)
         binding.txtBp.text = item.bp
         binding.txtHearing.text = item.hearing
-        binding.txtHeight.text = item.let { checkEmpty(it.height) }
-        binding.txtWeight.text = item.let { checkEmpty(it.weight) }
+        binding.txtHeight.text = checkEmpty(item.height)
+        binding.txtWeight.text = checkEmpty(item.weight)
         binding.txtVision.text = item.vision
         holder.itemView.setOnClickListener {
             if (encrypted != null) {
@@ -107,23 +98,27 @@ class AdapterHealthExamination(private val context: Context, private val mh: Rea
             if (realmExamination.date >= time) { dialog.setButton(DialogInterface.BUTTON_NEUTRAL, context.getString(R.string.edit)) { _: DialogInterface?, _: Int ->
                 context.startActivity(Intent(context, AddExaminationActivity::class.java)
                     .putExtra("id", getItem(position)._id)
-                    .putExtra("userId", mh._id))
+                    .putExtra("userId", profileId))
             }
             }
         }
         dialog.show()
     }
 
-    private fun showConditions(tvCondition: TextView, realmExamination: RealmMyHealthPojo?) {
-        val conditionsMap = GsonUtils.gson.fromJson(realmExamination?.conditions, JsonObject::class.java)
-        val keys = conditionsMap.keySet()
-        val conditions = StringBuilder()
-        for (key in keys) {
-            if (conditionsMap[key].asBoolean) {
-                conditions.append("$key, ")
+    private fun showConditions(tvCondition: TextView, realmExamination: HealthExaminationItem?) {
+        val conditionsMap = realmExamination?.conditions
+        if (conditionsMap != null) {
+            val keys = conditionsMap.keySet()
+            val conditions = StringBuilder()
+            for (key in keys) {
+                if (conditionsMap[key].asBoolean) {
+                    conditions.append("$key, ")
+                }
             }
+            tvCondition.text = conditions
+        } else {
+            tvCondition.text = ""
         }
-        tvCondition.text = conditions
     }
 
     private fun showEncryptedData(tvOtherNotes: TextView, encrypted: JsonObject) {
@@ -141,12 +136,12 @@ class AdapterHealthExamination(private val context: Context, private val mh: Rea
     }
 }
 
-class HealthExaminationDiffCallback : DiffUtil.ItemCallback<RealmMyHealthPojo>() {
-    override fun areItemsTheSame(oldItem: RealmMyHealthPojo, newItem: RealmMyHealthPojo): Boolean {
+class HealthExaminationDiffCallback : DiffUtil.ItemCallback<HealthExaminationItem>() {
+    override fun areItemsTheSame(oldItem: HealthExaminationItem, newItem: HealthExaminationItem): Boolean {
         return oldItem._id == newItem._id
     }
 
-    override fun areContentsTheSame(oldItem: RealmMyHealthPojo, newItem: RealmMyHealthPojo): Boolean {
+    override fun areContentsTheSame(oldItem: HealthExaminationItem, newItem: HealthExaminationItem): Boolean {
         return oldItem == newItem
     }
 }
