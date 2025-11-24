@@ -8,8 +8,8 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.*
 import javax.inject.Inject
 
-class ProgressRepositoryImpl @Inject constructor(private val databaseService: DatabaseService) {
-    suspend fun fetchCourseData(userId: String?): JsonArray {
+class ProgressRepositoryImpl @Inject constructor(private val databaseService: DatabaseService) : ProgressRepository {
+    override suspend fun fetchCourseData(userId: String?): JsonArray {
         return databaseService.withRealmAsync { realm ->
             val mycourses = RealmMyCourse.getMyCourseByUserId(
                 userId,
