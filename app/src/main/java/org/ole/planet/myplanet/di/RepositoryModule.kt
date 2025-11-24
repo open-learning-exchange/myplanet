@@ -58,6 +58,10 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
+    abstract fun bindLifeRepository(impl: LifeRepositoryImpl): LifeRepository
+
+    @Binds
+    @Singleton
     abstract fun bindMeetupRepository(impl: MeetupRepositoryImpl): MeetupRepository
 
     @Binds
