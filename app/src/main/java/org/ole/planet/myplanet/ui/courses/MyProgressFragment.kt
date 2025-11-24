@@ -19,7 +19,7 @@ import org.ole.planet.myplanet.databinding.FragmentMyProgressBinding
 class MyProgressFragment : Fragment() {
     private var _binding: FragmentMyProgressBinding? = null
     private val binding get() = _binding!!
-    private val myProgressViewModel: MyProgressViewModel by viewModels()
+    private val progressViewModel: ProgressViewModel by viewModels()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentMyProgressBinding.inflate(inflater, container, false)
@@ -28,13 +28,13 @@ class MyProgressFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        myProgressViewModel.loadCourseData()
+        progressViewModel.loadCourseData()
         observeCourseData()
     }
 
     private fun observeCourseData() {
         lifecycleScope.launch {
-            myProgressViewModel.courseData.collect { courseData ->
+            progressViewModel.courseData.collect { courseData ->
                 courseData?.let {
                     binding.rvMyprogress.layoutManager = LinearLayoutManager(requireActivity())
                     binding.rvMyprogress.adapter = AdapterMyProgress(requireActivity(), it)
