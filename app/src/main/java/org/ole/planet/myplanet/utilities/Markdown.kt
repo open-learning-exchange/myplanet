@@ -35,15 +35,20 @@ import io.noties.markwon.image.file.FileSchemeHandler
 import io.noties.markwon.image.network.NetworkSchemeHandler
 import io.noties.markwon.image.network.OkHttpNetworkSchemeHandler
 import io.noties.markwon.movement.MovementMethodPlugin
+import java.util.WeakHashMap
 import java.util.regex.Pattern
 import org.commonmark.node.Image
 import org.ole.planet.myplanet.R
 
 object Markdown {
+    // Markwon instances are expensive to create, so they are cached in a WeakHashMap.
+    // The context is used as a key, and the map will not prevent the context from being garbage collected.
     private var currentZoomDialog: Dialog? = null
+    private val markwonCache = WeakHashMap<Context, Markwon>()
 
     fun create(context: Context): Markwon {
-        return Markwon.builder(context)
+        return markwonCache.getOrPut(context) {
+            Markwon.builder(context)
             .usePlugin(HtmlPlugin.create())
             .usePlugin(ImagesPlugin.create())
             .usePlugin(MovementMethodPlugin.create(LinkMovementMethod.getInstance()))
@@ -65,6 +70,7 @@ object Markdown {
                     }
                 }
             }).build()
+        }
     }
 
     fun setMarkdownText(textView: TextView, markdown: String) {
