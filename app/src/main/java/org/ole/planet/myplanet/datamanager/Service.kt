@@ -292,7 +292,7 @@ class Service @Inject constructor(
                              retrofitInterface.putDoc(null, "application/json", "${UrlUtils.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}", obj).enqueue(object : Callback<JsonObject> {
                                  override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
                                      if (response.body() != null && response.body()?.has("id") == true) {
-                                        uploadToShelf(obj)
+                                         uploadToShelf(obj)
                                          serviceScope.launch {
                                              val result = saveUserToDb(
                                                  "${response.body()?.get("id")?.asString}",
