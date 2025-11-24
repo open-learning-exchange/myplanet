@@ -294,13 +294,16 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
     private fun applySearchFilter() {
         val searchText = _binding?.layoutSearch?.etSearch?.text?.toString().orEmpty()
         if (searchText.isNotEmpty()) {
-            adapter.updateData(search(searchText, currentSurveys))
+            adapter.updateData(search(searchText, currentSurveys)) {
+                updateUIState()
+                recyclerView.scrollToPosition(0)
+            }
         } else {
-            adapter.updateDataAfterSearch(currentSurveys)
+            adapter.updateDataAfterSearch(currentSurveys) {
+                updateUIState()
+                recyclerView.scrollToPosition(0)
+            }
         }
-
-        updateUIState()
-        recyclerView.scrollToPosition(0)
     }
 
     private fun updateUIState() {
