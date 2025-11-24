@@ -8,6 +8,7 @@ import android.content.SharedPreferences
 import android.content.res.Configuration
 import android.os.Bundle
 import android.os.StrictMode
+import android.os.Trace
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
 import androidx.appcompat.app.AppCompatDelegate
@@ -55,7 +56,6 @@ import org.ole.planet.myplanet.utilities.VersionUtils.getVersionName
 
 @HiltAndroidApp
 class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
-
     @Inject
     lateinit var databaseService: DatabaseService
 
@@ -181,13 +181,15 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
     override fun onCreate() {
         super.onCreate()
+        Trace.beginSection("AppOnCreate")
         setupCriticalProperties()
         initApp()
         setupStrictMode()
         registerExceptionHandler()
         setupLifecycleCallbacks()
         configureTheme()
-
+    }
+    private fun performDeferredInitialization() {
         applicationScope.launch {
             ensureApiClientInitialized()
             initializeDatabaseConnection()
@@ -196,7 +198,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             observeNetworkForDownloads()
         }
     }
-
     private fun initApp() {
         context = this
         applicationScope.launch(Dispatchers.Default) {
@@ -363,7 +364,11 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         return sharedPreferences.getString("theme_mode", ThemeMode.FOLLOW_SYSTEM) ?: ThemeMode.FOLLOW_SYSTEM
     }
 
-    override fun onActivityCreated(activity: Activity, bundle: Bundle?) {}
+    override fun onActivityCreated(activity: Activity, bundle: Bundle?) {
+        if (isFirstLaunch) {
+            performDeferredInitialization()
+        }
+    }
 
     override fun onActivityStarted(activity: Activity) {
         if (++activityReferences == 1 && !isActivityChangingConfigurations) {
@@ -371,7 +376,12 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         }
     }
 
-    override fun onActivityResumed(activity: Activity) {}
+    override fun onActivityResumed(activity: Activity) {
+        if (isFirstLaunch) {
+            Trace.endSection()
+            isFirstLaunch = false
+        }
+    }
 
     override fun onActivityPaused(activity: Activity) {}
 
