@@ -215,7 +215,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     }
 
     private suspend fun ensureApiClientInitialized() {
-        android.os.Trace.beginSection("ensureApiClientInitialized")
         withContext(Dispatchers.IO) {
             EntryPointAccessors.fromApplication(
                 this@MainApplication,
