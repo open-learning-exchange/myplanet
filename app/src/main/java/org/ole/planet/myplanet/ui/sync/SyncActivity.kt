@@ -349,12 +349,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         editor.apply()
     }
 
-    fun authenticateUser(settings: SharedPreferences?, username: String?, password: String?, isManagerMode: Boolean): Boolean {
+    suspend fun authenticateUser(settings: SharedPreferences?, username: String?, password: String?, isManagerMode: Boolean): Boolean {
         return try {
             if (settings != null) {
                 this.settings = settings
             }
-            val isEmpty = databaseService.withRealm { realm -> realm.isEmpty }
+            val isEmpty = withContext(Dispatchers.IO) {
+                databaseService.withRealm { realm -> realm.isEmpty }
+            }
             if (isEmpty) {
                 alertDialogOkay(getString(R.string.server_not_configured_properly_connect_this_device_with_planet_server))
                 false
@@ -367,30 +369,35 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
     }
 
-    private fun checkName(username: String?, password: String?, isManagerMode: Boolean): Boolean {
-        try {
-            val user = databaseService.withRealm { realm ->
-                realm.where(RealmUserModel::class.java).equalTo("name", username).findFirst()?.let { realm.copyFromRealm(it) }
+    private suspend fun checkName(username: String?, password: String?, isManagerMode: Boolean): Boolean {
+        return try {
+            val user = withContext(Dispatchers.IO) {
+                databaseService.withRealm { realm ->
+                    realm.where(RealmUserModel::class.java).equalTo("name", username).findFirst()?.let { realm.copyFromRealm(it) }
+                }
             }
             user?.let {
                 if (it._id?.isEmpty() == true) {
                     if (username == it.name && password == it.password) {
                         saveUserInfoPref(settings, password, it)
-                        return true
+                        true
+                    } else {
+                        false
                     }
                 } else {
                     if (androidDecrypter(username, password, it.derived_key, it.salt)) {
-                        if (isManagerMode && !it.isManager()) return false
+                        if (isManagerMode && !it.isManager()) return@let false
                         saveUserInfoPref(settings, password, it)
-                        return true
+                        true
+                    } else {
+                        false
                     }
                 }
-            }
+            } ?: false
         } catch (err: Exception) {
             err.printStackTrace()
-            return false
+            false
         }
-        return false
     }
 
     fun startSync(type: String) {
