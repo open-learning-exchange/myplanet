@@ -5,9 +5,8 @@ import io.realm.RealmChangeListener
 import io.realm.RealmObject
 import io.realm.RealmQuery
 import io.realm.RealmResults
-import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.flow
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.applyEqualTo
 import org.ole.planet.myplanet.datamanager.findCopyByField
@@ -45,26 +44,13 @@ open class RealmRepository(protected val databaseService: DatabaseService) {
     protected suspend fun <T : RealmObject> queryListFlow(
         clazz: Class<T>,
         builder: RealmQuery<T>.() -> Unit = {},
-    ): Flow<List<T>> = callbackFlow {
-        val realm = Realm.getDefaultInstance()
-        val results = realm.where(clazz).apply(builder).findAllAsync()
-        val listener = RealmChangeListener<RealmResults<T>> { updatedResults ->
-            if (updatedResults.isLoaded && updatedResults.isValid) {
-                trySend(realm.copyFromRealm(updatedResults))
+    ): Flow<List<T>> = flow {
+        val results = withRealmAsync { realm ->
+            realm.where(clazz).apply(builder).findAll().let {
+                realm.copyFromRealm(it)
             }
         }
-        results.addChangeListener(listener)
-
-        if (results.isLoaded && results.isValid) {
-            trySend(realm.copyFromRealm(results))
-        }
-
-        awaitClose {
-            if (!realm.isClosed) {
-                results.removeChangeListener(listener)
-                realm.close()
-            }
-        }
+        emit(results)
     }
 
     protected suspend fun <T : RealmObject, V : Any> findByField(
