@@ -215,6 +215,7 @@ dependencies {
     implementation(libs.kotlin.stdlib)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
+    implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.5.1"
     implementation(libs.android.gif.drawable)
 }
 realm {
