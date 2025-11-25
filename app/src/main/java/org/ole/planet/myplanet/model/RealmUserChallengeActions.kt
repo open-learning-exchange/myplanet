@@ -2,8 +2,8 @@ package org.ole.planet.myplanet.model
 
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import java.util.UUID
+import org.ole.planet.myplanet.datamanager.DatabaseService
 
 open class RealmUserChallengeActions : RealmObject() {
     @PrimaryKey
