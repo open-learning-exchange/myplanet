@@ -25,7 +25,7 @@ This document provides comprehensive guidance for AI assistants working on the m
 - **Primary Language**: Kotlin (with Java compatibility layer)
 - **Min SDK**: 26 (Android 8.0)
 - **Target SDK**: 36 (Android 15)
-- **Current Version**: 0.38.5 (versionCode: 3805)
+- **Current Version**: 0.38.63 (versionCode: 3863)
 - **Build System**: Gradle 8.13.1
 - **License**: AGPL v3
 
@@ -125,7 +125,7 @@ myplanet/
 | **DI Framework** | Dagger Hilt | 2.57.2 | Dependency injection |
 | **Database** | Realm | 10.19.0 | Local object database |
 | **Networking** | Retrofit | 3.0.0 | REST API client |
-| **HTTP Client** | OkHttp | 5.3.1 | HTTP communication |
+| **HTTP Client** | OkHttp | 5.3.2 | HTTP communication |
 | **JSON** | Gson | 2.13.2 | JSON serialization |
 | **Async** | Kotlin Coroutines | 1.10.2 | Asynchronous programming |
 | **Background Tasks** | AndroidX Work | 2.11.0 | Background job scheduling |
@@ -1202,6 +1202,6 @@ For questions or clarifications, refer to the Discord community or GitHub issues
 
 ---
 
-**Last Updated**: 2025-11-18
-**Version**: 0.38.5
+**Last Updated**: 2025-11-25
+**Version**: 0.38.63
 **Maintainer**: Open Learning Exchange
