@@ -2,8 +2,8 @@ package org.ole.planet.myplanet.model
 
 data class NewsItem(
     val id: String?,
-    val_id: String?,
-   val_rev: String?,
+    val _id: String?,
+    val _rev: String?,
     val userId: String?,
     val user: String?,
     val message: String?,

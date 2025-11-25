@@ -8,8 +8,8 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import org.ole.planet.myplanet.base.BaseMemberFragment
 import org.ole.planet.myplanet.callback.MemberChangeListener
+import org.ole.planet.myplanet.model.NewsItem
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getRequestedMember
-import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 
@@ -33,7 +33,7 @@ class MembersFragment : BaseMemberFragment() {
         currentUser = userProfileDbHandler.userModel ?: RealmUserModel()
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {}
+    override fun onNewsItemClick(news: NewsItem?) {}
     override fun clearImages() {
         imageList.clear()
         llImage?.removeAllViews()

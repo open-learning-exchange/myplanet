@@ -6,8 +6,8 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.LinearLayoutManager
 import org.ole.planet.myplanet.databinding.FragmentTeamCourseBinding
+import org.ole.planet.myplanet.model.NewsItem
 import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 
 class TeamCourseFragment : BaseTeamFragment() {
@@ -34,7 +34,7 @@ class TeamCourseFragment : BaseTeamFragment() {
             showNoData(binding.tvNodata, it.itemCount, "teamCourses")
         }
     }
-    override fun onNewsItemClick(news: RealmNews?) {}
+    override fun onNewsItemClick(news: NewsItem?) {}
     override fun clearImages() {
         imageList.clear()
         llImage?.removeAllViews()

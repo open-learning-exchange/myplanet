@@ -10,12 +10,13 @@ import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNewsBinding
+import org.ole.planet.myplanet.model.NewsItem
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Utilities
 
 class NewsLabelManager(private val context: Context, private val realm: Realm) {
-    fun setupAddLabelMenu(binding: RowNewsBinding, news: RealmNews?, canManageLabels: Boolean) {
+    fun setupAddLabelMenu(binding: RowNewsBinding, news: NewsItem?, canManageLabels: Boolean) {
         binding.btnAddLabel.setOnClickListener(null)
         binding.btnAddLabel.isEnabled = canManageLabels
         if (!canManageLabels) {
@@ -64,9 +65,9 @@ class NewsLabelManager(private val context: Context, private val realm: Realm) {
                             val newLabels = RealmList<String>().apply {
                                 managedLabels?.forEach { add(it) }
                             }
-                            news?.labels = newLabels
+                            val updatedNews = news?.copy(labels = newLabels)
                             Utilities.toast(context, context.getString(R.string.label_added))
-                            news?.let { showChips(binding, it, canManageLabels) }
+                            updatedNews?.let { showChips(binding, it, canManageLabels) }
                         }
                     }, { error ->
                         error.printStackTrace()
@@ -79,7 +80,7 @@ class NewsLabelManager(private val context: Context, private val realm: Realm) {
         }
     }
 
-    fun showChips(binding: RowNewsBinding, news: RealmNews, canManageLabels: Boolean) {
+    fun showChips(binding: RowNewsBinding, news: NewsItem, canManageLabels: Boolean) {
         binding.fbChips.removeAllViews()
 
         for (label in news.labels ?: emptyList()) {
@@ -123,8 +124,8 @@ class NewsLabelManager(private val context: Context, private val realm: Realm) {
                                 val newLabels = RealmList<String>().apply {
                                     managedLabels?.forEach { add(it) }
                                 }
-                                news.labels = newLabels
-                                showChips(binding, news, canManageLabels)
+                                val updatedNews = news.copy(labels = newLabels)
+                                showChips(binding, updatedNews, canManageLabels)
                             }
                         }, { error ->
                             error.printStackTrace()
@@ -138,7 +139,7 @@ class NewsLabelManager(private val context: Context, private val realm: Realm) {
 
     private fun updateAddLabelVisibility(
         binding: RowNewsBinding,
-        news: RealmNews?,
+        news: NewsItem?,
         canManageLabels: Boolean,
     ) {
         if (!canManageLabels) {

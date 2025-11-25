@@ -30,7 +30,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertTaskBinding
 import org.ole.planet.myplanet.databinding.AlertUsersSpinnerBinding
 import org.ole.planet.myplanet.databinding.FragmentTeamTaskBinding
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.NewsItem
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.myhealth.UserListArrayAdapter
@@ -261,7 +261,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
         return list.filter { !it.completed && it.assignee == user?.id }.sortedByDescending { it.deadline }
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {}
+    override fun onNewsItemClick(news: NewsItem?) {}
     override fun clearImages() {
         imageList.clear()
         llImage?.removeAllViews()

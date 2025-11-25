@@ -297,7 +297,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
                             submitListSafely(currentList)
                         }
                         val realmNews = mRealm.where(RealmNews::class.java).equalTo("id", news.id).findFirst()
-                        realmNews?.let { NewsActions.deletePost(mRealm, it, currentList.filterNotNull(), teamName, listener) }
+                        realmNews?.let { NewsActions.deletePost(mRealm, it, currentList.filterNotNull().toMutableList(), teamName, listener) }
                     }
                     .setNegativeButton(R.string.cancel, null)
                     .show()
