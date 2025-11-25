@@ -488,7 +488,7 @@ class MyHealthFragment : Fragment() {
                 val healths = realm.where(RealmMyHealthPojo::class.java).equalTo("profileId", mm.userKey).findAll()
 
                 val creatorIds = mutableSetOf<String>()
-                data class TempData(val exam: RealmMyHealthPojo, val encrypted: JsonObject, val createdBy: String)
+                data class TempData(val exam: RealmMyHealthPojo, val encrypted: JsonObject, val createdBy: String?)
                 val tempList = mutableListOf<TempData>()
 
                 for (exam in healths) {
@@ -509,7 +509,7 @@ class MyHealthFragment : Fragment() {
                 if (creatorIds.isNotEmpty()) {
                     val users = realm.where(RealmUserModel::class.java).`in`("id", creatorIds.toTypedArray()).findAll()
                     for (u in users) {
-                        userMap[u.id] = u.getFullName()
+                        u.id?.let { userMap[it] = u.getFullName() }
                     }
                 }
 
@@ -519,7 +519,8 @@ class MyHealthFragment : Fragment() {
                     var rowColor = greenColor
 
                     if (!TextUtils.isEmpty(createdBy) && !TextUtils.equals(createdBy, userId)) {
-                         val name = userMap[createdBy] ?: createdBy?.split(colonRegex)?.dropLastWhile { it.isEmpty() }?.toTypedArray()?.getOrNull(1) ?: createdBy ?: ""
+                         val safeCreatedBy = createdBy ?: ""
+                         val name = userMap[safeCreatedBy] ?: safeCreatedBy.split(colonRegex).dropLastWhile { it.isEmpty() }.toTypedArray().getOrNull(1) ?: safeCreatedBy
                          displayDate = String.format(twoStrings, dateFormatted, name).trimIndent()
                          rowColor = greyColor
                     } else {
