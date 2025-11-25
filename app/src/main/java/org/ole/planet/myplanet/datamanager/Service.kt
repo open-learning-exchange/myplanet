@@ -363,7 +363,7 @@ class Service @Inject constructor(
                     "${UrlUtils.getUrl()}/_users/$id"
                 )
 
-                ensureActive()
+                yield()
 
                 if (response.isSuccessful) {
                     response.body()?.let { userRepository.saveUser(it, settings) }
