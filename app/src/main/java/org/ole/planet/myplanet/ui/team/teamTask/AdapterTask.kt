@@ -26,7 +26,7 @@ class AdapterTask(
     var nonTeamMember: Boolean,
     private val coroutineScope: CoroutineScope,
     private val userRepository: UserRepository
-) : ListAdapter<RealmTeamTask, ViewHolderTask>(diffCallback) {
+) : ListAdapter<RealmTeamTask, ViewHolderTask>(DIFF_CALLBACK) {
     private val assigneeCache: MutableMap<String, String> = mutableMapOf()
     private var listener: OnCompletedListener? = null
     fun setListener(listener: OnCompletedListener?) {
@@ -126,9 +126,15 @@ class AdapterTask(
     }
 
     companion object {
-        val diffCallback = DiffUtils.itemCallback<RealmTeamTask>(
+        val DIFF_CALLBACK = DiffUtils.itemCallback<RealmTeamTask>(
             areItemsTheSame = { old, new -> old.id == new.id },
-            areContentsTheSame = { old, new -> old == new }
+            areContentsTheSame = { old, new ->
+                old.title == new.title &&
+                        old.description == new.description &&
+                        old.deadline == new.deadline &&
+                        old.completed == new.completed &&
+                        old.assignee == new.assignee
+            }
         )
     }
 }
