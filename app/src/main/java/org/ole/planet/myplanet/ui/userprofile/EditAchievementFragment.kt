@@ -65,10 +65,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentEditAchievementBinding = FragmentEditAchievementBinding.inflate(inflater, container, false)
         aRealm = databaseService.realmInstance
-        user = profileDbHandler.userModel
         achievementArray = JsonArray()
-        initializeData()
-        setListeners()
         return fragmentEditAchievementBinding.root
     }
 
@@ -77,6 +74,11 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         val toolbar = view.findViewById<androidx.appcompat.widget.Toolbar>(R.id.toolbar)
         toolbar.setNavigationOnClickListener {
             NavigationHelper.popBackStack(requireActivity().supportFragmentManager)
+        }
+        viewLifecycleOwner.lifecycleScope.launch {
+            user = profileDbHandler.getUserModel()
+            initializeData()
+            setListeners()
         }
     }
     

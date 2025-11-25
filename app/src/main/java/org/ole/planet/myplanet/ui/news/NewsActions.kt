@@ -231,19 +231,20 @@ object NewsActions {
         realm.commitTransaction()
     }
 
-    fun showMemberDetails(
+    suspend fun showMemberDetails(
         userModel: RealmUserModel?,
         profileDbHandler: UserProfileDbHandler
     ): MemberDetailFragment? {
         if (userModel == null) return null
         val userName = "${userModel.firstName} ${userModel.lastName}".trim().ifBlank { userModel.name }
+        val offlineVisits = profileDbHandler.getOfflineVisits(userModel)
         val fragment = MemberDetailFragment.newInstance(
             userName.toString(),
             userModel.email.toString(),
             userModel.dob.toString().substringBefore("T"),
             userModel.language.toString(),
             userModel.phoneNumber.toString(),
-            profileDbHandler.getOfflineVisits(userModel).toString(),
+            offlineVisits.toString(),
             profileDbHandler.getLastVisit(userModel),
             "${userModel.firstName} ${userModel.lastName}",
             userModel.level.toString(),

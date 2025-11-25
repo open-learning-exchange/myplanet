@@ -53,13 +53,13 @@ class MyMeetupDetailFragment : Fragment(), View.OnClickListener {
         binding.btnInvite.visibility = if (showBetaFeature(Constants.KEY_MEETUPS, requireContext())) View.VISIBLE else View.GONE
         binding.btnLeave.visibility = if (showBetaFeature(Constants.KEY_MEETUPS, requireContext())) View.VISIBLE else View.GONE
         binding.btnLeave.setOnClickListener(this)
-        user = userProfileDbHandler.getUserModelCopy()
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         viewLifecycleOwner.lifecycleScope.launch {
+            user = userProfileDbHandler.getUserModelCopy()
             meetups = meetUpId?.takeIf { it.isNotBlank() }?.let { meetupRepository.getMeetupById(it) }
             meetups?.let { setUpData(it) }
             updateAttendanceButton()

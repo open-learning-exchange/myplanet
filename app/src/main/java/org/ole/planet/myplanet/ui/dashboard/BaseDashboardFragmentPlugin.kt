@@ -110,13 +110,13 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         setBackgroundColor(textView, itemCnt)
     }
 
-    fun getLayout(itemCnt: Int, obj: RealmObject): View {
+    suspend fun getLayout(itemCnt: Int, obj: RealmObject): View {
         val itemMyLifeBinding = ItemMyLifeBinding.inflate(LayoutInflater.from(activity))
         val v = itemMyLifeBinding.root
         setBackgroundColor(v, itemCnt)
 
         val title = (obj as RealmMyLife).title
-        val user = profileDbHandler.userModel
+        val user = profileDbHandler.getUserModel()
         itemMyLifeBinding.img.setImageResource(resources.getIdentifier(obj.imageId, "drawable", requireActivity().packageName))
         itemMyLifeBinding.tvName.text = title
 

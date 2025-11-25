@@ -170,9 +170,9 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun getUserModel(): RealmUserModel? {
+    override suspend fun getUserModel(): RealmUserModel? {
         val userId = settings.getString("userId", null)?.takeUnless { it.isBlank() } ?: return null
-        return databaseService.withRealm { realm ->
+        return withRealm { realm ->
             realm.where(RealmUserModel::class.java)
                 .equalTo("id", userId)
                 .or()

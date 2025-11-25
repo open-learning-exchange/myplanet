@@ -69,7 +69,6 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentFeedbackListBinding.inflate(inflater, container, false)
-        userModel = userProfileDbHandler.userModel
 
         binding.fab.setOnClickListener {
             val feedbackFragment = FeedbackFragment()
@@ -190,6 +189,9 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
 
     override fun onFeedbackSubmitted() {
         viewLifecycleOwner.lifecycleScope.launch {
+            if (userModel == null) {
+                userModel = userProfileDbHandler.getUserModel()
+            }
             feedbackRepository.getFeedback(userModel).collectLatest { feedbackList ->
                 updatedFeedbackList(feedbackList)
             }

@@ -82,13 +82,13 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         selectedItems = mutableListOf()
         list = mutableListOf()
         mRealm = databaseService.realmInstance
-        model = profileDbHandler.userModel
-        val adapter = getAdapter()
-        recyclerView.adapter = adapter
-        if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {
-            resources?.let { showDownloadDialog(it) }
-        } else if (isMyCourseLib && courseLib == null && !isSurvey) {
-            viewLifecycleOwner.lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
+            model = profileDbHandler.getUserModel()
+            val adapter = getAdapter()
+            recyclerView.adapter = adapter
+            if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {
+                resources?.let { showDownloadDialog(it) }
+            } else if (isMyCourseLib && courseLib == null && !isSurvey) {
                 showDownloadDialog(getLibraryList(mRealm))
             }
         }

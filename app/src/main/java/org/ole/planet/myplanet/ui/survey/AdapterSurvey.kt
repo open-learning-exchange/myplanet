@@ -11,7 +11,9 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import io.realm.Realm
 import java.util.UUID
+import kotlinx.coroutines.launch
 import org.json.JSONObject
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.SurveyAdoptListener
@@ -27,7 +29,7 @@ import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 class AdapterSurvey(
     private val context: Context,
     private val mRealm: Realm,
-    private val userId: String?,
+    private var userId: String?,
     private val isTeam: Boolean,
     val teamId: String?,
     private val surveyAdoptListener: SurveyAdoptListener,
@@ -46,6 +48,10 @@ class AdapterSurvey(
         if (context is OnHomeItemClickListener) {
             listener = context
         }
+    }
+
+    fun setUserId(userId: String?) {
+        this.userId = userId
     }
 
     fun updateData(newList: List<RealmStepExam>, onComplete: (() -> Unit)? = null) {
@@ -174,7 +180,8 @@ class AdapterSurvey(
         }
 
         fun adoptSurvey(exam: RealmStepExam, teamId: String?) {
-            val userModel = userProfileDbHandler.userModel
+            MainApplication.applicationScope.launch {
+            val userModel = userProfileDbHandler.getUserModel()
             val sParentCode = settings.getString("parentCode", "")
             val planetCode = settings.getString("planetCode", "")
 
@@ -337,6 +344,7 @@ class AdapterSurvey(
                 })
             } catch (e: Exception) {
                 Snackbar.make(binding.root, context.getString(R.string.failed_to_adopt_survey), Snackbar.LENGTH_LONG).show()
+            }
             }
         }
     }

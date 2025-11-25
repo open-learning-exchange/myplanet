@@ -67,10 +67,12 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         title = "Reply"
         imageList = RealmList()
         id = intent.getStringExtra("id")
-        user = userProfileDbHandler.userModel
         activityReplyBinding.rvReply.layoutManager = LinearLayoutManager(this)
         activityReplyBinding.rvReply.isNestedScrollingEnabled = false
-        showData(id)
+        lifecycleScope.launch {
+            user = userProfileDbHandler.getUserModel()
+            showData(id)
+        }
         openFolderLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
             if (result.resultCode == RESULT_OK && result.data != null) {
                 val url = result.data?.data
@@ -100,8 +102,12 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
 
     override fun onResume() {
         super.onResume()
-        refreshData()
-
+        lifecycleScope.launch {
+            if (user == null) {
+                user = userProfileDbHandler.getUserModel()
+            }
+            refreshData()
+        }
     }
     private fun refreshData() {
         id?.let { showData(it) }
@@ -125,13 +131,15 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     override fun onNewsItemClick(news: RealmNews?) {}
 
     override fun onMemberSelected(userModel: RealmUserModel?) {
-        val fragment = NewsActions.showMemberDetails(userModel, userProfileDbHandler) ?: return
-        NavigationHelper.replaceFragment(
-            supportFragmentManager,
-            R.id.fragment_container,
-            fragment,
-            addToBackStack = true
-        )
+        lifecycleScope.launch {
+            val fragment = NewsActions.showMemberDetails(userModel, userProfileDbHandler) ?: return@launch
+            NavigationHelper.replaceFragment(
+                supportFragmentManager,
+                R.id.fragment_container,
+                fragment,
+                addToBackStack = true
+            )
+        }
     }
 
     override fun clearImages() {

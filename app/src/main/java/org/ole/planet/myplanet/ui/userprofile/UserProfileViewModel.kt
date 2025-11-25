@@ -110,11 +110,13 @@ class UserProfileViewModel @Inject constructor(
     val lastVisit: Long?
         get() = userProfileDbHandler.lastVisit
 
-    val offlineVisits: Int
-        get() = userProfileDbHandler.offlineVisits
+    suspend fun getOfflineVisits(): Int {
+        return userProfileDbHandler.getOfflineVisits()
+    }
 
-    val numberOfResourceOpen: String
-        get() = userProfileDbHandler.numberOfResourceOpen
+    suspend fun getNumberOfResourceOpen(): String {
+        return userProfileDbHandler.getNumberOfResourceOpen()
+    }
 
     val maxOpenedResource: String
         get() = userProfileDbHandler.maxOpenedResource

@@ -64,12 +64,13 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     override fun onCreateView(inflater: LayoutInflater, parent: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTakeExamBinding.inflate(inflater, parent, false)
         listAns = HashMap()
-        user = userProfileDbHandler.userModel
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        viewLifecycleOwner.lifecycleScope.launch {
+        user = userProfileDbHandler.getUserModel()
         initExam()
         questions = mRealm.where(RealmExamQuestion::class.java).equalTo("examId", exam?.id).findAll()
         binding.tvQuestionCount.text = getString(R.string.Q1, questions?.size)
@@ -98,6 +99,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             binding.btnSubmit.visibility = View.GONE
             binding.tvQuestionCount.setText(R.string.no_questions)
             Snackbar.make(binding.tvQuestionCount, R.string.no_questions_available, Snackbar.LENGTH_LONG).show()
+        }
         }
 
         binding.btnBack.setOnClickListener {

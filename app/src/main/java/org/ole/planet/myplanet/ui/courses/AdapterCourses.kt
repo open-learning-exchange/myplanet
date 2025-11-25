@@ -70,6 +70,10 @@ class AdapterCourses(
             homeItemClickListener = context
         }
         config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single)
+        lifecycleOwner.lifecycleScope.launch {
+            userModel = userProfileDbHandler.getUserModel()
+            notifyDataSetChanged()
+        }
     }
 
     fun setRatingChangeListener(ratingChangeListener: OnRatingChangeListener?) {
@@ -189,7 +193,6 @@ class AdapterCourses(
         holder.rowCourseBinding.courseProgress.max = course.getNumberOfSteps()
         displayTagCloud(holder, position)
 
-        userModel = userProfileDbHandler.userModel
         val isGuest = userModel?.isGuest() ?: true
         if (!isGuest) setupRatingBar(holder, course)
         setupCheckbox(holder, course, position, isGuest)

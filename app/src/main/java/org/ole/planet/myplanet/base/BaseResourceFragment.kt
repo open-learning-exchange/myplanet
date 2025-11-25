@@ -173,7 +173,8 @@ abstract class BaseResourceFragment : Fragment() {
         Service(requireContext()).isPlanetAvailable(object : PlanetAvailableListener {
             override fun isAvailable() {
                 if (!isAdded) return
-                val userId = profileDbHandler.userModel?.id
+                lifecycleScope.launch {
+                val userId = profileDbHandler.getUserModel()?.id
                 val librariesForDialog = if (userId.isNullOrBlank()) {
                     dbMyLibrary
                 } else {
@@ -216,6 +217,7 @@ abstract class BaseResourceFragment : Fragment() {
                             ?: 0) > 0
                     }
                 }
+                }
             }
 
             override fun notAvailable() {
@@ -228,8 +230,8 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     fun showPendingSurveyDialog() {
-        model = profileDbHandler.userModel
         viewLifecycleOwner.lifecycleScope.launch {
+            model = profileDbHandler.getUserModel()
             val list = submissionRepository.getPendingSurveys(model?.id)
             if (list.isEmpty()) return@launch
             val exams = getExamMap(mRealm, list)
@@ -417,7 +419,8 @@ abstract class BaseResourceFragment : Fragment() {
     fun addToLibrary(libraryItems: List<RealmMyLibrary?>, selectedItems: ArrayList<Int>) {
         if (!isRealmInitialized()) return
         
-        val userId = profileDbHandler.userModel?.id ?: return
+        lifecycleScope.launch {
+        val userId = profileDbHandler.getUserModel()?.id ?: return@launch
 
         try {
             if (!mRealm.isInTransaction) {
@@ -443,11 +446,13 @@ abstract class BaseResourceFragment : Fragment() {
         }
         Utilities.toast(activity, getString(R.string.added_to_my_library))
     }
+    }
 
     fun addAllToLibrary(libraryItems: List<RealmMyLibrary?>) {
         if (!isRealmInitialized()) return
 
-        val userId = profileDbHandler.userModel?.id ?: return
+        lifecycleScope.launch {
+        val userId = profileDbHandler.getUserModel()?.id ?: return@launch
 
         try {
             if (!mRealm.isInTransaction) {
@@ -471,6 +476,7 @@ abstract class BaseResourceFragment : Fragment() {
             throw e
         }
         Utilities.toast(activity, getString(R.string.added_to_my_library))
+    }
     }
 
     override fun onDestroyView() {

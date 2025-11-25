@@ -114,7 +114,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             }
         }
     }
-    fun initRatingView(type: String?, id: String?, title: String?, listener: OnRatingChangeListener?) {
+    suspend fun initRatingView(type: String?, id: String?, title: String?, listener: OnRatingChangeListener?) {
         timesRated = requireView().findViewById(R.id.times_rated)
         rating = requireView().findViewById(R.id.tv_rating)
         ratingBar = requireView().findViewById(R.id.rating_bar)
@@ -125,7 +125,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 }
                 true
             }
-            val userModel = profileDbHandler.userModel
+            val userModel = profileDbHandler.getUserModel()
             if (userModel?.isGuest() == false) {
                 setOnClickListener {
                     homeItemClickListener?.showRatingDialog(type, id, title, listener)

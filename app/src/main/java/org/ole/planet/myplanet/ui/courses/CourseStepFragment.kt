@@ -51,7 +51,6 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentCourseStepBinding = FragmentCourseStepBinding.inflate(inflater, container, false)
-        user = profileDbHandler.userModel
         fragmentCourseStepBinding.btnTakeTest.visibility = View.VISIBLE
         fragmentCourseStepBinding.btnTakeSurvey.visibility = View.VISIBLE
         return fragmentCourseStepBinding.root
@@ -92,58 +91,61 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     }
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        databaseService.withRealm { realm ->
-            step = realm.where(RealmCourseStep::class.java)
-                .equalTo("id", stepId)
-                .findFirst()
-                ?.let { realm.copyFromRealm(it) }!!
-            resources = realm.where(RealmMyLibrary::class.java)
-                .equalTo("stepId", stepId)
-                .findAll()
-                .let { realm.copyFromRealm(it) }
-            stepExams = realm.where(RealmStepExam::class.java)
-                .equalTo("stepId", stepId)
-                .equalTo("type", "courses")
-                .findAll()
-                .let { realm.copyFromRealm(it) }
-            stepSurvey = realm.where(RealmStepExam::class.java)
-                .equalTo("stepId", stepId)
-                .equalTo("type", "surveys")
-                .findAll()
-                .let { realm.copyFromRealm(it) }
-        }
-        fragmentCourseStepBinding.btnResources.text = getString(R.string.resources_size, resources.size)
-        hideTestIfNoQuestion()
-        fragmentCourseStepBinding.tvTitle.text = step.stepTitle
-        val markdownContentWithLocalPaths = prependBaseUrlToImages(
-            step.description,
-            "file://${MainApplication.context.getExternalFilesDir(null)}/ole/",
-            600,
-            350
-        )
-        setMarkdownText(fragmentCourseStepBinding.description, markdownContentWithLocalPaths)
-        fragmentCourseStepBinding.description.movementMethod = LinkMovementMethod.getInstance()
-        val userHasCourse = databaseService.withRealm { realm ->
-            isMyCourse(user?.id, step.courseId, realm)
-        }
-        if (!userHasCourse) {
-            fragmentCourseStepBinding.btnTakeTest.visibility = View.GONE
-            fragmentCourseStepBinding.btnTakeSurvey.visibility = View.GONE
-        }
-        setListeners()
-        val textWithSpans = fragmentCourseStepBinding.description.text
-        if (textWithSpans is Spannable) {
-            val urlSpans = textWithSpans.getSpans(0, textWithSpans.length, URLSpan::class.java)
-            for (urlSpan in urlSpans) {
-                val start = textWithSpans.getSpanStart(urlSpan)
-                val end = textWithSpans.getSpanEnd(urlSpan)
-                val dynamicTitle = textWithSpans.subSequence(start, end).toString()
-                textWithSpans.setSpan(CustomClickableSpan(urlSpan.url, dynamicTitle, requireActivity()), start, end, textWithSpans.getSpanFlags(urlSpan))
-                textWithSpans.removeSpan(urlSpan)
+        viewLifecycleOwner.lifecycleScope.launch {
+            user = profileDbHandler.getUserModel()
+            databaseService.withRealmAsync { realm ->
+                step = realm.where(RealmCourseStep::class.java)
+                    .equalTo("id", stepId)
+                    .findFirst()
+                    ?.let { realm.copyFromRealm(it) }!!
+                resources = realm.where(RealmMyLibrary::class.java)
+                    .equalTo("stepId", stepId)
+                    .findAll()
+                    .let { realm.copyFromRealm(it) }
+                stepExams = realm.where(RealmStepExam::class.java)
+                    .equalTo("stepId", stepId)
+                    .equalTo("type", "courses")
+                    .findAll()
+                    .let { realm.copyFromRealm(it) }
+                stepSurvey = realm.where(RealmStepExam::class.java)
+                    .equalTo("stepId", stepId)
+                    .equalTo("type", "surveys")
+                    .findAll()
+                    .let { realm.copyFromRealm(it) }
             }
-        }
-        if (isVisible && userHasCourse) {
-            launchSaveCourseProgress()
+            fragmentCourseStepBinding.btnResources.text = getString(R.string.resources_size, resources.size)
+            hideTestIfNoQuestion()
+            fragmentCourseStepBinding.tvTitle.text = step.stepTitle
+            val markdownContentWithLocalPaths = prependBaseUrlToImages(
+                step.description,
+                "file://${MainApplication.context.getExternalFilesDir(null)}/ole/",
+                600,
+                350
+            )
+            setMarkdownText(fragmentCourseStepBinding.description, markdownContentWithLocalPaths)
+            fragmentCourseStepBinding.description.movementMethod = LinkMovementMethod.getInstance()
+            val userHasCourse = databaseService.withRealmAsync { realm ->
+                isMyCourse(user?.id, step.courseId, realm)
+            }
+            if (!userHasCourse) {
+                fragmentCourseStepBinding.btnTakeTest.visibility = View.GONE
+                fragmentCourseStepBinding.btnTakeSurvey.visibility = View.GONE
+            }
+            setListeners()
+            val textWithSpans = fragmentCourseStepBinding.description.text
+            if (textWithSpans is Spannable) {
+                val urlSpans = textWithSpans.getSpans(0, textWithSpans.length, URLSpan::class.java)
+                for (urlSpan in urlSpans) {
+                    val start = textWithSpans.getSpanStart(urlSpan)
+                    val end = textWithSpans.getSpanEnd(urlSpan)
+                    val dynamicTitle = textWithSpans.subSequence(start, end).toString()
+                    textWithSpans.setSpan(CustomClickableSpan(urlSpan.url, dynamicTitle, requireActivity()), start, end, textWithSpans.getSpanFlags(urlSpan))
+                    textWithSpans.removeSpan(urlSpan)
+                }
+            }
+            if (isVisible && userHasCourse) {
+                launchSaveCourseProgress()
+            }
         }
     }
 

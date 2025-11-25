@@ -73,50 +73,52 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTakeCourseBinding.inflate(inflater, container, false)
         mRealm = databaseService.realmInstance
-        userModel = userProfileDbHandler.userModel
         currentCourse = mRealm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        binding.tvCourseTitle.text = currentCourse?.courseTitle
-        steps = getCourseSteps(mRealm, courseId)
-        if (steps.isEmpty()) {
-            binding.nextStep.visibility = View.GONE
-            binding.previousStep.visibility = View.GONE
-        }
-
-        currentStep = getCourseProgress()
-        position = if (currentStep > 0) currentStep  else 0
-        setNavigationButtons()
-        binding.viewPager2.adapter =
-            CoursesPagerAdapter(
-                this@TakeCourseFragment,
-                courseId,
-                getCourseStepIds(mRealm, courseId)
-            )
-
-        binding.viewPager2.isUserInputEnabled = false
-        binding.viewPager2.setCurrentItem(position, false)
-
-        binding.viewPager2.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
-            override fun onPageSelected(position: Int) {
-                super.onPageSelected(position)
-                this@TakeCourseFragment.onPageSelected(position)
+        lifecycleScope.launch {
+            userModel = userProfileDbHandler.getUserModel()
+            binding.tvCourseTitle.text = currentCourse?.courseTitle
+            steps = getCourseSteps(mRealm, courseId)
+            if (steps.isEmpty()) {
+                binding.nextStep.visibility = View.GONE
+                binding.previousStep.visibility = View.GONE
             }
-        })
 
-        updateStepDisplay(position)
+            currentStep = getCourseProgress(userModel?.id)
+            position = if (currentStep > 0) currentStep else 0
+            setNavigationButtons()
+            binding.viewPager2.adapter =
+                CoursesPagerAdapter(
+                    this@TakeCourseFragment,
+                    courseId,
+                    getCourseStepIds(mRealm, courseId)
+                )
 
-        if (position == 0) {
-            binding.previousStep.visibility = View.GONE
-        }
-        setCourseData()
-        setListeners()
-        checkSurveyCompletion()
-        binding.backButton.setOnClickListener {
-            NavigationHelper.popBackStack(requireActivity().supportFragmentManager)
+            binding.viewPager2.isUserInputEnabled = false
+            binding.viewPager2.setCurrentItem(position, false)
+
+            binding.viewPager2.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+                override fun onPageSelected(position: Int) {
+                    super.onPageSelected(position)
+                    this@TakeCourseFragment.onPageSelected(position)
+                }
+            })
+
+            updateStepDisplay(position)
+
+            if (position == 0) {
+                binding.previousStep.visibility = View.GONE
+            }
+            setCourseData()
+            setListeners()
+            checkSurveyCompletion()
+            binding.backButton.setOnClickListener {
+                NavigationHelper.popBackStack(requireActivity().supportFragmentManager)
+            }
         }
     }
 
@@ -318,10 +320,9 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         setCourseData()
     }
 
-    private fun getCourseProgress(): Int {
-        return databaseService.withRealm { realm ->
-            val user = userProfileDbHandler.userModel
-            val courseProgressMap = RealmCourseProgress.getCourseProgress(realm, user?.id)
+    private suspend fun getCourseProgress(userId: String?): Int {
+        return databaseService.withRealmAsync { realm ->
+            val courseProgressMap = RealmCourseProgress.getCourseProgress(realm, userId)
             courseProgressMap[courseId]?.asJsonObject?.get("current")?.asInt ?: 0
         }
     }

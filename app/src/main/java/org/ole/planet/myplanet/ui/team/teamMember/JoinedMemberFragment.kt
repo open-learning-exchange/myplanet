@@ -20,8 +20,10 @@ import org.ole.planet.myplanet.callback.MemberChangeListener
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMember
 import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_LOGIN
 
 class JoinedMemberFragment : BaseMemberFragment() {
     private var memberChangeListener: MemberChangeListener = object : MemberChangeListener {
@@ -58,8 +60,21 @@ class JoinedMemberFragment : BaseMemberFragment() {
                         getString(R.string.no_visit)
                     }
                     val visitCount = RealmTeamLog.getVisitCount(realm, member.name, teamId)
-                    val offlineVisits = profileDbHandler?.getOfflineVisits(member)?.toString() ?: "0"
-                    val profileLastVisit = profileDbHandler?.getLastVisit(member) ?: ""
+                    val offlineVisits = realm.where(RealmOfflineActivity::class.java)
+                        .equalTo("userName", member.name)
+                        .equalTo("type", KEY_LOGIN)
+                        .count().toString()
+
+                    val lastLogoutTimestamp = realm.where(RealmOfflineActivity::class.java)
+                        .equalTo("userName", member.name)
+                        .max("loginTime") as Long?
+                    val profileLastVisit = if (lastLogoutTimestamp != null) {
+                        val date = Date(lastLogoutTimestamp)
+                        SimpleDateFormat("MMMM dd, yyyy hh:mm a", Locale.getDefault()).format(date)
+                    } else {
+                        "No logout record found"
+                    }
+
                     JoinedMemberData(
                         member,
                         visitCount,

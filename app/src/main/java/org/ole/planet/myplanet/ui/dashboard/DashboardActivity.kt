@@ -137,29 +137,32 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         mRealm = databaseService.realmInstance
-        checkUser()
         initViews()
-        updateAppTitle()
-        notificationManager = NotificationUtils.getInstance(this)
-        if (handleGuestAccess()) return
-        setupNavigation()
-        handleInitialFragment()
-        setupToolbarActions()
-        hideWifi()
-        libraryListener = RealmChangeListener { onRealmDataChanged() }
-        submissionListener = RealmChangeListener { onRealmDataChanged() }
-        taskListener = RealmChangeListener { onRealmDataChanged() }
+        lifecycleScope.launch {
+            user = userProfileDbHandler.getUserModel()
+            if (!checkUser()) return@launch
+            updateAppTitle()
+            notificationManager = NotificationUtils.getInstance(this@DashboardActivity)
+            if (handleGuestAccess()) return@launch
+            setupNavigation()
+            handleInitialFragment()
+            setupToolbarActions()
+            hideWifi()
+            libraryListener = RealmChangeListener { onRealmDataChanged() }
+            submissionListener = RealmChangeListener { onRealmDataChanged() }
+            taskListener = RealmChangeListener { onRealmDataChanged() }
 
-        addBackPressCallback()
-        handleNotificationIntent(intent)
-        collectUiState()
+            addBackPressCallback()
+            handleNotificationIntent(intent)
+            collectUiState()
 
-        binding.root.post {
-            setupSystemNotificationReceiver()
-            checkIfShouldShowNotifications()
-            setupRealmListeners()
-            challengeHelper.evaluateChallengeDialog()
-            reportFullyDrawn()
+            binding.root.post {
+                setupSystemNotificationReceiver()
+                checkIfShouldShowNotifications()
+                setupRealmListeners()
+                challengeHelper.evaluateChallengeDialog()
+                reportFullyDrawn()
+            }
         }
     }
 
@@ -198,11 +201,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun updateAppTitle() {
         try {
-            val userProfileModel = profileDbHandler.userModel
+            val userProfileModel = user
             if (userProfileModel != null) {
                 var name: String? = userProfileModel.getFullName()
                 if (name.isNullOrBlank()) {
-                    name = profileDbHandler.userModel?.name
+                    name = user?.name
                 }
                 val communityName = settings.getString("communityName", "")
                 binding.appBarBell.appTitleName.text = if (user?.planetCode == "") {
@@ -225,7 +228,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             return true
         }
         navigationView.setOnItemSelectedListener(this)
-        val isTopBarVisible = userProfileDbHandler.userModel?.isShowTopbar == true
+        val isTopBarVisible = user?.isShowTopbar == true
         navigationView.visibility = if (isTopBarVisible) {
             View.VISIBLE
         } else {
@@ -266,7 +269,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
         lifecycleScope.launch {
             delay(50)
-            if (!(user?.id?.startsWith("guest") == true && profileDbHandler.offlineVisits >= 3) &&
+            if (!(user?.id?.startsWith("guest") == true && profileDbHandler.getOfflineVisits() >= 3) &&
                 resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
             ) {
                 result?.openDrawer()

@@ -119,7 +119,9 @@ class SettingActivity : AppCompatActivity() {
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
             requireContext().setTheme(R.style.PreferencesTheme)
             setPreferencesFromResource(R.xml.pref, rootKey)
-            user = profileDbHandler.userModel
+            lifecycleScope.launch {
+                user = profileDbHandler.getUserModel()
+            }
             dialog = DialogUtils.getCustomProgressDialog(requireActivity())
 
             setBetaToggleOn()
@@ -191,18 +193,23 @@ class SettingActivity : AppCompatActivity() {
                 prefFreeUp.onPreferenceClickListener = OnPreferenceClickListener {
                     AlertDialog.Builder(requireActivity()).setTitle(R.string.are_you_sure_want_to_delete_all_the_files)
                         .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                            databaseService.withRealm { realm ->
-                                realm.executeTransactionAsync({ bgRealm ->
-                                    val libraries = bgRealm.where(RealmMyLibrary::class.java).findAll()
-                                    for (library in libraries) {
-                                        library.resourceOffline = false
+                            lifecycleScope.launch {
+                                try {
+                                    databaseService.executeTransactionAsync { bgRealm ->
+                                        val libraries = bgRealm.where(RealmMyLibrary::class.java).findAll()
+                                        for (library in libraries) {
+                                            library.resourceOffline = false
+                                        }
                                     }
-                                }, {
-                                    val f = File(FileUtils.getOlePath(requireContext()))
-                                    deleteRecursive(f)
-                                    Utilities.toast(requireActivity(), getString(R.string.data_cleared))
-                                }) {
-                                    Utilities.toast(requireActivity(), getString(R.string.unable_to_clear_files))
+                                    withContext(Dispatchers.Main) {
+                                        val f = File(FileUtils.getOlePath(requireContext()))
+                                        deleteRecursive(f)
+                                        Utilities.toast(requireActivity(), getString(R.string.data_cleared))
+                                    }
+                                } catch (e: Exception) {
+                                    withContext(Dispatchers.Main) {
+                                        Utilities.toast(requireActivity(), getString(R.string.unable_to_clear_files))
+                                    }
                                 }
                             }
                         }.setNegativeButton("No", null).show()

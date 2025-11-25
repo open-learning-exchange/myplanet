@@ -12,6 +12,7 @@ import android.widget.CompoundButton
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import fisk.chipcloud.ChipCloud
@@ -20,6 +21,7 @@ import io.realm.Realm
 import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityAddExaminationBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -79,7 +81,9 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         customDiag = HashSet()
         initViews()
-        currentUser = userProfileDbHandler.userModel
+        lifecycleScope.launch {
+            currentUser = userProfileDbHandler.getUserModel()
+        }
         mapConditions = HashMap()
         mRealm = databaseService.realmInstance
         userId = intent.getStringExtra("userId")

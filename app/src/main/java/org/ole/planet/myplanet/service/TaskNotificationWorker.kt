@@ -25,7 +25,7 @@ class TaskNotificationWorker(appContext: Context, workerParams: WorkerParameters
         val userProfileDbHandler = entryPoint.userProfileDbHandler()
         val teamRepository = entryPoint.teamRepository()
 
-        val user = userProfileDbHandler.userModel
+        val user = userProfileDbHandler.getUserModel()
         val userId = user?.id
         if (!userId.isNullOrBlank()) {
             val tasks = runCatching {

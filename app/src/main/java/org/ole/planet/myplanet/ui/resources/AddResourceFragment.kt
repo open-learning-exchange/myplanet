@@ -262,9 +262,11 @@ class AddResourceFragment : BottomSheetDialogFragment() {
         if (type == 0) {
             startActivity(Intent(activity, AddResourceActivity::class.java).putExtra("resource_local_url", path))
         } else {
-            val userModel = userProfileDbHandler.userModel ?: return
-            showAlert(requireContext(), path, myPersonalRepository, userModel.id, userModel.name, viewLifecycleOwner.lifecycleScope) {
-                dismiss()
+            lifecycleScope.launch {
+                val userModel = userProfileDbHandler.getUserModel() ?: return@launch
+                showAlert(requireContext(), path, myPersonalRepository, userModel.id, userModel.name, viewLifecycleOwner.lifecycleScope) {
+                    dismiss()
+                }
             }
         }
     }

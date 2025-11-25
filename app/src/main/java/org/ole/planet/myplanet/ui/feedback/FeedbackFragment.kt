@@ -45,11 +45,17 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentFeedbackBinding.inflate(inflater, container, false)
-        model = userProfileDbHandler.userModel
-        user = model?.name
         binding.btnSubmit.setOnClickListener(this)
         binding.btnCancel.setOnClickListener(this)
         return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        viewLifecycleOwner.lifecycleScope.launch {
+            model = userProfileDbHandler.getUserModel()
+            user = model?.name
+        }
     }
 
     override fun onDestroyView() {

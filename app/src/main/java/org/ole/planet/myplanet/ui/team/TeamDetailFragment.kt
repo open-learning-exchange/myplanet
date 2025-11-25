@@ -77,11 +77,11 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
     private var pageConfigs: List<TeamPageConfig> = emptyList()
     private var loadTeamJob: Job? = null
 
-    private fun getCurrentUser(): RealmUserModel? {
-        return userProfileDbHandler.userModel
+    private suspend fun getCurrentUser(): RealmUserModel? {
+        return userProfileDbHandler.getUserModel()
     }
 
-    private fun detachCurrentUser(): RealmUserModel? {
+    private suspend fun detachCurrentUser(): RealmUserModel? {
         return userProfileDbHandler.getUserModelCopy()
     }
 
@@ -133,12 +133,12 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
 
         val teamId = requireArguments().getString("id" ) ?: ""
         val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
-        val user = detachCurrentUser()
 
         renderPlaceholder()
 
         loadTeamJob?.cancel()
         loadTeamJob = viewLifecycleOwner.lifecycleScope.launch {
+            val user = detachCurrentUser()
             val resolvedTeam = when {
                 shouldQueryRealm(teamId) && teamId.isNotEmpty() -> {
                     teamRepository.getTeamByDocumentIdOrTeamId(teamId)
@@ -459,13 +459,13 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
     }
 
     private fun createTeamLog() {
-        val userModel = getCurrentUser() ?: return
-        val userName = userModel.name
-        val userPlanetCode = userModel.planetCode
-        val userParentCode = userModel.parentCode
-        val teamType = getEffectiveTeamType()
-
         viewLifecycleOwner.lifecycleScope.launch {
+            val userModel = getCurrentUser() ?: return@launch
+            val userName = userModel.name
+            val userPlanetCode = userModel.planetCode
+            val userParentCode = userModel.parentCode
+            val teamType = getEffectiveTeamType()
+
             withContext(kotlinx.coroutines.Dispatchers.IO) {
                 teamRepository.logTeamVisit(
                     teamId = getEffectiveTeamId(),

@@ -2,10 +2,14 @@ package org.ole.planet.myplanet.ui.team.teamMember
 
 import android.content.Context
 import android.content.res.Configuration
+import android.os.Bundle
+import android.view.View
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.base.BaseMemberFragment
 import org.ole.planet.myplanet.callback.MemberChangeListener
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getRequestedMember
@@ -30,7 +34,18 @@ class MembersFragment : BaseMemberFragment() {
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        currentUser = userProfileDbHandler.userModel ?: RealmUserModel()
+        currentUser = RealmUserModel()
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        viewLifecycleOwner.lifecycleScope.launch {
+            val user = userProfileDbHandler.getUserModel()
+            if (user != null) {
+                currentUser = user
+                binding.rvMember.adapter = adapter
+            }
+        }
     }
 
     override fun onNewsItemClick(news: RealmNews?) {}
