@@ -141,11 +141,15 @@ class UserProfileFragment : Fragment() {
         initializeDependencies()
         binding.btProfilePic.setOnClickListener { searchForPhoto() }
         binding.btEditProfile.setOnClickListener { openEditProfileDialog() }
-        setupStatsRecycler()
         observeUserProfile()
         viewModel.loadUserProfile(settings.getString("userId", ""))
 
         return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        setupStatsRecycler()
     }
 
     private fun initializeDependencies() {
@@ -439,17 +443,18 @@ class UserProfileFragment : Fragment() {
         }
     }
 
-    private fun createStatsMap(): LinkedHashMap<String, String?> {
+    private suspend fun createStatsMap(): LinkedHashMap<String, String?> {
         return linkedMapOf(
             getString(R.string.community_name) to Utilities.checkNA(model?.planetCode),
             getString(R.string.last_login) to viewModel.lastVisit?.let { TimeUtils.getRelativeTime(it) },
-            getString(R.string.total_visits_overall) to viewModel.offlineVisits.toString(),
+            getString(R.string.total_visits_overall) to viewModel.getOfflineVisits().toString(),
             getString(R.string.most_opened_resource) to Utilities.checkNA(viewModel.maxOpenedResource),
-            getString(R.string.number_of_resources_opened) to Utilities.checkNA(viewModel.numberOfResourceOpen)
+            getString(R.string.number_of_resources_opened) to Utilities.checkNA(viewModel.getNumberOfResourceOpen())
         )
     }
 
     private fun setupStatsRecycler() {
+        viewLifecycleOwner.lifecycleScope.launch {
         val map = createStatsMap()
         val keys = LinkedList(map.keys)
         binding.rvStat.adapter = object : RecyclerView.Adapter<ViewHolderRowStat>() {
@@ -475,6 +480,7 @@ class UserProfileFragment : Fragment() {
             override fun getItemCount(): Int {
                 return keys.size
             }
+        }
         }
     }
 

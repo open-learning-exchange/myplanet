@@ -229,7 +229,7 @@ class AdapterSurvey(
 
             if (mRealm.isClosed) {
                 Snackbar.make(binding.root, context.getString(R.string.failed_to_adopt_survey), Snackbar.LENGTH_LONG).show()
-                return
+                return@launch
             }
 
             try {

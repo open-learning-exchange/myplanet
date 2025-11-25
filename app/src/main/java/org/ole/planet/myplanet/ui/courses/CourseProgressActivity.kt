@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.courses
 import android.os.Bundle
 import androidx.recyclerview.widget.GridLayoutManager
 import com.google.gson.JsonArray
+import androidx.lifecycle.lifecycleScope
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm

@@ -212,29 +212,31 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         isMyCourseLib = arguments?.getBoolean("isMyCourseLib", false) ?: false
-        userModel = profileDbHandler?.userModel
-        searchTags = ArrayList()
-        config = Utilities.getCloudConfig().showClose(R.color.black_overlay)
+        viewLifecycleOwner.lifecycleScope.launch {
+            userModel = profileDbHandler?.getUserModel()
+            searchTags = ArrayList()
+            config = Utilities.getCloudConfig().showClose(R.color.black_overlay)
 
-        initializeViews()
-        setupEventListeners()
-        initArrays()
-        hideButton()
+            initializeViews()
+            setupEventListeners()
+            initArrays()
+            hideButton()
 
-        setupGuestUserRestrictions()
+            setupGuestUserRestrictions()
 
-        showNoData(tvMessage, adapterLibrary.itemCount, "resources")
-        clearTagsButton()
-        setupUI(binding.myLibraryParentLayout, requireActivity())
-        changeButtonStatus()
-        additionalSetup()
+            showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+            clearTagsButton()
+            setupUI(binding.myLibraryParentLayout, requireActivity())
+            changeButtonStatus()
+            additionalSetup()
 
-        tvFragmentInfo = binding.tvFragmentInfo
-        if (isMyCourseLib) tvFragmentInfo.setText(R.string.txt_myLibrary)
-        checkList()
-        
-        realtimeSyncHelper = RealtimeSyncHelper(this, this)
-        realtimeSyncHelper.setupRealtimeSync()
+            tvFragmentInfo = binding.tvFragmentInfo
+            if (isMyCourseLib) tvFragmentInfo.setText(R.string.txt_myLibrary)
+            checkList()
+
+            realtimeSyncHelper = RealtimeSyncHelper(this@ResourcesFragment, this@ResourcesFragment)
+            realtimeSyncHelper.setupRealtimeSync()
+        }
     }
 
     private fun initializeViews() {

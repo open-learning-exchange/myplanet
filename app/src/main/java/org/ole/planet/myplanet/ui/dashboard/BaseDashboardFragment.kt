@@ -233,7 +233,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         imgTask.visibility = if (tasks.isNotEmpty()) View.VISIBLE else View.GONE
     }
 
-    private fun myLifeListInit(flexboxLayout: FlexboxLayout) {
+    private suspend fun myLifeListInit(flexboxLayout: FlexboxLayout) {
         val dbMylife: MutableList<RealmMyLife> = ArrayList()
         val rawMylife: List<RealmMyLife> = RealmMyLife.getMyLifeByUserId(realm, settings)
         for (item in rawMylife) if (item.isVisible) dbMylife.add(item)
