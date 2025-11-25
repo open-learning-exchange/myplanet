@@ -1,9 +1,9 @@
 package org.ole.planet.myplanet.model
 
-import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import java.util.UUID
+import org.ole.planet.myplanet.datamanager.DatabaseService
 
 open class RealmUserChallengeActions : RealmObject() {
     @PrimaryKey
@@ -14,37 +14,22 @@ open class RealmUserChallengeActions : RealmObject() {
     var time: Long = 0
 
     companion object {
-        fun createActionAsync(
+        suspend fun createActionAsync(
+            databaseService: DatabaseService,
             userId: String,
             resourceId: String?,
             actionType: String
         ) {
-            val realm = Realm.getDefaultInstance()
-            realm.executeTransactionAsync({ bgRealm ->
+            databaseService.executeTransactionAsync { bgRealm ->
                 val action = bgRealm.createObject(
                     RealmUserChallengeActions::class.java,
                     UUID.randomUUID().toString()
                 )
-                action.userId     = userId
+                action.userId = userId
                 action.actionType = actionType
                 action.resourceId = resourceId
-                action.time       = System.currentTimeMillis()
-            }, {
-                realm.close()
-            }, { e ->
-                e.printStackTrace()
-                realm.close()
-            })
-        }
-
-        @Deprecated("Use createActionAsync without realm parameter")
-        fun createActionAsync(
-            realm: Realm,
-            userId: String,
-            resourceId: String?,
-            actionType: String
-        ) {
-            createActionAsync(userId, resourceId, actionType)
+                action.time = System.currentTimeMillis()
+            }
         }
     }
 }
