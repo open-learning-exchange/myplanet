@@ -488,7 +488,7 @@ class MyHealthFragment : Fragment() {
                 val healths = realm.where(RealmMyHealthPojo::class.java).equalTo("profileId", mm.userKey).findAll()
 
                 val creatorIds = mutableSetOf<String>()
-                data class TempData(val exam: RealmMyHealthPojo, val encrypted: JsonObject, val createdBy: String?)
+                data class TempData(val exam: RealmMyHealthPojo, val encrypted: JsonObject, val createdBy: String)
                 val tempList = mutableListOf<TempData>()
 
                 for (exam in healths) {
