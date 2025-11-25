@@ -183,13 +183,12 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
 
     override fun onResume() {
         super.onResume()
-        setTeamList()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.rvTeamList.layoutManager = LinearLayoutManager(activity)
-        setTeamList()
+        refreshTeamList()
         textWatcher = object : TextWatcher {
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
             override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {
@@ -239,18 +238,26 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
     }
 
     private fun getList(searchText: String): Pair<List<RealmMyTeam>, Boolean> {
-        val filteredList = teamList.filter {
+        val nameFilteredList = teamList.filter {
             it.name?.contains(searchText, ignoreCase = true) == true
         }
-        return Pair(filteredList, conditionApplied)
+
+        val typeFilteredList: List<RealmMyTeam>
+        val newConditionApplied: Boolean
+
+        if (TextUtils.isEmpty(type) || type == "team") {
+            typeFilteredList = nameFilteredList.filter { it.type != "enterprise" }
+            newConditionApplied = false
+        } else {
+            typeFilteredList = nameFilteredList.filter { it.type == "enterprise" }
+            newConditionApplied = true
+        }
+
+        return Pair(typeFilteredList, newConditionApplied)
     }
 
     private fun setTeamList() {
         val list = teamList
-        if (list.isEmpty() && !fromDashboard) {
-            return
-        }
-
         adapterTeamList = activity?.let {
             AdapterTeamList(it, list, childFragmentManager, teamRepository, user, viewLifecycleOwner.lifecycleScope)
         } ?: return
@@ -274,9 +281,8 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
         viewLifecycleOwner.lifecycleScope.launch {
             when {
                 fromDashboard -> {
-                    val user = userProfileDbHandler.getUserModelCopy()
-                    if (user?._id != null) {
-                        teamRepository.getMyTeamsFlow(user._id!!).collectLatest {
+                    user?._id?.let { userId ->
+                        teamRepository.getMyTeamsFlow(userId).collectLatest {
                             teamList = it
                             setTeamList()
                         }
