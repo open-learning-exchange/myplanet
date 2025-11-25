@@ -142,7 +142,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             viewModel.uiState.collect {
                 renderMyLibrary(it.library)
                 renderMyCourses(it.courses)
-                renderMyTeams(it.teams)
+                renderMyTeams(it.teamItems)
             }
         }
     }
@@ -194,41 +194,26 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         }
     }
 
-    private fun renderMyTeams(teams: List<RealmMyTeam>) {
+    private fun renderMyTeams(teamItems: List<TeamItem>) {
         val flexboxLayout: FlexboxLayout = view?.findViewById(R.id.flexboxLayoutTeams) ?: return
         flexboxLayout.removeAllViews()
-        val userId = profileDbHandler.userModel?.id
-        for ((count, ob) in teams.withIndex()) {
-            val v = LayoutInflater.from(activity).inflate(R.layout.item_home_my_team, flexboxLayout, false)
+        for ((count, item) in teamItems.withIndex()) {
+            val v = LayoutInflater.from(activity)
+                .inflate(R.layout.item_home_my_team, flexboxLayout, false)
             val name = v.findViewById<TextView>(R.id.tv_name)
             setBackgroundColor(v, count)
-            if (ob.teamType == "sync") {
+            if (item.team.teamType == "sync") {
                 name.setTypeface(null, Typeface.BOLD)
             }
-            handleClick(ob._id, ob.name, TeamDetailFragment(), name)
-            showNotificationIcons(ob, v, userId)
-            name.text = ob.name
+            handleClick(item.team._id, item.team.name, TeamDetailFragment(), name)
+            v.findViewById<ImageView>(R.id.img_chat).visibility =
+                if (item.hasUnreadMessages) View.VISIBLE else View.GONE
+            v.findViewById<ImageView>(R.id.img_task).visibility =
+                if (item.hasUpcomingTasks) View.VISIBLE else View.GONE
+            name.text = item.team.name
             flexboxLayout.addView(v, params)
         }
-        setCountText(teams.size, RealmMyTeam::class.java, requireView())
-    }
-
-    private fun showNotificationIcons(ob: RealmObject, v: View, userId: String?) {
-        val current = Calendar.getInstance().timeInMillis
-        val tomorrow = Calendar.getInstance()
-        tomorrow.add(Calendar.DAY_OF_YEAR, 1)
-        val imgTask = v.findViewById<ImageView>(R.id.img_task)
-        val imgChat = v.findViewById<ImageView>(R.id.img_chat)
-        val notification: RealmTeamNotification? = realm.where(RealmTeamNotification::class.java)
-            .equalTo("parentId", (ob as RealmMyTeam)._id).equalTo("type", "chat").findFirst()
-        val chatCount: Long = realm.where(RealmNews::class.java).equalTo("viewableBy", "teams")
-            .equalTo("viewableId", ob._id).count()
-        if (notification != null) {
-            imgChat.visibility = if (notification.lastCount < chatCount) View.VISIBLE else View.GONE
-        }
-        val tasks = realm.where(RealmTeamTask::class.java).equalTo("assignee", userId)
-            .between("deadline", current, tomorrow.timeInMillis).findAll()
-        imgTask.visibility = if (tasks.isNotEmpty()) View.VISIBLE else View.GONE
+        setCountText(teamItems.size, RealmMyTeam::class.java, requireView())
     }
 
     private fun myLifeListInit(flexboxLayout: FlexboxLayout) {

@@ -6,6 +6,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.ui.dashboard.TeamItem
 
 data class TeamMemberStatus(
     val isMember: Boolean,
@@ -14,6 +15,7 @@ data class TeamMemberStatus(
 )
 
 interface TeamRepository {
+    suspend fun getTeamsWithNotificationIcons(teams: List<RealmMyTeam>, userId: String): List<TeamItem>
     suspend fun getMyTeamsFlow(userId: String): Flow<List<RealmMyTeam>>
     suspend fun getShareableTeams(): List<RealmMyTeam>
     suspend fun getShareableEnterprises(): List<RealmMyTeam>

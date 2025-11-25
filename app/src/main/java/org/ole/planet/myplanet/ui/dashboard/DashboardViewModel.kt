@@ -26,6 +26,7 @@ data class DashboardUiState(
     val library: List<RealmMyLibrary> = emptyList(),
     val courses: List<RealmMyCourse> = emptyList(),
     val teams: List<RealmMyTeam> = emptyList(),
+    val teamItems: List<TeamItem> = emptyList(),
 )
 
 @HiltViewModel
@@ -102,7 +103,8 @@ class DashboardViewModel @Inject constructor(
 
             launch {
                 teamRepository.getMyTeamsFlow(userId).collect { teams ->
-                    _uiState.update { it.copy(teams = teams) }
+                    val teamItems = teamRepository.getTeamsWithNotificationIcons(teams, userId)
+                    _uiState.update { it.copy(teamItems = teamItems) }
                 }
             }
         }

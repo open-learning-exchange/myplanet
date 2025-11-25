@@ -23,6 +23,8 @@ import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamLog
+import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.RealmTeamNotification
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UploadManager
@@ -39,6 +41,54 @@ class TeamRepositoryImpl @Inject constructor(
     @AppPreferences private val preferences: SharedPreferences,
     private val serverUrlMapper: ServerUrlMapper,
 ) : RealmRepository(databaseService), TeamRepository {
+    override suspend fun getTeamsWithNotificationIcons(
+        teams: List<RealmMyTeam>,
+        userId: String
+    ): List<org.ole.planet.myplanet.ui.dashboard.TeamItem> {
+        val teamIds = teams.map { it._id }.toTypedArray()
+
+        val notificationQuery = withRealm { realm ->
+            realm.where(RealmTeamNotification::class.java)
+                .`in`("parentId", teamIds)
+                .equalTo("type", "chat")
+                .findAll()
+                .let { realm.copyFromRealm(it) }
+        }
+
+        val chatCountQuery = withRealm { realm ->
+            realm.where(RealmNews::class.java)
+                .equalTo("viewableBy", "teams")
+                .`in`("viewableId", teamIds)
+                .findAll()
+                .let { realm.copyFromRealm(it) }
+        }
+
+        val tomorrow = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }.timeInMillis
+        val taskQuery = withRealm { realm ->
+            realm.where(RealmTeamTask::class.java)
+                .equalTo("assignee", userId)
+                .between("deadline", System.currentTimeMillis(), tomorrow)
+                .findAll()
+                .let { realm.copyFromRealm(it) }
+        }
+
+        val notifications = notificationQuery.associateBy { it.parentId }
+        val chatCounts = chatCountQuery.groupBy { it.viewableId }
+            .mapValues { it.value.size.toLong() }
+        val tasksByTeam = taskQuery.isNotEmpty()
+
+        return teams.map { team ->
+            val notification = notifications[team._id]
+            val chatCount = chatCounts[team._id] ?: 0L
+            val hasUnreadMessages = notification != null && notification.lastCount < chatCount
+            org.ole.planet.myplanet.ui.dashboard.TeamItem(
+                team = team,
+                hasUnreadMessages = hasUnreadMessages,
+                hasUpcomingTasks = tasksByTeam,
+            )
+        }
+    }
+
 
     override suspend fun getMyTeamsFlow(userId: String): Flow<List<RealmMyTeam>> {
         return queryListFlow(RealmMyTeam::class.java) {
