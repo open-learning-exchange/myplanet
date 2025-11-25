@@ -202,7 +202,7 @@ class SettingActivity : AppCompatActivity() {
                             dialog.show()
                             lifecycleScope.launch {
                                 try {
-                                    withTimeout(5 * 60 * 1000L) {
+                                    withTimeout(60 * 1000L) {
                                         databaseService.executeTransactionAsync { bgRealm ->
                                             val libraries = bgRealm.where(RealmMyLibrary::class.java).findAll()
                                             for (library in libraries) {
