@@ -41,8 +41,6 @@ import org.commonmark.node.Image
 import org.ole.planet.myplanet.R
 
 object Markdown {
-    // Markwon instances are expensive to create, so they are cached in a WeakHashMap.
-    // The context is used as a key, and the map will not prevent the context from being garbage collected.
     private var currentZoomDialog: Dialog? = null
     private val markwonCache = WeakHashMap<Context, Markwon>()
 
