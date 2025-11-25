@@ -76,15 +76,18 @@ class NewsRepositoryImpl @Inject constructor(
             false
         }
     }
+
     override suspend fun getCommunityNews(userIdentifier: String): Flow<List<RealmNews>> {
         val allNewsFlow = queryListFlow(RealmNews::class.java) {
             isEmpty("replyTo")
             equalTo("docType", "message", Case.INSENSITIVE)
             sort("time", Sort.DESCENDING)
         }
-        .flowOn(Dispatchers.Main)
+        .flowOn(Dispatchers.Main) // Realm async queries require a Looper thread.
 
         return allNewsFlow.map { allNews ->
+            // allNews are unmanaged copies (POJOs) created by copyFromRealm in queryListFlow.
+            // It is safe to process them on a background thread.
             allNews.filter { news ->
                 isVisibleToUser(news, userIdentifier)
             }.map { news ->
