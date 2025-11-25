@@ -114,6 +114,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private lateinit var libraryListener: RealmChangeListener<RealmResults<RealmMyLibrary>>
     private lateinit var submissionListener: RealmChangeListener<RealmResults<RealmSubmission>>
     private lateinit var taskListener: RealmChangeListener<RealmResults<RealmTeamTask>>
+    private lateinit var tabSelectedListener: TabLayout.OnTabSelectedListener
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     @Inject
@@ -128,6 +129,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private var lastNotificationCheckTime = 0L
     private val notificationCheckThrottleMs = 5000L
     private var systemNotificationReceiver: BroadcastReceiver? = null
+    private var onGlobalLayoutListener: android.view.ViewTreeObserver.OnGlobalLayoutListener? = null
     private lateinit var mRealm: Realm
 
     override fun attachBaseContext(base: Context) {
@@ -190,7 +192,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         binding.appBarBell.bellToolbar.inflateMenu(R.menu.menu_bell_dashboard)
         service = Service(this)
         tl = findViewById(R.id.tab_layout)
-        binding.root.viewTreeObserver.addOnGlobalLayoutListener { topBarVisible() }
+        onGlobalLayoutListener = android.view.ViewTreeObserver.OnGlobalLayoutListener { topBarVisible() }
+        binding.root.viewTreeObserver.addOnGlobalLayoutListener(onGlobalLayoutListener)
         binding.appBarBell.ivSetting.setOnClickListener {
             startActivity(Intent(this, SettingActivity::class.java))
         }
@@ -927,7 +930,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun topbarSetting() {
         UITheme()
         val tabLayout = findViewById<TabLayout>(R.id.tab_layout)
-        tabLayout.addOnTabSelectedListener(object : OnTabSelectedListener {
+        tabSelectedListener = object : OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab) {
                 onClickTabItems(tab.position)
             }
@@ -936,7 +939,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             override fun onTabReselected(tab: TabLayout.Tab) {
                 onClickTabItems(tab.position)
             }
-        })
+        }
+        tabLayout.addOnTabSelectedListener(tabSelectedListener)
         for (i in 0 until tabLayout.tabCount) {
             val customTabBinding = CustomTabBinding.inflate(LayoutInflater.from(this))
             val title = customTabBinding.title
@@ -1097,9 +1101,17 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     override fun onDestroy() {
+        val tabLayout = findViewById<TabLayout>(R.id.tab_layout)
+        if (::tabSelectedListener.isInitialized) {
+            tabLayout.removeOnTabSelectedListener(tabSelectedListener)
+        }
         libraryResults?.removeChangeListener(libraryListener)
         submissionResults?.removeChangeListener(submissionListener)
         taskResults?.removeChangeListener(taskListener)
+
+        onGlobalLayoutListener?.let {
+            binding.root.viewTreeObserver.removeOnGlobalLayoutListener(it)
+        }
 
         systemNotificationReceiver?.let {
             unregisterReceiver(it)
