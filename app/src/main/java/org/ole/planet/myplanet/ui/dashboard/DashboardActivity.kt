@@ -129,6 +129,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private var lastNotificationCheckTime = 0L
     private val notificationCheckThrottleMs = 5000L
     private var systemNotificationReceiver: BroadcastReceiver? = null
+    private var onGlobalLayoutListener: android.view.ViewTreeObserver.OnGlobalLayoutListener? = null
     private lateinit var mRealm: Realm
 
     override fun attachBaseContext(base: Context) {
@@ -191,7 +192,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         binding.appBarBell.bellToolbar.inflateMenu(R.menu.menu_bell_dashboard)
         service = Service(this)
         tl = findViewById(R.id.tab_layout)
-        binding.root.viewTreeObserver.addOnGlobalLayoutListener { topBarVisible() }
+        onGlobalLayoutListener = android.view.ViewTreeObserver.OnGlobalLayoutListener { topBarVisible() }
+        binding.root.viewTreeObserver.addOnGlobalLayoutListener(onGlobalLayoutListener)
         binding.appBarBell.ivSetting.setOnClickListener {
             startActivity(Intent(this, SettingActivity::class.java))
         }
@@ -1106,6 +1108,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         libraryResults?.removeChangeListener(libraryListener)
         submissionResults?.removeChangeListener(submissionListener)
         taskResults?.removeChangeListener(taskListener)
+
+        onGlobalLayoutListener?.let {
+            binding.root.viewTreeObserver.removeOnGlobalLayoutListener(it)
+        }
 
         systemNotificationReceiver?.let {
             unregisterReceiver(it)
