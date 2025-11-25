@@ -10,7 +10,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.findCopyByField
 import org.ole.planet.myplanet.model.RealmNews
@@ -83,14 +82,14 @@ class NewsRepositoryImpl @Inject constructor(
             equalTo("docType", "message", Case.INSENSITIVE)
             sort("time", Sort.DESCENDING)
         }
+        .flowOn(Dispatchers.Main)
+
         return allNewsFlow.map { allNews ->
-            withContext(Dispatchers.Default) {
-                allNews.filter { news ->
-                    isVisibleToUser(news, userIdentifier)
-                }.map { news ->
-                    news.sortDate = news.calculateSortDate()
-                    news
-                }
+            allNews.filter { news ->
+                isVisibleToUser(news, userIdentifier)
+            }.map { news ->
+                news.sortDate = news.calculateSortDate()
+                news
             }
         }.flowOn(Dispatchers.Default)
     }
