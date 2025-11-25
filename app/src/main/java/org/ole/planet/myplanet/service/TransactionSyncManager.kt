@@ -94,66 +94,69 @@ object TransactionSyncManager {
         }
     }
 
-    fun syncDb(realm: Realm, table: String) {
-        // Use a synchronous transaction to ensure it runs on the coroutine's dispatcher thread,
-        // avoiding Realm's thread-confinement issues.
-        realm.executeTransaction { mRealm: Realm ->
-            val apiInterface = client?.create(ApiInterface::class.java)
-            val allDocs = apiInterface?.getJsonObject(UrlUtils.header, UrlUtils.getUrl() + "/" + table + "/_all_docs?include_doc=false")
-            try {
-                val all = allDocs?.execute()
-                val rows = getJsonArray("rows", all?.body())
-                val keys: MutableList<String> = ArrayList()
-                for (i in 0 until rows.size()) {
-                    val `object` = rows[i].asJsonObject
-                    if (!TextUtils.isEmpty(getString("id", `object`))) keys.add(getString("key", `object`))
-                    if (i == rows.size() - 1 || keys.size == 1000) {
-                        val obj = JsonObject()
-                        obj.add("keys", Gson().fromJson(Gson().toJson(keys), JsonArray::class.java))
-                        val response = apiInterface?.findDocs(UrlUtils.header, "application/json", UrlUtils.getUrl() + "/" + table + "/_all_docs?include_docs=true", obj)?.execute()
-                        if (response?.body() != null) {
-                            val arr = getJsonArray("rows", response.body())
-                            if (table == "chat_history") {
-                                insertToChat(arr, mRealm)
-                            }
-                            insertDocs(arr, mRealm, table)
+    fun syncDb(table: String) {
+        val apiInterface = client?.create(ApiInterface::class.java) ?: return
+        val documentsToInsert = mutableListOf<JsonObject>()
+
+        try {
+            // Step 1: Get all document keys from the network
+            val allDocsResponse = apiInterface.getJsonObject(
+                UrlUtils.header,
+                "${UrlUtils.getUrl()}/$table/_all_docs?include_doc=false"
+            ).execute()
+
+            if (!allDocsResponse.isSuccessful) return
+
+            val rows = getJsonArray("rows", allDocsResponse.body())
+            val keys = rows.mapNotNull { it.asJsonObject?.let { obj -> getString("id", obj) } }
+                .filter { it.isNotEmpty() }
+
+            // Step 2: Batch fetch full documents
+            keys.chunked(1000).forEach { batchKeys ->
+                val keysObject = JsonObject().apply {
+                    add("keys", Gson().fromJson(Gson().toJson(batchKeys), JsonArray::class.java))
+                }
+                val docsResponse = apiInterface.findDocs(
+                    UrlUtils.header,
+                    "application/json",
+                    "${UrlUtils.getUrl()}/$table/_all_docs?include_docs=true",
+                    keysObject
+                ).execute()
+
+                if (docsResponse.isSuccessful) {
+                    val docRows = getJsonArray("rows", docsResponse.body())
+                    docRows.forEach { row ->
+                        getJsonObject("doc", row.asJsonObject)?.let { doc ->
+                            documentsToInsert.add(doc)
                         }
-                        keys.clear()
                     }
                 }
-            } catch (e: IOException) {
-                e.printStackTrace()
             }
-        }
-    }
-
-    private fun insertToChat(arr: JsonArray, mRealm: Realm) {
-        val chatHistoryList = mutableListOf<JsonObject>()
-        for (j in arr) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = getJsonObject("doc", jsonDoc)
-            chatHistoryList.add(jsonDoc)
+        } catch (e: IOException) {
+            e.printStackTrace()
+            return // Abort on network error
         }
 
-        chatHistoryList.forEach { jsonDoc ->
-            insert(mRealm, jsonDoc)
-        }
-    }
+        if (documentsToInsert.isEmpty()) return
 
-    private fun insertDocs(arr: JsonArray, mRealm: Realm, table: String) {
-        val documentList = mutableListOf<JsonObject>()
-
-        for (j in arr) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = getJsonObject("doc", jsonDoc)
-            val id = getString("_id", jsonDoc)
-            if (!id.startsWith("_design")) {
-                documentList.add(jsonDoc)
+        // Step 3: Perform database transaction
+        var realm: Realm? = null
+        try {
+            realm = Realm.getDefaultInstance()
+            realm.executeTransaction { transactionRealm ->
+                documentsToInsert.forEach { doc ->
+                    val id = getString("_id", doc)
+                    if (!id.startsWith("_design")) {
+                        if (table == "chat_history") {
+                            insert(transactionRealm, doc) // From RealmChatHistory
+                        } else {
+                            continueInsert(transactionRealm, table, doc)
+                        }
+                    }
+                }
             }
-        }
-
-        documentList.forEach { jsonDoc ->
-            continueInsert(mRealm, table, jsonDoc)
+        } finally {
+            realm?.close()
         }
     }
 
