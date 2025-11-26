@@ -9,6 +9,7 @@ import android.view.ViewGroup
 import android.widget.CompoundButton
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Locale
 import javax.inject.Inject
@@ -23,14 +24,14 @@ import org.ole.planet.myplanet.repository.TagRepository
 import org.ole.planet.myplanet.utilities.KeyboardUtils
 
 @AndroidEntryPoint
-class CollectionsFragment : DialogFragment(), TagExpandableAdapter.OnClickTagItem, CompoundButton.OnCheckedChangeListener {
+class CollectionsFragment : DialogFragment(), TagAdapter.OnClickTagItem, CompoundButton.OnCheckedChangeListener {
     private var _binding: FragmentCollectionsBinding? = null
     private val binding get() = _binding!!
     @Inject
     lateinit var tagRepository: TagRepository
     private lateinit var list: List<RealmTag>
     private var filteredList: ArrayList<RealmTag> = ArrayList()
-    private lateinit var adapter: TagExpandableAdapter
+    private lateinit var adapter: TagAdapter
     private var dbType: String? = null
     private var listener: TagClickListener? = null
     private var selectedItemsList: ArrayList<RealmTag> = ArrayList()
@@ -70,17 +71,12 @@ class CollectionsFragment : DialogFragment(), TagExpandableAdapter.OnClickTagIte
     }
 
     private fun filterTags(charSequence: String) {
-        filteredList.clear()
-        if (charSequence.isEmpty()) {
-            adapter.setTagList(list)
-            return
+        val filtered = if (charSequence.isEmpty()) {
+            list
+        } else {
+            list.filter { it.name?.lowercase(Locale.ROOT)?.contains(charSequence.lowercase(Locale.ROOT)) == true }
         }
-        list.forEach { t ->
-            if (t.name?.lowercase(Locale.ROOT)?.contains(charSequence.lowercase(Locale.ROOT)) == true) {
-                filteredList.add(t)
-            }
-        }
-        adapter.setTagList(filteredList)
+        adapter.setData(filtered)
     }
 
     private fun setListAdapter() {
@@ -88,11 +84,12 @@ class CollectionsFragment : DialogFragment(), TagExpandableAdapter.OnClickTagIte
             list = tagRepository.getTags(dbType)
             selectedItemsList = ArrayList(recentList)
             val childMap = tagRepository.buildChildMap()
-            binding.listTags.setGroupIndicator(null)
-            adapter = TagExpandableAdapter(list, childMap, selectedItemsList)
+            adapter = TagAdapter(childMap, selectedItemsList)
             adapter.setSelectMultiple(true)
             adapter.setClickListener(this@CollectionsFragment)
-            binding.listTags.setAdapter(adapter)
+            binding.listTags.adapter = adapter
+            binding.listTags.layoutManager = LinearLayoutManager(context)
+            adapter.setData(list)
             binding.btnOk.visibility = View.VISIBLE
         }
     }
@@ -113,8 +110,7 @@ class CollectionsFragment : DialogFragment(), TagExpandableAdapter.OnClickTagIte
     override fun onCheckedChanged(compoundButton: CompoundButton, b: Boolean) {
         MainApplication.isCollectionSwitchOn = b
         adapter.setSelectMultiple(b)
-        adapter.setTagList(list)
-        binding.listTags.setAdapter(adapter)
+        adapter.setData(list)
         binding.btnOk.visibility = if (b) View.VISIBLE else View.GONE
     }
 
