@@ -30,7 +30,7 @@ import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
-class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamList.OnUpdateCompleteListener {
+class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     private var _binding: FragmentTeamBinding? = null
     private val binding get() = _binding!!
     private lateinit var alertCreateTeamBinding: AlertCreateTeamBinding
@@ -222,16 +222,22 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
 
                     val adapterTeamList = AdapterTeamList(
                         activity as Context,
-                        sortedList,
                         childFragmentManager,
                         teamRepository,
                         user,
                         viewLifecycleOwner.lifecycleScope,
-                        sharedPrefManager
+                        sharedPrefManager,
+                        sortedList,
+                        ::refreshTeamList
                     )
                     adapterTeamList.setTeamListener(this@TeamFragment)
-                    adapterTeamList.setUpdateCompleteListener(this@TeamFragment)
                     binding.rvTeamList.adapter = adapterTeamList
+                    adapterTeamList.submitList(sortedList)
+                    if (sortedList.isEmpty()) {
+                        showNoResultsMessage(true, charSequence.toString())
+                    } else {
+                        showNoResultsMessage(false)
+                    }
                     listContentDescription(conditionApplied)
                 }
             }
@@ -263,12 +269,11 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
     private fun setTeamList() {
         val list = teamList
         adapterTeamList = activity?.let {
-            AdapterTeamList(it, list, childFragmentManager, teamRepository, user, viewLifecycleOwner.lifecycleScope, sharedPrefManager)
+            AdapterTeamList(it, childFragmentManager, teamRepository, user, viewLifecycleOwner.lifecycleScope, sharedPrefManager, list, ::refreshTeamList)
         } ?: return
 
         adapterTeamList.setType(type)
         adapterTeamList.setTeamListener(this@TeamFragment)
-        adapterTeamList.setUpdateCompleteListener(this@TeamFragment)
         requireView().findViewById<View>(R.id.type).visibility =
             if (type == null) {
                 View.GONE
@@ -277,7 +282,12 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
             }
 
         binding.rvTeamList.adapter = adapterTeamList
-        adapterTeamList.updateList()
+        adapterTeamList.submitList(list)
+        if (list.isEmpty()) {
+            showNoResultsMessage(true)
+        } else {
+            showNoResultsMessage(false)
+        }
         listContentDescription(conditionApplied)
     }
 
@@ -310,20 +320,12 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
         team?.let { createTeamAlert(it) }
     }
 
-    override fun onUpdateComplete(itemCount: Int) {
-        if (itemCount == 0) {
-            showNoResultsMessage(true)
-        } else {
-            showNoResultsMessage(false)
-        }
-    }
-
     private fun updatedTeamList() {
         viewLifecycleOwner.lifecycleScope.launch {
             if (!::adapterTeamList.isInitialized || binding.rvTeamList.adapter == null) {
                 setTeamList()
             } else {
-                adapterTeamList.updateList()
+                adapterTeamList.submitList(teamList)
             }
             listContentDescription(conditionApplied)
         }
