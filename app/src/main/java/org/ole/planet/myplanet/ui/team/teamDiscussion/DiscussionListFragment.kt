@@ -22,8 +22,11 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentDiscussionListBinding
+import org.ole.planet.myplanet.model.LibraryImageData
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.utilities.JsonUtils
+import java.io.File
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmTeamNotification
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -237,17 +240,43 @@ class DiscussionListFragment : BaseTeamFragment() {
     private fun showRecyclerView(realmNewsList: List<RealmNews?>?) {
         val existingAdapter = binding.rvDiscussion.adapter
         if (existingAdapter == null) {
-            val adapterNews = activity?.let {
-                AdapterNews(it, user, null, getEffectiveTeamName(), teamId, userProfileDbHandler, databaseService)
-            }
-            adapterNews?.sharedPrefManager = sharedPrefManager
-            adapterNews?.setmRealm(mRealm)
-            adapterNews?.setListener(this)
-            if (!isMemberFlow.value) adapterNews?.setNonTeamMember(true)
-            realmNewsList?.let { adapterNews?.updateList(it) }
-            binding.rvDiscussion.adapter = adapterNews
-            adapterNews?.let {
-                showNoData(binding.tvNodata, it.itemCount, "discussions")
+            val resourceIds = realmNewsList?.flatMap { news ->
+                news?.imagesArray?.mapNotNull { imageElement ->
+                    imageElement?.asJsonObject?.let { JsonUtils.getString("resourceId", it) }
+                } ?: emptyList()
+            }?.toSet() ?: emptySet()
+
+            viewLifecycleOwner.lifecycleScope.launch {
+                val libraryImageMap = mutableMapOf<String, LibraryImageData>()
+                if (resourceIds.isNotEmpty()) {
+                    val libraries = libraryRepository.getLibraryItemsByIds(resourceIds)
+                    val basePath = requireContext().getExternalFilesDir(null)
+                    if (basePath != null) {
+                        libraries.forEach { library ->
+                            library._id?.let {
+                                val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
+                                libraryImageMap[it] = LibraryImageData(
+                                    id = library.id,
+                                    resourceLocalAddress = library.resourceLocalAddress,
+                                    filePath = imageFile.absolutePath
+                                )
+                            }
+                        }
+                    }
+                }
+
+                val adapterNews = activity?.let {
+                    AdapterNews(it, user, null, getEffectiveTeamName(), teamId, userProfileDbHandler, databaseService, libraryImageMap)
+                }
+                adapterNews?.sharedPrefManager = sharedPrefManager
+                adapterNews?.setmRealm(mRealm)
+                adapterNews?.setListener(this@DiscussionListFragment)
+                if (!isMemberFlow.value) adapterNews?.setNonTeamMember(true)
+                realmNewsList?.let { adapterNews?.updateList(it) }
+                binding.rvDiscussion.adapter = adapterNews
+                adapterNews?.let {
+                    showNoData(binding.tvNodata, it.itemCount, "discussions")
+                }
             }
         } else {
             (existingAdapter as? AdapterNews)?.let { adapter ->

@@ -27,6 +27,8 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityReplyBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.model.LibraryImageData
+import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -89,7 +91,31 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         lifecycleScope.launch {
             val (news, list) = viewModel.getNewsWithReplies(id)
             databaseService.withRealm { realm ->
-                newsAdapter = AdapterNews(this@ReplyActivity, user, news, "", null, userProfileDbHandler, databaseService)
+                val allNews = list + news
+                val resourceIds = allNews.filterNotNull().flatMap { newsItem ->
+                    newsItem.imagesArray?.mapNotNull { imageElement ->
+                        imageElement?.asJsonObject?.let { getString("resourceId", it) }
+                    } ?: emptyList()
+                }.toSet()
+
+                val libraryImageMap = mutableMapOf<String, LibraryImageData>()
+                if (resourceIds.isNotEmpty()) {
+                    val libraries = realm.where(RealmMyLibrary::class.java).`in`("_id", resourceIds.toTypedArray()).findAll()
+                    val basePath = getExternalFilesDir(null)
+                    if (basePath != null) {
+                        libraries.forEach { library ->
+                            library._id?.let {
+                                val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
+                                libraryImageMap[it] = LibraryImageData(
+                                    id = library.id,
+                                    resourceLocalAddress = library.resourceLocalAddress,
+                                    filePath = imageFile.absolutePath
+                                )
+                            }
+                        }
+                    }
+                }
+                newsAdapter = AdapterNews(this@ReplyActivity, user, news, "", null, userProfileDbHandler, databaseService, libraryImageMap)
                 newsAdapter.sharedPrefManager = sharedPrefManager
                 newsAdapter.setListener(this@ReplyActivity)
                 newsAdapter.setmRealm(realm)
