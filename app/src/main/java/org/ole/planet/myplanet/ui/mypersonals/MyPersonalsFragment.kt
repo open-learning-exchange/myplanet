@@ -59,12 +59,12 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
 
     private fun setAdapter() {
         val model = userProfileDbHandler.userModel
-        personalAdapter = AdapterMyPersonal(requireActivity(), mutableListOf())
+        personalAdapter = AdapterMyPersonal(requireActivity())
         personalAdapter?.setListener(this)
         binding.rvMypersonal.adapter = personalAdapter
         viewLifecycleOwner.lifecycleScope.launch {
             myPersonalRepository.getPersonalResources(model?.id).collectLatest { realmMyPersonals ->
-                personalAdapter?.updateList(realmMyPersonals)
+                personalAdapter?.submitList(realmMyPersonals)
                 showNodata()
             }
         }

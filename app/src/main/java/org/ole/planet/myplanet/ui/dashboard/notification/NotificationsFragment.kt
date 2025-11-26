@@ -40,8 +40,6 @@ class NotificationsFragment : Fragment() {
     private var _binding: FragmentNotificationsBinding? = null
     private val binding get() = _binding!!
     @Inject
-    lateinit var databaseService: DatabaseService
-    @Inject
     lateinit var notificationRepository: NotificationRepository
     private lateinit var adapter: AdapterNotification
     private lateinit var userId: String
@@ -64,7 +62,7 @@ class NotificationsFragment : Fragment() {
         _binding = FragmentNotificationsBinding.inflate(inflater, container, false)
         userId = arguments?.getString("userId") ?: ""
         adapter = AdapterNotification(
-            databaseService,
+            notificationRepository,
             emptyList(),
             onMarkAsReadClick = { notificationId ->
                 markAsReadById(notificationId)
