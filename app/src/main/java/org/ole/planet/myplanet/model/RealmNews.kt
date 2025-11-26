@@ -10,6 +10,7 @@ import com.google.gson.JsonSyntaxException
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
+import io.realm.annotations.Ignore
 import io.realm.annotations.PrimaryKey
 import java.util.Date
 import java.util.UUID
@@ -56,6 +57,8 @@ open class RealmNews : RealmObject() {
     var isEdited: Boolean = false
     var editedTime: Long = 0
     var sharedBy: String? = null
+    @Ignore
+    var sortDate: Long = 0
 
     val imagesArray: JsonArray
         get() = if (images == null) JsonArray() else GsonUtils.gson.fromJson(images, JsonArray::class.java)
@@ -103,6 +106,23 @@ open class RealmNews : RealmObject() {
             }
             return isCommunity
         }
+
+    fun calculateSortDate(): Long {
+        try {
+            if (!viewIn.isNullOrEmpty()) {
+                val ar = GsonUtils.gson.fromJson(viewIn, JsonArray::class.java)
+                for (elem in ar) {
+                    val obj = elem.asJsonObject
+                    if (obj.has("section") && obj.get("section").asString.equals("community", true) && obj.has("sharedDate")) {
+                        return obj.get("sharedDate").asLong
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return time
+    }
 
     companion object {
         private val concatenatedLinks = ArrayList<String>()

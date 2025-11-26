@@ -6,6 +6,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import java.io.File
 import org.ole.planet.myplanet.callback.OnSelectedMyPersonal
@@ -19,81 +20,68 @@ import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.IntentUtils.openAudioFile
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
 
-class AdapterMyPersonal(private val context: Context, private var list: MutableList<RealmMyPersonal>) : RecyclerView.Adapter<ViewHolderMyPersonal>() {
+class AdapterMyPersonal(private val context: Context) : ListAdapter<RealmMyPersonal, ViewHolderMyPersonal>(DiffCallback) {
     private var listener: OnSelectedMyPersonal? = null
 
     fun setListener(listener: OnSelectedMyPersonal?) {
         this.listener = listener
     }
 
-    fun updateList(newList: List<RealmMyPersonal>) {
-        if (list === newList) return
-        val previousItems = list.toList()
-        val diffResult = DiffUtils.calculateDiff(
-            previousItems,
-            newList,
-            areItemsTheSame = { old, new -> old._id == new._id },
-            areContentsTheSame = { old, new ->
-                old.title == new.title &&
-                    old.description == new.description &&
-                    old.date == new.date &&
-                    old.path == new.path
-            }
-        )
-        list = newList.toMutableList()
-        diffResult.dispatchUpdatesTo(this)
-    }
-
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderMyPersonal {
         val binding = RowMyPersonalBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ViewHolderMyPersonal(binding)
     }
+
     override fun onBindViewHolder(holder: ViewHolderMyPersonal, position: Int) {
         val binding = holder.binding
-        val item = list[position]
+        val item = getItem(position)
         binding.title.text = item.title
         binding.description.text = item.description
         binding.date.text = getFormattedDate(item.date)
         binding.imgDelete.setOnClickListener {
             val adapterPosition = holder.bindingAdapterPosition
             if (adapterPosition != RecyclerView.NO_POSITION) {
-                listener?.onDeletePersonal(list[adapterPosition])
+                listener?.onDeletePersonal(getItem(adapterPosition))
             }
         }
         binding.imgEdit.setOnClickListener {
             val adapterPosition = holder.bindingAdapterPosition
             if (adapterPosition != RecyclerView.NO_POSITION) {
-                listener?.onEditPersonal(list[adapterPosition])
+                listener?.onEditPersonal(getItem(adapterPosition))
             }
         }
         holder.itemView.setOnClickListener {
             val adapterPosition = holder.bindingAdapterPosition
             if (adapterPosition != RecyclerView.NO_POSITION) {
-                openResource(list[adapterPosition].path)
+                openResource(getItem(adapterPosition).path)
             }
         }
         binding.imgUpload.setOnClickListener {
             val adapterPosition = holder.bindingAdapterPosition
             if (adapterPosition != RecyclerView.NO_POSITION && listener != null) {
-                listener?.onUpload(list[adapterPosition])
+                listener?.onUpload(getItem(adapterPosition))
             }
         }
     }
+
     private fun openResource(path: String?) {
         val arr = path?.split("\\.".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()
         when (arr?.get(arr.size - 1)) {
             "pdf" -> context.startActivity(
                 Intent(context, PDFReaderActivity::class.java).putExtra("TOUCHED_FILE", path)
             )
+
             "bmp", "gif", "jpg", "png", "webp" -> {
                 val ii = Intent(context, ImageViewerActivity::class.java).putExtra("TOUCHED_FILE", path)
                 ii.putExtra("isFullPath", true)
                 context.startActivity(ii)
             }
+
             "aac", "mp3" -> openAudioFile(context, path)
             "mp4" -> openVideo(path)
         }
     }
+
     private fun openVideo(path: String?) {
         val b = Bundle()
         b.putString("videoURL", "" + Uri.fromFile(path?.let { File(it) }))
@@ -103,8 +91,19 @@ class AdapterMyPersonal(private val context: Context, private var list: MutableL
         i.putExtras(b)
         context.startActivity(i)
     }
-    override fun getItemCount(): Int {
-        return list.size
-    }
+
     class ViewHolderMyPersonal(val binding: RowMyPersonalBinding) : RecyclerView.ViewHolder(binding.root)
+
+    companion object {
+        private val DiffCallback =
+            DiffUtils.itemCallback<RealmMyPersonal>(
+                areItemsTheSame = { old, new -> old._id == new._id },
+                areContentsTheSame = { old, new ->
+                    old.title == new.title &&
+                            old.description == new.description &&
+                            old.date == new.date &&
+                            old.path == new.path
+                }
+            )
+    }
 }

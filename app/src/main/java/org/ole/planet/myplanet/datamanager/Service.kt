@@ -27,6 +27,7 @@ import org.ole.planet.myplanet.di.ApiInterfaceEntryPoint
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.di.ApplicationScopeEntryPoint
 import org.ole.planet.myplanet.di.AutoSyncEntryPoint
+import org.ole.planet.myplanet.di.DatabaseServiceEntryPoint
 import org.ole.planet.myplanet.di.RepositoryEntryPoint
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmCommunity
@@ -53,6 +54,7 @@ import retrofit2.Response
 class Service @Inject constructor(
     private val context: Context,
     private val retrofitInterface: ApiInterface,
+    private val databaseService: DatabaseService,
     @ApplicationScope private val serviceScope: CoroutineScope,
     private val userRepository: UserRepository,
 ) {
@@ -62,6 +64,10 @@ class Service @Inject constructor(
             context.applicationContext,
             ApiInterfaceEntryPoint::class.java
         ).apiInterface(),
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            DatabaseServiceEntryPoint::class.java
+        ).databaseService(),
         EntryPointAccessors.fromApplication(
             context.applicationContext,
             ApplicationScopeEntryPoint::class.java
@@ -412,7 +418,7 @@ class Service @Inject constructor(
 
                 val transactionResult = runCatching {
                     withContext(Dispatchers.IO) {
-                        MainApplication.service.withRealm { backgroundRealm ->
+                        databaseService.withRealm { backgroundRealm ->
                             backgroundRealm.executeTransaction { realm1 ->
                                 realm1.delete(RealmCommunity::class.java)
                                 for (j in arr) {
