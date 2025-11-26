@@ -100,7 +100,14 @@ import org.ole.planet.myplanet.utilities.NotificationUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
-@AndroidEntryPoint  
+data class DashboardData(
+    val user: RealmUserModel?,
+    val appTitle: String,
+    val isGuest: Boolean,
+    val isTopBarVisible: Boolean
+)
+
+@AndroidEntryPoint
 class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener, NotificationListener {
 
     private lateinit var binding: ActivityDashboardBinding
@@ -140,31 +147,47 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        mRealm = databaseService.realmInstance
-        checkUser()
+        binding = ActivityDashboardBinding.inflate(layoutInflater)
+        setContentView(binding.root)
         initViews()
-        updateAppTitle()
-        notificationManager = NotificationUtils.getInstance(this)
-        if (handleGuestAccess()) return
-        setupNavigation()
-        handleInitialFragment()
-        setupToolbarActions()
-        hideWifi()
-        libraryListener = RealmChangeListener { onRealmDataChanged() }
-        submissionListener = RealmChangeListener { onRealmDataChanged() }
-        taskListener = RealmChangeListener { onRealmDataChanged() }
 
-        addBackPressCallback()
-        handleNotificationIntent(intent)
-        collectUiState()
-
-        binding.root.post {
-            setupSystemNotificationReceiver()
-            checkIfShouldShowNotifications()
-            setupRealmListeners()
-            challengeHelper.evaluateChallengeDialog()
-            reportFullyDrawn()
+        lifecycleScope.launch {
+            val data = withContext(Dispatchers.IO) {
+                loadDashboardData()
+            }
+            updateUiWithLoadedData(data)
         }
+    }
+
+    private suspend fun loadDashboardData(): DashboardData {
+        val user = databaseService.withRealmAsync { realm ->
+            realm.copyFromRealm(userProfileDbHandler.userModel)
+        }
+
+        if (user == null) {
+            withContext(Dispatchers.Main) {
+                toast(this@DashboardActivity, getString(R.string.session_expired))
+                logout()
+            }
+            return DashboardData(null, "", isGuest = false, isTopBarVisible = false)
+        }
+
+        if (user.id.startsWith("guest") && userProfileDbHandler.offlineVisits >= 3) {
+            withContext(Dispatchers.Main) {
+                showBecomeMemberDialog()
+            }
+        }
+
+        val appTitle = if (user.planetCode.isEmpty()) {
+            "${getString(R.string.planet)} ${settings.getString("communityName", "")}"
+        } else {
+            "${getString(R.string.planet)} ${user.planetCode}"
+        }
+
+        val isGuest = user.rolesList.isEmpty() && !user.userAdmin
+        val isTopBarVisible = user.isShowTopbar
+
+        return DashboardData(user, appTitle, isGuest, isTopBarVisible)
     }
 
     private fun collectUiState() {
@@ -180,8 +203,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun initViews() {
-        binding = ActivityDashboardBinding.inflate(layoutInflater)
-        setContentView(binding.root)
         EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
         setupUI(binding.activityDashboardParentLayout, this@DashboardActivity)
         setSupportActionBar(binding.myToolbar)
@@ -201,42 +222,73 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    private fun updateAppTitle() {
-        try {
-            val userProfileModel = profileDbHandler.userModel
-            if (userProfileModel != null) {
-                var name: String? = userProfileModel.getFullName()
-                if (name.isNullOrBlank()) {
-                    name = profileDbHandler.userModel?.name
-                }
-                val communityName = settings.getString("communityName", "")
-                binding.appBarBell.appTitleName.text = if (user?.planetCode == "") {
-                    "${getString(R.string.planet)} $communityName"
-                } else {
-                    "${getString(R.string.planet)} ${user?.planetCode}"
-                }
-            } else {
-                binding.appBarBell.appTitleName.text = getString(R.string.app_project_name)
-            }
-        } catch (err: Exception) {
-            throw RuntimeException(err)
+    private fun updateUiWithLoadedData(data: DashboardData) {
+        user = data.user
+        if (user == null) {
+            return
         }
-    }
+        mRealm = databaseService.realmInstance
 
-    private fun handleGuestAccess(): Boolean {
-        if (user != null && user?.rolesList?.isEmpty() == true && !user?.userAdmin!!) {
+        binding.appBarBell.appTitleName.text = data.appTitle
+        notificationManager = NotificationUtils.getInstance(this)
+
+        if (data.isGuest) {
             navigationView.visibility = View.GONE
             openCallFragment(InactiveDashboardFragment(), "Dashboard")
-            return true
-        }
-        navigationView.setOnItemSelectedListener(this)
-        val isTopBarVisible = userProfileDbHandler.userModel?.isShowTopbar == true
-        navigationView.visibility = if (isTopBarVisible) {
-            View.VISIBLE
         } else {
-            View.GONE
+            navigationView.setOnItemSelectedListener(this)
+            navigationView.visibility = if (data.isTopBarVisible) View.VISIBLE else View.GONE
+            setupNavigation()
         }
-        return false
+
+        handleInitialFragment()
+        setupToolbarActions()
+        hideWifi()
+        libraryListener = RealmChangeListener { onRealmDataChanged() }
+        submissionListener = RealmChangeListener { onRealmDataChanged() }
+        taskListener = RealmChangeListener { onRealmDataChanged() }
+
+        addBackPressCallback()
+        handleNotificationIntent(intent)
+        collectUiState()
+
+        binding.root.post {
+            setupSystemNotificationReceiver()
+            checkIfShouldShowNotifications()
+            setupRealmListeners()
+            challengeHelper.evaluateChallengeDialog()
+            reportFullyDrawn()
+        }
+
+        binding.loadingIndicator.visibility = View.GONE
+        binding.fragmentContainer.visibility = View.VISIBLE
+    }
+
+    private fun showBecomeMemberDialog() {
+        val builder = AlertDialog.Builder(this, R.style.AlertDialogTheme)
+        builder.setTitle(getString(R.string.become_a_member))
+        builder.setMessage(getString(R.string.trial_period_ended))
+        builder.setCancelable(false)
+        builder.setPositiveButton(getString(R.string.become_a_member), null)
+        builder.setNegativeButton(getString(R.string.menu_logout), null)
+        val dialog = builder.create()
+        dialog.show()
+        val becomeMember = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+        val logout = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
+        becomeMember.contentDescription = getString(R.string.confirm_membership)
+        logout.contentDescription = getString(R.string.menu_logout)
+        becomeMember.setOnClickListener {
+            val guest = true
+            val intent = Intent(this, BecomeMemberActivity::class.java)
+            intent.putExtra("username", profileDbHandler.userModel?.name)
+            intent.putExtra("guest", guest)
+            setResult(RESULT_OK, intent)
+            startActivity(intent)
+        }
+        logout.setOnClickListener {
+            dialog.dismiss()
+            logout()
+        }
     }
 
     private fun setupNavigation() {
@@ -855,41 +907,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val navMenu = binding.appBarBell.bellToolbar.menu
         navMenu.findItem(R.id.menu_goOnline)
             .setVisible(isBetaWifiFeatureEnabled(this))
-    }
-
-    private fun checkUser() {
-        user = userProfileDbHandler.userModel
-        if (user == null) {
-            toast(this, getString(R.string.session_expired))
-            logout()
-            return
-        }
-        if (user?.id?.startsWith("guest") == true && profileDbHandler.offlineVisits >= 3) {
-            val builder = AlertDialog.Builder(this, R.style.AlertDialogTheme)
-            builder.setTitle(getString(R.string.become_a_member))
-            builder.setMessage(getString(R.string.trial_period_ended))
-            builder.setCancelable(false)
-            builder.setPositiveButton(getString(R.string.become_a_member), null)
-            builder.setNegativeButton(getString(R.string.menu_logout), null)
-            val dialog = builder.create()
-            dialog.show()
-            val becomeMember = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-            val logout = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
-            becomeMember.contentDescription = getString(R.string.confirm_membership)
-            logout.contentDescription = getString(R.string.menu_logout)
-            becomeMember.setOnClickListener {
-                val guest = true
-                val intent = Intent(this, BecomeMemberActivity::class.java)
-                intent.putExtra("username", profileDbHandler.userModel?.name)
-                intent.putExtra("guest", guest)
-                setResult(RESULT_OK, intent)
-                startActivity(intent)
-            }
-            logout.setOnClickListener {
-                dialog.dismiss()
-                logout()
-            }
-        }
     }
 
     private fun topBarVisible(){
