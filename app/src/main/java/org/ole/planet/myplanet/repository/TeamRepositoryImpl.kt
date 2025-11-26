@@ -723,4 +723,15 @@ class TeamRepositoryImpl @Inject constructor(
     override suspend fun getAssignee(userId: String): RealmUserModel? {
         return findByField(RealmUserModel::class.java, "id", userId)
     }
+
+    override suspend fun getRequestedMembers(teamId: String): List<RealmUserModel> {
+        val teamMembers = queryList(RealmMyTeam::class.java) {
+            equalTo("teamId", teamId)
+            equalTo("docType", "request")
+        }.mapNotNull { it.userId }
+
+        return queryList(RealmUserModel::class.java) {
+            `in`("_id", teamMembers.toTypedArray())
+        }
+    }
 }
