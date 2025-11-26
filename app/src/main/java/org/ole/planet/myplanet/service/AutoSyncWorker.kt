@@ -74,9 +74,13 @@ class AutoSyncWorker(
     override fun onError(msg: String, blockSync: Boolean) {
         if (!blockSync) {
             syncManager.start(this, "upload")
-            uploadToShelfService.uploadUserData {
-                Service(MainApplication.context).healthAccess {
-                    uploadToShelfService.uploadHealth()
+            workerScope.launch {
+                uploadToShelfService.uploadUserData {
+                    Service(MainApplication.context).healthAccess {
+                        workerScope.launch {
+                            uploadToShelfService.uploadHealth()
+                        }
+                    }
                 }
             }
             if (!MainApplication.isSyncRunning) {

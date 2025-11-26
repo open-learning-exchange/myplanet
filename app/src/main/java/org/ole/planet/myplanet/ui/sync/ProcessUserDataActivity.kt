@@ -182,19 +182,25 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
 
     fun startUpload(source: String, userName: String? = null, securityCallback: SecurityDataCallback? = null) {
         if (source == "becomeMember") {
-            uploadToShelfService.uploadSingleUserData(userName, object : SuccessListener {
-                override fun onSuccess(success: String?) {
-                    uploadToShelfService.uploadSingleUserHealth("org.couchdb.user:${userName}", object : SuccessListener {
-                        override fun onSuccess(success: String?) {
-                            userName?.let { name ->
-                                fetchAndLogUserSecurityData(name, securityCallback)
-                            } ?: run {
-                                securityCallback?.onSecurityDataUpdated()
-                            }
+            lifecycleScope.launch {
+                uploadToShelfService.uploadSingleUserData(userName, object : SuccessListener {
+                    override fun onSuccess(success: String?) {
+                        lifecycleScope.launch {
+                            uploadToShelfService.uploadSingleUserHealth(
+                                "org.couchdb.user:${userName}",
+                                object : SuccessListener {
+                                    override fun onSuccess(success: String?) {
+                                        userName?.let { name ->
+                                            fetchAndLogUserSecurityData(name, securityCallback)
+                                        } ?: run {
+                                            securityCallback?.onSecurityDataUpdated()
+                                        }
+                                    }
+                                })
                         }
-                    })
-                }
-            })
+                    }
+                })
+            }
             return
         } else if (source == "login") {
             lifecycleScope.launch(Dispatchers.IO) {
@@ -233,9 +239,13 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
             uploadManager.uploadSubmissions()
             uploadManager.uploadCrashLog()
 
+        lifecycleScope.launch {
             uploadToShelfService.uploadUserData {
-                uploadToShelfService.uploadHealth()
+                lifecycleScope.launch {
+                    uploadToShelfService.uploadHealth()
+                }
                 checkAllOperationsComplete()
+            }
             }
 
             uploadManager.uploadUserActivities(object : SuccessListener {
