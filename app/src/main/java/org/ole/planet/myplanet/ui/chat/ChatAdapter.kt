@@ -9,8 +9,6 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
@@ -19,7 +17,7 @@ import org.ole.planet.myplanet.databinding.ItemUserMessageBinding
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
-class ChatAdapter(val context: Context, private val recyclerView: RecyclerView) :
+class ChatAdapter(val context: Context, private val recyclerView: RecyclerView, private val scope: CoroutineScope?) :
     ListAdapter<String, RecyclerView.ViewHolder>(
         DiffUtils.itemCallback(
             { old, new -> old == new },
@@ -31,7 +29,6 @@ class ChatAdapter(val context: Context, private val recyclerView: RecyclerView) 
     private val viewTypeResponse = 2
     val animatedMessages = HashMap<Int, Boolean>()
     var lastAnimatedPosition: Int = -1
-    private val coroutineScope = CoroutineScope(Dispatchers.Main)
     private val messages = mutableListOf<String>()
 
     interface OnChatItemClickListener {
@@ -60,12 +57,12 @@ class ChatAdapter(val context: Context, private val recyclerView: RecyclerView) 
         private val copyToClipboard: (String) -> Unit,
         val context: Context,
         private val recyclerView: RecyclerView,
-        private val coroutineScope: CoroutineScope
+        private val coroutineScope: CoroutineScope?
     ) : RecyclerView.ViewHolder(textAiMessageBinding.root) {
         fun bind(response: String, responseSource: Int,  shouldAnimate: Boolean, markAnimated: () -> Unit) {
             textAiMessageBinding.textGchatMessageOther.visibility = View.VISIBLE
             if (responseSource == RESPONSE_SOURCE_NETWORK) {
-                if (shouldAnimate) {
+                if (shouldAnimate && coroutineScope != null) {
                     textAiMessageBinding.textGchatMessageOther.text = context.getString(R.string.empty_text)
                     coroutineScope.launch {
                         animateTyping(response, markAnimated)
@@ -151,7 +148,7 @@ class ChatAdapter(val context: Context, private val recyclerView: RecyclerView) 
             }
             viewTypeResponse -> {
                 val aiMessageBinding = ItemAiResponseMessageBinding.inflate(LayoutInflater.from(context), parent, false)
-                ResponseViewHolder(aiMessageBinding, this::copyToClipboard, context, recyclerView, coroutineScope)
+                ResponseViewHolder(aiMessageBinding, this::copyToClipboard, context, recyclerView, scope)
             }
             else -> throw IllegalArgumentException("Invalid view type")
         }
@@ -176,11 +173,6 @@ class ChatAdapter(val context: Context, private val recyclerView: RecyclerView) 
         holder.itemView.setOnClickListener {
             chatItemClickListener?.onChatItemClick(position, chatItem)
         }
-    }
-
-    override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
-        super.onDetachedFromRecyclerView(recyclerView)
-        coroutineScope.cancel()
     }
 
     companion object {
