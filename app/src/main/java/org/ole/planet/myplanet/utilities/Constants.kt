@@ -44,6 +44,7 @@ object Constants {
         )
         LABELS = mutableMapOf(
             "Offer" to "offer",
+            "Help wanted" to "help",
             "Request for advice" to "advice"
         )
     }
