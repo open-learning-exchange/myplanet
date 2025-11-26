@@ -33,6 +33,7 @@ import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.TagBatchLoader
 
 class AdapterResource(
     private val context: Context,
@@ -48,8 +49,15 @@ class AdapterResource(
     private var ratingChangeListener: OnRatingChangeListener? = null
     private var isAscending = true
     private var isTitleAscending = false
-    private val tagCache: MutableMap<String, List<RealmTag>> = mutableMapOf()
-    private val tagRequestsInProgress: MutableSet<String> = mutableSetOf()
+    private val lifecycleOwner = context as LifecycleOwner
+    private val tagBatchLoader = TagBatchLoader(tagRepository, lifecycleOwner) { ids: List<String> ->
+        ids.forEach { id: String ->
+            val index = libraryList.indexOfFirst { it?.id == id }
+            if (index != -1) {
+                notifyItemChanged(index, TAGS_PAYLOAD)
+            }
+        }
+    }
 
     companion object {
         private const val TAGS_PAYLOAD = "payload_tags"
@@ -162,6 +170,13 @@ class AdapterResource(
         }
     }
 
+    override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
+        super.onAttachedToRecyclerView(recyclerView)
+        tagBatchLoader.attachTo(recyclerView) { position: Int ->
+            libraryList.getOrNull(position)?.id
+        }
+    }
+
     private fun openLibrary(library: RealmMyLibrary?) {
         homeItemClickListener?.openLibraryDetailFragment(library)
     }
@@ -177,8 +192,10 @@ class AdapterResource(
             if (payloads.contains(TAGS_PAYLOAD)) {
                 val resourceId = library.id
                 if (resourceId != null) {
-                    val tags = tagCache[resourceId].orEmpty()
-                    renderTagCloud(holder.rowLibraryBinding.flexboxDrawable, tags)
+                    val tags = tagBatchLoader.getTags(resourceId)
+                    if (tags != null) {
+                        renderTagCloud(holder.rowLibraryBinding.flexboxDrawable, tags)
+                    }
                     handled = true
                 }
             }
@@ -206,37 +223,11 @@ class AdapterResource(
             return
         }
 
-        val cachedTags = tagCache[resourceId]
+        val cachedTags = tagBatchLoader.getTags(resourceId)
         if (cachedTags != null) {
             renderTagCloud(flexboxDrawable, cachedTags)
-            return
-        }
-
-        flexboxDrawable.removeAllViews()
-
-        val lifecycleOwner = context as? LifecycleOwner ?: return
-        if (!tagRequestsInProgress.add(resourceId)) {
-            return
-        }
-        lifecycleOwner.lifecycleScope.launch {
-            try {
-                val tags = withContext(Dispatchers.IO) {
-                    tagRepository.getTagsForResource(resourceId)
-                }
-                tagCache[resourceId] = tags
-
-                if (isActive) {
-                    val adapterPosition = holder.bindingAdapterPosition
-                    if (adapterPosition != RecyclerView.NO_POSITION) {
-                        val currentResourceId = libraryList.getOrNull(adapterPosition)?.id
-                        if (currentResourceId == resourceId) {
-                            renderTagCloud(holder.rowLibraryBinding.flexboxDrawable, tags)
-                        }
-                    }
-                }
-            } finally {
-                tagRequestsInProgress.remove(resourceId)
-            }
+        } else {
+            flexboxDrawable.removeAllViews()
         }
     }
 

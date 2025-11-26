@@ -37,6 +37,7 @@ import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.SelectionUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.TagBatchLoader
 
 class AdapterCourses(
     private val context: Context,
@@ -56,8 +57,14 @@ class AdapterCourses(
     private var isTitleAscending = false
     private var areAllSelected = false
     var userModel: RealmUserModel?= null
-    private val tagCache: MutableMap<String, List<RealmTag>> = mutableMapOf()
-    private val tagRequestsInProgress: MutableSet<String> = mutableSetOf()
+    private val tagBatchLoader = TagBatchLoader(tagRepository, lifecycleOwner) { ids: List<String> ->
+        ids.forEach { id: String ->
+            val index = courseList.indexOfFirst { it?.id == id }
+            if (index != -1) {
+                notifyItemChanged(index, TAG_PAYLOAD)
+            }
+        }
+    }
 
     companion object {
         private const val TAG_PAYLOAD = "payload_tags"
@@ -157,6 +164,13 @@ class AdapterCourses(
 
     fun setListener(listener: OnCourseItemSelected?) {
         this.listener = listener
+    }
+
+    override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
+        super.onAttachedToRecyclerView(recyclerView)
+        tagBatchLoader.attachTo(recyclerView) { position: Int ->
+            courseList.getOrNull(position)?.id
+        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
@@ -345,8 +359,10 @@ class AdapterCourses(
         if (hasTagPayload || hasRatingPayload || hasProgressPayload) {
             if (hasTagPayload) {
                 val courseId = courseList.getOrNull(position)?.id ?: return
-                val tags = tagCache[courseId].orEmpty()
-                renderTagCloud(holder.rowCourseBinding.flexboxDrawable, tags)
+                val tags = tagBatchLoader.getTags(courseId)
+                if (tags != null) {
+                    renderTagCloud(holder.rowCourseBinding.flexboxDrawable, tags)
+                }
             }
             if (hasRatingPayload) {
                 updateRatingViews(holder, position)
@@ -367,29 +383,11 @@ class AdapterCourses(
             return
         }
 
-        val cachedTags = tagCache[courseId]
+        val cachedTags = tagBatchLoader.getTags(courseId)
         if (cachedTags != null) {
             renderTagCloud(flexboxDrawable, cachedTags)
-            return
-        }
-
-        flexboxDrawable.removeAllViews()
-
-        if (!tagRequestsInProgress.add(courseId)) {
-            return
-        }
-
-        lifecycleOwner.lifecycleScope.launch {
-            try {
-                val tags = tagRepository.getTagsForCourse(courseId)
-                tagCache[courseId] = tags
-                val adapterPosition = holder.bindingAdapterPosition
-                if (adapterPosition != RecyclerView.NO_POSITION) {
-                    notifyItemChanged(adapterPosition, TAG_PAYLOAD)
-                }
-            } finally {
-                tagRequestsInProgress.remove(courseId)
-            }
+        } else {
+            flexboxDrawable.removeAllViews()
         }
     }
 

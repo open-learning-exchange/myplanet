@@ -62,4 +62,40 @@ class TagRepositoryImpl @Inject constructor(
         val parentsById = parents.associateBy { it.id }
         return tagIds.mapNotNull { parentsById[it] }
     }
+
+    override suspend fun getTagsForMultipleResources(ids: List<String>): Map<String, List<RealmTag>> {
+        if (ids.isEmpty()) {
+            return emptyMap()
+        }
+
+        val links = queryList(RealmTag::class.java) {
+            `in`("linkId", ids.toTypedArray())
+        }
+
+        if (links.isEmpty()) {
+            return emptyMap()
+        }
+
+        val tagIds = links.mapNotNull { it.tagId }.distinct()
+        if (tagIds.isEmpty()) {
+            return emptyMap()
+        }
+
+        val tags = queryList(RealmTag::class.java) {
+            `in`("id", tagIds.toTypedArray())
+        }
+        val tagsById = tags.associateBy { it.id }
+
+        val result = mutableMapOf<String, MutableList<RealmTag>>()
+        links.forEach { link ->
+            link.linkId?.let { linkId ->
+                link.tagId?.let { tagId ->
+                    tagsById[tagId]?.let { tag ->
+                        result.getOrPut(linkId) { mutableListOf() }.add(tag)
+                    }
+                }
+            }
+        }
+        return result
+    }
 }
