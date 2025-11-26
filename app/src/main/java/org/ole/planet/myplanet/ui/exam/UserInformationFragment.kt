@@ -294,46 +294,44 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         }
     }
 
-    @OptIn(DelicateCoroutinesApi::class)
     private fun checkAvailableServer(settings: SharedPreferences) {
         val updateUrl = "${settings.getString("serverURL", "")}"
         val serverUrlMapper = ServerUrlMapper()
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
-        GlobalScope.launch(Dispatchers.IO) {
-            var primaryAvailable = false
-            var alternativeAvailable = false
-
-            try {
-                primaryAvailable = try {
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+            val primaryCheck = async {
+                try {
                     withTimeoutOrNull(15000) {
                         MainApplication.isServerReachable(mapping.primaryUrl)
                     } ?: false
                 } catch (e: Exception) {
                     false
                 }
+            }
 
-                alternativeAvailable = try {
+            val alternativeCheck = async {
+                try {
                     withTimeoutOrNull(15000) {
                         mapping.alternativeUrl?.let { MainApplication.isServerReachable(it) } == true
                     } ?: false
                 } catch (e: Exception) {
                     false
                 }
+            }
 
-                if (!primaryAvailable && alternativeAvailable) {
+            val primaryAvailable = primaryCheck.await()
+            val alternativeAvailable = alternativeCheck.await()
+
+            if (primaryAvailable || alternativeAvailable) {
+                if (!primaryAvailable) {
                     mapping.alternativeUrl?.let { alternativeUrl ->
                         val uri = updateUrl.toUri()
                         val editor = settings.edit()
                         serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, settings)
                     }
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            } finally {
-                if (primaryAvailable || alternativeAvailable) {
-                    uploadSubmissions()
-                }
+                uploadSubmissions()
             }
         }
     }
