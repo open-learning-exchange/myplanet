@@ -429,15 +429,27 @@ class Service @Inject constructor(
                             if (JsonUtils.getString("name", jsonDoc) == "learning") {
                                 community.addProperty("weight", 0)
                             }
-                            community.addProperty("localDomain", JsonUtils.getString("localDomain", jsonDoc))
+                            community.addProperty(
+                                "localDomain",
+                                JsonUtils.getString("localDomain", jsonDoc)
+                            )
                             community.addProperty("name", JsonUtils.getString("name", jsonDoc))
-                            community.addProperty("parentDomain", JsonUtils.getString("parentDomain", jsonDoc))
-                            community.addProperty("registrationRequest", JsonUtils.getString("registrationRequest", jsonDoc))
+                            community.addProperty(
+                                "parentDomain",
+                                JsonUtils.getString("parentDomain", jsonDoc)
+                            )
+                            community.addProperty(
+                                "registrationRequest",
+                                JsonUtils.getString("registrationRequest", jsonDoc)
+                            )
                             community
                         }
                         val chunkStartTime = System.currentTimeMillis()
                         MainApplication.service.executeTransactionAsync { realm1 ->
-                            realm1.createOrUpdateAllFromJson(RealmCommunity::class.java, GsonUtils.gson.toJson(communities))
+                            realm1.createOrUpdateAllFromJson(
+                                RealmCommunity::class.java,
+                                GsonUtils.gson.toJson(communities)
+                            )
                         }
                         val chunkEndTime = System.currentTimeMillis()
                         println("Chunk ${index + 1} processed in ${chunkEndTime - chunkStartTime}ms")
