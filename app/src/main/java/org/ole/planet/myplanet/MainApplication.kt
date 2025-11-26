@@ -55,7 +55,6 @@ import org.ole.planet.myplanet.utilities.VersionUtils.getVersionName
 
 @HiltAndroidApp
 class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
-
     @Inject
     lateinit var databaseService: DatabaseService
 
@@ -187,7 +186,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         registerExceptionHandler()
         setupLifecycleCallbacks()
         configureTheme()
-
+    }
+    private fun performDeferredInitialization() {
         applicationScope.launch {
             ensureApiClientInitialized()
             initializeDatabaseConnection()
@@ -196,7 +196,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             observeNetworkForDownloads()
         }
     }
-
     private fun initApp() {
         context = this
         applicationScope.launch(Dispatchers.Default) {
@@ -362,7 +361,11 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         return sharedPreferences.getString("theme_mode", ThemeMode.FOLLOW_SYSTEM) ?: ThemeMode.FOLLOW_SYSTEM
     }
 
-    override fun onActivityCreated(activity: Activity, bundle: Bundle?) {}
+    override fun onActivityCreated(activity: Activity, bundle: Bundle?) {
+        if (isFirstLaunch) {
+            performDeferredInitialization()
+        }
+    }
 
     override fun onActivityStarted(activity: Activity) {
         if (++activityReferences == 1 && !isActivityChangingConfigurations) {
@@ -370,7 +373,11 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         }
     }
 
-    override fun onActivityResumed(activity: Activity) {}
+    override fun onActivityResumed(activity: Activity) {
+        if (isFirstLaunch) {
+            isFirstLaunch = false
+        }
+    }
 
     override fun onActivityPaused(activity: Activity) {}
 
