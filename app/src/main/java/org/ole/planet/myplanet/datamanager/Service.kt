@@ -379,7 +379,9 @@ class Service @Inject constructor(
             }
 
             if (userModel != null) {
-                getUploadToShelfService().saveKeyIv(retrofitInterface, userModel, obj)
+                withContext(Dispatchers.IO) {
+                    getUploadToShelfService().saveKeyIv(retrofitInterface, userModel, obj)
+                }
                 withContext(Dispatchers.Main) {
                     if (context is ProcessUserDataActivity) {
                         val userName = obj["name"].asString
