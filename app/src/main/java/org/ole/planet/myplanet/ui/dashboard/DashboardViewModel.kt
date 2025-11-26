@@ -4,14 +4,18 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import io.realm.kotlin.where
 import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.repository.CourseRepository
@@ -26,6 +30,7 @@ data class DashboardUiState(
     val library: List<RealmMyLibrary> = emptyList(),
     val courses: List<RealmMyCourse> = emptyList(),
     val teams: List<RealmMyTeam> = emptyList(),
+    val myLife: List<RealmMyLife> = emptyList(),
 )
 
 @HiltViewModel
@@ -35,7 +40,8 @@ class DashboardViewModel @Inject constructor(
     private val courseRepository: CourseRepository,
     private val teamRepository: TeamRepository,
     private val submissionRepository: SubmissionRepository,
-    private val notificationRepository: NotificationRepository
+    private val notificationRepository: NotificationRepository,
+    private val databaseService: DatabaseService
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
@@ -88,7 +94,7 @@ class DashboardViewModel @Inject constructor(
     fun loadUserContent(userId: String?) {
         if (userId == null) return
         userContentJob?.cancel()
-        userContentJob = viewModelScope.launch {
+        userContentJob = viewModelScope.launch(Dispatchers.IO) {
             launch {
                 val myLibrary = libraryRepository.getMyLibrary(userId)
                 _uiState.update { it.copy(library = myLibrary) }
@@ -103,6 +109,15 @@ class DashboardViewModel @Inject constructor(
             launch {
                 teamRepository.getMyTeamsFlow(userId).collect { teams ->
                     _uiState.update { it.copy(teams = teams) }
+                }
+            }
+
+            launch {
+                databaseService.withRealm { realm ->
+                    val myLife = realm.where<RealmMyLife>().equalTo("userId", userId).findAll().let {
+                        realm.copyFromRealm(it)
+                    }
+                    _uiState.update { it.copy(myLife = myLife) }
                 }
             }
         }
