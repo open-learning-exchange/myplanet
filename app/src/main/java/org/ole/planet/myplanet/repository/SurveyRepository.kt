@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.model.SurveyBindingData
 import org.ole.planet.myplanet.ui.survey.SurveyInfo
 
 interface SurveyRepository {

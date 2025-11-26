@@ -1,6 +1,4 @@
-package org.ole.planet.myplanet.ui.survey
-
-import org.ole.planet.myplanet.model.RealmSubmission
+package org.ole.planet.myplanet.model
 
 data class SurveyBindingData(
     val teamSubmission: RealmSubmission?,
