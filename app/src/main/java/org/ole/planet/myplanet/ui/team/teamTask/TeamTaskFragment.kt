@@ -205,10 +205,6 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
                 mRealm.refresh()
             }
 
-            if (binding.rvTask.adapter != null) {
-                showNoData(binding.tvNodata, binding.rvTask.adapter?.itemCount, "tasks")
-            }
-            updateTasks()
             Utilities.toast(
                 activity,
                 String.format(
@@ -235,7 +231,11 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
                 launch {
                     isMemberFlow.collectLatest { isMember ->
                         binding.fab.isVisible = isMember
-                        adapterTask.nonTeamMember = !isMember
+                        val nonTeamMember = !isMember
+                        if (adapterTask.nonTeamMember != nonTeamMember) {
+                            adapterTask.nonTeamMember = nonTeamMember
+                            adapterTask.notifyDataSetChanged()
+                        }
                         updateTasks()
                     }
                 }
@@ -287,8 +287,6 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
             if (!mRealm.isClosed) {
                 mRealm.refresh()
             }
-
-            updateTasks()
         }
     }
 
@@ -306,8 +304,6 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
             }
 
             Utilities.toast(activity, getString(R.string.task_deleted_successfully))
-            updateTasks()
-            showNoData(binding.tvNodata, binding.rvTask.adapter?.itemCount, "tasks")
         }
     }
 
@@ -348,7 +344,6 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
                         teamRepository.assignTask(taskId, user.id)
                         Utilities.toast(activity, getString(R.string.assign_task_to) + " " + user.name)
                         adapter.notifyDataSetChanged()
-                        updateTasks()
                     }
                 }
                 .setNegativeButton(R.string.cancel) { dialog: DialogInterface, _: Int ->

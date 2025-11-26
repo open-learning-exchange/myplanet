@@ -13,6 +13,12 @@ data class TeamMemberStatus(
     val hasPendingRequest: Boolean
 )
 
+data class JoinRequestNotification(
+    val requesterName: String,
+    val teamName: String,
+    val requestId: String
+)
+
 interface TeamRepository {
     suspend fun getMyTeamsFlow(userId: String): Flow<List<RealmMyTeam>>
     suspend fun getShareableTeams(): List<RealmMyTeam>
@@ -23,6 +29,8 @@ interface TeamRepository {
     suspend fun getTeamById(teamId: String): RealmMyTeam?
     suspend fun getTaskTeamInfo(taskId: String): Triple<String, String, String>?
     suspend fun getJoinRequestTeamId(requestId: String): String?
+    suspend fun getTaskNotifications(userId: String?): List<Triple<String, String, String>>
+    suspend fun getJoinRequestNotifications(userId: String?): List<JoinRequestNotification>
     suspend fun isMember(userId: String?, teamId: String): Boolean
     suspend fun isTeamLeader(teamId: String, userId: String?): Boolean
     suspend fun hasPendingRequest(teamId: String, userId: String?): Boolean
