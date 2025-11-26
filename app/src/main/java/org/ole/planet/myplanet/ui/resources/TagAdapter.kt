@@ -1,11 +1,5 @@
 package org.ole.planet.myplanet.ui.resources
 
-data class TagDisplayItem(
-    val tag: RealmTag,
-    val isParent: Boolean,
-    var isExpanded: Boolean = false
-)
-
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -19,6 +13,12 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowAdapterNavigationChildBinding
 import org.ole.planet.myplanet.databinding.RowAdapterNavigationParentBinding
 import org.ole.planet.myplanet.model.RealmTag
+
+data class TagDisplayItem(
+    val tag: RealmTag,
+    val isParent: Boolean,
+    var isExpanded: Boolean = false
+)
 
 class TagAdapter(
     private val childMap: HashMap<String, List<RealmTag>>,
