@@ -843,7 +843,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
         suspend fun clearRealmDb() {
             withContext(Dispatchers.IO) {
-                MainApplication.service.withRealm { realm ->
+                val databaseService = (context.applicationContext as MainApplication).databaseService
+                databaseService.withRealm { realm ->
                     realm.executeTransaction { transactionRealm ->
                         transactionRealm.deleteAll()
                     }
