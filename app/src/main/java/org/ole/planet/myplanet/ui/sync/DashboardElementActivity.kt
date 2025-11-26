@@ -275,4 +275,9 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         fragment.arguments = b
         openCallFragment(fragment, "Enterprise")
     }
+
+    override fun onDestroy() {
+        supportFragmentManager.removeOnBackStackChangedListener(this)
+        super.onDestroy()
+    }
 }
