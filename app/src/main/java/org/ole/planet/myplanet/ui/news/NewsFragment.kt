@@ -29,7 +29,6 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.NewsRepository
-import org.ole.planet.myplanet.ui.news.NewsItem
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
@@ -53,9 +52,9 @@ class NewsFragment : BaseNewsFragment() {
     lateinit var newsRepository: NewsRepository
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
-    private var filteredNewsList: List<NewsItem?> = listOf()
-    private var searchFilteredList: List<NewsItem?> = listOf()
-    private var labelFilteredList: List<NewsItem?> = listOf()
+    private var filteredNewsList: List<RealmNews?> = listOf()
+    private var searchFilteredList: List<RealmNews?> = listOf()
+    private var labelFilteredList: List<RealmNews?> = listOf()
     private lateinit var etSearch: EditText
     private var selectedLabel: String = "All"
     private val labelDisplayToValue = mutableMapOf<String, String>()
@@ -107,9 +106,9 @@ class NewsFragment : BaseNewsFragment() {
         super.onViewCreated(view, savedInstanceState)
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                newsRepository.getCommunityNewsItems(getUserIdentifier(), teamId, user?._id).collect { news ->
+                newsRepository.getCommunityNews(getUserIdentifier()).collect { news ->
                     kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                        val filtered = news.map { it as NewsItem? }
+                        val filtered = news.map { it as RealmNews? }
                         val labels = collectAllLabels(filtered)
                         val labelFiltered = applyLabelFilter(filtered)
                         val searchFiltered =
@@ -166,14 +165,13 @@ class NewsFragment : BaseNewsFragment() {
         return "$planetCode@$parentCode"
     }
 
-    override fun setData(list: List<NewsItem?>?) {
+    override fun setData(list: List<RealmNews?>?) {
         if (!isAdded || list == null) return
 
         if (binding.rvNews.adapter == null) {
             changeLayoutManager(resources.configuration.orientation, binding.rvNews)
             val resourceIds = mutableSetOf<String>()
-            list.forEach { newsItem ->
-                val news = newsItem?.news
+            list.forEach { news ->
                 if ((news?.imagesArray?.size() ?: 0) > 0) {
                     val ob = news?.imagesArray?.get(0)?.asJsonObject
                     val resourceId = getString("resourceId", ob?.asJsonObject)
@@ -191,25 +189,25 @@ class NewsFragment : BaseNewsFragment() {
                     )
                 }
             }
-            val updatedListAsMutable: MutableList<NewsItem?> = list.toMutableList()
+            val updatedListAsMutable: MutableList<RealmNews?> = list.toMutableList()
             Trace.beginSection("NewsFragment.sort")
             val sortedList = try {
-                updatedListAsMutable.sortedWith(compareByDescending { newsItem ->
-                    newsItem?.news?.sortDate ?: 0L
+                updatedListAsMutable.sortedWith(compareByDescending { news ->
+                    news?.sortDate ?: 0L
                 })
             } finally {
                 Trace.endSection()
             }
-            adapterNews = AdapterNews(requireActivity(), user, null, "", null, userProfileDbHandler, databaseService)
+            adapterNews = AdapterNews(requireActivity(), user, null, "", null, userProfileDbHandler, databaseService, viewLifecycleOwner.lifecycleScope)
             adapterNews?.sharedPrefManager = sharedPrefManager
             adapterNews?.setmRealm(mRealm)
             adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
             adapterNews?.setListener(this)
             adapterNews?.registerAdapterDataObserver(observer)
-            adapterNews?.updateList(sortedList)
+            adapterNews?.setData(sortedList)
             binding.rvNews.adapter = adapterNews
         } else {
-            (binding.rvNews.adapter as? AdapterNews)?.updateList(list)
+            (binding.rvNews.adapter as? AdapterNews)?.setData(list)
         }
         adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, "news") }
         binding.llAddNews.visibility = View.GONE
@@ -279,15 +277,15 @@ class NewsFragment : BaseNewsFragment() {
             .launchIn(viewLifecycleOwner.lifecycleScope)
     }
     
-    private fun applySearchFilter(list: List<NewsItem?>, queryParam: String? = null): List<NewsItem?> {
+    private fun applySearchFilter(list: List<RealmNews?>, queryParam: String? = null): List<RealmNews?> {
         val query = queryParam ?: etSearch.text.toString().trim()
         
         if (query.isEmpty()) {
             return list
         }
         
-        val filtered = list.filter { newsItem ->
-            val message = newsItem?.news?.message?.trim() ?: ""
+        val filtered = list.filter { news ->
+            val message = news?.message?.trim() ?: ""
             val matches = message.contains(query, ignoreCase = true)
             matches
         }
@@ -327,7 +325,7 @@ class NewsFragment : BaseNewsFragment() {
         }
     }
     
-    private fun collectAllLabels(list: List<NewsItem?>): List<String> {
+    private fun collectAllLabels(list: List<RealmNews?>): List<String> {
         labelDisplayToValue.clear()
 
         val allLabels = mutableSetOf<String>()
@@ -340,8 +338,7 @@ class NewsFragment : BaseNewsFragment() {
 
         allLabels.add("Shared Chat")
 
-        list.forEach { newsItem ->
-            val news = newsItem?.news
+        list.forEach { news ->
             if (!news?.viewIn.isNullOrEmpty()) {
                 try {
                     val ar = GsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
@@ -370,13 +367,12 @@ class NewsFragment : BaseNewsFragment() {
         return allLabels.sorted()
     }
     
-    private fun applyLabelFilter(list: List<NewsItem?>): List<NewsItem?> {
+    private fun applyLabelFilter(list: List<RealmNews?>): List<RealmNews?> {
         if (selectedLabel == "All") {
             return list
         }
         
-        return list.filter { newsItem ->
-            val news = newsItem?.news
+        return list.filter { news ->
             when {
                 selectedLabel == "Shared Chat" -> {
                     news?.chat == true || news?.viewableBy.equals("community", ignoreCase = true)
