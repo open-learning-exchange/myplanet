@@ -10,6 +10,11 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.ui.survey.SurveyInfo
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import org.ole.planet.myplanet.model.RealmExamQuestion
+import org.ole.planet.myplanet.ui.survey.SurveyData
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDateWithTime
 
@@ -138,5 +143,38 @@ class SurveyRepositoryImpl @Inject constructor(
             )
         }
         return surveyInfos
+    }
+
+    override suspend fun getSurveysFlow(
+        isTeam: Boolean,
+        teamId: String?,
+        userId: String?,
+        isTeamShareAllowed: Boolean
+    ): Flow<SurveyData> {
+        val surveysFlow = queryListFlow(RealmStepExam::class.java) {
+            when {
+                isTeam && isTeamShareAllowed -> equalTo("isTeamShareAllowed", true)
+                isTeam -> equalTo("teamId", teamId)
+                else -> equalTo("type", "surveys").equalTo("isTeamShareAllowed", false)
+            }
+        }
+
+        return surveysFlow.flatMapLatest { surveys ->
+            val questionsFlow = queryListFlow(RealmExamQuestion::class.java)
+            val submissionsFlow = queryListFlow(RealmSubmission::class.java) {
+                if (teamId != null) {
+                    equalTo("membershipDoc.teamId", teamId)
+                }
+            }
+
+            questionsFlow.flatMapLatest { questions ->
+                submissionsFlow.map { submissions ->
+                    val surveyInfos = getSurveyInfos(isTeam, teamId, userId, surveys)
+                    val questionsMap = questions.filter { it.examId != null }.groupBy { it.examId!! }
+                    val submissionsMap = submissions.filter { it.parentId != null }.associateBy { it.parentId!! }
+                    SurveyData(surveys, questionsMap, submissionsMap, surveyInfos)
+                }
+            }
+        }
     }
 }

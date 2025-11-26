@@ -33,7 +33,9 @@ class AdapterSurvey(
     private val surveyAdoptListener: SurveyAdoptListener,
     private val settings: SharedPreferences,
     private val userProfileDbHandler: UserProfileDbHandler,
-    private val surveyInfoMap: Map<String, SurveyInfo>
+    private val surveyInfoMap: Map<String, SurveyInfo>,
+    private val questionsMap: Map<String, List<RealmExamQuestion>>,
+    private val submissionsMap: Map<String, RealmSubmission?>
 ) : ListAdapter<RealmStepExam, AdapterSurvey.ViewHolderSurvey>(SurveyDiffCallback()) {
     private var listener: OnHomeItemClickListener? = null
     private val adoptedSurveyIds = mutableSetOf<String>()
@@ -128,14 +130,7 @@ class AdapterSurvey(
                     tvDescription.text = exam.description
                 }
 
-                fun getTeamSubmission(): RealmSubmission? {
-                    return mRealm.where(RealmSubmission::class.java)
-                        .equalTo("parentId", exam.id)
-                        .equalTo("membershipDoc.teamId", teamId)
-                        .findFirst()
-                }
-
-                var teamSubmission = getTeamSubmission()
+                val teamSubmission = submissionsMap[exam.id]
                 startSurvey.setOnClickListener {
                     val shouldAdopt = exam.isTeamShareAllowed && teamSubmission?.isValid != true
                     if (shouldAdopt) {
@@ -145,15 +140,13 @@ class AdapterSurvey(
                     }
                 }
 
-                val questions = mRealm.where(RealmExamQuestion::class.java).equalTo("examId", exam.id)
-                    .findAll()
+                val questions = questionsMap[exam.id] ?: emptyList()
 
                 if (questions.isEmpty()) {
                     sendSurvey.visibility = View.GONE
                     startSurvey.visibility = View.GONE
                 }
 
-                teamSubmission = getTeamSubmission()
                 val shouldShowAdopt = exam.isTeamShareAllowed && teamSubmission?.isValid != true
 
                 startSurvey.text = when {

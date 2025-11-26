@@ -13,4 +13,11 @@ interface SurveyRepository {
         userId: String?,
         surveys: List<RealmStepExam>
     ): Map<String, SurveyInfo>
+
+    suspend fun getSurveysFlow(
+        isTeam: Boolean,
+        teamId: String?,
+        userId: String?,
+        isTeamShareAllowed: Boolean
+    ): kotlinx.coroutines.flow.Flow<org.ole.planet.myplanet.ui.survey.SurveyData>
 }

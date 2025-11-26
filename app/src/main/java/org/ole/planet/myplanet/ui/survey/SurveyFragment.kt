@@ -26,6 +26,8 @@ import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.callback.TableDataUpdate
 import org.ole.planet.myplanet.databinding.FragmentSurveyBinding
 import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.model.RealmExamQuestion
+import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.repository.SurveyRepository
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
@@ -33,6 +35,13 @@ import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
+
+data class SurveyData(
+    val surveys: List<RealmStepExam>,
+    val questionsMap: Map<String, List<RealmExamQuestion>>,
+    val submissionsMap: Map<String, RealmSubmission?>,
+    val surveyInfoMap: Map<String, SurveyInfo>
+)
 
 @AndroidEntryPoint
 class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListener, RealtimeSyncMixin {
@@ -74,20 +83,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         super.onCreate(savedInstanceState)
         isTeam = arguments?.getBoolean("isTeam", false) == true
         teamId = arguments?.getString("teamId", null)
-        val userProfileModel = profileDbHandler.userModel
-        adapter = AdapterSurvey(
-            requireActivity(),
-            mRealm,
-            userProfileModel?.id,
-            isTeam,
-            teamId,
-            this,
-            settings,
-            profileDbHandler,
-            surveyInfoMap
-        )
         prefManager = SharedPrefManager(requireContext())
-        
         startExamSync()
     }
 
@@ -273,21 +269,36 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         currentIsTeamShareAllowed = useTeamShareAllowed
         val userProfileModel = profileDbHandler.userModel
         loadSurveysJob?.cancel()
-        loadSurveysJob = launchWhenViewIsReady {
-            currentSurveys = when {
-                isTeam && useTeamShareAllowed -> surveyRepository.getAdoptableTeamSurveys(teamId)
-                isTeam -> surveyRepository.getTeamOwnedSurveys(teamId)
-                else -> surveyRepository.getIndividualSurveys()
-            }
-            val surveyInfos = surveyRepository.getSurveyInfos(
+        loadSurveysJob = viewLifecycleOwner.lifecycleScope.launch {
+            surveyRepository.getSurveysFlow(
                 isTeam,
                 teamId,
                 userProfileModel?.id,
-                currentSurveys
-            )
-            surveyInfoMap.clear()
-            surveyInfoMap.putAll(surveyInfos)
-            applySearchFilter()
+                useTeamShareAllowed
+            ).collect { surveyData ->
+                currentSurveys = surveyData.surveys
+                surveyInfoMap.clear()
+                surveyInfoMap.putAll(surveyData.surveyInfoMap)
+                if (!::adapter.isInitialized) {
+                    adapter = AdapterSurvey(
+                        requireActivity(),
+                        mRealm,
+                        userProfileModel?.id,
+                        isTeam,
+                        teamId,
+                        this@SurveyFragment,
+                        settings,
+                        profileDbHandler,
+                        surveyData.surveyInfoMap,
+                        surveyData.questionsMap,
+                        surveyData.submissionsMap
+                    )
+                    recyclerView.adapter = adapter
+                } else {
+                    adapter.submitList(surveyData.surveys)
+                }
+                applySearchFilter()
+            }
         }
     }
 
