@@ -2,7 +2,7 @@ package org.ole.planet.myplanet.ui.dashboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.realm.Realm
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -10,11 +10,16 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
+import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
+import javax.inject.Inject
 
-class BellDashboardViewModel : ViewModel() {
+@HiltViewModel
+class BellDashboardViewModel @Inject constructor(
+    private val databaseService: DatabaseService
+) : ViewModel() {
     private val _networkStatus = MutableStateFlow<NetworkStatus>(NetworkStatus.Disconnected)
     val networkStatus: StateFlow<NetworkStatus> = _networkStatus.asStateFlow()
 
@@ -34,14 +39,12 @@ class BellDashboardViewModel : ViewModel() {
     }
 
     fun loadCompletedCourses(userId: String?) {
-        viewModelScope.launch(Dispatchers.IO) {
-            var realm: Realm? = null
-            try {
-                realm = Realm.getDefaultInstance()
+        viewModelScope.launch {
+            val completed = databaseService.withRealmAsync { realm ->
                 val myCourses = RealmMyCourse.getMyCourseByUserId(userId, realm.where(RealmMyCourse::class.java).findAll())
                 val courseProgress = RealmCourseProgress.getCourseProgress(realm, userId)
 
-                val completed = myCourses.filter { course ->
+                myCourses.filter { course ->
                     val progress = courseProgress[course.id]
                     progress?.let {
                         it.asJsonObject["current"].asInt == it.asJsonObject["max"].asInt
@@ -49,10 +52,8 @@ class BellDashboardViewModel : ViewModel() {
                 }.map {
                     CourseCompletion(it.courseId, it.courseTitle)
                 }
-                _completedCourses.value = completed
-            } finally {
-                realm?.close()
             }
+            _completedCourses.value = completed
         }
     }
 
