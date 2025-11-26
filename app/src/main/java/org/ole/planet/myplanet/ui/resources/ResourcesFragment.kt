@@ -133,8 +133,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private fun startSyncManager() {
         syncManager.start(object : SyncListener {
             override fun onSyncStarted() {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    if (isAdded && !requireActivity().isFinishing) {
+                lifecycleScope.launch {
+                    if (isAdded && !requireActivity().isFinishing && view != null) {
                         customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
                         customProgressDialog?.setText(getString(R.string.syncing_resources))
                         customProgressDialog?.show()
@@ -143,8 +143,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             }
 
             override fun onSyncComplete() {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    if (isAdded) {
+                lifecycleScope.launch {
+                    if (isAdded && view != null) {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
                         refreshResourcesData()
@@ -154,8 +154,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             }
 
             override fun onSyncFailed(msg: String?) {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    if (isAdded) {
+                lifecycleScope.launch {
+                    if (isAdded && view != null) {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
 
