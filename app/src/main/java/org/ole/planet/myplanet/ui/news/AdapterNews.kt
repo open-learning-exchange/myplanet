@@ -91,6 +91,10 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         }
     )
 ) {
+    companion object {
+        private const val PAYLOAD_USER_UPDATE = "payload_user_update"
+    }
+
     private var listener: OnNewsItemClickListener? = null
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
@@ -107,6 +111,25 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     private val leadersList: List<RealmUserModel> by lazy {
         val raw = settings.getString("communityLeaders", "") ?: ""
         RealmUserModel.parseLeadersJson(raw)
+    }
+
+    private suspend fun preloadUserCache(userIds: Set<String>) {
+        if (userIds.isEmpty() || !::mRealm.isInitialized || mRealm.isClosed) return
+        val users = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            val managedUsers = mRealm.where(RealmUserModel::class.java)
+                .`in`("id", userIds.toTypedArray())
+                .findAll()
+            try {
+                mRealm.copyFromRealm(managedUsers)
+            } catch (e: Exception) {
+                emptyList<RealmUserModel>()
+            }
+        }
+        users.forEach { user ->
+            user.id?.let { userId ->
+                userCache[userId] = user
+            }
+        }
     }
 
     fun setImageList(imageList: RealmList<String>?) {
@@ -159,6 +182,36 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     @SuppressLint("SetTextI18n")
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        bindViewHolder(holder, position)
+    }
+
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int, payloads: MutableList<Any>) {
+        if (payloads.isEmpty()) {
+            bindViewHolder(holder, position)
+            return
+        }
+
+        val news = getNews(holder, position)
+        if (news?.isValid != true) {
+            bindViewHolder(holder, position)
+            return
+        }
+
+        if (payloads.contains(PAYLOAD_USER_UPDATE)) {
+            val userModel = userCache[news.userId]
+            val userFullName = userModel?.getFullNameWithMiddleName()?.trim()
+            if (userModel != null) {
+                if (holder is ViewHolderNews) {
+                    holder.binding.tvName.text = if (userFullName.isNullOrEmpty()) news.userName else userFullName
+                    ImageUtils.loadImage(userModel.userImage, holder.binding.imgUser)
+                }
+            }
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    private fun bindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         if (holder is ViewHolderNews) {
             holder.bind(position)
             val news = getNews(holder, position)
@@ -169,7 +222,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
 
                 resetViews(viewHolder)
 
-                updateReplyCount(viewHolder = viewHolder, getReplies(news), position)
+                updateReplyCount(viewHolder, getReplies(news), position)
 
                 val userModel = configureUser(viewHolder, news)
                 showShareButton(viewHolder, news)
@@ -247,25 +300,32 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         val userModel = when {
             userId.isNullOrEmpty() -> null
             userCache.containsKey(userId) -> userCache[userId]
-            ::mRealm.isInitialized -> {
-                val managedUser = mRealm.where(RealmUserModel::class.java)
-                    .equalTo("id", userId)
-                    .findFirst()
-                val detachedUser = managedUser?.let {
-                    try {
-                        mRealm.copyFromRealm(it)
-                    } catch (e: Exception) {
-                        null
+            else -> {
+                holder.binding.tvName.text = news.userName
+                ImageUtils.loadImage(null, holder.binding.imgUser)
+                holder.itemView.findViewTreeLifecycleOwner()?.lifecycleScope?.launch {
+                    val user = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                        if (!::mRealm.isInitialized || mRealm.isClosed) return@withContext null
+                        val managedUser = mRealm.where(RealmUserModel::class.java)
+                            .equalTo("id", userId)
+                            .findFirst()
+                        managedUser?.let {
+                            try {
+                                mRealm.copyFromRealm(it)
+                            } catch (e: Exception) {
+                                null
+                            }
+                        }
+                    }
+                    if (user != null) {
+                        userCache[userId] = user
+                        notifyItemChanged(holder.bindingAdapterPosition, PAYLOAD_USER_UPDATE)
+                    } else {
+                        userCache[userId] = null
                     }
                 }
-                if (detachedUser != null) {
-                    userCache[userId] = detachedUser
-                } else if (managedUser == null) {
-                    userCache[userId] = null
-                }
-                detachedUser ?: managedUser
+                null
             }
-            else -> null
         }
         val userFullName = userModel?.getFullNameWithMiddleName()?.trim()
         if (userModel != null && currentUser != null) {
@@ -273,9 +333,6 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
                 if (userFullName.isNullOrEmpty()) news.userName else userFullName
             ImageUtils.loadImage(userModel.userImage, holder.binding.imgUser)
             showHideButtons(news, holder)
-        } else {
-            holder.binding.tvName.text = news.userName
-            ImageUtils.loadImage(null, holder.binding.imgUser)
         }
         return userModel
     }
@@ -413,7 +470,11 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
                 news
             }
         }
-        submitList(detachedList, commitCallback)
+        val userIds = detachedList.mapNotNull { it?.userId }.toSet()
+        recyclerView?.findViewTreeLifecycleOwner()?.lifecycleScope?.launch {
+            preloadUserCache(userIds)
+            submitList(detachedList, commitCallback)
+        } ?: submitList(detachedList, commitCallback)
     }
 
     private fun setMemberClickListeners(holder: ViewHolderNews, userModel: RealmUserModel?, currentLeader: RealmUserModel?) {
