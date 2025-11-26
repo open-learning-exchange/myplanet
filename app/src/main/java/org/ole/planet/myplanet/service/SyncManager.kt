@@ -13,12 +13,14 @@ import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Realm
 import java.util.Date
+import java.util.concurrent.Executors
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
@@ -74,6 +76,7 @@ class SyncManager @Inject constructor(
     private var listener: SyncListener? = null
     private var backgroundSync: Job? = null
     private var betaSync = false
+    private val syncDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
     private val initializationJob: Job by lazy {
         syncScope.launch {
             improvedSyncManager.get().initialize()
@@ -146,17 +149,14 @@ class SyncManager @Inject constructor(
     }
 
     private fun authenticateAndSync(type: String, syncTables: List<String>?) {
-        td = Thread {
+        backgroundSync = syncScope.launch(syncDispatcher) {
             if (TransactionSyncManager.authenticate()) {
-                runBlocking {
-                    startSync(type, syncTables)
-                }
+                startSync(type, syncTables)
             } else {
                 handleException(context.getString(R.string.invalid_configuration))
                 cleanupMainSync()
             }
         }
-        td?.start()
     }
 
     private suspend fun startSync(type: String, syncTables: List<String>?) {
