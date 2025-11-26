@@ -30,6 +30,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getMyTeamsByUserId
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
@@ -44,6 +45,8 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
     lateinit var teamRepository: TeamRepository
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
+    @Inject
+    lateinit var sharedPrefManager: SharedPrefManager
     @Inject
     @AppPreferences
     lateinit var settings: SharedPreferences
@@ -256,6 +259,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
                         teamRepository,
                         user,
                         viewLifecycleOwner.lifecycleScope,
+                        sharedPrefManager
                     )
                     adapterTeamList.setTeamListener(this@TeamFragment)
                     adapterTeamList.setUpdateCompleteListener(this@TeamFragment)
@@ -290,7 +294,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
         }
 
         adapterTeamList = activity?.let {
-            AdapterTeamList(it, list, childFragmentManager, teamRepository, user, viewLifecycleOwner.lifecycleScope)
+            AdapterTeamList(it, list, childFragmentManager, teamRepository, user, viewLifecycleOwner.lifecycleScope, sharedPrefManager)
         } ?: return
 
         adapterTeamList.setType(type)
