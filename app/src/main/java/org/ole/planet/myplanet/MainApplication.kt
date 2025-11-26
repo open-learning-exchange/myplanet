@@ -9,6 +9,7 @@ import android.content.res.Configuration
 import android.os.Bundle
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
+import android.os.Trace
 import android.provider.Settings
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -28,6 +29,7 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
 import org.ole.planet.myplanet.callback.TeamPageListener
@@ -142,16 +144,18 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                 }
 
                 val url = URL(formattedUrl)
-                val responseCode = withContext(Dispatchers.IO) {
-                    val connection = url.openConnection() as HttpURLConnection
-                    try {
-                        connection.requestMethod = "GET"
-                        connection.connectTimeout = 5000
-                        connection.readTimeout = 5000
-                        connection.connect()
-                        connection.responseCode
-                    } finally {
-                        connection.disconnect()
+                val responseCode = withTimeoutOrNull(5000L) {
+                    withContext(Dispatchers.IO) {
+                        val connection = url.openConnection() as HttpURLConnection
+                        try {
+                            connection.requestMethod = "GET"
+                            connection.connectTimeout = 5000
+                            connection.readTimeout = 5000
+                            connection.connect()
+                            connection.responseCode
+                        } finally {
+                            connection.disconnect()
+                        }
                     }
                 }
                 responseCode in 200..299
@@ -179,31 +183,31 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     private lateinit var anrWatchdog: ANRWatchdog
 
     override fun onCreate() {
+        Trace.beginSection("MainApplication.onCreate")
         super.onCreate()
         setupCriticalProperties()
-        initApp()
-        setupStrictMode()
         registerExceptionHandler()
-        setupLifecycleCallbacks()
         configureTheme()
+        setupLifecycleCallbacks()
+        Trace.endSection()
     }
     private fun performDeferredInitialization() {
-        applicationScope.launch {
+        applicationScope.launch(Dispatchers.IO) {
+            applicationScope.launch(Dispatchers.Default) {
+                startListenNetworkState()
+            }
+            setupStrictMode()
             ensureApiClientInitialized()
             initializeDatabaseConnection()
+            onAppStarted()
             setupAnrWatchdog()
             scheduleWorkersOnStart()
             observeNetworkForDownloads()
         }
     }
-    private fun initApp() {
-        context = this
-        applicationScope.launch(Dispatchers.Default) {
-            startListenNetworkState()
-        }
-    }
 
     private fun setupCriticalProperties() {
+        context = this
         preferences = appPreferences
         defaultPref = defaultPreferences
         applicationScope = EntryPointAccessors.fromApplication(
@@ -278,7 +282,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
     private fun setupLifecycleCallbacks() {
         registerActivityLifecycleCallbacks(this)
-        onAppStarted()
     }
 
     private fun configureTheme() {
