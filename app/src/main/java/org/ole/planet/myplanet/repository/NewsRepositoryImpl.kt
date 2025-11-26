@@ -12,9 +12,11 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.findCopyByField
+import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.ui.news.NewsItem
 
 class NewsRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
@@ -95,5 +97,36 @@ class NewsRepositoryImpl @Inject constructor(
                 news
             }
         }.flowOn(Dispatchers.Default)
+    }
+
+    override suspend fun getCommunityNewsItems(
+        userIdentifier: String, teamId: String?, userId: String?
+    ): Flow<List<NewsItem>> {
+        return getCommunityNews(userIdentifier).map { newsList ->
+            withRealm(ensureLatest = false) { realm ->
+                val isTeamLeader = if (teamId != null && userId != null) {
+                    realm.where(RealmMyTeam::class.java)
+                        .equalTo("teamId", teamId)
+                        .equalTo("userId", userId)
+                        .equalTo("isLeader", true)
+                        .findFirst() != null
+                } else {
+                    false
+                }
+
+                newsList.map { news ->
+                    val replyCount = realm.where(RealmNews::class.java)
+                        .equalTo("replyTo", news.id, Case.INSENSITIVE)
+                        .count()
+                        .toInt()
+
+                    NewsItem(
+                        news = news,
+                        replyCount = replyCount,
+                        isTeamLeader = isTeamLeader
+                    )
+                }
+            }
+        }
     }
 }
