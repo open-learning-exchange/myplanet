@@ -8,7 +8,6 @@ import android.content.SharedPreferences
 import android.content.res.Configuration
 import android.os.Bundle
 import android.os.StrictMode
-import android.os.Trace
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
 import androidx.appcompat.app.AppCompatDelegate
@@ -181,7 +180,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
     override fun onCreate() {
         super.onCreate()
-        Trace.beginSection("AppOnCreate")
         setupCriticalProperties()
         initApp()
         setupStrictMode()
@@ -378,7 +376,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
     override fun onActivityResumed(activity: Activity) {
         if (isFirstLaunch) {
-            Trace.endSection()
             isFirstLaunch = false
         }
     }
