@@ -7,14 +7,16 @@ import android.widget.BaseExpandableListAdapter
 import android.widget.CheckBox
 import androidx.appcompat.widget.AppCompatImageView
 import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.ListUpdateCallback
 import kotlin.collections.HashMap
 import kotlin.collections.List
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowAdapterNavigationChildBinding
 import org.ole.planet.myplanet.databinding.RowAdapterNavigationParentBinding
 import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.utilities.DiffUtils
 
-class TagExpandableAdapter(private var tagList: List<RealmTag>, private val childMap: HashMap<String, List<RealmTag>>, private val selectedItemsList: ArrayList<RealmTag>) : BaseExpandableListAdapter() {
+class TagExpandableAdapter(private var tagList: List<RealmTag>, private val childMap: HashMap<String, List<RealmTag>>, private val selectedItemsList: ArrayList<RealmTag>) : BaseExpandableListAdapter(), ListUpdateCallback {
     private var clickListener: OnClickTagItem? = null
     private var isSelectMultiple = false
 
@@ -128,7 +130,29 @@ class TagExpandableAdapter(private var tagList: List<RealmTag>, private val chil
     }
 
     fun setTagList(filteredList: List<RealmTag>) {
+        val diffResult = DiffUtils.calculateDiff(
+            tagList,
+            filteredList,
+            { old, new -> old.id == new.id },
+            { old, new -> old.name == new.name }
+        )
         tagList = filteredList
+        diffResult.dispatchUpdatesTo(this)
+    }
+
+    override fun onInserted(position: Int, count: Int) {
+        notifyDataSetChanged()
+    }
+
+    override fun onRemoved(position: Int, count: Int) {
+        notifyDataSetChanged()
+    }
+
+    override fun onMoved(fromPosition: Int, toPosition: Int) {
+        notifyDataSetChanged()
+    }
+
+    override fun onChanged(position: Int, count: Int, payload: Any?) {
         notifyDataSetChanged()
     }
 

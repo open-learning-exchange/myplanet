@@ -51,6 +51,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
@@ -114,6 +115,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private lateinit var libraryListener: RealmChangeListener<RealmResults<RealmMyLibrary>>
     private lateinit var submissionListener: RealmChangeListener<RealmResults<RealmSubmission>>
     private lateinit var taskListener: RealmChangeListener<RealmResults<RealmTeamTask>>
+    private lateinit var tabSelectedListener: TabLayout.OnTabSelectedListener
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     @Inject
@@ -128,6 +130,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private var lastNotificationCheckTime = 0L
     private val notificationCheckThrottleMs = 5000L
     private var systemNotificationReceiver: BroadcastReceiver? = null
+    private var onGlobalLayoutListener: android.view.ViewTreeObserver.OnGlobalLayoutListener? = null
     private lateinit var mRealm: Realm
 
     override fun attachBaseContext(base: Context) {
@@ -190,7 +193,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         binding.appBarBell.bellToolbar.inflateMenu(R.menu.menu_bell_dashboard)
         service = Service(this)
         tl = findViewById(R.id.tab_layout)
-        binding.root.viewTreeObserver.addOnGlobalLayoutListener { topBarVisible() }
+        onGlobalLayoutListener = android.view.ViewTreeObserver.OnGlobalLayoutListener { topBarVisible() }
+        binding.root.viewTreeObserver.addOnGlobalLayoutListener(onGlobalLayoutListener)
         binding.appBarBell.ivSetting.setOnClickListener {
             startActivity(Intent(this, SettingActivity::class.java))
         }
@@ -447,13 +451,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     
     private suspend fun handleSurveyNavigation(surveyId: String?) {
         if (surveyId != null) {
-            val currentStepExam = withContext(Dispatchers.IO) {
-                Realm.getDefaultInstance().use { realm ->
-                    realm.where(RealmStepExam::class.java).equalTo("name", surveyId)
-                        .findFirst()?.let {
-                            realm.copyFromRealm(it)
-                        }
-                }
+            val currentStepExam = databaseService.withRealmAsync { realm ->
+                realm.where(RealmStepExam::class.java).equalTo("name", surveyId)
+                    .findFirst()?.let {
+                        realm.copyFromRealm(it)
+                    }
             }
             AdapterMySubmission.openSurvey(this, currentStepExam?.id, false, false, "")
         }
@@ -530,36 +532,51 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun setupSystemNotificationReceiver() {
         systemNotificationReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
-                if (intent?.action == "org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM") {
-                    val userId = user?.id
-                    if (userId != null) {
-                        val fragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
-                        if (fragment is NotificationsFragment) {
-                            fragment.view?.post {
-                                fragment.refreshNotificationsList()
-                            }
-                        } else {
-                            lifecycleScope.launch {
-                                delay(300)
-                                try {
-                                    mRealm.refresh()
-                                    val unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
-                                    onNotificationCountUpdated(unreadCount)
-                                } catch (e: Exception) {
-                                    e.printStackTrace()
-                                    delay(300)
-                                    try {
-                                        mRealm.refresh()
-                                        val unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
-                                        onNotificationCountUpdated(unreadCount)
-                                    } catch (e2: Exception) {
-                                        e2.printStackTrace()
+                val pendingResult = goAsync()
+                lifecycleScope.launch {
+                    try {
+                        kotlinx.coroutines.withTimeout(10000) {
+                            if (intent?.action == "org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM") {
+                                val userId = user?.id
+                                if (userId != null) {
+                                    val fragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
+                                    if (fragment is NotificationsFragment) {
+                                        withContext(Dispatchers.Main) {
+                                            fragment.view?.post {
+                                                fragment.refreshNotificationsList()
+                                            }
+                                        }
+                                    } else {
+                                        withContext(Dispatchers.IO) {
+                                            delay(300)
+                                            try {
+                                                mRealm.refresh()
+                                                val unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
+                                                withContext(Dispatchers.Main) {
+                                                    onNotificationCountUpdated(unreadCount)
+                                                }
+                                            } catch (e: Exception) {
+                                                e.printStackTrace()
+                                                delay(300)
+                                                try {
+                                                    mRealm.refresh()
+                                                    val unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
+                                                    withContext(Dispatchers.Main) {
+                                                        onNotificationCountUpdated(unreadCount)
+                                                    }
+                                                } catch (e2: Exception) {
+                                                    e2.printStackTrace()
+                                                }
+                                            }
+                                        }
                                     }
+                                } else {
+                                    android.util.Log.w("DashboardActivity", "SystemNotificationReceiver: User ID is null")
                                 }
                             }
                         }
-                    } else {
-                        android.util.Log.w("DashboardActivity", "SystemNotificationReceiver: User ID is null")
+                    } finally {
+                        pendingResult.finish()
                     }
                 }
             }
@@ -927,7 +944,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun topbarSetting() {
         UITheme()
         val tabLayout = findViewById<TabLayout>(R.id.tab_layout)
-        tabLayout.addOnTabSelectedListener(object : OnTabSelectedListener {
+        tabSelectedListener = object : OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab) {
                 onClickTabItems(tab.position)
             }
@@ -936,7 +953,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             override fun onTabReselected(tab: TabLayout.Tab) {
                 onClickTabItems(tab.position)
             }
-        })
+        }
+        tabLayout.addOnTabSelectedListener(tabSelectedListener)
         for (i in 0 until tabLayout.tabCount) {
             val customTabBinding = CustomTabBinding.inflate(LayoutInflater.from(this))
             val title = customTabBinding.title
@@ -1097,9 +1115,17 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     override fun onDestroy() {
+        val tabLayout = findViewById<TabLayout>(R.id.tab_layout)
+        if (::tabSelectedListener.isInitialized) {
+            tabLayout.removeOnTabSelectedListener(tabSelectedListener)
+        }
         libraryResults?.removeChangeListener(libraryListener)
         submissionResults?.removeChangeListener(submissionListener)
         taskResults?.removeChangeListener(taskListener)
+
+        onGlobalLayoutListener?.let {
+            binding.root.viewTreeObserver.removeOnGlobalLayoutListener(it)
+        }
 
         systemNotificationReceiver?.let {
             unregisterReceiver(it)

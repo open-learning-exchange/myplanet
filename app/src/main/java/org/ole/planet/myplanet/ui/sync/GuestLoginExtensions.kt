@@ -13,7 +13,8 @@ import org.ole.planet.myplanet.utilities.AuthHelper
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
 fun LoginActivity.showGuestLoginDialog() {
-    MainApplication.service.withRealm { realm ->
+    val databaseService = (this.applicationContext as MainApplication).databaseService
+    databaseService.withRealm { realm ->
         realm.refresh()
         val binding = AlertGuestLoginBinding.inflate(LayoutInflater.from(this))
         val view: View = binding.root
@@ -47,7 +48,7 @@ fun LoginActivity.showGuestLoginDialog() {
         val login = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
         val cancel = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
         login.setOnClickListener {
-            MainApplication.service.withRealm { loginRealm ->
+            databaseService.withRealm { loginRealm ->
                 val username = binding.etUserName.text.toString().trim { it <= ' ' }
                 val error = AuthHelper.validateUsername(this@showGuestLoginDialog, username)
                 if (error == null) {
