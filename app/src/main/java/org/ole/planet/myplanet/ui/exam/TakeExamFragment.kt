@@ -26,6 +26,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentTakeExamBinding
@@ -70,9 +71,11 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        postponeEnterTransition()
         initExam()
         questions = mRealm.where(RealmExamQuestion::class.java).equalTo("examId", exam?.id).findAll()
         binding.tvQuestionCount.text = getString(R.string.Q1, questions?.size)
+        binding.container.visibility = View.GONE
         var q: RealmQuery<*> = mRealm.where(RealmSubmission::class.java)
             .equalTo("userId", user?.id)
             .equalTo("parentId", if (!TextUtils.isEmpty(exam?.courseId)) {
@@ -89,11 +92,25 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
         if ((questions?.size ?: 0) > 0) {
             clearAllExistingAnswers {
-                createSubmission()
-                startExam(questions?.get(currentIndex))
-                updateNavButtons()
+                viewLifecycleOwner.lifecycleScope.launch {
+                    try {
+                        val job = withTimeoutOrNull(3000) {
+                            createSubmission()
+                        }
+                        if (job == null) {
+                            createFallbackSubmission()
+                        }
+                    } catch (e: Exception) {
+                        createFallbackSubmission()
+                    }
+                    startPostponedEnterTransition()
+                    binding.container.visibility = View.VISIBLE
+                    startExam(questions?.get(currentIndex))
+                    updateNavButtons()
+                }
             }
         } else {
+            startPostponedEnterTransition()
             binding.container.visibility = View.GONE
             binding.btnSubmit.visibility = View.GONE
             binding.tvQuestionCount.setText(R.string.no_questions)
@@ -226,34 +243,47 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         }
     }
 
-    private fun createSubmission() {
-        mRealm.beginTransaction()
-        try {
-            sub = createSubmission(null, mRealm)
-            setParentId()
-            setParentJson()
-            sub?.userId = user?.id
-            sub?.status = "pending"
-            sub?.type = type
-            sub?.startTime = Date().time
-            sub?.lastUpdateTime = Date().time
-            if (sub?.answers == null) {
-                sub?.answers = RealmList()
-            }
+    private suspend fun createSubmission() {
+        var submissionId: String? = null
+        databaseService.executeTransactionAsync { realm ->
+            val newSubmission = createSubmission(null, realm)
+            submissionId = newSubmission.id
+            populateSubmission(newSubmission, realm)
+        }
+        submissionId?.let {
+            sub = mRealm.where(RealmSubmission::class.java).equalTo("id", it).findFirst()
+        }
+        currentIndex = 0
+    }
 
-            currentIndex = 0
-            if (isTeam && teamId != null) {
-                addTeamInformation(mRealm)
-            }
-            mRealm.commitTransaction()
-        } catch (e: Exception) {
-            mRealm.cancelTransaction()
-            throw e
+    private fun populateSubmission(submission: RealmSubmission, realm: Realm) {
+        setParentId(submission)
+        setParentJson(submission)
+        submission.userId = user?.id
+        submission.status = "pending"
+        submission.type = type
+        submission.startTime = Date().time
+        submission.lastUpdateTime = Date().time
+        if (submission.answers == null) {
+            submission.answers = RealmList()
+        }
+        if (isTeam && teamId != null) {
+            addTeamInformation(realm, submission)
         }
     }
 
-    private fun setParentId() {
-        sub?.parentId = when {
+    private fun createFallbackSubmission() {
+        if (!mRealm.isInTransaction) {
+            mRealm.beginTransaction()
+        }
+        sub = createSubmission(null, mRealm)
+        populateSubmission(sub!!, mRealm)
+        mRealm.commitTransaction()
+        currentIndex = 0
+    }
+
+    private fun setParentId(submission: RealmSubmission?) {
+        submission?.parentId = when {
             !TextUtils.isEmpty(exam?.id) -> if (!TextUtils.isEmpty(exam?.courseId)) {
                 "${exam?.id}@${exam?.courseId}"
             } else {
@@ -264,11 +294,11 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             } else {
                 id
             }
-            else -> sub?.parentId
+            else -> submission?.parentId
         }
     }
 
-    private fun setParentJson() {
+    private fun setParentJson(submission: RealmSubmission?) {
         try {
             val parentJsonString = JSONObject().apply {
                 put("_id", exam?.id ?: id)
@@ -279,13 +309,13 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                 put("noOfQuestions", exam?.noOfQuestions ?: 0)
                 put("isFromNation", exam?.isFromNation ?: false)
             }.toString()
-            sub?.parent = parentJsonString
+            submission?.parent = parentJsonString
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
-    private fun addTeamInformation(realm: Realm) {
+    private fun addTeamInformation(realm: Realm, submission: RealmSubmission?) {
         val team = realm.where(org.ole.planet.myplanet.model.RealmMyTeam::class.java)
             .equalTo("_id", teamId)
             .findFirst()
@@ -295,12 +325,12 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             teamRef._id = team._id
             teamRef.name = team.name
             teamRef.type = team.type ?: "team"
-            sub?.teamObject = teamRef
+            submission?.teamObject = teamRef
         }
 
         val membershipDoc = realm.createObject(RealmMembershipDoc::class.java)
         membershipDoc.teamId = teamId
-        sub?.membershipDoc = membershipDoc
+        submission?.membershipDoc = membershipDoc
 
         val userModel = userProfileDbHandler.userModel
 
@@ -312,7 +342,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             membershipJson.put("teamId", teamId)
             userJson.put("membershipDoc", membershipJson)
 
-            sub?.user = userJson.toString()
+            submission?.user = userJson.toString()
         } catch (e: Exception) {
             e.printStackTrace()
         }
