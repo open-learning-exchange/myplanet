@@ -39,12 +39,12 @@ class AdapterTeamList(
     private val teamRepository: TeamRepository,
     private val currentUser: RealmUserModel?,
     private val scope: CoroutineScope,
+    private val sharedPrefManager: SharedPrefManager
 ) : RecyclerView.Adapter<AdapterTeamList.ViewHolderTeam>() {
     private var type: String? = ""
     private var teamListener: OnClickTeamItem? = null
     private var updateCompleteListener: OnUpdateCompleteListener? = null
     private var filteredList: List<RealmMyTeam> = emptyList()
-    private lateinit var prefData: SharedPrefManager
     private val teamStatusCache = mutableMapOf<String, TeamStatus>()
     private val visitCountsCache = mutableMapOf<String, Long>()
     private var visitCounts: Map<String, Long> = emptyMap()
@@ -85,7 +85,6 @@ class AdapterTeamList(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderTeam {
         val binding = ItemTeamListBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        prefData = SharedPrefManager(context)
         return ViewHolderTeam(binding)
     }
 
@@ -127,7 +126,7 @@ class AdapterTeamList(
                     addToBackStack = true,
                     tag = "TeamDetailFragment"
                 )
-                prefData.setTeamName(team.name)
+                sharedPrefManager.setTeamName(team.name)
             }
 
             btnFeedback.setOnClickListener {

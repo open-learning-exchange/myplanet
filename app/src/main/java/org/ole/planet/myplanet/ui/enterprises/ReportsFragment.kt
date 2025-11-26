@@ -222,7 +222,7 @@ class ReportsFragment : BaseTeamFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        adapterReports = AdapterReports(requireContext(), teamRepository, viewLifecycleOwner.lifecycleScope)
+        adapterReports = AdapterReports(requireContext(), teamRepository, viewLifecycleOwner.lifecycleScope, prefData)
         binding.rvReports.adapter = adapterReports
         binding.rvReports.layoutManager = LinearLayoutManager(activity)
 
