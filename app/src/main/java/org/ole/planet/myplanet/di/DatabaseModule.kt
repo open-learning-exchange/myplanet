@@ -18,6 +18,4 @@ object DatabaseModule {
     fun provideDatabaseService(@ApplicationContext context: Context): DatabaseService {
         return DatabaseService(context)
     }
-
-    // Realm initialization is handled in DatabaseService
 }

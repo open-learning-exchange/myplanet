@@ -23,9 +23,11 @@ import org.ole.planet.myplanet.ui.courses.MyProgressFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.utilities.MarkdownDialog
 
+import org.ole.planet.myplanet.datamanager.DatabaseService
+
 class ChallengeHelper(
     private val activity: DashboardActivity,
-    private val realm: Realm,
+    private val databaseService: DatabaseService,
     private val user: RealmUserModel?,
     private val settings: SharedPreferences,
     private val editor: SharedPreferences.Editor,
@@ -39,18 +41,18 @@ class ChallengeHelper(
         val startTime = 1730419200000
         val endTime = 1734307200000
 
-        val uniqueDates = fetchVoiceDates(startTime, endTime, user?.id)
-        val allUniqueDates = fetchVoiceDates(startTime, endTime, null)
+        databaseService.withRealm { realm ->
+            val uniqueDates = fetchVoiceDates(realm, startTime, endTime, user?.id)
+            val allUniqueDates = fetchVoiceDates(realm, startTime, endTime, null)
+            val courseId = "4e6b78800b6ad18b4e8b0e1e38a98cac"
+            activity.lifecycleScope.launch {
+                val courseData = progressRepository.fetchCourseData(user?.id)
+                val progress = MyProgressFragment.getCourseProgress(courseData, courseId)
+                val courseName = realm.where(RealmMyCourse::class.java)
+                    .equalTo("courseId", courseId)
+                    .findFirst()?.courseTitle
 
-        val courseId = "4e6b78800b6ad18b4e8b0e1e38a98cac"
-        activity.lifecycleScope.launch {
-            val courseData = progressRepository.fetchCourseData(user?.id)
-            val progress = MyProgressFragment.getCourseProgress(courseData, courseId)
-            val courseName = realm.where(RealmMyCourse::class.java)
-                .equalTo("courseId", courseId)
-                .findFirst()?.courseTitle
-
-            val hasUnfinishedSurvey = hasPendingSurvey(courseId)
+                val hasUnfinishedSurvey = hasPendingSurvey(realm, courseId)
 
             val validUrls = listOf(
                 "https://${BuildConfig.PLANET_GUATEMALA_URL}",
@@ -64,12 +66,13 @@ class ChallengeHelper(
             val today = LocalDate.now()
             if (user?.id?.startsWith("guest") == false && shouldPromptChallenge(today, validUrls)) {
                 val courseStatus = getCourseStatus(progress, courseName)
-                challengeDialog(uniqueDates.size, courseStatus, allUniqueDates.size, hasUnfinishedSurvey)
+                challengeDialog(realm, uniqueDates.size, courseStatus, allUniqueDates.size, hasUnfinishedSurvey)
             }
+        }
         }
     }
 
-    private fun fetchVoiceDates(start: Long, end: Long, userId: String?): List<String> {
+    private fun fetchVoiceDates(realm: Realm, start: Long, end: Long, userId: String?): List<String> {
         val query = realm.where(RealmNews::class.java)
             .greaterThanOrEqualTo("time", start)
             .lessThanOrEqualTo("time", end)
@@ -102,7 +105,7 @@ class ChallengeHelper(
         return dateFormat.format(Date(timestamp))
     }
 
-    private fun hasPendingSurvey(courseId: String): Boolean {
+    private fun hasPendingSurvey(realm: Realm, courseId: String): Boolean {
         return realm.where(RealmStepExam::class.java)
             .equalTo("courseId", courseId)
             .equalTo("type", "survey")
@@ -132,6 +135,7 @@ class ChallengeHelper(
     }
 
     private fun challengeDialog(
+        realm: Realm,
         voiceCount: Int,
         courseStatus: String,
         allVoiceCount: Int,

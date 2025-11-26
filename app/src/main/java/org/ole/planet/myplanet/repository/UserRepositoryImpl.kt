@@ -181,4 +181,8 @@ class UserRepositoryImpl @Inject constructor(
                 ?.let { realm.copyFromRealm(it) }
         }
     }
+
+    override fun getOfflineVisits(): Int {
+        return settings.getInt("offlineVisits", 0)
+    }
 }

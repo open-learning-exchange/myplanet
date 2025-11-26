@@ -209,4 +209,24 @@ class NotificationRepositoryImpl @Inject constructor(
             team?.name
         }
     }
+
+    override suspend fun markAsRead(notificationId: String, userId: String?) {
+        if (notificationId.startsWith("summary_")) {
+            val type = notificationId.removePrefix("summary_")
+            withRealm { realm ->
+                realm.executeTransaction {
+                    val notifications = realm.where(RealmNotification::class.java)
+                        .equalTo("userId", userId)
+                        .equalTo("type", type)
+                        .equalTo("isRead", false)
+                        .findAll()
+                    notifications.forEach { it.isRead = true }
+                }
+            }
+        } else {
+            update(RealmNotification::class.java, "id", notificationId) {
+                it.isRead = true
+            }
+        }
+    }
 }

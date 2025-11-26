@@ -17,4 +17,5 @@ interface NotificationRepository {
     suspend fun getJoinRequestTeamId(relatedId: String?): String?
     fun getJoinRequestDetails(relatedId: String?): Pair<String, String>
     fun getTaskTeamName(taskTitle: String): String?
+    suspend fun markAsRead(notificationId: String, userId: String?)
 }
