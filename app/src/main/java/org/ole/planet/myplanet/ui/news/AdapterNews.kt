@@ -34,6 +34,7 @@ import io.realm.Sort
 import java.io.File
 import java.util.Calendar
 import java.util.Locale
+import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNewsBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -91,11 +92,12 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     )
 ) {
     private var listener: OnNewsItemClickListener? = null
+    @Inject
+    lateinit var sharedPrefManager: SharedPrefManager
     private var imageList: RealmList<String>? = null
     lateinit var mRealm: Realm
     private var fromLogin = false
     private var nonTeamMember = false
-    private var sharedPreferences: SharedPrefManager? = null
     private var recyclerView: RecyclerView? = null
     var user: RealmUserModel? = null
     private var labelManager: NewsLabelManager? = null
@@ -146,7 +148,6 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val binding = RowNewsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        sharedPreferences = SharedPrefManager(context)
         user = userProfileDbHandler.userModel
         settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         if (::mRealm.isInitialized) {
@@ -565,7 +566,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         updateReplyCount(viewHolder, replies, position)
 
         viewHolder.binding.btnShowReply.setOnClickListener {
-            sharedPreferences?.setRepliedNewsId(finalNews?.id)
+            sharedPrefManager.setRepliedNewsId(finalNews?.id)
             listener?.showReply(finalNews, fromLogin, nonTeamMember)
         }
     }
