@@ -362,6 +362,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         return sharedPreferences.getString("theme_mode", ThemeMode.FOLLOW_SYSTEM) ?: ThemeMode.FOLLOW_SYSTEM
     }
 
+    override fun onActivityCreated(activity: Activity, bundle: Bundle?) {}
+
     override fun onActivityStarted(activity: Activity) {
         if (++activityReferences == 1 && !isActivityChangingConfigurations) {
             onAppForegrounded()
