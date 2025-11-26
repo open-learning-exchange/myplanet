@@ -314,15 +314,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private fun setupSelectAllListener() {
         selectAll.setOnClickListener {
             hideButton()
-            val allSelected = selectedItems?.size == adapterLibrary.currentList.size
-            adapterLibrary.selectAllItems(!allSelected)
-            if (allSelected) {
-                selectAll.isChecked = false
-                selectAll.text = getString(R.string.select_all)
-            } else {
-                selectAll.isChecked = true
-                selectAll.text = getString(R.string.unselect_all)
-            }
+            val isAllSelected = adapterLibrary.areAllSelected()
+            adapterLibrary.selectAllItems(!isAllSelected)
         }
     }
 
@@ -446,6 +439,13 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         selectedItems = list
         changeButtonStatus()
         hideButton()
+        if (adapterLibrary.areAllSelected()) {
+            selectAll.isChecked = true
+            selectAll.text = getString(R.string.unselect_all)
+        } else {
+            selectAll.isChecked = false
+            selectAll.text = getString(R.string.select_all)
+        }
     }
 
     override fun onTagClicked(realmTag: RealmTag) {

@@ -41,7 +41,7 @@ class AdapterResource(
     private val tagRepository: TagRepository,
     private val userModel: RealmUserModel?
 ) : ListAdapter<RealmMyLibrary, RecyclerView.ViewHolder>(AdapterResource.diffCallback) {
-    private val selectedItems: MutableList<RealmMyLibrary?> = ArrayList()
+    private val selectedIds: MutableSet<String> = mutableSetOf()
     private var listener: OnLibraryItemSelected? = null
     private val config: ChipCloudConfig = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single)
     private var homeItemClickListener: OnHomeItemClickListener? = null
@@ -110,7 +110,7 @@ class AdapterResource(
                 openLibrary(library)
             }
             holder.rowLibraryBinding.timesRated.text = context.getString(R.string.num_total, library.timesRated)
-            holder.rowLibraryBinding.checkbox.isChecked = selectedItems.contains(library)
+            holder.rowLibraryBinding.checkbox.isChecked = selectedIds.contains(library.id)
             val selectedText = context.getString(R.string.selected)
             val libraryTitle = library.title.orEmpty()
             holder.rowLibraryBinding.checkbox.contentDescription =
@@ -145,13 +145,12 @@ class AdapterResource(
                         context.getString(R.string.select_res_course, library.title ?: "")
                     val isChecked = (view as CheckBox).isChecked
                     if (isChecked) {
-                        if (!selectedItems.contains(library)) {
-                            selectedItems.add(library)
-                        }
+                        library.id?.let { selectedIds.add(it) }
                     } else {
-                        selectedItems.remove(library)
+                        selectedIds.remove(library.id)
                     }
-                    if (listener != null) listener?.onSelectedListChange(selectedItems)
+                    val selectedItems = currentList.filter { selectedIds.contains(it.id) }.toMutableList()
+                    listener?.onSelectedListChange(selectedItems)
                 }
             } else {
                 holder.rowLibraryBinding.checkbox.visibility = View.GONE
@@ -160,20 +159,19 @@ class AdapterResource(
     }
 
     fun areAllSelected(): Boolean {
-        return selectedItems.size == currentList.size
+        return selectedIds.size == currentList.size && currentList.isNotEmpty()
     }
 
     fun selectAllItems(selectAll: Boolean) {
         if (selectAll) {
-            selectedItems.clear()
-            selectedItems.addAll(currentList)
+            selectedIds.clear()
+            selectedIds.addAll(currentList.mapNotNull { it.id })
         } else {
-            selectedItems.clear()
+            selectedIds.clear()
         }
         notifyItemRangeChanged(0, currentList.size, SELECTION_PAYLOAD)
-        if (listener != null) {
-            listener?.onSelectedListChange(selectedItems)
-        }
+        val selectedItems = currentList.filter { selectedIds.contains(it.id) }.toMutableList()
+        listener?.onSelectedListChange(selectedItems)
     }
 
     private fun openLibrary(library: RealmMyLibrary?) {
@@ -201,7 +199,7 @@ class AdapterResource(
                 handled = true
             }
             if (payloads.contains(SELECTION_PAYLOAD)) {
-                holder.rowLibraryBinding.checkbox.isChecked = selectedItems.contains(library)
+                holder.rowLibraryBinding.checkbox.isChecked = selectedIds.contains(library.id)
                 handled = true
             }
             if (!handled) {
