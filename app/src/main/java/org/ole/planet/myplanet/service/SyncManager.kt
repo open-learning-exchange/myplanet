@@ -70,7 +70,6 @@ class SyncManager @Inject constructor(
     @ApplicationScope private val syncScope: CoroutineScope
 ) {
     private var td: Thread? = null
-    lateinit var mRealm: Realm
     private var isSyncing = false
     private val stringArray = arrayOfNulls<String>(4)
     private var listener: SyncListener? = null
@@ -135,14 +134,7 @@ class SyncManager @Inject constructor(
         settings.edit { putLong("LastSync", Date().time) }
         listener?.onSyncComplete()
         try {
-            if (!betaSync) {
-                if (::mRealm.isInitialized && !mRealm.isClosed) {
-                    mRealm.close()
-                    td?.interrupt()
-                }
-            } else {
-                td?.interrupt()
-            }
+            td?.interrupt()
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -178,7 +170,9 @@ class SyncManager @Inject constructor(
                 val syncJobs = listOf(
                     async {
                         logger.startProcess("tablet_users_sync")
-                        TransactionSyncManager.syncDb(mRealm, "tablet_users")
+                        safeRealmOperation { realm ->
+                            TransactionSyncManager.syncDb(realm, "tablet_users")
+                        }
                         logger.endProcess("tablet_users_sync")
                     },
                     async {
@@ -186,72 +180,123 @@ class SyncManager @Inject constructor(
                         myLibraryTransactionSync()
                         logger.endProcess("library_sync")
                     },
-                    async { logger.startProcess("courses_sync")
-                        TransactionSyncManager.syncDb(mRealm, "courses")
+                    async {
+                        logger.startProcess("courses_sync")
+                        safeRealmOperation { realm ->
+                            TransactionSyncManager.syncDb(realm, "courses")
+                        }
                         logger.endProcess("courses_sync")
                     },
-                    async { logger.startProcess("exams_sync")
-                        TransactionSyncManager.syncDb(mRealm, "exams")
+                    async {
+                        logger.startProcess("exams_sync")
+                        safeRealmOperation { realm ->
+                            TransactionSyncManager.syncDb(realm, "exams")
+                        }
                         logger.endProcess("exams_sync")
                     },
-                    async { logger.startProcess("ratings_sync")
-                        TransactionSyncManager.syncDb(mRealm, "ratings")
+                    async {
+                        logger.startProcess("ratings_sync")
+                        safeRealmOperation { realm ->
+                            TransactionSyncManager.syncDb(realm, "ratings")
+                        }
                         logger.endProcess("ratings_sync")
                     },
-                    async { logger.startProcess("courses_progress_sync")
-                        TransactionSyncManager.syncDb(mRealm, "courses_progress")
+                    async {
+                        logger.startProcess("courses_progress_sync")
+                        safeRealmOperation { realm ->
+                            TransactionSyncManager.syncDb(realm, "courses_progress")
+                        }
                         logger.endProcess("courses_progress_sync")
                     },
-                    async { logger.startProcess("achievements_sync")
-                        TransactionSyncManager.syncDb(mRealm, "achievements")
+                    async {
+                        logger.startProcess("achievements_sync")
+                        safeRealmOperation { realm ->
+                            TransactionSyncManager.syncDb(realm, "achievements")
+                        }
                         logger.endProcess("achievements_sync")
                     },
-                    async { logger.startProcess("tags_sync")
-                        TransactionSyncManager.syncDb(mRealm, "tags")
+                    async {
+                        logger.startProcess("tags_sync")
+                        safeRealmOperation { realm ->
+                            TransactionSyncManager.syncDb(realm, "tags")
+                        }
                         logger.endProcess("tags_sync")
                     },
-                    async { logger.startProcess("submissions_sync")
-                        TransactionSyncManager.syncDb(mRealm, "submissions")
+                    async {
+                        logger.startProcess("submissions_sync")
+                        safeRealmOperation { realm ->
+                            TransactionSyncManager.syncDb(realm, "submissions")
+                        }
                         logger.endProcess("submissions_sync")
                     },
-                    async { logger.startProcess("news_sync")
-                        TransactionSyncManager.syncDb(mRealm, "news")
+                    async {
+                        logger.startProcess("news_sync")
+                        safeRealmOperation { realm ->
+                            TransactionSyncManager.syncDb(realm, "news")
+                        }
                         logger.endProcess("news_sync")
                     },
-                    async { logger.startProcess("feedback_sync")
-                        TransactionSyncManager.syncDb(mRealm, "feedback")
+                    async {
+                        logger.startProcess("feedback_sync")
+                        safeRealmOperation { realm ->
+                            TransactionSyncManager.syncDb(realm, "feedback")
+                        }
                         logger.endProcess("feedback_sync")
                     },
-                    async { logger.startProcess("teams_sync")
-                        TransactionSyncManager.syncDb(mRealm, "teams")
+                    async {
+                        logger.startProcess("teams_sync")
+                        safeRealmOperation { realm ->
+                            TransactionSyncManager.syncDb(realm, "teams")
+                        }
                         logger.endProcess("teams_sync")
                     },
-                    async { logger.startProcess("tasks_sync")
-                        TransactionSyncManager.syncDb(mRealm, "tasks")
+                    async {
+                        logger.startProcess("tasks_sync")
+                        safeRealmOperation { realm ->
+                            TransactionSyncManager.syncDb(realm, "tasks")
+                        }
                         logger.endProcess("tasks_sync")
                     },
-                    async { logger.startProcess("login_activities_sync")
-                        TransactionSyncManager.syncDb(mRealm, "login_activities")
+                    async {
+                        logger.startProcess("login_activities_sync")
+                        safeRealmOperation { realm ->
+                            TransactionSyncManager.syncDb(realm, "login_activities")
+                        }
                         logger.endProcess("login_activities_sync")
                     },
-                    async { logger.startProcess("meetups_sync")
-                        TransactionSyncManager.syncDb(mRealm, "meetups")
+                    async {
+                        logger.startProcess("meetups_sync")
+                        safeRealmOperation { realm ->
+                            TransactionSyncManager.syncDb(realm, "meetups")
+                        }
                         logger.endProcess("meetups_sync")
                     },
-                    async { logger.startProcess("health_sync")
-                        TransactionSyncManager.syncDb(mRealm, "health")
+                    async {
+                        logger.startProcess("health_sync")
+                        safeRealmOperation { realm ->
+                            TransactionSyncManager.syncDb(realm, "health")
+                        }
                         logger.endProcess("health_sync")
                     },
-                    async { logger.startProcess("certifications_sync")
-                        TransactionSyncManager.syncDb(mRealm, "certifications")
+                    async {
+                        logger.startProcess("certifications_sync")
+                        safeRealmOperation { realm ->
+                            TransactionSyncManager.syncDb(realm, "certifications")
+                        }
                         logger.endProcess("certifications_sync")
                     },
-                    async { logger.startProcess("team_activities_sync")
-                        TransactionSyncManager.syncDb(mRealm, "team_activities")
+                    async {
+                        logger.startProcess("team_activities_sync")
+                        safeRealmOperation { realm ->
+                            TransactionSyncManager.syncDb(realm, "team_activities")
+                        }
                         logger.endProcess("team_activities_sync")
                     },
-                    async { logger.startProcess("chat_history_sync")
-                        TransactionSyncManager.syncDb(mRealm, "chat_history")
+                    async {
+                        logger.startProcess("chat_history_sync")
+                        safeRealmOperation { realm ->
+                            TransactionSyncManager.syncDb(realm, "chat_history")
+                        }
                         logger.endProcess("chat_history_sync")
                     }
                 )
@@ -267,9 +312,10 @@ class SyncManager @Inject constructor(
             logger.endProcess("resource_sync")
 
             logger.startProcess("on_synced")
-            onSynced(mRealm, settings)
+            safeRealmOperation { realm ->
+                onSynced(realm, settings)
+            }
             logger.endProcess("on_synced")
-            mRealm.close()
 
             logger.stopLogging()
         } catch (err: Exception) {
@@ -292,34 +338,45 @@ class SyncManager @Inject constructor(
                     syncJobs.add(
                         async {
                             logger.startProcess("tablet_users_sync")
-                            TransactionSyncManager.syncDb(mRealm, "tablet_users")
+                            safeRealmOperation { realm ->
+                                TransactionSyncManager.syncDb(realm, "tablet_users")
+                            }
                             logger.endProcess("tablet_users_sync")
                         })
 
                     syncJobs.add(
-                        async { logger.startProcess("login_activities_sync")
-                            TransactionSyncManager.syncDb(mRealm, "login_activities")
+                        async {
+                            logger.startProcess("login_activities_sync")
+                            safeRealmOperation { realm ->
+                                TransactionSyncManager.syncDb(realm, "login_activities")
+                            }
                             logger.endProcess("login_activities_sync")
                         })
 
                     syncJobs.add(
                         async {
                             logger.startProcess("tags_sync")
-                            TransactionSyncManager.syncDb(mRealm, "tags")
+                            safeRealmOperation { realm ->
+                                TransactionSyncManager.syncDb(realm, "tags")
+                            }
                             logger.endProcess("tags_sync")
                         })
 
                     syncJobs.add(
                         async {
                             logger.startProcess("teams_sync")
-                            TransactionSyncManager.syncDb(mRealm, "teams")
+                            safeRealmOperation { realm ->
+                                TransactionSyncManager.syncDb(realm, "teams")
+                            }
                             logger.endProcess("teams_sync")
                         })
 
                     syncJobs.add(
                         async {
                             logger.startProcess("news_sync")
-                            TransactionSyncManager.syncDb(mRealm, "news")
+                            safeRealmOperation { realm ->
+                                TransactionSyncManager.syncDb(realm, "news")
+                            }
                             logger.endProcess("news_sync")
                         })
                 }
@@ -351,21 +408,27 @@ class SyncManager @Inject constructor(
                     syncJobs.add(
                         async {
                             logger.startProcess("courses_sync")
-                            TransactionSyncManager.syncDb(mRealm, "courses")
+                            safeRealmOperation { realm ->
+                                TransactionSyncManager.syncDb(realm, "courses")
+                            }
                             logger.endProcess("courses_sync")
                         })
 
                     syncJobs.add(
                         async {
                             logger.startProcess("courses_progress_sync")
-                            TransactionSyncManager.syncDb(mRealm, "courses_progress")
+                            safeRealmOperation { realm ->
+                                TransactionSyncManager.syncDb(realm, "courses_progress")
+                            }
                             logger.endProcess("courses_progress_sync")
                         })
 
                     syncJobs.add(
                         async {
                             logger.startProcess("ratings_sync")
-                            TransactionSyncManager.syncDb(mRealm, "ratings")
+                            safeRealmOperation { realm ->
+                                TransactionSyncManager.syncDb(realm, "ratings")
+                            }
                             logger.endProcess("ratings_sync")
                         })
                 }
@@ -374,7 +437,9 @@ class SyncManager @Inject constructor(
                     syncJobs.add(
                         async {
                             logger.startProcess("tasks_sync")
-                            TransactionSyncManager.syncDb(mRealm, "tasks")
+                            safeRealmOperation { realm ->
+                                TransactionSyncManager.syncDb(realm, "tasks")
+                            }
                             logger.endProcess("tasks_sync")
                         })
                 }
@@ -383,7 +448,9 @@ class SyncManager @Inject constructor(
                     syncJobs.add(
                         async {
                             logger.startProcess("meetups_sync")
-                            TransactionSyncManager.syncDb(mRealm, "meetups")
+                            safeRealmOperation { realm ->
+                                TransactionSyncManager.syncDb(realm, "meetups")
+                            }
                             logger.endProcess("meetups_sync")
                         })
                 }
@@ -392,7 +459,9 @@ class SyncManager @Inject constructor(
                     syncJobs.add(
                         async {
                             logger.startProcess("team_activities_sync")
-                            TransactionSyncManager.syncDb(mRealm, "team_activities")
+                            safeRealmOperation { realm ->
+                                TransactionSyncManager.syncDb(realm, "team_activities")
+                            }
                             logger.endProcess("team_activities_sync")
                         })
                 }
@@ -401,7 +470,9 @@ class SyncManager @Inject constructor(
                     syncJobs.add(
                         async {
                             logger.startProcess("chat_history_sync")
-                            TransactionSyncManager.syncDb(mRealm, "chat_history")
+                            safeRealmOperation { realm ->
+                                TransactionSyncManager.syncDb(realm, "chat_history")
+                            }
                             logger.endProcess("chat_history_sync")
                         })
                 }
@@ -410,7 +481,9 @@ class SyncManager @Inject constructor(
                     syncJobs.add(
                         async {
                             logger.startProcess("feedback_sync")
-                            TransactionSyncManager.syncDb(mRealm, "feedback")
+                            safeRealmOperation { realm ->
+                                TransactionSyncManager.syncDb(realm, "feedback")
+                            }
                             logger.endProcess("feedback_sync")
                         })
                 }
@@ -419,22 +492,29 @@ class SyncManager @Inject constructor(
                     syncJobs.add(
                         async {
                             logger.startProcess("achievements_sync")
-                            TransactionSyncManager.syncDb(mRealm, "achievements")
+                            safeRealmOperation { realm ->
+                                TransactionSyncManager.syncDb(realm, "achievements")
+                            }
                             logger.endProcess("achievements_sync")
                         })
                 }
 
                 if (syncTables?.contains("health") == true) {
                     syncJobs.add(
-                        async { logger.startProcess("health_sync")
-                            TransactionSyncManager.syncDb(mRealm, "health")
+                        async {
+                            logger.startProcess("health_sync")
+                            safeRealmOperation { realm ->
+                                TransactionSyncManager.syncDb(realm, "health")
+                            }
                             logger.endProcess("health_sync")
                         })
 
                     syncJobs.add(
                         async {
                             logger.startProcess("certifications_sync")
-                            TransactionSyncManager.syncDb(mRealm, "certifications")
+                            safeRealmOperation { realm ->
+                                TransactionSyncManager.syncDb(realm, "certifications")
+                            }
                             logger.endProcess("certifications_sync")
                         })
                 }
@@ -443,14 +523,18 @@ class SyncManager @Inject constructor(
                     syncJobs.add(
                         async {
                             logger.startProcess("exams_sync")
-                            TransactionSyncManager.syncDb(mRealm, "exams")
+                            safeRealmOperation { realm ->
+                                TransactionSyncManager.syncDb(realm, "exams")
+                            }
                             logger.endProcess("exams_sync")
                         })
 
                     syncJobs.add(
                         async {
                             logger.startProcess("submissions_sync")
-                            TransactionSyncManager.syncDb(mRealm, "submissions")
+                            safeRealmOperation { realm ->
+                                TransactionSyncManager.syncDb(realm, "submissions")
+                            }
                             logger.endProcess("submissions_sync")
                         })
                 }
@@ -463,9 +547,10 @@ class SyncManager @Inject constructor(
             logger.endProcess("admin_sync")
 
             logger.startProcess("on_synced")
-            onSynced(mRealm, settings)
+            safeRealmOperation { realm ->
+                onSynced(realm, settings)
+            }
             logger.endProcess("on_synced")
-            mRealm.close()
 
             logger.stopLogging()
         } catch (err: Exception) {
@@ -479,18 +564,7 @@ class SyncManager @Inject constructor(
     private fun cleanupMainSync() {
         cancel(context, 111)
         isSyncing = false
-        if (!betaSync) {
-            try {
-                if (::mRealm.isInitialized) {
-                    mRealm.close()
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-            td?.interrupt()
-        } else {
-            td?.interrupt()
-        }
+        td?.interrupt()
     }
 
     private fun initializeSync() {
@@ -501,7 +575,6 @@ class SyncManager @Inject constructor(
         }
         isSyncing = true
         create(context, R.mipmap.ic_launcher, "Syncing data", "Please wait...")
-        mRealm = databaseService.realmInstance
     }
 
     fun cancelBackgroundSync() {
@@ -509,13 +582,12 @@ class SyncManager @Inject constructor(
         backgroundSync = null
     }
 
-    private suspend fun resourceTransactionSync(backgroundRealm: Realm? = null) {
+    private suspend fun resourceTransactionSync() {
         val logger = SyncTimeLogger
         logger.startProcess("resource_sync")
         var processedItems = 0
 
         try {
-            val realmInstance = backgroundRealm ?: mRealm
             val newIds: MutableList<String?> = ArrayList()
             var totalRows = 0
             ApiClient.executeWithRetryAndWrap {
@@ -554,73 +626,69 @@ class SyncManager @Inject constructor(
                         break
                     }
 
-                    val batchDocuments = JsonArray()
                     val validDocuments = mutableListOf<Pair<JsonObject, String>>()
-
                     for (i in 0 until rows.size()) {
                         val rowObj = rows[i].asJsonObject
                         if (rowObj.has("doc")) {
                             val doc = getJsonObject("doc", rowObj)
                             val id = getString("_id", doc)
-
                             if (!id.startsWith("_design") && id.isNotBlank()) {
-                                batchDocuments.add(doc)
                                 validDocuments.add(Pair(doc, id))
                             }
                         }
                     }
 
                     if (validDocuments.isNotEmpty()) {
-                        try {
-                            val chunkSize = 10
-                            val chunks = validDocuments.chunked(chunkSize)
-                            val idsWeAreProcessing = validDocuments.map { it.second }
+                        safeRealmOperation { realmInstance ->
+                            if (realmInstance == null) return@safeRealmOperation
+                            try {
+                                val chunkSize = 10
+                                val chunks = validDocuments.chunked(chunkSize)
+                                val idsWeAreProcessing = validDocuments.map { it.second }
+                                val savedIds = mutableListOf<String>()
 
-                            val savedIds = mutableListOf<String>()
-                            for ((_, chunk) in chunks.withIndex()) {
-                                realmInstance.executeTransaction { realm ->
-                                    val chunkDocuments = JsonArray()
-                                    chunk.forEach { (doc, _) -> chunkDocuments.add(doc) }
-
-                                    val chunkIds = save(chunkDocuments, realm)
-                                    savedIds.addAll(chunkIds)
+                                for ((_, chunk) in chunks.withIndex()) {
+                                    realmInstance.executeTransaction { realm ->
+                                        val chunkDocuments = JsonArray()
+                                        chunk.forEach { (doc, _) -> chunkDocuments.add(doc) }
+                                        val chunkIds = save(chunkDocuments, realm)
+                                        savedIds.addAll(chunkIds)
+                                    }
                                 }
-                            }
 
-                            if (savedIds.isNotEmpty()) {
-                                val validIds = savedIds.filter { it.isNotBlank() }
-                                if (validIds.isNotEmpty()) {
-                                    newIds.addAll(validIds)
-                                    processedItems += validIds.size
+                                if (savedIds.isNotEmpty()) {
+                                    val validIds = savedIds.filter { it.isNotBlank() }
+                                    if (validIds.isNotEmpty()) {
+                                        newIds.addAll(validIds)
+                                        processedItems += validIds.size
+                                    } else {
+                                        newIds.addAll(idsWeAreProcessing)
+                                        processedItems += idsWeAreProcessing.size
+                                    }
                                 } else {
                                     newIds.addAll(idsWeAreProcessing)
                                     processedItems += idsWeAreProcessing.size
                                 }
-                            } else {
-                                newIds.addAll(idsWeAreProcessing)
-                                processedItems += idsWeAreProcessing.size
-                            }
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-
-                            for ((doc, _) in validDocuments) {
-                                try {
-                                    realmInstance.executeTransaction { realm ->
-                                        val singleDocArray = JsonArray()
-                                        singleDocArray.add(doc)
-                                        val singleIds = save(singleDocArray, realm)
-                                        if (singleIds.isNotEmpty()) {
-                                            newIds.addAll(singleIds)
-                                            processedItems++
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                                for ((doc, _) in validDocuments) {
+                                    try {
+                                        realmInstance.executeTransaction { realm ->
+                                            val singleDocArray = JsonArray()
+                                            singleDocArray.add(doc)
+                                            val singleIds = save(singleDocArray, realm)
+                                            if (singleIds.isNotEmpty()) {
+                                                newIds.addAll(singleIds)
+                                                processedItems++
+                                            }
                                         }
+                                    } catch (e2: Exception) {
+                                        e2.printStackTrace()
                                     }
-                                } catch (e2: Exception) {
-                                    e2.printStackTrace()
                                 }
                             }
                         }
                     }
-
                     skip += rows.size()
                     if (batchCount % 10 == 0) {
                         val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -638,7 +706,10 @@ class SyncManager @Inject constructor(
             try {
                 val validNewIds = newIds.filter { !it.isNullOrBlank() }
                 if (validNewIds.isNotEmpty() && validNewIds.size == newIds.size) {
-                    removeDeletedResource(validNewIds, realmInstance)
+                    safeRealmOperation { realm ->
+                        if (realm == null) return@safeRealmOperation
+                        removeDeletedResource(validNewIds, realm)
+                    }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
