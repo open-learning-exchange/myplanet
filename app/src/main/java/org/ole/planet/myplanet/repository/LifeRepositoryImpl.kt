@@ -13,4 +13,25 @@ class LifeRepositoryImpl @Inject constructor(private val databaseService: Databa
             }
         }
     }
+
+    override suspend fun updateWeight(weight: Int, id: String?, userId: String?) {
+        databaseService.withRealmAsync { realm ->
+            val targetItem = realm.where(RealmMyLife::class.java)
+                .equalTo("_id", id)
+                .findFirst()
+
+            targetItem?.let { item ->
+                val currentWeight = item.weight
+                item.weight = weight
+
+                val otherItem = realm.where(RealmMyLife::class.java)
+                    .equalTo("userId", userId)
+                    .equalTo("weight", weight)
+                    .notEqualTo("_id", id)
+                    .findFirst()
+
+                otherItem?.weight = currentWeight
+            }
+        }
+    }
 }

@@ -21,7 +21,6 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmMyLife
-import org.ole.planet.myplanet.model.RealmMyLife.Companion.updateWeight
 import org.ole.planet.myplanet.repository.LifeRepository
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment
 import org.ole.planet.myplanet.ui.myhealth.MyHealthFragment
@@ -112,7 +111,14 @@ class AdapterMyLife(
 
     override fun onItemMove(fromPosition: Int, toPosition: Int): Boolean {
         val fromMyLife = getItem(fromPosition)
-        updateWeight(toPosition + 1, fromMyLife._id, fromMyLife.userId)
+        MainApplication.applicationScope.launch {
+            try {
+                lifeRepository.updateWeight(toPosition + 1, fromMyLife._id, fromMyLife.userId)
+            } catch (e: Exception) {
+                Utilities.log("Error updating weight: ${e.message}")
+                e.printStackTrace()
+            }
+        }
         notifyItemMoved(fromPosition, toPosition)
         return true
     }
