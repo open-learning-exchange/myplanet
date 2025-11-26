@@ -595,36 +595,38 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
                 .setTitle(R.string.share_with_community)
                 .setMessage(R.string.confirm_share_community)
                 .setPositiveButton(R.string.yes) { _, _ ->
-                    val array = GsonUtils.gson.fromJson(news?.viewIn, JsonArray::class.java)
-                    val firstElement = array.get(0)
-                    val obj = firstElement.asJsonObject
-                    if(!obj.has("name")){
-                        obj.addProperty("name", teamName)
-                    }
-                    val ob = JsonObject()
-                    ob.addProperty("section", "community")
-                    ob.addProperty("_id", currentUser?.planetCode + "@" + currentUser?.parentCode)
-                    ob.addProperty("sharedDate", Calendar.getInstance().timeInMillis)
-                    array.add(ob)
-                    if (!mRealm.isInTransaction) {
-                        mRealm.beginTransaction()
-                    }
+                    val newsId = news?.id
+                    val currentUserId = currentUser?.id
+                    val planetCode = currentUser?.planetCode
+                    val parentCode = currentUser?.parentCode
 
-                    val managedNews = news?.let { newsItem ->
-                        if (newsItem.isManaged) {
-                            newsItem
-                        } else {
-                            mRealm.where(RealmNews::class.java)
-                                .equalTo("id", newsItem.id)
-                                .findFirst()
+                    mRealm.executeTransactionAsync({ realm ->
+                        val managedNews = realm.where(RealmNews::class.java)
+                            .equalTo("id", newsId)
+                            .findFirst()
+
+                        if (managedNews != null) {
+                            val array = GsonUtils.gson.fromJson(managedNews.viewIn, JsonArray::class.java)
+                            val firstElement = array.get(0)
+                            val obj = firstElement.asJsonObject
+                            if (!obj.has("name")) {
+                                obj.addProperty("name", teamName)
+                            }
+                            val ob = JsonObject()
+                            ob.addProperty("section", "community")
+                            ob.addProperty("_id", "$planetCode@$parentCode")
+                            ob.addProperty("sharedDate", Calendar.getInstance().timeInMillis)
+                            array.add(ob)
+
+                            managedNews.sharedBy = currentUserId
+                            managedNews.viewIn = GsonUtils.gson.toJson(array)
                         }
-                    }
-                    
-                    managedNews?.sharedBy = currentUser?.id
-                    managedNews?.viewIn = GsonUtils.gson.toJson(array)
-                    mRealm.commitTransaction()
-                    Utilities.toast(context, context.getString(R.string.shared_to_community))
-                    viewHolder.binding.btnShare.visibility = View.GONE
+                    }, {
+                        Utilities.toast(context, context.getString(R.string.shared_to_community))
+                        viewHolder.binding.btnShare.visibility = View.GONE
+                    }, {
+                        Utilities.toast(context, context.getString(R.string.unable_to_share))
+                    })
                 }
                 .setNegativeButton(R.string.cancel, null)
                 .show()
