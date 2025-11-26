@@ -129,7 +129,7 @@ class ChatDetailFragment : Fragment() {
             isUserLoaded = true
             refreshInputState()
         }
-        mAdapter = ChatAdapter(requireContext(), binding.recyclerGchat)
+        mAdapter = ChatAdapter(requireContext(), binding.recyclerGchat, viewLifecycleOwner.lifecycleScope)
         binding.recyclerGchat.apply {
             adapter = mAdapter
             layoutManager = LinearLayoutManager(requireContext())

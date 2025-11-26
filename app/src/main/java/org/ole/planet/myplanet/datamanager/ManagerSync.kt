@@ -85,20 +85,27 @@ class ManagerSync private constructor(
 
                         val jsonDoc = response.body()
                         if (jsonDoc?.has("derived_key") == true && jsonDoc.has("salt")) {
-                            try {
-                                val derivedKey = jsonDoc["derived_key"].asString
-                                val salt = jsonDoc["salt"].asString
-
-                                if (androidDecrypter(userName, password, derivedKey, salt)) {
-                                    MainApplication.applicationScope.launch {
-                                        checkManagerAndInsert(jsonDoc, listener)
+                            MainApplication.applicationScope.launch {
+                                try {
+                                    val derivedKey = jsonDoc["derived_key"].asString
+                                    val salt = jsonDoc["salt"].asString
+                                    val isAuthenticated = withContext(Dispatchers.Default) {
+                                        androidDecrypter(userName, password, derivedKey, salt)
                                     }
-                                } else {
-                                    listener.onSyncFailed("Authentication failed. Invalid credentials.")
+
+                                    if (isAuthenticated) {
+                                        checkManagerAndInsert(jsonDoc, listener)
+                                    } else {
+                                        withContext(Dispatchers.Main) {
+                                            listener.onSyncFailed("Authentication failed. Invalid credentials.")
+                                        }
+                                    }
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                    withContext(Dispatchers.Main) {
+                                        listener.onSyncFailed("Authentication processing failed.")
+                                    }
                                 }
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                                listener.onSyncFailed("Authentication processing failed.")
                             }
                         } else {
                             listener.onSyncFailed("Server response missing authentication data.")
