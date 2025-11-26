@@ -102,51 +102,72 @@ class TeamCalendarFragment : BaseTeamFragment() {
             } else if (!link.isValidWebLink() && link.isNotEmpty()) {
                 Utilities.toast(activity, getString(R.string.invalid_url))
             } else {
-                try {
-                    if (!mRealm.isInTransaction) {
-                        mRealm.beginTransaction()
+                val defaultPlaceholder = getString(R.string.click_here_to_pick_time)
+                val startTimeText = "${addMeetupBinding.tvStartTime.text}"
+                val endTimeText = "${addMeetupBinding.tvEndTime.text}"
+                val recurringId = addMeetupBinding.rgRecuring.checkedRadioButtonId
+                val rb = addMeetupBinding.rgRecuring.findViewById<RadioButton>(recurringId)
+                val recurringText = rb?.text?.toString()
+                val teamPlanetCode = team?.teamPlanetCode
+                val userName = user?.name
+                val startMillis = start.timeInMillis
+                val endMillis = end.timeInMillis
+                val currentTeamId = teamId
+
+                lifecycleScope.launch {
+                    val success = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                        var backgroundRealm: io.realm.Realm? = null
+                        try {
+                            backgroundRealm = io.realm.Realm.getDefaultInstance()
+                            backgroundRealm.executeTransaction { realm ->
+                                val meetup = realm.createObject(RealmMeetup::class.java, "${UUID.randomUUID()}")
+                                meetup.title = title
+                                meetup.meetupLink = link
+                                meetup.description = description
+                                meetup.meetupLocation = location
+                                meetup.creator = userName
+                                meetup.startDate = startMillis
+                                meetup.endDate = endMillis
+                                if (startTimeText == defaultPlaceholder) {
+                                    meetup.startTime = ""
+                                } else {
+                                    meetup.startTime = startTimeText
+                                }
+                                if (endTimeText == defaultPlaceholder) {
+                                    meetup.endTime = ""
+                                } else {
+                                    meetup.endTime = endTimeText
+                                }
+                                meetup.createdDate = System.currentTimeMillis()
+                                meetup.sourcePlanet = teamPlanetCode
+                                val jo = JsonObject()
+                                jo.addProperty("type", "local")
+                                jo.addProperty("planetCode", teamPlanetCode)
+                                meetup.sync = Gson().toJson(jo)
+                                if (recurringText != null) {
+                                    meetup.recurring = recurringText
+                                }
+                                val ob = JsonObject()
+                                ob.addProperty("teams", currentTeamId)
+                                meetup.link = Gson().toJson(ob)
+                                meetup.teamId = currentTeamId
+                            }
+                            true
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                            false
+                        } finally {
+                            backgroundRealm?.close()
+                        }
                     }
-                    val defaultPlaceholder = getString(R.string.click_here_to_pick_time)
-                    val meetup = mRealm.createObject(RealmMeetup::class.java, "${UUID.randomUUID()}")
-                    meetup.title = title
-                    meetup.meetupLink = link
-                    meetup.description = description
-                    meetup.meetupLocation = location
-                    meetup.creator = user?.name
-                    meetup.startDate = start.timeInMillis
-                    meetup.endDate = end.timeInMillis
-                    if (addMeetupBinding.tvStartTime.text == defaultPlaceholder) {
-                        meetup.startTime = ""
+
+                    if (success) {
+                        Utilities.toast(activity, getString(R.string.meetup_added))
+                        addMeetupDialog?.dismiss()
+                        refreshCalendarView()
                     } else {
-                        meetup.startTime = "${addMeetupBinding.tvStartTime.text}"
+                        Utilities.toast(activity, getString(R.string.meetup_not_added))
                     }
-                    if (addMeetupBinding.tvEndTime.text == defaultPlaceholder) {
-                        meetup.endTime = ""
-                    } else {
-                        meetup.endTime = "${addMeetupBinding.tvEndTime.text}"
-                    }
-                    meetup.createdDate = System.currentTimeMillis()
-                    meetup.sourcePlanet = team?.teamPlanetCode
-                    val jo = JsonObject()
-                    jo.addProperty("type", "local")
-                    jo.addProperty("planetCode", team?.teamPlanetCode)
-                    meetup.sync = Gson().toJson(jo)
-                    val rb = addMeetupBinding.rgRecuring.findViewById<RadioButton>(addMeetupBinding.rgRecuring.checkedRadioButtonId)
-                    if (rb != null) {
-                        meetup.recurring = "${rb.text}"
-                    }
-                    val ob = JsonObject()
-                    ob.addProperty("teams", teamId)
-                    meetup.link = Gson().toJson(ob)
-                    meetup.teamId = teamId
-                    mRealm.commitTransaction()
-                    Utilities.toast(activity, getString(R.string.meetup_added))
-                    addMeetupDialog?.dismiss()
-                    refreshCalendarView()
-                } catch (e: Exception) {
-                    mRealm.cancelTransaction()
-                    e.printStackTrace()
-                    Utilities.toast(activity, getString(R.string.meetup_not_added))
                 }
             }
         }
