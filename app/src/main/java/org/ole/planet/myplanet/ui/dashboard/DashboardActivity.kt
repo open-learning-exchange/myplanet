@@ -67,6 +67,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.JoinRequestNotification
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -611,8 +612,12 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
             try {
                 dashboardViewModel.updateResourceNotification(userId)
+
+                val taskData = teamRepository.getTaskNotifications(userId)
+                val joinRequestData = teamRepository.getJoinRequestNotifications(userId)
+
                 databaseService.realmInstance.use { backgroundRealm ->
-                    val createdNotifications = createNotifications(backgroundRealm, userId)
+                    val createdNotifications = createNotifications(backgroundRealm, userId, taskData, joinRequestData)
                     newNotifications.addAll(createdNotifications)
 
                     unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
@@ -730,10 +735,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private suspend fun createNotifications(
         realm: Realm,
         userId: String?,
+        taskData: List<Triple<String, String, String>>,
+        joinRequestData: List<JoinRequestNotification>
     ): List<NotificationUtils.NotificationConfig> {
         val surveyTitles = collectSurveyData(realm, userId)
-        val taskData = collectTaskData(realm, userId)
-        val joinRequestData = collectJoinRequestData(realm, userId)
         val storageRatio = FileUtils.totalAvailableMemoryRatio(this)
 
         val notificationConfigs = realm.where(RealmNotification::class.java)
@@ -758,8 +763,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
         dashboardViewModel.createNotificationIfMissing("storage", "90%", "storage_test", userId)
 
-        joinRequestData.forEach { (message, id) ->
-            dashboardViewModel.createNotificationIfMissing("join_request", message, id, userId)
+        joinRequestData.forEach { (requesterName, teamName, requestId) ->
+            val message = getString(R.string.user_requested_to_join_team, requesterName, teamName)
+            dashboardViewModel.createNotificationIfMissing("join_request", message, requestId, userId)
         }
         return notificationConfigs
     }
@@ -776,50 +782,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     .equalTo("id", examId)
                     .findFirst()
                     ?.name
-            }
-    }
-
-    private fun collectTaskData(realm: Realm, userId: String?): List<Triple<String, String, String>> {
-        return realm.where(RealmTeamTask::class.java)
-            .notEqualTo("status", "archived")
-            .equalTo("completed", false)
-            .equalTo("assignee", userId)
-            .findAll()
-            .mapNotNull { task ->
-                val title = task.title ?: return@mapNotNull null
-                val id = task.id ?: return@mapNotNull null
-                Triple(title, formatDate(task.deadline), id)
-            }
-    }
-
-    private fun collectJoinRequestData(realm: Realm, userId: String?): List<Pair<String, String>> {
-        return realm.where(RealmMyTeam::class.java)
-            .equalTo("userId", userId)
-            .equalTo("docType", "membership")
-            .equalTo("isLeader", true)
-            .findAll()
-            .flatMap { leadership ->
-                realm.where(RealmMyTeam::class.java)
-                    .equalTo("teamId", leadership.teamId)
-                    .equalTo("docType", "request")
-                    .findAll()
-                    .mapNotNull { joinRequest ->
-                        joinRequest._id?.let { requestId ->
-                            val team = realm.where(RealmMyTeam::class.java)
-                                .equalTo("_id", leadership.teamId)
-                                .findFirst()
-
-                            val requester = realm.where(RealmUserModel::class.java)
-                                .equalTo("id", joinRequest.userId)
-                                .findFirst()
-
-                            val requesterName = requester?.name ?: "Unknown User"
-                            val teamName = team?.name ?: "Unknown Team"
-                            val message = getString(R.string.user_requested_to_join_team, requesterName, teamName)
-
-                            Pair(message, requestId)
-                        }
-                    }
             }
     }
 
