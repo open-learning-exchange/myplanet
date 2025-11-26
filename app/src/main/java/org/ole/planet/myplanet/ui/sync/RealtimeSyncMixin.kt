@@ -13,6 +13,10 @@ import org.ole.planet.myplanet.callback.BaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.TableDataUpdate
 import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
 
+interface DiffRefreshableAdapter {
+    fun refreshWithDiff()
+}
+
 interface RealtimeSyncMixin {
     fun getWatchedTables(): List<String>
     fun onDataUpdated(table: String, update: TableDataUpdate)
@@ -67,11 +71,15 @@ class RealtimeSyncHelper(
     
     private fun refreshRecyclerView() {
         fragment.viewLifecycleOwner.lifecycleScope.launch {
-            val adapter = mixin.getSyncRecyclerView()?.adapter
-            if (adapter is ListAdapter<*, *>) {
-                (adapter as ListAdapter<Any, *>).submitList(adapter.currentList.toList())
-            } else {
-                adapter?.notifyDataSetChanged()
+            val adapter = mixin.getSyncRecyclerView()?.adapter ?: return@launch
+            when {
+                adapter is DiffRefreshableAdapter -> adapter.refreshWithDiff()
+                adapter is ListAdapter<*, *> -> {
+                    (adapter as ListAdapter<Any, *>).let { listAdapter ->
+                        listAdapter.submitList(listAdapter.currentList.toList())
+                    }
+                }
+                else -> adapter.notifyDataSetChanged()
             }
         }
     }
