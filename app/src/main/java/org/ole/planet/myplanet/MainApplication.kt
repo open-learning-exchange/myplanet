@@ -55,7 +55,6 @@ import org.ole.planet.myplanet.utilities.VersionUtils.getVersionName
 
 @HiltAndroidApp
 class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
-
     @Inject
     lateinit var databaseService: DatabaseService
 
@@ -72,7 +71,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         private const val STAY_ONLINE_WORK_TAG = "stayOnlineWork"
         private const val TASK_NOTIFICATION_WORK_TAG = "taskNotificationWork"
         lateinit var context: Context
-        lateinit var service: DatabaseService
         var preferences: SharedPreferences? = null
         var syncFailedCount = 0
         var isCollectionSwitchOn = false
@@ -99,7 +97,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                 val userProfileDbHandler = entryPoint.userProfileDbHandler()
                 val settings = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
                 try {
-                    service.executeTransactionAsync { r ->
+                    val databaseService = (context.applicationContext as MainApplication).databaseService
+                    databaseService.executeTransactionAsync { r ->
                         val log = r.createObject(RealmApkLog::class.java, "${UUID.randomUUID()}")
                         val model = userProfileDbHandler.userModel
                         log.parentCode = settings.getString("parentCode", "")
@@ -187,7 +186,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         registerExceptionHandler()
         setupLifecycleCallbacks()
         configureTheme()
-
+    }
+    private fun performDeferredInitialization() {
         applicationScope.launch {
             ensureApiClientInitialized()
             initializeDatabaseConnection()
@@ -196,7 +196,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             observeNetworkForDownloads()
         }
     }
-
     private fun initApp() {
         context = this
         applicationScope.launch(Dispatchers.Default) {
@@ -206,7 +205,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
     private fun setupCriticalProperties() {
         preferences = appPreferences
-        service = databaseService
         defaultPref = defaultPreferences
         applicationScope = EntryPointAccessors.fromApplication(
             this,
@@ -225,7 +223,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     
     private suspend fun initializeDatabaseConnection() {
         withContext(Dispatchers.IO) {
-            service.withRealm { }
+            databaseService.withRealm { }
         }
     }
 
@@ -300,7 +298,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                                 isServerReachable(serverUrl)
                             }
                             if (canReachServer && defaultPref.getBoolean("beta_auto_download", false)) {
-                                service.withRealm { realm ->
+                                databaseService.withRealm { realm ->
                                     backgroundDownload(
                                         downloadAllFiles(getAllLibraryList(realm)),
                                         applicationContext
@@ -363,7 +361,11 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         return sharedPreferences.getString("theme_mode", ThemeMode.FOLLOW_SYSTEM) ?: ThemeMode.FOLLOW_SYSTEM
     }
 
-    override fun onActivityCreated(activity: Activity, bundle: Bundle?) {}
+    override fun onActivityCreated(activity: Activity, bundle: Bundle?) {
+        if (isFirstLaunch) {
+            performDeferredInitialization()
+        }
+    }
 
     override fun onActivityStarted(activity: Activity) {
         if (++activityReferences == 1 && !isActivityChangingConfigurations) {
@@ -371,7 +373,11 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         }
     }
 
-    override fun onActivityResumed(activity: Activity) {}
+    override fun onActivityResumed(activity: Activity) {
+        if (isFirstLaunch) {
+            isFirstLaunch = false
+        }
+    }
 
     override fun onActivityPaused(activity: Activity) {}
 
