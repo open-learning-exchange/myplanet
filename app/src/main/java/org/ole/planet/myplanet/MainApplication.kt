@@ -232,7 +232,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             val threadPolicy = StrictMode.ThreadPolicy.Builder()
                 .detectAll()
                 .penaltyLog()
-                .penaltyDeath()
                 .build()
             StrictMode.setThreadPolicy(threadPolicy)
 
