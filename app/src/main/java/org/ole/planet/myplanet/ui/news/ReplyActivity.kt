@@ -33,6 +33,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.news.AdapterNews.OnNewsItemClickListener
 import org.ole.planet.myplanet.ui.news.NewsActions
+import org.ole.planet.myplanet.ui.news.NewsBindingData
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getImagePath
@@ -89,14 +90,37 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         lifecycleScope.launch {
             val (news, list) = viewModel.getNewsWithReplies(id)
             databaseService.withRealm { realm ->
-                newsAdapter = AdapterNews(this@ReplyActivity, user, news, "", null, userProfileDbHandler, databaseService)
+                val newsBindingDataMap = mutableMapOf<String, NewsBindingData>()
+                val allNews = (listOf(news) + list).filterNotNull()
+                val newsIds = allNews.mapNotNull { it.id }.toTypedArray()
+
+                if (newsIds.isNotEmpty()) {
+                    val allReplies = realm.where(RealmNews::class.java)
+                        .`in`("replyTo", newsIds)
+                        .findAll()
+                    val replyCountMap = allReplies.groupBy { it.replyTo }.mapValues { it.value.size }
+
+                    allNews.forEach { newsItem ->
+                        if (newsItem.isValid && newsItem.id != null) {
+                            val replyCount = replyCountMap[newsItem.id] ?: 0
+                            newsBindingDataMap[newsItem.id!!] = NewsBindingData(
+                                teamLeaderStatus = false,
+                                replyCount = replyCount
+                            )
+                        }
+                    }
+                }
+                newsAdapter = AdapterNews(
+                    this@ReplyActivity, user, news, "", null,
+                    userProfileDbHandler, databaseService, newsBindingDataMap
+                )
                 newsAdapter.sharedPrefManager = sharedPrefManager
                 newsAdapter.setListener(this@ReplyActivity)
                 newsAdapter.setmRealm(realm)
                 newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
                 newsAdapter.setNonTeamMember(intent.getBooleanExtra("nonTeamMember", false))
                 newsAdapter.setImageList(imageList)
-                newsAdapter.updateList(list)
+                newsAdapter.updateList(list, newsBindingDataMap)
                 activityReplyBinding.rvReply.adapter = newsAdapter
             }
         }

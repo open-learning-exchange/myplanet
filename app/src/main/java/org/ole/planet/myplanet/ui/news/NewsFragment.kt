@@ -16,6 +16,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.RecyclerView.AdapterDataObserver
 import com.google.gson.JsonArray
 import dagger.hilt.android.AndroidEntryPoint
+import io.realm.Case
 import javax.inject.Inject
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.launchIn
@@ -25,12 +26,14 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseNewsFragment
 import org.ole.planet.myplanet.databinding.FragmentNewsBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.NewsRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
+import org.ole.planet.myplanet.ui.news.NewsBindingData
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.FileUtils
@@ -168,6 +171,34 @@ class NewsFragment : BaseNewsFragment() {
     override fun setData(list: List<RealmNews?>?) {
         if (!isAdded || list == null) return
 
+        val newsBindingDataMap = mutableMapOf<String, NewsBindingData>()
+        val teamId: String? = null // As it is in the current constructor call
+        val isTeamLeader = if (teamId != null) {
+            mRealm.where(RealmMyTeam::class.java)
+                .equalTo("teamId", teamId)
+                .equalTo("isLeader", true)
+                .findFirst()?.userId == user?._id
+        } else {
+            false
+        }
+
+        val newsIds = list.mapNotNull { it?.id }.toTypedArray()
+        if (newsIds.isNotEmpty()) {
+            val allReplies = mRealm.where(RealmNews::class.java)
+                .`in`("replyTo", newsIds)
+                .findAll()
+            val replyCountMap = allReplies.groupBy { it.replyTo }.mapValues { it.value.size }
+
+            list.forEach { news ->
+                if (news?.isValid == true && news.id != null) {
+                    val replyCount = replyCountMap[news.id] ?: 0
+                    newsBindingDataMap[news.id!!] = NewsBindingData(
+                        teamLeaderStatus = isTeamLeader, replyCount = replyCount
+                    )
+                }
+            }
+        }
+
         if (binding.rvNews.adapter == null) {
             changeLayoutManager(resources.configuration.orientation, binding.rvNews)
             val resourceIds = mutableSetOf<String>()
@@ -198,16 +229,16 @@ class NewsFragment : BaseNewsFragment() {
             } finally {
                 Trace.endSection()
             }
-            adapterNews = AdapterNews(requireActivity(), user, null, "", null, userProfileDbHandler, databaseService)
+            adapterNews = AdapterNews(requireActivity(), user, null, "", null, userProfileDbHandler, databaseService, newsBindingDataMap)
             adapterNews?.sharedPrefManager = sharedPrefManager
             adapterNews?.setmRealm(mRealm)
             adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
             adapterNews?.setListener(this)
             adapterNews?.registerAdapterDataObserver(observer)
-            adapterNews?.updateList(sortedList)
+            adapterNews?.updateList(sortedList, newsBindingDataMap)
             binding.rvNews.adapter = adapterNews
         } else {
-            (binding.rvNews.adapter as? AdapterNews)?.updateList(list)
+            (binding.rvNews.adapter as? AdapterNews)?.updateList(list, newsBindingDataMap)
         }
         adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, "news") }
         binding.llAddNews.visibility = View.GONE

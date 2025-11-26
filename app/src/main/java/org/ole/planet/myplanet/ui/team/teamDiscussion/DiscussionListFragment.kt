@@ -30,6 +30,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.news.AdapterNews
+import org.ole.planet.myplanet.ui.news.NewsBindingData
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.GsonUtils
@@ -236,15 +237,42 @@ class DiscussionListFragment : BaseTeamFragment() {
 
     private fun showRecyclerView(realmNewsList: List<RealmNews?>?) {
         val existingAdapter = binding.rvDiscussion.adapter
+        val isTeamLeader = mRealm.where(RealmMyTeam::class.java)
+            .equalTo("teamId", teamId)
+            .equalTo("isLeader", true)
+            .findFirst()?.userId == user?._id
+
+        val newsBindingDataMap = mutableMapOf<String, NewsBindingData>()
+        val newsIds = realmNewsList?.mapNotNull { it?.id }?.toTypedArray()
+        if (newsIds?.isNotEmpty() == true) {
+            val allReplies = mRealm.where(RealmNews::class.java)
+                .`in`("replyTo", newsIds)
+                .findAll()
+            val replyCountMap = allReplies.groupBy { it.replyTo }.mapValues { it.value.size }
+
+            realmNewsList.forEach { news ->
+                if (news?.isValid == true && news.id != null) {
+                    val replyCount = replyCountMap[news.id] ?: 0
+                    newsBindingDataMap[news.id!!] = NewsBindingData(
+                        teamLeaderStatus = isTeamLeader,
+                        replyCount = replyCount
+                    )
+                }
+            }
+        }
+
         if (existingAdapter == null) {
             val adapterNews = activity?.let {
-                AdapterNews(it, user, null, getEffectiveTeamName(), teamId, userProfileDbHandler, databaseService)
+                AdapterNews(
+                    it, user, null, getEffectiveTeamName(), teamId,
+                    userProfileDbHandler, databaseService, newsBindingDataMap
+                )
             }
             adapterNews?.sharedPrefManager = sharedPrefManager
             adapterNews?.setmRealm(mRealm)
             adapterNews?.setListener(this)
             if (!isMemberFlow.value) adapterNews?.setNonTeamMember(true)
-            realmNewsList?.let { adapterNews?.updateList(it) }
+            realmNewsList?.let { adapterNews?.updateList(it, newsBindingDataMap) }
             binding.rvDiscussion.adapter = adapterNews
             adapterNews?.let {
                 showNoData(binding.tvNodata, it.itemCount, "discussions")
@@ -252,7 +280,7 @@ class DiscussionListFragment : BaseTeamFragment() {
         } else {
             (existingAdapter as? AdapterNews)?.let { adapter ->
                 realmNewsList?.let {
-                    adapter.updateList(it)
+                    adapter.updateList(it, newsBindingDataMap)
                     showNoData(binding.tvNodata, adapter.itemCount, "discussions")
                 }
             }

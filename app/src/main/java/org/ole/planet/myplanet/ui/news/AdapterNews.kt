@@ -57,7 +57,16 @@ import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.makeExpandable
 
-class AdapterNews(var context: Context, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userProfileDbHandler: UserProfileDbHandler, private val databaseService: DatabaseService) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
+class AdapterNews(
+    var context: Context,
+    private var currentUser: RealmUserModel?,
+    private val parentNews: RealmNews?,
+    private val teamName: String = "",
+    private val teamId: String? = null,
+    private val userProfileDbHandler: UserProfileDbHandler,
+    private val databaseService: DatabaseService,
+    private var newsBindingDataMap: Map<String, NewsBindingData>
+) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem ->
             if (oldItem === newItem) return@itemCallback true
@@ -166,10 +175,11 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
             if (news?.isValid == true) {
                 val viewHolder = holder
                 val sharedTeamName = extractSharedTeamName(news)
+                val bindingData = news.id?.let { newsBindingDataMap[it] }
 
                 resetViews(viewHolder)
 
-                updateReplyCount(viewHolder = viewHolder, getReplies(news), position)
+                updateReplyCount(viewHolder, bindingData?.replyCount ?: 0, position)
 
                 val userModel = configureUser(viewHolder, news)
                 showShareButton(viewHolder, news)
@@ -392,7 +402,8 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         return null
     }
 
-    fun updateList(newList: List<RealmNews?>) {
+    fun updateList(newList: List<RealmNews?>, newDataMap: Map<String, NewsBindingData>) {
+        this.newsBindingDataMap = newDataMap
         submitListSafely(newList)
     }
 
@@ -443,17 +454,23 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     private fun isLoggedInAndMember(): Boolean =
         !fromLogin && !nonTeamMember
 
-    private fun canEdit(news: RealmNews?): Boolean =
-        isLoggedInAndMember() && (isOwner(news) || isAdmin() || isTeamLeader())
+    private fun canEdit(news: RealmNews?): Boolean {
+        val isLeader = news?.id?.let { newsBindingDataMap[it]?.teamLeaderStatus } ?: false
+        return isLoggedInAndMember() && (isOwner(news) || isAdmin() || isLeader)
+    }
 
-    private fun canDelete(news: RealmNews?): Boolean =
-        isLoggedInAndMember() && (isOwner(news) || isSharedByCurrentUser(news) || isAdmin() || isTeamLeader())
+    private fun canDelete(news: RealmNews?): Boolean {
+        val isLeader = news?.id?.let { newsBindingDataMap[it]?.teamLeaderStatus } ?: false
+        return isLoggedInAndMember() && (isOwner(news) || isSharedByCurrentUser(news) || isAdmin() || isLeader)
+    }
 
     private fun canReply(): Boolean =
         isLoggedInAndMember() && !isGuestUser()
 
-    private fun canAddLabel(news: RealmNews?): Boolean =
-        isLoggedInAndMember() && (isOwner(news) || isTeamLeader())
+    private fun canAddLabel(news: RealmNews?): Boolean {
+        val isLeader = news?.id?.let { newsBindingDataMap[it]?.teamLeaderStatus } ?: false
+        return isLoggedInAndMember() && (isOwner(news) || isLeader)
+    }
 
     private fun canShare(news: RealmNews?): Boolean =
         isLoggedInAndMember() && !news?.isCommunityNews!! && !isGuestUser()
@@ -462,55 +479,11 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         visibility = if (condition) View.VISIBLE else View.GONE
     }
 
-    fun isTeamLeader(): Boolean {
-        if(teamId==null)return false
-        return try {
-            if (::mRealm.isInitialized && !mRealm.isClosed) {
-                val team = mRealm.where(RealmMyTeam::class.java)
-                    .equalTo("teamId", teamId)
-                    .equalTo("isLeader", true)
-                    .findFirst()
-                team?.userId == currentUser?._id
-            } else {
-                databaseService.withRealm { realm ->
-                    val team = realm.where(RealmMyTeam::class.java)
-                        .equalTo("teamId", teamId)
-                        .equalTo("isLeader", true)
-                        .findFirst()
-                    team?.userId == currentUser?._id
-                }
-            }
-        } catch (e: Exception) {
-            false
-        }
-    }
-
-    private fun getReplies(finalNews: RealmNews?): List<RealmNews> {
-        return try {
-            if (::mRealm.isInitialized && !mRealm.isClosed) {
-                mRealm.where(RealmNews::class.java)
-                    .sort("time", Sort.DESCENDING)
-                    .equalTo("replyTo", finalNews?.id, Case.INSENSITIVE)
-                    .findAll()
-            } else {
-                databaseService.withRealm { realm ->
-                    realm.where(RealmNews::class.java)
-                        .sort("time", Sort.DESCENDING)
-                        .equalTo("replyTo", finalNews?.id, Case.INSENSITIVE)
-                        .findAll()
-                        .let { realm.copyFromRealm(it) }
-                }
-            }
-        } catch (e: Exception) {
-            emptyList()
-        }
-    }
-
-    private fun updateReplyCount(viewHolder: ViewHolderNews, replies: List<RealmNews>, position: Int) {
+    private fun updateReplyCount(viewHolder: ViewHolderNews, replyCount: Int, position: Int) {
         with(viewHolder.binding) {
-            btnShowReply.text = String.format(Locale.getDefault(),"(%d)", replies.size)
+            btnShowReply.text = String.format(Locale.getDefault(), "(%d)", replyCount)
             btnShowReply.setTextColor(context.getColor(R.color.daynight_textColor))
-            val visible = replies.isNotEmpty() && !(position == 0 && parentNews != null) && canReply()
+            val visible = replyCount > 0 && !(position == 0 && parentNews != null) && canReply()
             btnShowReply.visibility = if (visible) View.VISIBLE else View.GONE
         }
     }
@@ -555,15 +528,15 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
                     false,
                     currentUser,
                     listener,
-                     viewHolder,
+                    viewHolder,
                 ) { holder, news, i -> showReplyButton(holder, news, i) }
             }
         } else {
             viewHolder.binding.btnReply.visibility = View.GONE
         }
 
-        val replies = getReplies(finalNews)
-        updateReplyCount(viewHolder, replies, position)
+        val bindingData = finalNews?.id?.let { newsBindingDataMap[it] }
+        updateReplyCount(viewHolder, bindingData?.replyCount ?: 0, position)
 
         viewHolder.binding.btnShowReply.setOnClickListener {
             sharedPrefManager.setRepliedNewsId(finalNews?.id)
