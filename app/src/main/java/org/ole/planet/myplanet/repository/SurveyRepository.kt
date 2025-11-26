@@ -13,4 +13,9 @@ interface SurveyRepository {
         userId: String?,
         surveys: List<RealmStepExam>
     ): Map<String, SurveyInfo>
+
+    suspend fun getSurveyBindingData(
+        surveys: List<RealmStepExam>,
+        teamId: String?
+    ): Map<String, SurveyBindingData>
 }

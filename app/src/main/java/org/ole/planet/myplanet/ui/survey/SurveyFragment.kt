@@ -47,6 +47,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
     private var loadSurveysJob: Job? = null
     private var currentSurveys: List<RealmStepExam> = emptyList()
     private val surveyInfoMap = mutableMapOf<String, SurveyInfo>()
+    private val bindingDataMap = mutableMapOf<String, SurveyBindingData>()
     private var textWatcher: TextWatcher? = null
 
     @Inject
@@ -84,7 +85,8 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
             this,
             settings,
             profileDbHandler,
-            surveyInfoMap
+            surveyInfoMap,
+            bindingDataMap
         )
         prefManager = SharedPrefManager(requireContext())
         
@@ -287,6 +289,11 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
             )
             surveyInfoMap.clear()
             surveyInfoMap.putAll(surveyInfos)
+
+            val bindingData = surveyRepository.getSurveyBindingData(currentSurveys, teamId)
+            bindingDataMap.clear()
+            bindingDataMap.putAll(bindingData)
+
             applySearchFilter()
         }
     }
