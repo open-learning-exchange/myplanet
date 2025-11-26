@@ -30,7 +30,9 @@ class MembersFragment : BaseMemberFragment() {
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        currentUser = userProfileDbHandler.userModel ?: RealmUserModel()
+        lifecycleScope.launch {
+            currentUser = userProfileDbHandler.getUserModel() ?: RealmUserModel()
+        }
     }
 
     override fun onNewsItemClick(news: RealmNews?) {}

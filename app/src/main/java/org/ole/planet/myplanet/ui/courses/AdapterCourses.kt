@@ -189,10 +189,12 @@ class AdapterCourses(
         holder.rowCourseBinding.courseProgress.max = course.getNumberOfSteps()
         displayTagCloud(holder, position)
 
-        userModel = userProfileDbHandler.userModel
-        val isGuest = userModel?.isGuest() ?: true
-        if (!isGuest) setupRatingBar(holder, course)
-        setupCheckbox(holder, course, position, isGuest)
+        lifecycleOwner.lifecycleScope.launch {
+            userModel = userProfileDbHandler.getUserModel()
+            val isGuest = userModel?.isGuest() ?: true
+            if (!isGuest) setupRatingBar(holder, course)
+            setupCheckbox(holder, course, position, isGuest)
+        }
 
         updateRatingViews(holder, position)
         updateProgressViews(holder, position)

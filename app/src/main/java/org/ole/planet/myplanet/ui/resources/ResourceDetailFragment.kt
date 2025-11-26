@@ -52,7 +52,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             if (!isAdded) {
                 return@launch
             }
-            val userId = profileDbHandler.userModel?.id
+            val userId = profileDbHandler.getUserModel()?.id
             try {
                 val updatedLibrary = withContext(Dispatchers.IO) {
                     val backgroundLibrary = fetchLibrary(libraryId!!)
@@ -70,7 +70,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                 e.printStackTrace()
             }
             binding.btnDownload.setImageResource(R.drawable.ic_play)
-            val currentUserId = profileDbHandler.userModel?.id
+            val currentUserId = profileDbHandler.getUserModel()?.id
             if (currentUserId != null && library.userId?.contains(currentUserId) != true) {
                 Utilities.toast(activity, getString(R.string.added_to_my_library))
                 binding.btnRemove.setImageResource(R.drawable.close_x)
@@ -81,7 +81,9 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         super.onCreateView(inflater, container, savedInstanceState)
         _binding = FragmentLibraryDetailBinding.inflate(inflater, container, false)
-        userModel = profileDbHandler.userModel
+        lifecycleScope.launch {
+            userModel = profileDbHandler.getUserModel()
+        }
         setLoadingState(true)
         return binding.root
     }
@@ -196,62 +198,65 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             }
             openResource(library)
         }
-        val userId = profileDbHandler.userModel?.id
-        val isAdd = userId?.let { library.userId?.contains(it) } != true
-        if (userModel?.isGuest() != true) {
-            binding.btnRemove.setImageResource(
-                if (isAdd) {
-                    R.drawable.ic_add_library
-                } else {
-                    R.drawable.close_x
-                }
-            )
-            binding.btnRemove.contentDescription =
-                if (isAdd) {
-                    getString(R.string.add_to_mylib)
-                } else {
-                    getString(R.string.remove)
-                }
-        } else {
-            binding.btnRemove.visibility = View.GONE
-        }
-        binding.btnRemove.setOnClickListener {
-            val userId = profileDbHandler.userModel?.id
-            viewLifecycleOwner.lifecycleScope.launch {
-                if (!isAdded) {
-                    return@launch
-                }
-                val updatedLibrary = withContext(Dispatchers.IO) {
-                    try {
-                        if (userId != null) {
-                            libraryRepository.updateUserLibrary(libraryId!!, userId, isAdd)
-                        } else {
+        lifecycleScope.launch {
+            val userId = profileDbHandler.getUserModel()?.id
+            val isAdd = userId?.let { library.userId?.contains(it) } != true
+            if (userModel?.isGuest() != true) {
+                binding.btnRemove.setImageResource(
+                    if (isAdd) {
+                        R.drawable.ic_add_library
+                    } else {
+                        R.drawable.close_x
+                    }
+                )
+                binding.btnRemove.contentDescription =
+                    if (isAdd) {
+                        getString(R.string.add_to_mylib)
+                    } else {
+                        getString(R.string.remove)
+                    }
+            } else {
+                binding.btnRemove.visibility = View.GONE
+            }
+            binding.btnRemove.setOnClickListener {
+                viewLifecycleOwner.lifecycleScope.launch {
+                    if (!isAdded) {
+                        return@launch
+                    }
+                    val updatedLibrary = withContext(Dispatchers.IO) {
+                        try {
+                            if (userId != null) {
+                                libraryRepository.updateUserLibrary(libraryId!!, userId, isAdd)
+                            } else {
+                                null
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
                             null
+                        }
+                    }
+                    try {
+                        if (updatedLibrary != null) {
+                            library = updatedLibrary
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()
-                        null
                     }
+                    Utilities.toast(
+                        activity, getString(R.string.resources) + " " +
+                                if (isAdd) getString(R.string.added_to_my_library)
+                                else getString(R.string.removed_from_mylibrary)
+                    )
+                    setLibraryData()
                 }
-                try {
-                    if (updatedLibrary != null) {
-                        library = updatedLibrary
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-                Utilities.toast(activity, getString(R.string.resources) + " " +
-                        if (isAdd) getString(R.string.added_to_my_library)
-                        else getString(R.string.removed_from_mylibrary))
-                setLibraryData()
             }
-        }
-        binding.btnBack.setOnClickListener {
-            val activity = requireActivity()
-            if (activity is AddResourceActivity) {
-                activity.finish()
-            } else {
-                NavigationHelper.popBackStack(parentFragmentManager)
+            binding.btnBack.setOnClickListener {
+                val activity = requireActivity()
+                if (activity is AddResourceActivity) {
+                    activity.finish()
+                } else {
+                    NavigationHelper.popBackStack(parentFragmentManager)
+                }
             }
         }
     }

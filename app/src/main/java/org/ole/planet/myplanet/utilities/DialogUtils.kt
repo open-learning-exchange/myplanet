@@ -52,7 +52,9 @@ object DialogUtils {
         becomeMember.setOnClickListener {
             val guest = true
             val intent = Intent(context, BecomeMemberActivity::class.java)
-            intent.putExtra("username", profileDbHandler.userModel?.name)
+            MainApplication.applicationScope.launch {
+                intent.putExtra("username", profileDbHandler.getUserModel()?.name)
+            }
             intent.putExtra("guest", guest)
             context.startActivity(intent)
         }

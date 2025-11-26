@@ -89,7 +89,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         postponeEnterTransition()
         viewLifecycleOwner.lifecycleScope.launch {
             mRealm = databaseService.realmInstance
-            model = profileDbHandler.userModel
+            model = profileDbHandler.getUserModel()
             val adapter = getAdapter()
             recyclerView.adapter = adapter
             if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {
@@ -137,9 +137,8 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         isAddInProgress = true
         setJoinInProgress(true)
 
-        val userId = profileDbHandler.userModel?.id
-
         viewLifecycleOwner.lifecycleScope.launch {
+            val userId = profileDbHandler.getUserModel()?.id
             var libraryAdded = false
             var courseAdded = false
             val result = runCatching {

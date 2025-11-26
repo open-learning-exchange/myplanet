@@ -63,49 +63,51 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     private var di: DialogUtils.CustomProgressDialog? = null
     private lateinit var offlineActivitiesResults: RealmResults<RealmOfflineActivity>
     fun onLoaded(v: View) {
-        model = profileDbHandler.userModel
-        fullName = profileDbHandler.userModel?.getFullName()
-        if (fullName?.trim().isNullOrBlank()) {
-            fullName = profileDbHandler.userModel?.name
-            v.findViewById<LinearLayout>(R.id.ll_prompt).visibility = View.VISIBLE
-            v.findViewById<LinearLayout>(R.id.ll_prompt).setOnClickListener {
-                if (!childFragmentManager.isStateSaved) {
-                    UserInformationFragment.getInstance("", "", false).show(childFragmentManager, "")
+        viewLifecycleOwner.lifecycleScope.launch {
+            model = profileDbHandler.getUserModel()
+            fullName = model?.getFullName()
+            if (fullName?.trim().isNullOrBlank()) {
+                fullName = model?.name
+                v.findViewById<LinearLayout>(R.id.ll_prompt).visibility = View.VISIBLE
+                v.findViewById<LinearLayout>(R.id.ll_prompt).setOnClickListener {
+                    if (!childFragmentManager.isStateSaved) {
+                        UserInformationFragment.getInstance("", "", false)
+                            .show(childFragmentManager, "")
+                    }
                 }
+            } else {
+                v.findViewById<LinearLayout>(R.id.ll_prompt).visibility = View.GONE
             }
-        } else {
-            v.findViewById<LinearLayout>(R.id.ll_prompt).visibility = View.GONE
-        }
-        v.findViewById<ImageView>(R.id.ic_close).setOnClickListener {
-            v.findViewById<LinearLayout>(R.id.ll_prompt).visibility = View.GONE
-        }
-        val imageView = v.findViewById<ImageView>(R.id.imageView)
-        if (!TextUtils.isEmpty(model?.userImage)) {
-            Glide.with(requireActivity())
-                .load(model?.userImage)
-                .diskCacheStrategy(DiskCacheStrategy.ALL)
-                .override(200, 200)
-                .circleCrop()
-                .placeholder(R.drawable.profile)
-                .error(R.drawable.profile)
-                .into(imageView)
-        } else {
-            imageView.setImageResource(R.drawable.profile)
-        }
+            val imageView = v.findViewById<ImageView>(R.id.imageView)
+            if (!TextUtils.isEmpty(model?.userImage)) {
+                Glide.with(requireActivity())
+                    .load(model?.userImage)
+                    .diskCacheStrategy(DiskCacheStrategy.ALL)
+                    .override(200, 200)
+                    .circleCrop()
+                    .placeholder(R.drawable.profile)
+                    .error(R.drawable.profile)
+                    .into(imageView)
+            } else {
+                imageView.setImageResource(R.drawable.profile)
+            }
 
-        if (isRealmInitialized() && mRealm.isInTransaction) {
-            mRealm.commitTransaction()
-        }
+            if (isRealmInitialized() && mRealm.isInTransaction) {
+                mRealm.commitTransaction()
+            }
 
-        if (isRealmInitialized()) {
-            offlineActivitiesResults = mRealm.where(RealmOfflineActivity::class.java)
-                .equalTo("userName", profileDbHandler.userModel?.name)
-                .equalTo("type", KEY_LOGIN)
-                .findAllAsync()
+            if (isRealmInitialized()) {
+                offlineActivitiesResults = mRealm.where(RealmOfflineActivity::class.java)
+                    .equalTo("userName", model?.name)
+                    .equalTo("type", KEY_LOGIN)
+                    .findAllAsync()
+            }
+            v.findViewById<TextView>(R.id.txtRole)
+                .text = getString(R.string.user_role, model?.getRoleAsString())
+            val offlineVisits = profileDbHandler.getOfflineVisits()
+            v.findViewById<TextView>(R.id.txtFullName).text =
+                getString(R.string.user_name, fullName, offlineVisits)
         }
-        v.findViewById<TextView>(R.id.txtRole).text = getString(R.string.user_role, model?.getRoleAsString())
-        val offlineVisits = profileDbHandler.offlineVisits
-        v.findViewById<TextView>(R.id.txtFullName).text = getString(R.string.user_name, fullName, offlineVisits)
     }
 
     override fun forceDownloadNewsImages() {
@@ -197,20 +199,23 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     private fun renderMyTeams(teams: List<RealmMyTeam>) {
         val flexboxLayout: FlexboxLayout = view?.findViewById(R.id.flexboxLayoutTeams) ?: return
         flexboxLayout.removeAllViews()
-        val userId = profileDbHandler.userModel?.id
-        for ((count, ob) in teams.withIndex()) {
-            val v = LayoutInflater.from(activity).inflate(R.layout.item_home_my_team, flexboxLayout, false)
-            val name = v.findViewById<TextView>(R.id.tv_name)
-            setBackgroundColor(v, count)
-            if (ob.teamType == "sync") {
-                name.setTypeface(null, Typeface.BOLD)
+        lifecycleScope.launch {
+            val userId = profileDbHandler.getUserModel()?.id
+            for ((count, ob) in teams.withIndex()) {
+                val v = LayoutInflater.from(activity)
+                    .inflate(R.layout.item_home_my_team, flexboxLayout, false)
+                val name = v.findViewById<TextView>(R.id.tv_name)
+                setBackgroundColor(v, count)
+                if (ob.teamType == "sync") {
+                    name.setTypeface(null, Typeface.BOLD)
+                }
+                handleClick(ob._id, ob.name, TeamDetailFragment(), name)
+                showNotificationIcons(ob, v, userId)
+                name.text = ob.name
+                flexboxLayout.addView(v, params)
             }
-            handleClick(ob._id, ob.name, TeamDetailFragment(), name)
-            showNotificationIcons(ob, v, userId)
-            name.text = ob.name
-            flexboxLayout.addView(v, params)
+            setCountText(teams.size, RealmMyTeam::class.java, requireView())
         }
-        setCountText(teams.size, RealmMyTeam::class.java, requireView())
     }
 
     private fun showNotificationIcons(ob: RealmObject, v: View, userId: String?) {

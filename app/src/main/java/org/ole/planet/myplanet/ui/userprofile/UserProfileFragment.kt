@@ -439,41 +439,69 @@ class UserProfileFragment : Fragment() {
         }
     }
 
-    private fun createStatsMap(): LinkedHashMap<String, String?> {
+    private fun createStatsMap(lastVisit: Long?, offlineVisits: Int, numberOfResourceOpen: String, maxOpenedResource: String): LinkedHashMap<String, String?> {
         return linkedMapOf(
             getString(R.string.community_name) to Utilities.checkNA(model?.planetCode),
-            getString(R.string.last_login) to viewModel.lastVisit?.let { TimeUtils.getRelativeTime(it) },
-            getString(R.string.total_visits_overall) to viewModel.offlineVisits.toString(),
-            getString(R.string.most_opened_resource) to Utilities.checkNA(viewModel.maxOpenedResource),
-            getString(R.string.number_of_resources_opened) to Utilities.checkNA(viewModel.numberOfResourceOpen)
+            getString(R.string.last_login) to lastVisit?.let { TimeUtils.getRelativeTime(it) },
+            getString(R.string.total_visits_overall) to offlineVisits.toString(),
+            getString(R.string.most_opened_resource) to Utilities.checkNA(maxOpenedResource),
+            getString(R.string.number_of_resources_opened) to Utilities.checkNA(numberOfResourceOpen)
         )
     }
 
     private fun setupStatsRecycler() {
-        val map = createStatsMap()
-        val keys = LinkedList(map.keys)
-        binding.rvStat.adapter = object : RecyclerView.Adapter<ViewHolderRowStat>() {
-            override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderRowStat {
-                rowStatBinding = RowStatBinding.inflate(LayoutInflater.from(activity), parent, false)
-                return ViewHolderRowStat(rowStatBinding)
-            }
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.lastVisit.collect { lastVisit ->
+                    viewModel.offlineVisits.collect { offlineVisits ->
+                        viewModel.numberOfResourceOpen.collect { numberOfResourceOpen ->
+                            viewModel.maxOpenedResource.collect { maxOpenedResource ->
+                                val map = createStatsMap(
+                                    lastVisit,
+                                    offlineVisits,
+                                    numberOfResourceOpen,
+                                    maxOpenedResource
+                                )
+                                val keys = LinkedList(map.keys)
+                                binding.rvStat.adapter =
+                                    object : RecyclerView.Adapter<ViewHolderRowStat>() {
+                                        override fun onCreateViewHolder(
+                                            parent: ViewGroup,
+                                            viewType: Int
+                                        ): ViewHolderRowStat {
+                                            rowStatBinding = RowStatBinding.inflate(
+                                                LayoutInflater.from(activity),
+                                                parent,
+                                                false
+                                            )
+                                            return ViewHolderRowStat(rowStatBinding)
+                                        }
 
-            override fun onBindViewHolder(holder: ViewHolderRowStat, position: Int) {
-                rowStatBinding.tvTitle.text = keys[position]
-                rowStatBinding.tvTitle.visibility = View.VISIBLE
-                rowStatBinding.tvDescription.text = map[keys[position]]
-                if (position % 2 == 0) {
-                    rowStatBinding.root.setBackgroundColor(
-                        ContextCompat.getColor(
-                            requireContext(),
-                            R.color.user_profile_background
-                        )
-                    )
+                                        override fun onBindViewHolder(
+                                            holder: ViewHolderRowStat,
+                                            position: Int
+                                        ) {
+                                            rowStatBinding.tvTitle.text = keys[position]
+                                            rowStatBinding.tvTitle.visibility = View.VISIBLE
+                                            rowStatBinding.tvDescription.text = map[keys[position]]
+                                            if (position % 2 == 0) {
+                                                rowStatBinding.root.setBackgroundColor(
+                                                    ContextCompat.getColor(
+                                                        requireContext(),
+                                                        R.color.user_profile_background
+                                                    )
+                                                )
+                                            }
+                                        }
+
+                                        override fun getItemCount(): Int {
+                                            return keys.size
+                                        }
+                                    }
+                            }
+                        }
+                    }
                 }
-            }
-
-            override fun getItemCount(): Int {
-                return keys.size
             }
         }
     }

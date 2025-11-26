@@ -100,7 +100,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                     val databaseService = (context.applicationContext as MainApplication).databaseService
                     databaseService.executeTransactionAsync { r ->
                         val log = r.createObject(RealmApkLog::class.java, "${UUID.randomUUID()}")
-                        val model = userProfileDbHandler.userModel
+                        val model = userProfileDbHandler.getUserModelCopy()
                         log.parentCode = settings.getString("parentCode", "")
                         log.createdOn = settings.getString("planetCode", "")
                         model?.let { log.userId = it.id }

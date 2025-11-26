@@ -74,20 +74,22 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         super.onCreate(savedInstanceState)
         isTeam = arguments?.getBoolean("isTeam", false) == true
         teamId = arguments?.getString("teamId", null)
-        val userProfileModel = profileDbHandler.userModel
-        adapter = AdapterSurvey(
-            requireActivity(),
-            mRealm,
-            userProfileModel?.id,
-            isTeam,
-            teamId,
-            this,
-            settings,
-            profileDbHandler,
-            surveyInfoMap
-        )
+        lifecycleScope.launch {
+            val userProfileModel = profileDbHandler.getUserModel()
+            adapter = AdapterSurvey(
+                requireActivity(),
+                mRealm,
+                userProfileModel?.id,
+                isTeam,
+                teamId,
+                this@SurveyFragment,
+                settings,
+                profileDbHandler,
+                surveyInfoMap
+            )
+        }
         prefManager = SharedPrefManager(requireContext())
-        
+
         startExamSync()
     }
 
@@ -271,23 +273,25 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
     fun updateAdapterData(isTeamShareAllowed: Boolean? = null) {
         val useTeamShareAllowed = isTeamShareAllowed ?: currentIsTeamShareAllowed
         currentIsTeamShareAllowed = useTeamShareAllowed
-        val userProfileModel = profileDbHandler.userModel
-        loadSurveysJob?.cancel()
-        loadSurveysJob = launchWhenViewIsReady {
-            currentSurveys = when {
-                isTeam && useTeamShareAllowed -> surveyRepository.getAdoptableTeamSurveys(teamId)
-                isTeam -> surveyRepository.getTeamOwnedSurveys(teamId)
-                else -> surveyRepository.getIndividualSurveys()
+        lifecycleScope.launch {
+            val userProfileModel = profileDbHandler.getUserModel()
+            loadSurveysJob?.cancel()
+            loadSurveysJob = launchWhenViewIsReady {
+                currentSurveys = when {
+                    isTeam && useTeamShareAllowed -> surveyRepository.getAdoptableTeamSurveys(teamId)
+                    isTeam -> surveyRepository.getTeamOwnedSurveys(teamId)
+                    else -> surveyRepository.getIndividualSurveys()
+                }
+                val surveyInfos = surveyRepository.getSurveyInfos(
+                    isTeam,
+                    teamId,
+                    userProfileModel?.id,
+                    currentSurveys
+                )
+                surveyInfoMap.clear()
+                surveyInfoMap.putAll(surveyInfos)
+                applySearchFilter()
             }
-            val surveyInfos = surveyRepository.getSurveyInfos(
-                isTeam,
-                teamId,
-                userProfileModel?.id,
-                currentSurveys
-            )
-            surveyInfoMap.clear()
-            surveyInfoMap.putAll(surveyInfos)
-            applySearchFilter()
         }
     }
 

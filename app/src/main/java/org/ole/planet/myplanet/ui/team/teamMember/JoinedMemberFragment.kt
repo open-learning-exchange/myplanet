@@ -49,20 +49,34 @@ class JoinedMemberFragment : BaseMemberFragment() {
                     members.remove(leader)
                     members.add(0, leader)
                 }
-                members.map { member ->
-                    val lastVisitTimestamp = RealmTeamLog.getLastVisit(realm, member.name, teamId)
-                    val lastVisitDate = if (lastVisitTimestamp != null) {
-                        val sdf = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
-                        sdf.format(Date(lastVisitTimestamp))
-                    } else {
-                        getString(R.string.no_visit)
+                lifecycleScope.launch {
+                    members.map { member ->
+                        val lastVisitTimestamp = RealmTeamLog.getLastVisit(realm, member.name, teamId)
+                        val lastVisitDate = if (lastVisitTimestamp != null) {
+                            val sdf = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
+                            sdf.format(Date(lastVisitTimestamp))
+                        } else {
+                            getString(R.string.no_visit)
+                        }
+                        val visitCount = RealmTeamLog.getVisitCount(realm, member.name, teamId)
+                        val offlineVisits = getOfflineVisits(member)
+                        val profileLastVisit = profileDbHandler?.getLastVisit(member) ?: ""
+                        JoinedMemberData(
+                            member,
+                            visitCount,
+                            lastVisitDate,
+                            offlineVisits,
+                            profileLastVisit,
+                            member.id == leaderId
+                        )
                     }
-                    val visitCount = RealmTeamLog.getVisitCount(realm, member.name, teamId)
-                    val offlineVisits = profileDbHandler?.getOfflineVisits(member)?.toString() ?: "0"
-                    val profileLastVisit = profileDbHandler?.getLastVisit(member) ?: ""
-                    JoinedMemberData(
-                        member,
-                        visitCount,
+                }
+            }
+        }
+        cachedJoinedMembers = joinedMembersData
+        adapterJoined?.updateMembers(joinedMembersData)
+        showNoData(binding.tvNodata, joinedMembersData.size, "members")
+    }
                         lastVisitDate,
                         offlineVisits,
                         profileLastVisit,
@@ -123,6 +137,10 @@ class JoinedMemberFragment : BaseMemberFragment() {
             }
             return GridLayoutManager(activity, columns)
         }
+
+    private suspend fun getOfflineVisits(member: RealmUserModel): String {
+        return profileDbHandler?.getOfflineVisits(member)?.toString() ?: "0"
+    }
 
     private fun handleRemoveMember(member: JoinedMemberData) {
         val memberId = member.user.id ?: return

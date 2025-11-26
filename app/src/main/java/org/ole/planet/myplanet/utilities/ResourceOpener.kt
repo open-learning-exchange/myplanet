@@ -96,7 +96,7 @@ object ResourceOpener {
             Utilities.toast(activity, activity.getString(R.string.unable_to_open_resource))
             return
         }
-        profileDbHandler.setResourceOpenCount(items, UserProfileDbHandler.KEY_RESOURCE_OPEN)
+        profileDbHandler.setResourceOpenCount(items)
         if (mimetype.startsWith("video")) {
             playVideo(activity, videoType, items)
         } else {

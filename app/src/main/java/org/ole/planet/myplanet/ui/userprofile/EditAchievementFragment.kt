@@ -65,9 +65,11 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentEditAchievementBinding = FragmentEditAchievementBinding.inflate(inflater, container, false)
         aRealm = databaseService.realmInstance
-        user = profileDbHandler.userModel
+        lifecycleScope.launch {
+            user = profileDbHandler.getUserModel()
+            initializeData()
+        }
         achievementArray = JsonArray()
-        initializeData()
         setListeners()
         return fragmentEditAchievementBinding.root
     }

@@ -75,7 +75,11 @@ class AchievementFragment : BaseContainerFragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentAchievementBinding.inflate(inflater, container, false)
         aRealm = databaseService.realmInstance
-        user = profileDbHandler.userModel
+        lifecycleScope.launch {
+            user = profileDbHandler.getUserModel()
+            setupUserData()
+            loadInitialAchievementData()
+        }
         binding.btnEdit.setOnClickListener {
             if (listener != null) listener?.openCallFragment(EditAchievementFragment())
         }
@@ -279,7 +283,9 @@ class AchievementFragment : BaseContainerFragment() {
         )
         btnBinding.root.setOnClickListener {
             if (lib.isResourceOffline()) {
-                openResource(lib)
+                lifecycleScope.launch {
+                    openResource(lib)
+                }
             } else {
                 startDownload(arrayListOf(UrlUtils.getUrl(lib)))
             }

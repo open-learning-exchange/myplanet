@@ -174,9 +174,10 @@ class AdapterSurvey(
         }
 
         fun adoptSurvey(exam: RealmStepExam, teamId: String?) {
-            val userModel = userProfileDbHandler.userModel
-            val sParentCode = settings.getString("parentCode", "")
-            val planetCode = settings.getString("planetCode", "")
+            MainApplication.applicationScope.launch {
+                val userModel = userProfileDbHandler.getUserModel()
+                val sParentCode = settings.getString("parentCode", "")
+                val planetCode = settings.getString("planetCode", "")
 
             val parentJsonString = try {
                 JSONObject().apply {

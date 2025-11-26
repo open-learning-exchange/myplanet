@@ -202,24 +202,26 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun updateAppTitle() {
-        try {
-            val userProfileModel = profileDbHandler.userModel
-            if (userProfileModel != null) {
-                var name: String? = userProfileModel.getFullName()
-                if (name.isNullOrBlank()) {
-                    name = profileDbHandler.userModel?.name
-                }
-                val communityName = settings.getString("communityName", "")
-                binding.appBarBell.appTitleName.text = if (user?.planetCode == "") {
-                    "${getString(R.string.planet)} $communityName"
+        lifecycleScope.launch {
+            try {
+                val userProfileModel = userProfileDbHandler.getUserModel()
+                if (userProfileModel != null) {
+                    var name: String? = userProfileModel.getFullName()
+                    if (name.isNullOrBlank()) {
+                        name = user?.name
+                    }
+                    val communityName = settings.getString("communityName", "")
+                    binding.appBarBell.appTitleName.text = if (user?.planetCode == "") {
+                        "${getString(R.string.planet)} $communityName"
+                    } else {
+                        "${getString(R.string.planet)} ${user?.planetCode}"
+                    }
                 } else {
-                    "${getString(R.string.planet)} ${user?.planetCode}"
+                    binding.appBarBell.appTitleName.text = getString(R.string.app_project_name)
                 }
-            } else {
-                binding.appBarBell.appTitleName.text = getString(R.string.app_project_name)
+            } catch (err: Exception) {
+                throw RuntimeException(err)
             }
-        } catch (err: Exception) {
-            throw RuntimeException(err)
         }
     }
 
@@ -230,13 +232,15 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             return true
         }
         navigationView.setOnItemSelectedListener(this)
-        val isTopBarVisible = userProfileDbHandler.userModel?.isShowTopbar == true
-        navigationView.visibility = if (isTopBarVisible) {
-            View.VISIBLE
-        } else {
-            View.GONE
+        lifecycleScope.launch {
+            val userModel = userProfileDbHandler.getUserModel()
+            val isTopBarVisible = userModel?.isShowTopbar == true
+            navigationView.visibility = if (isTopBarVisible) {
+                View.VISIBLE
+            } else {
+                View.GONE
+            }
         }
-        return false
     }
 
     private fun setupNavigation() {
@@ -271,7 +275,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
         lifecycleScope.launch {
             delay(50)
-            if (!(user?.id?.startsWith("guest") == true && profileDbHandler.offlineVisits >= 3) &&
+            if (!(user?.id?.startsWith("guest") == true && profileDbHandler.getOfflineVisits() >= 3) &&
                 resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
             ) {
                 result?.openDrawer()
@@ -858,36 +862,38 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun checkUser() {
-        user = userProfileDbHandler.userModel
-        if (user == null) {
-            toast(this, getString(R.string.session_expired))
-            logout()
-            return
-        }
-        if (user?.id?.startsWith("guest") == true && profileDbHandler.offlineVisits >= 3) {
-            val builder = AlertDialog.Builder(this, R.style.AlertDialogTheme)
-            builder.setTitle(getString(R.string.become_a_member))
-            builder.setMessage(getString(R.string.trial_period_ended))
-            builder.setCancelable(false)
-            builder.setPositiveButton(getString(R.string.become_a_member), null)
-            builder.setNegativeButton(getString(R.string.menu_logout), null)
-            val dialog = builder.create()
-            dialog.show()
-            val becomeMember = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-            val logout = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
-            becomeMember.contentDescription = getString(R.string.confirm_membership)
-            logout.contentDescription = getString(R.string.menu_logout)
-            becomeMember.setOnClickListener {
-                val guest = true
-                val intent = Intent(this, BecomeMemberActivity::class.java)
-                intent.putExtra("username", profileDbHandler.userModel?.name)
-                intent.putExtra("guest", guest)
-                setResult(RESULT_OK, intent)
-                startActivity(intent)
-            }
-            logout.setOnClickListener {
-                dialog.dismiss()
+        lifecycleScope.launch {
+            user = userProfileDbHandler.getUserModel()
+            if (user == null) {
+                toast(this@DashboardActivity, getString(R.string.session_expired))
                 logout()
+                return@launch
+            }
+            if (user?.id?.startsWith("guest") == true && profileDbHandler.getOfflineVisits() >= 3) {
+                val builder = AlertDialog.Builder(this@DashboardActivity, R.style.AlertDialogTheme)
+                builder.setTitle(getString(R.string.become_a_member))
+                builder.setMessage(getString(R.string.trial_period_ended))
+                builder.setCancelable(false)
+                builder.setPositiveButton(getString(R.string.become_a_member), null)
+                builder.setNegativeButton(getString(R.string.menu_logout), null)
+                val dialog = builder.create()
+                dialog.show()
+                val becomeMember = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                val logout = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
+                becomeMember.contentDescription = getString(R.string.confirm_membership)
+                logout.contentDescription = getString(R.string.menu_logout)
+                becomeMember.setOnClickListener {
+                    val guest = true
+                    val intent = Intent(this@DashboardActivity, BecomeMemberActivity::class.java)
+                    intent.putExtra("username", user?.name)
+                    intent.putExtra("guest", guest)
+                    setResult(RESULT_OK, intent)
+                    startActivity(intent)
+                }
+                logout.setOnClickListener {
+                    dialog.dismiss()
+                    logout()
+                }
             }
         }
     }

@@ -44,10 +44,11 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
         val sParentCode = settings.getString("parentCode", "")
         val communityName = settings.getString("communityName", "")
         mRealm = databaseService.realmInstance
-        user = profileDbHandler?.userModel
-        teamId = requireArguments().getString("id", "") ?: "$communityName@$sParentCode"
-
-        loadTeamData()
+        lifecycleScope.launch {
+            user = profileDbHandler?.getUserModel()
+            teamId = requireArguments().getString("id", "") ?: "$communityName@$sParentCode"
+            loadTeamData()
+        }
     }
 
     override fun setData(list: List<RealmNews?>?) {}

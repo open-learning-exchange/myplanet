@@ -212,7 +212,10 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         isMyCourseLib = arguments?.getBoolean("isMyCourseLib", false) ?: false
-        userModel = profileDbHandler?.userModel
+        lifecycleScope.launch {
+            userModel = profileDbHandler?.getUserModel()
+            setupGuestUserRestrictions()
+        }
         searchTags = ArrayList()
         config = Utilities.getCloudConfig().showClose(R.color.black_overlay)
 
