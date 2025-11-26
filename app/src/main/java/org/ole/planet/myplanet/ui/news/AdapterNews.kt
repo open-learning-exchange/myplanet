@@ -175,22 +175,18 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
                         resetViews(viewHolder)
                     }
 
-                    val (replies, userModel, isLeader) = withContext(Dispatchers.IO) {
+                    var (replies, userModel, isLeader) = withContext(Dispatchers.IO) {
                         Triple(getReplies(news), fetchUser(news), isTeamLeader())
                     }
 
                     withContext(Dispatchers.Main) {
                         if (holder.adapterPosition == position) {
                             val userFullName = userModel?.getFullNameWithMiddleName()?.trim()
+                            viewHolder.binding.tvName.text = if (userFullName.isNullOrEmpty()) news.userName else userFullName
+                            ImageUtils.loadImage(userModel?.userImage, viewHolder.binding.imgUser)
                             if (userModel != null && currentUser != null) {
-                                viewHolder.binding.tvName.text = if (userFullName.isNullOrEmpty()) news.userName else userFullName
-                                ImageUtils.loadImage(userModel.userImage, viewHolder.binding.imgUser)
                                 showHideButtons(news, viewHolder)
-                            } else {
-                                viewHolder.binding.tvName.text = news.userName
-                                ImageUtils.loadImage(null, viewHolder.binding.imgUser)
                             }
-
                             updateReplyCount(viewHolder, replies, position)
                             showShareButton(viewHolder, news)
                         setMessageAndDate(viewHolder, news, sharedTeamName)
