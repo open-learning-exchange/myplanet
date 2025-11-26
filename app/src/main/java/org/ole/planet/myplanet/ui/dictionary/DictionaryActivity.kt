@@ -20,10 +20,13 @@ import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
+import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
-class DictionaryActivity : BaseActivity() {
+class DictionaryActivity : BaseActivity(), SuccessListener {
+    override fun onSuccess(message: String?) {}
+    override fun onFailure(message: String) {}
     private lateinit var fragmentDictionaryBinding: FragmentDictionaryBinding
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

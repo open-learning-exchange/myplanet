@@ -685,7 +685,7 @@ class UploadManager @Inject constructor(
                         listener.onSuccess("User activities sync completed successfully")
                     }) { e: Throwable ->
                         e.printStackTrace()
-                        listener.onFailure(e.message)
+                        listener.onFailure(e.message ?: "Unknown error")
                     }
                 } else {
                     realm.executeTransaction { transactionRealm: Realm ->

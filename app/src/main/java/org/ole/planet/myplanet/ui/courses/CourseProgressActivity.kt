@@ -20,10 +20,14 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 
 @AndroidEntryPoint
-class CourseProgressActivity : BaseActivity() {
+class CourseProgressActivity : BaseActivity(), SuccessListener {
+    override fun onSuccess(message: String?) {}
+
+    override fun onFailure(message: String) {}
     private lateinit var binding: ActivityCourseProgressBinding
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler

@@ -79,6 +79,9 @@ class UploadToShelfService @Inject constructor(
                 override fun onSuccess(success: String?) {
                     listener.onSuccess(success)
                 }
+                override fun onFailure(message: String) {
+                    listener.onFailure(message)
+                }
             })
         }) { error ->
             mRealm.close()

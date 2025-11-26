@@ -241,10 +241,16 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
             uploadManager.uploadSubmissions()
             uploadManager.uploadCrashLog()
 
-            uploadToShelfService.uploadUserData {
-                uploadToShelfService.uploadHealth()
-                checkAllOperationsComplete()
-            }
+            uploadToShelfService.uploadUserData(object : SuccessListener {
+                override fun onSuccess(success: String?) {
+                    uploadToShelfService.uploadHealth()
+                    checkAllOperationsComplete()
+                }
+
+                override fun onFailure(message: String) {
+                    checkAllOperationsComplete()
+                }
+            })
 
             uploadManager.uploadUserActivities(object : SuccessListener {
                 override fun onSuccess(success: String?) {

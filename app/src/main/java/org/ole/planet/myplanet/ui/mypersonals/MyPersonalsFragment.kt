@@ -89,12 +89,19 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
         pg.setText("Please wait......")
         pg.show()
         if (personal != null) {
-            uploadManager.uploadMyPersonal(personal) { s: String? ->
-                if (s != null) {
-                    Utilities.toast(activity, s)
+            uploadManager.uploadMyPersonal(personal, object : org.ole.planet.myplanet.callback.SuccessListener {
+                override fun onSuccess(s: String?) {
+                    if (s != null) {
+                        Utilities.toast(activity, s)
+                    }
+                    pg.dismiss()
                 }
-                pg.dismiss()
-            }
+
+                override fun onFailure(message: String) {
+                    Utilities.toast(activity, message)
+                    pg.dismiss()
+                }
+            })
         }
     }
 

@@ -26,10 +26,13 @@ import org.ole.planet.myplanet.utilities.DialogUtils.CustomProgressDialog
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.utilities.VersionUtils
 
 @AndroidEntryPoint
-class BecomeMemberActivity : BaseActivity() {
+class BecomeMemberActivity : BaseActivity(), SuccessListener {
+    override fun onSuccess(message: String?) {}
+    override fun onFailure(message: String) {}
     private lateinit var activityBecomeMemberBinding: ActivityBecomeMemberBinding
     private lateinit var mRealm: Realm
     var dob: String = ""

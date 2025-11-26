@@ -50,10 +50,13 @@ import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.ThemeManager
+import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.utilities.UrlUtils.getUrl
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
-class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
+class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener, SuccessListener {
+    override fun onSuccess(message: String?) {}
+    override fun onFailure(message: String) {}
     private lateinit var binding: ActivityLoginBinding
     private var guest = false
     var users: List<RealmUserModel>? = null
@@ -286,9 +289,15 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         setUpLanguageButton()
         if (NetworkUtils.isNetworkConnected) {
             lifecycleScope.launch {
-                service.syncPlanetServers { success: String? ->
-                    toast(this@LoginActivity, success)
-                }
+                service.syncPlanetServers(object : SuccessListener {
+                    override fun onSuccess(success: String?) {
+                        toast(this@LoginActivity, success)
+                    }
+
+                    override fun onFailure(message: String) {
+                        toast(this@LoginActivity, message)
+                    }
+                })
             }
         }
         binding.inputName.addTextChangedListener(object : TextWatcher {

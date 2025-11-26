@@ -74,11 +74,17 @@ class AutoSyncWorker(
     override fun onError(msg: String, blockSync: Boolean) {
         if (!blockSync) {
             syncManager.start(this, "upload")
-            uploadToShelfService.uploadUserData {
-                Service(MainApplication.context).healthAccess {
-                    uploadToShelfService.uploadHealth()
+            uploadToShelfService.uploadUserData(object : SuccessListener {
+                override fun onSuccess(success: String?) {
+                    Service(MainApplication.context).healthAccess(object : SuccessListener {
+                        override fun onSuccess(success: String?) {
+                            uploadToShelfService.uploadHealth()
+                        }
+                        override fun onFailure(message: String) {}
+                    })
                 }
-            }
+                override fun onFailure(message: String) {}
+            })
             if (!MainApplication.isSyncRunning) {
                 MainApplication.isSyncRunning = true
                 workerScope.launch {
@@ -98,7 +104,14 @@ class AutoSyncWorker(
                     uploadManager.uploadAdoptedSurveys()
                     uploadManager.uploadCrashLog()
                     uploadManager.uploadSubmissions()
-                    uploadManager.uploadActivities { MainApplication.isSyncRunning = false }
+                    uploadManager.uploadActivities(object : SuccessListener {
+                        override fun onSuccess(success: String?) {
+                            MainApplication.isSyncRunning = false
+                        }
+                        override fun onFailure(message: String) {
+                            MainApplication.isSyncRunning = false
+                        }
+                    })
                 }
             }
         }
