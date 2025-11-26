@@ -9,6 +9,7 @@ import android.content.res.Configuration
 import android.os.Bundle
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
+import android.os.Trace
 import android.provider.Settings
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -175,17 +176,29 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
     private var activityReferences = 0
     private var isActivityChangingConfigurations = false
-    private var isFirstLaunch = true
     private lateinit var anrWatchdog: ANRWatchdog
 
     override fun onCreate() {
+        Trace.beginSection("AppOnCreate")
         super.onCreate()
+        context = this
         setupCriticalProperties()
-        initApp()
-        setupStrictMode()
         registerExceptionHandler()
         setupLifecycleCallbacks()
         configureTheme()
+
+        // Deferred initialization
+        performDeferredInitialization()
+        applicationScope.launch(Dispatchers.Default) {
+            startListenNetworkState()
+        }
+        applicationScope.launch {
+            setupStrictMode()
+        }
+        applicationScope.launch {
+            createLog("new login", "")
+        }
+        Trace.endSection()
     }
     private fun performDeferredInitialization() {
         applicationScope.launch {
@@ -194,12 +207,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             setupAnrWatchdog()
             scheduleWorkersOnStart()
             observeNetworkForDownloads()
-        }
-    }
-    private fun initApp() {
-        context = this
-        applicationScope.launch(Dispatchers.Default) {
-            startListenNetworkState()
         }
     }
 
@@ -278,7 +285,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
     private fun setupLifecycleCallbacks() {
         registerActivityLifecycleCallbacks(this)
-        onAppStarted()
     }
 
     private fun configureTheme() {
@@ -360,11 +366,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         return sharedPreferences.getString("theme_mode", ThemeMode.FOLLOW_SYSTEM) ?: ThemeMode.FOLLOW_SYSTEM
     }
 
-    override fun onActivityCreated(activity: Activity, bundle: Bundle?) {
-        if (isFirstLaunch) {
-            performDeferredInitialization()
-        }
-    }
+    override fun onActivityCreated(activity: Activity, bundle: Bundle?) {}
 
     override fun onActivityStarted(activity: Activity) {
         if (++activityReferences == 1 && !isActivityChangingConfigurations) {
@@ -372,11 +374,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         }
     }
 
-    override fun onActivityResumed(activity: Activity) {
-        if (isFirstLaunch) {
-            isFirstLaunch = false
-        }
-    }
+    override fun onActivityResumed(activity: Activity) {}
 
     override fun onActivityPaused(activity: Activity) {}
 
@@ -390,20 +388,11 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     override fun onActivityDestroyed(activity: Activity) {}
 
     private fun onAppForegrounded() {
-        if (isFirstLaunch) {
-            isFirstLaunch = false
-        } else {
-            applicationScope.launch {
-                createLog("foreground", "")
-            }
+        applicationScope.launch {
+            createLog("foreground", "")
         }
     }
 
-    private fun onAppStarted() {
-        applicationScope.launch {
-            createLog("new login", "")
-        }
-    }
 
     override fun onTerminate() {
         if (::anrWatchdog.isInitialized) {
