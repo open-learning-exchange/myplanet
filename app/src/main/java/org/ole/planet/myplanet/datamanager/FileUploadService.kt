@@ -55,12 +55,12 @@ open class FileUploadService {
                 }
 
                 override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
-                    listener.onSuccess("Unable to upload resource")
+                    listener.onFailure("Unable to upload resource")
                 }
             })
         } catch (e: IOException) {
             e.printStackTrace()
-            listener.onSuccess("Unable to upload resource")
+            listener.onFailure("Unable to upload resource")
         }
     }
 
@@ -71,7 +71,7 @@ open class FileUploadService {
                 return
             }
         }
-        listener.onSuccess("Unable to upload resource")
+        listener.onFailure("Unable to upload resource")
     }
 
     companion object {

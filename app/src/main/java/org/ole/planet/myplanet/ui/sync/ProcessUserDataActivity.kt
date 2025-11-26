@@ -192,7 +192,15 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
                                 securityCallback?.onSecurityDataUpdated()
                             }
                         }
+
+                        override fun onFailure(message: String) {
+                            securityCallback?.onSecurityDataUpdated()
+                        }
                     })
+                }
+
+                override fun onFailure(message: String) {
+                    securityCallback?.onSecurityDataUpdated()
                 }
             })
             return
@@ -242,10 +250,18 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
                 override fun onSuccess(success: String?) {
                     checkAllOperationsComplete()
                 }
+
+                override fun onFailure(message: String) {
+                    checkAllOperationsComplete()
+                }
             })
 
             uploadManager.uploadExamResult(object : SuccessListener {
                 override fun onSuccess(success: String?) {
+                    checkAllOperationsComplete()
+                }
+
+                override fun onFailure(message: String) {
                     checkAllOperationsComplete()
                 }
             })
@@ -261,16 +277,28 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
                 override fun onSuccess(success: String?) {
                     checkAllOperationsComplete()
                 }
+
+                override fun onFailure(message: String) {
+                    checkAllOperationsComplete()
+                }
             })
 
             uploadManager.uploadSubmitPhotos(object : SuccessListener {
                 override fun onSuccess(success: String?) {
                     checkAllOperationsComplete()
                 }
+
+                override fun onFailure(message: String) {
+                    checkAllOperationsComplete()
+                }
             })
 
             uploadManager.uploadActivities(object : SuccessListener {
                 override fun onSuccess(success: String?) {
+                    checkAllOperationsComplete()
+                }
+
+                override fun onFailure(message: String) {
                     checkAllOperationsComplete()
                 }
             })

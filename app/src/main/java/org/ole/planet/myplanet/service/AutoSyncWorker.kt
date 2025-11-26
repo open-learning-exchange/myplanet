@@ -109,6 +109,10 @@ class AutoSyncWorker(
         settings.edit { putLong("lastUsageUploaded", Date().time) }
     }
 
+    override fun onFailure(message: String) {
+        // do nothing
+    }
+
     override fun onStopped() {
         super.onStopped()
         workerScope.cancel()

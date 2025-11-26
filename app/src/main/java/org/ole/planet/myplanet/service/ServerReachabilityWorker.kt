@@ -203,6 +203,8 @@ class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters)
                 override fun onSuccess(success: String?) {
                     // No UI updates required for background sync completion.
                 }
+
+                override fun onFailure(message: String) {}
             }
             uploadManager.uploadExamResult(successListener)
         } catch (e: Exception) {

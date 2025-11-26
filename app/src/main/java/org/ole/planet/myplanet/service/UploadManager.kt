@@ -107,12 +107,12 @@ class UploadManager @Inject constructor(
                 .findFirst()
                 ?.let { realm.copyFromRealm(it) }
         } ?: run {
-            listener?.onSuccess("Cannot upload activities: user model is null")
+            listener?.onFailure("Cannot upload activities: user model is null")
             return
         }
 
         if (model.isManager()) {
-            listener?.onSuccess("Skipping activities upload for manager")
+            listener?.onFailure("Skipping activities upload for manager")
             return
         }
 
@@ -141,7 +141,7 @@ class UploadManager @Inject constructor(
                         }
 
                         override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
-                            listener?.onSuccess("Failed to upload activities: ${t.message}")
+                            listener?.onFailure("Failed to upload activities: ${t.message}")
                         }
                     })
                 }
@@ -154,14 +154,14 @@ class UploadManager @Inject constructor(
                         }
 
                         override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
-                            listener?.onSuccess("Failed to upload activities: ${t.message}")
+                            listener?.onFailure("Failed to upload activities: ${t.message}")
                         }
                     })
                 }
             })
         } catch (e: Exception) {
             e.printStackTrace()
-            listener?.onSuccess("Failed to upload activities: ${e.message}")
+            listener?.onFailure("Failed to upload activities: ${e.message}")
         }
     }
 
@@ -224,7 +224,7 @@ class UploadManager @Inject constructor(
                 listener.onSuccess("Result sync completed successfully ($processedCount processed, $errorCount errors)")
             } catch (e: Exception) {
                 e.printStackTrace()
-                listener.onSuccess("Error during result sync: ${e.message}")
+                listener.onFailure("Error during result sync: ${e.message}")
             }
         }
     }
@@ -435,7 +435,7 @@ class UploadManager @Inject constructor(
             }, {
                 listener?.onSuccess("No resources to upload")
             }) { error ->
-                listener?.onSuccess("Resource upload failed: ${error.message}")
+                listener?.onFailure("Resource upload failed: ${error.message}")
             }
         }
     }
@@ -470,18 +470,18 @@ class UploadManager @Inject constructor(
                             }, {
                                 uploadAttachment(id, rev, personal, listener)
                             }) { error ->
-                                listener.onSuccess(
+                                listener.onFailure(
                                     "Error updating personal resource: ${error.message ?: "Unknown error"}"
                                 )
                             }
                         }
                     } else {
-                        listener.onSuccess("Failed to upload personal resource: No response")
+                        listener.onFailure("Failed to upload personal resource: No response")
                     }
                 }
 
                 override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
-                    listener.onSuccess("Unable to upload resource: ${t.message}")
+                    listener.onFailure("Unable to upload resource: ${t.message}")
                 }
             })
         } else {
@@ -643,12 +643,12 @@ class UploadManager @Inject constructor(
                 .findFirst()
                 ?.let { realm.copyFromRealm(it) }
         } ?: run {
-            listener.onSuccess("Cannot upload user activities: user model is null")
+            listener.onFailure("Cannot upload user activities: user model is null")
             return
         }
 
         if (model.isManager()) {
-            listener.onSuccess("Skipping user activities upload for manager")
+            listener.onFailure("Skipping user activities upload for manager")
             return
         }
 
@@ -685,7 +685,7 @@ class UploadManager @Inject constructor(
                         listener.onSuccess("User activities sync completed successfully")
                     }) { e: Throwable ->
                         e.printStackTrace()
-                        listener.onSuccess(e.message)
+                        listener.onFailure(e.message)
                     }
                 } else {
                     realm.executeTransaction { transactionRealm: Realm ->
@@ -718,7 +718,7 @@ class UploadManager @Inject constructor(
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            listener.onSuccess("Failed to upload user activities: ${e.message}")
+            listener.onFailure("Failed to upload user activities: ${e.message}")
         }
     }
 

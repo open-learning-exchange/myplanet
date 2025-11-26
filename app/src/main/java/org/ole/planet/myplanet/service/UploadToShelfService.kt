@@ -82,7 +82,7 @@ class UploadToShelfService @Inject constructor(
             })
         }) { error ->
             mRealm.close()
-            listener.onSuccess("Error during user data sync: ${error.localizedMessage}")
+            listener.onFailure("Error during user data sync: ${error.localizedMessage}")
         }
     }
 
@@ -116,7 +116,7 @@ class UploadToShelfService @Inject constructor(
             uploadSingleUserToShelf(userName, listener)
         }) { error ->
             mRealm.close()
-            listener.onSuccess("Error during user data sync: ${error.localizedMessage}")
+            listener.onFailure("Error during user data sync: ${error.localizedMessage}")
         }
     }
 
@@ -314,7 +314,7 @@ class UploadToShelfService @Inject constructor(
             listener?.onSuccess("Health data for user $userId uploaded successfully")
         }) { error ->
             mRealm.close()
-            listener?.onSuccess("Error uploading health data for user $userId: ${error.localizedMessage}")
+            listener?.onFailure("Error uploading health data for user $userId: ${error.localizedMessage}")
         }
     }
 
@@ -353,7 +353,7 @@ class UploadToShelfService @Inject constructor(
                 } catch (e: Exception) {
                     e.printStackTrace()
                     MainApplication.applicationScope.launch(Dispatchers.Main) {
-                        listener.onSuccess("Unable to update documents: ${e.localizedMessage}")
+                        listener.onFailure("Unable to update documents: ${e.localizedMessage}")
                     }
                 } finally {
                     backgroundRealm?.close()
@@ -361,7 +361,7 @@ class UploadToShelfService @Inject constructor(
             }.start()
         }, { error ->
             mRealm.close()
-            listener.onSuccess("Unable to update documents: ${error.localizedMessage}")
+            listener.onFailure("Unable to update documents: ${error.localizedMessage}")
         })
     }
 
@@ -395,7 +395,7 @@ class UploadToShelfService @Inject constructor(
             listener.onSuccess("Single user shelf sync completed successfully")
         }) { error ->
             mRealm.close()
-            listener.onSuccess("Unable to update document: ${error.localizedMessage}")
+            listener.onFailure("Unable to update document: ${error.localizedMessage}")
         }
     }
 
