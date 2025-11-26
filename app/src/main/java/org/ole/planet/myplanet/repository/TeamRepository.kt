@@ -105,4 +105,6 @@ interface TeamRepository {
     suspend fun respondToMemberRequest(teamId: String, userId: String, accept: Boolean): Result<Unit>
     suspend fun getJoinedMembers(teamId: String): List<RealmUserModel>
     suspend fun getAssignee(userId: String): RealmUserModel?
+    suspend fun hasNewChatNotifications(teamId: String): Boolean
+    suspend fun hasNewTaskNotifications(userId: String): Boolean
 }

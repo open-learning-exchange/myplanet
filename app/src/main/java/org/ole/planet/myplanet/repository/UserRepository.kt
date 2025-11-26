@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import android.content.SharedPreferences
 import com.google.gson.JsonObject
+import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmUserModel
 
 interface UserRepository {
@@ -49,4 +50,6 @@ interface UserRepository {
     )
 
     fun getUserModel(): RealmUserModel?
+    suspend fun getMyLife(userId: String): List<RealmMyLife>
+    suspend fun setUpMyLife(userId: String?)
 }

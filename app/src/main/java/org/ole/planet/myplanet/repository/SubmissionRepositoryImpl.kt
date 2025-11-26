@@ -216,4 +216,12 @@ class SubmissionRepositoryImpl @Inject constructor(
             sub.status = "complete"
         }
     }
+
+    override suspend fun getSurveySubmissionCount(userId: String?): Long {
+        if (userId == null) return 0
+        return count(RealmSubmission::class.java) {
+            equalTo("userId", userId)
+            equalTo("type", "survey")
+        }
+    }
 }

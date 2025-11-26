@@ -22,7 +22,9 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamLog
+import org.ole.planet.myplanet.model.RealmTeamNotification
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UploadManager
@@ -722,5 +724,28 @@ class TeamRepositoryImpl @Inject constructor(
 
     override suspend fun getAssignee(userId: String): RealmUserModel? {
         return findByField(RealmUserModel::class.java, "id", userId)
+    }
+
+    override suspend fun hasNewChatNotifications(teamId: String): Boolean {
+        return withRealm { realm ->
+            val notification = realm.where(RealmTeamNotification::class.java)
+                .equalTo("parentId", teamId)
+                .equalTo("type", "chat")
+                .findFirst()
+            val chatCount = realm.where(RealmNews::class.java)
+                .equalTo("viewableBy", "teams")
+                .equalTo("viewableId", teamId)
+                .count()
+            notification != null && notification.lastCount < chatCount
+        }
+    }
+
+    override suspend fun hasNewTaskNotifications(userId: String): Boolean {
+        val current = Calendar.getInstance().timeInMillis
+        val tomorrow = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }.timeInMillis
+        return count(RealmTeamTask::class.java) {
+            equalTo("assignee", userId)
+            between("deadline", current, tomorrow)
+        } > 0
     }
 }

@@ -138,16 +138,28 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         return v
     }
 
-    fun getMyLifeListBase(userId: String?): List<RealmMyLife> {
-        val myLifeList: MutableList<RealmMyLife> = ArrayList()
-        myLifeList.add(RealmMyLife("ic_myhealth", userId, getString(R.string.myhealth)))
-        myLifeList.add(RealmMyLife("my_achievement", userId, getString(R.string.achievements)))
-        myLifeList.add(RealmMyLife("ic_submissions", userId, getString(R.string.submission)))
-        myLifeList.add(RealmMyLife("ic_my_survey", userId, getString(R.string.my_survey)))
-        myLifeList.add(RealmMyLife("ic_references", userId, getString(R.string.references)))
-        myLifeList.add(RealmMyLife("ic_calendar", userId, getString(R.string.calendar)))
-        myLifeList.add(RealmMyLife("ic_mypersonals", userId, getString(R.string.mypersonals)))
-        return myLifeList
+    fun getLayout(itemCnt: Int, obj: MyLife): View {
+        val itemMyLifeBinding = ItemMyLifeBinding.inflate(LayoutInflater.from(activity))
+        val v = itemMyLifeBinding.root
+        setBackgroundColor(v, itemCnt)
+
+        val title = obj.title
+        obj.imageId?.let {
+            itemMyLifeBinding.img.setImageResource(resources.getIdentifier(it, "drawable", requireActivity().packageName))
+        }
+        itemMyLifeBinding.tvName.text = title
+
+        if (title == getString(R.string.my_survey)) {
+            itemMyLifeBinding.tvCount.visibility = View.VISIBLE
+            itemMyLifeBinding.tvCount.text = obj.surveyCount.toString()
+        } else {
+            itemMyLifeBinding.tvCount.visibility = View.GONE
+        }
+
+        if (title != null) {
+            handleClickMyLife(title, v)
+        }
+        return v
     }
 
     fun setBackgroundColor(v: View, count: Int) {

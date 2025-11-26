@@ -1,8 +1,10 @@
 package org.ole.planet.myplanet.ui.dashboard
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -10,10 +12,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.CourseRepository
 import org.ole.planet.myplanet.repository.LibraryRepository
 import org.ole.planet.myplanet.repository.NotificationRepository
@@ -21,15 +26,34 @@ import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.repository.UserRepository
 
+data class MyLife(
+    val title: String,
+    val imageId: String?,
+    val isVisible: Boolean,
+    val surveyCount: Int = 0
+)
+
+data class TeamNotificationItem(
+    val teamId: String,
+    val showChatIcon: Boolean,
+    val showTaskIcon: Boolean
+)
+
 data class DashboardUiState(
     val unreadNotifications: Int = 0,
     val library: List<RealmMyLibrary> = emptyList(),
     val courses: List<RealmMyCourse> = emptyList(),
     val teams: List<RealmMyTeam> = emptyList(),
+    val myLife: List<MyLife> = emptyList(),
+    val teamNotifications: List<TeamNotificationItem> = emptyList(),
+    val myLifeCount: Int = 0,
+    val myCoursesCount: Int = 0,
+    val myTeamsCount: Int = 0,
 )
 
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val userRepository: UserRepository,
     private val libraryRepository: LibraryRepository,
     private val courseRepository: CourseRepository,
@@ -96,15 +120,66 @@ class DashboardViewModel @Inject constructor(
 
             launch {
                 courseRepository.getMyCoursesFlow(userId).collect { courses ->
-                    _uiState.update { it.copy(courses = courses) }
+                    _uiState.update { it.copy(courses = courses, myCoursesCount = courses.size) }
                 }
             }
 
             launch {
                 teamRepository.getMyTeamsFlow(userId).collect { teams ->
-                    _uiState.update { it.copy(teams = teams) }
+                    val teamNotifications = getTeamNotificationItems(userId, teams)
+                    _uiState.update {
+                        it.copy(
+                            teams = teams,
+                            myTeamsCount = teams.size,
+                            teamNotifications = teamNotifications
+                        )
+                    }
+                }
+            }
+
+            launch {
+                userRepository.setUpMyLife(userId)
+                val myLife = userRepository.getMyLife(userId)
+                val surveyCount = submissionRepository.getSurveySubmissionCount(userId)
+                _uiState.update {
+                    it.copy(
+                        myLife = myLife.map { realmMyLife: RealmMyLife ->
+                            MyLife(
+                                title = realmMyLife.title ?: "",
+                                imageId = realmMyLife.imageId,
+                                isVisible = realmMyLife.isVisible,
+                                surveyCount = if (realmMyLife.title == context.getString(R.string.my_survey)) surveyCount.toInt() else 0
+                            )
+                        },
+                        myLifeCount = myLife.size
+                    )
                 }
             }
         }
+    }
+
+    suspend fun getUsers(): List<RealmUserModel> {
+        return userRepository.getAllUsers()
+    }
+
+    suspend fun getLibraryList(userId: String? = null): List<RealmMyLibrary> {
+        return libraryRepository.getLibraryListForUser(userId)
+    }
+
+    private suspend fun getTeamNotificationItems(userId: String?, teams: List<RealmMyTeam>): List<TeamNotificationItem> {
+        if (userId == null) return emptyList()
+        val teamNotifications = mutableListOf<TeamNotificationItem>()
+        for (team in teams) {
+            team._id?.let {
+                val showChatIcon = teamRepository.hasNewChatNotifications(it)
+                val showTaskIcon = teamRepository.hasNewTaskNotifications(userId)
+                teamNotifications.add(TeamNotificationItem(it, showChatIcon, showTaskIcon))
+            }
+        }
+        return teamNotifications
+    }
+
+    suspend fun getPrivateImagesCreatedAfter(timestamp: Long): List<RealmMyLibrary> {
+        return libraryRepository.getPrivateImagesCreatedAfter(timestamp)
     }
 }
