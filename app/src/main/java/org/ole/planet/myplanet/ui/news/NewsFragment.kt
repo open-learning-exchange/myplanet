@@ -20,10 +20,12 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import java.io.File
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseNewsFragment
 import org.ole.planet.myplanet.databinding.FragmentNewsBinding
+import org.ole.planet.myplanet.model.LibraryImageData
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
@@ -168,50 +170,52 @@ class NewsFragment : BaseNewsFragment() {
     override fun setData(list: List<RealmNews?>?) {
         if (!isAdded || list == null) return
 
-        if (binding.rvNews.adapter == null) {
-            changeLayoutManager(resources.configuration.orientation, binding.rvNews)
-            val resourceIds = mutableSetOf<String>()
-            list.forEach { news ->
-                if ((news?.imagesArray?.size() ?: 0) > 0) {
-                    val ob = news?.imagesArray?.get(0)?.asJsonObject
-                    val resourceId = getString("resourceId", ob?.asJsonObject)
-                    if (!resourceId.isNullOrBlank()) {
-                        resourceIds.add(resourceId)
+        val resourceIds = list.flatMap { news ->
+            news?.imagesArray?.mapNotNull { imageElement ->
+                imageElement?.asJsonObject?.let { getString("resourceId", it) }
+            } ?: emptyList()
+        }.toSet()
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            val libraryImageMap = mutableMapOf<String, LibraryImageData>()
+            if (resourceIds.isNotEmpty()) {
+                val libraries = libraryRepository.getLibraryItemsByIds(resourceIds)
+                val basePath = requireContext().getExternalFilesDir(null)
+                if (basePath != null) {
+                    libraries.forEach { library ->
+                        library._id?.let {
+                            val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
+                            libraryImageMap[it] = LibraryImageData(
+                                id = library.id,
+                                resourceLocalAddress = library.resourceLocalAddress,
+                                filePath = imageFile.absolutePath
+                            )
+                        }
                     }
                 }
+                getUrlsAndStartDownload(libraries.map { it }, arrayListOf())
             }
-            viewLifecycleOwner.lifecycleScope.launch {
-                if (resourceIds.isNotEmpty()) {
-                    val libraries = libraryRepository.getLibraryItemsByIds(resourceIds)
-                    getUrlsAndStartDownload(
-                        libraries.map<RealmMyLibrary, RealmMyLibrary?> { it },
-                        arrayListOf()
-                    )
+
+            if (binding.rvNews.adapter == null) {
+                changeLayoutManager(resources.configuration.orientation, binding.rvNews)
+                val sortedList = list.toMutableList().sortedWith(compareByDescending { it?.sortDate ?: 0L })
+                adapterNews = AdapterNews(requireActivity(), user, null, "", null, userProfileDbHandler, databaseService, libraryImageMap)
+                adapterNews?.run {
+                    sharedPrefManager = this@NewsFragment.sharedPrefManager
+                    setmRealm(mRealm)
+                    setFromLogin(requireArguments().getBoolean("fromLogin"))
+                    setListener(this@NewsFragment)
+                    registerAdapterDataObserver(observer)
+                    updateList(sortedList)
                 }
+                binding.rvNews.adapter = adapterNews
+            } else {
+                (binding.rvNews.adapter as? AdapterNews)?.updateList(list)
             }
-            val updatedListAsMutable: MutableList<RealmNews?> = list.toMutableList()
-            Trace.beginSection("NewsFragment.sort")
-            val sortedList = try {
-                updatedListAsMutable.sortedWith(compareByDescending { news ->
-                    news?.sortDate ?: 0L
-                })
-            } finally {
-                Trace.endSection()
-            }
-            adapterNews = AdapterNews(requireActivity(), user, null, "", null, userProfileDbHandler, databaseService)
-            adapterNews?.sharedPrefManager = sharedPrefManager
-            adapterNews?.setmRealm(mRealm)
-            adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
-            adapterNews?.setListener(this)
-            adapterNews?.registerAdapterDataObserver(observer)
-            adapterNews?.updateList(sortedList)
-            binding.rvNews.adapter = adapterNews
-        } else {
-            (binding.rvNews.adapter as? AdapterNews)?.updateList(list)
+            adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, "news") }
+            binding.llAddNews.visibility = View.GONE
+            binding.btnNewVoice.text = getString(R.string.new_voice)
         }
-        adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, "news") }
-        binding.llAddNews.visibility = View.GONE
-        binding.btnNewVoice.text = getString(R.string.new_voice)
     }
 
     override fun onNewsItemClick(news: RealmNews?) {

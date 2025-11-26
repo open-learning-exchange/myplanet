@@ -39,6 +39,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNewsBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.Conversation
+import org.ole.planet.myplanet.model.LibraryImageData
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
@@ -57,8 +58,16 @@ import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.makeExpandable
 
-class AdapterNews(var context: Context, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userProfileDbHandler: UserProfileDbHandler, private val databaseService: DatabaseService) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
-    DiffUtils.itemCallback(
+class AdapterNews(
+    var context: Context,
+    private var currentUser: RealmUserModel?,
+    private val parentNews: RealmNews?,
+    private val teamName: String = "",
+    private val teamId: String? = null,
+    private val userProfileDbHandler: UserProfileDbHandler,
+    private val databaseService: DatabaseService,
+    private val libraryImageMap: Map<String, LibraryImageData>
+) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem ->
             if (oldItem === newItem) return@itemCallback true
             if (oldItem == null || newItem == null) return@itemCallback oldItem == newItem
@@ -730,67 +739,61 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
 
     private fun loadLibraryImage(binding: RowNewsBinding, resourceId: String?) {
         if (resourceId == null) return
-        val library = mRealm.where(RealmMyLibrary::class.java)
-            .equalTo("_id", resourceId)
-            .findFirst()
+        val imageData = libraryImageMap[resourceId] ?: return
+        val imageFile = imageData.filePath?.let { File(it) }
 
-        val basePath = context.getExternalFilesDir(null)
-        if (library != null && basePath != null) {
-            val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
-            if (imageFile.exists()) {
-                val request = Glide.with(binding.imgNews.context)
-                val isGif = library.resourceLocalAddress?.lowercase(Locale.getDefault())?.endsWith(".gif") == true
-                val target = if (isGif) {
-                    request.asGif().load(imageFile)
-                } else {
-                    request.load(imageFile)
-                }
-                target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().placeholder(R.drawable.ic_loading)
-                    .error(R.drawable.ic_loading)
-                    .into(binding.imgNews)
-                binding.imgNews.visibility = View.VISIBLE
-                binding.imgNews.setOnClickListener {
-                    showZoomableImage(it.context, imageFile.toString())
-                }
+        if (imageFile?.exists() == true) {
+            val request = Glide.with(binding.imgNews.context)
+            val isGif = imageData.resourceLocalAddress?.lowercase(Locale.getDefault())?.endsWith(".gif") == true
+            val target = if (isGif) {
+                request.asGif().load(imageFile)
+            } else {
+                request.load(imageFile)
+            }
+            target.diskCacheStrategy(DiskCacheStrategy.ALL)
+                .fitCenter()
+                .placeholder(R.drawable.ic_loading)
+                .error(R.drawable.ic_loading)
+                .into(binding.imgNews)
+            binding.imgNews.visibility = View.VISIBLE
+            binding.imgNews.setOnClickListener {
+                showZoomableImage(it.context, imageFile.toString())
             }
         }
     }
 
     private fun addLibraryImageToContainer(binding: RowNewsBinding, resourceId: String?) {
         if (resourceId == null) return
-        val library = mRealm.where(RealmMyLibrary::class.java)
-            .equalTo("_id", resourceId)
-            .findFirst()
+        val imageData = libraryImageMap[resourceId] ?: return
+        val imageFile = imageData.filePath?.let { File(it) }
 
-        val basePath = context.getExternalFilesDir(null)
-        if (library != null && basePath != null) {
-            val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
-            if (imageFile.exists()) {
-                val imageView = ImageView(context)
-                val size = (100 * context.resources.displayMetrics.density).toInt()
-                val margin = (4 * context.resources.displayMetrics.density).toInt()
-                val params = ViewGroup.MarginLayoutParams(size, size)
-                params.setMargins(margin, margin, margin, margin)
-                imageView.layoutParams = params
-                imageView.scaleType = ImageView.ScaleType.CENTER_CROP
+        if (imageFile?.exists() == true) {
+            val imageView = ImageView(context)
+            val size = (100 * context.resources.displayMetrics.density).toInt()
+            val margin = (4 * context.resources.displayMetrics.density).toInt()
+            val params = ViewGroup.MarginLayoutParams(size, size)
+            params.setMargins(margin, margin, margin, margin)
+            imageView.layoutParams = params
+            imageView.scaleType = ImageView.ScaleType.CENTER_CROP
 
-                val request = Glide.with(context)
-                val isGif = library.resourceLocalAddress?.lowercase(Locale.getDefault())?.endsWith(".gif") == true
-                val target = if (isGif) {
-                    request.asGif().load(imageFile)
-                } else {
-                    request.load(imageFile)
-                }
-                target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().placeholder(R.drawable.ic_loading)
-                    .error(R.drawable.ic_loading)
-                    .into(imageView)
-
-                imageView.setOnClickListener {
-                    showZoomableImage(context, imageFile.toString())
-                }
-
-                binding.llNewsImages.addView(imageView)
+            val request = Glide.with(context)
+            val isGif = imageData.resourceLocalAddress?.lowercase(Locale.getDefault())?.endsWith(".gif") == true
+            val target = if (isGif) {
+                request.asGif().load(imageFile)
+            } else {
+                request.load(imageFile)
             }
+            target.diskCacheStrategy(DiskCacheStrategy.ALL)
+                .fitCenter()
+                .placeholder(R.drawable.ic_loading)
+                .error(R.drawable.ic_loading)
+                .into(imageView)
+
+            imageView.setOnClickListener {
+                showZoomableImage(context, imageFile.toString())
+            }
+
+            binding.llNewsImages.addView(imageView)
         }
     }
 
