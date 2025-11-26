@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.mylife
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.ContextWrapper
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -115,7 +116,7 @@ class AdapterMyLife(
             try {
                 lifeRepository.updateWeight(toPosition + 1, fromMyLife._id, fromMyLife.userId)
             } catch (e: Exception) {
-                Utilities.log("Error updating weight: ${e.message}")
+                Log.e("AdapterMyLife", "Error updating weight: ${e.message}")
                 e.printStackTrace()
             }
         }
