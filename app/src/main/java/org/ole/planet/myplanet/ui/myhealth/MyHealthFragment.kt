@@ -27,7 +27,6 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
-import org.ole.planet.myplanet.utilities.GsonUtils
 import io.realm.Case
 import io.realm.Realm
 import io.realm.Sort
@@ -57,6 +56,7 @@ import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
+import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate

@@ -40,7 +40,8 @@ open class RealmMyLife : RealmObject {
         @JvmStatic
         fun updateWeight(weight: Int, id: String?, userId: String?) {
             MainApplication.applicationScope.launch {
-                MainApplication.service.executeTransactionAsync { realm ->
+                val databaseService = (MainApplication.context as MainApplication).databaseService
+                databaseService.executeTransactionAsync { realm ->
                     val targetItem = realm.where(RealmMyLife::class.java)
                         .equalTo("_id", id)
                         .findFirst()
@@ -64,7 +65,8 @@ open class RealmMyLife : RealmObject {
         @JvmStatic
         fun updateVisibility(isVisible: Boolean, id: String?) {
             MainApplication.applicationScope.launch {
-                MainApplication.service.executeTransactionAsync { realm ->
+                val databaseService = (MainApplication.context as MainApplication).databaseService
+                databaseService.executeTransactionAsync { realm ->
                     realm.where(RealmMyLife::class.java)
                         .equalTo("_id", id)
                         .findFirst()

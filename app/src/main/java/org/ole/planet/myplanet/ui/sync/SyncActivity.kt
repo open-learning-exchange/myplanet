@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.ui.sync
 import android.Manifest
 import android.content.DialogInterface
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.graphics.drawable.AnimationDrawable
 import android.os.Build
@@ -844,7 +843,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
         suspend fun clearRealmDb() {
             withContext(Dispatchers.IO) {
-                MainApplication.service.withRealm { realm ->
+                val databaseService = (context.applicationContext as MainApplication).databaseService
+                databaseService.withRealm { realm ->
                     realm.executeTransaction { transactionRealm ->
                         transactionRealm.deleteAll()
                     }

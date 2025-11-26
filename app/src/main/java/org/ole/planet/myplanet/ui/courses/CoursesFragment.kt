@@ -22,7 +22,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
-import org.ole.planet.myplanet.utilities.GsonUtils
 import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
@@ -54,6 +53,7 @@ import org.ole.planet.myplanet.ui.resources.CollectionsFragment
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utilities.DialogUtils
+import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager

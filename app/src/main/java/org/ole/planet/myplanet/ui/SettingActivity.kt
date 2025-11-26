@@ -23,9 +23,17 @@ import androidx.preference.SwitchPreference
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import javax.inject.Inject
+import android.os.Looper
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.yield
+import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
@@ -191,18 +199,30 @@ class SettingActivity : AppCompatActivity() {
                 prefFreeUp.onPreferenceClickListener = OnPreferenceClickListener {
                     AlertDialog.Builder(requireActivity()).setTitle(R.string.are_you_sure_want_to_delete_all_the_files)
                         .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                            databaseService.withRealm { realm ->
-                                realm.executeTransactionAsync({ bgRealm ->
-                                    val libraries = bgRealm.where(RealmMyLibrary::class.java).findAll()
-                                    for (library in libraries) {
-                                        library.resourceOffline = false
+                            dialog.show()
+                            lifecycleScope.launch {
+                                try {
+                                    withTimeout(60 * 1000L) {
+                                        databaseService.executeTransactionAsync { bgRealm ->
+                                            val libraries = bgRealm.where(RealmMyLibrary::class.java).findAll()
+                                            for (library in libraries) {
+                                                library.resourceOffline = false
+                                            }
+                                        }
+                                        val f = File(FileUtils.getOlePath(requireContext()))
+                                        withContext(Dispatchers.IO) {
+                                            deleteRecursive(f)
+                                        }
                                     }
-                                }, {
-                                    val f = File(FileUtils.getOlePath(requireContext()))
-                                    deleteRecursive(f)
                                     Utilities.toast(requireActivity(), getString(R.string.data_cleared))
-                                }) {
+                                } catch (e: Exception) {
+                                    if (e is CancellationException && e !is TimeoutCancellationException) {
+                                        throw e
+                                    }
                                     Utilities.toast(requireActivity(), getString(R.string.unable_to_clear_files))
+                                    e.printStackTrace()
+                                } finally {
+                                    dialog.dismiss()
                                 }
                             }
                         }.setNegativeButton("No", null).show()
@@ -211,8 +231,18 @@ class SettingActivity : AppCompatActivity() {
             }
         }
 
-        private fun deleteRecursive(fileOrDirectory: File) {
-            if (fileOrDirectory.isDirectory) for (child in fileOrDirectory.listFiles()!!) deleteRecursive(child)
+        private suspend fun deleteRecursive(fileOrDirectory: File) {
+            if (org.ole.planet.myplanet.BuildConfig.DEBUG) {
+                if (android.os.Looper.myLooper() == android.os.Looper.getMainLooper()) {
+                    throw RuntimeException("File deletion on main thread!")
+                }
+            }
+            yield()
+            if (fileOrDirectory.isDirectory) {
+                fileOrDirectory.listFiles()?.forEach { child ->
+                    deleteRecursive(child)
+                }
+            }
             fileOrDirectory.delete()
         }
 

@@ -19,7 +19,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.google.gson.JsonObject
-import org.ole.planet.myplanet.utilities.GsonUtils
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.RealmList
 import java.io.File
@@ -38,6 +37,8 @@ import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getImagePath
 import org.ole.planet.myplanet.utilities.FileUtils.getRealPathFromURI
+import org.ole.planet.myplanet.utilities.GsonUtils
+import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 
 @AndroidEntryPoint
@@ -53,6 +54,8 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
+    @Inject
+    lateinit var sharedPrefManager: SharedPrefManager
     private lateinit var imageList: RealmList<String>
     private var llImage: ViewGroup? = null
     private lateinit var openFolderLauncher: ActivityResultLauncher<Intent>
@@ -87,6 +90,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
             val (news, list) = viewModel.getNewsWithReplies(id)
             databaseService.withRealm { realm ->
                 newsAdapter = AdapterNews(this@ReplyActivity, user, news, "", null, userProfileDbHandler, databaseService)
+                newsAdapter.sharedPrefManager = sharedPrefManager
                 newsAdapter.setListener(this@ReplyActivity)
                 newsAdapter.setmRealm(realm)
                 newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))

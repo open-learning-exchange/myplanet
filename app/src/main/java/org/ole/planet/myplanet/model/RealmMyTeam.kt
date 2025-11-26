@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.model
 import android.content.SharedPreferences
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import org.ole.planet.myplanet.utilities.GsonUtils
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
@@ -16,6 +15,7 @@ import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utilities.DownloadUtils.openDownloadService
+import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.UrlUtils.getUrl
 

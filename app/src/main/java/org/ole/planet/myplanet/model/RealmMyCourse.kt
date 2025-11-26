@@ -6,7 +6,6 @@ import android.text.TextUtils
 import android.util.Base64
 import androidx.core.content.edit
 import com.google.gson.JsonArray
-import org.ole.planet.myplanet.utilities.GsonUtils
 import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmList
@@ -19,6 +18,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.createStepResource
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DownloadUtils.extractLinks
+import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.UrlUtils
 

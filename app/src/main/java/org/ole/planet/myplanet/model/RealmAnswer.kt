@@ -3,10 +3,10 @@ package org.ole.planet.myplanet.model
 import android.text.TextUtils
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import org.ole.planet.myplanet.utilities.GsonUtils
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
+import org.ole.planet.myplanet.utilities.GsonUtils
 
 open class RealmAnswer : RealmObject() {
     @PrimaryKey

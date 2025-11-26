@@ -20,11 +20,12 @@ import androidx.core.graphics.drawable.toDrawable
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import androidx.lifecycle.findViewTreeLifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.github.chrisbanes.photoview.PhotoView
 import com.google.gson.JsonArray
-import org.ole.planet.myplanet.utilities.GsonUtils
 import com.google.gson.JsonObject
 import io.realm.Case
 import io.realm.Realm
@@ -33,6 +34,7 @@ import io.realm.Sort
 import java.io.File
 import java.util.Calendar
 import java.util.Locale
+import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNewsBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -45,6 +47,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DiffUtils
+import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.ImageUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
@@ -89,11 +92,12 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     )
 ) {
     private var listener: OnNewsItemClickListener? = null
+    @Inject
+    lateinit var sharedPrefManager: SharedPrefManager
     private var imageList: RealmList<String>? = null
     lateinit var mRealm: Realm
     private var fromLogin = false
     private var nonTeamMember = false
-    private var sharedPreferences: SharedPrefManager? = null
     private var recyclerView: RecyclerView? = null
     var user: RealmUserModel? = null
     private var labelManager: NewsLabelManager? = null
@@ -144,7 +148,6 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val binding = RowNewsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        sharedPreferences = SharedPrefManager(context)
         user = userProfileDbHandler.userModel
         settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         if (::mRealm.isInitialized) {
@@ -346,7 +349,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     private fun handleChat(holder: ViewHolderNews, news: RealmNews) {
         if (news.newsId?.isNotEmpty() == true) {
             val conversations = GsonUtils.gson.fromJson(news.conversations, Array<Conversation>::class.java).toList()
-            val chatAdapter = ChatAdapter(context, holder.binding.recyclerGchat)
+            val chatAdapter = ChatAdapter(context, holder.binding.recyclerGchat, holder.itemView.findViewTreeLifecycleOwner()?.lifecycleScope)
 
             if (user?.id?.startsWith("guest") == false) {
                 chatAdapter.setOnChatItemClickListener(object : ChatAdapter.OnChatItemClickListener {
@@ -563,7 +566,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         updateReplyCount(viewHolder, replies, position)
 
         viewHolder.binding.btnShowReply.setOnClickListener {
-            sharedPreferences?.setRepliedNewsId(finalNews?.id)
+            sharedPrefManager.setRepliedNewsId(finalNews?.id)
             listener?.showReply(finalNews, fromLogin, nonTeamMember)
         }
     }

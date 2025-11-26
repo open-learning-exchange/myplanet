@@ -32,7 +32,6 @@ import org.ole.planet.myplanet.base.BaseDialogFragment
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.databinding.FragmentUserInformationBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.UserRepository

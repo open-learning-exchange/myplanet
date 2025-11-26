@@ -6,7 +6,9 @@ import io.realm.Case
 import io.realm.Sort
 import java.util.HashMap
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.findCopyByField
@@ -74,16 +76,24 @@ class NewsRepositoryImpl @Inject constructor(
             false
         }
     }
+
     override suspend fun getCommunityNews(userIdentifier: String): Flow<List<RealmNews>> {
         val allNewsFlow = queryListFlow(RealmNews::class.java) {
             isEmpty("replyTo")
             equalTo("docType", "message", Case.INSENSITIVE)
             sort("time", Sort.DESCENDING)
         }
+        .flowOn(Dispatchers.Main) // Realm async queries require a Looper thread.
+
         return allNewsFlow.map { allNews ->
+            // allNews are unmanaged copies (POJOs) created by copyFromRealm in queryListFlow.
+            // It is safe to process them on a background thread.
             allNews.filter { news ->
                 isVisibleToUser(news, userIdentifier)
+            }.map { news ->
+                news.sortDate = news.calculateSortDate()
+                news
             }
-        }
+        }.flowOn(Dispatchers.Default)
     }
 }

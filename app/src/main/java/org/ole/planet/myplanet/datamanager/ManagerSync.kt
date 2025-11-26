@@ -4,11 +4,10 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.util.Base64
 import androidx.core.content.edit
-import com.google.gson.Gson
 import com.google.gson.JsonObject
+import dagger.hilt.android.EntryPointAccessors
 import java.util.Locale
 import kotlin.LazyThreadSafetyMode
-import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -16,12 +15,12 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.di.RepositoryEntryPoint
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.androidDecrypter
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.UrlUtils
-import org.ole.planet.myplanet.repository.UserRepository
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -86,20 +85,27 @@ class ManagerSync private constructor(
 
                         val jsonDoc = response.body()
                         if (jsonDoc?.has("derived_key") == true && jsonDoc.has("salt")) {
-                            try {
-                                val derivedKey = jsonDoc["derived_key"].asString
-                                val salt = jsonDoc["salt"].asString
-
-                                if (androidDecrypter(userName, password, derivedKey, salt)) {
-                                    MainApplication.applicationScope.launch {
-                                        checkManagerAndInsert(jsonDoc, listener)
+                            MainApplication.applicationScope.launch {
+                                try {
+                                    val derivedKey = jsonDoc["derived_key"].asString
+                                    val salt = jsonDoc["salt"].asString
+                                    val isAuthenticated = withContext(Dispatchers.Default) {
+                                        androidDecrypter(userName, password, derivedKey, salt)
                                     }
-                                } else {
-                                    listener.onSyncFailed("Authentication failed. Invalid credentials.")
+
+                                    if (isAuthenticated) {
+                                        checkManagerAndInsert(jsonDoc, listener)
+                                    } else {
+                                        withContext(Dispatchers.Main) {
+                                            listener.onSyncFailed("Authentication failed. Invalid credentials.")
+                                        }
+                                    }
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                    withContext(Dispatchers.Main) {
+                                        listener.onSyncFailed("Authentication processing failed.")
+                                    }
                                 }
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                                listener.onSyncFailed("Authentication processing failed.")
                             }
                         } else {
                             listener.onSyncFailed("Server response missing authentication data.")

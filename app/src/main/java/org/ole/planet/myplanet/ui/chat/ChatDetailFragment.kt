@@ -24,7 +24,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import org.ole.planet.myplanet.utilities.GsonUtils
 import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Date
@@ -54,6 +53,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utilities.DialogUtils
+import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import retrofit2.Call
 import retrofit2.Callback
@@ -126,7 +126,7 @@ class ChatDetailFragment : Fragment() {
             isUserLoaded = true
             refreshInputState()
         }
-        mAdapter = ChatAdapter(requireContext(), binding.recyclerGchat)
+        mAdapter = ChatAdapter(requireContext(), binding.recyclerGchat, viewLifecycleOwner.lifecycleScope)
         binding.recyclerGchat.apply {
             adapter = mAdapter
             layoutManager = LinearLayoutManager(requireContext())

@@ -20,16 +20,12 @@ import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.json.JSONObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.R.array.status_options
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentNotificationsBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNotification
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
@@ -43,8 +39,6 @@ import org.ole.planet.myplanet.utilities.NotificationUtils
 class NotificationsFragment : Fragment() {
     private var _binding: FragmentNotificationsBinding? = null
     private val binding get() = _binding!!
-    @Inject
-    lateinit var databaseService: DatabaseService
     @Inject
     lateinit var notificationRepository: NotificationRepository
     private lateinit var adapter: AdapterNotification
@@ -68,7 +62,7 @@ class NotificationsFragment : Fragment() {
         _binding = FragmentNotificationsBinding.inflate(inflater, container, false)
         userId = arguments?.getString("userId") ?: ""
         adapter = AdapterNotification(
-            databaseService,
+            notificationRepository,
             emptyList(),
             onMarkAsReadClick = { notificationId ->
                 markAsReadById(notificationId)

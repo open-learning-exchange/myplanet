@@ -47,4 +47,6 @@ interface UserRepository {
         userId: String?,
         payload: JsonObject
     )
+
+    fun getUserModel(): RealmUserModel?
 }

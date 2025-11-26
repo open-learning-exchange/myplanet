@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.news
 
 import android.content.res.Configuration
 import android.os.Bundle
+import android.os.Trace
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -9,10 +10,11 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.EditText
 import androidx.core.view.isVisible
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.RecyclerView.AdapterDataObserver
 import com.google.gson.JsonArray
-import org.ole.planet.myplanet.utilities.GsonUtils
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.flow.debounce
@@ -32,6 +34,8 @@ import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.FileUtils
+import org.ole.planet.myplanet.utilities.GsonUtils
+import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.textChanges
@@ -46,6 +50,8 @@ class NewsFragment : BaseNewsFragment() {
     lateinit var userProfileDbHandler: UserProfileDbHandler
     @Inject
     lateinit var newsRepository: NewsRepository
+    @Inject
+    lateinit var sharedPrefManager: SharedPrefManager
     private var filteredNewsList: List<RealmNews?> = listOf()
     private var searchFilteredList: List<RealmNews?> = listOf()
     private var labelFilteredList: List<RealmNews?> = listOf()
@@ -99,19 +105,21 @@ class NewsFragment : BaseNewsFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         viewLifecycleOwner.lifecycleScope.launch {
-            newsRepository.getCommunityNews(getUserIdentifier()).collect { news ->
-                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                    val filtered = news.map { it as RealmNews? }
-                    val labels = collectAllLabels(filtered)
-                    val labelFiltered = applyLabelFilter(filtered)
-                    val searchFiltered =
-                        applySearchFilter(labelFiltered, etSearch.text.toString().trim())
-                    if (_binding != null) {
-                        filteredNewsList = filtered
-                        labelFilteredList = labelFiltered
-                        searchFilteredList = searchFiltered
-                        setupLabelFilter(labels)
-                        setData(searchFilteredList)
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                newsRepository.getCommunityNews(getUserIdentifier()).collect { news ->
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                        val filtered = news.map { it as RealmNews? }
+                        val labels = collectAllLabels(filtered)
+                        val labelFiltered = applyLabelFilter(filtered)
+                        val searchFiltered =
+                            applySearchFilter(labelFiltered, etSearch.text.toString().trim())
+                        if (_binding != null) {
+                            filteredNewsList = filtered
+                            labelFilteredList = labelFiltered
+                            searchFilteredList = searchFiltered
+                            setupLabelFilter(labels)
+                            setData(searchFilteredList)
+                        }
                     }
                 }
             }
@@ -182,11 +190,16 @@ class NewsFragment : BaseNewsFragment() {
                 }
             }
             val updatedListAsMutable: MutableList<RealmNews?> = list.toMutableList()
-            val sortedList = updatedListAsMutable.sortedWith(compareByDescending { news ->
-                getSortDate(news)
-            })
+            Trace.beginSection("NewsFragment.sort")
+            val sortedList = try {
+                updatedListAsMutable.sortedWith(compareByDescending { news ->
+                    news?.sortDate ?: 0L
+                })
+            } finally {
+                Trace.endSection()
+            }
             adapterNews = AdapterNews(requireActivity(), user, null, "", null, userProfileDbHandler, databaseService)
-
+            adapterNews?.sharedPrefManager = sharedPrefManager
             adapterNews?.setmRealm(mRealm)
             adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
             adapterNews?.setListener(this)
@@ -250,23 +263,6 @@ class NewsFragment : BaseNewsFragment() {
         override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) {
             adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, "news") }
         }
-    }
-    private fun getSortDate(news: RealmNews?): Long {
-        if (news == null) return 0
-        try {
-            if (!news.viewIn.isNullOrEmpty()) {
-                val ar = GsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
-                for (elem in ar) {
-                    val obj = elem.asJsonObject
-                    if (obj.has("section") && obj.get("section").asString.equals("community", true) && obj.has("sharedDate")) {
-                        return obj.get("sharedDate").asLong
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-        return news.time
     }
     
     private fun setupSearchTextListener() {

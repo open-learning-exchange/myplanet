@@ -28,6 +28,9 @@ interface ApiInterface {
     @GET
     fun getJsonObject(@Header("Authorization") header: String?, @Url url: String?): Call<JsonObject>
 
+    @GET
+    suspend fun getJsonObjectSuspended(@Header("Authorization") header: String?, @Url url: String?): Response<JsonObject>
+
     @POST
     fun findDocs(@Header("Authorization") header: String?, @Header("Content-Type") c: String?, @Url url: String?, @Body s: JsonObject?): Call<JsonObject>
 

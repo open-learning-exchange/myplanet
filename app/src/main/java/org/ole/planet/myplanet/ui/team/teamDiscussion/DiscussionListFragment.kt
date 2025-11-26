@@ -11,7 +11,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.gson.JsonArray
-import org.ole.planet.myplanet.utilities.GsonUtils
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.RealmResults
@@ -33,6 +32,8 @@ import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.news.AdapterNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.FileUtils
+import org.ole.planet.myplanet.utilities.GsonUtils
+import org.ole.planet.myplanet.utilities.SharedPrefManager
 
 @AndroidEntryPoint
 class DiscussionListFragment : BaseTeamFragment() {
@@ -42,6 +43,8 @@ class DiscussionListFragment : BaseTeamFragment() {
     
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
+    @Inject
+    lateinit var sharedPrefManager: SharedPrefManager
     private var filteredNewsList: List<RealmNews?> = listOf()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -237,6 +240,7 @@ class DiscussionListFragment : BaseTeamFragment() {
             val adapterNews = activity?.let {
                 AdapterNews(it, user, null, getEffectiveTeamName(), teamId, userProfileDbHandler, databaseService)
             }
+            adapterNews?.sharedPrefManager = sharedPrefManager
             adapterNews?.setmRealm(mRealm)
             adapterNews?.setListener(this)
             if (!isMemberFlow.value) adapterNews?.setNonTeamMember(true)

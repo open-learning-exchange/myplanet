@@ -16,7 +16,6 @@ import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.JsonObject
-import org.ole.planet.myplanet.utilities.GsonUtils
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.RealmList
@@ -38,6 +37,7 @@ import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
+import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.JsonUtils.getStringAsJsonArray
 import org.ole.planet.myplanet.utilities.KeyboardUtils.hideSoftKeyboard
