@@ -30,6 +30,9 @@ import com.google.gson.JsonObject
 import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmList
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import io.realm.Sort
 import java.io.File
 import java.util.Calendar
@@ -182,19 +185,19 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     @SuppressLint("SetTextI18n")
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        bindViewHolder(holder, position)
+        performFullBind(holder, position)
     }
 
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int, payloads: MutableList<Any>) {
         if (payloads.isEmpty()) {
-            bindViewHolder(holder, position)
+            performFullBind(holder, position)
             return
         }
 
         val news = getNews(holder, position)
         if (news?.isValid != true) {
-            bindViewHolder(holder, position)
+            performFullBind(holder, position)
             return
         }
 
@@ -211,7 +214,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     }
 
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
-    private fun bindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+    private fun performFullBind(holder: RecyclerView.ViewHolder, position: Int) {
         if (holder is ViewHolderNews) {
             holder.bind(position)
             val news = getNews(holder, position)
