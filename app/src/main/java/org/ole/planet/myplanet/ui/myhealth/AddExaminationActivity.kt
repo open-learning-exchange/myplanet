@@ -12,11 +12,15 @@ import android.widget.CompoundButton
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
 import io.realm.Realm
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
@@ -83,25 +87,47 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         mapConditions = HashMap()
         mRealm = databaseService.realmInstance
         userId = intent.getStringExtra("userId")
-        pojo = mRealm.where(RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
-        if (pojo == null) {
-            pojo = mRealm.where(RealmMyHealthPojo::class.java).equalTo("userId", userId).findFirst()
+        binding.progressBar.visibility = View.VISIBLE
+        binding.rootScrollView.visibility = View.GONE
+        lifecycleScope.launch(Dispatchers.IO) {
+            val backgroundRealm = Realm.getDefaultInstance()
+            try {
+                val p = backgroundRealm.where(RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
+                    ?: backgroundRealm.where(RealmMyHealthPojo::class.java).equalTo("userId", userId).findFirst()
+                pojo = p?.let { backgroundRealm.copyFromRealm(it) }
+
+                val u = backgroundRealm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
+                user = u?.let { backgroundRealm.copyFromRealm(it) }
+
+                if (user != null && (user?.key == null || user?.iv == null)) {
+                    val (key, iv) = withContext(Dispatchers.IO) {
+                        generateKey() to generateIv()
+                    }
+                    databaseService.executeTransactionAsync { realm ->
+                        val userToUpdate = realm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
+                        userToUpdate?.key = key
+                        userToUpdate?.iv = iv
+                    }
+                    user?.key = key
+                    user?.iv = iv
+                }
+
+                if (pojo != null && !TextUtils.isEmpty(pojo?.data)) {
+                    health = GsonUtils.gson.fromJson(decrypt(pojo?.data, user?.key, user?.iv), RealmMyHealth::class.java)
+                }
+            } finally {
+                backgroundRealm.close()
+            }
+            if (health == null) {
+                initHealth()
+            }
+            withContext(Dispatchers.Main) {
+                initExamination()
+                validateFields()
+                binding.progressBar.visibility = View.GONE
+                binding.rootScrollView.visibility = View.VISIBLE
+            }
         }
-        user = mRealm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
-        if (user != null && (user?.key == null || user?.iv == null)) {
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
-            user?.key = generateKey()
-            user?.iv = generateIv()
-            mRealm.commitTransaction()
-        }
-        if (pojo != null && !TextUtils.isEmpty(pojo?.data)) {
-            health = GsonUtils.gson.fromJson(decrypt(pojo?.data, user?.key, user?.iv), RealmMyHealth::class.java)
-        }
-        if (health == null) {
-            initHealth()
-        }
-        initExamination()
-        validateFields()
         findViewById<View>(R.id.btn_save).setOnClickListener {
             if(!allowSubmission){
                 scrollToView(binding.etBloodpressure)
