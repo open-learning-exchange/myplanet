@@ -29,15 +29,14 @@ class AdapterReports(
     private val context: Context,
     private val teamRepository: TeamRepository,
     private val scope: CoroutineScope,
+    private val prefData: SharedPrefManager
 ) : ListAdapter<RealmMyTeam, AdapterReports.ViewHolderReports>(diffCallback) {
     private var startTimeStamp: String? = null
     private var endTimeStamp: String? = null
-    lateinit var prefData: SharedPrefManager
     private var nonTeamMember = false
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderReports {
         val binding = ReportListItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        prefData = SharedPrefManager(context)
         return ViewHolderReports(binding)
     }
 

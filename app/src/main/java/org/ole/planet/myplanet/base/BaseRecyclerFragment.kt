@@ -81,18 +81,25 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         tvMessage = v.findViewById(R.id.tv_message)
         selectedItems = mutableListOf()
         list = mutableListOf()
-        mRealm = databaseService.realmInstance
-        model = profileDbHandler.userModel
-        val adapter = getAdapter()
-        recyclerView.adapter = adapter
-        if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {
-            resources?.let { showDownloadDialog(it) }
-        } else if (isMyCourseLib && courseLib == null && !isSurvey) {
-            viewLifecycleOwner.lifecycleScope.launch {
+        return v
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        postponeEnterTransition()
+        viewLifecycleOwner.lifecycleScope.launch {
+            mRealm = databaseService.realmInstance
+            model = profileDbHandler.userModel
+            val adapter = getAdapter()
+            recyclerView.adapter = adapter
+            if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {
+                resources?.let { showDownloadDialog(it) }
+            } else if (isMyCourseLib && courseLib == null && !isSurvey) {
                 showDownloadDialog(getLibraryList(mRealm))
             }
+            startPostponedEnterTransition()
+            requireActivity().reportFullyDrawn()
         }
-        return v
     }
 
     private fun initDeleteButton() {
