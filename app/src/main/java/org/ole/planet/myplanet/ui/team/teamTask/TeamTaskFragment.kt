@@ -234,7 +234,6 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
                         val nonTeamMember = !isMember
                         if (adapterTask.nonTeamMember != nonTeamMember) {
                             adapterTask.nonTeamMember = nonTeamMember
-                            adapterTask.notifyDataSetChanged()
                         }
                         updateTasks()
                     }
@@ -343,7 +342,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
                     viewLifecycleOwner.lifecycleScope.launch {
                         teamRepository.assignTask(taskId, user.id)
                         Utilities.toast(activity, getString(R.string.assign_task_to) + " " + user.name)
-                        adapter.notifyDataSetChanged()
+                        updateTasks()
                     }
                 }
                 .setNegativeButton(R.string.cancel) { dialog: DialogInterface, _: Int ->
