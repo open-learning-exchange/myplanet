@@ -172,20 +172,20 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             return DashboardData(null, "", isGuest = false, isTopBarVisible = false)
         }
 
-        if (user.id.startsWith("guest") && userProfileDbHandler.offlineVisits >= 3) {
+        if (user.id?.startsWith("guest") == true && userProfileDbHandler.offlineVisits >= 3) {
             withContext(Dispatchers.Main) {
                 showBecomeMemberDialog()
             }
         }
 
-        val appTitle = if (user.planetCode.isEmpty()) {
+        val appTitle = if (user.planetCode.isNullOrEmpty()) {
             "${getString(R.string.planet)} ${settings.getString("communityName", "")}"
         } else {
             "${getString(R.string.planet)} ${user.planetCode}"
         }
 
-        val isGuest = user.rolesList.isEmpty() && !user.userAdmin
-        val isTopBarVisible = user.isShowTopbar
+        val isGuest = user.rolesList.isNullOrEmpty() && user.userAdmin != true
+        val isTopBarVisible = user.isShowTopbar == true
 
         return DashboardData(user, appTitle, isGuest, isTopBarVisible)
     }
