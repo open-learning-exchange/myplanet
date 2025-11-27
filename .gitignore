@@ -32,7 +32,6 @@ app/build
 app/release
 .kotlin
 
-
 # Local configuration
 local.properties
 
