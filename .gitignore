@@ -30,6 +30,8 @@ out
 build
 app/build
 app/release
+.kotlin
+
 
 # Local configuration
 local.properties
@@ -48,4 +50,3 @@ captures
 
 # version.xml out of build.gradle
 app/src/main/res/values/versions.xml
-.kotlin/
