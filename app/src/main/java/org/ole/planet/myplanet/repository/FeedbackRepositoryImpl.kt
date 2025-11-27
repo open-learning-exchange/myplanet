@@ -7,7 +7,9 @@ import io.realm.Sort
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -62,7 +64,7 @@ class FeedbackRepositoryImpl @Inject constructor(
                 equalTo("owner", userModel?.name)
                 sort("openTime", Sort.DESCENDING)
             }
-        }
+        }.flowOn(Dispatchers.Main)
 
     override suspend fun getFeedbackById(id: String?): RealmFeedback? {
         return id?.let { findByField(RealmFeedback::class.java, "id", it) }

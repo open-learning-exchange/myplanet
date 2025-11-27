@@ -13,6 +13,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
@@ -45,7 +46,7 @@ class TeamRepositoryImpl @Inject constructor(
         return queryListFlow(RealmMyTeam::class.java) {
             equalTo("userId", userId)
             equalTo("docType", "membership")
-        }.flatMapLatest { memberships ->
+        }.flowOn(Dispatchers.Main).flatMapLatest { memberships ->
             val teamIds = memberships.mapNotNull { it.teamId }.toTypedArray()
             if (teamIds.isEmpty()) {
                 flowOf(emptyList())
@@ -53,7 +54,7 @@ class TeamRepositoryImpl @Inject constructor(
                 queryListFlow(RealmMyTeam::class.java) {
                     `in`("_id", teamIds)
                     notEqualTo("status", "archived")
-                }
+                }.flowOn(Dispatchers.Main)
             }
         }
     }
@@ -188,7 +189,7 @@ class TeamRepositoryImpl @Inject constructor(
             notEqualTo("status", "archived")
             startDate?.let { greaterThanOrEqualTo("date", it) }
             endDate?.let { lessThanOrEqualTo("date", it) }
-        }.map { transactions ->
+        }.flowOn(Dispatchers.Main).map { transactions ->
             if (sortAscending) {
                 transactions.sortedBy { it.date }
             } else {
@@ -492,7 +493,7 @@ class TeamRepositoryImpl @Inject constructor(
         return queryListFlow(RealmTeamTask::class.java) {
             equalTo("teamId", teamId)
             notEqualTo("status", "archived")
-        }
+        }.flowOn(Dispatchers.Main)
     }
 
     override suspend fun deleteTask(taskId: String) {

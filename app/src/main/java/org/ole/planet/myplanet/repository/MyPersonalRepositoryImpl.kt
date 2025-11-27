@@ -3,8 +3,10 @@ package org.ole.planet.myplanet.repository
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.flowOn
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyPersonal
 
@@ -39,7 +41,7 @@ class MyPersonalRepositoryImpl @Inject constructor(
 
         return queryListFlow(RealmMyPersonal::class.java) {
             equalTo("userId", userId)
-        }
+        }.flowOn(Dispatchers.Main)
     }
 
     override suspend fun deletePersonalResource(id: String) {

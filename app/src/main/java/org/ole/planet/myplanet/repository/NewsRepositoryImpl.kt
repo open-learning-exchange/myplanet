@@ -82,8 +82,7 @@ class NewsRepositoryImpl @Inject constructor(
             isEmpty("replyTo")
             equalTo("docType", "message", Case.INSENSITIVE)
             sort("time", Sort.DESCENDING)
-        }
-        .flowOn(Dispatchers.Main) // Realm async queries require a Looper thread.
+        }.flowOn(Dispatchers.Main)
 
         return allNewsFlow.map { allNews ->
             // allNews are unmanaged copies (POJOs) created by copyFromRealm in queryListFlow.

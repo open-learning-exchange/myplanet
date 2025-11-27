@@ -1,7 +1,9 @@
 package org.ole.planet.myplanet.repository
 
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse
@@ -16,7 +18,7 @@ class CourseRepositoryImpl @Inject constructor(
     override suspend fun getMyCoursesFlow(userId: String): Flow<List<RealmMyCourse>> {
         return queryListFlow(RealmMyCourse::class.java) {
             equalTo("userId", userId)
-        }
+        }.flowOn(Dispatchers.Main)
     }
 
     override suspend fun getCourseByCourseId(courseId: String?): RealmMyCourse? {
