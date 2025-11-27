@@ -174,6 +174,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         }
     }
 
+    private var isColdStart = true
     private var activityReferences = 0
     private var isActivityChangingConfigurations = false
     private lateinit var anrWatchdog: ANRWatchdog
@@ -388,6 +389,10 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     override fun onActivityDestroyed(activity: Activity) {}
 
     private fun onAppForegrounded() {
+        if (isColdStart) {
+            isColdStart = false
+            return
+        }
         applicationScope.launch {
             createLog("foreground", "")
         }
