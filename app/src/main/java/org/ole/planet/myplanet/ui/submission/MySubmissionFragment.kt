@@ -99,7 +99,8 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
             requireActivity(),
             submissions,
             exams,
-            nameResolver = { userId -> userId?.let { userNameMap[it] } }
+            nameResolver = { userId -> userId?.let { userNameMap[it] } },
+            viewLifecycleOwner.lifecycleScope
         )
         val itemCount = adapter.itemCount
         val s = binding.etSearch.text.toString()
