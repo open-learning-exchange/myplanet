@@ -740,38 +740,65 @@ class UploadManager @Inject constructor(
     fun uploadRating() {
         val apiInterface = client?.create(ApiInterface::class.java)
 
-        databaseService.withRealm { realm ->
-            realm.executeTransactionAsync { transactionRealm: Realm ->
-                val activities = transactionRealm.where(RealmRating::class.java).equalTo("isUpdated", true).findAll()
-                activities.processInBatches { act ->
-                    try {
-                        if (act.userId?.startsWith("guest") == true) {
-                            return@processInBatches
-                        }
+        // STEP 1: Query ratings OUTSIDE transaction (read-only operation)
+        val ratingsToUpload = databaseService.withRealm { realm ->
+            realm.where(RealmRating::class.java)
+                .equalTo("isUpdated", true)
+                .findAll()
+                .filter { !it.userId?.startsWith("guest")!! }
+                .map { rating ->
+                    // Copy data needed for upload
+                    Triple(
+                        rating.id,
+                        RealmRating.serializeRating(rating),
+                        rating._id
+                    )
+                }
+        }
 
-                        val `object`: Response<JsonObject>? =
-                            if (TextUtils.isEmpty(act._id)) {
-                                apiInterface?.postDoc(
-                                    UrlUtils.header,
-                                    "application/json",
-                                    "${UrlUtils.getUrl()}/ratings",
-                                    RealmRating.serializeRating(act)
-                                )?.execute()
-                            } else {
-                                apiInterface?.putDoc(
-                                    UrlUtils.header,
-                                    "application/json",
-                                    "${UrlUtils.getUrl()}/ratings/" + act._id,
-                                    RealmRating.serializeRating(act)
-                                )?.execute()
+        // STEP 2: Upload ratings OUTSIDE transaction (no DB lock held)
+        val uploadResults = mutableListOf<Pair<String?, Pair<String, String>>>()
+        ratingsToUpload.processInBatches { (id, serialized, _id) ->
+            try {
+                val `object`: Response<JsonObject>? =
+                    if (TextUtils.isEmpty(_id)) {
+                        apiInterface?.postDoc(
+                            UrlUtils.header,
+                            "application/json",
+                            "${UrlUtils.getUrl()}/ratings",
+                            serialized
+                        )?.execute()
+                    } else {
+                        apiInterface?.putDoc(
+                            UrlUtils.header,
+                            "application/json",
+                            "${UrlUtils.getUrl()}/ratings/$_id",
+                            serialized
+                        )?.execute()
+                    }
+                if (`object`?.body() != null) {
+                    val responseId = getString("id", `object`.body())
+                    val responseRev = getString("rev", `object`.body())
+                    uploadResults.add(id to (responseId to responseRev))
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+        // STEP 3: Update DB with results in SHORT transaction
+        if (uploadResults.isNotEmpty()) {
+            databaseService.withRealm { realm ->
+                realm.executeTransactionAsync { transactionRealm ->
+                    uploadResults.forEach { (id, result) ->
+                        val (responseId, responseRev) = result
+                        transactionRealm.where(RealmRating::class.java)
+                            .equalTo("id", id)
+                            .findFirst()?.let { rating ->
+                                rating._id = responseId
+                                rating._rev = responseRev
+                                rating.isUpdated = false
                             }
-                        if (`object`?.body() != null) {
-                            act._id = getString("id", `object`.body())
-                            act._rev = getString("rev", `object`.body())
-                            act.isUpdated = false
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
                     }
                 }
             }

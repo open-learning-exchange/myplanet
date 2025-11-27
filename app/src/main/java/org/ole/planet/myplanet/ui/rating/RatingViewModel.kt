@@ -70,10 +70,14 @@ class RatingViewModel @Inject constructor(
         comment: String
     ) {
         viewModelScope.launch {
+            val vmStartTime = System.currentTimeMillis()
+            android.util.Log.d("RatingPerformance", "[${vmStartTime}] STEP 3: ViewModel.submitRating started")
             try {
                 _submitState.value = SubmitState.Submitting
 
+                val userLookupTime = System.currentTimeMillis()
                 val user = _userState.value ?: userRepository.getUserById(userId)
+                android.util.Log.d("RatingPerformance", "[${userLookupTime}] User lookup took ${System.currentTimeMillis() - userLookupTime}ms")
 
                 if (user == null) {
                     _submitState.value = SubmitState.Error("User not found")
@@ -82,6 +86,8 @@ class RatingViewModel @Inject constructor(
 
                 _userState.value = user
 
+                val repoStartTime = System.currentTimeMillis()
+                android.util.Log.d("RatingPerformance", "[${repoStartTime}] STEP 4: Calling repository.submitRating")
                 val summary = ratingRepository.submitRating(
                     type = type,
                     itemId = itemId,
@@ -90,10 +96,15 @@ class RatingViewModel @Inject constructor(
                     rating = rating,
                     comment = comment
                 )
+                val repoEndTime = System.currentTimeMillis()
+                android.util.Log.d("RatingPerformance", "[${repoEndTime}] STEP 5: Repository completed (took ${repoEndTime - repoStartTime}ms)")
 
                 _ratingState.value = summary.toUiState()
                 _submitState.value = SubmitState.Success
+                val vmEndTime = System.currentTimeMillis()
+                android.util.Log.d("RatingPerformance", "[${vmEndTime}] ViewModel.submitRating completed (total: ${vmEndTime - vmStartTime}ms)")
             } catch (e: Exception) {
+                android.util.Log.e("RatingPerformance", "ViewModel.submitRating failed", e)
                 _submitState.value = SubmitState.Error(e.message ?: "Failed to submit rating")
             } finally {
                 _submitState.value = SubmitState.Idle

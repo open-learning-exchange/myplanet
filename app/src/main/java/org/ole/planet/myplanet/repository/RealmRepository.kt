@@ -84,9 +84,15 @@ open class RealmRepository(protected val databaseService: DatabaseService) {
         }
 
     protected suspend fun <T : RealmObject> save(item: T) {
+        val saveStartTime = System.currentTimeMillis()
+        android.util.Log.d("RatingPerformance", "[${saveStartTime}] RealmRepository.save() called")
         executeTransaction { realm ->
+            val copyStartTime = System.currentTimeMillis()
+            android.util.Log.d("RatingPerformance", "[${copyStartTime}] About to call realm.copyToRealmOrUpdate")
             realm.copyToRealmOrUpdate(item)
+            android.util.Log.d("RatingPerformance", "[${copyStartTime}] realm.copyToRealmOrUpdate completed in ${System.currentTimeMillis() - copyStartTime}ms")
         }
+        android.util.Log.d("RatingPerformance", "[${saveStartTime}] RealmRepository.save() total: ${System.currentTimeMillis() - saveStartTime}ms")
     }
 
     protected suspend fun <T : RealmObject, V : Any> update(

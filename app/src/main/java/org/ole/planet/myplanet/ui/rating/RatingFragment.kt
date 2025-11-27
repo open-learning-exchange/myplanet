@@ -119,8 +119,12 @@ class RatingFragment : DialogFragment() {
                     currentSubmitState = state
                     when (state) {
                         is RatingViewModel.SubmitState.Success -> {
+                            val callbackTime = System.currentTimeMillis()
+                            android.util.Log.d("RatingPerformance", "[${callbackTime}] STEP 6: Success callback received - calling onRatingChanged")
                             Utilities.toast(activity, "Thank you, your rating is submitted.")
                             ratingListener?.onRatingChanged()
+                            val dismissTime = System.currentTimeMillis()
+                            android.util.Log.d("RatingPerformance", "[${dismissTime}] STEP 7: Callback completed, dismissing dialog (callback took ${dismissTime - callbackTime}ms)")
                             dismiss()
                         }
                         is RatingViewModel.SubmitState.Error -> {
@@ -148,6 +152,9 @@ class RatingFragment : DialogFragment() {
     }
 
     private fun submitRating() {
+        val submitStartTime = System.currentTimeMillis()
+        android.util.Log.d("RatingPerformance", "[${submitStartTime}] STEP 2: Submit button clicked - starting submission")
+
         val comment = binding.etComment.text.toString()
         val rating = binding.ratingBar.rating
         val userId = settings.getString("userId", "") ?: ""

@@ -56,29 +56,46 @@ class RatingRepositoryImpl @Inject constructor(
         rating: Float,
         comment: String,
     ): RatingSummary {
+        val repoStartTime = System.currentTimeMillis()
+        android.util.Log.d("RatingPerformance", "[${repoStartTime}] Repository: Finding user")
+
         val resolvedUser = findUserForRating(userId)
         val resolvedUserId = resolvedUser.id?.takeIf { it.isNotBlank() } ?: resolvedUser._id
         require(!resolvedUserId.isNullOrBlank()) { "Resolved user is missing an identifier" }
+        android.util.Log.d("RatingPerformance", "[${repoStartTime}] User found in ${System.currentTimeMillis() - repoStartTime}ms")
 
+        val queryStartTime = System.currentTimeMillis()
         val existingRating = queryList(RealmRating::class.java) {
             equalTo("type", type)
             equalTo("userId", resolvedUserId)
             equalTo("item", itemId)
         }.firstOrNull()
+        android.util.Log.d("RatingPerformance", "[${queryStartTime}] Existing rating query took ${System.currentTimeMillis() - queryStartTime}ms")
 
+        val saveStartTime = System.currentTimeMillis()
         if (existingRating == null || existingRating.id.isNullOrBlank()) {
+            android.util.Log.d("RatingPerformance", "[${saveStartTime}] Creating new rating")
             val newRating = RealmRating().apply {
                 id = UUID.randomUUID().toString()
             }
             setRatingData(newRating, resolvedUser, type, itemId, title, rating, comment)
             save(newRating)
         } else {
+            android.util.Log.d("RatingPerformance", "[${saveStartTime}] Updating existing rating")
             update(RealmRating::class.java, "id", existingRating.id!!) { ratingObject ->
                 setRatingData(ratingObject, resolvedUser, type, itemId, title, rating, comment)
             }
         }
+        android.util.Log.d("RatingPerformance", "[${saveStartTime}] Save/update completed in ${System.currentTimeMillis() - saveStartTime}ms")
 
-        return getRatingSummary(type, itemId, resolvedUserId)
+        val summaryStartTime = System.currentTimeMillis()
+        val summary = getRatingSummary(type, itemId, resolvedUserId)
+        android.util.Log.d("RatingPerformance", "[${summaryStartTime}] Get summary took ${System.currentTimeMillis() - summaryStartTime}ms")
+
+        val repoEndTime = System.currentTimeMillis()
+        android.util.Log.d("RatingPerformance", "[${repoEndTime}] Repository total time: ${repoEndTime - repoStartTime}ms")
+
+        return summary
     }
 
     private fun RealmRating.toRatingEntry(): RatingEntry =

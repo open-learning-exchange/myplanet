@@ -732,23 +732,38 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     override fun onRatingChanged() {
+        val refreshStartTime = System.currentTimeMillis()
+        android.util.Log.d("RatingPerformance", "[${refreshStartTime}] STEP 8: onRatingChanged - starting UI refresh")
+
         if (!::adapterCourses.isInitialized) {
+            android.util.Log.d("RatingPerformance", "[${refreshStartTime}] Adapter not initialized, calling super")
             super.onRatingChanged()
             return
         }
 
+        val realmRefreshTime = System.currentTimeMillis()
         if (!mRealm.isInTransaction) {
             mRealm.refresh()
         }
-        val map = getRatings(mRealm, "course", model?.id)
-        val progressMap = getCourseProgress(mRealm, model?.id)
+        android.util.Log.d("RatingPerformance", "[${realmRefreshTime}] Realm refresh took ${System.currentTimeMillis() - realmRefreshTime}ms")
 
+        val ratingsStartTime = System.currentTimeMillis()
+        val map = getRatings(mRealm, "course", model?.id)
+        android.util.Log.d("RatingPerformance", "[${ratingsStartTime}] getRatings took ${System.currentTimeMillis() - ratingsStartTime}ms")
+
+        val progressStartTime = System.currentTimeMillis()
+        val progressMap = getCourseProgress(mRealm, model?.id)
+        android.util.Log.d("RatingPerformance", "[${progressStartTime}] getCourseProgress took ${System.currentTimeMillis() - progressStartTime}ms")
+
+        val filterStartTime = System.currentTimeMillis()
         val filteredCourseList = if (etSearch.text.toString().isEmpty() && searchTags.isEmpty() && gradeLevel.isEmpty() && subjectLevel.isEmpty()) {
             getFullCourseList()
         } else {
             filterCourseByTag(etSearch.text.toString(), searchTags)
         }
+        android.util.Log.d("RatingPerformance", "[${filterStartTime}] Filter/get course list took ${System.currentTimeMillis() - filterStartTime}ms")
 
+        val adapterCreateTime = System.currentTimeMillis()
         adapterCourses = AdapterCourses(
             requireActivity(), filteredCourseList, map, userProfileDbHandler,
             tagRepository, this@CoursesFragment
@@ -756,6 +771,12 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         adapterCourses.setProgressMap(progressMap)
         adapterCourses.setListener(this)
         adapterCourses.setRatingChangeListener(this)
+        android.util.Log.d("RatingPerformance", "[${adapterCreateTime}] Adapter creation took ${System.currentTimeMillis() - adapterCreateTime}ms")
+
+        val setAdapterTime = System.currentTimeMillis()
         recyclerView.adapter = adapterCourses
+        val refreshEndTime = System.currentTimeMillis()
+        android.util.Log.d("RatingPerformance", "[${refreshEndTime}] STEP 9: Set adapter took ${refreshEndTime - setAdapterTime}ms")
+        android.util.Log.d("RatingPerformance", "[${refreshEndTime}] COMPLETE: Total UI refresh time: ${refreshEndTime - refreshStartTime}ms")
     }
 }
