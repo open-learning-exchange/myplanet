@@ -38,6 +38,7 @@ import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNewsBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.model.ChatMessage
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
@@ -353,23 +354,24 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
 
             if (user?.id?.startsWith("guest") == false) {
                 chatAdapter.setOnChatItemClickListener(object : ChatAdapter.OnChatItemClickListener {
-                    override fun onChatItemClick(position: Int, chatItem: String) {
+                    override fun onChatItemClick(position: Int, chatItem: ChatMessage) {
                         listener?.onNewsItemClick(news)
                     }
                 })
             }
 
+            val messages = mutableListOf<ChatMessage>()
             for (conversation in conversations) {
                 val query = conversation.query
                 val response = conversation.response
                 if (query != null) {
-                    chatAdapter.addQuery(query)
+                    messages.add(ChatMessage(query, ChatMessage.QUERY))
                 }
-                chatAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_SHARED_VIEW_MODEL
                 if (response != null) {
-                    chatAdapter.addResponse(response)
+                    messages.add(ChatMessage(response, ChatMessage.RESPONSE, ChatMessage.RESPONSE_SOURCE_SHARED_VIEW_MODEL))
                 }
             }
+            chatAdapter.submitList(messages)
 
             holder.binding.recyclerGchat.adapter = chatAdapter
             holder.binding.recyclerGchat.layoutManager = LinearLayoutManager(context)
