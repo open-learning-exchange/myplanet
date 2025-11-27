@@ -202,10 +202,9 @@ class NewsFragment : BaseNewsFragment() {
         if (binding.rvNews.adapter == null) {
             changeLayoutManager(resources.configuration.orientation, binding.rvNews)
             val sortedList = list.toMutableList().sortedWith(compareByDescending { it?.sortDate ?: 0L })
-            adapterNews = AdapterNews(requireActivity(), user, null, "", null, userProfileDbHandler, databaseService, libraryImageMap)
+            adapterNews = AdapterNews(requireActivity(), user, null, "", null, userProfileDbHandler, databaseService, libraryImageMap, mRealm)
             adapterNews?.run {
                 sharedPrefManager = this@NewsFragment.sharedPrefManager
-                setmRealm(mRealm)
                 setFromLogin(requireArguments().getBoolean("fromLogin"))
                 setListener(this@NewsFragment)
                 registerAdapterDataObserver(observer)

@@ -269,10 +269,9 @@ class DiscussionListFragment : BaseTeamFragment() {
             }
 
             val adapterNews = activity?.let {
-                AdapterNews(it, user, null, getEffectiveTeamName(), teamId, userProfileDbHandler, databaseService, libraryImageMap)
+                AdapterNews(it, user, null, getEffectiveTeamName(), teamId, userProfileDbHandler, databaseService, libraryImageMap, mRealm)
             }
             adapterNews?.sharedPrefManager = sharedPrefManager
-            adapterNews?.setmRealm(mRealm)
             adapterNews?.setListener(this@DiscussionListFragment)
             if (!isMemberFlow.value) adapterNews?.setNonTeamMember(true)
             realmNewsList?.let { adapterNews?.updateList(it) }

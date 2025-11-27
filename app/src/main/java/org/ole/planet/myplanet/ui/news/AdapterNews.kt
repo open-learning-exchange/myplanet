@@ -66,7 +66,8 @@ class AdapterNews(
     private val teamId: String? = null,
     private val userProfileDbHandler: UserProfileDbHandler,
     private val databaseService: DatabaseService,
-    private val libraryImageMap: Map<String, LibraryImageData>
+    private val libraryImageMap: Map<String, LibraryImageData>,
+    private val mRealm: Realm
 ) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem ->
             if (oldItem === newItem) return@itemCallback true
@@ -104,7 +105,6 @@ class AdapterNews(
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
     private var imageList: RealmList<String>? = null
-    lateinit var mRealm: Realm
     private var fromLogin = false
     private var nonTeamMember = false
     private var recyclerView: RecyclerView? = null
@@ -148,20 +148,11 @@ class AdapterNews(
         this.listener = listener
     }
 
-    fun setmRealm(mRealm: Realm?) {
-        if (mRealm != null) {
-            this.mRealm = mRealm
-            labelManager = NewsLabelManager(context, this.mRealm)
-        }
-    }
-
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val binding = RowNewsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         user = userProfileDbHandler.userModel
         settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        if (::mRealm.isInitialized) {
-            if (labelManager == null) labelManager = NewsLabelManager(context, mRealm)
-        }
+        labelManager = NewsLabelManager(context, mRealm)
         return ViewHolderNews(binding)
     }
 
@@ -256,7 +247,7 @@ class AdapterNews(
         val userModel = when {
             userId.isNullOrEmpty() -> null
             userCache.containsKey(userId) -> userCache[userId]
-            ::mRealm.isInitialized -> {
+            else -> {
                 val managedUser = mRealm.where(RealmUserModel::class.java)
                     .equalTo("id", userId)
                     .findFirst()
@@ -274,7 +265,6 @@ class AdapterNews(
                 }
                 detachedUser ?: managedUser
             }
-            else -> null
         }
         val userFullName = userModel?.getFullNameWithMiddleName()?.trim()
         if (userModel != null && currentUser != null) {
@@ -412,7 +402,7 @@ class AdapterNews(
     private fun submitListSafely(list: List<RealmNews?>, commitCallback: Runnable? = null) {
         userCache.clear()
         val detachedList = list.map { news ->
-            if (news?.isValid == true && ::mRealm.isInitialized) {
+            if (news?.isValid == true) {
                 try {
                     mRealm.copyFromRealm(news)
                 } catch (e: Exception) {
@@ -474,7 +464,7 @@ class AdapterNews(
     fun isTeamLeader(): Boolean {
         if(teamId==null)return false
         return try {
-            if (::mRealm.isInitialized && !mRealm.isClosed) {
+            if (!mRealm.isClosed) {
                 val team = mRealm.where(RealmMyTeam::class.java)
                     .equalTo("teamId", teamId)
                     .equalTo("isLeader", true)
@@ -496,7 +486,7 @@ class AdapterNews(
 
     private fun getReplies(finalNews: RealmNews?): List<RealmNews> {
         return try {
-            if (::mRealm.isInitialized && !mRealm.isClosed) {
+            if (!mRealm.isClosed) {
                 mRealm.where(RealmNews::class.java)
                     .sort("time", Sort.DESCENDING)
                     .equalTo("replyTo", finalNews?.id, Case.INSENSITIVE)
