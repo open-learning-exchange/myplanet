@@ -115,52 +115,40 @@ class TeamCalendarFragment : BaseTeamFragment() {
                 val currentTeamId = teamId
 
                 lifecycleScope.launch {
-                    val success = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                        var backgroundRealm: io.realm.Realm? = null
-                        try {
-                            backgroundRealm = io.realm.Realm.getDefaultInstance()
-                            backgroundRealm.executeTransaction { realm ->
-                                val meetup = realm.createObject(RealmMeetup::class.java, "${UUID.randomUUID()}")
-                                meetup.title = title
-                                meetup.meetupLink = link
-                                meetup.description = description
-                                meetup.meetupLocation = location
-                                meetup.creator = userName
-                                meetup.startDate = startMillis
-                                meetup.endDate = endMillis
-                                if (startTimeText == defaultPlaceholder) {
-                                    meetup.startTime = ""
-                                } else {
-                                    meetup.startTime = startTimeText
-                                }
-                                if (endTimeText == defaultPlaceholder) {
-                                    meetup.endTime = ""
-                                } else {
-                                    meetup.endTime = endTimeText
-                                }
-                                meetup.createdDate = System.currentTimeMillis()
-                                meetup.sourcePlanet = teamPlanetCode
-                                val jo = JsonObject()
-                                jo.addProperty("type", "local")
-                                jo.addProperty("planetCode", teamPlanetCode)
-                                meetup.sync = Gson().toJson(jo)
-                                if (recurringText != null) {
-                                    meetup.recurring = recurringText
-                                }
-                                val ob = JsonObject()
-                                ob.addProperty("teams", currentTeamId)
-                                meetup.link = Gson().toJson(ob)
-                                meetup.teamId = currentTeamId
-                            }
-                            true
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                            false
-                        } finally {
-                            backgroundRealm?.close()
+                    val meetup = RealmMeetup().apply {
+                        id = "${UUID.randomUUID()}"
+                        this.title = title
+                        meetupLink = link
+                        this.description = description
+                        meetupLocation = location
+                        creator = userName
+                        startDate = startMillis
+                        endDate = endMillis
+                        if (startTimeText == defaultPlaceholder) {
+                            startTime = ""
+                        } else {
+                            startTime = startTimeText
                         }
+                        if (endTimeText == defaultPlaceholder) {
+                            endTime = ""
+                        } else {
+                            endTime = endTimeText
+                        }
+                        createdDate = System.currentTimeMillis()
+                        sourcePlanet = teamPlanetCode
+                        val jo = JsonObject()
+                        jo.addProperty("type", "local")
+                        jo.addProperty("planetCode", teamPlanetCode)
+                        sync = Gson().toJson(jo)
+                        if (recurringText != null) {
+                            recurring = recurringText
+                        }
+                        val ob = JsonObject()
+                        ob.addProperty("teams", currentTeamId)
+                        this.link = Gson().toJson(ob)
+                        this.teamId = currentTeamId
                     }
-
+                    val success = meetupRepository.createMeetup(meetup)
                     if (success) {
                         Utilities.toast(activity, getString(R.string.meetup_added))
                         addMeetupDialog?.dismiss()
