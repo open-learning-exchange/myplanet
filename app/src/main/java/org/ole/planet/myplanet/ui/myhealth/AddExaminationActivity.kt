@@ -90,6 +90,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         binding.progressBar.visibility = View.VISIBLE
         binding.rootScrollView.visibility = View.GONE
         lifecycleScope.launch(Dispatchers.IO) {
+            var keysGenerated = false
             val backgroundRealm = Realm.getDefaultInstance()
             try {
                 val p = backgroundRealm.where(RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
@@ -100,6 +101,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
                 user = u?.let { backgroundRealm.copyFromRealm(it) }
 
                 if (user != null && (user?.key == null || user?.iv == null)) {
+                    keysGenerated = true
                     val (key, iv) = withContext(Dispatchers.IO) {
                         generateKey() to generateIv()
                     }
@@ -112,7 +114,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
                     user?.iv = iv
                 }
 
-                if (pojo != null && !TextUtils.isEmpty(pojo?.data)) {
+                if (pojo != null && !TextUtils.isEmpty(pojo?.data) && !keysGenerated) {
                     health = GsonUtils.gson.fromJson(decrypt(pojo?.data, user?.key, user?.iv), RealmMyHealth::class.java)
                 }
             } finally {
@@ -260,13 +262,11 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         }
 
     private fun initHealth() {
-        if (!mRealm.isInTransaction) mRealm.beginTransaction()
         health = RealmMyHealth()
         val profile = RealmMyHealthProfile()
         health?.lastExamination = Date().time
         health?.userKey = generateKey()
         health?.profile = profile
-        mRealm.commitTransaction()
     }
 
     private fun saveData() {
