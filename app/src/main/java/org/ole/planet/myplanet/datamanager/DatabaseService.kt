@@ -2,6 +2,8 @@ package org.ole.planet.myplanet.datamanager
 
 import android.content.Context
 import io.realm.Realm
+import android.os.Handler
+import android.os.HandlerThread
 import io.realm.RealmConfiguration
 import io.realm.RealmModel
 import io.realm.RealmQuery
@@ -12,6 +14,16 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.BuildConfig
 
 class DatabaseService(context: Context) {
+    private val backgroundThread: HandlerThread by lazy {
+        val thread = HandlerThread("RealmBackgroundThread")
+        thread.start()
+        thread
+    }
+
+    val backgroundHandler: Handler by lazy {
+        Handler(backgroundThread.looper)
+    }
+
     init {
         Realm.init(context)
         val targetLogLevel = if (BuildConfig.DEBUG) LogLevel.DEBUG else LogLevel.ERROR

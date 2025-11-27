@@ -1,15 +1,15 @@
 package org.ole.planet.myplanet.repository
 
 import io.realm.Realm
+import android.os.HandlerThread
+import android.os.Handler
 import io.realm.RealmChangeListener
 import io.realm.RealmObject
 import io.realm.RealmQuery
 import io.realm.RealmResults
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.flowOn
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.applyEqualTo
 import org.ole.planet.myplanet.datamanager.findCopyByField
@@ -47,24 +47,39 @@ open class RealmRepository(protected val databaseService: DatabaseService) {
     protected fun <T : RealmObject> queryListFlow(
         clazz: Class<T>,
         builder: RealmQuery<T>.() -> Unit = {},
-    ): Flow<List<T>> = callbackFlow<List<T>> {
-        val realm = Realm.getDefaultInstance()
-        val listener = RealmChangeListener<Realm> {
-            val results = realm.where(clazz).apply(builder).findAll()
-            if (results.isLoaded && results.isValid) {
-                trySend(realm.copyFromRealm(results))
+    ): Flow<List<T>> = callbackFlow {
+        val handler = databaseService.backgroundHandler
+        var realm: Realm? = null
+        var results: RealmResults<T>? = null
+        var listener: RealmChangeListener<RealmResults<T>>? = null
+
+        handler.post {
+            val currentRealm = Realm.getDefaultInstance()
+            realm = currentRealm
+            val currentResults = currentRealm.where(clazz).apply(builder).findAllAsync()
+            results = currentResults
+            val currentListener = RealmChangeListener<RealmResults<T>> { updatedResults ->
+                if (updatedResults.isLoaded && updatedResults.isValid) {
+                    trySend(currentRealm.copyFromRealm(updatedResults))
+                }
+            }
+            listener = currentListener
+            currentResults.addChangeListener(currentListener)
+            if (currentResults.isLoaded && currentResults.isValid) {
+                trySend(currentRealm.copyFromRealm(currentResults))
             }
         }
-        realm.addChangeListener(listener)
-        listener.onChange(realm)
 
         awaitClose {
-            if (!realm.isClosed) {
-                realm.removeChangeListener(listener)
-                realm.close()
+            handler.post {
+                val currentListener = listener
+                if (currentListener != null) {
+                    results?.removeChangeListener(currentListener)
+                }
+                realm?.close()
             }
         }
-    }.flowOn(Dispatchers.IO)
+    }
 
     protected suspend fun <T : RealmObject, V : Any> findByField(
         clazz: Class<T>,
