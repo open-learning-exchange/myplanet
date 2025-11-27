@@ -16,8 +16,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.datamanager.ApiClient.client
-import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -683,12 +681,9 @@ class TeamRepositoryImpl @Inject constructor(
 
     private suspend fun uploadTeamActivities() {
         try {
-            val apiInterface = client?.create(ApiInterface::class.java)
             withContext(Dispatchers.IO) {
                 uploadManager.uploadTeams()
-                executeTransaction { realm ->
-                    uploadManager.uploadTeamActivities(realm, apiInterface)
-                }
+                uploadManager.uploadTeamActivities()
             }
         } catch (e: Exception) {
             e.printStackTrace()

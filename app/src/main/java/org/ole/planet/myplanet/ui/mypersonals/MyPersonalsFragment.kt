@@ -89,12 +89,13 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
         pg.setText("Please wait......")
         pg.show()
         if (personal != null) {
-            uploadManager.uploadMyPersonal(personal) { s: String? ->
-                if (s != null) {
-                    Utilities.toast(activity, s)
-                }
+            viewLifecycleOwner.lifecycleScope.launch {
+                uploadManager.uploadMyPersonal(personal)
                 pg.dismiss()
+                Utilities.toast(activity, "Upload complete")
             }
+        } else {
+            pg.dismiss()
         }
     }
 

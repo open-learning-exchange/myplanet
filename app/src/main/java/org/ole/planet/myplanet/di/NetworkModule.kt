@@ -49,7 +49,7 @@ object NetworkModule {
     @Singleton
     @StandardHttpClient
     fun provideStandardOkHttpClient(): OkHttpClient {
-        return buildOkHttpClient(10, 10, 10)
+        return buildOkHttpClient(30, 30, 30)
     }
 
     @Provides

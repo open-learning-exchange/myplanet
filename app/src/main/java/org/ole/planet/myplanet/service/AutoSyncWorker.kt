@@ -12,6 +12,8 @@ import java.util.Date
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.SuccessListener
@@ -82,23 +84,29 @@ class AutoSyncWorker(
             if (!MainApplication.isSyncRunning) {
                 MainApplication.isSyncRunning = true
                 workerScope.launch {
-                    uploadManager.uploadExamResult(this@AutoSyncWorker)
-                    uploadManager.uploadFeedback()
-                    uploadManager.uploadAchievement()
-                    uploadManager.uploadResourceActivities("")
-                    uploadManager.uploadUserActivities(this@AutoSyncWorker)
-                    uploadManager.uploadCourseActivities()
-                    uploadManager.uploadSearchActivity()
-                    uploadManager.uploadRating()
-                    uploadManager.uploadResource(this@AutoSyncWorker)
-                    uploadManager.uploadNews()
-                    uploadManager.uploadTeams()
-                    uploadManager.uploadTeamTask()
-                    uploadManager.uploadMeetups()
-                    uploadManager.uploadAdoptedSurveys()
-                    uploadManager.uploadCrashLog()
-                    uploadManager.uploadSubmissions()
-                    uploadManager.uploadActivities { MainApplication.isSyncRunning = false }
+                    coroutineScope {
+                        val jobs = listOf(
+                            launch { uploadManager.uploadExamResult() },
+                            launch { uploadManager.uploadFeedback() },
+                            launch { uploadManager.uploadAchievement() },
+                            launch { uploadManager.uploadResourceActivities("") },
+                            launch { uploadManager.uploadUserActivities() },
+                            launch { uploadManager.uploadCourseActivities() },
+                            launch { uploadManager.uploadSearchActivity() },
+                            launch { uploadManager.uploadRating() },
+                            launch { uploadManager.uploadResource() },
+                            launch { uploadManager.uploadNews() },
+                            launch { uploadManager.uploadTeams() },
+                            launch { uploadManager.uploadTeamTask() },
+                            launch { uploadManager.uploadMeetups() },
+                            launch { uploadManager.uploadAdoptedSurveys() },
+                            launch { uploadManager.uploadCrashLog() },
+                            launch { uploadManager.uploadSubmissions() },
+                            launch { uploadManager.uploadActivities() }
+                        )
+                        jobs.joinAll()
+                    }
+                    MainApplication.isSyncRunning = false
                 }
             }
         }
