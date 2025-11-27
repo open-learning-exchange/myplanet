@@ -1,8 +1,10 @@
 package org.ole.planet.myplanet.ui.dashboard
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -12,6 +14,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import io.realm.kotlin.where
 import kotlinx.coroutines.launch
+import java.util.UUID
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -35,6 +39,7 @@ data class DashboardUiState(
 
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val userRepository: UserRepository,
     private val libraryRepository: LibraryRepository,
     private val courseRepository: CourseRepository,
@@ -114,12 +119,42 @@ class DashboardViewModel @Inject constructor(
 
             launch {
                 databaseService.withRealm { realm ->
-                    val myLife = realm.where<RealmMyLife>().equalTo("userId", userId).findAll().let {
+                    var myLife = realm.where<RealmMyLife>().equalTo("userId", userId).findAll().let {
                         realm.copyFromRealm(it)
+                    }
+                    if (myLife.isEmpty()) {
+                        realm.executeTransaction {
+                            val myLifeListBase = getMyLifeListBase(userId)
+                            var weight = 1
+                            for (item in myLifeListBase) {
+                                val ml = it.createObject(RealmMyLife::class.java, UUID.randomUUID().toString())
+                                ml.title = item.title
+                                ml.imageId = item.imageId
+                                ml.weight = weight
+                                ml.userId = item.userId
+                                ml.isVisible = true
+                                weight++
+                            }
+                        }
+                        myLife = realm.where<RealmMyLife>().equalTo("userId", userId).findAll().let {
+                            realm.copyFromRealm(it)
+                        }
                     }
                     _uiState.update { it.copy(myLife = myLife) }
                 }
             }
         }
+    }
+
+    private fun getMyLifeListBase(userId: String?): List<RealmMyLife> {
+        val myLifeList: MutableList<RealmMyLife> = ArrayList()
+        myLifeList.add(RealmMyLife("ic_myhealth", userId, context.getString(R.string.myhealth)))
+        myLifeList.add(RealmMyLife("my_achievement", userId, context.getString(R.string.achievements)))
+        myLifeList.add(RealmMyLife("ic_submissions", userId, context.getString(R.string.submission)))
+        myLifeList.add(RealmMyLife("ic_my_survey", userId, context.getString(R.string.my_survey)))
+        myLifeList.add(RealmMyLife("ic_references", userId, context.getString(R.string.references)))
+        myLifeList.add(RealmMyLife("ic_calendar", userId, context.getString(R.string.calendar)))
+        myLifeList.add(RealmMyLife("ic_mypersonals", userId, context.getString(R.string.mypersonals)))
+        return myLifeList
     }
 }
