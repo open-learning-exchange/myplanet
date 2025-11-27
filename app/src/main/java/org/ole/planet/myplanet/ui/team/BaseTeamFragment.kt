@@ -50,7 +50,7 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
         loadTeamData()
     }
 
-    override fun setData(list: List<RealmNews?>?) {}
+    override suspend fun setData(list: List<RealmNews?>?) {}
 
     private fun loadTeamData() {
         val shouldQueryTeam = shouldQueryTeamFromRealm()

@@ -120,7 +120,9 @@ class NewsFragment : BaseNewsFragment() {
                             labelFilteredList = labelFiltered
                             searchFilteredList = searchFiltered
                             setupLabelFilter(labels)
-                            setData(searchFilteredList)
+                            viewLifecycleOwner.lifecycleScope.launch {
+                                setData(searchFilteredList)
+                            }
                         }
                     }
                 }
@@ -146,7 +148,9 @@ class NewsFragment : BaseNewsFragment() {
             adapterNews?.addItem(n)
             labelFilteredList = applyLabelFilter(filteredNewsList)
             searchFilteredList = applySearchFilter(labelFilteredList)
-            setData(searchFilteredList)
+            viewLifecycleOwner.lifecycleScope.launch {
+                setData(searchFilteredList)
+            }
             scrollToTop()
         }
 
@@ -167,7 +171,7 @@ class NewsFragment : BaseNewsFragment() {
         return "$planetCode@$parentCode"
     }
 
-    override fun setData(list: List<RealmNews?>?) {
+    override suspend fun setData(list: List<RealmNews?>?) {
         if (!isAdded || list == null) return
 
         val resourceIds = list.flatMap { news ->
@@ -176,46 +180,44 @@ class NewsFragment : BaseNewsFragment() {
             } ?: emptyList()
         }.toSet()
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            val libraryImageMap = mutableMapOf<String, LibraryImageData>()
-            if (resourceIds.isNotEmpty()) {
-                val libraries = libraryRepository.getLibraryItemsByIds(resourceIds)
-                val basePath = requireContext().getExternalFilesDir(null)
-                if (basePath != null) {
-                    libraries.forEach { library ->
-                        library._id?.let {
-                            val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
-                            libraryImageMap[it] = LibraryImageData(
-                                id = library.id,
-                                resourceLocalAddress = library.resourceLocalAddress,
-                                filePath = imageFile.absolutePath
-                            )
-                        }
+        val libraryImageMap = mutableMapOf<String, LibraryImageData>()
+        if (resourceIds.isNotEmpty()) {
+            val libraries = libraryRepository.getLibraryItemsByIds(resourceIds)
+            val basePath = requireContext().getExternalFilesDir(null)
+            if (basePath != null) {
+                libraries.forEach { library ->
+                    library._id?.let {
+                        val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
+                        libraryImageMap[it] = LibraryImageData(
+                            id = library.id,
+                            resourceLocalAddress = library.resourceLocalAddress,
+                            filePath = imageFile.absolutePath
+                        )
                     }
                 }
-                getUrlsAndStartDownload(libraries.map { it }, arrayListOf())
             }
-
-            if (binding.rvNews.adapter == null) {
-                changeLayoutManager(resources.configuration.orientation, binding.rvNews)
-                val sortedList = list.toMutableList().sortedWith(compareByDescending { it?.sortDate ?: 0L })
-                adapterNews = AdapterNews(requireActivity(), user, null, "", null, userProfileDbHandler, databaseService, libraryImageMap)
-                adapterNews?.run {
-                    sharedPrefManager = this@NewsFragment.sharedPrefManager
-                    setmRealm(mRealm)
-                    setFromLogin(requireArguments().getBoolean("fromLogin"))
-                    setListener(this@NewsFragment)
-                    registerAdapterDataObserver(observer)
-                    updateList(sortedList)
-                }
-                binding.rvNews.adapter = adapterNews
-            } else {
-                (binding.rvNews.adapter as? AdapterNews)?.updateList(list)
-            }
-            adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, "news") }
-            binding.llAddNews.visibility = View.GONE
-            binding.btnNewVoice.text = getString(R.string.new_voice)
+            getUrlsAndStartDownload(libraries.map { it }, arrayListOf())
         }
+
+        if (binding.rvNews.adapter == null) {
+            changeLayoutManager(resources.configuration.orientation, binding.rvNews)
+            val sortedList = list.toMutableList().sortedWith(compareByDescending { it?.sortDate ?: 0L })
+            adapterNews = AdapterNews(requireActivity(), user, null, "", null, userProfileDbHandler, databaseService, libraryImageMap)
+            adapterNews?.run {
+                sharedPrefManager = this@NewsFragment.sharedPrefManager
+                setmRealm(mRealm)
+                setFromLogin(requireArguments().getBoolean("fromLogin"))
+                setListener(this@NewsFragment)
+                registerAdapterDataObserver(observer)
+                updateList(sortedList)
+            }
+            binding.rvNews.adapter = adapterNews
+        } else {
+            (binding.rvNews.adapter as? AdapterNews)?.updateList(list)
+        }
+        adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, "news") }
+        binding.llAddNews.visibility = View.GONE
+        binding.btnNewVoice.text = getString(R.string.new_voice)
     }
 
     override fun onNewsItemClick(news: RealmNews?) {
@@ -275,7 +277,9 @@ class NewsFragment : BaseNewsFragment() {
             .onEach { text ->
                 val searchQuery = text.toString().trim()
                 searchFilteredList = applySearchFilter(labelFilteredList, searchQuery)
-                setData(searchFilteredList)
+                viewLifecycleOwner.lifecycleScope.launch {
+                    setData(searchFilteredList)
+                }
                 scrollToTop()
             }
             .launchIn(viewLifecycleOwner.lifecycleScope)
@@ -305,7 +309,9 @@ class NewsFragment : BaseNewsFragment() {
                 selectedLabel = labels.getItem(position) ?: "All"
                 labelFilteredList = applyLabelFilter(filteredNewsList)
                 searchFilteredList = applySearchFilter(labelFilteredList)
-                setData(searchFilteredList)
+                viewLifecycleOwner.lifecycleScope.launch {
+                    setData(searchFilteredList)
+                }
                 scrollToTop()
             }
             override fun onNothingSelected(parent: AdapterView<*>?) {}

@@ -105,7 +105,7 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
         )
     }
 
-    abstract fun setData(list: List<RealmNews?>?)
+    abstract suspend fun setData(list: List<RealmNews?>?)
     fun showNoData(v: View?, count: Int?, source: String) {
         count?.let { BaseRecyclerFragment.showNoData(v, it, source) }
     }
