@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.userprofile
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
@@ -11,9 +12,8 @@ import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.utilities.DiffUtils
 
 class TeamListAdapter(
-    private var membersList: MutableList<User>,
     private val onItemClickListener: OnItemClickListener
-) : RecyclerView.Adapter<TeamListAdapter.ViewHolder>() {
+) : ListAdapter<User, TeamListAdapter.ViewHolder>(DIFF_CALLBACK) {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = UserListItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ViewHolder(binding)
@@ -24,39 +24,19 @@ class TeamListAdapter(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.bindView(membersList[position])
+        val member = getItem(position)
+        holder.bindView(member)
 
         holder.itemView.setOnClickListener {
             val currentPosition = holder.bindingAdapterPosition
             if (currentPosition != RecyclerView.NO_POSITION) {
-                val member = membersList[currentPosition]
+                val member = getItem(currentPosition)
                 onItemClickListener.onItemClick(member)
             }
         }
     }
 
-    override fun getItemCount(): Int {
-        return membersList.size
-    }
-
-    fun updateList(newUserList: MutableList<User>) {
-        if (membersList === newUserList) return
-        val diffResult = DiffUtils.calculateDiff(
-            membersList,
-            newUserList,
-            areItemsTheSame = { old, new -> old.name == new.name },
-            areContentsTheSame = { old, new ->
-                old.name == new.name &&
-                    old.fullName == new.fullName &&
-                    old.image == new.image
-            }
-        )
-        membersList.clear()
-        membersList.addAll(newUserList)
-        diffResult.dispatchUpdatesTo(this)
-    }
-    
-    fun getList(): List<User> = membersList
+    fun getList(): List<User> = currentList
 
     class ViewHolder(private val binding: UserListItemBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bindView(account: User) {
@@ -74,5 +54,15 @@ class TeamListAdapter(
                 .into(binding.userProfile)
         }
     }
-    
+
+    companion object {
+        private val DIFF_CALLBACK = DiffUtils.itemCallback<User>(
+            areItemsTheSame = { old, new -> old.name == new.name },
+            areContentsTheSame = { old, new ->
+                old.name == new.name &&
+                        old.fullName == new.fullName &&
+                        old.image == new.image
+            }
+        )
+    }
 }
