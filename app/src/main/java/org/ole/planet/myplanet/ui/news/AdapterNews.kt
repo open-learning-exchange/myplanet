@@ -117,15 +117,17 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     }
 
     private suspend fun preloadUserCache(userIds: Set<String>) {
-        if (userIds.isEmpty() || !::mRealm.isInitialized || mRealm.isClosed) return
-        val users = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-            val managedUsers = mRealm.where(RealmUserModel::class.java)
-                .`in`("id", userIds.toTypedArray())
-                .findAll()
-            try {
-                mRealm.copyFromRealm(managedUsers)
-            } catch (e: Exception) {
-                emptyList<RealmUserModel>()
+        if (userIds.isEmpty()) return
+        val users = withContext(Dispatchers.IO) {
+            databaseService.withRealm { realm ->
+                val managedUsers = realm.where(RealmUserModel::class.java)
+                    .`in`("id", userIds.toTypedArray())
+                    .findAll()
+                try {
+                    realm.copyFromRealm(managedUsers)
+                } catch (e: Exception) {
+                    emptyList<RealmUserModel>()
+                }
             }
         }
         users.forEach { user ->
@@ -307,16 +309,17 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
                 holder.binding.tvName.text = news.userName
                 ImageUtils.loadImage(null, holder.binding.imgUser)
                 holder.itemView.findViewTreeLifecycleOwner()?.lifecycleScope?.launch {
-                    val user = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                        if (!::mRealm.isInitialized || mRealm.isClosed) return@withContext null
-                        val managedUser = mRealm.where(RealmUserModel::class.java)
-                            .equalTo("id", userId)
-                            .findFirst()
-                        managedUser?.let {
-                            try {
-                                mRealm.copyFromRealm(it)
-                            } catch (e: Exception) {
-                                null
+                    val user = withContext(Dispatchers.IO) {
+                        databaseService.withRealm { realm ->
+                            val managedUser = realm.where(RealmUserModel::class.java)
+                                .equalTo("id", userId)
+                                .findFirst()
+                            managedUser?.let {
+                                try {
+                                    realm.copyFromRealm(it)
+                                } catch (e: Exception) {
+                                    null
+                                }
                             }
                         }
                     }
