@@ -23,6 +23,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Date
 import java.util.Locale
+import java.util.UUID
 import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityAddExaminationBinding
@@ -93,18 +94,17 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
             var keysGenerated = false
             val backgroundRealm = Realm.getDefaultInstance()
             try {
-                val p = backgroundRealm.where(RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
+                val healthPojo = backgroundRealm.where(RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
                     ?: backgroundRealm.where(RealmMyHealthPojo::class.java).equalTo("userId", userId).findFirst()
-                pojo = p?.let { backgroundRealm.copyFromRealm(it) }
+                pojo = healthPojo?.let { backgroundRealm.copyFromRealm(it) }
 
-                val u = backgroundRealm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
-                user = u?.let { backgroundRealm.copyFromRealm(it) }
+                val userModel = backgroundRealm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
+                user = userModel?.let { backgroundRealm.copyFromRealm(it) }
 
                 if (user != null && (user?.key == null || user?.iv == null)) {
                     keysGenerated = true
-                    val (key, iv) = withContext(Dispatchers.IO) {
-                        generateKey() to generateIv()
-                    }
+                    val key = generateKey()
+                    val iv = generateIv()
                     databaseService.executeTransactionAsync { realm ->
                         val userToUpdate = realm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
                         userToUpdate?.key = key
@@ -115,7 +115,12 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
                 }
 
                 if (pojo != null && !TextUtils.isEmpty(pojo?.data) && !keysGenerated) {
-                    health = GsonUtils.gson.fromJson(decrypt(pojo?.data, user?.key, user?.iv), RealmMyHealth::class.java)
+                    try {
+                        health = GsonUtils.gson.fromJson(decrypt(pojo?.data, user?.key, user?.iv), RealmMyHealth::class.java)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        health = null
+                    }
                 }
             } finally {
                 backgroundRealm.close()
@@ -273,8 +278,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         if (!mRealm.isInTransaction) mRealm.beginTransaction()
         createPojo()
         if (examination == null) {
-            val userId = generateIv()
-            examination = mRealm.createObject(RealmMyHealthPojo::class.java, userId)
+            examination = mRealm.createObject(RealmMyHealthPojo::class.java, UUID.randomUUID().toString())
             examination?.userId = userId
         }
         examination?.profileId = health?.userKey
