@@ -189,8 +189,22 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
 
     private fun createOrUpdateTask(task: String, desc: String, teamTask: RealmTeamTask?, assigneeId: String? = null) {
         val isCreate = teamTask == null
-        val realmTeamTask = teamTask?.let { mRealm.copyFromRealm(it) } ?: RealmTeamTask().apply {
-            id = UUID.randomUUID().toString()
+        val realmTeamTask = RealmTeamTask()
+
+        if (isCreate) {
+            realmTeamTask.id = UUID.randomUUID().toString()
+        } else {
+            teamTask?.let {
+                realmTeamTask.id = it.id
+                realmTeamTask._id = it._id
+                realmTeamTask._rev = it._rev
+                realmTeamTask.link = it.link
+                realmTeamTask.sync = it.sync
+                realmTeamTask.status = it.status
+                realmTeamTask.completed = it.completed
+                realmTeamTask.completedTime = it.completedTime
+                realmTeamTask.isNotified = it.isNotified
+            }
         }
         realmTeamTask.title = task
         realmTeamTask.description = desc
