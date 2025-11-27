@@ -47,23 +47,20 @@ open class RealmRepository(protected val databaseService: DatabaseService) {
     protected fun <T : RealmObject> queryListFlow(
         clazz: Class<T>,
         builder: RealmQuery<T>.() -> Unit = {},
-    ): Flow<List<T>> = callbackFlow {
+    ): Flow<List<T>> = callbackFlow<List<T>> {
         val realm = Realm.getDefaultInstance()
-        val results = realm.where(clazz).apply(builder).findAllAsync()
-        val listener = RealmChangeListener<RealmResults<T>> { updatedResults ->
-            if (updatedResults.isLoaded && updatedResults.isValid) {
-                trySend(realm.copyFromRealm(updatedResults))
+        val listener = RealmChangeListener<Realm> {
+            val results = realm.where(clazz).apply(builder).findAll()
+            if (results.isLoaded && results.isValid) {
+                trySend(realm.copyFromRealm(results))
             }
         }
-        results.addChangeListener(listener)
-
-        if (results.isLoaded && results.isValid) {
-            trySend(realm.copyFromRealm(results))
-        }
+        realm.addChangeListener(listener)
+        listener.onChange(realm)
 
         awaitClose {
             if (!realm.isClosed) {
-                results.removeChangeListener(listener)
+                realm.removeChangeListener(listener)
                 realm.close()
             }
         }
