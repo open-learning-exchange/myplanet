@@ -6,6 +6,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.ui.team.teamMember.MemberRequest
 
 data class TeamMemberStatus(
     val isMember: Boolean,
@@ -105,4 +106,5 @@ interface TeamRepository {
     suspend fun respondToMemberRequest(teamId: String, userId: String, accept: Boolean): Result<Unit>
     suspend fun getJoinedMembers(teamId: String): List<RealmUserModel>
     suspend fun getAssignee(userId: String): RealmUserModel?
+    suspend fun getMemberRequests(teamId: String, currentUserId: String?): List<MemberRequest>
 }

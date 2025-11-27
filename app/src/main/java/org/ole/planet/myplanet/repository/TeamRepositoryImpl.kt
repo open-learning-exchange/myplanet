@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
+import org.ole.planet.myplanet.ui.team.teamMember.MemberRequest
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
@@ -722,5 +723,54 @@ class TeamRepositoryImpl @Inject constructor(
 
     override suspend fun getAssignee(userId: String): RealmUserModel? {
         return findByField(RealmUserModel::class.java, "id", userId)
+    }
+
+    override suspend fun getMemberRequests(
+        teamId: String, currentUserId: String?
+    ): List<MemberRequest> {
+        if (teamId.isBlank()) return emptyList()
+
+        return withRealm { realm ->
+            val team = realm.where(RealmMyTeam::class.java)
+                .equalTo("_id", teamId)
+                .findFirst()
+                ?: return@withRealm emptyList()
+
+            val requestedMemberIds = realm.where(RealmMyTeam::class.java)
+                .equalTo("teamId", teamId)
+                .equalTo("docType", "request")
+                .findAll()
+                .mapNotNull { it.userId }
+
+            val requestedMembers = realm.where(RealmUserModel::class.java)
+                .`in`("id", requestedMemberIds.toTypedArray())
+                .findAll()
+
+            val joinedMembersCount = realm.where(RealmMyTeam::class.java)
+                .equalTo("teamId", teamId)
+                .equalTo("docType", "membership")
+                .count()
+
+            val canModerate = if (currentUserId.isNullOrBlank()) {
+                false
+            } else {
+                val membership = realm.where(RealmMyTeam::class.java)
+                    .equalTo("teamId", teamId)
+                    .equalTo("docType", "membership")
+                    .equalTo("userId", currentUserId)
+                    .findFirst()
+                membership?.isLeader == true || membership?.docType == "membership"
+            }
+
+            requestedMembers.map { user ->
+                MemberRequest(
+                    user = user,
+                    teamId = teamId,
+                    canModerate = canModerate,
+                    isUserLoggedIn = user.id == currentUserId,
+                    memberCount = joinedMembersCount.toInt()
+                )
+            }
+        }
     }
 }
