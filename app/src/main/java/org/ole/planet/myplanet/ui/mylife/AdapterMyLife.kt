@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.ContextWrapper
 import android.util.Log
+import java.util.Collections
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -111,16 +112,19 @@ class AdapterMyLife(
     }
 
     override fun onItemMove(fromPosition: Int, toPosition: Int): Boolean {
-        val fromMyLife = getItem(fromPosition)
+        val newList = currentList.toMutableList()
+        Collections.swap(newList, fromPosition, toPosition)
+        submitList(newList.toList())
+
         MainApplication.applicationScope.launch {
             try {
-                lifeRepository.updateWeight(toPosition + 1, fromMyLife._id, fromMyLife.userId)
+                val orderedIds = newList.mapNotNull { it._id }
+                lifeRepository.updateAllWeights(orderedIds)
             } catch (e: Exception) {
-                Log.e("AdapterMyLife", "Error updating weight: ${e.message}")
+                Log.e("AdapterMyLife", "Error updating weights: ${e.message}")
                 e.printStackTrace()
             }
         }
-        notifyItemMoved(fromPosition, toPosition)
         return true
     }
 

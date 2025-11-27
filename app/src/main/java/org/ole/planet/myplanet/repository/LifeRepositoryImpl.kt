@@ -14,23 +14,13 @@ class LifeRepositoryImpl @Inject constructor(private val databaseService: Databa
         }
     }
 
-    override suspend fun updateWeight(weight: Int, id: String?, userId: String?) {
+    override suspend fun updateAllWeights(orderedIds: List<String>) {
         databaseService.withRealmAsync { realm ->
-            val targetItem = realm.where(RealmMyLife::class.java)
-                .equalTo("_id", id)
-                .findFirst()
-
-            targetItem?.let { item ->
-                val currentWeight = item.weight
-                item.weight = weight
-
-                val otherItem = realm.where(RealmMyLife::class.java)
-                    .equalTo("userId", userId)
-                    .equalTo("weight", weight)
-                    .notEqualTo("_id", id)
+            orderedIds.forEachIndexed { index, id ->
+                realm.where(RealmMyLife::class.java)
+                    .equalTo("_id", id)
                     .findFirst()
-
-                otherItem?.weight = currentWeight
+                    ?.weight = index
             }
         }
     }
