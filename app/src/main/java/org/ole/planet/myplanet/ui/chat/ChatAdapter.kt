@@ -9,11 +9,12 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemAiResponseMessageBinding
+import kotlin.coroutines.coroutineContext
 import org.ole.planet.myplanet.databinding.ItemUserMessageBinding
 import org.ole.planet.myplanet.model.ChatMessage
 import org.ole.planet.myplanet.utilities.DiffUtils
@@ -87,7 +88,7 @@ class ChatAdapter(val context: Context, private val recyclerView: RecyclerView, 
         private suspend fun animateTyping(response: String, markAnimated: () -> Unit) {
             var currentIndex = 0
             while (currentIndex < response.length) {
-                if (!isActive) {
+                if (coroutineContext[Job]?.isActive == false) {
                     return
                 }
                 textAiMessageBinding.textGchatMessageOther.text = response.substring(0, currentIndex + 1)
