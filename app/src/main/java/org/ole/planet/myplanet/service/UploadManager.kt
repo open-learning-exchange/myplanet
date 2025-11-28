@@ -15,6 +15,9 @@ import java.util.Date
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -89,16 +92,16 @@ class UploadManager @Inject constructor(
         }
 
         newsLogsToUpload.chunked(BATCH_SIZE).forEach { batch ->
-            val uploadedLogs = kotlinx.coroutines.coroutineScope {
+            val uploadedLogs: List<Pair<String, JsonObject>> = coroutineScope {
                 batch.map { news ->
-                    kotlinx.coroutines.async {
+                    async {
                         try {
-                            val response = apiInterface.postDoc(
+                            val response = apiInterface?.postDoc(
                                 UrlUtils.header,
                                 "application/json",
                                 "${UrlUtils.getUrl()}/myplanet_activities",
                                 RealmNewsLog.serialize(news)
-                            ).execute().body()
+                            )?.execute()?.body()
                             response?.let { news.id to it }
                         } catch (e: IOException) {
                             e.printStackTrace()
@@ -217,9 +220,9 @@ class UploadManager @Inject constructor(
                     for ((id, serialized, _id) in submissionsToUpload) {
                         try {
                             val response: JsonObject? = if (TextUtils.isEmpty(_id)) {
-                                apiInterface.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/submissions", serialized).execute().body()
+                                apiInterface?.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/submissions", serialized)?.execute()?.body()
                             } else {
-                                apiInterface.putDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/submissions/$_id", serialized).execute().body()
+                                apiInterface?.putDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/submissions/$_id", serialized)?.execute()?.body()
                             }
 
                             if (response != null && id != null) {
@@ -346,7 +349,7 @@ class UploadManager @Inject constructor(
 
             feedbacksToUpload.forEach { feedback ->
                 try {
-                    val res = apiInterface.postDocSuspend(
+                    val res = apiInterface?.postDocSuspend(
                         UrlUtils.header,
                         "application/json",
                         "${UrlUtils.getUrl()}/feedback",
@@ -825,12 +828,12 @@ class UploadManager @Inject constructor(
                         imageChunk.forEach { imageObject ->
                             val imgObject = gson.fromJson(imageObject, JsonObject::class.java)
                             val ob = createImage(user, imgObject)
-                            val response = apiInterface.postDoc(
+                            val response = apiInterface?.postDoc(
                                 UrlUtils.header,
                                 "application/json",
                                 "${UrlUtils.getUrl()}/resources",
                                 ob
-                            ).execute().body()
+                            )?.execute()?.body()
 
                             val rev = getString("rev", response)
                             val id = getString("id", response)
@@ -843,8 +846,8 @@ class UploadManager @Inject constructor(
                                 .toRequestBody("application/octet-stream".toMediaTypeOrNull())
                             val url = String.format(format, UrlUtils.getUrl(), id, name)
 
-                            val res = apiInterface.uploadResource(getHeaderMap(mimeType, rev), url, body).execute()
-                            val attachment = res.body()
+                            val res = apiInterface?.uploadResource(getHeaderMap(mimeType, rev), url, body)?.execute()
+                            val attachment = res?.body()
 
                             val resourceObject = JsonObject().apply {
                                 addProperty("resourceId", getString("id", attachment))
@@ -863,12 +866,12 @@ class UploadManager @Inject constructor(
                     `object`.add("images", image)
 
                     val newsUploadResponse = if (TextUtils.isEmpty(act._id)) {
-                        apiInterface.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/news", `object`).execute()
+                        apiInterface?.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/news", `object`)?.execute()
                     } else {
-                        apiInterface.putDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/news/${act._id}", `object`).execute()
+                        apiInterface?.putDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/news/${act._id}", `object`)?.execute()
                     }
 
-                    if (newsUploadResponse.isSuccessful) {
+                    if (newsUploadResponse?.isSuccessful == true) {
                         newsUploadResponse.body()?.let {
                             databaseService.withRealm { realm ->
                                 realm.executeTransaction { transactionRealm ->
