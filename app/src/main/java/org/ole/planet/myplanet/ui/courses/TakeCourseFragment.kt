@@ -96,7 +96,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                 CoursesPagerAdapter(
                     this@TakeCourseFragment,
                     courseId,
-                    steps.mapNotNull { it?.id }
+                    steps.mapNotNull { it?.id }.toTypedArray()
                 )
 
             binding.viewPager2.isUserInputEnabled = false
