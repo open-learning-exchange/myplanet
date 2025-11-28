@@ -32,13 +32,13 @@ import org.ole.planet.myplanet.utilities.SyncTimeLogger
 class ImprovedSyncManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val databaseService: DatabaseService,
-    @AppPreferences private val settings: SharedPreferences
+    @AppPreferences private val settings: SharedPreferences,
+    private val transactionSyncManager: TransactionSyncManager,
+    private val standardStrategy: StandardSyncStrategy
 ) {
 
     private val batchProcessor = AdaptiveBatchProcessor(context)
     private val poolManager = RealmPoolManager.getInstance()
-
-    private val standardStrategy = StandardSyncStrategy()
 
     private var isSyncing = false
     private var listener: SyncListener? = null
@@ -92,7 +92,7 @@ class ImprovedSyncManager @Inject constructor(
     private fun startSyncProcess(syncMode: SyncMode, syncTables: List<String>?) {
         syncScope.launch {
             try {
-                if (TransactionSyncManager.authenticate()) {
+                if (transactionSyncManager.authenticate()) {
                     performSync(syncMode, syncTables)
                 } else {
                     handleException("Authentication failed")
@@ -151,7 +151,7 @@ class ImprovedSyncManager @Inject constructor(
             } else {
                 // Fallback to standard sync
                 poolManager.useRealm { realm ->
-                    TransactionSyncManager.syncDb(realm, table)
+                    transactionSyncManager.syncDb(realm, table)
                 }
             }
 

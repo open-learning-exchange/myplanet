@@ -144,6 +144,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), CheckVersionCallback,
     lateinit var syncManager: SyncManager
 
     @Inject
+    lateinit var transactionSyncManager: TransactionSyncManager
+
+    @Inject
     lateinit var broadcastService: org.ole.planet.myplanet.service.BroadcastService
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
@@ -699,7 +702,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), CheckVersionCallback,
                             }
                             val backgroundRealm = databaseService.realmInstance
                             try {
-                                TransactionSyncManager.syncDb(backgroundRealm, "login_activities")
+                                transactionSyncManager.syncDb(backgroundRealm, "login_activities")
                             } finally {
                                 backgroundRealm.close()
                             }
