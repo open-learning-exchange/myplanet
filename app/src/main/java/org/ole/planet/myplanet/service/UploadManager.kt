@@ -102,7 +102,7 @@ class UploadManager @Inject constructor(
                                 "${UrlUtils.getUrl()}/myplanet_activities",
                                 RealmNewsLog.serialize(news)
                             )?.execute()?.body()
-                            response?.let { news.id to it }
+                            response?.let { news.id?.let { newsId -> newsId to it } }
                         } catch (e: IOException) {
                             e.printStackTrace()
                             null
@@ -356,8 +356,8 @@ class UploadManager @Inject constructor(
                         RealmFeedback.serializeFeedback(feedback)
                     )
 
-                    val r = res.body()
-                    if (res.isSuccessful && r != null) {
+                    val r = res?.body()
+                    if (res?.isSuccessful == true && r != null) {
                         val revElement = r["rev"]
                         val idElement = r["id"]
                         if (revElement != null && idElement != null) {
