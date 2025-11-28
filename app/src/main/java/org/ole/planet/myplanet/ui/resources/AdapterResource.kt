@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TagRepository
 import org.ole.planet.myplanet.utilities.CourseRatingUtils
+import kotlinx.coroutines.Job
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
@@ -41,6 +42,7 @@ class AdapterResource(
     private val tagRepository: TagRepository,
     private val userModel: RealmUserModel?
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+    private var diffJob: Job? = null
     private val selectedItems: MutableList<RealmMyLibrary?> = ArrayList()
     private var listener: OnLibraryItemSelected? = null
     private val config: ChipCloudConfig = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single)
@@ -293,32 +295,40 @@ class AdapterResource(
     }
 
     private fun updateList(newList: List<RealmMyLibrary?>) {
-        val diffResult = DiffUtils.calculateDiff(
-            libraryList,
-            newList,
-            areItemsTheSame = { old, new -> old?.id == new?.id },
-            areContentsTheSame = { old, new ->
-                old?.title == new?.title &&
-                        old?.description == new?.description &&
-                        old?.createdDate == new?.createdDate &&
-                        old?.averageRating == new?.averageRating &&
-                        old?.timesRated == new?.timesRated
-            },
-            getChangePayload = { old, new ->
-                val ratingChanged = old?.averageRating != new?.averageRating || old?.timesRated != new?.timesRated
-                val otherContentChanged = old?.title != new?.title ||
-                        old?.description != new?.description ||
-                        old?.createdDate != new?.createdDate
+        diffJob?.cancel()
+        diffJob = (context as? LifecycleOwner)?.lifecycleScope?.launch {
+            val diffResult = withContext(Dispatchers.Default) {
+                DiffUtils.calculateDiff(
+                    libraryList,
+                    newList,
+                    areItemsTheSame = { old, new -> old?.id == new?.id },
+                    areContentsTheSame = { old, new ->
+                        old?.title == new?.title &&
+                                old?.description == new?.description &&
+                                old?.createdDate == new?.createdDate &&
+                                old?.averageRating == new?.averageRating &&
+                                old?.timesRated == new?.timesRated
+                    },
+                    getChangePayload = { old, new ->
+                        val ratingChanged = old?.averageRating != new?.averageRating || old?.timesRated != new?.timesRated
+                        val otherContentChanged = old?.title != new?.title ||
+                                old?.description != new?.description ||
+                                old?.createdDate != new?.createdDate
 
-                if (ratingChanged && !otherContentChanged) {
-                    RATING_PAYLOAD
-                } else {
-                    null
-                }
+                        if (ratingChanged && !otherContentChanged) {
+                            RATING_PAYLOAD
+                        } else {
+                            null
+                        }
+                    }
+                )
             }
-        )
-        libraryList = newList
-        diffResult.dispatchUpdatesTo(this)
+
+            if (isActive) {
+                libraryList = newList
+                diffResult.dispatchUpdatesTo(this@AdapterResource)
+            }
+        }
     }
 
     fun setRatingMap(newRatingMap: HashMap<String?, JsonObject>) {
