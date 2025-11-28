@@ -29,6 +29,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.sync.withPermit
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
@@ -710,8 +712,21 @@ class SyncManager @Inject constructor(
             add("keys", Gson().fromJson(Gson().toJson(shelfIds), JsonArray::class.java))
         }
 
-        val response = ApiClient.executeWithRetryAndWrap {
-            apiInterface.findDocs(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/shelf/_all_docs?include_docs=true", keysObject).execute()
+        val response = try {
+            withContext(Dispatchers.IO) {
+                withTimeoutOrNull(20000L) {
+                    ApiClient.executeWithRetryAndWrap {
+                        apiInterface.findDocs(
+                            UrlUtils.header, "application/json",
+                            "${UrlUtils.getUrl()}/shelf/_all_docs?include_docs=true",
+                            keysObject
+                        ).execute()
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
         }?.body()
 
         response?.let { responseBody ->
