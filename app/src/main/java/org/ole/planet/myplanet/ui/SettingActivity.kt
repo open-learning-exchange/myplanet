@@ -185,10 +185,12 @@ class SettingActivity : AppCompatActivity() {
                 preference.onPreferenceClickListener = OnPreferenceClickListener {
                     AlertDialog.Builder(requireActivity()).setTitle(R.string.are_you_sure)
                         .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                            CoroutineScope(Dispatchers.Main).launch {
+                            lifecycleScope.launch(Dispatchers.IO) {
                                 clearRealmDb()
                                 clearSharedPref()
-                                restartApp()
+                                withContext(Dispatchers.Main) {
+                                    restartApp()
+                                }
                             }
                         }.setNegativeButton(R.string.no, null).show()
                     false
