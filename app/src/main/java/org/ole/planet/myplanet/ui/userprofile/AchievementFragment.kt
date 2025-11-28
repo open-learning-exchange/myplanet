@@ -83,7 +83,6 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     override fun onDestroyView() {
-        super.onDestroyView()
         if (::realtimeSyncListener.isInitialized) {
             syncCoordinator.removeListener(realtimeSyncListener)
         }
@@ -91,6 +90,7 @@ class AchievementFragment : BaseContainerFragment() {
             aRealm.removeChangeListener(realmChangeListener)
         }
         _binding = null
+        super.onDestroyView()
     }
 
     private fun startAchievementSync() {
