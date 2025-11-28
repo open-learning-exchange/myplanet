@@ -13,6 +13,7 @@ import java.io.IOException
 import java.util.Date
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -23,6 +24,7 @@ import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.getMyMeetUpIds
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourseIds
 import org.ole.planet.myplanet.model.RealmMyHealthPojo
@@ -44,7 +46,8 @@ import retrofit2.Response
 class UploadToShelfService @Inject constructor(
     @ApplicationContext private val context: Context,
     private val dbService: DatabaseService,
-    @AppPreferences private val sharedPreferences: SharedPreferences
+    @AppPreferences private val sharedPreferences: SharedPreferences,
+    @ApplicationScope private val scope: CoroutineScope,
 ) {
     lateinit var mRealm: Realm
 
@@ -160,8 +163,14 @@ class UploadToShelfService @Inject constructor(
                 model.salt = getString("salt", fetchDataResponse.body())
                 model.iterations = getString("iterations", fetchDataResponse.body())
 
-                if (saveKeyIv(apiInterface, model, obj)) {
-                    updateHealthData(realm, model)
+                scope.launch {
+                    try {
+                        if (saveKeyIv(apiInterface, model._id, obj)) {
+                            updateUserHealthData(model._id, model.id)
+                        }
+                    } catch (e: IOException) {
+                        e.printStackTrace()
+                    }
                 }
             }
         } catch (e: IOException) {
@@ -206,10 +215,18 @@ class UploadToShelfService @Inject constructor(
         return "$protocol://$replacedUrl"
     }
 
-    private fun updateHealthData(realm: Realm, model: RealmUserModel) {
-        val list: List<RealmMyHealthPojo> = realm.where(RealmMyHealthPojo::class.java).equalTo("_id", model.id).findAll()
-        for (p in list) {
-            p.userId = model._id
+    private suspend fun updateUserHealthData(userId: String?, modelId: String?) {
+        if (userId.isNullOrEmpty() || modelId.isNullOrEmpty()) {
+            return
+        }
+        dbService.withRealm { realm ->
+            realm.executeTransaction {
+                val healthPojos =
+                    it.where(RealmMyHealthPojo::class.java).equalTo("_id", modelId).findAll()
+                healthPojos.forEach { pojo ->
+                    pojo.userId = userId
+                }
+            }
         }
     }
 
