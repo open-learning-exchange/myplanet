@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
+import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getAllCourses
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourseByUserId
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -109,7 +110,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
-    override fun onRatingChanged() {
+    open override fun onRatingChanged() {
         recyclerView.adapter = getAdapter()
     }
 
@@ -187,7 +188,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
-    fun deleteSelected(deleteProgress: Boolean) {
+    open fun deleteSelected(deleteProgress: Boolean) {
         selectedItems?.forEach { item ->
             try {
                 if (!mRealm.isInTransaction) {
