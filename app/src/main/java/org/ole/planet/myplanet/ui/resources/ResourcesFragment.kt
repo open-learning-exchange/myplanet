@@ -133,8 +133,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private fun startSyncManager() {
         syncManager.start(object : SyncListener {
             override fun onSyncStarted() {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    if (isAdded && !requireActivity().isFinishing) {
+                lifecycleScope.launch {
+                    if (isAdded && !requireActivity().isFinishing && view != null) {
                         customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
                         customProgressDialog?.setText(getString(R.string.syncing_resources))
                         customProgressDialog?.show()
@@ -143,8 +143,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             }
 
             override fun onSyncComplete() {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    if (isAdded) {
+                lifecycleScope.launch {
+                    if (isAdded && view != null) {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
                         refreshResourcesData()
@@ -154,8 +154,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             }
 
             override fun onSyncFailed(msg: String?) {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    if (isAdded) {
+                lifecycleScope.launch {
+                    if (isAdded && view != null) {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
 
@@ -562,33 +562,34 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         super.onDestroyView()
     }
 
-    private fun filterApplied(): Boolean {
+    private fun filterApplied(searchText: String): Boolean {
         return !(subjects.isEmpty() && languages.isEmpty()
                 && mediums.isEmpty() && levels.isEmpty()
-                && searchTags.isEmpty() && "${etSearch.text}".isEmpty())
+                && searchTags.isEmpty() && searchText.isEmpty())
     }
 
     private fun saveSearchActivity() {
-        if (!filterApplied()) {
-            return
-        }
-
-        val userName = model?.name ?: return
-        val planetCode = model?.planetCode ?: return
-        val parentCode = model?.parentCode ?: return
         val searchText = etSearch.text?.toString().orEmpty()
-        val filter = JsonObject().apply {
-            add("tags", getTagsArray(searchTags))
-            add("subjects", getJsonArrayFromList(subjects))
-            add("language", getJsonArrayFromList(languages))
-            add("level", getJsonArrayFromList(levels))
-            add("mediaType", getJsonArrayFromList(mediums))
-        }
-        val filterPayload = Gson().toJson(filter)
-        val createdAt = Calendar.getInstance().timeInMillis
-        val activityId = UUID.randomUUID().toString()
+        val userName = model?.name
+        val planetCode = model?.planetCode
+        val parentCode = model?.parentCode
 
-        lifecycleScope.launch {
+        lifecycleScope.launch(Dispatchers.IO) {
+            if (!filterApplied(searchText) || userName == null || planetCode == null || parentCode == null) {
+                return@launch
+            }
+
+            val filter = JsonObject().apply {
+                add("tags", getTagsArray(searchTags))
+                add("subjects", getJsonArrayFromList(subjects))
+                add("language", getJsonArrayFromList(languages))
+                add("level", getJsonArrayFromList(levels))
+                add("mediaType", getJsonArrayFromList(mediums))
+            }
+            val filterPayload = Gson().toJson(filter)
+            val createdAt = Calendar.getInstance().timeInMillis
+            val activityId = UUID.randomUUID().toString()
+
             databaseService.executeTransactionAsync { realm ->
                 val activity = realm.createObject(RealmSearchActivity::class.java, activityId)
                 activity.user = userName

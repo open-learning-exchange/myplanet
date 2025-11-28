@@ -22,6 +22,7 @@ import java.util.Date
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
+import javax.inject.Provider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.launchIn
@@ -56,22 +57,24 @@ import org.ole.planet.myplanet.utilities.VersionUtils.getVersionName
 @HiltAndroidApp
 class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     @Inject
-    lateinit var databaseService: DatabaseService
+    lateinit var databaseServiceProvider: Provider<DatabaseService>
+    val databaseService: DatabaseService by lazy { databaseServiceProvider.get() }
 
     @Inject
     @AppPreferences
-    lateinit var appPreferences: SharedPreferences
+    lateinit var appPreferencesProvider: Provider<SharedPreferences>
+    val preferences: SharedPreferences by lazy { appPreferencesProvider.get() }
 
     @Inject
     @DefaultPreferences
-    lateinit var defaultPreferences: SharedPreferences
+    lateinit var defaultPreferencesProvider: Provider<SharedPreferences>
+    val defaultPref: SharedPreferences by lazy { defaultPreferencesProvider.get() }
 
     companion object {
         private const val AUTO_SYNC_WORK_TAG = "autoSyncWork"
         private const val STAY_ONLINE_WORK_TAG = "stayOnlineWork"
         private const val TASK_NOTIFICATION_WORK_TAG = "taskNotificationWork"
         lateinit var context: Context
-        var preferences: SharedPreferences? = null
         var syncFailedCount = 0
         var isCollectionSwitchOn = false
         var showDownload = false
@@ -86,7 +89,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             return "0"
         }
         lateinit var applicationScope: CoroutineScope
-        lateinit var defaultPref: SharedPreferences
 
         fun createLog(type: String, error: String = "") {
             applicationScope.launch {
@@ -181,14 +183,16 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     override fun onCreate() {
         super.onCreate()
         setupCriticalProperties()
-        initApp()
+        performDeferredInitialization()
         setupStrictMode()
         registerExceptionHandler()
         setupLifecycleCallbacks()
         configureTheme()
     }
+
     private fun performDeferredInitialization() {
         applicationScope.launch {
+            initApp()
             ensureApiClientInitialized()
             initializeDatabaseConnection()
             setupAnrWatchdog()
@@ -204,8 +208,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     }
 
     private fun setupCriticalProperties() {
-        preferences = appPreferences
-        defaultPref = defaultPreferences
         applicationScope = EntryPointAccessors.fromApplication(
             this,
             ApplicationScopeEntryPoint::class.java
@@ -232,7 +234,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             val threadPolicy = StrictMode.ThreadPolicy.Builder()
                 .detectAll()
                 .penaltyLog()
-                .penaltyDeath()
                 .build()
             StrictMode.setThreadPolicy(threadPolicy)
 
@@ -259,8 +260,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
     private suspend fun scheduleWorkersOnStart() {
         withContext(Dispatchers.Default) {
-            if (preferences?.getBoolean("autoSync", false) == true && preferences?.contains("autoSyncInterval") == true) {
-                val syncInterval = preferences?.getInt("autoSyncInterval", 60 * 60)
+            if (preferences.getBoolean("autoSync", false) && preferences.contains("autoSyncInterval")) {
+                val syncInterval = preferences.getInt("autoSyncInterval", 60 * 60)
                 scheduleAutoSyncWork(syncInterval)
             } else {
                 cancelAutoSyncWork()
@@ -291,7 +292,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         withContext(Dispatchers.Default) {
             isNetworkConnectedFlow.onEach { isConnected ->
                 if (isConnected) {
-                    val serverUrl = preferences?.getString("serverURL", "")
+                    val serverUrl = preferences.getString("serverURL", "")
                     if (!serverUrl.isNullOrEmpty()) {
                         applicationScope.launch {
                             val canReachServer = withContext(Dispatchers.IO) {
@@ -361,11 +362,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         return sharedPreferences.getString("theme_mode", ThemeMode.FOLLOW_SYSTEM) ?: ThemeMode.FOLLOW_SYSTEM
     }
 
-    override fun onActivityCreated(activity: Activity, bundle: Bundle?) {
-        if (isFirstLaunch) {
-            performDeferredInitialization()
-        }
-    }
+    override fun onActivityCreated(activity: Activity, bundle: Bundle?) {}
 
     override fun onActivityStarted(activity: Activity) {
         if (++activityReferences == 1 && !isActivityChangingConfigurations) {

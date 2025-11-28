@@ -22,15 +22,15 @@ class AdapterSteps(
     private var list: List<RealmCourseStep>,
     private val submissionRepository: SubmissionRepository
 ) : RecyclerView.Adapter<AdapterSteps.ViewHolder>() {
-    private val descriptionVisibilityList: MutableList<Boolean> = ArrayList()
-    private var currentlyVisiblePosition = RecyclerView.NO_POSITION
+    private val descriptionVisibilityMap = mutableMapOf<String, Boolean>()
+    private var currentlyVisibleStepId: String? = null
     private val job = SupervisorJob()
     private val coroutineScope = CoroutineScope(job + Dispatchers.Main)
     private val examQuestionCountCache = mutableMapOf<String, Int>()
 
     init {
-        for (i in list.indices) {
-            descriptionVisibilityList.add(false)
+        for (step in list) {
+            step.id?.let { descriptionVisibilityMap.getOrPut(it) { false } }
         }
     }
 
@@ -48,7 +48,7 @@ class AdapterSteps(
             super.onBindViewHolder(holder, position, payloads)
         } else {
             if (payloads.first() is Boolean) {
-                holder.updateDescriptionVisibility(position)
+                holder.updateDescriptionVisibility()
             }
         }
     }
@@ -60,9 +60,8 @@ class AdapterSteps(
             old == new
         })
         list = newList
-        descriptionVisibilityList.clear()
-        for (i in list.indices) {
-            descriptionVisibilityList.add(false)
+        for (step in newList) {
+            step.id?.let { descriptionVisibilityMap.getOrPut(it) { false } }
         }
         diffResult.dispatchUpdatesTo(this)
     }
@@ -78,7 +77,9 @@ class AdapterSteps(
             itemView.setOnClickListener {
                 val position = bindingAdapterPosition
                 if (position != RecyclerView.NO_POSITION) {
-                    toggleDescriptionVisibility(position)
+                    list.getOrNull(position)?.id?.let { stepId ->
+                        toggleDescriptionVisibility(stepId)
+                    }
                 }
             }
         }
@@ -108,15 +109,19 @@ class AdapterSteps(
                     }
                 }
             }
-            updateDescriptionVisibility(bindingAdapterPosition)
+            updateDescriptionVisibility()
         }
 
-        fun updateDescriptionVisibility(position: Int) {
+        fun updateDescriptionVisibility() {
+            val position = bindingAdapterPosition
             if (position != RecyclerView.NO_POSITION) {
-                if (descriptionVisibilityList[position]) {
-                    rowStepsBinding.tvDescription.visibility = View.VISIBLE
-                } else {
-                    rowStepsBinding.tvDescription.visibility = View.GONE
+                val stepId = list.getOrNull(position)?.id
+                if (stepId != null) {
+                    if (descriptionVisibilityMap[stepId] == true) {
+                        rowStepsBinding.tvDescription.visibility = View.VISIBLE
+                    } else {
+                        rowStepsBinding.tvDescription.visibility = View.GONE
+                    }
                 }
             }
         }
@@ -127,14 +132,30 @@ class AdapterSteps(
         }
     }
 
-    private fun toggleDescriptionVisibility(position: Int) {
-        if (currentlyVisiblePosition != RecyclerView.NO_POSITION && currentlyVisiblePosition != position) {
-            descriptionVisibilityList[currentlyVisiblePosition] = false
-            notifyItemChanged(currentlyVisiblePosition, false)
+    private fun toggleDescriptionVisibility(stepId: String) {
+        val currentVisibility = descriptionVisibilityMap.getOrElse(stepId) { false }
+        val newVisibility = !currentVisibility
+
+        if (newVisibility) {
+            // Hide the previously visible item if there is one
+            currentlyVisibleStepId?.let {
+                if (it != stepId) {
+                    descriptionVisibilityMap[it] = false
+                    val oldPosition = list.indexOfFirst { step -> step.id == it }
+                    if (oldPosition != -1) notifyItemChanged(oldPosition, false)
+                }
+            }
+            currentlyVisibleStepId = stepId
+        } else if (currentlyVisibleStepId == stepId) {
+            // If the currently visible item is collapsed, clear the tracker
+            currentlyVisibleStepId = null
         }
-        descriptionVisibilityList[position] = !descriptionVisibilityList[position]
-        notifyItemChanged(position, descriptionVisibilityList[position])
-        currentlyVisiblePosition = if (descriptionVisibilityList[position]) position else RecyclerView.NO_POSITION
+
+        descriptionVisibilityMap[stepId] = newVisibility
+        val position = list.indexOfFirst { it.id == stepId }
+        if (position != -1) {
+            notifyItemChanged(position, newVisibility)
+        }
     }
 
     override fun onViewRecycled(holder: ViewHolder) {
