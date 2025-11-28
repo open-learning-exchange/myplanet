@@ -128,7 +128,7 @@ class AdapterResource(
                     } else {
                         selectedItems.remove(library)
                     }
-                    if (listener != null) listener?.onSelectedListChange(selectedItems.map { it?.toRealmMyLibrary() }.toMutableList())
+                    if (listener != null) listener?.onSelectedListChange(selectedItems.mapNotNull { it?.id })
                 }
             } else {
                 holder.rowLibraryBinding.checkbox.visibility = View.GONE
@@ -148,9 +148,7 @@ class AdapterResource(
             selectedItems.clear()
         }
         notifyItemRangeChanged(0, currentList.size, SELECTION_PAYLOAD)
-        if (listener != null) {
-            listener?.onSelectedListChange(selectedItems.map { it?.toRealmMyLibrary() }.toMutableList())
-        }
+        listener?.onSelectedListChange(selectedItems.mapNotNull { it?.id })
     }
 
     private fun openLibrary(library: LibraryItemDto?) {

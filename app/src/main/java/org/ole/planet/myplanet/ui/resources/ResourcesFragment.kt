@@ -88,6 +88,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private lateinit var searchTags: MutableList<RealmTag>
     private lateinit var config: ChipCloudConfig
     private lateinit var adapterLibrary: AdapterResource
+    private var filteredLibraryList: List<RealmMyLibrary?> = emptyList()
     var userModel: RealmUserModel ?= null
     var map: HashMap<String?, JsonObject>? = null
     private var confirmation: AlertDialog? = null
@@ -189,7 +190,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
     }
 
-    private fun refreshResourcesData() {
+    fun refreshResourcesData() {
         if (!isAdded || requireActivity().isFinishing) return
 
         try {
@@ -197,7 +198,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             val libraryList: List<RealmMyLibrary?> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary?>()
             val currentSearchTags = if (::searchTags.isInitialized) searchTags else emptyList()
             val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
-            val filteredLibraryList: List<RealmMyLibrary?> =
+            filteredLibraryList =
                 if (currentSearchTags.isEmpty() && searchQuery.isEmpty()) {
                     applyFilter(libraryList.filterNotNull()).map { it }
                 } else {
@@ -292,7 +293,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             AlertDialog.Builder(this.context, R.style.AlertDialogTheme)
                 .setMessage(R.string.confirm_removal)
                 .setPositiveButton(R.string.yes) { _, _ ->
-                    deleteSelected(true)
+                    unlinkSelectedFromLibrary(true)
                     val newFragment = ResourcesFragment()
                     recreateFragment(newFragment)
                 }
@@ -329,7 +330,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private fun setupSelectAllListener() {
         selectAll.setOnClickListener {
             hideButton()
-            val allSelected = selectedItems?.size == adapterLibrary.currentList.size
+            val allSelected = adapterLibrary.areAllSelected()
             adapterLibrary.selectAllItems(!allSelected)
             if (allSelected) {
                 selectAll.isChecked = false
@@ -456,8 +457,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
     }
 
-    override fun onSelectedListChange(list: MutableList<RealmMyLibrary?>) {
-        selectedItems = list
+    override fun onSelectedListChange(list: List<String>) {
+        val selectedRealmObjects = mRealm.where(RealmMyLibrary::class.java).`in`("id", list.toTypedArray()).findAll()
+        selectedItems = selectedRealmObjects.toMutableList()
         changeButtonStatus()
         hideButton()
     }
@@ -523,12 +525,11 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     override fun getData(): Map<String, Set<String>> {
-        val libraryList = adapterLibrary.currentList.map { it.toRealmMyLibrary() }
         val b: MutableMap<String, Set<String>> = HashMap()
-        b["languages"] = libraryList.let { getArrayList(it, "languages").filterNotNull().toSet() }
-        b["subjects"] = libraryList.let { getSubjects(it).toList().toSet() }
-        b["mediums"] = getArrayList(libraryList, "mediums").filterNotNull().toSet()
-        b["levels"] = getLevels(libraryList).toList().toSet()
+        b["languages"] = filteredLibraryList.filterNotNull().let { getArrayList(it, "languages").filterNotNull().toSet() }
+        b["subjects"] = filteredLibraryList.filterNotNull().let { getSubjects(it).toList().toSet() }
+        b["mediums"] = getArrayList(filteredLibraryList.filterNotNull(), "mediums").filterNotNull().toSet()
+        b["levels"] = getLevels(filteredLibraryList.filterNotNull()).toList().toSet()
         return b
     }
 
@@ -638,6 +639,23 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
     }
 
+    private fun unlinkSelectedFromLibrary(isMyCourseLib: Boolean) {
+        val selectedRealmObjects = selectedItems?.mapNotNull { it?.id }?.let {
+            mRealm.where(RealmMyLibrary::class.java).`in`("id", it.toTypedArray()).findAll()
+        }
+        if (selectedRealmObjects != null) {
+            mRealm.executeTransaction {
+                selectedRealmObjects.forEach {
+                    if (isMyCourseLib) {
+                        it.removeUserId(model?.id)
+                    }
+                }
+            }
+        }
+        selectedItems?.clear()
+        refreshResourcesData()
+    }
+
     private fun additionalSetup() {
         val bottomSheet = binding.cardFilter
         filter.setOnClickListener {
@@ -665,6 +683,10 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     
     override fun getSyncRecyclerView(): RecyclerView? {
         return if (::recyclerView.isInitialized) recyclerView else null
+    }
+
+    override fun onRatingChanged() {
+        refreshResourcesData()
     }
     
 }
