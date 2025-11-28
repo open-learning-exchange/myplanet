@@ -4,6 +4,7 @@ import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.util.Log
 import androidx.core.content.edit
 import androidx.work.Worker
 import androidx.work.WorkerParameters
@@ -13,7 +14,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
+import kotlin.coroutines.resume
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.datamanager.Service
@@ -46,10 +49,14 @@ class AutoSyncWorker(
         val currentTime = System.currentTimeMillis()
         val syncInterval = preferences.getInt("autoSyncInterval", 60 * 60)
         if (currentTime - lastSync > syncInterval * 1000) {
-            if (isAppInForeground(context)) {
-                Utilities.toast(context, "Syncing started...")
+            workerScope.launch {
+                if (isAppInForeground(context)) {
+                    withContext(Dispatchers.Main) {
+                        Utilities.toast(context, "Syncing started...")
+                    }
+                }
+                Service(context).checkVersion(this@AutoSyncWorker, preferences)
             }
-            Service(context).checkVersion(this, preferences)
         }
         return Result.success()
     }
@@ -73,32 +80,48 @@ class AutoSyncWorker(
     override fun onCheckingVersion() {}
     override fun onError(msg: String, blockSync: Boolean) {
         if (!blockSync) {
-            syncManager.start(this, "upload")
-            uploadToShelfService.uploadUserData {
-                Service(MainApplication.context).healthAccess {
+            workerScope.launch(Dispatchers.IO) {
+                try {
+                    Log.d("AutoSyncWorker", "Starting onError sync process.")
+                    syncManager.start(this@AutoSyncWorker, "upload")
+                    uploadToShelfService.uploadUserDataSuspend()
+                    Service(MainApplication.context).healthAccessSuspend()
                     uploadToShelfService.uploadHealth()
-                }
-            }
-            if (!MainApplication.isSyncRunning) {
-                MainApplication.isSyncRunning = true
-                workerScope.launch {
-                    uploadManager.uploadExamResult(this@AutoSyncWorker)
-                    uploadManager.uploadFeedback()
-                    uploadManager.uploadAchievement()
-                    uploadManager.uploadResourceActivities("")
-                    uploadManager.uploadUserActivities(this@AutoSyncWorker)
-                    uploadManager.uploadCourseActivities()
-                    uploadManager.uploadSearchActivity()
-                    uploadManager.uploadRating()
-                    uploadManager.uploadResource(this@AutoSyncWorker)
-                    uploadManager.uploadNews()
-                    uploadManager.uploadTeams()
-                    uploadManager.uploadTeamTask()
-                    uploadManager.uploadMeetups()
-                    uploadManager.uploadAdoptedSurveys()
-                    uploadManager.uploadCrashLog()
-                    uploadManager.uploadSubmissions()
-                    uploadManager.uploadActivities { MainApplication.isSyncRunning = false }
+
+                    if (!MainApplication.isSyncRunning) {
+                        MainApplication.isSyncRunning = true
+                        try {
+                            Log.d("AutoSyncWorker", "Starting upload tasks.")
+                            uploadManager.uploadExamResult(this@AutoSyncWorker)
+                            uploadManager.uploadFeedback()
+                            uploadManager.uploadAchievement()
+                            uploadManager.uploadResourceActivities("")
+                            uploadManager.uploadUserActivities(this@AutoSyncWorker)
+                            uploadManager.uploadCourseActivities()
+                            uploadManager.uploadSearchActivity()
+                            uploadManager.uploadRating()
+                            uploadManager.uploadResource(this@AutoSyncWorker)
+                            uploadManager.uploadNews()
+                            uploadManager.uploadTeams()
+                            uploadManager.uploadTeamTask()
+                            uploadManager.uploadMeetups()
+                            uploadManager.uploadAdoptedSurveys()
+                            uploadManager.uploadCrashLog()
+                            uploadManager.uploadSubmissions()
+                            uploadManager.uploadActivitiesSuspend()
+                            MainApplication.isSyncRunning = false
+                            Log.d("AutoSyncWorker", "uploadActivities complete.")
+                        } catch (e: Exception) {
+                            MainApplication.isSyncRunning = false
+                            Log.e("AutoSyncWorker", "Upload error: ${e.message}")
+                            e.printStackTrace()
+                        }
+                    } else {
+                        Log.d("AutoSyncWorker", "Sync is already running.")
+                    }
+                } catch (e: Exception) {
+                    Log.e("AutoSyncWorker", "onError error: ${e.message}")
+                    e.printStackTrace()
                 }
             }
         }
@@ -125,5 +148,23 @@ class AutoSyncWorker(
             }
         }
         return false
+    }
+}
+
+suspend fun UploadToShelfService.uploadUserDataSuspend() = kotlinx.coroutines.suspendCancellableCoroutine<Unit> { continuation ->
+    uploadUserData {
+        continuation.resume(Unit)
+    }
+}
+
+suspend fun Service.healthAccessSuspend() = kotlinx.coroutines.suspendCancellableCoroutine<Unit> { continuation ->
+    healthAccess {
+        continuation.resume(Unit)
+    }
+}
+
+suspend fun UploadManager.uploadActivitiesSuspend() = kotlinx.coroutines.suspendCancellableCoroutine<Unit> { continuation ->
+    uploadActivities {
+        continuation.resume(Unit)
     }
 }
