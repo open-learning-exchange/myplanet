@@ -9,10 +9,17 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Realm
 import java.io.IOException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.datamanager.ApiInterface
+import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.DocumentResponse
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.insert
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
@@ -28,8 +35,27 @@ import org.ole.planet.myplanet.utilities.SecurePrefs
 import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import retrofit2.Response
+import okhttp3.OkHttpClient
+import java.util.concurrent.TimeUnit
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+
 
 object TransactionSyncManager {
+    private val databaseService: DatabaseService
+        get() = (MainApplication.context as MainApplication).databaseService
+    private val healthSyncOkHttpClient: OkHttpClient = OkHttpClient.Builder()
+        .connectTimeout(30, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .build()
+    private val healthSyncApiInterface: ApiInterface = Retrofit.Builder()
+        .baseUrl(UrlUtils.getUrl())
+        .client(healthSyncOkHttpClient)
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+        .create(ApiInterface::class.java)
+
+
     fun authenticate(): Boolean {
         val apiInterface = client?.create(ApiInterface::class.java)
         try {
@@ -48,28 +74,58 @@ object TransactionSyncManager {
         val userName = SecurePrefs.getUserName(MainApplication.context, settings) ?: ""
         val password = SecurePrefs.getPassword(MainApplication.context, settings) ?: ""
         val header = "Basic ${Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)}"
-        mRealm.executeTransactionAsync({ realm: Realm ->
-            val users = realm.where(RealmUserModel::class.java).isNotEmpty("_id").findAll()
-            for (userModel in users) {
-                syncHealthData(userModel, header)
+
+        MainApplication.applicationScope.launch {
+            try {
+                val usersToSync = databaseService.withRealm { realm ->
+                    realm.copyFromRealm(realm.where(RealmUserModel::class.java).isNotEmpty("_id").findAll())
+                }
+
+                coroutineScope {
+                    val tasks = usersToSync.map { user ->
+                        async(Dispatchers.IO) {
+                            syncHealthData(user, header)
+                        }
+                    }
+                    tasks.awaitAll()
+                }
+
+                databaseService.withRealm { realm ->
+                    realm.executeTransaction {
+                        for (user in usersToSync) {
+                            it.insertOrUpdate(user)
+                        }
+                    }
+                }
+
+                withContext(Dispatchers.Main) {
+                    listener.onSyncComplete()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    e.message?.let { listener.onSyncFailed(it) }
+                }
             }
-        }, { listener.onSyncComplete() }) { error: Throwable ->
-            error.message?.let { listener.onSyncFailed(it) }
         }
     }
 
-    private fun syncHealthData(userModel: RealmUserModel?, header: String) {
+    private suspend fun syncHealthData(userModel: RealmUserModel?, header: String) {
+        if (userModel?.key?.isNotEmpty() == true && userModel.iv?.isNotEmpty() == true) {
+            return
+        }
         val table = "userdb-${userModel?.planetCode?.let { Utilities.toHex(it) }}-${userModel?.name?.let { Utilities.toHex(it) }}"
-        val apiInterface = client?.create(ApiInterface::class.java)
-        val response: Response<DocumentResponse>?
         try {
-            response = apiInterface?.getDocuments(header, "${UrlUtils.getUrl()}/$table/_all_docs")?.execute()
-            val ob = response?.body()
+            val response = withContext(Dispatchers.IO) {
+                healthSyncApiInterface.getDocuments(header, "${UrlUtils.getUrl()}/$table/_all_docs").execute()
+            }
+            val ob = response.body()
             if (ob != null && ob.rows?.isNotEmpty() == true) {
                 val r = ob.rows?.firstOrNull()
                 r?.id?.let { id ->
-                    val jsonDoc = apiInterface.getJsonObject(header, "${UrlUtils.getUrl()}/$table/$id")
-                        .execute().body()
+                    val jsonDoc = withContext(Dispatchers.IO) {
+                        healthSyncApiInterface.getJsonObject(header, "${UrlUtils.getUrl()}/$table/$id").execute().body()
+                    }
                     userModel?.key = getString("key", jsonDoc)
                     userModel?.iv = getString("iv", jsonDoc)
                 }
@@ -86,11 +142,36 @@ object TransactionSyncManager {
         val password = SecurePrefs.getPassword(MainApplication.context, settings) ?: ""
         val header = "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)
         val id = model?.id
-        mRealm.executeTransactionAsync({ realm: Realm ->
-            val userModel = realm.where(RealmUserModel::class.java).equalTo("id", id).findFirst()
-            syncHealthData(userModel, header)
-        }, { listener.onSyncComplete() }) { error: Throwable ->
-            error.message?.let { listener.onSyncFailed(it) }
+
+        MainApplication.applicationScope.launch {
+            try {
+                val userToSync = databaseService.withRealm { realm ->
+                    realm.where(RealmUserModel::class.java).equalTo("id", id).findFirst()?.let {
+                        realm.copyFromRealm(it)
+                    }
+                }
+
+                if (userToSync != null) {
+                    withContext(Dispatchers.IO) {
+                        syncHealthData(userToSync, header)
+                    }
+
+                    databaseService.withRealm { realm ->
+                        realm.executeTransaction {
+                            it.insertOrUpdate(userToSync)
+                        }
+                    }
+                }
+
+                withContext(Dispatchers.Main) {
+                    listener.onSyncComplete()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    e.message?.let { listener.onSyncFailed(it) }
+                }
+            }
         }
     }
 
