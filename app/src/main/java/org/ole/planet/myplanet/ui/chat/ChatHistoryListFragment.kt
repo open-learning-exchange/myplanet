@@ -61,6 +61,7 @@ class ChatHistoryListFragment : Fragment() {
     private val serverUrlMapper = ServerUrlMapper()
     private var sharedNewsMessages: List<RealmNews> = emptyList()
     private var shareTargets = ChatShareTargets(null, emptyList(), emptyList())
+    private var searchBarWatcher: TextWatcher? = null
     
     @Inject
     lateinit var syncManager: SyncManager
@@ -125,7 +126,7 @@ class ChatHistoryListFragment : Fragment() {
 
         refreshChatHistoryList()
 
-        binding.searchBar.addTextChangedListener(object : TextWatcher {
+        searchBarWatcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
 
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
@@ -133,7 +134,8 @@ class ChatHistoryListFragment : Fragment() {
             }
 
             override fun afterTextChanged(s: Editable?) {}
-        })
+        }
+        binding.searchBar.addTextChangedListener(searchBarWatcher)
 
         binding.fullSearch.setOnCheckedChangeListener { _, isChecked ->
             val density = Resources.getSystem().displayMetrics.density
@@ -378,6 +380,7 @@ class ChatHistoryListFragment : Fragment() {
         if (::realtimeSyncListener.isInitialized) {
             syncCoordinator.removeListener(realtimeSyncListener)
         }
+        searchBarWatcher?.let { binding.searchBar.removeTextChangedListener(it) }
         _binding = null
         super.onDestroyView()
     }
