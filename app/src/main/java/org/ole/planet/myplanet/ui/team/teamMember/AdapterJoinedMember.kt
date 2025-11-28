@@ -23,8 +23,8 @@ data class JoinedMemberData(
     val user: RealmUserModel,
     val visitCount: Long,
     val lastVisitDate: String,
-    val offlineVisits: String,
-    val profileLastVisit: String,
+    val offlineVisits: String?,
+    val profileLastVisit: String?,
     var isLeader: Boolean
 )
 
@@ -119,8 +119,8 @@ class AdapterJoinedMember(
                 member.dob.toString().substringBefore("T"),
                 member.language.toString(),
                 member.phoneNumber.toString(),
-                memberData.offlineVisits,
-                memberData.profileLastVisit,
+                memberData.offlineVisits ?: "N/A",
+                memberData.profileLastVisit ?: "N/A",
                 "${member.firstName} ${member.lastName}",
                 member.level.toString(),
                 member.userImage

@@ -12,6 +12,9 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -37,29 +40,36 @@ class JoinedMemberFragment : BaseMemberFragment() {
     }
 
     private suspend fun loadAndDisplayJoinedMembers() {
-        val joinedMembersData = withContext(Dispatchers.IO) {
-            databaseService.withRealm { realm ->
-                val members = getJoinedMember(teamId, realm).map { realm.copyFromRealm(it) }.toMutableList()
-                val leaderId = realm.where(RealmMyTeam::class.java)
-                    .equalTo("teamId", teamId)
-                    .equalTo("isLeader", true)
-                    .findFirst()?.userId
-                val leader = members.find { it.id == leaderId }
-                if (leader != null) {
-                    members.remove(leader)
-                    members.add(0, leader)
-                }
-                members.map { member ->
-                    val lastVisitTimestamp = RealmTeamLog.getLastVisit(realm, member.name, teamId)
-                    val lastVisitDate = if (lastVisitTimestamp != null) {
-                        val sdf = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
-                        sdf.format(Date(lastVisitTimestamp))
-                    } else {
-                        getString(R.string.no_visit)
+        val members = databaseService.withRealm { realm ->
+            getJoinedMember(teamId, realm).map { realm.copyFromRealm(it) }.toMutableList()
+        }
+        val leaderId = databaseService.withRealm { realm ->
+            realm.where(RealmMyTeam::class.java)
+                .equalTo("teamId", teamId)
+                .equalTo("isLeader", true)
+                .findFirst()?.userId
+        }
+        val leader = members.find { it.id == leaderId }
+        if (leader != null) {
+            members.remove(leader)
+            members.add(0, leader)
+        }
+
+        val joinedMembersData = coroutineScope {
+            members.map { member ->
+                async(Dispatchers.IO) {
+                    val (visitCount, lastVisitDate) = databaseService.withRealm { realm ->
+                        val lastVisitTimestamp = RealmTeamLog.getLastVisit(realm, member.name, teamId)
+                        val date = if (lastVisitTimestamp != null) {
+                            val sdf = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
+                            sdf.format(Date(lastVisitTimestamp))
+                        } else {
+                            getString(R.string.no_visit)
+                        }
+                        Pair(RealmTeamLog.getVisitCount(realm, member.name, teamId), date)
                     }
-                    val visitCount = RealmTeamLog.getVisitCount(realm, member.name, teamId)
-                    val offlineVisits = profileDbHandler?.getOfflineVisits(member)?.toString() ?: "0"
-                    val profileLastVisit = profileDbHandler?.getLastVisit(member) ?: ""
+                    val offlineVisits = profileDbHandler?.getOfflineVisits(member)?.toString()
+                    val profileLastVisit = profileDbHandler?.getLastVisit(member)
                     JoinedMemberData(
                         member,
                         visitCount,
@@ -69,7 +79,7 @@ class JoinedMemberFragment : BaseMemberFragment() {
                         member.id == leaderId
                     )
                 }
-            }
+            }.awaitAll()
         }
         cachedJoinedMembers = joinedMembersData
         adapterJoined?.updateMembers(joinedMembersData)

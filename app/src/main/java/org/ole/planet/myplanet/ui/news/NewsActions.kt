@@ -231,7 +231,7 @@ object NewsActions {
         realm.commitTransaction()
     }
 
-    fun showMemberDetails(
+    suspend fun showMemberDetails(
         userModel: RealmUserModel?,
         profileDbHandler: UserProfileDbHandler
     ): MemberDetailFragment? {

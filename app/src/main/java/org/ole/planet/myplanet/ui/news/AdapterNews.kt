@@ -427,11 +427,15 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         if (!fromLogin) {
             holder.binding.imgUser.setOnClickListener {
                 val model = userModel ?: currentLeader
-                listener?.onMemberSelected(model)
+                holder.itemView.findViewTreeLifecycleOwner()?.lifecycleScope?.launch {
+                    listener?.onMemberSelected(model)
+                }
             }
             holder.binding.tvName.setOnClickListener {
                 val model = userModel ?: currentLeader
-                listener?.onMemberSelected(model)
+                holder.itemView.findViewTreeLifecycleOwner()?.lifecycleScope?.launch {
+                    listener?.onMemberSelected(model)
+                }
             }
         }
     }
@@ -588,7 +592,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         fun onNewsItemClick(news: RealmNews?)
         fun clearImages()
         fun onDataChanged()
-        fun onMemberSelected(userModel: RealmUserModel?)
+        suspend fun onMemberSelected(userModel: RealmUserModel?)
         fun getCurrentImageList(): RealmList<String>?
     }
 

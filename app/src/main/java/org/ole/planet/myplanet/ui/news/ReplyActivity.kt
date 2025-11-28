@@ -128,7 +128,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
 
     override fun onNewsItemClick(news: RealmNews?) {}
 
-    override fun onMemberSelected(userModel: RealmUserModel?) {
+    override suspend fun onMemberSelected(userModel: RealmUserModel?) {
         val fragment = NewsActions.showMemberDetails(userModel, userProfileDbHandler) ?: return
         NavigationHelper.replaceFragment(
             supportFragmentManager,

@@ -439,21 +439,22 @@ class UserProfileFragment : Fragment() {
         }
     }
 
-    private fun createStatsMap(): LinkedHashMap<String, String?> {
+    private suspend fun createStatsMap(): LinkedHashMap<String, String?> {
         return linkedMapOf(
             getString(R.string.community_name) to Utilities.checkNA(model?.planetCode),
-            getString(R.string.last_login) to viewModel.lastVisit?.let { TimeUtils.getRelativeTime(it) },
-            getString(R.string.total_visits_overall) to viewModel.offlineVisits.toString(),
-            getString(R.string.most_opened_resource) to Utilities.checkNA(viewModel.maxOpenedResource),
-            getString(R.string.number_of_resources_opened) to Utilities.checkNA(viewModel.numberOfResourceOpen)
+            getString(R.string.last_login) to viewModel.getLastVisit()?.let { TimeUtils.getRelativeTime(it) },
+            getString(R.string.total_visits_overall) to viewModel.getOfflineVisits().toString(),
+            getString(R.string.most_opened_resource) to Utilities.checkNA(viewModel.getMaxOpenedResource()),
+            getString(R.string.number_of_resources_opened) to Utilities.checkNA(viewModel.getNumberOfResourceOpen())
         )
     }
 
     private fun setupStatsRecycler() {
-        val map = createStatsMap()
-        val keys = LinkedList(map.keys)
-        binding.rvStat.adapter = object : RecyclerView.Adapter<ViewHolderRowStat>() {
-            override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderRowStat {
+        lifecycleScope.launch {
+            val map = createStatsMap()
+            val keys = LinkedList(map.keys)
+            binding.rvStat.adapter = object : RecyclerView.Adapter<ViewHolderRowStat>() {
+                override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderRowStat {
                 rowStatBinding = RowStatBinding.inflate(LayoutInflater.from(activity), parent, false)
                 return ViewHolderRowStat(rowStatBinding)
             }
@@ -476,7 +477,7 @@ class UserProfileFragment : Fragment() {
                 return keys.size
             }
         }
-    }
+    }}
 
     private fun searchForPhoto() {
         val options = arrayOf(getString(R.string.capture_image), getString(R.string.select_gallery))

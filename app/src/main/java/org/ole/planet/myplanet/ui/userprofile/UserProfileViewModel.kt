@@ -107,15 +107,11 @@ class UserProfileViewModel @Inject constructor(
         _updateState.value = ProfileUpdateState.Idle
     }
 
-    val lastVisit: Long?
-        get() = userProfileDbHandler.lastVisit
+    suspend fun getLastVisit(): Long? = userProfileDbHandler.getLastVisit()
 
-    val offlineVisits: Int
-        get() = userProfileDbHandler.offlineVisits
+    suspend fun getOfflineVisits(): Int = userProfileDbHandler.getOfflineVisits()
 
-    val numberOfResourceOpen: String
-        get() = userProfileDbHandler.numberOfResourceOpen
+    suspend fun getNumberOfResourceOpen(): String = userProfileDbHandler.getNumberOfResourceOpen()
 
-    val maxOpenedResource: String
-        get() = userProfileDbHandler.maxOpenedResource
+    suspend fun getMaxOpenedResource(): String = userProfileDbHandler.getMaxOpenedResource()
 }

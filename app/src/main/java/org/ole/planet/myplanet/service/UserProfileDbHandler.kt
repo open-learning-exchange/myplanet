@@ -109,28 +109,26 @@ class UserProfileDbHandler @Inject constructor(
         }
     }
 
-
-    val lastVisit: Long? get() = realmService.withRealm { realm ->
-        realm.where(RealmOfflineActivity::class.java).max("loginTime") as Long?
-    }
-    val offlineVisits: Int get() = getOfflineVisits(userModel)
-
-    fun getOfflineVisits(m: RealmUserModel?): Int {
-        return realmService.withRealm { realm ->
-            val dbUsers = realm.where(RealmOfflineActivity::class.java)
-                .equalTo("userName", m?.name)
-                .equalTo("type", KEY_LOGIN)
-                .findAll()
-            if (!dbUsers.isEmpty()) {
-                dbUsers.size
-            } else {
-                0
-            }
+    suspend fun getLastVisit(): Long? = withContext(Dispatchers.IO) {
+        realmService.withRealm { realm ->
+            realm.where(RealmOfflineActivity::class.java).max("loginTime") as Long?
         }
     }
 
-    fun getLastVisit(m: RealmUserModel): String {
-        return realmService.withRealm { realm ->
+    suspend fun getOfflineVisits(): Int = getOfflineVisits(userModel)
+
+    suspend fun getOfflineVisits(m: RealmUserModel?): Int = withContext(Dispatchers.IO) {
+        realmService.withRealm { realm ->
+            realm.where(RealmOfflineActivity::class.java)
+                .equalTo("userName", m?.name)
+                .equalTo("type", KEY_LOGIN)
+                .findAll()
+                .size
+        }
+    }
+
+    suspend fun getLastVisit(m: RealmUserModel): String = withContext(Dispatchers.IO) {
+        realmService.withRealm { realm ->
             val lastLogoutTimestamp = realm.where(RealmOfflineActivity::class.java)
                 .equalTo("userName", m.name)
                 .max("loginTime") as Long?
@@ -178,17 +176,18 @@ class UserProfileDbHandler @Inject constructor(
         }
     }
 
-    val numberOfResourceOpen: String
-        get() = realmService.withRealm { realm ->
+    suspend fun getNumberOfResourceOpen(): String = withContext(Dispatchers.IO) {
+        realmService.withRealm { realm ->
             val count = realm.where(RealmResourceActivity::class.java)
                 .equalTo("user", fullName)
                 .equalTo("type", KEY_RESOURCE_OPEN)
                 .count()
             if (count == 0L) "" else "Resource opened $count times."
         }
+    }
 
-    val maxOpenedResource: String
-        get() = realmService.withRealm { realm ->
+    suspend fun getMaxOpenedResource(): String = withContext(Dispatchers.IO) {
+        realmService.withRealm { realm ->
             val result = realm.where(RealmResourceActivity::class.java)
                 .equalTo("user", fullName)
                 .equalTo("type", KEY_RESOURCE_OPEN)
@@ -215,6 +214,7 @@ class UserProfileDbHandler @Inject constructor(
 
             if (maxCount == 0L) "" else "$maxOpenedResource opened $maxCount times"
         }
+    }
 
     companion object {
         const val KEY_LOGIN = "login"

@@ -93,7 +93,7 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
         }
     }
 
-    override fun onMemberSelected(userModel: RealmUserModel?) {
+    override suspend fun onMemberSelected(userModel: RealmUserModel?) {
         if (!isAdded) return
         val handler = profileDbHandler
         val fragment = NewsActions.showMemberDetails(userModel, handler) ?: return
