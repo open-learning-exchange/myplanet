@@ -716,7 +716,7 @@ class TeamRepositoryImpl @Inject constructor(
         }.mapNotNull { it.userId }
 
         return queryList(RealmUserModel::class.java) {
-            `in`("_id", teamMembers.toTypedArray())
+            `in`("id", teamMembers.toTypedArray())
         }
     }
 
@@ -731,7 +731,7 @@ class TeamRepositoryImpl @Inject constructor(
         }.mapNotNull { it.userId }
 
         return queryList(RealmUserModel::class.java) {
-            `in`("_id", teamMembers.toTypedArray())
+            `in`("id", teamMembers.toTypedArray())
         }
     }
 }
