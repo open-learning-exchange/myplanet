@@ -140,44 +140,9 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     private fun observeUiState() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.uiState.collect {
-                renderMyLibrary(it.library)
                 renderMyCourses(it.courses)
                 renderMyTeams(it.teams)
             }
-        }
-    }
-
-    private fun renderMyLibrary(dbMylibrary: List<RealmMyLibrary>) {
-        val flexboxLayout = view?.findViewById<FlexboxLayout>(R.id.flexboxLayout)
-        flexboxLayout?.removeAllViews()
-        flexboxLayout?.flexDirection = FlexDirection.ROW
-        if (dbMylibrary.isEmpty()) {
-            view?.findViewById<TextView>(R.id.count_library)?.visibility = View.GONE
-        } else {
-            view?.findViewById<TextView>(R.id.count_library)?.text =
-                getString(R.string.number_placeholder, dbMylibrary.size)
-        }
-        for ((itemCnt, items) in dbMylibrary.withIndex()) {
-            val itemLibraryHomeBinding =
-                ItemLibraryHomeBinding.inflate(LayoutInflater.from(activity))
-            val v = itemLibraryHomeBinding.root
-            setTextColor(itemLibraryHomeBinding.title, itemCnt)
-            val colorResId =
-                if (itemCnt % 2 == 0) R.color.card_bg else R.color.dashboard_item_alternative
-            val color = context?.let { ContextCompat.getColor(it, colorResId) }
-            if (color != null) {
-                v.setBackgroundColor(color)
-            }
-
-            itemLibraryHomeBinding.title.text = items.title
-            itemLibraryHomeBinding.detail.setOnClickListener {
-                if (homeItemClickListener != null) {
-                    homeItemClickListener?.openLibraryDetailFragment(items)
-                }
-            }
-
-            myLibraryItemClickAction(itemLibraryHomeBinding.title, items)
-            flexboxLayout?.addView(v, params)
         }
     }
 
@@ -264,13 +229,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         }
     }
 
-    private fun myLibraryItemClickAction(textView: TextView, items: RealmMyLibrary?) {
-        textView.setOnClickListener {
-            items?.let {
-                openResource(it)
-            }
-        }
-    }
 
     override fun onDestroy() {
         if (isRealmInitialized()) {
@@ -321,6 +279,11 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         val userId = settings?.getString("userId", "--")
         setUpMyLife(userId)
         myLifeListInit(myLifeFlex)
+
+        val myLibraryFragment = MyLibraryFragment()
+        homeItemClickListener?.let { myLibraryFragment.setHomeItemClickListener(it) }
+        childFragmentManager.beginTransaction()
+            .replace(R.id.library_fragment_container, myLibraryFragment).commit()
 
         if (isRealmInitialized() && mRealm.isInTransaction) {
             mRealm.commitTransaction()

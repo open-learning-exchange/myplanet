@@ -26,4 +26,6 @@
     <dimen name="dialog_min_width_major">65%</dimen>
     <dimen name="dialog_min_width_minor">95%</dimen>
     <dimen name="survey_radio_text_size">12sp</dimen>
+    <dimen name="library_item_width">250dp</dimen>
+    <dimen name="library_item_height">100dp</dimen>
 </resources>

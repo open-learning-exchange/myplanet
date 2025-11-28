@@ -1113,6 +1113,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         openCallFragment(f)
     }
 
+    override fun openResource(resource: RealmMyLibrary) {
+        val f: Fragment = ResourceDetailFragment()
+        val b = Bundle()
+        b.putString("libraryId", resource.resourceId)
+        f.arguments = b
+        openCallFragment(f)
+    }
+
     override fun sendSurvey(current: RealmStepExam?) {
         val f = SendSurveyFragment()
         val b = Bundle()

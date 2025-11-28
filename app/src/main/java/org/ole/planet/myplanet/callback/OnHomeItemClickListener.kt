@@ -11,4 +11,6 @@ interface OnHomeItemClickListener {
     fun showRatingDialog(type: String?, resourceId: String?, title: String?, listener: OnRatingChangeListener?)
 
     fun sendSurvey(current: RealmStepExam?)
+
+    fun openResource(resource: RealmMyLibrary)
 }

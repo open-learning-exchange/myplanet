@@ -23,7 +23,6 @@ import org.ole.planet.myplanet.repository.UserRepository
 
 data class DashboardUiState(
     val unreadNotifications: Int = 0,
-    val library: List<RealmMyLibrary> = emptyList(),
     val courses: List<RealmMyCourse> = emptyList(),
     val teams: List<RealmMyTeam> = emptyList(),
 )
@@ -89,11 +88,6 @@ class DashboardViewModel @Inject constructor(
         if (userId == null) return
         userContentJob?.cancel()
         userContentJob = viewModelScope.launch {
-            launch {
-                val myLibrary = libraryRepository.getMyLibrary(userId)
-                _uiState.update { it.copy(library = myLibrary) }
-            }
-
             launch {
                 courseRepository.getMyCoursesFlow(userId).collect { courses ->
                     _uiState.update { it.copy(courses = courses) }

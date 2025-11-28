@@ -61,21 +61,11 @@
         </FrameLayout>
 
 
-        <HorizontalScrollView
+        <FrameLayout
+            android:id="@+id/library_fragment_container"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:contentDescription="@string/txt_myLibrary"
-            android:background="@color/card_bg">
-
-            <com.google.android.flexbox.FlexboxLayout
-                android:id="@+id/flexboxLayout"
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                app:alignContent="stretch"
-                app:alignItems="stretch"
-                app:flexWrap="wrap" />
-        </HorizontalScrollView>
+            android:layout_weight="1" />
     </LinearLayout>
 
 </androidx.cardview.widget.CardView>
