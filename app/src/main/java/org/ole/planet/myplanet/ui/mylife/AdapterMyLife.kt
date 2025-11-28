@@ -16,9 +16,10 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyLife.Companion.updateWeight
@@ -40,8 +41,10 @@ import org.ole.planet.myplanet.utilities.Utilities
 class AdapterMyLife(
     private val context: Context,
     private val mDragStartListener: OnStartDragListener,
-    private val lifeRepository: LifeRepository
+    private val lifeRepository: LifeRepository,
+    private val coroutineScope: CoroutineScope
 ) : ListAdapter<RealmMyLife, RecyclerView.ViewHolder>(DIFF_CALLBACK), ItemTouchHelperAdapter {
+    private val jobs = mutableMapOf<Int, Job>()
     private val hide = 0.5f
     private val show = 1f
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
@@ -84,7 +87,7 @@ class AdapterMyLife(
     private fun updateVisibility(holder: RecyclerView.ViewHolder, position: Int, isVisible: Boolean) {
         val myLife = getItem(position)
         myLife._id?.let {
-            MainApplication.applicationScope.launch(Dispatchers.IO) {
+            jobs[position] = coroutineScope.launch(Dispatchers.IO) {
                 lifeRepository.updateVisibility(!isVisible, it)
                 launch(Dispatchers.Main) {
                     if (isVisible) {
@@ -115,6 +118,21 @@ class AdapterMyLife(
         updateWeight(toPosition + 1, fromMyLife._id, fromMyLife.userId)
         notifyItemMoved(fromPosition, toPosition)
         return true
+    }
+
+    override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
+        super.onViewRecycled(holder)
+        val position = holder.bindingAdapterPosition
+        if (position != RecyclerView.NO_POSITION) {
+            jobs[position]?.cancel()
+            jobs.remove(position)
+        }
+    }
+
+    override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
+        super.onDetachedFromRecyclerView(recyclerView)
+        jobs.values.forEach { it.cancel() }
+        jobs.clear()
     }
 
     internal inner class ViewHolderMyLife(itemView: View) : RecyclerView.ViewHolder(itemView),
