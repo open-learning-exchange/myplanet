@@ -448,12 +448,11 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         updateTeamDropdown()
 
         if (mAdapter == null) {
-            mAdapter = TeamListAdapter(prefData.getSavedUsers().toMutableList(), this)
+            mAdapter = TeamListAdapter(this)
             binding.recyclerView.layoutManager = LinearLayoutManager(this)
             binding.recyclerView.adapter = mAdapter
-        } else {
-            mAdapter?.updateList(prefData.getSavedUsers().toMutableList())
         }
+        mAdapter?.submitList(prefData.getSavedUsers().toMutableList())
 
         binding.recyclerView.isNestedScrollingEnabled = true
         binding.recyclerView.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY

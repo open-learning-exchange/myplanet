@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.callback.TableDataUpdate
 import org.ole.planet.myplanet.databinding.FragmentSurveyBinding
 import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.model.SurveyBindingData
 import org.ole.planet.myplanet.repository.SurveyRepository
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
@@ -47,6 +48,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
     private var loadSurveysJob: Job? = null
     private var currentSurveys: List<RealmStepExam> = emptyList()
     private val surveyInfoMap = mutableMapOf<String, SurveyInfo>()
+    private val bindingDataMap = mutableMapOf<String, SurveyBindingData>()
     private var textWatcher: TextWatcher? = null
 
     @Inject
@@ -84,7 +86,8 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
             this,
             settings,
             profileDbHandler,
-            surveyInfoMap
+            surveyInfoMap,
+            bindingDataMap
         )
         prefManager = SharedPrefManager(requireContext())
         
@@ -287,6 +290,11 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
             )
             surveyInfoMap.clear()
             surveyInfoMap.putAll(surveyInfos)
+
+            val bindingData = surveyRepository.getSurveyBindingData(currentSurveys, teamId)
+            bindingDataMap.clear()
+            bindingDataMap.putAll(bindingData)
+
             applySearchFilter()
         }
     }
