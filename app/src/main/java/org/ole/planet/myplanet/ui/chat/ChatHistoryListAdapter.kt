@@ -9,9 +9,12 @@ import androidx.core.graphics.drawable.toDrawable
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import java.text.Normalizer
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.Date
-import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AddNoteDialogBinding
 import org.ole.planet.myplanet.databinding.ChatShareDialogBinding
@@ -103,72 +106,83 @@ class ChatHistoryListAdapter(
         submitList(filteredChatHistory)
     }
 
-    private fun normalizeText(str: String): String {
-        return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
-            .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
-    }
-
-    fun search(s: String, isFullSearch: Boolean, isQuestion: Boolean) {
-        val results = if (isFullSearch) {
-            fullConvoSearch(s, isQuestion)
-        } else {
-            searchByTitle(s)
+    suspend fun search(s: String, isFullSearch: Boolean, isQuestion: Boolean) {
+        val results = withContext(Dispatchers.Default) {
+            if (isFullSearch) {
+                fullConvoSearch(s, isQuestion)
+            } else {
+                searchByTitle(s)
+            }
         }
         submitList(results)
     }
 
     private fun fullConvoSearch(s: String, isQuestion: Boolean): List<RealmChatHistory> {
-        var conversation: String?
-        val queryParts = s.split(" ").filterNot { it.isEmpty() }
         val normalizedQuery = normalizeText(s)
-        val inTitleStartQuery = mutableListOf<RealmChatHistory>()
-        val inTitleContainsQuery = mutableListOf<RealmChatHistory>()
-        val startsWithQuery = mutableListOf<RealmChatHistory>()
-        val containsQuery = mutableListOf<RealmChatHistory>()
+        val queryParts = normalizedQuery.split(" ").filterNot { it.isEmpty() }
 
-        for (chat in chatHistory) {
-            if (chat.conversations != null && chat.conversations?.isNotEmpty() == true) {
-                for (i in 0 until chat.conversations!!.size) {
-                    conversation = if (isQuestion) {
-                        chat.conversations?.get(i)?.query?.let { normalizeText(it) }
-                    } else {
-                        chat.conversations?.get(i)?.response?.let { normalizeText(it) }
-                    }
-                    if (conversation == null) continue
-                    if (conversation.startsWith(normalizedQuery, ignoreCase = true)) {
-                        if (i == 0) inTitleStartQuery.add(chat) else startsWithQuery.add(chat)
-                        break
-                    } else if (queryParts.all { conversation.contains(normalizeText(it), ignoreCase = true) }) {
-                        if (i == 0) inTitleContainsQuery.add(chat) else containsQuery.add(chat)
-                        break
-                    }
+        return chatHistory.asSequence().mapNotNull { chat ->
+            val firstMatchIndex = chat.conversations?.indexOfFirst { conversation ->
+                val textToSearch = if (isQuestion) {
+                    conversation.normalizedQuery ?: normalizeText(conversation.query ?: "")
+                } else {
+                    conversation.normalizedResponse ?: normalizeText(conversation.response ?: "")
+                }
+                textToSearch.let {
+                    it.startsWith(normalizedQuery, ignoreCase = true) || queryParts.all { part -> it.contains(part, ignoreCase = true) }
                 }
             }
-        }
-        return inTitleStartQuery + inTitleContainsQuery + startsWithQuery + containsQuery
+
+            if (firstMatchIndex != null && firstMatchIndex != -1) {
+                val conversation = chat.conversations?.get(firstMatchIndex)
+                val textToSearch = if (isQuestion) {
+                    conversation?.normalizedQuery ?: normalizeText(conversation?.query ?: "")
+                } else {
+                    conversation?.normalizedResponse ?: normalizeText(conversation?.response ?: "")
+                }
+
+                val score = when {
+                    textToSearch.startsWith(normalizedQuery, ignoreCase = true) == true -> if (firstMatchIndex == 0) 4 else 2
+                    queryParts.all { part -> textToSearch.contains(part, ignoreCase = true) == true } -> if (firstMatchIndex == 0) 3 else 1
+                    else -> 0
+                }
+                if (score > 0) Pair(chat, score) else null
+            } else {
+                null
+            }
+        }.sortedByDescending { it.second }
+            .map { it.first }
+            .distinct()
+            .take(200)
+            .toList()
     }
 
     private fun searchByTitle(s: String): List<RealmChatHistory> {
-        var title: String?
-        val queryParts = s.split(" ").filterNot { it.isEmpty() }
         val normalizedQuery = normalizeText(s)
-        val startsWithQuery = mutableListOf<RealmChatHistory>()
-        val containsQuery = mutableListOf<RealmChatHistory>()
+        val queryParts = normalizedQuery.split(" ").filterNot { it.isEmpty() }
 
-        for (chat in chatHistory) {
-            title = if (chat.conversations != null && chat.conversations?.isNotEmpty() == true) {
-                chat.conversations?.get(0)?.query?.let { normalizeText(it) }
+        val titleMatches = chatHistory.asSequence().mapNotNull { chat ->
+            val title = if (chat.conversations?.isNotEmpty() == true) {
+                chat.conversations?.first()?.normalizedQuery ?: normalizeText(chat.conversations?.first()?.query ?: "")
             } else {
                 chat.title?.let { normalizeText(it) }
             }
-            if (title == null) continue
-            if (title.startsWith(normalizedQuery, ignoreCase = true)) {
-                startsWithQuery.add(chat)
-            } else if (queryParts.all { title.contains(normalizeText(it), ignoreCase = true) }) {
-                containsQuery.add(chat)
+
+            title?.let {
+                val score = when {
+                    it.startsWith(normalizedQuery, ignoreCase = true) -> 2
+                    queryParts.all { part -> it.contains(part, ignoreCase = true) } -> 1
+                    else -> 0
+                }
+                if (score > 0) Pair(chat, score) else null
             }
-        }
-        return startsWithQuery + containsQuery
+        }.sortedByDescending { it.second }
+            .map { it.first }
+            .distinct()
+            .take(200)
+            .toList()
+
+        return titleMatches
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderChat {

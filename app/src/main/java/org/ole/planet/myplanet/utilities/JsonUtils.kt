@@ -6,8 +6,16 @@ import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser.parseString
 import io.realm.RealmList
+import java.text.Normalizer
+import java.util.Locale
 
 object JsonUtils {
+    @JvmStatic
+    fun normalizeText(str: String): String {
+        return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
+            .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
+    }
+
     @JvmStatic
     fun getString(fieldName: String, jsonObject: JsonObject?): String {
         return try {

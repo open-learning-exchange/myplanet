@@ -19,7 +19,10 @@ import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.HashMap
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
@@ -61,6 +64,7 @@ class ChatHistoryListFragment : Fragment() {
     private val serverUrlMapper = ServerUrlMapper()
     private var sharedNewsMessages: List<RealmNews> = emptyList()
     private var shareTargets = ChatShareTargets(null, emptyList(), emptyList())
+    private var searchJob: Job? = null
     
     @Inject
     lateinit var syncManager: SyncManager
@@ -129,7 +133,13 @@ class ChatHistoryListFragment : Fragment() {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
 
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                (binding.recyclerView.adapter as? ChatHistoryListAdapter)?.search(s.toString(), isFullSearch, isQuestion)
+                searchJob?.cancel()
+                searchJob = viewLifecycleOwner.lifecycleScope.launch {
+                    delay(300)
+                    (binding.recyclerView.adapter as? ChatHistoryListAdapter)?.run {
+                        search(s.toString(), isFullSearch, isQuestion)
+                    }
+                }
             }
 
             override fun afterTextChanged(s: Editable?) {}

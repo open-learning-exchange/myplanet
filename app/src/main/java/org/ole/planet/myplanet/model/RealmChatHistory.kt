@@ -4,11 +4,16 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmList
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
+import io.realm.Realm
+import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import java.util.Date
 import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
+import org.ole.planet.myplanet.utilities.JsonUtils.normalizeText
 
 open class RealmChatHistory : RealmObject() {
     @PrimaryKey
@@ -45,6 +50,7 @@ open class RealmChatHistory : RealmObject() {
             for (element in jsonArray) {
                 val conversation = GsonUtils.gson.fromJson(element, Conversation::class.java)
                 val realmConversation = realm.copyToRealm(conversation)
+                normalizeAndSetConversationText(realmConversation, realmConversation.query, realmConversation.response)
                 conversations.add(realmConversation)
             }
             return conversations
@@ -59,11 +65,21 @@ open class RealmChatHistory : RealmObject() {
                 val conversation = mRealm.createObject(Conversation::class.java)
                 conversation.query = query
                 conversation.response = response
+                normalizeAndSetConversationText(conversation, query, response)
                 chatHistory.conversations?.add(conversation)
                 chatHistory.lastUsed = Date().time
                 if (!newRev.isNullOrEmpty()) {
                     chatHistory._rev = newRev
                 }
+            }
+        }
+
+        private fun normalizeAndSetConversationText(conversation: Conversation, query: String?, response: String?) {
+            query?.let {
+                conversation.normalizedQuery = normalizeText(it)
+            }
+            response?.let {
+                conversation.normalizedResponse = normalizeText(it)
             }
         }
     }
