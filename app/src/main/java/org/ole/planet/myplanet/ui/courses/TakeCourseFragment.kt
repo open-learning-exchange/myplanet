@@ -26,14 +26,13 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentTakeCourseBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.repository.CourseRepository
 import org.ole.planet.myplanet.model.RealmCourseActivity.Companion.createActivity
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseProgress.Companion.getCurrentProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getCourseStepIds
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getCourseSteps
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onAdd
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onRemove
 import org.ole.planet.myplanet.model.RealmStepExam
@@ -53,6 +52,8 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     lateinit var databaseService: DatabaseService
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
+    @Inject
+    lateinit var courseRepository: CourseRepository
     lateinit var mRealm: Realm
     private var currentCourse: RealmMyCourse? = null
     lateinit var steps: List<RealmCourseStep?>
@@ -81,42 +82,45 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.tvCourseTitle.text = currentCourse?.courseTitle
-        steps = getCourseSteps(mRealm, courseId)
-        if (steps.isEmpty()) {
-            binding.nextStep.visibility = View.GONE
-            binding.previousStep.visibility = View.GONE
-        }
-
-        currentStep = getCourseProgress()
-        position = if (currentStep > 0) currentStep  else 0
-        setNavigationButtons()
-        binding.viewPager2.adapter =
-            CoursesPagerAdapter(
-                this@TakeCourseFragment,
-                courseId,
-                getCourseStepIds(mRealm, courseId)
-            )
-
-        binding.viewPager2.isUserInputEnabled = false
-        binding.viewPager2.setCurrentItem(position, false)
-
-        binding.viewPager2.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
-            override fun onPageSelected(position: Int) {
-                super.onPageSelected(position)
-                this@TakeCourseFragment.onPageSelected(position)
+        viewLifecycleOwner.lifecycleScope.launch {
+            steps = courseRepository.getCourseSteps(courseId)
+            if (steps.isEmpty()) {
+                binding.nextStep.visibility = View.GONE
+                binding.previousStep.visibility = View.GONE
             }
-        })
 
-        updateStepDisplay(position)
+            currentStep = getCourseProgress()
+            position = if (currentStep > 0) currentStep else 0
+            setNavigationButtons()
+            binding.viewPager2.adapter =
+                CoursesPagerAdapter(
+                    this@TakeCourseFragment,
+                    courseId,
+                    steps.mapNotNull { it?.id }
+                )
 
-        if (position == 0) {
-            binding.previousStep.visibility = View.GONE
-        }
-        setCourseData()
-        setListeners()
-        checkSurveyCompletion()
-        binding.backButton.setOnClickListener {
-            NavigationHelper.popBackStack(requireActivity().supportFragmentManager)
+            binding.viewPager2.isUserInputEnabled = false
+            binding.viewPager2.setCurrentItem(position, false)
+
+            binding.viewPager2.registerOnPageChangeCallback(object :
+                ViewPager2.OnPageChangeCallback() {
+                override fun onPageSelected(position: Int) {
+                    super.onPageSelected(position)
+                    this@TakeCourseFragment.onPageSelected(position)
+                }
+            })
+
+            updateStepDisplay(position)
+
+            if (position == 0) {
+                binding.previousStep.visibility = View.GONE
+            }
+            setCourseData()
+            setListeners()
+            checkSurveyCompletion()
+            binding.backButton.setOnClickListener {
+                NavigationHelper.popBackStack(requireActivity().supportFragmentManager)
+            }
         }
     }
 
