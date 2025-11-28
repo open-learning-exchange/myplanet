@@ -12,6 +12,7 @@ import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.databinding.FragmentLifeBinding
+import org.ole.planet.myplanet.model.MyLifeItemDto
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyLife.Companion.getMyLifeByUserId
 import org.ole.planet.myplanet.repository.LifeRepository
@@ -20,7 +21,7 @@ import org.ole.planet.myplanet.ui.mylife.helper.SimpleItemTouchHelperCallback
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 
 @AndroidEntryPoint
-class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
+class LifeFragment : BaseRecyclerFragment<MyLifeItemDto?>(), OnStartDragListener {
     private lateinit var adapterMyLife: AdapterMyLife
     private var mItemTouchHelper: ItemTouchHelper? = null
     @Inject
@@ -49,7 +50,17 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val myLifeList = getMyLifeByUserId(mRealm, model?.id)
-        adapterMyLife.submitList(mRealm.copyFromRealm(myLifeList))
+        val myLifeDtoList = mRealm.copyFromRealm(myLifeList).map {
+            MyLifeItemDto(
+                _id = it._id,
+                imageId = it.imageId,
+                userId = it.userId,
+                title = it.title,
+                isVisible = it.isVisible,
+                weight = it.weight
+            )
+        }
+        adapterMyLife.submitList(myLifeDtoList)
         recyclerView.setHasFixedSize(true)
         setupUI(binding.myLifeParentLayout, requireActivity())
         val callback: ItemTouchHelper.Callback = SimpleItemTouchHelperCallback(adapterMyLife)
