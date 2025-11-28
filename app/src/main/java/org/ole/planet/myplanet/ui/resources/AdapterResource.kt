@@ -53,11 +53,29 @@ class AdapterResource(
     private val tagCache: MutableMap<String, List<RealmTag>> = mutableMapOf()
     private val tagRequestsInProgress: MutableSet<String> = mutableSetOf()
 
+    private data class DiffData(
+        val id: String?,
+        val title: String?,
+        val description: String?,
+        val createdDate: Long?,
+        val averageRating: String?,
+        val timesRated: Int?
+    )
+
     companion object {
         private const val TAGS_PAYLOAD = "payload_tags"
         private const val RATING_PAYLOAD = "payload_rating"
         private const val SELECTION_PAYLOAD = "payload_selection"
     }
+
+    private fun RealmMyLibrary.toDiffData() = DiffData(
+        id = this.id,
+        title = this.title,
+        description = this.description,
+        createdDate = this.createdDate,
+        averageRating = this.averageRating,
+        timesRated = this.timesRated
+    )
 
     init {
         if (context is OnHomeItemClickListener) {
@@ -296,24 +314,21 @@ class AdapterResource(
 
     private fun updateList(newList: List<RealmMyLibrary?>) {
         diffJob?.cancel()
+        val oldList = libraryList.mapNotNull { it?.toDiffData() }
+        val newListMapped = newList.mapNotNull { it?.toDiffData() }
+
         diffJob = (context as? LifecycleOwner)?.lifecycleScope?.launch {
             val diffResult = withContext(Dispatchers.Default) {
                 DiffUtils.calculateDiff(
-                    libraryList,
-                    newList,
-                    areItemsTheSame = { old, new -> old?.id == new?.id },
-                    areContentsTheSame = { old, new ->
-                        old?.title == new?.title &&
-                                old?.description == new?.description &&
-                                old?.createdDate == new?.createdDate &&
-                                old?.averageRating == new?.averageRating &&
-                                old?.timesRated == new?.timesRated
-                    },
+                    oldList,
+                    newListMapped,
+                    areItemsTheSame = { old, new -> old.id == new.id },
+                    areContentsTheSame = { old, new -> old == new },
                     getChangePayload = { old, new ->
-                        val ratingChanged = old?.averageRating != new?.averageRating || old?.timesRated != new?.timesRated
-                        val otherContentChanged = old?.title != new?.title ||
-                                old?.description != new?.description ||
-                                old?.createdDate != new?.createdDate
+                        val ratingChanged = old.averageRating != new.averageRating || old.timesRated != new.timesRated
+                        val otherContentChanged = old.title != new.title ||
+                                old.description != new.description ||
+                                old.createdDate != new.createdDate
 
                         if (ratingChanged && !otherContentChanged) {
                             RATING_PAYLOAD
