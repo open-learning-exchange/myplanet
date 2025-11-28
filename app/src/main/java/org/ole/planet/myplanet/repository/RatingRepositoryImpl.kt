@@ -1,10 +1,13 @@
 package org.ole.planet.myplanet.repository
 
 import com.google.gson.Gson
+import com.google.gson.JsonObject
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import kotlin.math.roundToInt
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -13,6 +16,19 @@ class RatingRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     private val gson: Gson,
 ) : RealmRepository(databaseService), RatingRepository {
+    override suspend fun getRatingsFlow(type: String, userId: String): Flow<HashMap<String?, JsonObject>> {
+        return queryListFlow(RealmRating::class.java) {
+            equalTo("type", type)
+            equalTo("userId", userId)
+        }.map { list ->
+            val map = HashMap<String?, JsonObject>()
+            list.forEach {
+                map[it.item] = RealmRating.serializeRating(it)
+            }
+            map
+        }
+    }
+
 
     override suspend fun getRatingSummary(
         type: String,

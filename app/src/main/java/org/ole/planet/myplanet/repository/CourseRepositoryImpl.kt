@@ -89,4 +89,18 @@ class CourseRepositoryImpl @Inject constructor(
             isNotNull("resourceLocalAddress")
         }
     }
+
+    override suspend fun getCourseTags(courseId: String?): List<String> {
+        if (courseId.isNullOrEmpty()) {
+            return emptyList()
+        }
+        val stepIds = getCourseByCourseId(courseId)?.courseSteps?.map { it.id }?.toTypedArray()
+        if (stepIds.isNullOrEmpty()) {
+            return emptyList()
+        }
+        val resources = queryList(RealmMyLibrary::class.java) {
+            `in`("stepId", stepIds)
+        }
+        return resources.flatMap { it.tag ?: emptyList() }.distinct()
+    }
 }

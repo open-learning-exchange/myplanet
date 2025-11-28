@@ -41,7 +41,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 class AdapterCourses(
     private val context: Context,
     private var courseList: List<RealmMyCourse?>,
-    private val map: HashMap<String?, JsonObject>,
+    private var map: HashMap<String?, JsonObject>,
     private val userProfileDbHandler: UserProfileDbHandler,
     private val tagRepository: TagRepository,
     private val lifecycleOwner: LifecycleOwner
@@ -55,10 +55,13 @@ class AdapterCourses(
     private var isAscending = true
     private var isTitleAscending = false
     private var areAllSelected = false
-    var userModel: RealmUserModel?= null
+    var userModel: RealmUserModel? = null
     private val tagCache: MutableMap<String, List<RealmTag>> = mutableMapOf()
     private val tagRequestsInProgress: MutableSet<String> = mutableSetOf()
 
+    fun setMap(map: HashMap<String?, JsonObject>) {
+        this.map = map
+    }
     companion object {
         private const val TAG_PAYLOAD = "payload_tags"
         private const val RATING_PAYLOAD = "payload_rating"

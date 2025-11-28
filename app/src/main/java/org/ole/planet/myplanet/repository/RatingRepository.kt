@@ -1,6 +1,10 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.JsonObject
+import kotlinx.coroutines.flow.Flow
+
 interface RatingRepository {
+    suspend fun getRatingsFlow(type: String, userId: String): Flow<HashMap<String?, JsonObject>>
     suspend fun getRatingSummary(type: String, itemId: String, userId: String): RatingSummary
 
     suspend fun submitRating(

@@ -13,9 +13,25 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 
-class ProgressRepositoryImpl @Inject constructor(private val databaseService: DatabaseService) : ProgressRepository {
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+
+class ProgressRepositoryImpl @Inject constructor(
+    databaseService: DatabaseService,
+) : RealmRepository(databaseService), ProgressRepository {
+    override suspend fun getCourseProgress(userId: String): Flow<HashMap<String?, JsonObject>> {
+        return queryListFlow(RealmCourseProgress::class.java) {
+            equalTo("userId", userId)
+        }.map { list ->
+            val map = HashMap<String?, JsonObject>()
+            list.forEach {
+                map[it.courseId] = RealmCourseProgress.serializeProgress(it)
+            }
+            map
+        }
+    }
     override suspend fun fetchCourseData(userId: String?): JsonArray {
-        return databaseService.withRealmAsync { realm ->
+        return withRealmAsync { realm ->
             val mycourses = RealmMyCourse.getMyCourseByUserId(
                 userId,
                 realm.where(RealmMyCourse::class.java).findAll()
