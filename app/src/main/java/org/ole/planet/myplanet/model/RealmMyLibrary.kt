@@ -8,10 +8,12 @@ import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
+import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 import java.util.Calendar
 import java.util.Date
 import java.util.UUID
+import android.util.Log
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.FileUtils
@@ -28,6 +30,7 @@ open class RealmMyLibrary : RealmObject() {
     var resourceLocalAddress: String? = null
     var resourceOffline: Boolean = false
     var resourceId: String? = null
+    @Index
     var _rev: String? = null
     var downloadedRev: String? = null
     var needsOptimization: Boolean = false
@@ -208,13 +211,33 @@ open class RealmMyLibrary : RealmObject() {
 
         @JvmStatic
         fun removeDeletedResource(newIds: List<String?>, mRealm: Realm) {
+            val startTime = System.currentTimeMillis()
             val ids = getIds(mRealm)
-            ids.filterNot { it in newIds }.forEach { id ->
-                mRealm.executeTransaction { realm ->
-                    realm.where(RealmMyLibrary::class.java).equalTo("resourceId", id).findAll()
+            val idsToDelete = ids.filterNot { it in newIds }
+
+            if (idsToDelete.isEmpty()) {
+                Log.d("PerformanceTest", "removeDeletedResource: No resources to delete")
+                return
+            }
+
+            Log.d("PerformanceTest", "removeDeletedResource: Starting batch delete of ${idsToDelete.size} resources")
+
+            // Single transaction for all deletes - massive performance improvement
+            val deleteStartTime = System.currentTimeMillis()
+            mRealm.executeTransaction { realm ->
+                idsToDelete.forEach { id ->
+                    realm.where(RealmMyLibrary::class.java)
+                        .equalTo("resourceId", id)
+                        .findAll()
                         .deleteAllFromRealm()
                 }
             }
+            val deleteEndTime = System.currentTimeMillis()
+
+            val totalTime = deleteEndTime - startTime
+            val transactionTime = deleteEndTime - deleteStartTime
+            Log.d("PerformanceTest", "removeDeletedResource: Completed in ${totalTime}ms (transaction: ${transactionTime}ms) for ${idsToDelete.size} items")
+            Log.d("PerformanceTest", "removeDeletedResource: Average ${totalTime / idsToDelete.size.coerceAtLeast(1)}ms per item")
         }
 
         @JvmStatic

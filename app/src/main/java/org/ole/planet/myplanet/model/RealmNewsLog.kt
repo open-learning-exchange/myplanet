@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.model
 
 import com.google.gson.JsonObject
 import io.realm.RealmObject
+import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utilities.NetworkUtils
@@ -9,7 +10,9 @@ import org.ole.planet.myplanet.utilities.NetworkUtils
 open class RealmNewsLog : RealmObject() {
     @PrimaryKey
     var id: String? = null
+    @Index
     var _id: String? = null
+    @Index
     var _rev: String? = null
     var type: String? = null
     var time: Long? = null
