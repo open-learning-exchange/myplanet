@@ -125,24 +125,41 @@ abstract class BaseResourceFragment : Fragment() {
 
     private var receiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
+            val pendingResult = goAsync()
             this@BaseResourceFragment.lifecycleScope.launch {
-                val list = libraryRepository.getLibraryListForUser(
-                    settings.getString("userId", "--")
-                )
-                showDownloadDialog(list)
+                try {
+                    val list = libraryRepository.getLibraryListForUser(
+                        settings.getString("userId", "--")
+                    )
+                    showDownloadDialog(list)
+                } finally {
+                    pendingResult.finish()
+                }
             }
         }
     }
 
     private var stateReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
+            val pendingResult = goAsync()
             stayOnlineDialog?.dismiss()
-            stayOnlineDialog = AlertDialog.Builder(requireContext()).setMessage(R.string.do_you_want_to_stay_online)
-                .setPositiveButton(R.string.yes, null)
-                .setNegativeButton(R.string.no) { _: DialogInterface?, _: Int ->
-                    val wifi = requireContext().applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-                    wifi.setWifiEnabled(false)
-                }.create()
+            stayOnlineDialog = AlertDialog.Builder(requireContext())
+                .setMessage(R.string.do_you_want_to_stay_online)
+                .setPositiveButton(R.string.yes) { _, _ ->
+                    pendingResult.finish()
+                }
+                .setNegativeButton(R.string.no) { _, _ ->
+                    lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                        try {
+                            val wifi = requireContext().applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+                            wifi.setWifiEnabled(false)
+                        } finally {
+                            pendingResult.finish()
+                        }
+                    }
+                }
+                .setCancelable(false)
+                .create()
             stayOnlineDialog?.setOnDismissListener {
                 stayOnlineDialog = null
             }
