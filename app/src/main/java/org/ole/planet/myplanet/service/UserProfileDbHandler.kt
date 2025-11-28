@@ -54,10 +54,10 @@ class UserProfileDbHandler @Inject constructor(
         }
     }
 
-    val userModel: RealmUserModel? get() = userRepository.getUserModel()
+    val userModel: RealmUserModel? get() = userRepository.getUserModel(settings.getString("userId", "") ?: "")
 
     fun getUserModelCopy(): RealmUserModel? {
-        return userRepository.getUserModel()
+        return userRepository.getUserModel(settings.getString("userId", "") ?: "")
     }
 
     fun onLogin() {
@@ -113,12 +113,12 @@ class UserProfileDbHandler @Inject constructor(
     val lastVisit: Long? get() = realmService.withRealm { realm ->
         realm.where(RealmOfflineActivity::class.java).max("loginTime") as Long?
     }
-    val offlineVisits: Int get() = getOfflineVisits(userModel)
+    val offlineVisits: Int get() = getOfflineVisits(userModel?.id)
 
-    fun getOfflineVisits(m: RealmUserModel?): Int {
+    fun getOfflineVisits(userId: String?): Int {
         return realmService.withRealm { realm ->
             val dbUsers = realm.where(RealmOfflineActivity::class.java)
-                .equalTo("userName", m?.name)
+                .equalTo("userId", userId)
                 .equalTo("type", KEY_LOGIN)
                 .findAll()
             if (!dbUsers.isEmpty()) {

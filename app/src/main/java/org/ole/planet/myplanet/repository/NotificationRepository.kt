@@ -17,4 +17,8 @@ interface NotificationRepository {
     suspend fun getJoinRequestTeamId(relatedId: String?): String?
     fun getJoinRequestDetails(relatedId: String?): Pair<String, String>
     fun getTaskTeamName(taskTitle: String): String?
+    suspend fun getNotificationByParentId(parentId: String): org.ole.planet.myplanet.model.RealmTeamNotification?
+    suspend fun getChatCount(teamId: String): Long
+    suspend fun getNotificationsByParentIds(parentIds: List<String>): List<org.ole.planet.myplanet.model.RealmTeamNotification>
+    suspend fun getChatCounts(teamIds: List<String>): Map<String, Long>
 }

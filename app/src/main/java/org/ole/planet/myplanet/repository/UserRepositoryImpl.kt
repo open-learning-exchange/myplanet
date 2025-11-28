@@ -170,15 +170,20 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun getUserModel(): RealmUserModel? {
-        val userId = settings.getString("userId", null)?.takeUnless { it.isBlank() } ?: return null
+    override fun getUserModel(userId: String): RealmUserModel? {
         return databaseService.withRealm { realm ->
-            realm.where(RealmUserModel::class.java)
-                .equalTo("id", userId)
-                .or()
-                .equalTo("_id", userId)
-                .findFirst()
+            realm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
                 ?.let { realm.copyFromRealm(it) }
+        }
+    }
+
+    override suspend fun getOfflineVisits(userId: String): Int {
+        return databaseService.withRealm { realm ->
+            realm.where(RealmOfflineActivity::class.java)
+                .equalTo("userId", userId)
+                .equalTo("type", "login")
+                .findAll()
+                .size
         }
     }
 }

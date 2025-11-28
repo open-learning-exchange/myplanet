@@ -56,7 +56,6 @@ class BellDashboardFragment : BaseDashboardFragment() {
         _binding = FragmentHomeBellBinding.inflate(inflater, container, false)
         val view = binding.root
         declareElements()
-        onLoaded(view)
         user = profileDbHandler?.userModel
         return binding.root
     }

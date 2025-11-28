@@ -89,4 +89,12 @@ class CourseRepositoryImpl @Inject constructor(
             isNotNull("resourceLocalAddress")
         }
     }
+    override suspend fun getMyCourses(userId: String): List<RealmMyCourse> {
+        return databaseService.withRealm { realm ->
+            realm.where(RealmMyCourse::class.java)
+                .equalTo("userId", userId)
+                .findAll()
+                .let { realm.copyFromRealm(it) }
+        }
+    }
 }

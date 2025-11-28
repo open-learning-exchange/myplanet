@@ -209,4 +209,42 @@ class NotificationRepositoryImpl @Inject constructor(
             team?.name
         }
     }
+
+    override suspend fun getNotificationByParentId(parentId: String): org.ole.planet.myplanet.model.RealmTeamNotification? {
+        return databaseService.withRealm { realm ->
+            realm.where(org.ole.planet.myplanet.model.RealmTeamNotification::class.java)
+                .equalTo("parentId", parentId)
+                .findFirst()
+                ?.let { realm.copyFromRealm(it) }
+        }
+    }
+
+    override suspend fun getChatCount(teamId: String): Long {
+        return databaseService.withRealm { realm ->
+            realm.where(org.ole.planet.myplanet.model.RealmNews::class.java)
+                .equalTo("viewableBy", "teams")
+                .equalTo("viewableId", teamId)
+                .count()
+        }
+    }
+
+    override suspend fun getNotificationsByParentIds(parentIds: List<String>): List<org.ole.planet.myplanet.model.RealmTeamNotification> {
+        return databaseService.withRealm { realm ->
+            realm.where(org.ole.planet.myplanet.model.RealmTeamNotification::class.java)
+                .`in`("parentId", parentIds.toTypedArray())
+                .findAll()
+                .let { realm.copyFromRealm(it) }
+        }
+    }
+
+    override suspend fun getChatCounts(teamIds: List<String>): Map<String, Long> {
+        return databaseService.withRealm { realm ->
+            teamIds.associateWith { teamId ->
+                realm.where(org.ole.planet.myplanet.model.RealmNews::class.java)
+                    .equalTo("viewableBy", "teams")
+                    .equalTo("viewableId", teamId)
+                    .count()
+            }
+        }
+    }
 }

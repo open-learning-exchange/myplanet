@@ -411,6 +411,25 @@ class TeamRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun hasTasks(userId: String, start: Long, end: Long): Boolean {
+        return databaseService.withRealm { realm ->
+            realm.where(RealmTeamTask::class.java)
+                .equalTo("assignee", userId)
+                .between("deadline", start, end)
+                .count() > 0
+        }
+    }
+
+    override suspend fun getTasks(userId: String, start: Long, end: Long): List<RealmTeamTask> {
+        return databaseService.withRealm { realm ->
+            realm.where(RealmTeamTask::class.java)
+                .equalTo("assignee", userId)
+                .between("deadline", start, end)
+                .findAll()
+                .let { realm.copyFromRealm(it) }
+        }
+    }
+
     override suspend fun removeMember(teamId: String, userId: String) {
         if (teamId.isBlank() || userId.isBlank()) return
         executeTransaction { realm ->
@@ -420,6 +439,21 @@ class TeamRepositoryImpl @Inject constructor(
                 .equalTo("docType", "membership")
                 .findAll()
                 .deleteAllFromRealm()
+        }
+    }
+
+    override suspend fun getMyTeams(userId: String): List<RealmMyTeam> {
+        return databaseService.withRealm { realm ->
+            val teamIds = realm.where(RealmMyTeam::class.java)
+                .equalTo("userId", userId)
+                .equalTo("docType", "membership")
+                .findAll()
+                .map { it.teamId }
+
+            realm.where(RealmMyTeam::class.java)
+                .`in`("_id", teamIds.toTypedArray())
+                .findAll()
+                .let { realm.copyFromRealm(it) }
         }
     }
 

@@ -20,11 +20,8 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayout
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.RealmObject
-import io.realm.RealmResults
 import io.realm.Sort
 import java.util.Calendar
-import java.util.UUID
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.NotificationCallback
@@ -35,13 +32,7 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmOfflineActivity
-import org.ole.planet.myplanet.model.RealmTeamNotification
-import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.TransactionSyncManager
-import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_LOGIN
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
 import org.ole.planet.myplanet.ui.myhealth.UserListArrayAdapter
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
@@ -57,57 +48,9 @@ import org.ole.planet.myplanet.utilities.Utilities
 open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCallback,
     SyncListener {
     private val viewModel: DashboardViewModel by viewModels()
-    private val realm get() = requireRealmInstance()
     private var fullName: String? = null
     private var params = LinearLayout.LayoutParams(250, 100)
     private var di: DialogUtils.CustomProgressDialog? = null
-    private lateinit var offlineActivitiesResults: RealmResults<RealmOfflineActivity>
-    fun onLoaded(v: View) {
-        model = profileDbHandler.userModel
-        fullName = profileDbHandler.userModel?.getFullName()
-        if (fullName?.trim().isNullOrBlank()) {
-            fullName = profileDbHandler.userModel?.name
-            v.findViewById<LinearLayout>(R.id.ll_prompt).visibility = View.VISIBLE
-            v.findViewById<LinearLayout>(R.id.ll_prompt).setOnClickListener {
-                if (!childFragmentManager.isStateSaved) {
-                    UserInformationFragment.getInstance("", "", false).show(childFragmentManager, "")
-                }
-            }
-        } else {
-            v.findViewById<LinearLayout>(R.id.ll_prompt).visibility = View.GONE
-        }
-        v.findViewById<ImageView>(R.id.ic_close).setOnClickListener {
-            v.findViewById<LinearLayout>(R.id.ll_prompt).visibility = View.GONE
-        }
-        val imageView = v.findViewById<ImageView>(R.id.imageView)
-        if (!TextUtils.isEmpty(model?.userImage)) {
-            Glide.with(requireActivity())
-                .load(model?.userImage)
-                .diskCacheStrategy(DiskCacheStrategy.ALL)
-                .override(200, 200)
-                .circleCrop()
-                .placeholder(R.drawable.profile)
-                .error(R.drawable.profile)
-                .into(imageView)
-        } else {
-            imageView.setImageResource(R.drawable.profile)
-        }
-
-        if (isRealmInitialized() && mRealm.isInTransaction) {
-            mRealm.commitTransaction()
-        }
-
-        if (isRealmInitialized()) {
-            offlineActivitiesResults = mRealm.where(RealmOfflineActivity::class.java)
-                .equalTo("userName", profileDbHandler.userModel?.name)
-                .equalTo("type", KEY_LOGIN)
-                .findAllAsync()
-        }
-        v.findViewById<TextView>(R.id.txtRole).text = getString(R.string.user_role, model?.getRoleAsString())
-        val offlineVisits = profileDbHandler.offlineVisits
-        v.findViewById<TextView>(R.id.txtFullName).text = getString(R.string.user_name, fullName, offlineVisits)
-    }
-
     override fun forceDownloadNewsImages() {
         Utilities.toast(activity, getString(R.string.please_select_starting_date))
         val now = Calendar.getInstance()
@@ -115,9 +58,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             now[Calendar.YEAR] = i
             now[Calendar.MONTH] = i1
             now[Calendar.DAY_OF_MONTH] = i2
-            val imageList = realm.where(RealmMyLibrary::class.java).equalTo("isPrivate", true)
-                .greaterThan("createdDate", now.timeInMillis).equalTo("mediaType", "image")
-                .findAll()
+            val imageList = viewModel.uiState.value.dashboardData?.library?.filter { it.isPrivate == true && it.createdDate > now.timeInMillis && it.mediaType == "image" } ?: emptyList()
             val urls = ArrayList<String>()
             getUrlsAndStartDownload(imageList, urls) },
             now[Calendar.YEAR], now[Calendar.MONTH], now[Calendar.DAY_OF_MONTH]
@@ -139,10 +80,14 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
     private fun observeUiState() {
         viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.uiState.collect {
-                renderMyLibrary(it.library)
-                renderMyCourses(it.courses)
-                renderMyTeams(it.teams)
+            viewModel.uiState.collect { uiState ->
+                uiState.dashboardData?.let { data ->
+                    renderUserData(data.user, data.offlineVisits)
+                    renderMyLibrary(data.library)
+                    renderMyCourses(data.courses)
+                    renderMyTeams(data.teams)
+                    renderMyLife(data.myLife)
+                }
             }
         }
     }
@@ -156,6 +101,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         } else {
             view?.findViewById<TextView>(R.id.count_library)?.text =
                 getString(R.string.number_placeholder, dbMylibrary.size)
+            view?.findViewById<TextView>(R.id.count_library)?.visibility = View.VISIBLE
         }
         for ((itemCnt, items) in dbMylibrary.withIndex()) {
             val itemLibraryHomeBinding =
@@ -194,74 +140,83 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         }
     }
 
-    private fun renderMyTeams(teams: List<RealmMyTeam>) {
+    private fun renderMyTeams(teams: List<TeamWithNotification>) {
         val flexboxLayout: FlexboxLayout = view?.findViewById(R.id.flexboxLayoutTeams) ?: return
         flexboxLayout.removeAllViews()
-        val userId = profileDbHandler.userModel?.id
-        for ((count, ob) in teams.withIndex()) {
-            val v = LayoutInflater.from(activity).inflate(R.layout.item_home_my_team, flexboxLayout, false)
+        for ((count, teamWithNotification) in teams.withIndex()) {
+            val v = LayoutInflater.from(activity)
+                .inflate(R.layout.item_home_my_team, flexboxLayout, false)
             val name = v.findViewById<TextView>(R.id.tv_name)
             setBackgroundColor(v, count)
-            if (ob.teamType == "sync") {
+            if (teamWithNotification.team.teamType == "sync") {
                 name.setTypeface(null, Typeface.BOLD)
             }
-            handleClick(ob._id, ob.name, TeamDetailFragment(), name)
-            showNotificationIcons(ob, v, userId)
-            name.text = ob.name
+            handleClick(
+                teamWithNotification.team._id,
+                teamWithNotification.team.name,
+                TeamDetailFragment(),
+                name
+            )
+            showNotificationIcons(teamWithNotification, v)
+            name.text = teamWithNotification.team.name
             flexboxLayout.addView(v, params)
         }
         setCountText(teams.size, RealmMyTeam::class.java, requireView())
     }
 
-    private fun showNotificationIcons(ob: RealmObject, v: View, userId: String?) {
-        val current = Calendar.getInstance().timeInMillis
-        val tomorrow = Calendar.getInstance()
-        tomorrow.add(Calendar.DAY_OF_YEAR, 1)
+    private fun showNotificationIcons(teamWithNotification: TeamWithNotification, v: View) {
         val imgTask = v.findViewById<ImageView>(R.id.img_task)
         val imgChat = v.findViewById<ImageView>(R.id.img_chat)
-        val notification: RealmTeamNotification? = realm.where(RealmTeamNotification::class.java)
-            .equalTo("parentId", (ob as RealmMyTeam)._id).equalTo("type", "chat").findFirst()
-        val chatCount: Long = realm.where(RealmNews::class.java).equalTo("viewableBy", "teams")
-            .equalTo("viewableId", ob._id).count()
-        if (notification != null) {
-            imgChat.visibility = if (notification.lastCount < chatCount) View.VISIBLE else View.GONE
-        }
-        val tasks = realm.where(RealmTeamTask::class.java).equalTo("assignee", userId)
-            .between("deadline", current, tomorrow.timeInMillis).findAll()
-        imgTask.visibility = if (tasks.isNotEmpty()) View.VISIBLE else View.GONE
+        imgChat.visibility = if (teamWithNotification.hasUnreadChat) View.VISIBLE else View.GONE
+        imgTask.visibility = if (teamWithNotification.hasPendingTask) View.VISIBLE else View.GONE
     }
 
-    private fun myLifeListInit(flexboxLayout: FlexboxLayout) {
-        val dbMylife: MutableList<RealmMyLife> = ArrayList()
-        val rawMylife: List<RealmMyLife> = RealmMyLife.getMyLifeByUserId(realm, settings)
-        for (item in rawMylife) if (item.isVisible) dbMylife.add(item)
-        for ((itemCnt, items) in dbMylife.withIndex()) {
-            flexboxLayout.addView(getLayout(itemCnt, items), params)
+    private fun renderMyLife(myLife: List<RealmMyLife>) {
+        val flexboxLayout = view?.findViewById<FlexboxLayout>(R.id.flexboxLayoutMyLife)
+        flexboxLayout?.removeAllViews()
+        val visibleMyLife = myLife.filter { it.isVisible }
+        for ((itemCnt, items) in visibleMyLife.withIndex()) {
+            flexboxLayout?.addView(getLayout(itemCnt, items), params)
         }
     }
 
-    private fun setUpMyLife(userId: String?) {
-        databaseService.withRealm { realm ->
-            val realmObjects = RealmMyLife.getMyLifeByUserId(realm, settings)
-            if (realmObjects.isEmpty()) {
-                if (!realm.isInTransaction) {
-                    realm.beginTransaction()
+    private fun renderUserData(user: RealmUserModel?, offlineVisits: Int) {
+        if (view == null) return
+        val v = requireView()
+        model = user
+        fullName = user?.getFullName()
+        if (fullName?.trim().isNullOrBlank()) {
+            fullName = user?.name
+            v.findViewById<LinearLayout>(R.id.ll_prompt).visibility = View.VISIBLE
+            v.findViewById<LinearLayout>(R.id.ll_prompt).setOnClickListener {
+                if (!childFragmentManager.isStateSaved) {
+                    UserInformationFragment.getInstance("", "", false)
+                        .show(childFragmentManager, "")
                 }
-                val myLifeListBase = getMyLifeListBase(userId)
-                var ml: RealmMyLife
-                var weight = 1
-                for (item in myLifeListBase) {
-                    ml = realm.createObject(RealmMyLife::class.java, UUID.randomUUID().toString())
-                    ml.title = item.title
-                    ml.imageId = item.imageId
-                    ml.weight = weight
-                    ml.userId = item.userId
-                    ml.isVisible = true
-                    weight++
-                }
-                realm.commitTransaction()
             }
+        } else {
+            v.findViewById<LinearLayout>(R.id.ll_prompt).visibility = View.GONE
         }
+        v.findViewById<ImageView>(R.id.ic_close).setOnClickListener {
+            v.findViewById<LinearLayout>(R.id.ll_prompt).visibility = View.GONE
+        }
+        val imageView = v.findViewById<ImageView>(R.id.imageView)
+        if (!TextUtils.isEmpty(user?.userImage)) {
+            Glide.with(requireActivity())
+                .load(user?.userImage)
+                .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .override(200, 200)
+                .circleCrop()
+                .placeholder(R.drawable.profile)
+                .error(R.drawable.profile)
+                .into(imageView)
+        } else {
+            imageView.setImageResource(R.drawable.profile)
+        }
+        v.findViewById<TextView>(R.id.txtRole).text =
+            getString(R.string.user_role, user?.getRoleAsString())
+        v.findViewById<TextView>(R.id.txtFullName).text =
+            getString(R.string.user_name, fullName, offlineVisits)
     }
 
     private fun myLibraryItemClickAction(textView: TextView, items: RealmMyLibrary?) {
@@ -270,17 +225,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
                 openResource(it)
             }
         }
-    }
-
-    override fun onDestroy() {
-        if (isRealmInitialized()) {
-            mRealm.removeAllChangeListeners()
-            if (mRealm.isInTransaction) {
-                mRealm.cancelTransaction()
-            }
-            mRealm.close()
-        }
-        super.onDestroy()
     }
 
     private fun setCountText(countText: Int, c: Class<*>, v: View) {
@@ -310,32 +254,25 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         view.findViewById<View>(R.id.txtFullName).setOnClickListener {
             homeItemClickListener?.openCallFragment(UserProfileFragment())
         }
-        viewModel.loadUserContent(settings?.getString("userId", "--"))
+        val userId = settings?.getString("userId", "--") ?: ""
+        viewModel.loadDashboardData(userId)
         observeUiState()
 
         view.findViewById<FlexboxLayout>(R.id.flexboxLayoutCourse).flexDirection = FlexDirection.ROW
         view.findViewById<FlexboxLayout>(R.id.flexboxLayoutTeams).flexDirection = FlexDirection.ROW
-        val myLifeFlex = view.findViewById<FlexboxLayout>(R.id.flexboxLayoutMyLife)
-        myLifeFlex.flexDirection = FlexDirection.ROW
-
-        val userId = settings?.getString("userId", "--")
-        setUpMyLife(userId)
-        myLifeListInit(myLifeFlex)
-
-        if (isRealmInitialized() && mRealm.isInTransaction) {
-            mRealm.commitTransaction()
-        }
+        view.findViewById<FlexboxLayout>(R.id.flexboxLayoutMyLife).flexDirection = FlexDirection.ROW
     }
 
     override fun showResourceDownloadDialog() {
         viewLifecycleOwner.lifecycleScope.launch {
-            showDownloadDialog(getLibraryList(realm))
+            val libraries = viewModel.uiState.value.dashboardData?.library ?: emptyList()
+            showDownloadDialog(libraries)
         }
     }
 
     override fun showUserResourceDialog() {
         var dialog: AlertDialog? = null
-        val userModelList = realm.where(RealmUserModel::class.java).sort("joinDate", Sort.DESCENDING).findAll()
+        val userModelList = viewModel.uiState.value.dashboardData?.user?.let { listOf(it) } ?: emptyList()
         val adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, userModelList)
         val alertHealthListBinding = AlertHealthListBinding.inflate(LayoutInflater.from(activity))
         alertHealthListBinding.etSearch.visibility = View.GONE
@@ -348,7 +285,8 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         alertHealthListBinding.list.adapter = adapter
         alertHealthListBinding.list.onItemClickListener = AdapterView.OnItemClickListener { _, _, i, _ ->
             val selected = alertHealthListBinding.list.adapter.getItem(i) as RealmUserModel
-            showDownloadDialog(getLibraryList(realm, selected._id))
+            val libraries = viewModel.uiState.value.dashboardData?.library?.filter { it.userIds?.contains(selected.id) == true } ?: emptyList()
+            showDownloadDialog(libraries)
             dialog?.dismiss()
         }
 
@@ -364,13 +302,21 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
     override fun syncKeyId() {
         if (model?.getRoleAsString()?.contains("health") == true) {
-            settings?.let { TransactionSyncManager.syncAllHealthData(realm, it, this) }
+            settings?.let {
+                val databaseService = (activity?.application as? org.ole.planet.myplanet.MainApplication)?.databaseService
+                databaseService?.syncAllHealthData(it, this)
+            }
         } else {
-            settings?.let { TransactionSyncManager.syncKeyIv(realm, it, this, profileDbHandler) }
+            settings?.let {
+                val databaseService = (activity?.application as? org.ole.planet.myplanet.MainApplication)?.databaseService
+                val profileDbHandler = org.ole.planet.myplanet.service.UserProfileDbHandler(requireContext())
+                databaseService?.syncKeyIv(it, this, profileDbHandler)
+            }
         }
     }
 
     override fun onSyncStarted() {
+        di = DialogUtils.getCustomProgressDialog(activity)
         di?.show()
     }
 
@@ -381,5 +327,4 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     override fun onSyncFailed(msg: String?) {
         di?.dismiss()
     }
-
 }
