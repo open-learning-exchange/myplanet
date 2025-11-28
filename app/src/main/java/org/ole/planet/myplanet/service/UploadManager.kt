@@ -15,7 +15,9 @@ import java.util.Date
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.MainApplication
@@ -191,25 +193,35 @@ class UploadManager @Inject constructor(
 
                     for ((id, serialized, _id) in submissionsToUpload) {
                         try {
-                            val response: JsonObject? = if (TextUtils.isEmpty(_id)) {
-                                apiInterface.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/submissions", serialized).execute().body()
-                            } else {
-                                apiInterface.putDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/submissions/$_id", serialized).execute().body()
+                            val response = withTimeout(30000) {
+                                if (TextUtils.isEmpty(_id)) {
+                                    apiInterface.postDocSuspend(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/submissions", serialized)
+                                } else {
+                                    apiInterface.putDocSuspend(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/submissions/$_id", serialized)
+                                }
                             }
 
-                            if (response != null && id != null) {
-                                databaseService.withRealm { realm ->
-                                    realm.executeTransaction { transactionRealm ->
-                                        transactionRealm.where(RealmSubmission::class.java).equalTo("id", id).findFirst()?.let { sub ->
-                                            sub._id = getString("id", response)
-                                            sub._rev = getString("rev", response)
+                            if (response.isSuccessful) {
+                                val responseBody = response.body()
+                                if (responseBody != null && id != null) {
+                                    databaseService.withRealm { realm ->
+                                        realm.executeTransaction { transactionRealm ->
+                                            transactionRealm.where(RealmSubmission::class.java).equalTo("id", id).findFirst()?.let { sub ->
+                                                sub._id = getString("id", responseBody)
+                                                sub._rev = getString("rev", responseBody)
+                                            }
                                         }
                                     }
+                                    processedCount++
+                                } else {
+                                    errorCount++
                                 }
-                                processedCount++
                             } else {
                                 errorCount++
                             }
+                        } catch (e: TimeoutCancellationException) {
+                            errorCount++
+                            e.printStackTrace()
                         } catch (e: IOException) {
                             errorCount++
                             e.printStackTrace()
