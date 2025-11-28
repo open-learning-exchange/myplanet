@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.sync
 
+import android.util.Log
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -13,6 +14,10 @@ import org.ole.planet.myplanet.callback.BaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.TableDataUpdate
 import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
 
+fun interface DiffRefreshable {
+    fun refresh()
+}
+
 interface DiffRefreshableAdapter {
     fun refreshWithDiff()
 }
@@ -21,6 +26,7 @@ interface RealtimeSyncMixin {
     fun getWatchedTables(): List<String>
     fun onDataUpdated(table: String, update: TableDataUpdate)
     fun getSyncRecyclerView(): RecyclerView?
+    fun getDiffRefreshable(): DiffRefreshable? = null
     fun shouldAutoRefresh(table: String): Boolean = true
 }
 
@@ -71,15 +77,29 @@ class RealtimeSyncHelper(
     
     private fun refreshRecyclerView() {
         fragment.viewLifecycleOwner.lifecycleScope.launch {
+            val diffRefreshable = mixin.getDiffRefreshable()
+            if (diffRefreshable != null) {
+                diffRefreshable.refresh()
+                return@launch
+            }
+
             val adapter = mixin.getSyncRecyclerView()?.adapter ?: return@launch
             when {
                 adapter is DiffRefreshableAdapter -> adapter.refreshWithDiff()
                 adapter is ListAdapter<*, *> -> {
+                    @Suppress("UNCHECKED_CAST")
                     (adapter as ListAdapter<Any, *>).let { listAdapter ->
                         listAdapter.submitList(listAdapter.currentList.toList())
                     }
                 }
-                else -> adapter.notifyDataSetChanged()
+                else -> {
+                    Log.w(
+                        "RealtimeSyncHelper",
+                        "Adapter ${adapter.javaClass.simpleName} is using inefficient notifyDataSetChanged(). " +
+                                "Consider implementing DiffRefreshable or using ListAdapter."
+                    )
+                    adapter.notifyDataSetChanged()
+                }
             }
         }
     }
