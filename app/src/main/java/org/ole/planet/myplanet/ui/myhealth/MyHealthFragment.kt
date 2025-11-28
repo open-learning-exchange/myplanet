@@ -6,6 +6,8 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.os.CountDownTimer
+import android.os.Handler
+import android.os.Looper
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
@@ -22,6 +24,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatSpinner
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -34,12 +37,12 @@ import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.BaseRealtimeSyncListener
-import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.callback.TableDataUpdate
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
@@ -49,7 +52,6 @@ import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmMyHealthPojo
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
@@ -64,12 +66,11 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 class MyHealthFragment : Fragment() {
+    private val myHealthViewModel: MyHealthViewModel by viewModels()
 
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
 
-    @Inject
-    lateinit var syncManager: SyncManager
     @Inject
     lateinit var databaseService: DatabaseService
     @Inject
@@ -88,7 +89,9 @@ class MyHealthFragment : Fragment() {
     private lateinit var healthAdapter: AdapterHealthExamination
     var dialog: AlertDialog? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
-    lateinit var prefManager: SharedPrefManager
+    private lateinit var prefManager: SharedPrefManager
+    private val handler = Handler(Looper.getMainLooper())
+    private var syncCheckRunnable: Runnable? = null
     lateinit var settings: SharedPreferences
     private val serverUrlMapper = ServerUrlMapper()
     private val serverUrl: String
@@ -99,7 +102,6 @@ class MyHealthFragment : Fragment() {
         super.onCreate(savedInstanceState)
         prefManager = SharedPrefManager(requireContext())
         settings = requireContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        startHealthSync()
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -121,44 +123,9 @@ class MyHealthFragment : Fragment() {
         lifecycleScope.launch(Dispatchers.IO) {
             updateServerIfNecessary(mapping)
             withContext(Dispatchers.Main) {
-                startSyncManager()
+                myHealthViewModel.startSync()
             }
         }
-    }
-
-    private fun startSyncManager() {
-        syncManager.start(object : SyncListener {
-            override fun onSyncStarted() {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    if (isAdded && !requireActivity().isFinishing) {
-                        customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-                        customProgressDialog?.setText(getString(R.string.syncing_health_data))
-                        customProgressDialog?.show()
-                    }
-                }
-            }
-
-            override fun onSyncComplete() {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    if (isAdded) {
-                        customProgressDialog?.dismiss()
-                        customProgressDialog = null
-                        refreshHealthData()
-                        prefManager.setHealthSynced(true)
-                    }
-                }
-            }
-
-            override fun onSyncFailed(msg: String?) {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    if (isAdded) {
-                        customProgressDialog?.dismiss()
-                        customProgressDialog = null
-                        Snackbar.make(binding.root, "Sync failed: ${msg ?: "Unknown error"}", Snackbar.LENGTH_LONG).setAction("Retry") { startHealthSync() }.show()
-                    }
-                }
-            }
-        }, "full", listOf("health"))
     }
 
     private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
@@ -187,6 +154,7 @@ class MyHealthFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         view.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.secondary_bg))
         setupRealtimeSync()
+        observeSyncState()
         alertMyPersonalBinding = AlertMyPersonalBinding.inflate(LayoutInflater.from(context))
         binding.txtDob.hint = "yyyy-MM-dd'"
 
@@ -209,6 +177,16 @@ class MyHealthFragment : Fragment() {
 
         setupInitialData()
         setupButtons()
+        postStartHealthSync()
+    }
+
+    private fun postStartHealthSync() {
+        syncCheckRunnable = Runnable {
+            if (isAdded) {
+                startHealthSync()
+            }
+        }
+        handler.postDelayed(syncCheckRunnable!!, 3000)
     }
 
     private fun setupInitialData() {
@@ -221,10 +199,52 @@ class MyHealthFragment : Fragment() {
         return userProfileDbHandler.getUserModelCopy()
     }
 
+    private fun observeSyncState() {
+        lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
+                myHealthViewModel.syncState.collectLatest { state ->
+                    when (state) {
+                        is SyncState.Syncing -> {
+                            if (isAdded && !requireActivity().isFinishing) {
+                                customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
+                                customProgressDialog?.setText(getString(R.string.syncing_health_data))
+                                customProgressDialog?.show()
+                            }
+                        }
+
+                        is SyncState.Success -> {
+                            if (isAdded && !isDetached() && customProgressDialog?.isShowing == true) {
+                                customProgressDialog?.dismiss()
+                            }
+                            customProgressDialog = null
+                            refreshHealthData()
+                            prefManager.setHealthSynced(true)
+                        }
+
+                        is SyncState.Error -> {
+                            if (isAdded && !isDetached() && customProgressDialog?.isShowing == true) {
+                                customProgressDialog?.dismiss()
+                            }
+                            customProgressDialog = null
+                            Snackbar.make(
+                                binding.root,
+                                "Sync failed: ${state.message ?: "Unknown error"}",
+                                Snackbar.LENGTH_LONG
+                            ).setAction("Retry") { startHealthSync() }.show()
+                        }
+
+                        is SyncState.Idle -> {
+                            // Do nothing
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     private fun setupButtons() {
         val isHealthProvider = userModel?.rolesList?.contains("health") ?: false
-        binding.btnnewPatient.visibility =
-            if (isHealthProvider) View.VISIBLE else View.GONE
+        binding.btnnewPatient.visibility = if (isHealthProvider) View.VISIBLE else View.GONE
 
         binding.btnnewPatient.setOnClickListener {
             if (isHealthProvider) {
@@ -234,10 +254,19 @@ class MyHealthFragment : Fragment() {
         binding.updateHealth.visibility = View.VISIBLE
 
         binding.updateHealth.setOnClickListener {
-            startActivity(Intent(activity, AddMyHealthActivity::class.java).putExtra("userId", userId))
+            startActivity(
+                Intent(activity, AddMyHealthActivity::class.java).putExtra(
+                    "userId",
+                    userId
+                )
+            )
         }
 
-        binding.txtDob.text = if (TextUtils.isEmpty(userModel?.dob)) getString(R.string.birth_date) else getFormattedDate(userModel?.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+        binding.txtDob.text =
+            if (TextUtils.isEmpty(userModel?.dob)) getString(R.string.birth_date) else getFormattedDate(
+                userModel?.dob,
+                "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
+            )
     }
 
     private fun setupRealtimeSync() {
@@ -483,6 +512,8 @@ class MyHealthFragment : Fragment() {
         if (::realtimeSyncListener.isInitialized) {
             syncCoordinator.removeListener(realtimeSyncListener)
         }
+        syncCheckRunnable?.let { handler.removeCallbacks(it) }
+        syncCheckRunnable = null
         alertHealthListBinding?.etSearch?.removeTextChangedListener(textWatcher)
         textWatcher = null
         _binding = null
