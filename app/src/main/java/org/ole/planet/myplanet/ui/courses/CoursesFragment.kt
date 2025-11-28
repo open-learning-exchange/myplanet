@@ -77,6 +77,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private lateinit var confirmation: AlertDialog
     private var isUpdatingSelectAllState = false
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
+    private var searchTextWatcher: TextWatcher? = null
 
     @Inject
     lateinit var prefManager: SharedPrefManager
@@ -297,7 +298,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     private fun setupEventListeners() {
-        etSearch.addTextChangedListener(object : TextWatcher {
+        searchTextWatcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
                 if (!etSearch.isFocused) return
@@ -313,7 +314,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 }
             }
             override fun afterTextChanged(s: Editable) {}
-        })
+        }
+        etSearch.addTextChangedListener(searchTextWatcher)
 
         btnRemove.setOnClickListener {
             val alertDialogBuilder = AlertDialog.Builder(ContextThemeWrapper(this.context, R.style.CustomAlertDialog))
@@ -728,6 +730,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         if (::realtimeSyncHelper.isInitialized) {
             realtimeSyncHelper.cleanup()
         }
+        searchTextWatcher?.let { etSearch.removeTextChangedListener(it) }
         super.onDestroyView()
     }
 
