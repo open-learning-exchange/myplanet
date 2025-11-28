@@ -10,6 +10,7 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemAiResponseMessageBinding
@@ -56,12 +57,14 @@ class ChatAdapter(val context: Context, private val recyclerView: RecyclerView, 
         private val recyclerView: RecyclerView,
         private val coroutineScope: CoroutineScope?
     ) : RecyclerView.ViewHolder(textAiMessageBinding.root) {
+        internal var animationJob: kotlinx.coroutines.Job? = null
         fun bind(response: String, responseSource: Int,  shouldAnimate: Boolean, markAnimated: () -> Unit) {
             textAiMessageBinding.textGchatMessageOther.visibility = View.VISIBLE
+            animationJob?.cancel()
             if (responseSource == ChatMessage.RESPONSE_SOURCE_NETWORK) {
                 if (shouldAnimate && coroutineScope != null) {
                     textAiMessageBinding.textGchatMessageOther.text = context.getString(R.string.empty_text)
-                    coroutineScope.launch {
+                    animationJob = coroutineScope.launch {
                         animateTyping(response, markAnimated)
                     }
                 } else{
@@ -84,6 +87,9 @@ class ChatAdapter(val context: Context, private val recyclerView: RecyclerView, 
         private suspend fun animateTyping(response: String, markAnimated: () -> Unit) {
             var currentIndex = 0
             while (currentIndex < response.length) {
+                if (!isActive) {
+                    return
+                }
                 textAiMessageBinding.textGchatMessageOther.text = response.substring(0, currentIndex + 1)
                 recyclerView.scrollToPosition(bindingAdapterPosition)
                 currentIndex++
@@ -170,6 +176,12 @@ class ChatAdapter(val context: Context, private val recyclerView: RecyclerView, 
         }
         holder.itemView.setOnClickListener {
             chatItemClickListener?.onChatItemClick(position, chatItem)
+        }
+    }
+    override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
+        super.onViewRecycled(holder)
+        if (holder is ResponseViewHolder) {
+            holder.animationJob?.cancel()
         }
     }
 
