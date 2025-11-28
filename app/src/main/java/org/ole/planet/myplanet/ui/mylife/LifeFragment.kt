@@ -49,7 +49,7 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val myLifeList = getMyLifeByUserId(mRealm, model?.id)
-        adapterMyLife.submitList(myLifeList)
+        adapterMyLife.submitList(mRealm.copyFromRealm(myLifeList))
         recyclerView.setHasFixedSize(true)
         setupUI(binding.myLifeParentLayout, requireActivity())
         val callback: ItemTouchHelper.Callback = SimpleItemTouchHelperCallback(adapterMyLife)
