@@ -19,6 +19,7 @@ class MyProgressFragment : Fragment() {
     private var _binding: FragmentMyProgressBinding? = null
     private val binding get() = _binding!!
     private val progressViewModel: ProgressViewModel by viewModels()
+    private lateinit var myProgressAdapter: AdapterMyProgress
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentMyProgressBinding.inflate(inflater, container, false)
@@ -27,6 +28,9 @@ class MyProgressFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        myProgressAdapter = AdapterMyProgress(requireActivity())
+        binding.rvMyprogress.layoutManager = LinearLayoutManager(requireActivity())
+        binding.rvMyprogress.adapter = myProgressAdapter
         progressViewModel.loadCourseData()
         observeCourseData()
     }
@@ -34,9 +38,9 @@ class MyProgressFragment : Fragment() {
     private fun observeCourseData() {
         lifecycleScope.launch {
             progressViewModel.courseData.collect { courseData ->
-                courseData?.let {
-                    binding.rvMyprogress.layoutManager = LinearLayoutManager(requireActivity())
-                    binding.rvMyprogress.adapter = AdapterMyProgress(requireActivity(), it)
+                courseData?.let { jsonArray ->
+                    val list = jsonArray.map { it.asJsonObject }
+                    myProgressAdapter.submitList(list)
                 }
             }
         }
