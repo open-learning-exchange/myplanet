@@ -29,18 +29,29 @@ import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import retrofit2.Response
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.datamanager.AuthClient
+import android.util.Log
+
 object TransactionSyncManager {
-    fun authenticate(): Boolean {
-        val apiInterface = client?.create(ApiInterface::class.java)
-        try {
-            val response: Response<DocumentResponse>? = apiInterface?.getDocuments(UrlUtils.header, "${UrlUtils.getUrl()}/tablet_users/_all_docs")?.execute()
-            if (response != null) {
-                return response.code() == 200
+    suspend fun authenticate(): Boolean {
+        val startTime = System.currentTimeMillis()
+        val isAuthenticated = try {
+            withContext(Dispatchers.IO) {
+                val response = AuthClient.getDocuments(UrlUtils.header, "${UrlUtils.getUrl()}/tablet_users/_all_docs")
+                response.isSuccessful
             }
         } catch (e: IOException) {
             e.printStackTrace()
+            false
         }
-        return false
+        val duration = System.currentTimeMillis() - startTime
+        Log.d("TransactionSyncManager", "Authentication duration: $duration ms")
+        if (duration > 3000) {
+            Log.w("TransactionSyncManager", "Authentication took longer than 3 seconds")
+        }
+        return isAuthenticated
     }
 
     fun syncAllHealthData(mRealm: Realm, settings: SharedPreferences, listener: SyncListener) {
