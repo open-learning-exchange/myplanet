@@ -34,6 +34,8 @@ class AdapterResource(
     private var listener: OnLibraryItemSelected? = null
     private var homeItemClickListener: OnHomeItemClickListener? = null
     private var ratingChangeListener: OnRatingChangeListener? = null
+    private var isAscending = true
+    private var isTitleAscending = false
 
     companion object {
         private const val RATING_PAYLOAD = "payload_rating"
@@ -105,6 +107,21 @@ class AdapterResource(
         }
     }
 
+    fun areAllSelected(): Boolean {
+        return selectedItems.size == currentList.size
+    }
+
+    fun selectAllItems(selectAll: Boolean) {
+        if (selectAll) {
+            selectedItems.clear()
+            selectedItems.addAll(currentList)
+        } else {
+            selectedItems.clear()
+        }
+        notifyItemRangeChanged(0, currentList.size, SELECTION_PAYLOAD)
+        listener?.onSelectedListChange(selectedItems)
+    }
+
     private fun openLibrary(library: RealmMyLibrary?) {
         homeItemClickListener?.openLibraryDetailFragment(library)
     }
@@ -153,6 +170,26 @@ class AdapterResource(
                 context.getString(R.string.rating_count_format, library.timesRated ?: 0)
             holder.rowLibraryBinding.ratingBar.rating = averageRating
         }
+    }
+
+    fun toggleTitleSortOrder() {
+        isTitleAscending = !isTitleAscending
+        val sortedList = if (isTitleAscending) {
+            currentList.sortedBy { it.title?.lowercase(Locale.ROOT) }
+        } else {
+            currentList.sortedByDescending { it.title?.lowercase(Locale.ROOT) }
+        }
+        submitList(sortedList)
+    }
+
+    fun toggleSortOrder() {
+        isAscending = !isAscending
+        val sortedList = if (isAscending) {
+            currentList.sortedBy { it.createdDate }
+        } else {
+            currentList.sortedByDescending { it.createdDate }
+        }
+        submitList(sortedList)
     }
 
     fun updateTagSpannables(newTagSpannables: Map<String, SpannableString>) {

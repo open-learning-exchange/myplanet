@@ -54,14 +54,12 @@
                     android:maxLines="2"
                     android:padding="4dp"
                     android:textColor="@color/daynight_textColor" />
-                <com.google.android.flexbox.FlexboxLayout
-                    android:id="@+id/flexbox_drawable"
+                <TextView
+                    android:id="@+id/tv_tags"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:alignContent="space_around"
-                    app:alignItems="flex_start"
-                    app:flexWrap="wrap"
-                    app:showDivider="middle" />
+                    android:padding="4dp"
+                    android:textColor="@color/daynight_textColor" />
                 <TextView
                     android:id="@+id/tv_date"
                     android:layout_width="wrap_content"
