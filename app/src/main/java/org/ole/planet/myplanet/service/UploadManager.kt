@@ -15,6 +15,7 @@ import java.util.Date
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -191,18 +192,21 @@ class UploadManager @Inject constructor(
 
                     for ((id, serialized, _id) in submissionsToUpload) {
                         try {
-                            val response: JsonObject? = if (TextUtils.isEmpty(_id)) {
-                                apiInterface.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/submissions", serialized).execute().body()
-                            } else {
-                                apiInterface.putDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/submissions/$_id", serialized).execute().body()
+                            val response = withTimeoutOrNull(15000L) {
+                                if (TextUtils.isEmpty(_id)) {
+                                    apiInterface.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/submissions", serialized)
+                                } else {
+                                    apiInterface.putDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/submissions/$_id", serialized)
+                                }
                             }
 
-                            if (response != null && id != null) {
+                            val body = response?.body()
+                            if (response != null && response.isSuccessful && body != null && id != null) {
                                 databaseService.withRealm { realm ->
                                     realm.executeTransaction { transactionRealm ->
                                         transactionRealm.where(RealmSubmission::class.java).equalTo("id", id).findFirst()?.let { sub ->
-                                            sub._id = getString("id", response)
-                                            sub._rev = getString("rev", response)
+                                            sub._id = getString("id", body)
+                                            sub._rev = getString("rev", body)
                                         }
                                     }
                                 }
@@ -210,9 +214,6 @@ class UploadManager @Inject constructor(
                             } else {
                                 errorCount++
                             }
-                        } catch (e: IOException) {
-                            errorCount++
-                            e.printStackTrace()
                         } catch (e: Exception) {
                             errorCount++
                             e.printStackTrace()
