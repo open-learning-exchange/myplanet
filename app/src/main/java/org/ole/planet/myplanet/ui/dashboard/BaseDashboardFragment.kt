@@ -25,6 +25,7 @@ import io.realm.RealmResults
 import io.realm.Sort
 import java.util.Calendar
 import java.util.UUID
+import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.NotificationCallback
@@ -62,6 +63,10 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     private var params = LinearLayout.LayoutParams(250, 100)
     private var di: DialogUtils.CustomProgressDialog? = null
     private lateinit var offlineActivitiesResults: RealmResults<RealmOfflineActivity>
+
+    @Inject
+    lateinit var transactionSyncManager: TransactionSyncManager
+
     fun onLoaded(v: View) {
         model = profileDbHandler.userModel
         fullName = profileDbHandler.userModel?.getFullName()
@@ -364,9 +369,9 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
     override fun syncKeyId() {
         if (model?.getRoleAsString()?.contains("health") == true) {
-            settings?.let { TransactionSyncManager.syncAllHealthData(realm, it, this) }
+            settings?.let { transactionSyncManager.syncAllHealthData(realm, it, this) }
         } else {
-            settings?.let { TransactionSyncManager.syncKeyIv(realm, it, this, profileDbHandler) }
+            settings?.let { transactionSyncManager.syncKeyIv(realm, it, this, profileDbHandler) }
         }
     }
 

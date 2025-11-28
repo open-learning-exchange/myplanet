@@ -10,6 +10,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import dagger.Lazy
+import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Realm
 import java.util.Date
 import java.util.concurrent.Executors
@@ -37,6 +38,7 @@ import org.ole.planet.myplanet.datamanager.ApiClient
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.ManagerSync
+import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.insert
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.insertMyCourses
@@ -61,9 +63,9 @@ import org.ole.planet.myplanet.utilities.UrlUtils
 
 @Singleton
 class SyncManager @Inject constructor(
-    private val context: Context,
+    @ApplicationContext private val context: Context,
     private val databaseService: DatabaseService,
-    private val settings: SharedPreferences,
+    @AppPreferences private val settings: SharedPreferences,
     private val apiInterface: ApiInterface,
     private val improvedSyncManager: Lazy<ImprovedSyncManager>,
     private val transactionSyncManager: TransactionSyncManager,
