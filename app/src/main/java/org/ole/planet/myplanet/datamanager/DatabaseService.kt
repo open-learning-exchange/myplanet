@@ -11,26 +11,41 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.BuildConfig
 
-class DatabaseService(context: Context) {
-    init {
-        Realm.init(context)
-        val targetLogLevel = if (BuildConfig.DEBUG) LogLevel.DEBUG else LogLevel.ERROR
-        if (RealmLog.getLevel() != targetLogLevel) {
-            RealmLog.setLevel(targetLogLevel)
+class DatabaseService(private val context: Context) {
+    private var isRealmInitialized = false
+    private val initializationLock = Any()
+
+    private fun ensureRealmInitialized() {
+        synchronized(initializationLock) {
+            if (isRealmInitialized) return
+            Realm.init(context)
+            val targetLogLevel = if (BuildConfig.DEBUG) LogLevel.DEBUG else LogLevel.ERROR
+            if (RealmLog.getLevel() != targetLogLevel) {
+                RealmLog.setLevel(targetLogLevel)
+            }
+            val config = RealmConfiguration.Builder()
+                .name(Realm.DEFAULT_REALM_NAME)
+                .addModule(Realm.getDefaultModule())
+                .migration(AppRealmMigration())
+                .schemaVersion(4)
+                .build()
+            Realm.setDefaultConfiguration(config)
+            isRealmInitialized = true
         }
-        val config = RealmConfiguration.Builder()
-            .name(Realm.DEFAULT_REALM_NAME)
-            .deleteRealmIfMigrationNeeded()
-            .schemaVersion(4)
-            .build()
-        Realm.setDefaultConfiguration(config)
     }
 
-    @Deprecated("Use withRealm/withRealmAsync instead")
+    @Deprecated(
+        "Use withRealm/withRealmAsync instead",
+        replaceWith = ReplaceWith("withRealm { realm -> /* your code */ }")
+    )
     val realmInstance: Realm
-        get() = Realm.getDefaultInstance()
+        get() {
+            ensureRealmInitialized()
+            return Realm.getDefaultInstance()
+        }
 
     private inline fun <T> withRealmInstance(block: (Realm) -> T): T {
+        ensureRealmInitialized()
         val realm = Realm.getDefaultInstance()
         return try {
             block(realm)
@@ -42,16 +57,19 @@ class DatabaseService(context: Context) {
     }
 
     fun <T> withRealm(operation: (Realm) -> T): T {
+        ensureRealmInitialized()
         return withRealmInstance(operation)
     }
 
     suspend fun <T> withRealmAsync(operation: (Realm) -> T): T {
+        ensureRealmInitialized()
         return withContext(Dispatchers.IO) {
             withRealmInstance(operation)
         }
     }
 
     suspend fun executeTransactionAsync(transaction: (Realm) -> Unit) {
+        ensureRealmInitialized()
         withContext(Dispatchers.IO) {
             Realm.getDefaultInstance().use { realm ->
                 realm.executeTransaction { transactionRealm ->
