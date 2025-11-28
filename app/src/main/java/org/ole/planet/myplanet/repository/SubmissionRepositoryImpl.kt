@@ -124,7 +124,7 @@ class SubmissionRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getSubmissionsByUserId(userId: String): List<RealmSubmission> {
-        return queryList(RealmSubmission::class.java) {
+        return queryList(RealmSubmission::class.java, ensureLatest = true) {
             equalTo("userId", userId)
         }
     }

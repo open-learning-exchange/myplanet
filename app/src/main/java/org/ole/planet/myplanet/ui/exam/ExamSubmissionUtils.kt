@@ -21,7 +21,7 @@ object ExamSubmissionUtils {
         }
 
         val questionId = question.id
-        realm.executeTransactionAsync { r ->
+        realm.executeTransactionAsync({ r ->
             val realmSubmission = if (submissionId != null) {
                 r.where(RealmSubmission::class.java).equalTo("id", submissionId).findFirst()
             } else {
@@ -29,12 +29,13 @@ object ExamSubmissionUtils {
                     .equalTo("status", "pending")
                     .findAll().lastOrNull()
             }
-            
+
             val realmQuestion = r.where(RealmExamQuestion::class.java).equalTo("id", questionId).findFirst()
-            
+
             if (realmSubmission != null && realmQuestion != null) {
                 val answer = createOrRetrieveAnswer(r, realmSubmission, realmQuestion)
                 populateAnswer(answer, realmQuestion, ans, listAns, otherText, otherVisible)
+
                 if (type == "exam") {
                     val isCorrect = ExamAnswerUtils.checkCorrectAnswer(ans, listAns, realmQuestion)
                     answer.isPassed = isCorrect
@@ -43,15 +44,21 @@ object ExamSubmissionUtils {
                         answer.mistakes = answer.mistakes + 1
                     }
                 }
+
                 updateSubmissionStatus(r, realmSubmission, index, total, type)
             }
-        }
+        }, {
+            // Success
+        }, { _ ->
+            // Error
+        })
 
-        return if (type == "exam") {
+        val result = if (type == "exam") {
             ExamAnswerUtils.checkCorrectAnswer(ans, listAns, question)
         } else {
             true
         }
+        return result
     }
 
     private fun createOrRetrieveAnswer(
@@ -60,12 +67,19 @@ object ExamSubmissionUtils {
         question: RealmExamQuestion,
     ): RealmAnswer {
         val existing = submission?.answers?.find { it.questionId == question.id }
-        val ansObj = existing ?: realm.createObject(RealmAnswer::class.java, UUID.randomUUID().toString())
-        if (existing == null) {
-            submission?.answers?.add(ansObj)
+
+        val ansObj = if (existing != null) {
+            existing
+        } else {
+            val newAnswerId = UUID.randomUUID().toString()
+            val newAnswer = realm.createObject(RealmAnswer::class.java, newAnswerId)
+            submission?.answers?.add(newAnswer)
+            newAnswer
         }
+
         ansObj.questionId = question.id
         ansObj.submissionId = submission?.id
+        ansObj.examId = question.examId
         return ansObj
     }
 
@@ -142,7 +156,7 @@ object ExamSubmissionUtils {
     ) {
         answer.value = ""
         answer.valueChoices = RealmList<String>().apply {
-            listAns?.toMap()?.forEach { (text, id) ->
+            listAns?.forEach { (text, id) ->
                 if (id == "other" && otherVisible && !otherText.isNullOrEmpty()) {
                     add("""{"id":"other","text":"$otherText"}""")
                 } else {

@@ -22,6 +22,12 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 
+data class SubmissionWithCount(
+    val submission: RealmSubmission,
+    val count: Int,
+    val allSubmissions: List<RealmSubmission>
+)
+
 @AndroidEntryPoint
 class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
     private var _binding: FragmentMySubmissionBinding? = null
@@ -54,7 +60,8 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
             viewModel.submissions.collectLatest { submissions ->
                 val exams = viewModel.exams.value
                 val userNames = viewModel.userNames.value
-                setData(submissions, exams, userNames)
+                val submissionCounts = viewModel.submissionCounts.value
+                setData(submissions, exams, userNames, submissionCounts)
             }
         }
 
@@ -67,6 +74,11 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
         }
         binding.etSearch.addTextChangedListener(textWatcher)
         showHideRadioButton()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        viewModel.loadSubmissions(type ?: "", binding.etSearch.text.toString())
     }
 
     private fun showHideRadioButton() {
@@ -93,12 +105,14 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
     private fun setData(
         submissions: List<RealmSubmission>,
         exams: HashMap<String?, RealmStepExam>,
-        userNameMap: Map<String, String>
+        userNameMap: Map<String, String>,
+        submissionCountMap: Map<String?, Int>
     ) {
         val adapter = AdapterMySubmission(
             requireActivity(),
             submissions,
             exams,
+            submissionCountMap,
             nameResolver = { userId -> userId?.let { userNameMap[it] } },
             viewLifecycleOwner.lifecycleScope
         )

@@ -29,6 +29,9 @@ class SubmissionViewModel @Inject constructor(
     private val _userNames = MutableStateFlow<Map<String, String>>(emptyMap())
     val userNames: StateFlow<Map<String, String>> = _userNames
 
+    private val _submissionCounts = MutableStateFlow<Map<String?, Int>>(emptyMap())
+    val submissionCounts: StateFlow<Map<String?, Int>> = _submissionCounts
+
     private var allSubmissions: List<RealmSubmission> = emptyList()
 
     fun loadSubmissions(type: String, query: String) {
@@ -61,14 +64,21 @@ class SubmissionViewModel @Inject constructor(
             filtered = filtered.filter { examIds.contains(it.parentId) }
         }
 
-        val uniqueSubmissions = filtered
-            .groupBy { it.parentId }
+        val groupedSubmissions = filtered.groupBy { it.parentId }
+
+        val uniqueSubmissions = groupedSubmissions
             .mapValues { entry -> entry.value.maxByOrNull { it.lastUpdateTime ?: 0 } }
             .values
             .filterNotNull()
             .toList()
 
+        val submissionCountMap = groupedSubmissions.mapValues { it.value.size }
+            .mapKeys { entry ->
+                groupedSubmissions[entry.key]?.maxByOrNull { it.lastUpdateTime ?: 0 }?.id
+            }
+
         _submissions.value = uniqueSubmissions
+        _submissionCounts.value = submissionCountMap
 
         val submitterIds = uniqueSubmissions.mapNotNull { it.userId }.toSet()
         val userNameMap = submitterIds.mapNotNull { id ->
