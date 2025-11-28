@@ -10,7 +10,6 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 
 abstract class BaseMemberFragment : BaseTeamFragment() {
-    abstract val list: List<RealmUserModel?>
     abstract val adapter: RecyclerView.Adapter<*>?
     abstract val layoutManager: RecyclerView.LayoutManager?
     private var _binding: FragmentMembersBinding? = null
@@ -24,7 +23,6 @@ abstract class BaseMemberFragment : BaseTeamFragment() {
         super.onViewCreated(view, savedInstanceState)
         binding.rvMember.layoutManager = layoutManager
         binding.rvMember.adapter = adapter
-        showNoData(binding.tvNodata, list.size, "members")
     }
 
     override fun onDestroyView() {

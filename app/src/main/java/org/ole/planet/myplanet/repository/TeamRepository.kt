@@ -105,4 +105,5 @@ interface TeamRepository {
     suspend fun respondToMemberRequest(teamId: String, userId: String, accept: Boolean): Result<Unit>
     suspend fun getJoinedMembers(teamId: String): List<RealmUserModel>
     suspend fun getAssignee(userId: String): RealmUserModel?
+    suspend fun getMemberRequests(teamId: String, userId: String): List<org.ole.planet.myplanet.model.MemberRequest>
 }

@@ -723,4 +723,37 @@ class TeamRepositoryImpl @Inject constructor(
     override suspend fun getAssignee(userId: String): RealmUserModel? {
         return findByField(RealmUserModel::class.java, "id", userId)
     }
+
+    override suspend fun getMemberRequests(teamId: String, userId: String): List<org.ole.planet.myplanet.model.MemberRequest> {
+        return withRealm { realm ->
+            val teamMembers = realm.where(RealmMyTeam::class.java)
+                .equalTo("teamId", teamId)
+                .equalTo("docType", "membership")
+                .findAll()
+
+            val requestedMembers = realm.where(RealmMyTeam::class.java)
+                .equalTo("teamId", teamId)
+                .equalTo("docType", "request")
+                .findAll()
+
+            val memberUserIds = requestedMembers.mapNotNull { it.userId }
+            val memberUsers = realm.where(RealmUserModel::class.java)
+                .`in`("id", memberUserIds.toTypedArray())
+                .findAll()
+
+            val canModerate = teamMembers.any { it.userId == userId && it.isLeader }
+            val leadershipMap = teamMembers.associate { it.userId to it.isLeader }
+
+            memberUsers.map { user ->
+                org.ole.planet.myplanet.model.MemberRequest(
+                    userId = user.id ?: "",
+                    userName = user.name ?: "",
+                    isUserTeamLeader = leadershipMap[user.id] ?: false,
+                    canModerate = canModerate,
+                    teamMemberCount = teamMembers.size,
+                    isCurrentUser = user.id == userId
+                )
+            }
+        }
+    }
 }
