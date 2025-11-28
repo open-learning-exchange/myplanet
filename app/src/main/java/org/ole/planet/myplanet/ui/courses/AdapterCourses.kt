@@ -40,12 +40,12 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 class AdapterCourses(
     private val context: Context,
-    private var courseList: List<RealmMyCourse?>,
-    private val map: HashMap<String?, JsonObject>,
     private val userProfileDbHandler: UserProfileDbHandler,
     private val tagRepository: TagRepository,
     private val lifecycleOwner: LifecycleOwner
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+    private var courseList: List<RealmMyCourse?> = emptyList()
+    private var map: HashMap<String?, JsonObject> = HashMap()
     private val selectedItems: MutableList<RealmMyCourse?> = ArrayList()
     private var listener: OnCourseItemSelected? = null
     private var homeItemClickListener: OnHomeItemClickListener? = null
@@ -55,7 +55,7 @@ class AdapterCourses(
     private var isAscending = true
     private var isTitleAscending = false
     private var areAllSelected = false
-    var userModel: RealmUserModel?= null
+    var userModel: RealmUserModel? = null
     private val tagCache: MutableMap<String, List<RealmTag>> = mutableMapOf()
     private val tagRequestsInProgress: MutableSet<String> = mutableSetOf()
 
@@ -80,43 +80,41 @@ class AdapterCourses(
         return courseList
     }
 
-    private fun dispatchDiff(newList: List<RealmMyCourse?>) {
-        val diffResult = DiffUtils.calculateDiff(
-            courseList,
-            newList,
+    fun updateData(
+        newCourseList: List<RealmMyCourse?>,
+        newRatings: HashMap<String?, JsonObject>,
+        newProgress: HashMap<String?, JsonObject>
+    ) {
+        val diffResult = DiffUtils.calculateDiff(courseList,
+            newCourseList,
             areItemsTheSame = { old, new -> old?.id == new?.id },
             areContentsTheSame = { old, new ->
-                val ratingSame = map[old?.courseId] == map[new?.courseId]
-                val progressSame = progressMap?.get(old?.courseId) == progressMap?.get(new?.courseId)
+                val ratingSame = newRatings[old?.courseId] == newRatings[new?.courseId]
+                val progressSame =
+                    newProgress[old?.courseId] == newProgress[new?.courseId]
 
-                old?.courseTitle == new?.courseTitle &&
-                        old?.description == new?.description &&
-                        old?.gradeLevel == new?.gradeLevel &&
-                        old?.subjectLevel == new?.subjectLevel &&
-                        old?.createdDate == new?.createdDate &&
-                        old?.isMyCourse == new?.isMyCourse &&
-                        old?.getNumberOfSteps() == new?.getNumberOfSteps() &&
-                        ratingSame &&
-                        progressSame
+                old?.courseTitle == new?.courseTitle && old?.description == new?.description && old?.gradeLevel == new?.gradeLevel && old?.subjectLevel == new?.subjectLevel && old?.createdDate == new?.createdDate && old?.isMyCourse == new?.isMyCourse && old?.getNumberOfSteps() == new?.getNumberOfSteps() && ratingSame && progressSame
             },
             getChangePayload = { old, new ->
                 val bundle = Bundle()
-                if (map[old?.courseId] != map[new?.courseId]) {
+                if (newRatings[old?.courseId] != newRatings[new?.courseId]) {
                     bundle.putBoolean(RATING_PAYLOAD, true)
                 }
-                if (progressMap?.get(old?.courseId) != progressMap?.get(new?.courseId)) {
+                if (newProgress[old?.courseId] != newProgress[new?.courseId]) {
                     bundle.putBoolean(PROGRESS_PAYLOAD, true)
                 }
                 if (bundle.isEmpty) null else bundle
-            }
-        )
-        courseList = newList
+            })
+
+        courseList = newCourseList
+        map = newRatings
+        progressMap = newProgress
         diffResult.dispatchUpdatesTo(this)
     }
 
     fun setCourseList(courseList: List<RealmMyCourse?>) {
         if (this.courseList === courseList) return
-        dispatchDiff(courseList)
+        updateData(courseList, map, progressMap ?: HashMap())
     }
 
     private fun sortCourseListByTitle(list: List<RealmMyCourse?>): List<RealmMyCourse?> {
