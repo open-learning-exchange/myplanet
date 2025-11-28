@@ -19,6 +19,11 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.ui.exam.TakeExamFragment
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission.ViewHolderMySurvey
 import org.ole.planet.myplanet.utilities.DiffUtils
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
 
 class AdapterMySubmission(
@@ -26,6 +31,7 @@ class AdapterMySubmission(
     list: List<RealmSubmission>?,
     private val examHashMap: HashMap<String?, RealmStepExam>?,
     private val nameResolver: (String?) -> String?,
+    private val lifecycleScope: CoroutineScope,
 ) : ListAdapter<RealmSubmission, ViewHolderMySurvey>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem ->
@@ -65,7 +71,7 @@ class AdapterMySubmission(
         val binding = holder.binding
         binding.status.text = submission.status
         binding.date.text = getFormattedDate(submission.startTime)
-        showSubmittedBy(binding, submission)
+        showSubmittedBy(holder, binding, submission)
         if (examHashMap?.containsKey(submission.parentId) == true) {
             binding.title.text = examHashMap[submission.parentId]?.name
         }
@@ -79,21 +85,31 @@ class AdapterMySubmission(
         }
     }
 
-    private fun showSubmittedBy(binding: RowMysurveyBinding, submission: RealmSubmission) {
-        val embeddedName = runCatching {
-            submission.user?.takeIf { it.isNotBlank() }?.let { userJson ->
-                JSONObject(userJson).optString("name").takeIf { name -> name.isNotBlank() }
+    override fun onViewRecycled(holder: ViewHolderMySurvey) {
+        super.onViewRecycled(holder)
+        holder.job?.cancel()
+    }
+
+    private fun showSubmittedBy(holder: ViewHolderMySurvey, binding: RowMysurveyBinding, submission: RealmSubmission) {
+        holder.job?.cancel()
+        holder.job = lifecycleScope.launch {
+            val resolvedName = withContext(Dispatchers.IO) {
+                runCatching {
+                    submission.user?.takeIf { it.isNotBlank() }?.let { userJson ->
+                        JSONObject(userJson).optString("name").takeIf { name -> name.isNotBlank() }
+                    }
+                }.getOrNull() ?: nameResolver(submission.userId)
             }
-        }.getOrNull()
 
-        val resolvedName = embeddedName ?: nameResolver(submission.userId)
-
-        if (resolvedName.isNullOrBlank()) {
-            binding.submittedBy.visibility = View.GONE
-            binding.submittedBy.text = ""
-        } else {
-            binding.submittedBy.visibility = View.VISIBLE
-            binding.submittedBy.text = resolvedName
+            withContext(Dispatchers.Main) {
+                if (resolvedName.isNullOrBlank()) {
+                    binding.submittedBy.visibility = View.GONE
+                    binding.submittedBy.text = ""
+                } else {
+                    binding.submittedBy.visibility = View.VISIBLE
+                    binding.submittedBy.text = resolvedName
+                }
+            }
         }
     }
 
@@ -137,7 +153,9 @@ class AdapterMySubmission(
         }
     }
 
-    class ViewHolderMySurvey(val binding: RowMysurveyBinding) : RecyclerView.ViewHolder(binding.root)
+    class ViewHolderMySurvey(val binding: RowMysurveyBinding) : RecyclerView.ViewHolder(binding.root) {
+        var job: Job? = null
+    }
 
     companion object {
         @JvmStatic
