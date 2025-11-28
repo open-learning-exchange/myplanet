@@ -15,6 +15,8 @@ import java.util.Date
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -221,10 +223,14 @@ class UploadManager @Inject constructor(
                 }
 
                 uploadCourseProgress()
-                listener.onSuccess("Result sync completed successfully ($processedCount processed, $errorCount errors)")
+                withContext(Dispatchers.Main) {
+                    listener.onSuccess("Result sync completed successfully ($processedCount processed, $errorCount errors)")
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
-                listener.onSuccess("Error during result sync: ${e.message}")
+                withContext(Dispatchers.Main) {
+                    listener.onSuccess("Error during result sync: ${e.message}")
+                }
             }
         }
     }
