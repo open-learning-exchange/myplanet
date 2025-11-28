@@ -44,15 +44,14 @@
                 android:checked="true"
                 android:padding="@dimen/padding_normal"
                 android:text="@string/select_many_collections"
-                android:visibility="gone" />
+                android:visibility="visible" />
         </LinearLayout>
 
-        <ExpandableListView
+        <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/list_tags"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="1"
-            android:padding="@dimen/padding_normal" />
+            android:layout_weight="1" />
         <Button
             android:id="@+id/btn_ok"
             android:layout_width="wrap_content"

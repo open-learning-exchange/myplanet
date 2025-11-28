@@ -7,4 +7,5 @@ interface TagRepository {
     suspend fun buildChildMap(): HashMap<String, List<RealmTag>>
     suspend fun getTagsForResource(resourceId: String): List<RealmTag>
     suspend fun getTagsForCourse(courseId: String): List<RealmTag>
+    suspend fun getTagsByParentId(parentId: String): List<RealmTag>
 }

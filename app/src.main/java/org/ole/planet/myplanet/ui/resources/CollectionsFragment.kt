@@ -6,7 +6,6 @@ import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.CompoundButton
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -24,7 +23,7 @@ import org.ole.planet.myplanet.repository.TagRepository
 import org.ole.planet.myplanet.utilities.KeyboardUtils
 
 @AndroidEntryPoint
-class CollectionsFragment : DialogFragment(), TagAdapter.OnClickTagItem, CompoundButton.OnCheckedChangeListener {
+class CollectionsFragment : DialogFragment(), TagAdapter.OnClickTagItem {
     private var _binding: FragmentCollectionsBinding? = null
     private val binding get() = _binding!!
     @Inject
@@ -35,8 +34,7 @@ class CollectionsFragment : DialogFragment(), TagAdapter.OnClickTagItem, Compoun
     private var listener: TagClickListener? = null
     private var selectedItemsList: ArrayList<RealmTag> = ArrayList()
     private var textWatcher: TextWatcher? = null
-    private val tagListItems = mutableListOf<TagListItem>()
-    private val childMap = HashMap<String, List<RealmTag>>()
+    private val tagList = mutableListOf<TagListItem>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -69,44 +67,35 @@ class CollectionsFragment : DialogFragment(), TagAdapter.OnClickTagItem, Compoun
             override fun afterTextChanged(editable: Editable?) {}
         }
         binding.etFilter.addTextChangedListener(textWatcher)
-        binding.switchMany.setOnCheckedChangeListener(this)
     }
 
     private fun filterTags(charSequence: String) {
         val filteredList = if (charSequence.isEmpty()) {
-            tagListItems
+            tagList
         } else {
-            val filteredParents = list.filter {
-                it.name?.lowercase(Locale.ROOT)?.contains(charSequence.lowercase(Locale.ROOT)) == true
-            }
-            val filteredChildren = childMap.values.flatten().filter {
-                it.name?.lowercase(Locale.ROOT)?.contains(charSequence.lowercase(Locale.ROOT)) == true
-            }
-            val parentIds = filteredChildren.map { it.attachedTo ?: emptyList() }.flatten().distinct()
-            val parentsFromChildren = list.filter { parentIds.contains(it.id) }
-            (filteredParents + parentsFromChildren).distinct().map {
-                TagListItem.Parent(it, hasChildren = childMap.containsKey(it.id))
+            tagList.filter {
+                when (it) {
+                    is TagListItem.Parent -> it.tag.name?.lowercase(Locale.ROOT)?.contains(charSequence.lowercase(Locale.ROOT)) == true
+                    is TagListItem.Child -> it.tag.name?.lowercase(Locale.ROOT)?.contains(charSequence.lowercase(Locale.ROOT)) == true
+                }
             }
         }
         adapter.submitList(filteredList)
     }
 
-
     private fun setListAdapter() {
         viewLifecycleOwner.lifecycleScope.launch {
             list = tagRepository.getTags(dbType)
             selectedItemsList = ArrayList(recentList)
-            childMap.clear()
-            childMap.putAll(tagRepository.buildChildMap())
-            tagListItems.clear()
+            tagList.clear()
             list.forEach { tag ->
-                tagListItems.add(TagListItem.Parent(tag, hasChildren = childMap.containsKey(tag.id)))
+                tagList.add(TagListItem.Parent(tag))
             }
             adapter = TagAdapter(selectedItemsList, this@CollectionsFragment)
             binding.listTags.adapter = adapter
             binding.listTags.layoutManager = LinearLayoutManager(requireContext())
             adapter.setSelectMultiple(true)
-            adapter.submitList(tagListItems)
+            adapter.submitList(tagList)
             binding.btnOk.visibility = View.VISIBLE
         }
     }
@@ -122,26 +111,17 @@ class CollectionsFragment : DialogFragment(), TagAdapter.OnClickTagItem, Compoun
         } else {
             selectedItemsList.add(tag)
         }
-        val position = adapter.currentList.indexOfFirst {
-            (it is TagListItem.Parent && it.tag.id == tag.id) || (it is TagListItem.Child && it.tag.id == tag.id)
-        }
-        if (position != -1) {
-            adapter.notifyItemChanged(position)
-        }
+        adapter.notifyDataSetChanged()
     }
 
     override fun onParentTagClicked(parent: TagListItem.Parent, position: Int) {
+        parent.isExpanded = !parent.isExpanded
         val currentList = adapter.currentList.toMutableList()
-        val parentItem = currentList[position] as TagListItem.Parent
-        parentItem.isExpanded = !parentItem.isExpanded
-
-        if (parentItem.isExpanded) {
-            val children = childMap[parent.tag.id]?.map { TagListItem.Child(it) }
-            if (children != null) {
-                currentList.addAll(position + 1, children)
-            }
+        if (parent.isExpanded) {
+            val children = parent.tag.tags.map { TagListItem.Child(it) }
+            currentList.addAll(position + 1, children)
         } else {
-            currentList.removeAll { it is TagListItem.Child && it.tag.attachedTo?.contains(parent.tag.id) == true }
+            currentList.removeAll { it is TagListItem.Child && it.tag.parentId == parent.tag.id }
         }
         adapter.submitList(currentList)
     }
@@ -169,12 +149,5 @@ class CollectionsFragment : DialogFragment(), TagAdapter.OnClickTagItem, Compoun
 
     fun setListener(listener: TagClickListener) {
         this.listener = listener
-    }
-
-    override fun onCheckedChanged(buttonView: CompoundButton, isChecked: Boolean) {
-        MainApplication.isCollectionSwitchOn = isChecked
-        adapter.setSelectMultiple(isChecked)
-        adapter.notifyDataSetChanged()
-        binding.btnOk.visibility = if (isChecked) View.VISIBLE else View.GONE
     }
 }

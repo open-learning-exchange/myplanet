@@ -62,4 +62,10 @@ class TagRepositoryImpl @Inject constructor(
         val parentsById = parents.associateBy { it.id }
         return tagIds.mapNotNull { parentsById[it] }
     }
+
+    override suspend fun getTagsByParentId(parentId: String): List<RealmTag> {
+        return queryList(RealmTag::class.java) {
+            equalTo("attachedTo", parentId)
+        }
+    }
 }
