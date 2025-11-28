@@ -292,8 +292,9 @@ class UploadToShelfService @Inject constructor(
             val errorMessage = "Failed to save key/IV after $maxAttempts attempts"
             throw IOException(errorMessage)
         }
-
-        changeUserSecurity(unmanagedUser.planetCode, unmanagedUser.name, obj)
+        if (!unmanagedUser.planetCode.isNullOrEmpty() && !unmanagedUser.name.isNullOrEmpty()) {
+            changeUserSecurity(unmanagedUser.planetCode!!, unmanagedUser.name!!, obj)
+        }
         return true
     }
 
@@ -507,12 +508,12 @@ class UploadToShelfService @Inject constructor(
                     members?.add("roles", rolesArray)
                     jsonObject?.add("members", members)
                     withContext(Dispatchers.IO) {
-                        apiInterface.putDoc(
+                        apiInterface?.putDoc(
                             header,
                             "application/json",
                             "${UrlUtils.getUrl()}/${table}/_security",
                             jsonObject
-                        ).execute()
+                        )?.execute()
                     }
                 }
             } catch (e: IOException) {

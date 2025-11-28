@@ -65,8 +65,9 @@ object ServiceModule {
     fun provideUploadToShelfService(
         @ApplicationContext context: Context,
         databaseService: DatabaseService,
-        @AppPreferences preferences: SharedPreferences
+        @AppPreferences preferences: SharedPreferences,
+        @ApplicationScope scope: CoroutineScope
     ): UploadToShelfService {
-        return UploadToShelfService(context, databaseService, preferences)
+        return UploadToShelfService(context, databaseService, preferences, scope)
     }
 }
