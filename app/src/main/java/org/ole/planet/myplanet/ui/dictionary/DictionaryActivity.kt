@@ -34,14 +34,12 @@ class DictionaryActivity : BaseActivity() {
         title = getString(R.string.dictionary)
 
         lifecycleScope.launch {
-            withContext(Dispatchers.IO) {
+            val dictionarySize = withContext(Dispatchers.IO) {
                 databaseService.withRealm { realm ->
-                    val list = realm.where(RealmDictionary::class.java).findAll()
-                    withContext(Dispatchers.Main) {
-                        fragmentDictionaryBinding.tvResult.text = getString(R.string.list_size, list.size)
-                    }
+                    realm.where(RealmDictionary::class.java).count()
                 }
             }
+            fragmentDictionaryBinding.tvResult.text = getString(R.string.list_size, dictionarySize)
         }
 
         if (FileUtils.checkFileExist(this, Constants.DICTIONARY_URL)) {
