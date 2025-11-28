@@ -51,6 +51,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     private var fullName: String? = null
     private var params = LinearLayout.LayoutParams(250, 100)
     private var di: DialogUtils.CustomProgressDialog? = null
+
     override fun forceDownloadNewsImages() {
         Utilities.toast(activity, getString(R.string.please_select_starting_date))
         val now = Calendar.getInstance()
@@ -301,18 +302,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     override fun syncKeyId() {
-        if (model?.getRoleAsString()?.contains("health") == true) {
-            settings?.let {
-                val databaseService = (activity?.application as? org.ole.planet.myplanet.MainApplication)?.databaseService
-                databaseService?.syncAllHealthData(it, this)
-            }
-        } else {
-            settings?.let {
-                val databaseService = (activity?.application as? org.ole.planet.myplanet.MainApplication)?.databaseService
-                val profileDbHandler = org.ole.planet.myplanet.service.UserProfileDbHandler(requireContext())
-                databaseService?.syncKeyIv(it, this, profileDbHandler)
-            }
-        }
+        // todo: refactor this to use the view model
     }
 
     override fun onSyncStarted() {
