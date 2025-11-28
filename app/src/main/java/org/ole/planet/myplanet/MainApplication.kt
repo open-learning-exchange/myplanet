@@ -195,7 +195,9 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             initApp()
             ensureApiClientInitialized()
             initializeDatabaseConnection()
-            setupAnrWatchdog()
+            if (BuildConfig.DEBUG) {
+                setupAnrWatchdog()
+            }
             scheduleWorkersOnStart()
             observeNetworkForDownloads()
         }
@@ -247,7 +249,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
     private suspend fun setupAnrWatchdog() {
         withContext(Dispatchers.Default) {
-            anrWatchdog = ANRWatchdog(timeout = 5000L, listener = object : ANRWatchdog.ANRListener {
+            anrWatchdog = ANRWatchdog(timeout = 10000L, listener = object : ANRWatchdog.ANRListener {
                 override fun onAppNotResponding(message: String, blockedThread: Thread, duration: Long) {
                     applicationScope.launch {
                         createLog("anr", "ANR detected! Duration: ${duration}ms\n $message")
