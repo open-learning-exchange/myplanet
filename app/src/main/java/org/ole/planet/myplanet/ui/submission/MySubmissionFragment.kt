@@ -29,6 +29,7 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
     private val viewModel: SubmissionViewModel by viewModels()
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
+    private lateinit var textWatcher: TextWatcher
     var type: String? = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -57,13 +58,14 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
             }
         }
 
-        binding.etSearch.addTextChangedListener(object : TextWatcher {
+        textWatcher = object : TextWatcher {
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
             override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {
                 viewModel.loadSubmissions(type ?: "", charSequence.toString())
             }
             override fun afterTextChanged(editable: Editable) {}
-        })
+        }
+        binding.etSearch.addTextChangedListener(textWatcher)
         showHideRadioButton()
     }
 
@@ -97,7 +99,8 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
             requireActivity(),
             submissions,
             exams,
-            nameResolver = { userId -> userId?.let { userNameMap[it] } }
+            nameResolver = { userId -> userId?.let { userNameMap[it] } },
+            viewLifecycleOwner.lifecycleScope
         )
         val itemCount = adapter.itemCount
         val s = binding.etSearch.text.toString()
@@ -128,6 +131,11 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
     }
 
     override fun onDestroyView() {
+        if (this::textWatcher.isInitialized) {
+            binding.etSearch.removeTextChangedListener(textWatcher)
+        }
+        binding.rbExam.setOnCheckedChangeListener(null)
+        binding.rbSurvey.setOnCheckedChangeListener(null)
         _binding = null
         super.onDestroyView()
     }
