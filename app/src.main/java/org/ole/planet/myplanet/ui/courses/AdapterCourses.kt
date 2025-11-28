@@ -41,7 +41,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 class AdapterCourses(
     private val context: Context,
     private var courseList: List<RealmMyCourse?>,
-    private var map: HashMap<String?, JsonObject>,
+    private val map: HashMap<String?, JsonObject>,
     private val userProfileDbHandler: UserProfileDbHandler,
     private val tagRepository: TagRepository,
     private val lifecycleOwner: LifecycleOwner
@@ -153,10 +153,6 @@ class AdapterCourses(
 
     fun setProgressMap(progressMap: HashMap<String?, JsonObject>?) {
         this.progressMap = progressMap
-    }
-
-    fun setRatingMap(map: HashMap<String?, JsonObject>) {
-        this.map = map
     }
 
     fun setListener(listener: OnCourseItemSelected?) {
