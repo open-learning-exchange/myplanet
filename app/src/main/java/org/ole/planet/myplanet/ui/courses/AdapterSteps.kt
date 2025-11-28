@@ -11,6 +11,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowStepsBinding
 import org.ole.planet.myplanet.model.RealmCourseStep
@@ -96,7 +97,9 @@ class AdapterSteps(
                     rowStepsBinding.tvDescription.text = context.getString(R.string.test_size, cachedCount)
                 } else {
                     loadJob = coroutineScope.launch {
-                        val size = submissionRepository.getExamQuestionCount(stepId)
+                        val size = withContext(Dispatchers.IO) {
+                            submissionRepository.getExamQuestionCount(stepId)
+                        }
                         examQuestionCountCache[stepId] = size
                         if (bindingAdapterPosition == RecyclerView.NO_POSITION) {
                             return@launch
