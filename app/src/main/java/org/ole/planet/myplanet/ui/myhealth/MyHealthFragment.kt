@@ -280,27 +280,37 @@ class MyHealthFragment : Fragment() {
     }
 
     private fun selectPatient() {
-        userModelList = mRealm.where(RealmUserModel::class.java).sort("joinDate", Sort.DESCENDING).findAll()
-        adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, userModelList)
-        alertHealthListBinding = AlertHealthListBinding.inflate(LayoutInflater.from(context))
-        alertHealthListBinding?.btnAddMember?.setOnClickListener {
-            startActivity(Intent(requireContext(), BecomeMemberActivity::class.java))
-        }
-
-        alertHealthListBinding?.let { binding ->
-            setTextWatcher(binding.etSearch, binding.btnAddMember, binding.list)
-            binding.list.adapter = adapter
-            binding.list.onItemClickListener = OnItemClickListener { _: AdapterView<*>?, _: View, i: Int, _: Long ->
-                val selected = binding.list.adapter.getItem(i) as RealmUserModel
-                userId = if (selected._id.isNullOrEmpty()) selected.id else selected._id
-                getHealthRecords(userId)
-                dialog?.dismiss()
+        viewLifecycleOwner.lifecycleScope.launch {
+            val users = withContext(Dispatchers.IO) {
+                Realm.getDefaultInstance().use { realm ->
+                    val results = realm.where(RealmUserModel::class.java).sort("joinDate", Sort.DESCENDING).findAll()
+                    realm.copyFromRealm(results)
+                }
             }
-            sortList(binding.spnSort, binding.list)
-            dialog = AlertDialog.Builder(requireActivity(),R.style.AlertDialogTheme)
-                .setTitle(getString(R.string.select_health_member)).setView(binding.root)
-                .setCancelable(false).setNegativeButton(R.string.dismiss, null).create()
-            dialog?.show()
+            withContext(Dispatchers.Main) {
+                userModelList = users
+                adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, userModelList)
+                alertHealthListBinding = AlertHealthListBinding.inflate(LayoutInflater.from(context))
+                alertHealthListBinding?.btnAddMember?.setOnClickListener {
+                    startActivity(Intent(requireContext(), BecomeMemberActivity::class.java))
+                }
+
+                alertHealthListBinding?.let { binding ->
+                    setTextWatcher(binding.etSearch, binding.btnAddMember, binding.list)
+                    binding.list.adapter = adapter
+                    binding.list.onItemClickListener = OnItemClickListener { _: AdapterView<*>?, _: View, i: Int, _: Long ->
+                        val selected = binding.list.adapter.getItem(i) as RealmUserModel
+                        userId = if (selected._id.isNullOrEmpty()) selected.id else selected._id
+                        getHealthRecords(userId)
+                        dialog?.dismiss()
+                    }
+                    sortList(binding.spnSort, binding.list)
+                    dialog = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
+                        .setTitle(getString(R.string.select_health_member)).setView(binding.root)
+                        .setCancelable(false).setNegativeButton(R.string.dismiss, null).create()
+                    dialog?.show()
+                }
+            }
         }
     }
 
