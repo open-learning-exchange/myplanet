@@ -261,12 +261,16 @@ class AdapterCourses(
 
     private fun setupRatingBar(holder: ViewHoldercourse, course: RealmMyCourse) {
         holder.rowCourseBinding.ratingBar.setOnTouchListener { _: View?, event: MotionEvent ->
-            if (event.action == MotionEvent.ACTION_UP) homeItemClickListener?.showRatingDialog(
-                "course",
-                course.courseId,
-                course.courseTitle,
-                ratingChangeListener
-            )
+            if (event.action == MotionEvent.ACTION_UP) {
+                val ratingFlowId = System.currentTimeMillis()
+                android.util.Log.d("RatingPerformance", "[${ratingFlowId}] STEP 1: Rating bar touched - showing dialog")
+                homeItemClickListener?.showRatingDialog(
+                    "course",
+                    course.courseId,
+                    course.courseTitle,
+                    ratingChangeListener
+                )
+            }
             true
         }
     }
