@@ -235,9 +235,11 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
             uploadManager.uploadSubmissions()
             uploadManager.uploadCrashLog()
 
-            uploadToShelfService.uploadUserData {
-                uploadToShelfService.uploadHealth()
-                checkAllOperationsComplete()
+            lifecycleScope.launch {
+                uploadToShelfService.uploadUserData {
+                    uploadToShelfService.uploadHealth()
+                    checkAllOperationsComplete()
+                }
             }
 
             uploadManager.uploadUserActivities(object : SuccessListener {

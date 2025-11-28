@@ -50,15 +50,17 @@ class UploadToShelfService @Inject constructor(
 
     suspend fun uploadUserData(listener: SuccessListener) {
         val apiInterface = client?.create(ApiInterface::class.java)
-        try {
-            dbService.withRealm { realm ->
+        withContext(Dispatchers.IO) {
+            var realm: Realm? = null
+            try {
+                realm = dbService.realmInstance
                 val userModels: List<RealmUserModel> = realm.where(RealmUserModel::class.java)
                     .isEmpty("_id").or().equalTo("isUpdated", true)
                     .findAll()
                     .take(100)
 
                 if (userModels.isEmpty()) {
-                    return@withRealm
+                    return@withContext
                 }
 
                 val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
@@ -76,17 +78,21 @@ class UploadToShelfService @Inject constructor(
                         e.printStackTrace()
                     }
                 }
+                uploadToShelf(listener)
+            } catch (e: Exception) {
+                listener.onSuccess("Error during user data sync: ${e.localizedMessage}")
+            } finally {
+                realm?.close()
             }
-            uploadToShelf(listener)
-        } catch (e: Exception) {
-            listener.onSuccess("Error during user data sync: ${e.localizedMessage}")
         }
     }
 
     suspend fun uploadSingleUserData(userName: String?, listener: SuccessListener) {
         val apiInterface = client?.create(ApiInterface::class.java)
-        try {
-            dbService.withRealm { realm ->
+        withContext(Dispatchers.IO) {
+            var realm: Realm? = null
+            try {
+                realm = dbService.realmInstance
                 val userModel = realm.where(RealmUserModel::class.java)
                     .equalTo("name", userName)
                     .findFirst()
@@ -106,10 +112,12 @@ class UploadToShelfService @Inject constructor(
                         e.printStackTrace()
                     }
                 }
+                uploadSingleUserToShelf(userName, listener)
+            } catch (e: Exception) {
+                listener.onSuccess("Error during user data sync: ${e.localizedMessage}")
+            } finally {
+                realm?.close()
             }
-            uploadSingleUserToShelf(userName, listener)
-        } catch (e: Exception) {
-            listener.onSuccess("Error during user data sync: ${e.localizedMessage}")
         }
     }
 
@@ -189,15 +197,15 @@ class UploadToShelfService @Inject constructor(
                 val jsonObject = jsonElement.asJsonObject
 
                 val updateResponse = withContext(Dispatchers.IO) {
-                    apiInterface.putDoc(
+                    apiInterface?.putDoc(
                         header,
                         "application/json",
                         "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}",
                         jsonObject
-                    ).execute()
+                    )?.execute()
                 }
 
-                if (updateResponse.isSuccessful) {
+                if (updateResponse?.isSuccessful == true) {
                     val updatedRev = updateResponse.body()?.get("rev")?.asString
                     model._rev = updatedRev
                     model.isUpdated = false
