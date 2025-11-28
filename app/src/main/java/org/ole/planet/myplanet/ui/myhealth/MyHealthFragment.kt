@@ -26,6 +26,7 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.snackbar.Snackbar
@@ -90,8 +91,6 @@ class MyHealthFragment : Fragment() {
     var dialog: AlertDialog? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     private lateinit var prefManager: SharedPrefManager
-    private val handler = Handler(Looper.getMainLooper())
-    private var syncCheckRunnable: Runnable? = null
     lateinit var settings: SharedPreferences
     private val serverUrlMapper = ServerUrlMapper()
     private val serverUrl: String
@@ -177,16 +176,14 @@ class MyHealthFragment : Fragment() {
 
         setupInitialData()
         setupButtons()
-        postStartHealthSync()
-    }
-
-    private fun postStartHealthSync() {
-        syncCheckRunnable = Runnable {
+        view.post {
             if (isAdded) {
-                startHealthSync()
+                val isFastSync = settings.getBoolean("fastSync", false)
+                if (isFastSync && !prefManager.isHealthSynced()) {
+                    checkServerAndStartSync()
+                }
             }
         }
-        handler.postDelayed(syncCheckRunnable!!, 3000)
     }
 
     private fun setupInitialData() {
@@ -213,7 +210,7 @@ class MyHealthFragment : Fragment() {
                         }
 
                         is SyncState.Success -> {
-                            if (isAdded && !isDetached() && customProgressDialog?.isShowing == true) {
+                            if (isAdded && !isDetached() && customProgressDialog?.isShowing() == true) {
                                 customProgressDialog?.dismiss()
                             }
                             customProgressDialog = null
@@ -222,7 +219,7 @@ class MyHealthFragment : Fragment() {
                         }
 
                         is SyncState.Error -> {
-                            if (isAdded && !isDetached() && customProgressDialog?.isShowing == true) {
+                            if (isAdded && !isDetached() && customProgressDialog?.isShowing() == true) {
                                 customProgressDialog?.dismiss()
                             }
                             customProgressDialog = null
@@ -230,7 +227,7 @@ class MyHealthFragment : Fragment() {
                                 binding.root,
                                 "Sync failed: ${state.message ?: "Unknown error"}",
                                 Snackbar.LENGTH_LONG
-                            ).setAction("Retry") { startHealthSync() }.show()
+                            ).setAction("Retry") { checkServerAndStartSync() }.show()
                         }
 
                         is SyncState.Idle -> {
@@ -509,15 +506,16 @@ class MyHealthFragment : Fragment() {
     }
 
     override fun onDestroyView() {
+        super.onDestroyView()
+        if (customProgressDialog?.isShowing() == true) {
+            customProgressDialog?.dismiss()
+        }
         if (::realtimeSyncListener.isInitialized) {
             syncCoordinator.removeListener(realtimeSyncListener)
         }
-        syncCheckRunnable?.let { handler.removeCallbacks(it) }
-        syncCheckRunnable = null
         alertHealthListBinding?.etSearch?.removeTextChangedListener(textWatcher)
         textWatcher = null
         _binding = null
-        super.onDestroyView()
     }
 
     override fun onDestroy() {
