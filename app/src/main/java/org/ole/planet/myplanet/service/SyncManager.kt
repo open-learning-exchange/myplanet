@@ -25,10 +25,13 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.yield
 import kotlinx.coroutines.sync.withPermit
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
@@ -853,54 +856,65 @@ class SyncManager @Inject constructor(
             if (validIds.isEmpty()) return 0
 
             val batchSize = 25
-
             for (i in 0 until validIds.size step batchSize) {
-                val end = minOf(i + batchSize, validIds.size)
-                val batch = validIds.subList(i, end)
+                ensureActive()
+                withContext(Dispatchers.IO) {
+                    val end = minOf(i + batchSize, validIds.size)
+                    val batch = validIds.subList(i, end)
 
-                val keysObject = JsonObject()
-                keysObject.add("keys", Gson().fromJson(Gson().toJson(batch), JsonArray::class.java))
+                    val keysObject = JsonObject()
+                    keysObject.add("keys", Gson().fromJson(Gson().toJson(batch), JsonArray::class.java))
 
-                var response: JsonObject? = null
-                ApiClient.executeWithRetryAndWrap {
-                    apiInterface.findDocs(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/${shelfData.type}/_all_docs?include_docs=true", keysObject).execute()
-                }?.let {
-                    response = it.body()
-                }
-
-                if (response == null) continue
-
-                val responseRows = getJsonArray("rows", response)
-                if (responseRows.size() == 0) continue
-
-                val documentsToProcess = mutableListOf<JsonObject>()
-                for (j in 0 until responseRows.size()) {
-                    val rowObj = responseRows[j].asJsonObject
-                    if (rowObj.has("doc")) {
-                        val doc = getJsonObject("doc", rowObj)
-                        documentsToProcess.add(doc)
+                    val response = withTimeoutOrNull(30000L) {
+                        var response: JsonObject? = null
+                        ApiClient.executeWithRetryAndWrap {
+                            apiInterface.findDocs(
+                                UrlUtils.header,
+                                "application/json",
+                                "${UrlUtils.getUrl()}/${shelfData.type}/_all_docs?include_docs=true",
+                                keysObject
+                            ).execute()
+                        }?.let {
+                            response = it.body()
+                        }
+                        response
                     }
-                }
 
-                if (documentsToProcess.isNotEmpty()) {
-                    safeRealmOperation { realm ->
-                        realm.executeTransaction { realmTx ->
-                            documentsToProcess.forEach { doc ->
-                                try {
-                                    when (shelfData.type) {
-                                        "resources" -> insertMyLibrary(shelfId, doc, realmTx)
-                                        "meetups" -> insert(realmTx, doc)
-                                        "courses" -> insertMyCourses(shelfId, doc, realmTx)
-                                        "teams" -> insertMyTeams(doc, realmTx)
+                    if (response == null) return@withContext
+
+                    val responseRows = getJsonArray("rows", response)
+                    if (responseRows.size() == 0) return@withContext
+
+                    val documentsToProcess = mutableListOf<JsonObject>()
+                    for (j in 0 until responseRows.size()) {
+                        val rowObj = responseRows[j].asJsonObject
+                        if (rowObj.has("doc")) {
+                            val doc = getJsonObject("doc", rowObj)
+                            documentsToProcess.add(doc)
+                        }
+                    }
+
+                    if (documentsToProcess.isNotEmpty()) {
+                        safeRealmOperation { realm ->
+                            realm.executeTransaction { realmTx ->
+                                documentsToProcess.forEach { doc ->
+                                    try {
+                                        when (shelfData.type) {
+                                            "resources" -> insertMyLibrary(shelfId, doc, realmTx)
+                                            "meetups" -> insert(realmTx, doc)
+                                            "courses" -> insertMyCourses(shelfId, doc, realmTx)
+                                            "teams" -> insertMyTeams(doc, realmTx)
+                                        }
+                                        processedCount++
+                                    } catch (e: Exception) {
+                                        e.printStackTrace()
                                     }
-                                    processedCount++
-                                } catch (e: Exception) {
-                                    e.printStackTrace()
                                 }
                             }
                         }
                     }
                 }
+                yield()
             }
 
         } catch (e: Exception) {
