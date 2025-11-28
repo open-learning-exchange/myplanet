@@ -126,16 +126,18 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
     override fun onResume() {
         super.onResume()
-        val currentPosition = binding.viewPager2.currentItem
-        updateStepDisplay(currentPosition)
+        if (this::steps.isInitialized) {
+            val currentPosition = binding.viewPager2.currentItem
+            updateStepDisplay(currentPosition)
 
-        // Update Next/Finish button visibility when returning from exam
-        if (currentPosition >= steps.size) {
-            binding.nextStep.visibility = View.GONE
-            binding.finishStep.visibility = View.VISIBLE
-        } else {
-            binding.nextStep.visibility = View.VISIBLE
-            binding.finishStep.visibility = View.GONE
+            // Update Next/Finish button visibility when returning from exam
+            if (currentPosition >= steps.size) {
+                binding.nextStep.visibility = View.GONE
+                binding.finishStep.visibility = View.VISIBLE
+            } else {
+                binding.nextStep.visibility = View.VISIBLE
+                binding.finishStep.visibility = View.GONE
+            }
         }
     }
 
