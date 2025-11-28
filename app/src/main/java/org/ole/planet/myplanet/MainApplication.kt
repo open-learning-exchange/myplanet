@@ -187,7 +187,14 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         setupStrictMode()
         registerExceptionHandler()
         setupLifecycleCallbacks()
-        configureTheme()
+        // TODO: This can cause a "flash of wrong theme" (FOWT) on startup.
+        // The theme is loaded asynchronously, so the app may start with the default theme
+        // and then switch to the user's preferred theme.
+        // A proper solution would involve using the SplashScreen API to wait for the theme to be loaded.
+        // However, this was not possible due to build issues.
+        applicationScope.launch {
+            loadAndApplyTheme()
+        }
     }
 
     private fun performDeferredInitialization() {
@@ -283,9 +290,18 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         onAppStarted()
     }
 
-    private fun configureTheme() {
-        val savedThemeMode = getCurrentThemeMode()
-        applyThemeMode(savedThemeMode)
+    private suspend fun loadAndApplyTheme() {
+        android.os.Trace.beginSection("Theme Loading")
+        try {
+            val savedThemeMode = withContext(Dispatchers.IO) {
+                val sharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                sharedPreferences.getString("theme_mode", ThemeMode.FOLLOW_SYSTEM)
+                    ?: ThemeMode.FOLLOW_SYSTEM
+            }
+            applyThemeMode(savedThemeMode)
+        } finally {
+            android.os.Trace.endSection()
+        }
     }
 
     private suspend fun observeNetworkForDownloads() {
@@ -348,18 +364,9 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-
-        if (getCurrentThemeMode() != ThemeMode.FOLLOW_SYSTEM) return
-
-        val isNightMode = (newConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
-        val themeToApply = if (isNightMode) ThemeMode.DARK else ThemeMode.LIGHT
-
-        applyThemeMode(themeToApply)
-    }
-
-    private fun getCurrentThemeMode(): String {
-        val sharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        return sharedPreferences.getString("theme_mode", ThemeMode.FOLLOW_SYSTEM) ?: ThemeMode.FOLLOW_SYSTEM
+        applicationScope.launch {
+            loadAndApplyTheme()
+        }
     }
 
     override fun onActivityCreated(activity: Activity, bundle: Bundle?) {}
