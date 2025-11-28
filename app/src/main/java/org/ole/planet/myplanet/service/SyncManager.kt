@@ -26,6 +26,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.sync.Semaphore
@@ -673,16 +674,16 @@ class SyncManager @Inject constructor(
         }
     }
 
-    private suspend fun getShelvesWithDataBatchOptimized(): List<String> {
+    private suspend fun getShelvesWithDataBatchOptimized(): List<String> = withContext(Dispatchers.IO) {
         val shelvesWithData = mutableListOf<String>()
         val cachedShelves = getCachedShelvesWithData()
         if (cachedShelves.isNotEmpty()) {
-            return cachedShelves
+            return@withContext cachedShelves
         }
 
         val allShelves = ApiClient.executeWithRetryAndWrap {
             apiInterface.getDocuments(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/_all_docs").execute()
-        }?.body()?.rows ?: return emptyList()
+        }?.body()?.rows ?: return@withContext emptyList()
 
         coroutineScope {
             val semaphore = Semaphore(8)
@@ -700,7 +701,7 @@ class SyncManager @Inject constructor(
         }
 
         cacheShelvesWithData(shelvesWithData)
-        return shelvesWithData
+        shelvesWithData
     }
 
     private suspend fun checkShelfBatchForDataOptimized(shelfBatch: List<Rows>, apiInterface: ApiInterface): List<String> {
