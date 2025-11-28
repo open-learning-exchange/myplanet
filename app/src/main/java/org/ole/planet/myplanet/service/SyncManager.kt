@@ -527,140 +527,150 @@ class SyncManager @Inject constructor(
         val logger = SyncTimeLogger
         logger.startProcess("resource_sync")
         var processedItems = 0
-
-        try {
-            val realmInstance = backgroundRealm ?: mRealm
-            val newIds: MutableList<String?> = ArrayList()
-            var totalRows = 0
-            ApiClient.executeWithRetryAndWrap {
-                apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/resources/_all_docs?limit=0").execute()
-            }?.let { response ->
-                response.body()?.let { body ->
-                    if (body.has("total_rows")) {
-                        totalRows = body.get("total_rows").asInt
-                    }
-                }
-            }
-
-            val batchSize = 50
-            var skip = 0
-            var batchCount = 0
-
-            while (skip < totalRows || (totalRows == 0 && skip == 0)) {
-                batchCount++
-
-                try {
-                    var response: JsonObject? = null
-                    ApiClient.executeWithRetryAndWrap {
-                        apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/resources/_all_docs?include_docs=true&limit=$batchSize&skip=$skip").execute()
-                    }?.let {
-                        response = it.body()
-                    }
-
-                    if (response == null) {
-                        skip += batchSize
-                        continue
-                    }
-
-                    val rows = getJsonArray("rows", response)
-
-                    if (rows.size() == 0) {
-                        break
-                    }
-
-                    val batchDocuments = JsonArray()
-                    val validDocuments = mutableListOf<Pair<JsonObject, String>>()
-
-                    for (i in 0 until rows.size()) {
-                        val rowObj = rows[i].asJsonObject
-                        if (rowObj.has("doc")) {
-                            val doc = getJsonObject("doc", rowObj)
-                            val id = getString("_id", doc)
-
-                            if (!id.startsWith("_design") && id.isNotBlank()) {
-                                batchDocuments.add(doc)
-                                validDocuments.add(Pair(doc, id))
-                            }
+        withContext(Dispatchers.IO) {
+            try {
+                val realmInstance = backgroundRealm ?: mRealm
+                val newIds: MutableList<String?> = ArrayList()
+                var totalRows = 0
+                ApiClient.executeWithRetryAndWrap {
+                    apiInterface.getJsonObject(
+                        UrlUtils.header,
+                        "${UrlUtils.getUrl()}/resources/_all_docs?limit=0"
+                    ).execute()
+                }?.let { response ->
+                    response.body()?.let { body ->
+                        if (body.has("total_rows")) {
+                            totalRows = body.get("total_rows").asInt
                         }
                     }
+                }
 
-                    if (validDocuments.isNotEmpty()) {
-                        try {
-                            val chunkSize = 10
-                            val chunks = validDocuments.chunked(chunkSize)
-                            val idsWeAreProcessing = validDocuments.map { it.second }
+                val batchSize = 50
+                var skip = 0
+                var batchCount = 0
 
-                            val savedIds = mutableListOf<String>()
-                            for ((_, chunk) in chunks.withIndex()) {
-                                realmInstance.executeTransaction { realm ->
-                                    val chunkDocuments = JsonArray()
-                                    chunk.forEach { (doc, _) -> chunkDocuments.add(doc) }
+                while (skip < totalRows || (totalRows == 0 && skip == 0)) {
+                    batchCount++
 
-                                    val chunkIds = save(chunkDocuments, realm)
-                                    savedIds.addAll(chunkIds)
+                    try {
+                        var response: JsonObject? = null
+                        ApiClient.executeWithRetryAndWrap {
+                            apiInterface.getJsonObject(
+                                UrlUtils.header,
+                                "${UrlUtils.getUrl()}/resources/_all_docs?include_docs=true&limit=$batchSize&skip=$skip"
+                            ).execute()
+                        }?.let {
+                            response = it.body()
+                        }
+
+                        if (response == null) {
+                            skip += batchSize
+                            continue
+                        }
+
+                        val rows = getJsonArray("rows", response)
+
+                        if (rows.size() == 0) {
+                            break
+                        }
+
+                        val batchDocuments = JsonArray()
+                        val validDocuments = mutableListOf<Pair<JsonObject, String>>()
+
+                        for (i in 0 until rows.size()) {
+                            val rowObj = rows[i].asJsonObject
+                            if (rowObj.has("doc")) {
+                                val doc = getJsonObject("doc", rowObj)
+                                val id = getString("_id", doc)
+
+                                if (!id.startsWith("_design") && id.isNotBlank()) {
+                                    batchDocuments.add(doc)
+                                    validDocuments.add(Pair(doc, id))
                                 }
                             }
+                        }
 
-                            if (savedIds.isNotEmpty()) {
-                                val validIds = savedIds.filter { it.isNotBlank() }
-                                if (validIds.isNotEmpty()) {
-                                    newIds.addAll(validIds)
-                                    processedItems += validIds.size
+                        if (validDocuments.isNotEmpty()) {
+                            try {
+                                val chunkSize = 10
+                                val chunks = validDocuments.chunked(chunkSize)
+                                val idsWeAreProcessing = validDocuments.map { it.second }
+
+                                val savedIds = mutableListOf<String>()
+                                for ((_, chunk) in chunks.withIndex()) {
+                                    realmInstance.executeTransaction { realm ->
+                                        val chunkDocuments = JsonArray()
+                                        chunk.forEach { (doc, _) -> chunkDocuments.add(doc) }
+
+                                        val chunkIds = save(chunkDocuments, realm)
+                                        savedIds.addAll(chunkIds)
+                                    }
+                                }
+
+                                if (savedIds.isNotEmpty()) {
+                                    val validIds = savedIds.filter { it.isNotBlank() }
+                                    if (validIds.isNotEmpty()) {
+                                        newIds.addAll(validIds)
+                                        processedItems += validIds.size
+                                    } else {
+                                        newIds.addAll(idsWeAreProcessing)
+                                        processedItems += idsWeAreProcessing.size
+                                    }
                                 } else {
                                     newIds.addAll(idsWeAreProcessing)
                                     processedItems += idsWeAreProcessing.size
                                 }
-                            } else {
-                                newIds.addAll(idsWeAreProcessing)
-                                processedItems += idsWeAreProcessing.size
-                            }
-                        } catch (e: Exception) {
-                            e.printStackTrace()
+                            } catch (e: Exception) {
+                                e.printStackTrace()
 
-                            for ((doc, _) in validDocuments) {
-                                try {
-                                    realmInstance.executeTransaction { realm ->
-                                        val singleDocArray = JsonArray()
-                                        singleDocArray.add(doc)
-                                        val singleIds = save(singleDocArray, realm)
-                                        if (singleIds.isNotEmpty()) {
-                                            newIds.addAll(singleIds)
-                                            processedItems++
+                                for ((doc, _) in validDocuments) {
+                                    try {
+                                        realmInstance.executeTransaction { realm ->
+                                            val singleDocArray = JsonArray()
+                                            singleDocArray.add(doc)
+                                            val singleIds = save(singleDocArray, realm)
+                                            if (singleIds.isNotEmpty()) {
+                                                newIds.addAll(singleIds)
+                                                processedItems++
+                                            }
                                         }
+                                    } catch (e2: Exception) {
+                                        e2.printStackTrace()
                                     }
-                                } catch (e2: Exception) {
-                                    e2.printStackTrace()
                                 }
                             }
                         }
-                    }
 
-                    skip += rows.size()
-                    if (batchCount % 10 == 0) {
-                        val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                        settings.edit {
-                            putLong("ResourceLastSyncTime", System.currentTimeMillis())
-                            putInt("ResourceSyncPosition", skip)
+                        skip += rows.size()
+                        if (batchCount % 10 == 0) {
+                            val settings = MainApplication.context.getSharedPreferences(
+                                PREFS_NAME,
+                                Context.MODE_PRIVATE
+                            )
+                            settings.edit {
+                                putLong("ResourceLastSyncTime", System.currentTimeMillis())
+                                putInt("ResourceSyncPosition", skip)
+                            }
                         }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        skip += batchSize
+                    }
+                }
+
+                try {
+                    val validNewIds = newIds.filter { !it.isNullOrBlank() }
+                    if (validNewIds.isNotEmpty() && validNewIds.size == newIds.size) {
+                        removeDeletedResource(validNewIds, realmInstance)
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
-                    skip += batchSize
                 }
-            }
-
-            try {
-                val validNewIds = newIds.filter { !it.isNullOrBlank() }
-                if (validNewIds.isNotEmpty() && validNewIds.size == newIds.size) {
-                    removeDeletedResource(validNewIds, realmInstance)
-                }
+                logger.endProcess("resource_sync", processedItems)
             } catch (e: Exception) {
                 e.printStackTrace()
+                logger.endProcess("resource_sync", processedItems)
             }
-            logger.endProcess("resource_sync", processedItems)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            logger.endProcess("resource_sync", processedItems)
         }
     }
 
