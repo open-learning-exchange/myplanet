@@ -15,7 +15,8 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.datamanager.ApiClient.client
@@ -213,17 +214,25 @@ class UploadToShelfService @Inject constructor(
     }
 
     @Throws(IOException::class)
-    fun saveKeyIv(apiInterface: ApiInterface?, model: RealmUserModel, obj: JsonObject): Boolean {
-        val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
+    suspend fun saveKeyIv(apiInterface: ApiInterface?, userId: String?, obj: JsonObject): Boolean {
+        if (userId.isNullOrEmpty()) {
+            throw IOException("User ID is null or empty")
+        }
+        val unmanagedUser = dbService.withRealm { realm ->
+            val user = realm.where(RealmUserModel::class.java).equalTo("_id", userId).findFirst()
+                ?: throw IOException("User not found in database for ID: $userId")
+            realm.copyFromRealm(user)
+        }
+        val table = "userdb-${Utilities.toHex(unmanagedUser.planetCode)}-${Utilities.toHex(unmanagedUser.name)}"
         val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
         val ob = JsonObject()
         var keyString = generateKey()
         var iv: String? = generateIv()
-        if (!TextUtils.isEmpty(model.iv)) {
-            iv = model.iv
+        if (!TextUtils.isEmpty(unmanagedUser.iv)) {
+            iv = unmanagedUser.iv
         }
-        if (!TextUtils.isEmpty(model.key)) {
-            keyString = model.key
+        if (!TextUtils.isEmpty(unmanagedUser.key)) {
+            keyString = unmanagedUser.key
         }
         ob.addProperty("key", keyString)
         ob.addProperty("iv", iv)
@@ -231,25 +240,43 @@ class UploadToShelfService @Inject constructor(
         val maxAttempts = 3
         val retryDelayMs = 2000L
 
-        val response = runBlocking {
-            RetryUtils.retry(
-                maxAttempts = maxAttempts,
-                delayMs = retryDelayMs,
-                shouldRetry = { resp -> resp == null || !resp.isSuccessful || resp.body() == null }
-            ) {
-                apiInterface?.postDoc(header, "application/json", "${UrlUtils.getUrl()}/$table", ob)?.execute()
+        val response = try {
+            withContext(Dispatchers.IO) {
+                withTimeout(10000) {
+                    RetryUtils.retry(
+                        maxAttempts = maxAttempts,
+                        delayMs = retryDelayMs,
+                        shouldRetry = { resp -> resp == null || !resp.isSuccessful || resp.body() == null }
+                    ) {
+                        apiInterface?.postDoc(
+                            header,
+                            "application/json",
+                            "${UrlUtils.getUrl()}/$table",
+                            ob
+                        )?.execute()
+                    }
+                }
             }
+        } catch (e: Exception) {
+            throw IOException("Failed to save key/IV", e)
         }
 
         if (response?.isSuccessful == true && response.body() != null) {
-            model.key = keyString
-            model.iv = iv
+            dbService.withRealm { realm ->
+                realm.executeTransaction {
+                    val userToUpdate = it.where(RealmUserModel::class.java).equalTo("_id", userId).findFirst()
+                    userToUpdate?.let { user ->
+                        user.key = keyString
+                        user.iv = iv
+                    }
+                }
+            }
         } else {
             val errorMessage = "Failed to save key/IV after $maxAttempts attempts"
             throw IOException(errorMessage)
         }
 
-        changeUserSecurity(model, obj)
+        changeUserSecurity(unmanagedUser.planetCode, unmanagedUser.name, obj)
         return true
     }
 
@@ -339,10 +366,18 @@ class UploadToShelfService @Inject constructor(
                     unmanagedUsers.forEach { model ->
                         try {
                             if (model.id?.startsWith("guest") == true) return@forEach
-                            val jsonDoc = apiInterface?.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/${model._id}")?.execute()?.body()
+                            val jsonDoc = apiInterface?.getJsonObject(
+                                UrlUtils.header,
+                                "${UrlUtils.getUrl()}/shelf/${model._id}"
+                            )?.execute()?.body()
                             val `object` = getShelfData(backgroundRealm, model.id, jsonDoc)
                             `object`.addProperty("_rev", getString("_rev", jsonDoc))
-                            apiInterface?.putDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/shelf/${sharedPreferences.getString("userId", "")}", `object`)?.execute()
+                            apiInterface?.putDoc(
+                                UrlUtils.header,
+                                "application/json",
+                                "${UrlUtils.getUrl()}/shelf/${sharedPreferences.getString("userId", "")}",
+                                `object`
+                            )?.execute()
                         } catch (e: Exception) {
                             e.printStackTrace()
                         }
@@ -415,7 +450,11 @@ class UploadToShelfService @Inject constructor(
         return `object`
     }
 
-    private fun mergeJsonArray(array1: JsonArray?, array2: JsonArray, removedIds: List<String>): JsonArray {
+    private fun mergeJsonArray(
+        array1: JsonArray?,
+        array2: JsonArray,
+        removedIds: List<String>
+    ): JsonArray {
         val array = JsonArray()
         array.addAll(array1)
         for (e in array2) {
@@ -427,12 +466,18 @@ class UploadToShelfService @Inject constructor(
     }
 
     companion object {
-        private fun changeUserSecurity(model: RealmUserModel, obj: JsonObject) {
-            val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
-            val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
+        private suspend fun changeUserSecurity(planetCode: String, name: String, obj: JsonObject) {
+            val table = "userdb-${Utilities.toHex(planetCode)}-${Utilities.toHex(name)}"
+            val header = "Basic ${Base64.encodeToString(
+                ("${obj["name"].asString}:${obj["password"].asString}").toByteArray(),
+                Base64.NO_WRAP
+            )}"
             val apiInterface = client?.create(ApiInterface::class.java)
             try {
-                val response: Response<JsonObject?>? = apiInterface?.getJsonObject(header, "${UrlUtils.getUrl()}/${table}/_security")?.execute()
+                val response: Response<JsonObject?>? = withContext(Dispatchers.IO) {
+                    apiInterface?.getJsonObject(header, "${UrlUtils.getUrl()}/${table}/_security")
+                        ?.execute()
+                }
                 if (response?.body() != null) {
                     val jsonObject = response.body()
                     val members = jsonObject?.getAsJsonObject("members")
@@ -444,7 +489,14 @@ class UploadToShelfService @Inject constructor(
                     rolesArray.add("health")
                     members?.add("roles", rolesArray)
                     jsonObject?.add("members", members)
-                    apiInterface.putDoc(header, "application/json", "${UrlUtils.getUrl()}/${table}/_security", jsonObject).execute()
+                    withContext(Dispatchers.IO) {
+                        apiInterface.putDoc(
+                            header,
+                            "application/json",
+                            "${UrlUtils.getUrl()}/${table}/_security",
+                            jsonObject
+                        ).execute()
+                    }
                 }
             } catch (e: IOException) {
                 e.printStackTrace()

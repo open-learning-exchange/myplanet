@@ -379,14 +379,22 @@ class Service @Inject constructor(
             }
 
             if (userModel != null) {
-                getUploadToShelfService().saveKeyIv(retrofitInterface, userModel, obj)
-                withContext(Dispatchers.Main) {
-                    if (context is ProcessUserDataActivity) {
-                        val userName = obj["name"].asString
-                        context.startUpload("becomeMember", userName, securityCallback)
+                try {
+                    getUploadToShelfService().saveKeyIv(retrofitInterface, userModel._id, obj)
+                    withContext(Dispatchers.Main) {
+                        if (context is ProcessUserDataActivity) {
+                            val userName = obj["name"].asString
+                            context.startUpload("becomeMember", userName, securityCallback)
+                        }
                     }
+                    Result.success(userModel)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    withContext(Dispatchers.Main) {
+                        securityCallback?.onSecurityDataUpdated()
+                    }
+                    Result.failure(e)
                 }
-                Result.success(userModel)
             } else {
                 Result.failure(Exception("Failed to save user or user model was null"))
             }
