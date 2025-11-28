@@ -79,9 +79,6 @@ class JoinedMemberFragment : BaseMemberFragment() {
     private val joinedMembers: List<JoinedMemberData>
         get() = cachedJoinedMembers ?: emptyList()
 
-    override val list: List<RealmUserModel>
-        get() = joinedMembers.map { it.user }
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         viewLifecycleOwner.lifecycleScope.launch {

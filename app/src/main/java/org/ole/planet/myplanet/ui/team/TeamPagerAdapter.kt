@@ -53,8 +53,8 @@ class TeamPagerAdapter(
             MembersPage -> if (fragment is JoinedMemberFragment) {
                 fragment.setMemberChangeListener(memberChangeListener)
             }
-            ApplicantsPage, JoinRequestsPage -> if (fragment is MembersFragment) {
-                fragment.setMemberChangeListener(memberChangeListener)
+            ApplicantsPage, JoinRequestsPage -> {
+                // The listener is now passed in the constructor of the adapter, so this is no longer needed.
             }
             DocumentsPage, ResourcesPage -> if (fragment is TeamResourceFragment) {
                 MainApplication.listener = fragment
