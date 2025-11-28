@@ -255,7 +255,7 @@ open class RealmNews : RealmObject() {
                 e.printStackTrace()
             }
 
-            news.userId = user?.id
+        news.userId = user?._id
             news.replyTo = map["replyTo"] ?: ""
             news.user = GsonUtils.gson.toJson(user?.serialize())
             if (news.imageUrls == null) {

@@ -265,7 +265,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
                 userCache.containsKey(userId) -> userCache[userId]
                 ::mRealm.isInitialized -> {
                     val managedUser = mRealm.where(RealmUserModel::class.java)
-                        .equalTo("id", userId)
+                        .equalTo("_id", userId)
                         .findFirst()
                     val detachedUser = managedUser?.let {
                         try {
