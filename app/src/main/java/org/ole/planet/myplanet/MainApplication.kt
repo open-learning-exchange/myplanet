@@ -7,6 +7,8 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.content.res.Configuration
 import android.os.Bundle
+import android.os.Looper
+import android.os.Trace
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
@@ -25,6 +27,7 @@ import javax.inject.Inject
 import javax.inject.Provider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -178,12 +181,18 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     private var activityReferences = 0
     private var isActivityChangingConfigurations = false
     private var isFirstLaunch = true
+    private var isFirstActivityCreated = false
     private lateinit var anrWatchdog: ANRWatchdog
 
     override fun onCreate() {
         super.onCreate()
         setupCriticalProperties()
-        performDeferredInitialization()
+        Trace.beginSection("App Initialization")
+        try {
+            performDeferredInitialization()
+        } finally {
+            Trace.endSection()
+        }
         setupStrictMode()
         registerExceptionHandler()
         setupLifecycleCallbacks()
@@ -196,7 +205,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             ensureApiClientInitialized()
             initializeDatabaseConnection()
             setupAnrWatchdog()
-            scheduleWorkersOnStart()
             observeNetworkForDownloads()
         }
     }
@@ -260,13 +268,16 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
     private suspend fun scheduleWorkersOnStart() {
         withContext(Dispatchers.Default) {
-            if (preferences.getBoolean("autoSync", false) && preferences.contains("autoSyncInterval")) {
-                val syncInterval = preferences.getInt("autoSyncInterval", 60 * 60)
-                scheduleAutoSyncWork(syncInterval)
+            val autoSyncEnabled = preferences.getBoolean("autoSync", false)
+            val autoSyncInterval = preferences.getInt("autoSyncInterval", 60 * 60)
+
+            if (autoSyncEnabled && preferences.contains("autoSyncInterval")) {
+                scheduleAutoSyncWork(autoSyncInterval)
             } else {
                 cancelAutoSyncWork()
             }
             scheduleStayOnlineWork()
+            delay(29000)
             scheduleTaskNotificationWork()
             startNetworkMonitoring()
         }
@@ -317,7 +328,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         val autoSyncWork: PeriodicWorkRequest? = syncInterval?.let { PeriodicWorkRequest.Builder(AutoSyncWorker::class.java, it.toLong(), TimeUnit.SECONDS).build() }
         val workManager = WorkManager.getInstance(this)
         if (autoSyncWork != null) {
-            workManager.enqueueUniquePeriodicWork(AUTO_SYNC_WORK_TAG, ExistingPeriodicWorkPolicy.UPDATE, autoSyncWork)
+            workManager.enqueueUniquePeriodicWork(AUTO_SYNC_WORK_TAG, ExistingPeriodicWorkPolicy.KEEP, autoSyncWork)
         }
     }
 
@@ -327,15 +338,15 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     }
 
     private fun scheduleStayOnlineWork() {
-        val stayOnlineWork: PeriodicWorkRequest = PeriodicWorkRequest.Builder(StayOnlineWorker::class.java, 900, TimeUnit.SECONDS).build()
+        val stayOnlineWork: PeriodicWorkRequest = PeriodicWorkRequest.Builder(StayOnlineWorker::class.java, 15, TimeUnit.MINUTES).build()
         val workManager = WorkManager.getInstance(this)
-        workManager.enqueueUniquePeriodicWork(STAY_ONLINE_WORK_TAG, ExistingPeriodicWorkPolicy.UPDATE, stayOnlineWork)
+        workManager.enqueueUniquePeriodicWork(STAY_ONLINE_WORK_TAG, ExistingPeriodicWorkPolicy.KEEP, stayOnlineWork)
     }
 
     private fun scheduleTaskNotificationWork() {
-        val taskNotificationWork: PeriodicWorkRequest = PeriodicWorkRequest.Builder(TaskNotificationWorker::class.java, 900, TimeUnit.SECONDS).build()
+        val taskNotificationWork: PeriodicWorkRequest = PeriodicWorkRequest.Builder(TaskNotificationWorker::class.java, 15, TimeUnit.MINUTES).build()
         val workManager = WorkManager.getInstance(this)
-        workManager.enqueueUniquePeriodicWork(TASK_NOTIFICATION_WORK_TAG, ExistingPeriodicWorkPolicy.UPDATE, taskNotificationWork)
+        workManager.enqueueUniquePeriodicWork(TASK_NOTIFICATION_WORK_TAG, ExistingPeriodicWorkPolicy.KEEP, taskNotificationWork)
     }
 
     private fun startNetworkMonitoring() {
@@ -362,7 +373,20 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         return sharedPreferences.getString("theme_mode", ThemeMode.FOLLOW_SYSTEM) ?: ThemeMode.FOLLOW_SYSTEM
     }
 
-    override fun onActivityCreated(activity: Activity, bundle: Bundle?) {}
+    override fun onActivityCreated(activity: Activity, bundle: Bundle?) {
+        if (!isFirstActivityCreated) {
+            isFirstActivityCreated = true
+            deferredScheduleWorkers()
+        }
+    }
+
+    private fun deferredScheduleWorkers() {
+        android.os.Handler(Looper.getMainLooper()).postDelayed({
+            applicationScope.launch {
+                scheduleWorkersOnStart()
+            }
+        }, 1000)
+    }
 
     override fun onActivityStarted(activity: Activity) {
         if (++activityReferences == 1 && !isActivityChangingConfigurations) {
