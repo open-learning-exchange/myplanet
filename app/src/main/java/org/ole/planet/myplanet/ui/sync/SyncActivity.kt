@@ -28,6 +28,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SwitchCompat
 import androidx.core.content.edit
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.RecyclerView
 import com.afollestad.materialdialogs.DialogAction
@@ -92,7 +93,7 @@ import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
-abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVersionCallback,
+abstract class SyncActivity : ProcessUserDataActivity(), CheckVersionCallback,
     ConfigurationIdListener {
     private lateinit var syncDate: TextView
     lateinit var lblLastSyncDate: TextView
@@ -148,6 +149,29 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        lifecycleScope.launch {
+            repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
+                syncManager.syncStatus.collect { status ->
+                    when (status) {
+                        is SyncManager.SyncStatus.Idle -> {
+                            // Do nothing
+                        }
+
+                        is SyncManager.SyncStatus.Syncing -> {
+                            onSyncStarted()
+                        }
+
+                        is SyncManager.SyncStatus.Success -> {
+                            onSyncComplete()
+                        }
+
+                        is SyncManager.SyncStatus.Error -> {
+                            onSyncFailed(status.message)
+                        }
+                    }
+                }
+            }
+        }
         settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         editor = settings.edit()
         requestAllPermissions()
@@ -394,7 +418,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     fun startSync(type: String) {
-        syncManager.start(this@SyncActivity, type)
+        syncManager.start(null, type)
     }
 
     private fun saveConfigAndContinue(
@@ -442,13 +466,13 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         return if (isUrlValid(url)) setUrlParts(url, pin) else ""
     }
 
-    override fun onSyncStarted() {
+    private fun onSyncStarted() {
         customProgressDialog.setText(getString(R.string.syncing_data_please_wait))
         customProgressDialog.show()
         isProgressDialogShowing = true
     }
 
-    override fun onSyncFailed(msg: String?) {
+    private fun onSyncFailed(msg: String?) {
         if (isProgressDialogShowing) {
             customProgressDialog.dismiss()
         }
@@ -464,7 +488,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
     }
 
-    override fun onSyncComplete() {
+    private fun onSyncComplete() {
         val activityContext = this@SyncActivity
         lifecycleScope.launch(Dispatchers.IO) {
             try {

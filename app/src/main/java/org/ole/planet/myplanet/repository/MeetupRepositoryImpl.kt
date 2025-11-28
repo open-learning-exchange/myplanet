@@ -66,4 +66,16 @@ class MeetupRepositoryImpl @Inject constructor(
         }
         return updatedMeetup ?: getMeetupById(meetupId)
     }
+
+    override suspend fun createMeetup(meetup: RealmMeetup): Boolean {
+        return try {
+            executeTransaction { realm ->
+                realm.copyToRealmOrUpdate(meetup)
+            }
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
 }
