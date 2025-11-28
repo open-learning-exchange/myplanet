@@ -26,7 +26,8 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import org.ole.planet.myplanet.MainApplication
@@ -76,6 +77,8 @@ class SyncManager @Inject constructor(
     private var listener: SyncListener? = null
     private var backgroundSync: Job? = null
     private var betaSync = false
+    private val _syncStatus = MutableStateFlow<SyncStatus>(SyncStatus.Idle)
+    val syncStatus: StateFlow<SyncStatus> = _syncStatus
     private val syncDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
     private val initializationJob: Job by lazy {
         syncScope.launch {
@@ -86,8 +89,10 @@ class SyncManager @Inject constructor(
     fun start(listener: SyncListener?, type: String, syncTables: List<String>? = null) {
         this.listener = listener
         if (!isSyncing) {
+            _syncStatus.value = SyncStatus.Idle
             settings.edit { remove("concatenated_links") }
             listener?.onSyncStarted()
+            _syncStatus.value = SyncStatus.Syncing
 
             // Use improved sync manager if beta sync is enabled
             val useImproved = settings.getBoolean("useImprovedSync", false)
@@ -105,6 +110,13 @@ class SyncManager @Inject constructor(
         }
     }
 
+    sealed class SyncStatus {
+        object Idle : SyncStatus()
+        object Syncing : SyncStatus()
+        data class Success(val message: String) : SyncStatus()
+        data class Error(val message: String) : SyncStatus()
+    }
+
     private fun initializeAndStartImprovedSync(listener: SyncListener?, syncTables: List<String>?) {
         syncScope.launch {
             try {
@@ -120,6 +132,7 @@ class SyncManager @Inject constructor(
                 manager.start(listener, syncMode, syncTables)
             } catch (e: Exception) {
                 listener?.onSyncFailed(e.message)
+                _syncStatus.value = SyncStatus.Error(e.message ?: "Unknown error")
             }
         }
     }
@@ -134,6 +147,7 @@ class SyncManager @Inject constructor(
         isSyncing = false
         settings.edit { putLong("LastSync", Date().time) }
         listener?.onSyncComplete()
+        _syncStatus.value = SyncStatus.Success("Sync completed")
         try {
             if (!betaSync) {
                 if (::mRealm.isInitialized && !mRealm.isClosed) {
@@ -655,6 +669,7 @@ class SyncManager @Inject constructor(
             isSyncing = false
             MainApplication.syncFailedCount++
             listener?.onSyncFailed(message)
+            _syncStatus.value = SyncStatus.Error(message ?: "Unknown error")
         }
     }
 
