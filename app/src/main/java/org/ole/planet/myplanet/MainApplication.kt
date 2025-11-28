@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.content.res.Configuration
 import android.os.Bundle
+import android.os.Trace
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
@@ -179,15 +180,29 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     private var isActivityChangingConfigurations = false
     private var isFirstLaunch = true
     private lateinit var anrWatchdog: ANRWatchdog
+    private var currentActivity: Activity? = null
 
     override fun onCreate() {
         super.onCreate()
         setupCriticalProperties()
+        loadLocale()
         performDeferredInitialization()
         setupStrictMode()
         registerExceptionHandler()
         setupLifecycleCallbacks()
         configureTheme()
+    }
+
+    private fun loadLocale() {
+        applicationScope.launch {
+            val persistedLanguage = LocaleHelper.loadPersistedLocale(this@MainApplication)
+            if (persistedLanguage != LocaleHelper.currentLanguage) {
+                withContext(Dispatchers.Main) {
+                    LocaleHelper.setLocale(this@MainApplication, persistedLanguage)
+                    currentActivity?.recreate()
+                }
+            }
+        }
     }
 
     private fun performDeferredInitialization() {
@@ -343,7 +358,9 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     }
 
     override fun attachBaseContext(base: Context) {
+        Trace.beginSection("MainApplication#attachBaseContext")
         super.attachBaseContext(LocaleHelper.onAttach(base))
+        Trace.endSection()
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
@@ -371,6 +388,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     }
 
     override fun onActivityResumed(activity: Activity) {
+        currentActivity = activity
         if (isFirstLaunch) {
             isFirstLaunch = false
         }
@@ -385,7 +403,11 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
     override fun onActivitySaveInstanceState(activity: Activity, bundle: Bundle) {}
 
-    override fun onActivityDestroyed(activity: Activity) {}
+    override fun onActivityDestroyed(activity: Activity) {
+        if (currentActivity == activity) {
+            currentActivity = null
+        }
+    }
 
     private fun onAppForegrounded() {
         if (isFirstLaunch) {

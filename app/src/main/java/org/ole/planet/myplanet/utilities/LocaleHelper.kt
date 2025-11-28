@@ -5,21 +5,32 @@ import android.content.res.Configuration
 import androidx.core.content.edit
 import androidx.preference.PreferenceManager
 import java.util.Locale
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 object LocaleHelper {
     private const val SELECTED_LANGUAGE = "Locale.Helper.Selected.Language"
+    var currentLanguage: String? = null
+        private set
 
     fun onAttach(context: Context): Context {
-        val lang = getPersistedData(context, Locale.getDefault().language)
-        return setLocale(context, lang)
+        val defaultLanguage = Locale.getDefault().language
+        return setLocale(context, defaultLanguage, persist = false)
+    }
+
+    suspend fun loadPersistedLocale(context: Context): String = withContext(Dispatchers.IO) {
+        getPersistedData(context, Locale.getDefault().language)
     }
 
     fun getLanguage(context: Context): String {
         return getPersistedData(context, Locale.getDefault().language)
     }
 
-    fun setLocale(context: Context, language: String): Context {
-        persist(context, language)
+    fun setLocale(context: Context, language: String, persist: Boolean = true): Context {
+        currentLanguage = language
+        if (persist) {
+            persist(context, language)
+        }
 
         val locale = Locale(language)
         Locale.setDefault(locale)
