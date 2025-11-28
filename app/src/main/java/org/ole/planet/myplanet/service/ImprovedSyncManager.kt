@@ -15,6 +15,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -95,10 +96,14 @@ class ImprovedSyncManager @Inject constructor(
                 if (TransactionSyncManager.authenticate()) {
                     performSync(syncMode, syncTables)
                 } else {
-                    handleException("Authentication failed")
+                    withContext(Dispatchers.Main) {
+                        handleException("Authentication failed")
+                    }
                 }
             } catch (e: Exception) {
-                handleException(e.message ?: "Unknown error")
+                withContext(Dispatchers.Main) {
+                    handleException(e.message ?: "Unknown error")
+                }
             } finally {
                 cleanup()
             }

@@ -29,18 +29,21 @@ import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import retrofit2.Response
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+
 object TransactionSyncManager {
-    fun authenticate(): Boolean {
+    suspend fun authenticate(): Boolean {
         val apiInterface = client?.create(ApiInterface::class.java)
-        try {
-            val response: Response<DocumentResponse>? = apiInterface?.getDocuments(UrlUtils.header, "${UrlUtils.getUrl()}/tablet_users/_all_docs")?.execute()
-            if (response != null) {
-                return response.code() == 200
+        return try {
+            val response = withContext(Dispatchers.IO) {
+                apiInterface?.getDocuments(UrlUtils.header, "${UrlUtils.getUrl()}/tablet_users/_all_docs")?.execute()
             }
+            response?.code() == 200
         } catch (e: IOException) {
             e.printStackTrace()
+            false
         }
-        return false
     }
 
     fun syncAllHealthData(mRealm: Realm, settings: SharedPreferences, listener: SyncListener) {

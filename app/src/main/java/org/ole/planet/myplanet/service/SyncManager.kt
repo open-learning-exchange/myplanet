@@ -26,6 +26,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.sync.Semaphore
@@ -167,7 +168,9 @@ class SyncManager @Inject constructor(
             if (TransactionSyncManager.authenticate()) {
                 startSync(type, syncTables)
             } else {
-                handleException(context.getString(R.string.invalid_configuration))
+                withContext(Dispatchers.Main) {
+                    handleException(context.getString(R.string.invalid_configuration))
+                }
                 cleanupMainSync()
             }
         }
