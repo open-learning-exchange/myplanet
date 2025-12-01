@@ -189,31 +189,24 @@ class UserProfileDbHandler @Inject constructor(
 
     val maxOpenedResource: String
         get() = realmService.withRealm { realm ->
-            val result = realm.where(RealmResourceActivity::class.java)
+            val activities = realm.where(RealmResourceActivity::class.java)
                 .equalTo("user", fullName)
                 .equalTo("type", KEY_RESOURCE_OPEN)
                 .findAll()
-                .where()
-                .distinct("resourceId")
-                .findAll()
 
-            var maxCount = 0L
-            var maxOpenedResource = ""
-
-            for (realmResourceActivities in result) {
-                val count = realm.where(RealmResourceActivity::class.java)
-                    .equalTo("user", fullName)
-                    .equalTo("type", KEY_RESOURCE_OPEN)
-                    .equalTo("resourceId", realmResourceActivities.resourceId)
-                    .count()
-
-                if (count > maxCount) {
-                    maxCount = count
-                    maxOpenedResource = "${realmResourceActivities.title}"
-                }
+            if (activities.isEmpty()) {
+                return@withRealm ""
             }
 
-            if (maxCount == 0L) "" else "$maxOpenedResource opened $maxCount times"
+            val mostOpenedResource = activities
+                .groupBy { it.resourceId }
+                .maxByOrNull { it.value.size }
+
+            mostOpenedResource?.let {
+                val resourceTitle = it.value.first().title
+                val count = it.value.size
+                "$resourceTitle opened $count times"
+            } ?: ""
         }
 
     companion object {
