@@ -7,6 +7,7 @@ import android.content.DialogInterface
 import android.content.SharedPreferences
 import android.graphics.Color
 import android.os.Build
+import android.os.Trace
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
@@ -61,6 +62,12 @@ import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.makeExpandable
 
+private data class OnBindViewHolderData(
+    val replies: List<RealmNews>,
+    val userModel: RealmUserModel?,
+    val isLeader: Boolean,
+    val libraryMap: Map<String, RealmMyLibrary?>
+)
 class AdapterNews(var context: Context, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userProfileDbHandler: UserProfileDbHandler, private val databaseService: DatabaseService) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem ->
@@ -168,40 +175,68 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
             val news = getNews(holder, position)
 
             if (news?.isValid == true) {
-                holder.itemView.findViewTreeLifecycleOwner()?.lifecycleScope?.launch {
-                    val viewHolder = holder
-                    val sharedTeamName = extractSharedTeamName(news)
+                Trace.beginSection("AdapterNews.onBindViewHolder")
+                try {
+                    holder.itemView.findViewTreeLifecycleOwner()?.lifecycleScope?.launch {
+                        val viewHolder = holder
+                        val sharedTeamName = extractSharedTeamName(news)
 
-                    withContext(Dispatchers.Main) {
-                        resetViews(viewHolder)
-                    }
+                        withContext(Dispatchers.Main) {
+                            resetViews(viewHolder)
+                        }
 
-                    var (replies, userModel, isLeader) = withContext(Dispatchers.IO) {
-                        Triple(getReplies(news), fetchUser(news), isTeamLeader())
-                    }
+                        val (replies, userModel, isLeader, libraryMap) = withContext(Dispatchers.IO) {
+                            val repliesResult = getReplies(news)
+                            val userModelResult = fetchUser(news)
+                            val isLeaderResult = isTeamLeader()
 
-                    withContext(Dispatchers.Main) {
-                        if (holder.adapterPosition == position) {
-                            val userFullName = userModel?.getFullNameWithMiddleName()?.trim()
-                            viewHolder.binding.tvName.text = if (userFullName.isNullOrEmpty()) news.userName else userFullName
-                            ImageUtils.loadImage(userModel?.userImage, viewHolder.binding.imgUser)
-                            if (userModel != null && currentUser != null) {
-                                showHideButtons(news, viewHolder)
+                            val resourceIds = news?.imagesArray?.mapNotNull {
+                                it?.asJsonObject?.let { obj ->
+                                    JsonUtils.getString("resourceId", obj)
+                                }
+                            } ?: emptyList()
+
+                            val libraryMapResult = if (resourceIds.isNotEmpty()) {
+                                databaseService.withRealm { realm ->
+                                    realm.where(RealmMyLibrary::class.java)
+                                        .`in`("_id", resourceIds.toTypedArray())
+                                        .findAll()
+                                        .let { realm.copyFromRealm(it) }
+                                        .mapNotNull { library ->
+                                            library._id?.let { id -> id to library }
+                                        }.toMap()
+                                }
+                            } else {
+                                emptyMap()
                             }
-                            updateReplyCount(viewHolder, replies, position)
-                            showShareButton(viewHolder, news)
-                        setMessageAndDate(viewHolder, news, sharedTeamName)
-                        configureEditDeleteButtons(viewHolder, news)
-                        loadImage(viewHolder.binding, news)
-                        showReplyButton(viewHolder, news, position)
-                        val canManageLabels = canAddLabel(news)
-                        labelManager?.setupAddLabelMenu(viewHolder.binding, news, canManageLabels)
-                        news.let { labelManager?.showChips(viewHolder.binding, it, canManageLabels) }
-                        handleChat(viewHolder, news)
-                        val currentLeader = getCurrentLeader(userModel, news)
-                        setMemberClickListeners(viewHolder, userModel, currentLeader)
+                            OnBindViewHolderData(repliesResult, userModelResult, isLeaderResult, libraryMapResult)
+                        }
+                        withContext(Dispatchers.Main) {
+                            if (holder.adapterPosition == position) {
+                                val userFullName = userModel?.getFullNameWithMiddleName()?.trim()
+                                viewHolder.binding.tvName.text =
+                                    if (userFullName.isNullOrEmpty()) news.userName else userFullName
+                                ImageUtils.loadImage(userModel?.userImage, viewHolder.binding.imgUser)
+                                if (userModel != null && currentUser != null) {
+                                    showHideButtons(news, viewHolder)
+                                }
+                                updateReplyCount(viewHolder, replies, position)
+                                showShareButton(viewHolder, news)
+                                setMessageAndDate(viewHolder, news, sharedTeamName)
+                                configureEditDeleteButtons(viewHolder, news)
+                                loadImage(viewHolder.binding, news, libraryMap)
+                                showReplyButton(viewHolder, news, position)
+                                val canManageLabels = canAddLabel(news)
+                                labelManager?.setupAddLabelMenu(viewHolder.binding, news, canManageLabels)
+                                news.let { labelManager?.showChips(viewHolder.binding, it, canManageLabels) }
+                                handleChat(viewHolder, news)
+                                val currentLeader = getCurrentLeader(userModel, news)
+                                setMemberClickListeners(viewHolder, userModel, currentLeader)
+                            }
                         }
                     }
+                } finally {
+                    Trace.endSection()
                 }
             }
         }
@@ -648,7 +683,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         this.recyclerView = null
     }
 
-    private fun loadImage(binding: RowNewsBinding, news: RealmNews?) {
+    private fun loadImage(binding: RowNewsBinding, news: RealmNews?, libraryMap: Map<String, RealmMyLibrary?>) {
         binding.imgNews.visibility = View.GONE
         binding.llNewsImages.visibility = View.GONE
         binding.llNewsImages.removeAllViews()
@@ -678,13 +713,13 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
                 if (imagesArray.size() == 1) {
                     val ob = imagesArray[0]?.asJsonObject
                     val resourceId = JsonUtils.getString("resourceId", ob)
-                    loadLibraryImage(binding, resourceId)
+                    loadLibraryImage(binding, resourceId, libraryMap)
                 } else {
                     binding.llNewsImages.visibility = View.VISIBLE
                     for (i in 0 until imagesArray.size()) {
                         val ob = imagesArray[i]?.asJsonObject
                         val resourceId = JsonUtils.getString("resourceId", ob)
-                        addLibraryImageToContainer(binding, resourceId)
+                        addLibraryImageToContainer(binding, resourceId, libraryMap)
                     }
                 }
             }
@@ -735,11 +770,9 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         binding.llNewsImages.addView(imageView)
     }
 
-    private fun loadLibraryImage(binding: RowNewsBinding, resourceId: String?) {
+    private fun loadLibraryImage(binding: RowNewsBinding, resourceId: String?, libraryMap: Map<String, RealmMyLibrary?>) {
         if (resourceId == null) return
-        val library = mRealm.where(RealmMyLibrary::class.java)
-            .equalTo("_id", resourceId)
-            .findFirst()
+        val library = libraryMap[resourceId]
 
         val basePath = context.getExternalFilesDir(null)
         if (library != null && basePath != null) {
@@ -763,11 +796,9 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         }
     }
 
-    private fun addLibraryImageToContainer(binding: RowNewsBinding, resourceId: String?) {
+    private fun addLibraryImageToContainer(binding: RowNewsBinding, resourceId: String?, libraryMap: Map<String, RealmMyLibrary?>) {
         if (resourceId == null) return
-        val library = mRealm.where(RealmMyLibrary::class.java)
-            .equalTo("_id", resourceId)
-            .findFirst()
+        val library = libraryMap[resourceId]
 
         val basePath = context.getExternalFilesDir(null)
         if (library != null && basePath != null) {
