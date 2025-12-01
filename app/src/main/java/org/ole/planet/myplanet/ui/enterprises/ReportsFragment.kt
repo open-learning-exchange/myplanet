@@ -195,8 +195,8 @@ class ReportsFragment : BaseTeamFragment() {
                         val csvBuilder = StringBuilder()
                         csvBuilder.append("${prefData.getTeamName()} Financial Report Summary\n\n")
                         csvBuilder.append("Start Date, End Date, Created Date, Updated Date, Beginning Balance, Sales, Other Income, Wages, Other Expenses, Profit/Loss, Ending Balance\n")
+                        val dateFormat = SimpleDateFormat("EEE MMM dd yyyy HH:mm:ss 'GMT'Z (z)", Locale.US)
                         for (report in reports) {
-                            val dateFormat = SimpleDateFormat("EEE MMM dd yyyy HH:mm:ss 'GMT'Z (z)", Locale.US)
                             val totalIncome = report.sales + report.otherIncome
                             val totalExpenses = report.wages + report.otherExpenses
                             val profitLoss = totalIncome - totalExpenses
