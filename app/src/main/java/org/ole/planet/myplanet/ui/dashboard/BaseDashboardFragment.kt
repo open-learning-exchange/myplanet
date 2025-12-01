@@ -148,6 +148,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
                 renderMyLibrary(it.library)
                 renderMyCourses(it.courses)
                 renderMyTeams(it.teams)
+                renderMyLife(it.myLife)
             }
         }
     }
@@ -236,34 +237,12 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         imgTask.visibility = if (tasks.isNotEmpty()) View.VISIBLE else View.GONE
     }
 
-    private fun myLifeListInit(flexboxLayout: FlexboxLayout) {
-        val dbMylife: MutableList<RealmMyLife> = ArrayList()
-        val rawMylife: List<RealmMyLife> = RealmMyLife.getMyLifeByUserId(realm, settings)
-        for (item in rawMylife) if (item.isVisible) dbMylife.add(item)
-        for ((itemCnt, items) in dbMylife.withIndex()) {
-            flexboxLayout.addView(getLayout(itemCnt, items), params)
-        }
-    }
-
-    private suspend fun setUpMyLife(userId: String?) {
-        val myLifeExists = databaseService.withRealmAsync { realm ->
-            RealmMyLife.getMyLifeByUserId(realm, settings).isNotEmpty()
-        }
-
-        if (!myLifeExists) {
-            val myLifeListBase = getMyLifeListBase(userId)
-            databaseService.executeTransactionAsync { realm ->
-                var weight = 1
-                for (item in myLifeListBase) {
-                    val ml = realm.createObject(RealmMyLife::class.java, UUID.randomUUID().toString())
-                    ml.title = item.title
-                    ml.imageId = item.imageId
-                    ml.weight = weight
-                    ml.userId = item.userId
-                    ml.isVisible = true
-                    weight++
-                }
-            }
+    private fun renderMyLife(myLifeItems: List<MyLifeItem>) {
+        val flexboxLayout = view?.findViewById<FlexboxLayout>(R.id.flexboxLayoutMyLife)
+        flexboxLayout?.removeAllViews()
+        for ((itemCnt, items) in myLifeItems.withIndex()) {
+            val myLife = RealmMyLife(items.imageId, items.title, null)
+            flexboxLayout?.addView(getLayout(itemCnt, myLife), params)
         }
     }
 
@@ -320,12 +299,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         view.findViewById<FlexboxLayout>(R.id.flexboxLayoutTeams).flexDirection = FlexDirection.ROW
         val myLifeFlex = view.findViewById<FlexboxLayout>(R.id.flexboxLayoutMyLife)
         myLifeFlex.flexDirection = FlexDirection.ROW
-
-        val userId = settings?.getString("userId", "--")
-        lifecycleScope.launch {
-            setUpMyLife(userId)
-            myLifeListInit(myLifeFlex)
-        }
 
         if (isRealmInitialized() && mRealm.isInTransaction) {
             mRealm.commitTransaction()
