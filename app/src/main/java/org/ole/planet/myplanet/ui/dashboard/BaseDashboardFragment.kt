@@ -245,18 +245,17 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         }
     }
 
-    private fun setUpMyLife(userId: String?) {
-        databaseService.withRealm { realm ->
-            val realmObjects = RealmMyLife.getMyLifeByUserId(realm, settings)
-            if (realmObjects.isEmpty()) {
-                if (!realm.isInTransaction) {
-                    realm.beginTransaction()
-                }
-                val myLifeListBase = getMyLifeListBase(userId)
-                var ml: RealmMyLife
+    private suspend fun setUpMyLife(userId: String?) {
+        val myLifeExists = databaseService.withRealmAsync { realm ->
+            RealmMyLife.getMyLifeByUserId(realm, settings).isNotEmpty()
+        }
+
+        if (!myLifeExists) {
+            val myLifeListBase = getMyLifeListBase(userId)
+            databaseService.executeTransactionAsync { realm ->
                 var weight = 1
                 for (item in myLifeListBase) {
-                    ml = realm.createObject(RealmMyLife::class.java, UUID.randomUUID().toString())
+                    val ml = realm.createObject(RealmMyLife::class.java, UUID.randomUUID().toString())
                     ml.title = item.title
                     ml.imageId = item.imageId
                     ml.weight = weight
@@ -264,7 +263,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
                     ml.isVisible = true
                     weight++
                 }
-                realm.commitTransaction()
             }
         }
     }
@@ -324,8 +322,10 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         myLifeFlex.flexDirection = FlexDirection.ROW
 
         val userId = settings?.getString("userId", "--")
-        setUpMyLife(userId)
-        myLifeListInit(myLifeFlex)
+        lifecycleScope.launch {
+            setUpMyLife(userId)
+            myLifeListInit(myLifeFlex)
+        }
 
         if (isRealmInitialized() && mRealm.isInTransaction) {
             mRealm.commitTransaction()
