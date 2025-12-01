@@ -13,11 +13,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
-import android.widget.AdapterView.OnItemClickListener
 import android.widget.AdapterView.OnItemSelectedListener
 import android.widget.Button
 import android.widget.EditText
-import android.widget.ListView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatSpinner
 import androidx.core.content.ContextCompat
@@ -84,7 +82,7 @@ class MyHealthFragment : Fragment() {
     lateinit var mRealm: Realm
     var userModel: RealmUserModel? = null
     lateinit var userModelList: List<RealmUserModel>
-    lateinit var adapter: UserListArrayAdapter
+    lateinit var adapter: UserListAdapter
     private lateinit var healthAdapter: AdapterHealthExamination
     var dialog: AlertDialog? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
@@ -289,22 +287,23 @@ class MyHealthFragment : Fragment() {
             }
             withContext(Dispatchers.Main) {
                 userModelList = users
-                adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, userModelList)
+                adapter = UserListAdapter()
+                adapter.submitList(userModelList)
                 alertHealthListBinding = AlertHealthListBinding.inflate(LayoutInflater.from(context))
                 alertHealthListBinding?.btnAddMember?.setOnClickListener {
                     startActivity(Intent(requireContext(), BecomeMemberActivity::class.java))
                 }
 
                 alertHealthListBinding?.let { binding ->
-                    setTextWatcher(binding.etSearch, binding.btnAddMember, binding.list)
+                    setTextWatcher(binding.etSearch, binding.btnAddMember)
+                    binding.list.layoutManager = LinearLayoutManager(requireContext())
                     binding.list.adapter = adapter
-                    binding.list.onItemClickListener = OnItemClickListener { _: AdapterView<*>?, _: View, i: Int, _: Long ->
-                        val selected = binding.list.adapter.getItem(i) as RealmUserModel
+                    adapter.onItemClickListener = { selected ->
                         userId = if (selected._id.isNullOrEmpty()) selected.id else selected._id
                         getHealthRecords(userId)
                         dialog?.dismiss()
                     }
-                    sortList(binding.spnSort, binding.list)
+                    sortList(binding.spnSort)
                     dialog = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
                         .setTitle(getString(R.string.select_health_member)).setView(binding.root)
                         .setCancelable(false).setNegativeButton(R.string.dismiss, null).create()
@@ -314,7 +313,7 @@ class MyHealthFragment : Fragment() {
         }
     }
 
-    private fun sortList(spnSort: AppCompatSpinner, lv: ListView) {
+    private fun sortList(spnSort: AppCompatSpinner) {
         spnSort.onItemSelectedListener = object : OnItemSelectedListener {
             override fun onNothingSelected(p0: AdapterView<*>?) {}
 
@@ -339,14 +338,13 @@ class MyHealthFragment : Fragment() {
                         sort = Sort.DESCENDING
                     }
                 }
-                userModelList = mRealm.where(RealmUserModel::class.java).sort(sortBy, sort).findAll()
-                adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, userModelList)
-                lv.adapter = adapter
+                val userModelList = mRealm.where(RealmUserModel::class.java).sort(sortBy, sort).findAll()
+                adapter.submitList(mRealm.copyFromRealm(userModelList))
             }
         }
     }
 
-    private fun setTextWatcher(etSearch: EditText, btnAddMember: Button, lv: ListView) {
+    private fun setTextWatcher(etSearch: EditText, btnAddMember: Button) {
         var timer: CountDownTimer? = null
         textWatcher = object : TextWatcher {
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
@@ -357,15 +355,21 @@ class MyHealthFragment : Fragment() {
                 timer = object : CountDownTimer(1000, 1500) {
                     override fun onTick(millisUntilFinished: Long) {}
                     override fun onFinish() {
-                        val userModelList = mRealm.where(RealmUserModel::class.java)
-                            .contains("firstName", editable.toString(), Case.INSENSITIVE).or()
-                            .contains("lastName", editable.toString(), Case.INSENSITIVE).or()
-                            .contains("name", editable.toString(), Case.INSENSITIVE)
-                            .sort("joinDate", Sort.DESCENDING).findAll()
-
-                        val adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, userModelList)
-                        lv.adapter = adapter
-                        btnAddMember.visibility = if (adapter.count == 0) View.VISIBLE else View.GONE
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            val userModelList = withContext(Dispatchers.IO) {
+                                val realm = Realm.getDefaultInstance()
+                                val results = realm.where(RealmUserModel::class.java)
+                                    .contains("firstName", editable.toString(), Case.INSENSITIVE).or()
+                                    .contains("lastName", editable.toString(), Case.INSENSITIVE).or()
+                                    .contains("name", editable.toString(), Case.INSENSITIVE)
+                                    .sort("joinDate", Sort.DESCENDING).findAll()
+                                val copiedList = realm.copyFromRealm(results)
+                                realm.close()
+                                copiedList
+                            }
+                            adapter.submitList(userModelList)
+                            btnAddMember.visibility = if (userModelList.isEmpty()) View.VISIBLE else View.GONE
+                        }
                     }
                 }.start()
             }

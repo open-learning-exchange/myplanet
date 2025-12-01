@@ -51,9 +51,8 @@
             android:textColor="@color/daynight_textColor" />
     </com.google.android.material.textfield.TextInputLayout>
 
-    <ListView
+    <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/list"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:choiceMode="singleChoice" />
+        android:layout_height="wrap_content" />
 </LinearLayout>
