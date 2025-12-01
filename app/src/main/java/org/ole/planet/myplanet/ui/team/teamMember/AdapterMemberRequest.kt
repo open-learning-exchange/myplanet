@@ -1,9 +1,9 @@
 package org.ole.planet.myplanet.ui.team.teamMember
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -14,30 +14,26 @@ import org.ole.planet.myplanet.callback.MemberChangeListener
 import org.ole.planet.myplanet.databinding.RowMemberRequestBinding
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TeamRepository
+import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 class AdapterMemberRequest(
     private val context: Context,
-    private val list: MutableList<RealmUserModel>,
     private val currentUser: RealmUserModel,
     private val listener: MemberChangeListener,
     private val teamRepository: TeamRepository,
-) : RecyclerView.Adapter<AdapterMemberRequest.ViewHolderUser>() {
+) : ListAdapter<RealmUserModel, AdapterMemberRequest.ViewHolderUser>(
+    DiffUtils.itemCallback(
+        areItemsTheSame = { old, new -> old.id == new.id },
+        areContentsTheSame = { old, new -> old.name == new.name }
+    )
+) {
     private var teamId: String? = null
-    private var teamLeader = false
-    private var joinedTeamMembers = 0
+    var teamLeader = false
+    var joinedTeamMembers = 0
 
     fun setTeamId(teamId: String?) {
         this.teamId = teamId
-    }
-
-    @SuppressLint("NotifyDataSetChanged")
-    fun setData(members: List<RealmUserModel>, isLeader: Boolean, memberCount: Int) {
-        list.clear()
-        list.addAll(members)
-        teamLeader = isLeader
-        joinedTeamMembers = memberCount
-        notifyDataSetChanged()
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderUser {
@@ -46,7 +42,7 @@ class AdapterMemberRequest(
     }
 
     override fun onBindViewHolder(holder: ViewHolderUser, position: Int) {
-        val currentItem = list.getOrNull(position) ?: return
+        val currentItem = getItem(position)
         val binding = holder.binding
         binding.tvName.text = currentItem.name ?: currentItem.toString()
 
@@ -76,14 +72,14 @@ class AdapterMemberRequest(
     private fun isGuestUser() = currentUser.id?.startsWith("guest") == true
     private fun handleClick(holder: RecyclerView.ViewHolder, isAccepted: Boolean) {
         val adapterPosition = holder.bindingAdapterPosition
-        if (adapterPosition != RecyclerView.NO_POSITION && adapterPosition < list.size) {
-            val targetUser = list[adapterPosition]
+        if (adapterPosition != RecyclerView.NO_POSITION) {
+            val targetUser = getItem(adapterPosition)
             if (targetUser.id == currentUser.id) return
-            acceptReject(targetUser, isAccepted, adapterPosition)
+            acceptReject(targetUser, isAccepted)
         }
     }
 
-    private fun acceptReject(userModel: RealmUserModel, isAccept: Boolean, position: Int) {
+    private fun acceptReject(userModel: RealmUserModel, isAccept: Boolean) {
         val userId = userModel.id
         val teamId = this.teamId
 
@@ -92,31 +88,20 @@ class AdapterMemberRequest(
             return
         }
 
-        list.removeAt(position)
-        notifyItemRemoved(position)
-        notifyItemRangeChanged(position, list.size)
-
         MainApplication.applicationScope.launch {
             val result = teamRepository.respondToMemberRequest(teamId, userId, isAccept)
             if (result.isSuccess) {
                 runCatching { teamRepository.syncTeamActivities() }
                     .onFailure { it.printStackTrace() }
-                withContext(Dispatchers.Main) {
-                    listener.onMemberChanged()
-                }
             } else {
                 withContext(Dispatchers.Main) {
-                    list.add(position, userModel)
-                    notifyItemInserted(position)
                     Utilities.toast(context, context.getString(R.string.request_failed_please_retry))
-                    listener.onMemberChanged()
                 }
             }
+            withContext(Dispatchers.Main) {
+                listener.onMemberChanged()
+            }
         }
-    }
-
-    override fun getItemCount(): Int {
-        return list.size
     }
 
     class ViewHolderUser(val binding: RowMemberRequestBinding) : RecyclerView.ViewHolder(binding.root)

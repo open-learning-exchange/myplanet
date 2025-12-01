@@ -45,11 +45,11 @@ class MembersFragment : BaseMemberFragment() {
         teamId?.let { viewModel.fetchMembers(it) }
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.uiState.collect { uiState ->
-                (adapter as? AdapterMemberRequest)?.setData(
-                    uiState.members,
-                    uiState.isLeader,
-                    uiState.memberCount
-                )
+                (adapter as? AdapterMemberRequest)?.apply {
+                    teamLeader = uiState.isLeader
+                    joinedTeamMembers = uiState.memberCount
+                    submitList(uiState.members)
+                }
                 showNoData(binding.tvNodata, uiState.members.size, "members")
             }
         }
@@ -67,7 +67,6 @@ class MembersFragment : BaseMemberFragment() {
     override val adapter: RecyclerView.Adapter<*> by lazy {
         AdapterMemberRequest(
             requireActivity(),
-            mutableListOf(),
             currentUser,
             memberChangeListener,
             teamRepository,
