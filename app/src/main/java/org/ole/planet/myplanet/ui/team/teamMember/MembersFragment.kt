@@ -67,7 +67,6 @@ class MembersFragment : BaseMemberFragment() {
     override val adapter: RecyclerView.Adapter<*> by lazy {
         AdapterMemberRequest(
             requireActivity(),
-            mutableListOf(),
             currentUser,
             memberChangeListener,
             teamRepository,
