@@ -11,6 +11,8 @@ import org.ole.planet.myplanet.repository.CourseRepository
 import org.ole.planet.myplanet.repository.CourseRepositoryImpl
 import org.ole.planet.myplanet.repository.FeedbackRepository
 import org.ole.planet.myplanet.repository.FeedbackRepositoryImpl
+import org.ole.planet.myplanet.repository.HealthRepository
+import org.ole.planet.myplanet.repository.HealthRepositoryImpl
 import org.ole.planet.myplanet.repository.LibraryRepository
 import org.ole.planet.myplanet.repository.LibraryRepositoryImpl
 import org.ole.planet.myplanet.repository.LifeRepository
@@ -41,68 +43,105 @@ import org.ole.planet.myplanet.repository.UserRepositoryImpl
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class RepositoryModule {
+    @Binds
+    @Singleton
+    abstract fun bindHealthRepository(
+        healthRepositoryImpl: HealthRepositoryImpl
+    ): HealthRepository
 
     @Binds
     @Singleton
-    abstract fun bindChatRepository(impl: ChatRepositoryImpl): ChatRepository
+    abstract fun bindUserRepository(
+        userRepositoryImpl: UserRepositoryImpl
+    ): UserRepository
 
     @Binds
     @Singleton
-    abstract fun bindCourseRepository(impl: CourseRepositoryImpl): CourseRepository
+    abstract fun bindTeamRepository(
+        teamRepositoryImpl: TeamRepositoryImpl
+    ): TeamRepository
 
     @Binds
     @Singleton
-    abstract fun bindFeedbackRepository(impl: FeedbackRepositoryImpl): FeedbackRepository
+    abstract fun bindTagRepository(
+        tagRepositoryImpl: TagRepositoryImpl
+    ): TagRepository
 
     @Binds
     @Singleton
-    abstract fun bindLibraryRepository(impl: LibraryRepositoryImpl): LibraryRepository
+    abstract fun bindSurveyRepository(
+        surveyRepositoryImpl: SurveyRepositoryImpl
+    ): SurveyRepository
 
     @Binds
     @Singleton
-    abstract fun bindLifeRepository(impl: LifeRepositoryImpl): LifeRepository
+    abstract fun bindSubmissionRepository(
+        submissionRepositoryImpl: SubmissionRepositoryImpl
+    ): SubmissionRepository
 
     @Binds
     @Singleton
-    abstract fun bindMeetupRepository(impl: MeetupRepositoryImpl): MeetupRepository
+    abstract fun bindRatingRepository(
+        ratingRepositoryImpl: RatingRepositoryImpl
+    ): RatingRepository
 
     @Binds
     @Singleton
-    abstract fun bindMyPersonalRepository(impl: MyPersonalRepositoryImpl): MyPersonalRepository
+    abstract fun bindProgressRepository(
+        progressRepositoryImpl: ProgressRepositoryImpl
+    ): ProgressRepository
 
     @Binds
     @Singleton
-    abstract fun bindNewsRepository(impl: NewsRepositoryImpl): NewsRepository
+    abstract fun bindNotificationRepository(
+        notificationRepositoryImpl: NotificationRepositoryImpl
+    ): NotificationRepository
 
     @Binds
     @Singleton
-    abstract fun bindNotificationRepository(impl: NotificationRepositoryImpl): NotificationRepository
+    abstract fun bindNewsRepository(
+        newsRepositoryImpl: NewsRepositoryImpl
+    ): NewsRepository
 
     @Binds
     @Singleton
-    abstract fun bindProgressRepository(impl: ProgressRepositoryImpl): ProgressRepository
+    abstract fun bindMyPersonalRepository(
+        myPersonalRepositoryImpl: MyPersonalRepositoryImpl
+    ): MyPersonalRepository
 
     @Binds
     @Singleton
-    abstract fun bindRatingRepository(impl: RatingRepositoryImpl): RatingRepository
+    abstract fun bindMeetupRepository(
+        meetupRepositoryImpl: MeetupRepositoryImpl
+    ): MeetupRepository
 
     @Binds
     @Singleton
-    abstract fun bindSubmissionRepository(impl: SubmissionRepositoryImpl): SubmissionRepository
+    abstract fun bindLifeRepository(
+        lifeRepositoryImpl: LifeRepositoryImpl
+    ): LifeRepository
 
     @Binds
     @Singleton
-    abstract fun bindSurveyRepository(impl: SurveyRepositoryImpl): SurveyRepository
+    abstract fun bindLibraryRepository(
+        libraryRepositoryImpl: LibraryRepositoryImpl
+    ): LibraryRepository
 
     @Binds
     @Singleton
-    abstract fun bindTagRepository(impl: TagRepositoryImpl): TagRepository
+    abstract fun bindFeedbackRepository(
+        feedbackRepositoryImpl: FeedbackRepositoryImpl
+    ): FeedbackRepository
 
     @Binds
     @Singleton
-    abstract fun bindTeamRepository(impl: TeamRepositoryImpl): TeamRepository
+    abstract fun bindCourseRepository(
+        courseRepositoryImpl: CourseRepositoryImpl
+    ): CourseRepository
 
     @Binds
     @Singleton
-    abstract fun bindUserRepository(impl: UserRepositoryImpl): UserRepository
+    abstract fun bindChatRepository(
+        chatRepositoryImpl: ChatRepositoryImpl
+    ): ChatRepository
 }
