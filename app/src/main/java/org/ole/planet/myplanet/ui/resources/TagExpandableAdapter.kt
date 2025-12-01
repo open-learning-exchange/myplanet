@@ -16,7 +16,7 @@ import org.ole.planet.myplanet.databinding.RowAdapterNavigationParentBinding
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.utilities.DiffUtils
 
-class TagExpandableAdapter(private var tagList: List<RealmTag>, private val childMap: HashMap<String, List<RealmTag>>, private val selectedItemsList: ArrayList<RealmTag>) : BaseExpandableListAdapter(), ListUpdateCallback {
+class TagExpandableAdapter(private var tagList: List<RealmTag>, private val childMap: HashMap<String, List<RealmTag>>, private val selectedItemsList: ArrayList<RealmTag>) : BaseExpandableListAdapter() {
     private var clickListener: OnClickTagItem? = null
     private var isSelectMultiple = false
 
@@ -137,23 +137,23 @@ class TagExpandableAdapter(private var tagList: List<RealmTag>, private val chil
             { old, new -> old.name == new.name }
         )
         tagList = filteredList
-        diffResult.dispatchUpdatesTo(this)
-    }
+        diffResult.dispatchUpdatesTo(object : ListUpdateCallback {
+            override fun onInserted(position: Int, count: Int) {
+                notifyDataSetChanged()
+            }
 
-    override fun onInserted(position: Int, count: Int) {
-        notifyDataSetChanged()
-    }
+            override fun onRemoved(position: Int, count: Int) {
+                notifyDataSetChanged()
+            }
 
-    override fun onRemoved(position: Int, count: Int) {
-        notifyDataSetChanged()
-    }
+            override fun onMoved(fromPosition: Int, toPosition: Int) {
+                notifyDataSetChanged()
+            }
 
-    override fun onMoved(fromPosition: Int, toPosition: Int) {
-        notifyDataSetChanged()
-    }
-
-    override fun onChanged(position: Int, count: Int, payload: Any?) {
-        notifyDataSetChanged()
+            override fun onChanged(position: Int, count: Int, payload: Any?) {
+                notifyDataSetChanged()
+            }
+        })
     }
 
     interface OnClickTagItem {

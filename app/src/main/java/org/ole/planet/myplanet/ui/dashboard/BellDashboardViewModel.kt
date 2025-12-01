@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.dashboard
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,7 +15,6 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
-import javax.inject.Inject
 
 @HiltViewModel
 class BellDashboardViewModel @Inject constructor(

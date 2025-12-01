@@ -24,7 +24,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.R.array.status_options
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentNotificationsBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity

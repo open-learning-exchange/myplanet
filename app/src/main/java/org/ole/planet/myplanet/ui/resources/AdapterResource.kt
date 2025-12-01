@@ -16,6 +16,7 @@ import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -41,6 +42,7 @@ class AdapterResource(
     private val tagRepository: TagRepository,
     private val userModel: RealmUserModel?
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+    private var diffJob: Job? = null
     private val selectedItems: MutableList<RealmMyLibrary?> = ArrayList()
     private var listener: OnLibraryItemSelected? = null
     private val config: ChipCloudConfig = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single)
@@ -51,11 +53,29 @@ class AdapterResource(
     private val tagCache: MutableMap<String, List<RealmTag>> = mutableMapOf()
     private val tagRequestsInProgress: MutableSet<String> = mutableSetOf()
 
+    private data class DiffData(
+        val id: String?,
+        val title: String?,
+        val description: String?,
+        val createdDate: Long?,
+        val averageRating: String?,
+        val timesRated: Int?
+    )
+
     companion object {
         private const val TAGS_PAYLOAD = "payload_tags"
         private const val RATING_PAYLOAD = "payload_rating"
         private const val SELECTION_PAYLOAD = "payload_selection"
     }
+
+    private fun RealmMyLibrary.toDiffData() = DiffData(
+        id = this.id,
+        title = this.title,
+        description = this.description,
+        createdDate = this.createdDate,
+        averageRating = this.averageRating,
+        timesRated = this.timesRated
+    )
 
     init {
         if (context is OnHomeItemClickListener) {
@@ -293,32 +313,37 @@ class AdapterResource(
     }
 
     private fun updateList(newList: List<RealmMyLibrary?>) {
-        val diffResult = DiffUtils.calculateDiff(
-            libraryList,
-            newList,
-            areItemsTheSame = { old, new -> old?.id == new?.id },
-            areContentsTheSame = { old, new ->
-                old?.title == new?.title &&
-                        old?.description == new?.description &&
-                        old?.createdDate == new?.createdDate &&
-                        old?.averageRating == new?.averageRating &&
-                        old?.timesRated == new?.timesRated
-            },
-            getChangePayload = { old, new ->
-                val ratingChanged = old?.averageRating != new?.averageRating || old?.timesRated != new?.timesRated
-                val otherContentChanged = old?.title != new?.title ||
-                        old?.description != new?.description ||
-                        old?.createdDate != new?.createdDate
+        diffJob?.cancel()
+        val oldList = libraryList.mapNotNull { it?.toDiffData() }
+        val newListMapped = newList.mapNotNull { it?.toDiffData() }
 
-                if (ratingChanged && !otherContentChanged) {
-                    RATING_PAYLOAD
-                } else {
-                    null
-                }
+        diffJob = (context as? LifecycleOwner)?.lifecycleScope?.launch {
+            val diffResult = withContext(Dispatchers.Default) {
+                DiffUtils.calculateDiff(
+                    oldList,
+                    newListMapped,
+                    areItemsTheSame = { old, new -> old.id == new.id },
+                    areContentsTheSame = { old, new -> old == new },
+                    getChangePayload = { old, new ->
+                        val ratingChanged = old.averageRating != new.averageRating || old.timesRated != new.timesRated
+                        val otherContentChanged = old.title != new.title ||
+                                old.description != new.description ||
+                                old.createdDate != new.createdDate
+
+                        if (ratingChanged && !otherContentChanged) {
+                            RATING_PAYLOAD
+                        } else {
+                            null
+                        }
+                    }
+                )
             }
-        )
-        libraryList = newList
-        diffResult.dispatchUpdatesTo(this)
+
+            if (isActive) {
+                libraryList = newList
+                diffResult.dispatchUpdatesTo(this@AdapterResource)
+            }
+        }
     }
 
     fun setRatingMap(newRatingMap: HashMap<String?, JsonObject>) {

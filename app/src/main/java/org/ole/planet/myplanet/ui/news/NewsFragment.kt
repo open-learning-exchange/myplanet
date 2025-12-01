@@ -35,9 +35,9 @@ import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.GsonUtils
-import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
+import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.textChanges
 
 @AndroidEntryPoint

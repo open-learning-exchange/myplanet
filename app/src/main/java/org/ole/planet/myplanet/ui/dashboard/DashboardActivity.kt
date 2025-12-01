@@ -61,7 +61,6 @@ import org.ole.planet.myplanet.databinding.ActivityDashboardBinding
 import org.ole.planet.myplanet.databinding.CustomTabBinding
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
@@ -97,7 +96,6 @@ import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.NotificationUtils
-import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
 @AndroidEntryPoint  

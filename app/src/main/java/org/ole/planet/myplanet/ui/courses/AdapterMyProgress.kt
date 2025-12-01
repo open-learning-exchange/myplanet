@@ -9,13 +9,14 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowMyProgressBinding
+import org.ole.planet.myplanet.utilities.DiffUtils
 
-class AdapterMyProgress(private val context: Context, private val list: JsonArray) :
-    RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+class AdapterMyProgress(private val context: Context) : ListAdapter<JsonObject, RecyclerView.ViewHolder>(DiffUtils.itemCallback({ old, new -> old.toString() == new.toString() }, { old, new -> old.toString() == new.toString() })) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val binding = RowMyProgressBinding.inflate(LayoutInflater.from(parent.context), parent, false)
@@ -24,23 +25,25 @@ class AdapterMyProgress(private val context: Context, private val list: JsonArra
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         if (holder is ViewHolderMyProgress) {
-            holder.binding.tvTitle.text = list[position].asJsonObject["courseName"].asString
-            if (list[position].asJsonObject.has("progress")) {
-                holder.binding.tvDescription.text = context.getString(R.string.step_progress, list[position].asJsonObject["progress"].asJsonObject["current"].asInt, list[position].asJsonObject["progress"].asJsonObject["max"].asInt)
+            val item = getItem(position)
+            holder.binding.tvTitle.text = item.asJsonObject["courseName"].asString
+            if (item.asJsonObject.has("progress")) {
+                holder.binding.tvDescription.text = context.getString(R.string.step_progress, item.asJsonObject["progress"].asJsonObject["current"].asInt, item.asJsonObject["progress"].asJsonObject["max"].asInt)
                 holder.itemView.setOnClickListener {
-                    context.startActivity(Intent(context, CourseProgressActivity::class.java).putExtra("courseId", list[position].asJsonObject["courseId"].asString))
+                    context.startActivity(Intent(context, CourseProgressActivity::class.java).putExtra("courseId", item.asJsonObject["courseId"].asString))
                 }
             }
-            if (list[position].asJsonObject.has("mistakes")) holder.binding.tvTotal.text =
-                list[position].asJsonObject["mistakes"].asString
+            if (item.asJsonObject.has("mistakes")) holder.binding.tvTotal.text =
+                item.asJsonObject["mistakes"].asString
             else holder.binding.tvTotal.text = context.getString(R.string.message_placeholder, "0")
             showStepMistakes(position, holder.binding)
         }
     }
 
     private fun showStepMistakes(position: Int, binding: RowMyProgressBinding) {
-        if (list[position].asJsonObject.has("stepMistake")) {
-            val stepMistake = list[position].asJsonObject["stepMistake"].asJsonObject
+        val item = getItem(position)
+        if (item.asJsonObject.has("stepMistake")) {
+            val stepMistake = item.asJsonObject["stepMistake"].asJsonObject
             binding.llProgress.removeAllViews()
 
             if (stepMistake.keySet().isNotEmpty()) {
@@ -81,10 +84,6 @@ class AdapterMyProgress(private val context: Context, private val list: JsonArra
         } else {
             binding.llHeader.visibility = View.GONE
         }
-    }
-
-    override fun getItemCount(): Int {
-        return list.size()
     }
 
     internal inner class ViewHolderMyProgress(val binding: RowMyProgressBinding) : RecyclerView.ViewHolder(binding.root) {

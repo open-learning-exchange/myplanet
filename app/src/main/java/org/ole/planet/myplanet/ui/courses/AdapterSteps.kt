@@ -9,8 +9,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowStepsBinding
 import org.ole.planet.myplanet.model.RealmCourseStep
@@ -20,20 +21,27 @@ import org.ole.planet.myplanet.utilities.DiffUtils
 class AdapterSteps(
     private val context: Context,
     private var list: List<RealmCourseStep>,
-    private val submissionRepository: SubmissionRepository
+    private val submissionRepository: SubmissionRepository,
+    private val providedScope: CoroutineScope? = null
 ) : RecyclerView.Adapter<AdapterSteps.ViewHolder>() {
     private val descriptionVisibilityMap = mutableMapOf<String, Boolean>()
     private var currentlyVisibleStepId: String? = null
-    private val job = SupervisorJob()
-    private val coroutineScope = CoroutineScope(job + Dispatchers.Main)
+    private var internalScope: CoroutineScope? = null
+    private val coroutineScope: CoroutineScope
+        get() = providedScope ?: internalScope!!
     private val examQuestionCountCache = mutableMapOf<String, Int>()
-
     init {
         for (step in list) {
             step.id?.let { descriptionVisibilityMap.getOrPut(it) { false } }
         }
     }
 
+    override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
+        super.onAttachedToRecyclerView(recyclerView)
+        if (providedScope == null) {
+            internalScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+        }
+    }
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val rowStepsBinding = RowStepsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ViewHolder(rowStepsBinding)
@@ -96,7 +104,9 @@ class AdapterSteps(
                     rowStepsBinding.tvDescription.text = context.getString(R.string.test_size, cachedCount)
                 } else {
                     loadJob = coroutineScope.launch {
-                        val size = submissionRepository.getExamQuestionCount(stepId)
+                        val size = withContext(Dispatchers.IO) {
+                            submissionRepository.getExamQuestionCount(stepId)
+                        }
                         examQuestionCountCache[stepId] = size
                         if (bindingAdapterPosition == RecyclerView.NO_POSITION) {
                             return@launch
@@ -165,6 +175,7 @@ class AdapterSteps(
 
     override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
         super.onDetachedFromRecyclerView(recyclerView)
-        job.cancelChildren()
+        internalScope?.cancel()
+        internalScope = null
     }
 }

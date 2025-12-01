@@ -38,8 +38,8 @@ import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getImagePath
 import org.ole.planet.myplanet.utilities.FileUtils.getRealPathFromURI
 import org.ole.planet.myplanet.utilities.GsonUtils
-import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
+import org.ole.planet.myplanet.utilities.SharedPrefManager
 
 @AndroidEntryPoint
 open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
