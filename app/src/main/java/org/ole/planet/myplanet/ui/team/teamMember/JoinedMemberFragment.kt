@@ -26,7 +26,9 @@ import org.ole.planet.myplanet.model.RealmUserModel
 class JoinedMemberFragment : BaseMemberFragment() {
     private var memberChangeListener: MemberChangeListener = object : MemberChangeListener {
         override fun onMemberChanged() {
-            // fallback listener to prevent crash
+            viewLifecycleOwner.lifecycleScope.launch {
+                loadAndDisplayJoinedMembers()
+            }
         }
     }
     private var adapterJoined: AdapterJoinedMember? = null
