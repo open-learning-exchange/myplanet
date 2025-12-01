@@ -82,29 +82,36 @@ class AchievementFragment : BaseContainerFragment() {
     private suspend fun loadAndProcessAchievementData(): AchievementData? {
         return withContext(Dispatchers.IO) {
             databaseService.withRealm { realm ->
+                val userId = user?.id
+                val planetCode = user?.planetCode
+                if (userId == null || planetCode == null) {
+                    return@withRealm null
+                }
+
                 val achievement = realm.where(RealmAchievement::class.java)
-                    .equalTo("_id", user?.id + "@" + user?.planetCode)
+                    .equalTo("_id", "$userId@$planetCode")
                     .findFirst()
 
                 if (achievement == null) {
                     return@withRealm null
                 }
+
                 val achievementUnmanaged = realm.copyFromRealm(achievement)
-                val allResourceIds = achievementUnmanaged.achievements.flatMap { json ->
+                val allResourceIds = achievementUnmanaged.achievements?.flatMap { json ->
                     GsonUtils.gson.fromJson(json, JsonObject::class.java)
                         .getAsJsonArray("resources")
-                        .map { it.asJsonObject["_id"].asString }
-                }.distinct()
+                        ?.mapNotNull { it.asJsonObject["_id"]?.asString } ?: emptyList()
+                }?.distinct() ?: emptyList()
 
                 val resourcesMap = realm.where(RealmMyLibrary::class.java)
                     .`in`("id", allResourceIds.toTypedArray())
                     .findAll()
                     .associateBy { it.id }
 
-                val achievementItems = achievementUnmanaged.achievements.map { json ->
+                val achievementItems = achievementUnmanaged.achievements?.map { json ->
                     val ob = GsonUtils.gson.fromJson(json, JsonObject::class.java)
-                    val resourceItems = ob.getAsJsonArray("resources").mapNotNull { res ->
-                        val resId = res.asJsonObject["_id"].asString
+                    val resourceItems = ob.getAsJsonArray("resources")?.mapNotNull { res ->
+                        val resId = res.asJsonObject["_id"]?.asString
                         resourcesMap[resId]?.let { lib ->
                             ResourceItem(
                                 id = lib.id,
@@ -112,21 +119,22 @@ class AchievementFragment : BaseContainerFragment() {
                                 isOffline = lib.isResourceOffline()
                             )
                         }
-                    }
+                    } ?: emptyList()
+
                     AchievementItem(
-                        description = getString("description", ob),
-                        date = getString("date", ob),
-                        title = getString("title", ob),
+                        description = getString("description", ob) ?: "",
+                        date = getString("date", ob) ?: "",
+                        title = getString("title", ob) ?: "",
                         resources = resourceItems
                     )
-                }
+                } ?: emptyList()
 
                 AchievementData(
-                    goals = achievementUnmanaged.goals,
-                    purpose = achievementUnmanaged.purpose,
-                    achievementsHeader = achievementUnmanaged.achievementsHeader,
+                    goals = achievementUnmanaged.goals ?: "",
+                    purpose = achievementUnmanaged.purpose ?: "",
+                    achievementsHeader = achievementUnmanaged.achievementsHeader ?: "",
                     achievements = achievementItems,
-                    references = achievementUnmanaged.references.map { it }
+                    references = achievementUnmanaged.references?.mapNotNull { it } ?: emptyList()
                 )
             }
         }
