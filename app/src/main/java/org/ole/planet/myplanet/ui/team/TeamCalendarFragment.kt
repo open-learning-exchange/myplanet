@@ -56,6 +56,8 @@ class TeamCalendarFragment : BaseTeamFragment() {
     private var meetupList: List<RealmMeetup> = emptyList()
     private val eventDates: MutableList<Calendar> = mutableListOf()
     private var addMeetupDialog: AlertDialog? = null
+    private var meetupDialog: AlertDialog? = null
+    private var meetupAdapter: AdapterMeetup? = null
     @Inject
     lateinit var meetupRepository: MeetupRepository
 
@@ -153,6 +155,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
                         Utilities.toast(activity, getString(R.string.meetup_added))
                         addMeetupDialog?.dismiss()
                         refreshCalendarView()
+                        refreshMeetupDialog()
                     } else {
                         Utilities.toast(activity, getString(R.string.meetup_not_added))
                     }
@@ -288,11 +291,11 @@ class TeamCalendarFragment : BaseTeamFragment() {
         recyclerView.layoutParams.height = cardHeight + extraHeight
         recyclerView.requestLayout()
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
-        val adapter = AdapterMeetup()
-        recyclerView.adapter = adapter
-        adapter.submitList(meetupList)
+        meetupAdapter = AdapterMeetup()
+        recyclerView.adapter = meetupAdapter
+        meetupAdapter?.submitList(meetupList)
 
-        val dialog = AlertDialog.Builder(requireContext())
+        meetupDialog = AlertDialog.Builder(requireContext())
             .setView(dialogView)
             .create()
         val btnAdd = dialogView.findViewById<Button>(R.id.btnadd)
@@ -302,7 +305,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
             btnAdd.visibility = View.GONE
         }
         dialogView.findViewById<Button>(R.id.btnClose).setOnClickListener {
-            dialog.dismiss()
+            meetupDialog?.dismiss()
         }
         btnAdd.setOnClickListener {
             if(arguments?.getBoolean("fromLogin", false) != true){
@@ -312,7 +315,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
             }
         }
 
-        dialog.setOnDismissListener {
+        meetupDialog?.setOnDismissListener {
             eventDates.add(clickedCalendar)
             lifecycleScope.launch {
                 binding.calendarView.selectedDates = emptyList()
@@ -321,7 +324,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
             binding.calendarView.selectedDates = eventDates
         }
 
-        dialog.show()
+        meetupDialog?.show()
     }
 
     private fun refreshCalendarView() {
@@ -340,6 +343,28 @@ class TeamCalendarFragment : BaseTeamFragment() {
                 eventDates.addAll(newDates)
                 binding.calendarView.selectedDates = ArrayList(newDates)
             }
+        }
+    }
+
+    private fun refreshMeetupDialog() {
+        if (!::clickedCalendar.isInitialized || meetupDialog?.isShowing != true) {
+            return
+        }
+        viewLifecycleOwner.lifecycleScope.launch {
+            val updatedMeetupList = meetupRepository.getMeetupsForTeam(teamId)
+            val clickedDateInMillis = clickedCalendar.timeInMillis
+            val clickedDate = Instant.ofEpochMilli(clickedDateInMillis)
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate()
+
+            val filteredMeetups = updatedMeetupList.filter { meetup ->
+                val meetupDate = Instant.ofEpochMilli(meetup.startDate)
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDate()
+                meetupDate == clickedDate
+            }
+
+            meetupAdapter?.submitList(filteredMeetups)
         }
     }
 
