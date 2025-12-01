@@ -27,7 +27,9 @@ import kotlin.Array
 import kotlin.Int
 import kotlin.String
 import kotlin.arrayOf
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.databinding.AlertAddAttachmentBinding
@@ -197,7 +199,16 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             alertAddAttachmentBinding.tvDate as AppCompatTextView
         )
         alertAddAttachmentBinding.btnAddResources.setOnClickListener {
-            showResourceListDialog(prevList)
+            it.isEnabled = false
+            alertAddAttachmentBinding.progressBar.visibility = View.VISIBLE
+            lifecycleScope.launch {
+                val list = withContext(Dispatchers.IO) {
+                    aRealm.copyFromRealm(aRealm.where(RealmMyLibrary::class.java).findAll())
+                }
+                showResourceListDialog(prevList, list)
+                alertAddAttachmentBinding.progressBar.visibility = View.GONE
+                it.isEnabled = true
+            }
         }
         val tintColor = ContextCompat.getColorStateList(requireContext(), R.color.daynight_textColor)
         alertAddAttachmentBinding.etDesc.backgroundTintList = tintColor
@@ -246,10 +257,9 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         showAchievementAndInfo()
     }
 
-    private fun showResourceListDialog(prevList: List<String?>) {
+    private fun showResourceListDialog(prevList: List<String?>, list: List<RealmMyLibrary>) {
         val builder = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
         builder.setTitle(R.string.select_resources)
-        val list: List<RealmMyLibrary> = aRealm.where(RealmMyLibrary::class.java).findAll()
         myLibraryAlertdialogBinding = MyLibraryAlertdialogBinding.inflate(LayoutInflater.from(activity))
         val myLibraryAlertdialogView: View = myLibraryAlertdialogBinding.root
         val lv = createResourceList(myLibraryAlertdialogBinding, list, prevList)
