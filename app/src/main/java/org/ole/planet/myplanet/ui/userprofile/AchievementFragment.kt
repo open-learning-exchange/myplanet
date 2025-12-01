@@ -41,6 +41,26 @@ import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.UrlUtils
 
+private data class AchievementData(
+    val goals: String,
+    val purpose: String,
+    val achievementsHeader: String,
+    val achievements: List<AchievementItem>,
+    val references: List<String>,
+)
+
+private data class AchievementItem(
+    val description: String,
+    val date: String,
+    val title: String,
+    val resources: List<ResourceItem>,
+)
+
+private data class ResourceItem(
+    val id: String,
+    val title: String,
+    val isOffline: Boolean,
+)
 @AndroidEntryPoint
 class AchievementFragment : BaseContainerFragment() {
     private var _binding: FragmentAchievementBinding? = null
@@ -49,7 +69,6 @@ class AchievementFragment : BaseContainerFragment() {
     private lateinit var realmChangeListener: io.realm.RealmChangeListener<Realm>
     var user: RealmUserModel? = null
     var listener: OnHomeItemClickListener? = null
-    private var achievement: RealmAchievement? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     lateinit var prefManager: SharedPrefManager
     private val serverUrlMapper = ServerUrlMapper()
@@ -60,7 +79,79 @@ class AchievementFragment : BaseContainerFragment() {
     private lateinit var realtimeSyncListener: BaseRealtimeSyncListener
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
+    private suspend fun loadAndProcessAchievementData(): AchievementData? {
+        return withContext(Dispatchers.IO) {
+            databaseService.withRealm { realm ->
+                val achievement = realm.where(RealmAchievement::class.java)
+                    .equalTo("_id", user?.id + "@" + user?.planetCode)
+                    .findFirst()
 
+                if (achievement == null) {
+                    return@withRealm null
+                }
+                val achievementUnmanaged = realm.copyFromRealm(achievement)
+                val allResourceIds = achievementUnmanaged.achievements.flatMap { json ->
+                    GsonUtils.gson.fromJson(json, JsonObject::class.java)
+                        .getAsJsonArray("resources")
+                        .map { it.asJsonObject["_id"].asString }
+                }.distinct()
+
+                val resourcesMap = realm.where(RealmMyLibrary::class.java)
+                    .`in`("id", allResourceIds.toTypedArray())
+                    .findAll()
+                    .associateBy { it.id }
+
+                val achievementItems = achievementUnmanaged.achievements.map { json ->
+                    val ob = GsonUtils.gson.fromJson(json, JsonObject::class.java)
+                    val resourceItems = ob.getAsJsonArray("resources").mapNotNull { res ->
+                        val resId = res.asJsonObject["_id"].asString
+                        resourcesMap[resId]?.let { lib ->
+                            ResourceItem(
+                                id = lib.id,
+                                title = lib.title,
+                                isOffline = lib.isResourceOffline()
+                            )
+                        }
+                    }
+                    AchievementItem(
+                        description = getString("description", ob),
+                        date = getString("date", ob),
+                        title = getString("title", ob),
+                        resources = resourceItems
+                    )
+                }
+
+                AchievementData(
+                    goals = achievementUnmanaged.goals,
+                    purpose = achievementUnmanaged.purpose,
+                    achievementsHeader = achievementUnmanaged.achievementsHeader,
+                    achievements = achievementItems,
+                    references = achievementUnmanaged.references.map { it }
+                )
+            }
+        }
+    }
+
+    private fun render(data: AchievementData?) {
+        if (data == null) {
+            return
+        }
+        binding.tvGoals.text = data.goals
+        binding.tvPurpose.text = data.purpose
+        binding.tvAchievementHeader.text = data.achievementsHeader
+
+        binding.llAchievement.removeAllViews()
+        data.achievements.forEach { achievement ->
+            val view = createAchievementView(achievement)
+            if (view.parent != null) {
+                (view.parent as ViewGroup).removeView(view)
+            }
+            binding.llAchievement.addView(view)
+        }
+
+        binding.rvOtherInfo.layoutManager = LinearLayoutManager(requireContext())
+        binding.rvOtherInfo.adapter = AdapterOtherInfo(requireContext(), RealmList(*data.references.toTypedArray()))
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefManager = SharedPrefManager(requireContext())
@@ -155,25 +246,16 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     private fun refreshAchievementData() {
-        if (!isAdded || requireActivity().isFinishing) return
-
-        try {
-            achievement = aRealm.where(RealmAchievement::class.java)
-                .equalTo("_id", user?.id + "@" + user?.planetCode)
-                .findFirst()
-
-            updateAchievementUI()
-
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+        loadData()
     }
 
-    private fun updateAchievementUI() {
-        if (achievement != null) {
-            setupAchievementHeader(achievement!!)
-            populateAchievements()
-            setupReferences()
+    private fun loadData() {
+        if (!isAdded || requireActivity().isFinishing) return
+        lifecycleScope.launch {
+            val data = loadAndProcessAchievementData()
+            if (isAdded && !requireActivity().isFinishing) {
+                render(data)
+            }
         }
     }
 
@@ -191,19 +273,7 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     private fun loadInitialAchievementData() {
-        achievement = aRealm.where(RealmAchievement::class.java)
-            .equalTo("_id", user?.id + "@" + user?.planetCode)
-            .findFirst()
-
-        achievement?.let {
-            updateAchievementUI()
-            realmChangeListener = io.realm.RealmChangeListener {
-                if (isAdded) {
-                    populateAchievements()
-                }
-            }
-            aRealm.addChangeListener(realmChangeListener)
-        }
+        loadData()
     }
 
     private fun setupRealtimeSync() {
@@ -219,39 +289,18 @@ class AchievementFragment : BaseContainerFragment() {
         syncCoordinator.addListener(realtimeSyncListener)
     }
 
-    private fun setupAchievementHeader(a: RealmAchievement) {
-        binding.tvGoals.text = a.goals
-        binding.tvPurpose.text = a.purpose
-        binding.tvAchievementHeader.text = a.achievementsHeader
-    }
-
-    private fun populateAchievements() {
-        binding.llAchievement.removeAllViews()
-        achievement?.achievements?.forEach { json ->
-            val element = GsonUtils.gson.fromJson(json, JsonElement::class.java)
-            val view = if (element is JsonObject) createAchievementView(element) else null
-            view?.let {
-                // Ensure the view is properly detached from any previous parent
-                if (it.parent != null) {
-                    (it.parent as ViewGroup).removeView(it)
-                }
-                binding.llAchievement.addView(it)
-            }
-        }
-    }
-
-    private fun createAchievementView(ob: JsonObject): View {
+    private fun createAchievementView(achievement: AchievementItem): View {
         val binding = RowAchievementBinding.inflate(LayoutInflater.from(requireContext()))
-        val desc = getString("description", ob)
-        binding.tvDescription.text = desc
-        binding.tvDate.text = getString("date", ob)
-        binding.tvTitle.text = getString("title", ob)
-        val libraries = getLibraries(ob.getAsJsonArray("resources"))
+        binding.tvDescription.text = achievement.description
+        binding.tvDate.text = achievement.date
+        binding.tvTitle.text = achievement.title
 
-        if (desc.isNotEmpty() && libraries.isNotEmpty()) {
+        if (achievement.description.isNotEmpty() && achievement.resources.isNotEmpty()) {
             binding.llRow.setOnClickListener { toggleDescription(binding) }
             binding.flexboxResources.removeAllViews()
-            libraries.forEach { binding.flexboxResources.addView(createResourceButton(it)) }
+            achievement.resources.forEach { resource ->
+                binding.flexboxResources.addView(createResourceButton(resource))
+            }
         } else {
             binding.tvTitle.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0)
         }
@@ -268,39 +317,34 @@ class AchievementFragment : BaseContainerFragment() {
         )
     }
 
-    private fun createResourceButton(lib: RealmMyLibrary): View {
+    private fun createResourceButton(resource: ResourceItem): View {
         val btnBinding = LayoutButtonPrimaryBinding.inflate(LayoutInflater.from(requireContext()))
-        btnBinding.root.text = lib.title
+        btnBinding.root.text = resource.title
         btnBinding.root.setCompoundDrawablesWithIntrinsicBounds(
             0,
             0,
-            if (lib.isResourceOffline()) R.drawable.ic_eye else R.drawable.ic_download,
+            if (resource.isOffline) R.drawable.ic_eye else R.drawable.ic_download,
             0
         )
         btnBinding.root.setOnClickListener {
-            if (lib.isResourceOffline()) {
-                openResource(lib)
+            if (resource.isOffline) {
+                // Find the Realm object to open it. This is a quick operation.
+                databaseService.withRealm { realm ->
+                    val lib = realm.where(RealmMyLibrary::class.java)
+                        .equalTo("id", resource.id)
+                        .findFirst()
+                    lib?.let { openResource(it) }
+                }
             } else {
-                startDownload(arrayListOf(UrlUtils.getUrl(lib)))
+                databaseService.withRealm { realm ->
+                    val lib = realm.where(RealmMyLibrary::class.java)
+                        .equalTo("id", resource.id)
+                        .findFirst()
+                    lib?.let { startDownload(arrayListOf(UrlUtils.getUrl(it))) }
+                }
             }
         }
         return btnBinding.root
-    }
-
-    private fun setupReferences() {
-        binding.rvOtherInfo.layoutManager = LinearLayoutManager(requireContext())
-        binding.rvOtherInfo.adapter =
-            AdapterOtherInfo(requireContext(), achievement?.references ?: RealmList())
-    }
-
-    private fun getLibraries(array: JsonArray): List<RealmMyLibrary> {
-        val libraries = ArrayList<RealmMyLibrary>()
-        for (e in array) {
-            val id = e.asJsonObject["_id"].asString
-            val li = aRealm.where(RealmMyLibrary::class.java).equalTo("id", id).findFirst()
-            if (li != null) libraries.add(li)
-        }
-        return libraries
     }
 
 
