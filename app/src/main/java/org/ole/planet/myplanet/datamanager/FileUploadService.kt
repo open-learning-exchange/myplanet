@@ -64,6 +64,53 @@ open class FileUploadService {
         }
     }
 
+    // Suspend versions
+    suspend fun uploadAttachmentSuspend(id: String, rev: String, personal: RealmMyPersonal): Boolean {
+        val f = personal.path?.let { File(it) }
+        val name = FileUtils.getFileNameFromUrl(personal.path)
+        if (f != null) {
+            return uploadDocSuspend(id, rev, "%s/resources/%s/%s", f, name)
+        }
+        return false
+    }
+
+    suspend fun uploadAttachmentSuspend(id: String, rev: String, personal: RealmMyLibrary): Boolean {
+        val f = personal.resourceLocalAddress?.let { File(it) }
+        val name = FileUtils.getFileNameFromLocalAddress(personal.resourceLocalAddress)
+        if (f != null) {
+            return uploadDocSuspend(id, rev, "%s/resources/%s/%s", f, name)
+        }
+        return false
+    }
+
+    suspend fun uploadAttachmentSuspend(id: String, rev: String, personal: RealmSubmitPhotos): Boolean {
+        val f = personal.photoLocation?.let { File(it) }
+        val name = FileUtils.getFileNameFromUrl(personal.photoLocation)
+        if (f != null) {
+            return uploadDocSuspend(id, rev, "%s/submissions/%s/%s", f, name)
+        }
+        return false
+    }
+
+    private suspend fun uploadDocSuspend(id: String, rev: String, format: String, f: File, name: String): Boolean {
+        val apiInterface = ApiClient.client?.create(ApiInterface::class.java)
+        return try {
+            val connection = f.toURI().toURL().openConnection()
+            val mimeType = connection.contentType
+            val body = FileUtils.fullyReadFileToBytes(f)
+                .toRequestBody("application/octet-stream".toMediaTypeOrNull())
+            val url = String.format(format, UrlUtils.getUrl(), id, name)
+            val response = apiInterface?.uploadResourceSuspend(getHeaderMap(mimeType, rev), url, body)
+
+            response?.isSuccessful == true && response.body()?.let {
+                JsonUtils.getBoolean("ok", it)
+            } == true
+        } catch (e: IOException) {
+            e.printStackTrace()
+            false
+        }
+    }
+
     private fun onDataReceived(`object`: JsonObject?, listener: SuccessListener) {
         if (`object` != null) {
             if (JsonUtils.getBoolean("ok", `object`)) {

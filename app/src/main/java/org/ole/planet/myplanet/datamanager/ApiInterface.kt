@@ -40,11 +40,20 @@ interface ApiInterface {
     @POST
     suspend fun postDocSuspend(@Header("Authorization") header: String?, @Header("Content-Type") c: String?, @Url url: String?, @Body s: JsonObject?): Response<JsonObject>
 
+    @POST
+    suspend fun findDocsSuspend(@Header("Authorization") header: String?, @Header("Content-Type") c: String?, @Url url: String?, @Body s: JsonObject?): Response<JsonObject>
+
     @PUT
     fun uploadResource(@HeaderMap headerMap: Map<String, String>, @Url url: String?, @Body body: RequestBody?): Call<JsonObject>
 
     @PUT
+    suspend fun uploadResourceSuspend(@HeaderMap headerMap: Map<String, String>, @Url url: String?, @Body body: RequestBody?): Response<JsonObject>
+
+    @PUT
     fun putDoc(@Header("Authorization") header: String?, @Header("Content-Type") c: String?, @Url url: String?, @Body s: JsonObject?): Call<JsonObject>
+
+    @PUT
+    suspend fun putDocSuspend(@Header("Authorization") header: String?, @Header("Content-Type") c: String?, @Url url: String?, @Body s: JsonObject?): Response<JsonObject>
 
     @GET
     suspend fun checkVersion(@Url serverUrl: String?): Response<MyPlanet>
@@ -54,6 +63,9 @@ interface ApiInterface {
 
     @GET
     fun healthAccess(@Url url: String?): Call<ResponseBody>
+
+    @GET
+    suspend fun healthAccessSuspend(@Url url: String?): Response<ResponseBody>
 
     @GET
     fun getChecksum(@Url url: String?): Call<ResponseBody>

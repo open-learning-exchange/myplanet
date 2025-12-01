@@ -13,6 +13,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.callback.SyncListener
@@ -73,24 +74,26 @@ class AutoSyncWorker(
     override fun onCheckingVersion() {}
     override fun onError(msg: String, blockSync: Boolean) {
         if (!blockSync) {
-            syncManager.start(this, "upload")
-            uploadToShelfService.uploadUserData {
-                Service(MainApplication.context).healthAccess {
-                    uploadToShelfService.uploadHealth()
-                }
-            }
-            if (!MainApplication.isSyncRunning) {
-                MainApplication.isSyncRunning = true
-                workerScope.launch {
-                    uploadManager.uploadExamResult(this@AutoSyncWorker)
+            workerScope.launch {
+                syncManager.start(this@AutoSyncWorker, "upload")
+                uploadToShelfService.uploadUserData()
+                Service(MainApplication.context).healthAccessSuspend()
+                uploadToShelfService.uploadHealth()
+
+                if (!MainApplication.isSyncRunning) {
+                    MainApplication.isSyncRunning = true
+                    uploadManager.uploadExamResult()
+                    onSuccess(null)
                     uploadManager.uploadFeedback()
                     uploadManager.uploadAchievement()
                     uploadManager.uploadResourceActivities("")
-                    uploadManager.uploadUserActivities(this@AutoSyncWorker)
+                    uploadManager.uploadUserActivities()
+                    onSuccess(null)
                     uploadManager.uploadCourseActivities()
                     uploadManager.uploadSearchActivity()
                     uploadManager.uploadRating()
-                    uploadManager.uploadResource(this@AutoSyncWorker)
+                    uploadManager.uploadResource()
+                    onSuccess(null)
                     uploadManager.uploadNews()
                     uploadManager.uploadTeams()
                     uploadManager.uploadTeamTask()
@@ -98,7 +101,10 @@ class AutoSyncWorker(
                     uploadManager.uploadAdoptedSurveys()
                     uploadManager.uploadCrashLog()
                     uploadManager.uploadSubmissions()
-                    uploadManager.uploadActivities { MainApplication.isSyncRunning = false }
+                    uploadManager.uploadActivities()
+                    withContext(Dispatchers.Main) {
+                        MainApplication.isSyncRunning = false
+                    }
                 }
             }
         }

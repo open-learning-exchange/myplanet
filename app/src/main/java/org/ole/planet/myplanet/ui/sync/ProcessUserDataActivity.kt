@@ -182,23 +182,21 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
 
     fun startUpload(source: String, userName: String? = null, securityCallback: SecurityDataCallback? = null) {
         if (source == "becomeMember") {
-            uploadToShelfService.uploadSingleUserData(userName, object : SuccessListener {
-                override fun onSuccess(success: String?) {
-                    uploadToShelfService.uploadSingleUserHealth("org.couchdb.user:${userName}", object : SuccessListener {
-                        override fun onSuccess(success: String?) {
-                            userName?.let { name ->
-                                fetchAndLogUserSecurityData(name, securityCallback)
-                            } ?: run {
-                                securityCallback?.onSecurityDataUpdated()
-                            }
-                        }
-                    })
+            lifecycleScope.launch {
+                uploadToShelfService.uploadSingleUserData(userName)
+                uploadToShelfService.uploadSingleUserHealth("org.couchdb.user:${userName}")
+                userName?.let { name ->
+                    fetchAndLogUserSecurityData(name, securityCallback)
+                } ?: run {
+                    withContext(Dispatchers.Main) {
+                         securityCallback?.onSecurityDataUpdated()
+                    }
                 }
-            })
+            }
             return
         } else if (source == "login") {
             lifecycleScope.launch(Dispatchers.IO) {
-                uploadManager.uploadUserActivities(this@ProcessUserDataActivity)
+                uploadManager.uploadUserActivities()
             }
             return
         }
@@ -206,74 +204,37 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         customProgressDialog.show()
 
         lifecycleScope.launch {
-            val asyncOperationsCounter = AtomicInteger(0)
-            val totalAsyncOperations = 6
+            withContext(Dispatchers.IO) {
+                uploadManager.uploadAchievement()
+                uploadManager.uploadNews()
+                uploadManager.uploadResourceActivities("")
+                uploadManager.uploadCourseActivities()
+                uploadManager.uploadSearchActivity()
+                uploadManager.uploadTeams()
+                uploadManager.uploadRating()
+                uploadManager.uploadTeamTask()
+                uploadManager.uploadMeetups()
+                uploadManager.uploadAdoptedSurveys()
+                uploadManager.uploadSubmissions()
+                uploadManager.uploadCrashLog()
 
-            fun checkAllOperationsComplete() {
-                if (asyncOperationsCounter.incrementAndGet() == totalAsyncOperations) {
-                    runOnUiThread {
-                        if (!isFinishing && !isDestroyed) {
-                            customProgressDialog.dismiss()
-                            Toast.makeText(this@ProcessUserDataActivity, "upload complete", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                }
-            }
-
-            uploadManager.uploadAchievement()
-            uploadManager.uploadNews()
-            uploadManager.uploadResourceActivities("")
-            uploadManager.uploadCourseActivities()
-            uploadManager.uploadSearchActivity()
-            uploadManager.uploadTeams()
-            uploadManager.uploadRating()
-            uploadManager.uploadTeamTask()
-            uploadManager.uploadMeetups()
-            uploadManager.uploadAdoptedSurveys()
-            uploadManager.uploadSubmissions()
-            uploadManager.uploadCrashLog()
-
-            uploadToShelfService.uploadUserData {
+                uploadToShelfService.uploadUserData()
                 uploadToShelfService.uploadHealth()
-                checkAllOperationsComplete()
+
+                uploadManager.uploadUserActivities()
+                uploadManager.uploadExamResult()
+                uploadManager.uploadFeedback()
+                uploadManager.uploadResource()
+                uploadManager.uploadSubmitPhotos()
+                uploadManager.uploadActivities()
             }
 
-            uploadManager.uploadUserActivities(object : SuccessListener {
-                override fun onSuccess(success: String?) {
-                    checkAllOperationsComplete()
-                }
-            })
-
-            uploadManager.uploadExamResult(object : SuccessListener {
-                override fun onSuccess(success: String?) {
-                    checkAllOperationsComplete()
-                }
-            })
-
-            lifecycleScope.launch(Dispatchers.IO) {
-                val success = uploadManager.uploadFeedback()
-                withContext(Dispatchers.Main) {
-                    checkAllOperationsComplete()
+            withContext(Dispatchers.Main) {
+                if (!isFinishing && !isDestroyed) {
+                    customProgressDialog.dismiss()
+                    Toast.makeText(this@ProcessUserDataActivity, "upload complete", Toast.LENGTH_SHORT).show()
                 }
             }
-
-            uploadManager.uploadResource(object : SuccessListener {
-                override fun onSuccess(success: String?) {
-                    checkAllOperationsComplete()
-                }
-            })
-
-            uploadManager.uploadSubmitPhotos(object : SuccessListener {
-                override fun onSuccess(success: String?) {
-                    checkAllOperationsComplete()
-                }
-            })
-
-            uploadManager.uploadActivities(object : SuccessListener {
-                override fun onSuccess(success: String?) {
-                    checkAllOperationsComplete()
-                }
-            })
         }
     }
 

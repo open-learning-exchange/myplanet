@@ -140,6 +140,41 @@ class Service @Inject constructor(
         }
     }
 
+    suspend fun healthAccessSuspend(): String {
+        return try {
+            val healthUrl = UrlUtils.getHealthAccessUrl(preferences)
+            if (healthUrl.isBlank()) {
+                return ""
+            }
+
+            val response = retrofitInterface.healthAccessSuspend(healthUrl)
+            try {
+                when (response.code()) {
+                    200 -> context.getString(R.string.server_sync_successfully)
+                    401 -> "Unauthorized - Invalid credentials"
+                    404 -> "Server endpoint not found"
+                    500 -> "Server internal error"
+                    502 -> "Bad gateway - Server unavailable"
+                    503 -> "Service temporarily unavailable"
+                    504 -> "Gateway timeout"
+                    else -> "Server error: ${response.code()}"
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                ""
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            when (e) {
+                is java.net.UnknownHostException -> "Server not reachable"
+                is java.net.SocketTimeoutException -> "Connection timeout"
+                is java.net.ConnectException -> "Unable to connect to server"
+                is java.io.IOException -> "Network connection error"
+                else -> "Health access initialization failed"
+            }
+        }
+    }
+
     fun checkCheckSum(callback: ChecksumCallback, path: String?) {
         retrofitInterface.getChecksum(UrlUtils.getChecksumUrl(preferences)).enqueue(object : Callback<ResponseBody> {
             override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
