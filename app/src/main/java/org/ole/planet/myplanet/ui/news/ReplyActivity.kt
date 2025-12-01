@@ -23,7 +23,9 @@ import dagger.hilt.android.AndroidEntryPoint
 import io.realm.RealmList
 import java.io.File
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityReplyBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -87,12 +89,13 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     private fun showData(id: String?) {
         id ?: return
         lifecycleScope.launch {
-            val (news, list) = viewModel.getNewsWithReplies(id)
-            databaseService.withRealm { realm ->
+            val (news, list) = withContext(Dispatchers.IO) {
+                viewModel.getNewsWithReplies(id)
+            }
+            withContext(Dispatchers.Main) {
                 newsAdapter = AdapterNews(this@ReplyActivity, user, news, "", null, userProfileDbHandler, databaseService)
                 newsAdapter.sharedPrefManager = sharedPrefManager
                 newsAdapter.setListener(this@ReplyActivity)
-                newsAdapter.setmRealm(realm)
                 newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
                 newsAdapter.setNonTeamMember(intent.getBooleanExtra("nonTeamMember", false))
                 newsAdapter.setImageList(imageList)
