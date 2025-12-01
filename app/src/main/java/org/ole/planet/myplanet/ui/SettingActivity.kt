@@ -115,6 +115,7 @@ class SettingActivity : AppCompatActivity() {
         @AppPreferences
         lateinit var settings: SharedPreferences
         var user: RealmUserModel? = null
+        private var libraryList: List<RealmMyLibrary>? = null
         private lateinit var dialog: DialogUtils.CustomProgressDialog
 
         override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -151,14 +152,22 @@ class SettingActivity : AppCompatActivity() {
             }
 
             val autoDownload = findPreference<SwitchPreference>("beta_auto_download")
-            autoDownload?.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, _: Any? ->
-                if (autoDownload.isChecked == true) {
+            autoDownload?.onPreferenceChangeListener = OnPreferenceChangeListener { preference, newValue ->
+                val isChecked = newValue as Boolean
+                if (isChecked) {
+                    preference.isEnabled = false
                     defaultPref.edit { putBoolean("beta_auto_download", true) }
-                    databaseService.withRealm { realm ->
-                        backgroundDownload(
-                            downloadAllFiles(getAllLibraryList(realm)),
-                            requireContext()
-                        )
+                    lifecycleScope.launch {
+                        try {
+                            val files = libraryList ?: withContext(Dispatchers.IO) {
+                                databaseService.withRealm { realm ->
+                                    getAllLibraryList(realm).also { libraryList = it }
+                                }
+                            }
+                            backgroundDownload(downloadAllFiles(files), requireContext())
+                        } finally {
+                            preference.isEnabled = true
+                        }
                     }
                 } else {
                     defaultPref.edit { putBoolean("beta_auto_download", false) }
