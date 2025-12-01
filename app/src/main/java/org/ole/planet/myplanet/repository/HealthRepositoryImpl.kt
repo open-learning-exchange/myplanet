@@ -20,8 +20,8 @@ import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 class HealthRepositoryImpl @Inject constructor(
-    @ApplicationContext private val context: Context, override var databaseService: DatabaseService
-) : HealthRepository {
+    @ApplicationContext private val context: Context, databaseService: DatabaseService
+) : RealmRepository(databaseService), HealthRepository {
 
     private val colonRegex by lazy { ":".toRegex() }
 
