@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import android.content.SharedPreferences
 import com.google.gson.JsonObject
+import io.realm.Sort
 import org.ole.planet.myplanet.model.RealmUserModel
 
 interface UserRepository {
@@ -49,4 +50,6 @@ interface UserRepository {
     )
 
     fun getUserModel(): RealmUserModel?
+    suspend fun getUsersSorted(sortBy: String, sort: Sort): List<RealmUserModel>
+    suspend fun getUsersByFilter(filter: String): List<RealmUserModel>
 }

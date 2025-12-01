@@ -2,6 +2,8 @@ package org.ole.planet.myplanet.repository
 
 import android.content.SharedPreferences
 import com.google.gson.JsonObject
+import io.realm.Case
+import io.realm.Sort
 import java.util.Calendar
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -179,6 +181,28 @@ class UserRepositoryImpl @Inject constructor(
                 .equalTo("_id", userId)
                 .findFirst()
                 ?.let { realm.copyFromRealm(it) }
+        }
+    }
+
+    override suspend fun getUsersSorted(sortBy: String, sort: Sort): List<RealmUserModel> {
+        return withRealm { realm ->
+            realm.where(RealmUserModel::class.java).sort(sortBy, sort).findAll().let {
+                realm.copyFromRealm(it)
+            }
+        }
+    }
+
+    override suspend fun getUsersByFilter(filter: String): List<RealmUserModel> {
+        return withRealm { realm ->
+            realm.where(RealmUserModel::class.java)
+                .contains("firstName", filter, Case.INSENSITIVE)
+                .or()
+                .contains("lastName", filter, Case.INSENSITIVE)
+                .or()
+                .contains("name", filter, Case.INSENSITIVE)
+                .sort("joinDate", Sort.DESCENDING)
+                .findAll()
+                .let { realm.copyFromRealm(it) }
         }
     }
 }

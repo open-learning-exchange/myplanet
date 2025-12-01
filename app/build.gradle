@@ -1,5 +1,6 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-parcelize'
 apply plugin: 'kotlin-kapt'
 apply plugin: 'com.google.devtools.ksp'
 apply plugin: 'dagger.hilt.android.plugin'
@@ -17,6 +18,9 @@ android {
     }
     configurations.configureEach {
         resolutionStrategy.force "com.google.android.material:material:${libs.versions.material.get()}"
+    }
+    configurations.all {
+        exclude group: 'org.jetbrains.kotlin', module: 'kotlin-android-extensions-runtime'
     }
     buildTypes {
         release {
