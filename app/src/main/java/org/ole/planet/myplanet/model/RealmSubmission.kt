@@ -8,6 +8,7 @@ import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
+import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 import java.util.Date
 import java.util.UUID
@@ -19,7 +20,9 @@ import org.ole.planet.myplanet.utilities.NetworkUtils
 open class RealmSubmission : RealmObject() {
     @PrimaryKey
     var id: String? = null
+    @Index
     var _id: String? = null
+    @Index
     var _rev: String? = null
     var parentId: String? = null
     var type: String? = null
@@ -37,6 +40,7 @@ open class RealmSubmission : RealmObject() {
     var parentCode: String? = null
     var parent: String? = null
     var membershipDoc: RealmMembershipDoc? = null
+    @Index
     var isUpdated = false
 
     companion object {

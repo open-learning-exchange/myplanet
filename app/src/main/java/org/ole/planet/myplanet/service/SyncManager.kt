@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.net.wifi.SupplicantState
 import android.net.wifi.WifiManager
+import android.util.Log
 import androidx.core.content.edit
 import com.google.gson.Gson
 import com.google.gson.JsonArray
@@ -186,6 +187,9 @@ class SyncManager constructor(
     }
 
     private suspend fun startFullSync() {
+        val syncStartTime = System.currentTimeMillis()
+        Log.d("PerformanceTest", "=== FULL SYNC STARTED at ${java.text.SimpleDateFormat("HH:mm:ss").format(java.util.Date())} ===")
+
         try {
             val logger = SyncTimeLogger
             logger.startLogging()
@@ -306,7 +310,17 @@ class SyncManager constructor(
             mRealm.close()
 
             logger.stopLogging()
+
+            val syncEndTime = System.currentTimeMillis()
+            val totalSyncTime = syncEndTime - syncStartTime
+            val minutes = totalSyncTime / 60000
+            val seconds = (totalSyncTime % 60000) / 1000
+            Log.d("PerformanceTest", "=== FULL SYNC COMPLETED at ${java.text.SimpleDateFormat("HH:mm:ss").format(java.util.Date())} ===")
+            Log.d("PerformanceTest", "=== TOTAL SYNC TIME: ${minutes}m ${seconds}s (${totalSyncTime}ms) ===")
         } catch (err: Exception) {
+            val syncEndTime = System.currentTimeMillis()
+            val totalSyncTime = syncEndTime - syncStartTime
+            Log.d("PerformanceTest", "=== SYNC FAILED after ${totalSyncTime}ms ===")
             err.printStackTrace()
             handleException(err.message)
         } finally {
@@ -546,6 +560,9 @@ class SyncManager constructor(
     }
 
     private suspend fun resourceTransactionSync(backgroundRealm: Realm? = null) {
+        val resourceSyncStartTime = System.currentTimeMillis()
+        Log.d("PerformanceTest", "resourceTransactionSync: Starting resource sync")
+
         val logger = SyncTimeLogger
         logger.startProcess("resource_sync")
         var processedItems = 0
@@ -568,8 +585,11 @@ class SyncManager constructor(
             var skip = 0
             var batchCount = 0
 
+            Log.d("PerformanceTest", "resourceTransactionSync: Total resources to sync: $totalRows")
+
             while (skip < totalRows || (totalRows == 0 && skip == 0)) {
                 batchCount++
+                val batchStartTime = System.currentTimeMillis()
 
                 try {
                     var response: JsonObject? = null
@@ -658,7 +678,11 @@ class SyncManager constructor(
                     }
 
                     skip += rows.size()
+
+                    val batchEndTime = System.currentTimeMillis()
+                    val batchTime = batchEndTime - batchStartTime
                     if (batchCount % 10 == 0) {
+                        Log.d("PerformanceTest", "resourceTransactionSync: Batch $batchCount completed in ${batchTime}ms - Progress: $skip/$totalRows (${(skip * 100 / totalRows.coerceAtLeast(1))}%)")
                         val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                         settings.edit {
                             putLong("ResourceLastSyncTime", System.currentTimeMillis())
@@ -674,15 +698,24 @@ class SyncManager constructor(
             try {
                 val validNewIds = newIds.filter { !it.isNullOrBlank() }
                 if (validNewIds.isNotEmpty() && validNewIds.size == newIds.size) {
+                    Log.d("PerformanceTest", "resourceTransactionSync: Removing deleted resources (${newIds.size - validNewIds.size} items)")
                     removeDeletedResource(validNewIds, realmInstance)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
             logger.endProcess("resource_sync", processedItems)
+
+            val resourceSyncEndTime = System.currentTimeMillis()
+            val resourceSyncTime = resourceSyncEndTime - resourceSyncStartTime
+            val minutes = resourceSyncTime / 60000
+            val seconds = (resourceSyncTime % 60000) / 1000
+            Log.d("PerformanceTest", "resourceTransactionSync: Completed in ${minutes}m ${seconds}s (${resourceSyncTime}ms) - Processed $processedItems items")
         } catch (e: Exception) {
             e.printStackTrace()
             logger.endProcess("resource_sync", processedItems)
+            val resourceSyncEndTime = System.currentTimeMillis()
+            Log.d("PerformanceTest", "resourceTransactionSync: Failed after ${resourceSyncEndTime - resourceSyncStartTime}ms")
         }
     }
 
