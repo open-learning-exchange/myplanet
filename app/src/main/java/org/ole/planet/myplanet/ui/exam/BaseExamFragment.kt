@@ -64,6 +64,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     var submitId = ""
     var isTeam: Boolean = false
     var teamId: String? = null
+    internal var answerTextWatcher: TextWatcher? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -206,13 +207,15 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
         val markwon = Markwon.create(requireActivity())
         val editor = MarkwonEditor.create(markwon)
         if (type.equals("textarea", ignoreCase = true)) {
-            etAnswer.addTextChangedListener(MarkwonEditorTextWatcher.withProcess(editor))
+            answerTextWatcher = MarkwonEditorTextWatcher.withProcess(editor)
+            etAnswer.addTextChangedListener(answerTextWatcher)
         } else {
-            etAnswer.addTextChangedListener(object : TextWatcher {
+            answerTextWatcher = object : TextWatcher {
                 override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
                 override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
                 override fun afterTextChanged(editable: Editable) {}
-            })
+            }
+            etAnswer.addTextChangedListener(answerTextWatcher)
         }
         etAnswer.setText(oldAnswer)
     }
