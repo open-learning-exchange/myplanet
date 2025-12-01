@@ -7,8 +7,10 @@ import org.json.JSONException
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.SurveyBindingData
 import org.ole.planet.myplanet.ui.survey.SurveyInfo
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDateWithTime
@@ -138,5 +140,31 @@ class SurveyRepositoryImpl @Inject constructor(
             )
         }
         return surveyInfos
+    }
+
+    override suspend fun getSurveyBindingData(
+        surveys: List<RealmStepExam>,
+        teamId: String?
+    ): Map<String, SurveyBindingData> {
+        val surveyIds = surveys.map { it.id }
+
+        val teamSubmissions = queryList(RealmSubmission::class.java) {
+            `in`("parentId", surveyIds.toTypedArray())
+            equalTo("membershipDoc.teamId", teamId)
+        }.associateBy { it.parentId }
+
+        val questions = queryList(RealmExamQuestion::class.java) {
+            `in`("examId", surveyIds.toTypedArray())
+        }
+        val questionCounts = questions.groupingBy { it.examId }.eachCount()
+
+        val bindingData = mutableMapOf<String, SurveyBindingData>()
+        for (survey in surveys) {
+            val surveyId = survey.id ?: continue
+            val teamSubmission = teamSubmissions[surveyId]
+            val questionCount = questionCounts[surveyId] ?: 0
+            bindingData[surveyId] = SurveyBindingData(teamSubmission, questionCount)
+        }
+        return bindingData
     }
 }

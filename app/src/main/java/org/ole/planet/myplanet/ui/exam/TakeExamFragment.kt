@@ -727,6 +727,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     override fun onDestroyView() {
         super.onDestroyView()
         saveCurrentAnswer()
+        answerTextWatcher?.let { binding.etAnswer.removeTextChangedListener(it) }
         selectedRatingButton = null
         _binding = null
     }
