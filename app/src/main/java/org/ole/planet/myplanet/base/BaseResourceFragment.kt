@@ -65,7 +65,7 @@ abstract class BaseResourceFragment : Fragment() {
     var homeItemClickListener: OnHomeItemClickListener? = null
     var model: RealmUserModel? = null
     protected lateinit var mRealm: Realm
-    var editor: SharedPreferences.Editor? = null
+    private val editor by lazy { settings.edit() }
     var lv: CheckboxListView? = null
     var convertView: View? = null
     internal lateinit var prgDialog: DialogUtils.CustomProgressDialog
@@ -348,10 +348,10 @@ abstract class BaseResourceFragment : Fragment() {
         prgDialog.setNegativeButton("disabling", isVisible = false){ prgDialog.dismiss() }
 
         if (settings.getBoolean("isAlternativeUrl", false)) {
-            editor?.putString("alternativeUrl", "")
-            editor?.putString("processedAlternativeUrl", "")
-            editor?.putBoolean("isAlternativeUrl", false)
-            editor?.apply()
+            editor.putString("alternativeUrl", "")
+            editor.putString("processedAlternativeUrl", "")
+            editor.putBoolean("isAlternativeUrl", false)
+            editor.apply()
         }
     }
 
@@ -392,7 +392,6 @@ abstract class BaseResourceFragment : Fragment() {
         super.onCreate(savedInstanceState)
         mRealm = databaseService.realmInstance
         prgDialog = getProgressDialog(requireActivity())
-        editor = settings.edit()
     }
 
     override fun onPause() {
