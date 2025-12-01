@@ -25,11 +25,13 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
@@ -822,11 +824,18 @@ class SyncManager constructor(
         var processedItems = 0
 
         try {
-            var shelfDoc: JsonObject? = null
-            ApiClient.executeWithRetryAndWrap {
-                apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/$shelfId").execute()
-            }?.let {
-                shelfDoc = it.body()
+            val shelfDoc: JsonObject? = withContext(Dispatchers.IO) {
+                var doc: JsonObject? = null
+                ApiClient.executeWithRetryAndWrap {
+                    apiInterface.getJsonObject(
+                        UrlUtils.header,
+                        "${UrlUtils.getUrl()}/shelf/$shelfId"
+                    ).execute()
+                }?.let {
+                    doc = it.body()
+                }
+                coroutineContext.ensureActive()
+                doc
             }
 
             if (shelfDoc == null) {
