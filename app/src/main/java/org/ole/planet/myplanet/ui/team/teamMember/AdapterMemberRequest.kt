@@ -1,10 +1,10 @@
 package org.ole.planet.myplanet.ui.team.teamMember
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import io.realm.Realm
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -12,8 +12,6 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.MemberChangeListener
 import org.ole.planet.myplanet.databinding.RowMemberRequestBinding
-import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMember
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.utilities.Utilities
@@ -21,18 +19,25 @@ import org.ole.planet.myplanet.utilities.Utilities
 class AdapterMemberRequest(
     private val context: Context,
     private val list: MutableList<RealmUserModel>,
-    private val mRealm: Realm,
     private val currentUser: RealmUserModel,
     private val listener: MemberChangeListener,
     private val teamRepository: TeamRepository,
 ) : RecyclerView.Adapter<AdapterMemberRequest.ViewHolderUser>() {
     private var teamId: String? = null
-    private lateinit var team: RealmMyTeam
-    private var cachedModerationStatus: Boolean? = null
+    private var teamLeader = false
+    private var joinedTeamMembers = 0
 
     fun setTeamId(teamId: String?) {
         this.teamId = teamId
-        cachedModerationStatus = null
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
+    fun setData(members: List<RealmUserModel>, isLeader: Boolean, memberCount: Int) {
+        list.clear()
+        list.addAll(members)
+        teamLeader = isLeader
+        joinedTeamMembers = memberCount
+        notifyDataSetChanged()
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderUser {
@@ -45,25 +50,10 @@ class AdapterMemberRequest(
         val binding = holder.binding
         binding.tvName.text = currentItem.name ?: currentItem.toString()
 
-        team = try {
-            mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
-                ?: throw IllegalArgumentException("Team not found for ID: $teamId")
-        } catch (e: IllegalArgumentException) {
-            e.printStackTrace()
-            try {
-                mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId).findFirst()
-                    ?: throw IllegalArgumentException("Team not found for ID: $teamId")
-            } catch (e: IllegalArgumentException) {
-                e.printStackTrace()
-                return
-            }
-        }
-
         with(binding) {
-            val members = getJoinedMember("$teamId", mRealm).size
-            val userCanModerateRequests = canModerateRequests()
+            val userCanModerateRequests = teamLeader
             val isRequester = currentItem.id == currentUser.id
-            btnAccept.isEnabled = members < 12
+            btnAccept.isEnabled = joinedTeamMembers < 12
             btnReject.isEnabled = true
             btnAccept.setOnClickListener(null)
             btnReject.setOnClickListener(null)
@@ -84,29 +74,6 @@ class AdapterMemberRequest(
     }
 
     private fun isGuestUser() = currentUser.id?.startsWith("guest") == true
-
-    private fun canModerateRequests(): Boolean {
-        cachedModerationStatus?.let { return it }
-
-        val teamId = this.teamId
-        val userId = currentUser.id
-        if (teamId.isNullOrBlank() || userId.isNullOrBlank()) {
-            cachedModerationStatus = false
-            return false
-        }
-
-        val membershipRecord = mRealm.where(RealmMyTeam::class.java)
-            .equalTo("teamId", teamId)
-            .equalTo("docType", "membership")
-            .equalTo("userId", userId)
-            .findFirst()
-
-        val canModerate = membershipRecord?.let { it.isLeader || it.docType == "membership" } ?: false
-        cachedModerationStatus = canModerate
-        return canModerate
-    }
-
-
     private fun handleClick(holder: RecyclerView.ViewHolder, isAccepted: Boolean) {
         val adapterPosition = holder.bindingAdapterPosition
         if (adapterPosition != RecyclerView.NO_POSITION && adapterPosition < list.size) {
