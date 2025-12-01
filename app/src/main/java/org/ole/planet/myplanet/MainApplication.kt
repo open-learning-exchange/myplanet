@@ -9,6 +9,7 @@ import android.content.res.Configuration
 import android.os.Bundle
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
+import android.os.Trace
 import android.provider.Settings
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -187,12 +188,12 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         setupStrictMode()
         registerExceptionHandler()
         setupLifecycleCallbacks()
-        configureTheme()
     }
 
     private fun performDeferredInitialization() {
         applicationScope.launch {
             initApp()
+            loadAndApplyTheme()
             ensureApiClientInitialized()
             initializeDatabaseConnection()
             setupAnrWatchdog()
@@ -283,9 +284,16 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         onAppStarted()
     }
 
-    private fun configureTheme() {
-        val savedThemeMode = getCurrentThemeMode()
-        applyThemeMode(savedThemeMode)
+    private suspend fun loadAndApplyTheme() {
+        Trace.beginSection("Theme Loading")
+        try {
+            val savedThemeMode = withContext(Dispatchers.IO) {
+                getCurrentThemeMode()
+            }
+            applyThemeMode(savedThemeMode)
+        } finally {
+            Trace.endSection()
+        }
     }
 
     private suspend fun observeNetworkForDownloads() {
