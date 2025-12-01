@@ -1,0 +1,48 @@
+package org.ole.planet.myplanet.model
+
+import com.google.gson.JsonObject
+
+data class NewsItem(
+    val id: String?,
+    val _id: String?,
+    val _rev: String?,
+    val userId: String?,
+    val user: String?,
+    val message: String?,
+    val docType: String?,
+    val viewableBy: String?,
+    val viewableId: String?,
+    val avatar: String?,
+    val replyTo: String?,
+    val userName: String?,
+    val messagePlanetCode: String?,
+    val messageType: String?,
+    val updatedDate: Long,
+    val time: Long,
+    val createdOn: String?,
+    val parentCode: String?,
+    val imageUrls: List<String>?,
+    val images: String?,
+    val labels: List<String>?,
+    val viewIn: String?,
+    val newsId: String?,
+    val newsRev: String?,
+    val newsUser: String?,
+    val aiProvider: String?,
+    val newsTitle: String?,
+    val conversations: String?,
+    val newsCreatedDate: Long,
+    val newsUpdatedDate: Long,
+    val chat: Boolean,
+    val isEdited: Boolean,
+    val editedTime: Long,
+    val sharedBy: String?,
+    val sortDate: Long,
+    // Additional fields for UI
+    val userImage: String?,
+    val userFullName: String?,
+    val replyCount: Int,
+    val isCommunityNews: Boolean,
+    val imagesArray: List<JsonObject>,
+    val resolvedLibraryImages: Map<String, String> = emptyMap()
+)

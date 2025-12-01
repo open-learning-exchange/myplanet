@@ -17,15 +17,19 @@ import io.realm.RealmResults
 import io.realm.Sort
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentDiscussionListBinding
+import org.ole.planet.myplanet.model.NewsItem
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmTeamNotification
+import org.ole.planet.myplanet.repository.NewsRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
@@ -45,6 +49,8 @@ class DiscussionListFragment : BaseTeamFragment() {
     lateinit var userProfileDbHandler: UserProfileDbHandler
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
+    @Inject
+    lateinit var newsRepository: NewsRepository
     private var filteredNewsList: List<RealmNews?> = listOf()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -129,14 +135,23 @@ class DiscussionListFragment : BaseTeamFragment() {
 
         updatedNewsList?.addChangeListener { results ->
             filteredNewsList = filterNewsList(results)
-            setData(filteredNewsList)
+            // Map to NewsItem
+            val ids = filteredNewsList.mapNotNull { it?.id }
+            viewLifecycleOwner.lifecycleScope.launch {
+                val items = withContext(Dispatchers.IO) {
+                    newsRepository.getNewsItemsByIds(ids)
+                }
+                setData(items)
+            }
         }
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val realmNewsList = news
+        val realmNewsList = news // Getter 'news' returns List<RealmNews>
+
+        // Count update
         val count = realmNewsList.size
         mRealm.executeTransactionAsync { realm: Realm ->
             var notification = realm.where(RealmTeamNotification::class.java).equalTo("type", "chat").equalTo("parentId", getEffectiveTeamId()).findFirst()
@@ -148,7 +163,15 @@ class DiscussionListFragment : BaseTeamFragment() {
             notification?.lastCount = count
         }
         changeLayoutManager(resources.configuration.orientation, binding.rvDiscussion)
-        showRecyclerView(realmNewsList)
+
+        // Initial show
+        val ids = realmNewsList.mapNotNull { it.id }
+        viewLifecycleOwner.lifecycleScope.launch {
+             val items = withContext(Dispatchers.IO) {
+                 newsRepository.getNewsItemsByIds(ids)
+             }
+             showRecyclerView(items)
+        }
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -165,7 +188,7 @@ class DiscussionListFragment : BaseTeamFragment() {
         }
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {
+    override fun onNewsItemClick(news: NewsItem?) {
         val bundle = Bundle()
         bundle.putString("newsId", news?.newsId)
         bundle.putString("newsRev", news?.newsRev)
@@ -234,24 +257,24 @@ class DiscussionListFragment : BaseTeamFragment() {
         changeLayoutManager(newConfig.orientation, binding.rvDiscussion)
     }
 
-    private fun showRecyclerView(realmNewsList: List<RealmNews?>?) {
+    private fun showRecyclerView(newsList: List<NewsItem>?) {
         val existingAdapter = binding.rvDiscussion.adapter
         if (existingAdapter == null) {
+            val isLeader = isTeamLeader()
             val adapterNews = activity?.let {
-                AdapterNews(it, user, null, getEffectiveTeamName(), teamId, userProfileDbHandler, databaseService)
+                AdapterNews(it, user, null, getEffectiveTeamName(), isLeader)
             }
             adapterNews?.sharedPrefManager = sharedPrefManager
-            adapterNews?.setmRealm(mRealm)
             adapterNews?.setListener(this)
             if (!isMemberFlow.value) adapterNews?.setNonTeamMember(true)
-            realmNewsList?.let { adapterNews?.updateList(it) }
+            newsList?.let { adapterNews?.updateList(it) }
             binding.rvDiscussion.adapter = adapterNews
             adapterNews?.let {
                 showNoData(binding.tvNodata, it.itemCount, "discussions")
             }
         } else {
             (existingAdapter as? AdapterNews)?.let { adapter ->
-                realmNewsList?.let {
+                newsList?.let {
                     adapter.updateList(it)
                     showNoData(binding.tvNodata, adapter.itemCount, "discussions")
                 }
@@ -259,7 +282,7 @@ class DiscussionListFragment : BaseTeamFragment() {
         }
     }
 
-    override fun setData(list: List<RealmNews?>?) {
+    override fun setData(list: List<NewsItem>?) {
         showRecyclerView(list)
     }
 
@@ -278,5 +301,18 @@ class DiscussionListFragment : BaseTeamFragment() {
                 requireArguments().containsKey("teamType") &&
                 requireArguments().containsKey("teamId")
         return !hasDirectData
+    }
+
+    private fun isTeamLeader(): Boolean {
+        if(teamId.isEmpty()) return false
+        val team = mRealm.where(RealmMyTeam::class.java)
+            .equalTo("teamId", teamId)
+            .equalTo("isLeader", true)
+            .findFirst()
+        return team?.userId == user?.id
+    }
+
+    override fun getTeamName(): String {
+        return getEffectiveTeamName()
     }
 }

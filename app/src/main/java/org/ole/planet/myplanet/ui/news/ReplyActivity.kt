@@ -14,25 +14,31 @@ import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
+import io.realm.Realm
 import io.realm.RealmList
 import java.io.File
+import java.util.Calendar
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityReplyBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.model.NewsItem
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.news.AdapterNews.OnNewsItemClickListener
-import org.ole.planet.myplanet.ui.news.NewsActions
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getImagePath
@@ -40,6 +46,7 @@ import org.ole.planet.myplanet.utilities.FileUtils.getRealPathFromURI
 import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.SharedPrefManager
+import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
@@ -49,6 +56,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     var id: String? = null
     private lateinit var newsAdapter: AdapterNews
     var user: RealmUserModel? = null
+    private lateinit var mRealm: Realm
 
     private val viewModel: ReplyViewModel by viewModels()
     
@@ -62,6 +70,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        mRealm = Realm.getDefaultInstance()
         activityReplyBinding = ActivityReplyBinding.inflate(layoutInflater)
         setContentView(activityReplyBinding.root)
         EdgeToEdgeUtils.setupEdgeToEdgeWithKeyboard(this, activityReplyBinding.root)
@@ -87,15 +96,13 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     private fun showData(id: String?) {
         id ?: return
         lifecycleScope.launch {
-            val (news, list) = viewModel.getNewsWithReplies(id)
-            databaseService.withRealm { realm ->
-                newsAdapter = AdapterNews(this@ReplyActivity, user, news, "", null, userProfileDbHandler, databaseService)
+            val (news, list) = viewModel.getNewsItemWithReplies(id)
+            if (news != null) {
+                newsAdapter = AdapterNews(this@ReplyActivity, user, news, "")
                 newsAdapter.sharedPrefManager = sharedPrefManager
                 newsAdapter.setListener(this@ReplyActivity)
-                newsAdapter.setmRealm(realm)
                 newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
                 newsAdapter.setNonTeamMember(intent.getBooleanExtra("nonTeamMember", false))
-                newsAdapter.setImageList(imageList)
                 newsAdapter.updateList(list)
                 activityReplyBinding.rvReply.adapter = newsAdapter
             }
@@ -115,7 +122,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         refreshData()
     }
 
-    override fun showReply(news: RealmNews?, fromLogin: Boolean, nonTeamMember: Boolean) {
+    override fun showReply(news: NewsItem?, fromLogin: Boolean, nonTeamMember: Boolean) {
         startActivity(Intent(this, ReplyActivity::class.java).putExtra("id", news?.id))
     }
 
@@ -126,16 +133,20 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         openFolderLauncher.launch(Intent.createChooser(intent, "Select Image"))
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {}
+    override fun onNewsItemClick(news: NewsItem?) {}
 
-    override fun onMemberSelected(userModel: RealmUserModel?) {
-        val fragment = NewsActions.showMemberDetails(userModel, userProfileDbHandler) ?: return
-        NavigationHelper.replaceFragment(
-            supportFragmentManager,
-            R.id.fragment_container,
-            fragment,
-            addToBackStack = true
-        )
+    override fun onMemberSelected(news: NewsItem) {
+        val userId = news.userId
+        if (userId != null) {
+            val userModel = mRealm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
+            val fragment = NewsActions.showMemberDetails(userModel, userProfileDbHandler) ?: return
+            NavigationHelper.replaceFragment(
+                supportFragmentManager,
+                R.id.fragment_container,
+                fragment,
+                addToBackStack = true
+            )
+        }
     }
 
     override fun clearImages() {
@@ -187,7 +198,74 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
                 .into(imgView)
             llImage?.addView(inflater)
         }
-        newsAdapter.setImageList(imageList)
+    }
+
+    override fun onDelete(news: NewsItem) {
+        val realmNews = mRealm.where(RealmNews::class.java).equalTo("id", news.id).findFirst()
+        if (realmNews != null) {
+            NewsActions.deletePost(mRealm, realmNews, mutableListOf(), "")
+            refreshData()
+        }
+    }
+
+    override fun onEdit(news: NewsItem, holder: RecyclerView.ViewHolder) {
+        NewsActions.showEditAlert(this, mRealm, news.id, true, user, this, holder) { _, _, _ ->
+            refreshData()
+        }
+    }
+
+    override fun onReply(news: NewsItem, holder: RecyclerView.ViewHolder) {
+        NewsActions.showEditAlert(this, mRealm, news.id, false, user, this, holder) { _, _, _ ->
+            refreshData()
+        }
+    }
+
+    override fun onShare(news: NewsItem) {
+        AlertDialog.Builder(this, R.style.AlertDialogTheme)
+            .setTitle(R.string.share_with_community)
+            .setMessage(R.string.confirm_share_community)
+            .setPositiveButton(R.string.yes) { _, _ ->
+                val realmNews = mRealm.where(RealmNews::class.java).equalTo("id", news.id).findFirst()
+                if (realmNews != null) {
+                    val array = GsonUtils.gson.fromJson(realmNews.viewIn, JsonArray::class.java)
+                    val firstElement = array.get(0)
+                    val obj = firstElement.asJsonObject
+                    if (!obj.has("name")) {
+                         // Team name? ReplyActivity has no team context usually (empty teamName).
+                        obj.addProperty("name", "")
+                    }
+                    val ob = JsonObject()
+                    ob.addProperty("section", "community")
+                    ob.addProperty("_id", user?.planetCode + "@" + user?.parentCode)
+                    ob.addProperty("sharedDate", Calendar.getInstance().timeInMillis)
+                    array.add(ob)
+
+                    if (!mRealm.isInTransaction) {
+                        mRealm.beginTransaction()
+                    }
+                    realmNews.sharedBy = user?.id
+                    realmNews.viewIn = GsonUtils.gson.toJson(array)
+                    mRealm.commitTransaction()
+                    Utilities.toast(this, getString(R.string.shared_to_community))
+                    refreshData()
+                }
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    override fun onAddLabel(news: NewsItem, label: String) {
+        lifecycleScope.launch {
+            viewModel.addLabel(news.id ?: return@launch, label)
+            refreshData()
+        }
+    }
+
+    override fun onRemoveLabel(news: NewsItem, label: String) {
+        lifecycleScope.launch {
+             viewModel.removeLabel(news.id ?: return@launch, label)
+             refreshData()
+        }
     }
 
 
@@ -197,6 +275,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     }
 
     override fun onDestroy() {
+        if (!mRealm.isClosed) mRealm.close()
         super.onDestroy()
     }
 }
