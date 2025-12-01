@@ -11,6 +11,7 @@ import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import com.google.gson.JsonObject
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import org.ole.planet.myplanet.R
@@ -257,7 +258,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         }
     }
 
-    private var lastKnownRating: Any? = null
+    private var lastKnownRating: com.google.gson.JsonObject? = null
     override fun onRatingChanged() {
         lastKnownRating?.let { setRatings(it) }
 
@@ -268,7 +269,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                     val rating = withContext(Dispatchers.IO) {
                         databaseService.withRealm { realm ->
                             getRatingsById(realm, "resource", library.resourceId, userModel?.id)
-                        }
+                        } as? com.google.gson.JsonObject
                     }
                     lastKnownRating = rating
                     setRatings(rating)
