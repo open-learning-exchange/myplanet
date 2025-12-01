@@ -12,6 +12,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
@@ -256,11 +257,26 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         }
     }
 
+    private var lastKnownRating: Any? = null
     override fun onRatingChanged() {
-        val `object` = databaseService.withRealm { realm ->
-            getRatingsById(realm, "resource", library.resourceId, userModel?.id)
+        lastKnownRating?.let { setRatings(it) }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            if (!isAdded) return@launch
+            try {
+                withTimeout(2000) {
+                    val rating = withContext(Dispatchers.IO) {
+                        databaseService.withRealm { realm ->
+                            getRatingsById(realm, "resource", library.resourceId, userModel?.id)
+                        }
+                    }
+                    lastKnownRating = rating
+                    setRatings(rating)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
-        setRatings(`object`)
     }
     override fun onDestroy() {
         try {
