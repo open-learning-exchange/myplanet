@@ -319,29 +319,28 @@ class MyHealthFragment : Fragment() {
             override fun onNothingSelected(p0: AdapterView<*>?) {}
 
             override fun onItemSelected(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) {
-                val sort: Sort
-                val sortBy: String
-                when (p2) {
-                    0 -> {
-                        sortBy = "joinDate"
-                        sort = Sort.DESCENDING
+                viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                    val (sortBy, sort) = when (p2) {
+                        0 -> "joinDate" to Sort.DESCENDING
+                        1 -> "joinDate" to Sort.ASCENDING
+                        2 -> "name" to Sort.ASCENDING
+                        else -> "name" to Sort.DESCENDING
                     }
-                    1 -> {
-                        sortBy = "joinDate"
-                        sort = Sort.ASCENDING
+
+                    val sortedList = Realm.getDefaultInstance().use { realm ->
+                        val results = realm.where(RealmUserModel::class.java).sort(sortBy, sort).findAll()
+                        realm.copyFromRealm(results)
                     }
-                    2 -> {
-                        sortBy = "name"
-                        sort = Sort.ASCENDING
-                    }
-                    else -> {
-                        sortBy = "name"
-                        sort = Sort.DESCENDING
+
+                    withContext(Dispatchers.Main) {
+                        if (isAdded) {
+                            userModelList = sortedList
+                            adapter.clear()
+                            adapter.addAll(userModelList)
+                            adapter.notifyDataSetChanged()
+                        }
                     }
                 }
-                userModelList = mRealm.where(RealmUserModel::class.java).sort(sortBy, sort).findAll()
-                adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, userModelList)
-                lv.adapter = adapter
             }
         }
     }
