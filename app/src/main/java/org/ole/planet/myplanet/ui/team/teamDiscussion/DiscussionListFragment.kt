@@ -43,8 +43,6 @@ class DiscussionListFragment : BaseTeamFragment() {
     private val binding get() = _binding!!
 
     @Inject
-    lateinit var teamRepository: TeamRepository
-    @Inject
     lateinit var newsRepository: NewsRepository
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
@@ -121,8 +119,8 @@ class DiscussionListFragment : BaseTeamFragment() {
         binding.addMessage.isVisible = false
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                user?.let {
-                    newsRepository.getCommunityNews(it.id).collectLatest { news ->
+                user?.id?.let { userId ->
+                    newsRepository.getCommunityNews(userId).collectLatest { news ->
                         filteredNewsList = filterNewsList(news)
                         setData(filteredNewsList)
                     }
@@ -135,8 +133,8 @@ class DiscussionListFragment : BaseTeamFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         viewLifecycleOwner.lifecycleScope.launch {
-            user?.let {
-                val realmNewsList = newsRepository.getCommunityVisibleNews(it.id)
+            user?.id?.let { userId ->
+                val realmNewsList = newsRepository.getCommunityVisibleNews(userId)
                 val count = realmNewsList.size
                 databaseService.executeTransactionAsync { realm: Realm ->
                     var notification = realm.where(RealmTeamNotification::class.java)
