@@ -16,6 +16,7 @@ import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.datamanager.ApiClient.client
@@ -149,22 +150,24 @@ class UploadToShelfService @Inject constructor(
     }
 
     private fun processUserAfterCreation(apiInterface: ApiInterface?, realm: Realm, model: RealmUserModel, obj: JsonObject) {
-        try {
-            val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
-            val header = "Basic ${Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
-            val fetchDataResponse = apiInterface?.getJsonObject(header, "${replacedUrl(model)}/_users/${model._id}")?.execute()
-            if (fetchDataResponse?.isSuccessful == true) {
-                model.password_scheme = getString("password_scheme", fetchDataResponse.body())
-                model.derived_key = getString("derived_key", fetchDataResponse.body())
-                model.salt = getString("salt", fetchDataResponse.body())
-                model.iterations = getString("iterations", fetchDataResponse.body())
-
-                if (saveKeyIv(apiInterface, model, obj)) {
+        MainApplication.applicationScope.launch {
+            try {
+                val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
+                val header = "Basic ${Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
+                val fetchDataResponse = withContext(Dispatchers.IO) {
+                    apiInterface?.getJsonObject(header, "${replacedUrl(model)}/_users/${model._id}")?.execute()
+                }
+                if (fetchDataResponse?.isSuccessful == true) {
+                    model.password_scheme = getString("password_scheme", fetchDataResponse.body())
+                    model.derived_key = getString("derived_key", fetchDataResponse.body())
+                    model.salt = getString("salt", fetchDataResponse.body())
+                    model.iterations = getString("iterations", fetchDataResponse.body())
+                    saveKeyIv(apiInterface, model, obj)
                     updateHealthData(realm, model)
                 }
+            } catch (e: IOException) {
+                e.printStackTrace()
             }
-        } catch (e: IOException) {
-            e.printStackTrace()
         }
     }
 
@@ -212,45 +215,47 @@ class UploadToShelfService @Inject constructor(
         }
     }
 
-    @Throws(IOException::class)
-    fun saveKeyIv(apiInterface: ApiInterface?, model: RealmUserModel, obj: JsonObject): Boolean {
+    suspend fun saveKeyIv(apiInterface: ApiInterface?, model: RealmUserModel, obj: JsonObject) {
         val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
         val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
         val ob = JsonObject()
         var keyString = generateKey()
         var iv: String? = generateIv()
+
         if (!TextUtils.isEmpty(model.iv)) {
             iv = model.iv
         }
         if (!TextUtils.isEmpty(model.key)) {
             keyString = model.key
         }
+
         ob.addProperty("key", keyString)
         ob.addProperty("iv", iv)
         ob.addProperty("createdOn", Date().time)
+
         val maxAttempts = 3
         val retryDelayMs = 2000L
 
-        val response = runBlocking {
+        val response = withContext(Dispatchers.IO) {
             RetryUtils.retry(
                 maxAttempts = maxAttempts,
                 delayMs = retryDelayMs,
                 shouldRetry = { resp -> resp == null || !resp.isSuccessful || resp.body() == null }
             ) {
-                apiInterface?.postDoc(header, "application/json", "${UrlUtils.getUrl()}/$table", ob)?.execute()
+                apiInterface?.postDocSuspend(header, "application/json", "${UrlUtils.getUrl()}/$table", ob)
             }
         }
 
         if (response?.isSuccessful == true && response.body() != null) {
             model.key = keyString
             model.iv = iv
+            withContext(Dispatchers.IO) {
+                changeUserSecurity(model, obj)
+            }
         } else {
             val errorMessage = "Failed to save key/IV after $maxAttempts attempts"
             throw IOException(errorMessage)
         }
-
-        changeUserSecurity(model, obj)
-        return true
     }
 
     fun uploadHealth() {
