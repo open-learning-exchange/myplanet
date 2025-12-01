@@ -144,6 +144,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), CheckVersionCallback,
     lateinit var syncManager: SyncManager
 
     @Inject
+    lateinit var transactionSyncManager: TransactionSyncManager
+
+    @Inject
     lateinit var broadcastService: org.ole.planet.myplanet.service.BroadcastService
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
@@ -699,7 +702,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), CheckVersionCallback,
                             }
                             val backgroundRealm = databaseService.realmInstance
                             try {
-                                TransactionSyncManager.syncDb(backgroundRealm, "login_activities")
+                                transactionSyncManager.syncDb(backgroundRealm, "login_activities")
                             } finally {
                                 backgroundRealm.close()
                             }
@@ -876,22 +879,24 @@ abstract class SyncActivity : ProcessUserDataActivity(), CheckVersionCallback,
             }
         }
 
-        fun clearSharedPref() {
-            val settings = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-            val editor = settings.edit()
-            val keysToKeep = setOf(SharedPrefManager.FIRST_LAUNCH, SharedPrefManager.MANUAL_CONFIG)
-            val tempStorage = HashMap<String, Boolean>()
-            for (key in keysToKeep) {
-                tempStorage[key] = settings.getBoolean(key, false)
+        suspend fun clearSharedPref() {
+            withContext(Dispatchers.IO) {
+                val settings = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                val editor = settings.edit()
+                val keysToKeep =
+                    setOf(SharedPrefManager.FIRST_LAUNCH, SharedPrefManager.MANUAL_CONFIG)
+                val tempStorage = HashMap<String, Boolean>()
+                for (key in keysToKeep) {
+                    tempStorage[key] = settings.getBoolean(key, false)
+                }
+                editor.clear().apply()
+                for ((key, value) in tempStorage) {
+                    editor.putBoolean(key, value)
+                }
+                editor.commit()
+                val preferences = PreferenceManager.getDefaultSharedPreferences(context)
+                preferences.edit { clear() }
             }
-            editor.clear().apply()
-            for ((key, value) in tempStorage) {
-                editor.putBoolean(key, value)
-            }
-            editor.commit()
-
-            val preferences = PreferenceManager.getDefaultSharedPreferences(context)
-            preferences.edit { clear() }
         }
 
         fun restartApp() {
