@@ -7,6 +7,7 @@ import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.RealmResults
+import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 import java.util.Date
 import kotlinx.coroutines.Dispatchers
@@ -24,8 +25,10 @@ open class RealmMyTeam : RealmObject() {
     var _id: String? = null
     var _rev: String? = null
     var courses: RealmList<String>? = null
+    @Index
     var teamId: String? = null
     var name: String? = null
+    @Index
     var userId: String? = null
     var description: String? = null
     var requests: String? = null
@@ -38,6 +41,7 @@ open class RealmMyTeam : RealmObject() {
     var teamPlanetCode: String? = null
     var userPlanetCode: String? = null
     var parentCode: String? = null
+    @Index
     var docType: String? = null
     var title: String? = null
     var route: String? = null
