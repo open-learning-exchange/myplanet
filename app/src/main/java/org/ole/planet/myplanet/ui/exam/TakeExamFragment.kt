@@ -71,33 +71,46 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         initExam()
-        questions = mRealm.where(RealmExamQuestion::class.java).equalTo("examId", exam?.id).findAll()
-        binding.tvQuestionCount.text = getString(R.string.Q1, questions?.size)
-        var q: RealmQuery<*> = mRealm.where(RealmSubmission::class.java)
-            .equalTo("userId", user?.id)
-            .equalTo("parentId", if (!TextUtils.isEmpty(exam?.courseId)) {
-                id + "@" + exam?.courseId
-            } else {
-                id
-            }).sort("startTime", Sort.DESCENDING)
-        if (type == "exam") {
-            q = q.equalTo("status", "pending")
-        }
-        sub = q.findFirst() as RealmSubmission?
-        val courseId = exam?.courseId
-        isCertified = isCourseCertified(mRealm, courseId)
+        viewLifecycleOwner.lifecycleScope.launch {
+            val (copiedQuestions, copiedSub, certified) = withContext(Dispatchers.IO) {
+                val realmQuestions = mRealm.where(RealmExamQuestion::class.java).equalTo("examId", exam?.id).findAll()
+                var q: RealmQuery<*> = mRealm.where(RealmSubmission::class.java)
+                    .equalTo("userId", user?.id)
+                    .equalTo("parentId", if (!TextUtils.isEmpty(exam?.courseId)) {
+                        id + "@" + exam?.courseId
+                    } else {
+                        id
+                    }).sort("startTime", Sort.DESCENDING)
+                if (type == "exam") {
+                    q = q.equalTo("status", "pending")
+                }
+                val realmSub = q.findFirst() as RealmSubmission?
+                val courseId = exam?.courseId
+                val isCertified = isCourseCertified(mRealm, courseId)
 
-        if ((questions?.size ?: 0) > 0) {
-            clearAllExistingAnswers {
-                createSubmission()
-                startExam(questions?.get(currentIndex))
-                updateNavButtons()
+                val copiedQuestions = mRealm.copyFromRealm(realmQuestions)
+                val copiedSub = realmSub?.let { mRealm.copyFromRealm(it) }
+                Triple(copiedQuestions, copiedSub, isCertified)
             }
-        } else {
-            binding.container.visibility = View.GONE
-            binding.btnSubmit.visibility = View.GONE
-            binding.tvQuestionCount.setText(R.string.no_questions)
-            Snackbar.make(binding.tvQuestionCount, R.string.no_questions_available, Snackbar.LENGTH_LONG).show()
+
+            questions = copiedQuestions
+            sub = copiedSub
+            isCertified = certified
+
+            binding.tvQuestionCount.text = getString(R.string.Q1, questions?.size)
+
+            if ((questions?.size ?: 0) > 0) {
+                clearAllExistingAnswers {
+                    createSubmission()
+                    startExam(questions?.get(currentIndex))
+                    updateNavButtons()
+                }
+            } else {
+                binding.container.visibility = View.GONE
+                binding.btnSubmit.visibility = View.GONE
+                binding.tvQuestionCount.setText(R.string.no_questions)
+                Snackbar.make(binding.tvQuestionCount, R.string.no_questions_available, Snackbar.LENGTH_LONG).show()
+            }
         }
 
         binding.btnBack.setOnClickListener {
