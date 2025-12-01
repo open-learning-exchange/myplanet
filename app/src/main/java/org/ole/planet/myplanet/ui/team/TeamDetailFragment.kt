@@ -135,6 +135,9 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
         val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
         val user = detachCurrentUser()
 
+        binding.loadingIndicator?.visibility = View.VISIBLE
+        binding.contentLayout?.visibility = View.GONE
+
         renderPlaceholder()
 
         loadTeamJob?.cancel()
@@ -169,7 +172,13 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
 
             resolvedTeam?.let { team = it }
 
-            setupTeamDetails(isMyTeam, user)
+            withContext(kotlinx.coroutines.Dispatchers.Main) {
+                binding.loadingIndicator?.visibility = View.GONE
+                binding.contentLayout?.visibility = View.VISIBLE
+                setupTeamDetails(isMyTeam, user)
+                val targetPageId = arguments?.getString("navigateToPage") ?: team?._id?.let { teamLastPage[it] }
+                setupViewPager(isMyTeam, targetPageId)
+            }
             loadTeamJob = null
         }
 
@@ -247,14 +256,6 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
     }
 
     private fun setupTeamDetails(isMyTeam: Boolean, user: RealmUserModel?) {
-        binding.root.post {
-            if (isAdded && !requireActivity().isFinishing) {
-                val targetPageId = arguments?.getString("navigateToPage")
-                    ?: team?._id?.let { teamLastPage[it] }
-                setupViewPager(isMyTeam, targetPageId)
-            }
-        }
-
         binding.title.text = getEffectiveTeamName()
         binding.subtitle.text = getEffectiveTeamType()
 
