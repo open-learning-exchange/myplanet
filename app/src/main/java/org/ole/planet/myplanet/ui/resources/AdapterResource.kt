@@ -14,6 +14,7 @@ import com.google.android.flexbox.FlexboxLayout
 import com.google.gson.JsonObject
 import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
+import io.realm.Realm
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -30,6 +31,7 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TagRepository
 import org.ole.planet.myplanet.utilities.CourseRatingUtils
+import org.ole.planet.myplanet.ui.sync.DiffRefreshableAdapter
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
@@ -41,7 +43,7 @@ class AdapterResource(
     private var ratingMap: HashMap<String?, JsonObject>,
     private val tagRepository: TagRepository,
     private val userModel: RealmUserModel?
-) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+) : RecyclerView.Adapter<RecyclerView.ViewHolder>(), DiffRefreshableAdapter {
     private var diffJob: Job? = null
     private val selectedItems: MutableList<RealmMyLibrary?> = ArrayList()
     private var listener: OnLibraryItemSelected? = null
@@ -415,5 +417,35 @@ class AdapterResource(
             }
 
         fun bind() {}
+    }
+
+    override fun refreshWithDiff() {
+        (context as? LifecycleOwner)?.lifecycleScope?.launch {
+            val newLibraryList = withContext(Dispatchers.IO) {
+                Realm.getDefaultInstance().use { realm ->
+                    realm.copyFromRealm(realm.where(RealmMyLibrary::class.java).findAll())
+                }
+            }
+            triggerDiff(newLibraryList)
+        }
+    }
+
+    private fun triggerDiff(newList: List<RealmMyLibrary?>) {
+        val oldList = ArrayList(this.libraryList)
+        diffJob?.cancel()
+        diffJob = (context as? LifecycleOwner)?.lifecycleScope?.launch {
+            val diffResult = withContext(Dispatchers.Default) {
+                DiffUtils.calculateDiff(
+                    oldList,
+                    newList,
+                    areItemsTheSame = { old, new -> old?.id == new?.id },
+                    areContentsTheSame = { old, new -> old == new }
+                )
+            }
+            if (isActive) {
+                libraryList = newList
+                diffResult.dispatchUpdatesTo(this@AdapterResource)
+            }
+        }
     }
 }
