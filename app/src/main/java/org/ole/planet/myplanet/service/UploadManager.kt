@@ -395,47 +395,80 @@ class UploadManager @Inject constructor(
         }
     }
 
-    fun uploadResource(listener: SuccessListener?) {
+    suspend fun uploadResource(listener: SuccessListener?) = withContext(Dispatchers.IO) {
         val apiInterface = client?.create(ApiInterface::class.java)
 
-        databaseService.withRealm { realm ->
-            realm.executeTransactionAsync({ transactionRealm: Realm ->
-                val user = transactionRealm.where(RealmUserModel::class.java)
+        val (user, librariesToUpload) = try {
+            databaseService.withRealm { realm ->
+                val userModel = realm.where(RealmUserModel::class.java)
                     .equalTo("id", pref.getString("userId", ""))
                     .findFirst()
+                    ?.let { realm.copyFromRealm(it) }
 
-                val data: List<RealmMyLibrary> = transactionRealm.where(RealmMyLibrary::class.java)
+                val libraries = realm.where(RealmMyLibrary::class.java)
                     .isNull("_rev")
                     .findAll()
+                    .let { realm.copyFromRealm(it) }
+                Pair(userModel, libraries)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            withContext(Dispatchers.Main) {
+                listener?.onSuccess("Resource upload failed: ${e.message}")
+            }
+            return@withContext
+        }
 
-                if (data.isEmpty()) {
-                    return@executeTransactionAsync
-                }
+        if (librariesToUpload.isEmpty()) {
+            withContext(Dispatchers.Main) {
+                listener?.onSuccess("No resources to upload")
+            }
+            return@withContext
+        }
 
-                data.processInBatches { sub ->
+        var failedCount = 0
+        librariesToUpload.processInBatches { sub ->
+            try {
+                val `object` = apiInterface?.postDoc(
+                    UrlUtils.header,
+                    "application/json",
+                    "${UrlUtils.getUrl()}/resources",
+                    RealmMyLibrary.serialize(sub, user)
+                )?.execute()?.body()
+
+                if (`object` != null) {
+                    val rev = getString("rev", `object`)
+                    val id = getString("id", `object`)
+
                     try {
-                        val `object` = apiInterface?.postDoc(
-                            UrlUtils.header,
-                            "application/json",
-                            "${UrlUtils.getUrl()}/resources",
-                            RealmMyLibrary.serialize(sub, user)
-                        )?.execute()?.body()
-
-                        if (`object` != null) {
-                            val rev = getString("rev", `object`)
-                            val id = getString("id", `object`)
-                            sub._rev = rev
-                            sub._id = id
-                            listener?.let { uploadAttachment(id, rev, sub, it) }
+                        databaseService.withRealm { realm ->
+                            realm.executeTransaction { transactionRealm ->
+                                val db_sub = transactionRealm.where(RealmMyLibrary::class.java)
+                                    .equalTo("id", sub.id)
+                                    .findFirst()
+                                db_sub?._rev = rev
+                                db_sub?._id = id
+                            }
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()
+                        failedCount++
                     }
+                    listener?.let { uploadAttachment(id, rev, sub, it) }
+                } else {
+                    failedCount++
                 }
-            }, {
-                listener?.onSuccess("No resources to upload")
-            }) { error ->
-                listener?.onSuccess("Resource upload failed: ${error.message}")
+            } catch (e: Exception) {
+                failedCount++
+                e.printStackTrace()
+            }
+        }
+
+        withContext(Dispatchers.Main) {
+            if (failedCount == 0) {
+                listener?.onSuccess("Resources uploaded successfully")
+            } else {
+                listener?.onSuccess("Resource upload failed for $failedCount of ${librariesToUpload.size} items")
             }
         }
     }

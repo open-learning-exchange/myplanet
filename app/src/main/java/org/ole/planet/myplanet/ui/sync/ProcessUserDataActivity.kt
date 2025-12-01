@@ -257,11 +257,13 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
                 }
             }
 
-            uploadManager.uploadResource(object : SuccessListener {
-                override fun onSuccess(success: String?) {
-                    checkAllOperationsComplete()
-                }
-            })
+            lifecycleScope.launch(Dispatchers.IO) {
+                uploadManager.uploadResource(object : SuccessListener {
+                    override fun onSuccess(success: String?) {
+                        checkAllOperationsComplete()
+                    }
+                })
+            }
 
             uploadManager.uploadSubmitPhotos(object : SuccessListener {
                 override fun onSuccess(success: String?) {
