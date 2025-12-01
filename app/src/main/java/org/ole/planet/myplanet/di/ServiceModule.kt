@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.service.ImprovedSyncManager
 import org.ole.planet.myplanet.service.SyncManager
+import org.ole.planet.myplanet.service.TransactionSyncManager
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UploadToShelfService
 
@@ -44,9 +45,10 @@ object ServiceModule {
         @AppPreferences preferences: SharedPreferences,
         apiInterface: ApiInterface,
         improvedSyncManager: Lazy<ImprovedSyncManager>,
+        transactionSyncManager: TransactionSyncManager,
         @ApplicationScope scope: CoroutineScope
     ): SyncManager {
-        return SyncManager(context, databaseService, preferences, apiInterface, improvedSyncManager, scope)
+        return SyncManager(context, databaseService, preferences, apiInterface, improvedSyncManager, transactionSyncManager, scope)
     }
 
     @Provides
