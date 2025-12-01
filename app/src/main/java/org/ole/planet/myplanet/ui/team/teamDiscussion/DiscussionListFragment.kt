@@ -26,10 +26,12 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmTeamNotification
+import org.ole.planet.myplanet.model.dto.NewsItem
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.news.AdapterNews
+import org.ole.planet.myplanet.ui.news.NewsMapper
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.GsonUtils
@@ -165,11 +167,11 @@ class DiscussionListFragment : BaseTeamFragment() {
         }
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {
+    override fun onNewsItemClick(news: NewsItem) {
         val bundle = Bundle()
-        bundle.putString("newsId", news?.newsId)
-        bundle.putString("newsRev", news?.newsRev)
-        bundle.putString("conversations", news?.conversations)
+        bundle.putString("newsId", news.newsId)
+        bundle.putString("newsRev", news.newsRev)
+        bundle.putString("conversations", GsonUtils.gson.toJson(news.conversations))
 
         val chatDetailFragment = ChatDetailFragment()
         chatDetailFragment.arguments = bundle
@@ -180,6 +182,10 @@ class DiscussionListFragment : BaseTeamFragment() {
             chatDetailFragment,
             addToBackStack = true
         )
+    }
+
+    override fun getTeamName(): String {
+        return getEffectiveTeamName()
     }
 
     override fun clearImages() {
@@ -235,26 +241,26 @@ class DiscussionListFragment : BaseTeamFragment() {
     }
 
     private fun showRecyclerView(realmNewsList: List<RealmNews?>?) {
+        val mappedList = realmNewsList?.mapNotNull { it?.let { news ->
+             NewsMapper.mapToNewsItem(requireContext(), mRealm, news, user, teamId)
+        }} ?: emptyList()
+
         val existingAdapter = binding.rvDiscussion.adapter
         if (existingAdapter == null) {
             val adapterNews = activity?.let {
-                AdapterNews(it, user, null, getEffectiveTeamName(), teamId, userProfileDbHandler, databaseService)
+                AdapterNews(it, null, this)
             }
-            adapterNews?.sharedPrefManager = sharedPrefManager
-            adapterNews?.setmRealm(mRealm)
-            adapterNews?.setListener(this)
             if (!isMemberFlow.value) adapterNews?.setNonTeamMember(true)
-            realmNewsList?.let { adapterNews?.updateList(it) }
+            adapterNews?.updateList(mappedList)
             binding.rvDiscussion.adapter = adapterNews
             adapterNews?.let {
                 showNoData(binding.tvNodata, it.itemCount, "discussions")
             }
         } else {
             (existingAdapter as? AdapterNews)?.let { adapter ->
-                realmNewsList?.let {
-                    adapter.updateList(it)
-                    showNoData(binding.tvNodata, adapter.itemCount, "discussions")
-                }
+                if (!isMemberFlow.value) adapter.setNonTeamMember(true)
+                adapter.updateList(mappedList)
+                showNoData(binding.tvNodata, adapter.itemCount, "discussions")
             }
         }
     }

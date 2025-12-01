@@ -132,7 +132,7 @@ object NewsActions {
         news: RealmNews?,
         realm: Realm,
         currentUser: RealmUserModel?,
-        imageList: RealmList<String>?,
+        imageList: List<String>?,
         listener: AdapterNews.OnNewsItemClickListener?
     ) {
         val s = components.editText.text.toString().trim()
@@ -157,8 +157,8 @@ object NewsActions {
         isEdit: Boolean,
         currentUser: RealmUserModel?,
         listener: AdapterNews.OnNewsItemClickListener?,
-        viewHolder: RecyclerView.ViewHolder,
-        updateReplyButton: (RecyclerView.ViewHolder, RealmNews?, Int) -> Unit = { _, _, _ -> }
+        viewHolder: RecyclerView.ViewHolder?,
+        updateReplyButton: (RecyclerView.ViewHolder?, RealmNews?, Int) -> Unit = { _, _, _ -> }
     ) {
         val components = createEditDialogComponents(context, listener)
         val message = components.view.findViewById<TextView>(R.id.cust_msg)
@@ -180,7 +180,7 @@ object NewsActions {
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
             val currentImageList = listener?.getCurrentImageList()
             handlePositiveButton(dialog, isEdit, components, news, realm, currentUser, currentImageList, listener)
-            updateReplyButton(viewHolder,news,viewHolder.bindingAdapterPosition)
+            updateReplyButton(viewHolder,news,viewHolder?.bindingAdapterPosition ?: -1)
         }
     }
 
@@ -189,7 +189,7 @@ object NewsActions {
         s: String?,
         news: RealmNews?,
         currentUser: RealmUserModel?,
-        imageList: RealmList<String>?
+        imageList: List<String>?
     ) {
         val shouldCommit = !realm.isInTransaction
         if (shouldCommit) realm.beginTransaction()
@@ -201,11 +201,15 @@ object NewsActions {
         map["messageType"] = news?.messageType ?: ""
         map["messagePlanetCode"] = news?.messagePlanetCode ?: ""
         map["viewIn"] = news?.viewIn ?: ""
-        currentUser?.let { createNews(map, realm, it, imageList, true) }
+
+        val realmImageList = RealmList<String>()
+        imageList?.forEach { realmImageList.add(it) }
+
+        currentUser?.let { createNews(map, realm, it, realmImageList, true) }
         if (shouldCommit) realm.commitTransaction()
     }
 
-    private fun editPost(realm: Realm, s: String, news: RealmNews?, imageList: RealmList<String>?) {
+    private fun editPost(realm: Realm, s: String, news: RealmNews?, imageList: List<String>?) {
         if (s.isEmpty()) return
         if (!realm.isInTransaction) realm.beginTransaction()
 

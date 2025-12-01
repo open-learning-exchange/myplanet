@@ -23,11 +23,13 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseNewsFragment
+import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.databinding.FragmentNewsBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.dto.NewsItem
 import org.ole.planet.myplanet.repository.NewsRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
@@ -141,7 +143,8 @@ class NewsFragment : BaseNewsFragment() {
             val n = user?.let { it1 -> createNews(map, mRealm, it1, imageList) }
             imageList.clear()
             llImage?.removeAllViews()
-            adapterNews?.addItem(n)
+            val newsItem = n?.let { NewsMapper.mapToNewsItem(requireContext(), mRealm, it, user, "") }
+            adapterNews?.addItem(newsItem)
             labelFilteredList = applyLabelFilter(filteredNewsList)
             searchFilteredList = applySearchFilter(labelFilteredList)
             setData(searchFilteredList)
@@ -198,29 +201,34 @@ class NewsFragment : BaseNewsFragment() {
             } finally {
                 Trace.endSection()
             }
-            adapterNews = AdapterNews(requireActivity(), user, null, "", null, userProfileDbHandler, databaseService)
-            adapterNews?.sharedPrefManager = sharedPrefManager
-            adapterNews?.setmRealm(mRealm)
+
+            val mappedList = sortedList.mapNotNull { it?.let { news ->
+                NewsMapper.mapToNewsItem(requireContext(), mRealm, news, user, "")
+            }}
+
+            adapterNews = AdapterNews(requireActivity(), null, this)
             adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
-            adapterNews?.setListener(this)
             adapterNews?.registerAdapterDataObserver(observer)
-            adapterNews?.updateList(sortedList)
+            adapterNews?.updateList(mappedList)
             binding.rvNews.adapter = adapterNews
         } else {
-            (binding.rvNews.adapter as? AdapterNews)?.updateList(list)
+             val mappedList = list.mapNotNull { it?.let { news ->
+                NewsMapper.mapToNewsItem(requireContext(), mRealm, news, user, "")
+            }}
+            (binding.rvNews.adapter as? AdapterNews)?.updateList(mappedList)
         }
         adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, "news") }
         binding.llAddNews.visibility = View.GONE
         binding.btnNewVoice.text = getString(R.string.new_voice)
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {
+    override fun onNewsItemClick(news: NewsItem) {
         val fromLogin = arguments?.getBoolean("fromLogin")
         if (fromLogin == false) {
             val bundle = Bundle()
-            bundle.putString("newsId", news?.newsId)
-            bundle.putString("newsRev", news?.newsRev)
-            bundle.putString("conversations", news?.conversations)
+            bundle.putString("newsId", news.newsId)
+            bundle.putString("newsRev", news.newsRev)
+            bundle.putString("conversations", GsonUtils.gson.toJson(news.conversations))
 
             val chatDetailFragment = ChatDetailFragment()
             chatDetailFragment.arguments = bundle
