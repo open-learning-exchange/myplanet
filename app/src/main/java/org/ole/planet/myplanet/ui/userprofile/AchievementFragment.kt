@@ -103,7 +103,7 @@ class AchievementFragment : BaseContainerFragment() {
     private fun checkServerAndStartSync() {
         val mapping = serverUrlMapper.processUrl(serverUrl)
 
-        lifecycleScope.launch(Dispatchers.IO) {
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             updateServerIfNecessary(mapping)
             withContext(Dispatchers.Main) {
                 startSyncManager()

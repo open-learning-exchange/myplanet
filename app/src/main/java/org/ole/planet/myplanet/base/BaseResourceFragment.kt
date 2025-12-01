@@ -126,7 +126,7 @@ abstract class BaseResourceFragment : Fragment() {
     private var receiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             val pendingResult = goAsync()
-            this@BaseResourceFragment.lifecycleScope.launch {
+            viewLifecycleOwner.lifecycleScope.launch {
                 try {
                     val list = libraryRepository.getLibraryListForUser(
                         settings.getString("userId", "--")
@@ -149,7 +149,7 @@ abstract class BaseResourceFragment : Fragment() {
                     pendingResult.finish()
                 }
                 .setNegativeButton(R.string.no) { _, _ ->
-                    lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                    viewLifecycleOwner.lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
                         try {
                             val wifi = requireContext().applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
                             wifi.setWifiEnabled(false)
@@ -368,7 +368,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     private fun registerReceiver() {
         broadcastJob?.cancel()
-        broadcastJob = lifecycleScope.launch {
+        broadcastJob = viewLifecycleOwner.lifecycleScope.launch {
             broadcastService.events.collect { intent ->
                 if (isActive) {
                     when (intent.action) {
