@@ -105,7 +105,7 @@ class ChatHistoryListAdapter(
 
     private fun normalizeText(str: String): String {
         return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
-            .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
+            .replace(DIACRITICS_REGEX, "")
     }
 
     fun search(s: String, isFullSearch: Boolean, isQuestion: Boolean) {
@@ -336,4 +336,8 @@ class ChatHistoryListAdapter(
     }
 
     class ViewHolderChat(val rowChatHistoryBinding: RowChatHistoryBinding) : RecyclerView.ViewHolder(rowChatHistoryBinding.root)
+
+    companion object {
+        private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
+    }
 }

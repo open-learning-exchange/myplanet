@@ -64,8 +64,6 @@ open class RealmMyTeam : RealmObject() {
     var updatedDate: Long = 0
 
     companion object {
-        private val concatenatedLinks = ArrayList<String>()
-
         @JvmStatic
         fun populateTeamFields(doc: JsonObject, team: RealmMyTeam, includeCourses: Boolean = false) {
             team.userId = JsonUtils.getString("userId", doc)
@@ -118,11 +116,12 @@ open class RealmMyTeam : RealmObject() {
         private fun processDescription(description: String?) {
             val links = extractLinks(description ?: "")
             val baseUrl = getUrl()
+            val concatenatedLinks = LinkedHashSet<String>()
             for (link in links) {
                 val concatenatedLink = "$baseUrl/$link"
                 concatenatedLinks.add(concatenatedLink)
             }
-            openDownloadService(context, concatenatedLinks, true)
+            openDownloadService(context, ArrayList(concatenatedLinks), true)
         }
 
         @JvmStatic

@@ -398,45 +398,90 @@ class UploadManager @Inject constructor(
     fun uploadResource(listener: SuccessListener?) {
         val apiInterface = client?.create(ApiInterface::class.java)
 
-        databaseService.withRealm { realm ->
-            realm.executeTransactionAsync({ transactionRealm: Realm ->
-                val user = transactionRealm.where(RealmUserModel::class.java)
-                    .equalTo("id", pref.getString("userId", ""))
-                    .findFirst()
+        try {
+            val hasLooper = Looper.myLooper() != null
 
-                val data: List<RealmMyLibrary> = transactionRealm.where(RealmMyLibrary::class.java)
-                    .isNull("_rev")
-                    .findAll()
+            databaseService.withRealm { realm ->
+                if (hasLooper) {
+                    realm.executeTransactionAsync({ transactionRealm: Realm ->
+                        val user = transactionRealm.where(RealmUserModel::class.java)
+                            .equalTo("id", pref.getString("userId", ""))
+                            .findFirst()
 
-                if (data.isEmpty()) {
-                    return@executeTransactionAsync
-                }
+                        val data: List<RealmMyLibrary> = transactionRealm.where(RealmMyLibrary::class.java)
+                            .isNull("_rev")
+                            .findAll()
 
-                data.processInBatches { sub ->
-                    try {
-                        val `object` = apiInterface?.postDoc(
-                            UrlUtils.header,
-                            "application/json",
-                            "${UrlUtils.getUrl()}/resources",
-                            RealmMyLibrary.serialize(sub, user)
-                        )?.execute()?.body()
-
-                        if (`object` != null) {
-                            val rev = getString("rev", `object`)
-                            val id = getString("id", `object`)
-                            sub._rev = rev
-                            sub._id = id
-                            listener?.let { uploadAttachment(id, rev, sub, it) }
+                        if (data.isEmpty()) {
+                            return@executeTransactionAsync
                         }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
+
+                        data.processInBatches { sub ->
+                            try {
+                                val `object` = apiInterface?.postDoc(
+                                    UrlUtils.header,
+                                    "application/json",
+                                    "${UrlUtils.getUrl()}/resources",
+                                    RealmMyLibrary.serialize(sub, user)
+                                )?.execute()?.body()
+
+                                if (`object` != null) {
+                                    val rev = getString("rev", `object`)
+                                    val id = getString("id", `object`)
+                                    sub._rev = rev
+                                    sub._id = id
+                                    listener?.let { uploadAttachment(id, rev, sub, it) }
+                                }
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                        }
+                    }, {
+                        listener?.onSuccess("No resources to upload")
+                    }) { error ->
+                        listener?.onSuccess("Resource upload failed: ${error.message}")
+                    }
+                } else {
+                    realm.executeTransaction { transactionRealm: Realm ->
+                        val user = transactionRealm.where(RealmUserModel::class.java)
+                            .equalTo("id", pref.getString("userId", ""))
+                            .findFirst()
+
+                        val data: List<RealmMyLibrary> = transactionRealm.where(RealmMyLibrary::class.java)
+                            .isNull("_rev")
+                            .findAll()
+
+                        if (data.isEmpty()) {
+                            listener?.onSuccess("No resources to upload")
+                            return@executeTransaction
+                        }
+
+                        data.processInBatches { sub ->
+                            try {
+                                val `object` = apiInterface?.postDoc(
+                                    UrlUtils.header,
+                                    "application/json",
+                                    "${UrlUtils.getUrl()}/resources",
+                                    RealmMyLibrary.serialize(sub, user)
+                                )?.execute()?.body()
+
+                                if (`object` != null) {
+                                    val rev = getString("rev", `object`)
+                                    val id = getString("id", `object`)
+                                    sub._rev = rev
+                                    sub._id = id
+                                    listener?.let { uploadAttachment(id, rev, sub, it) }
+                                }
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                        }
                     }
                 }
-            }, {
-                listener?.onSuccess("No resources to upload")
-            }) { error ->
-                listener?.onSuccess("Resource upload failed: ${error.message}")
             }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            listener?.onSuccess("Resource upload failed: ${e.message}")
         }
     }
 
