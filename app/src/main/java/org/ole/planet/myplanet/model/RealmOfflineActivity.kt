@@ -5,6 +5,7 @@ import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.Sort
+import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.JsonUtils
@@ -14,6 +15,7 @@ open class RealmOfflineActivity : RealmObject() {
     @PrimaryKey
     var id: String? = null
     var _id: String? = null
+    @Index
     var _rev: String? = null
     var userName: String? = null
     var userId: String? = null

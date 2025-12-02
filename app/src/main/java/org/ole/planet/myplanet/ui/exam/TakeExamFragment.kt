@@ -341,10 +341,14 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                 binding.groupChoices.visibility = View.VISIBLE
                 selectQuestion(question, ans)
             }
-            question?.type.equals("input", ignoreCase = true) ||
-                    question?.type.equals("textarea", ignoreCase = true) -> {
+            question?.type.equals("input", ignoreCase = true) || question?.type.equals("textarea", ignoreCase = true) -> {
                 question?.type?.let {
                     setMarkdownViewAndShowInput(binding.etAnswer, it, ans)
+                    val questionId = question.id
+                    val answerData = answerCache[questionId]
+                    if (answerData != null && answerData.singleAnswer.isNotEmpty()) {
+                        binding.etAnswer.setText(answerData.singleAnswer)
+                    }
                 }
             }
             question?.type.equals("selectMultiple", ignoreCase = true) -> {
@@ -366,7 +370,11 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     private fun loadSavedAnswer(question: RealmExamQuestion?) {
         val questionId = question?.id ?: return
         val answerData = answerCache[questionId]
-        clearAnswer()
+
+        ans = ""
+        listAns?.clear()
+        selectedRatingButton?.isSelected = false
+        selectedRatingButton = null
 
         if (answerData != null) {
             when (question.type) {
@@ -393,6 +401,8 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                     binding.etAnswer.setText(ans)
                 }
             }
+        } else {
+            binding.etAnswer.setText("")
         }
     }
 
@@ -741,6 +751,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     override fun onDestroyView() {
         super.onDestroyView()
         saveCurrentAnswer()
+        answerTextWatcher?.let { binding.etAnswer.removeTextChangedListener(it) }
         selectedRatingButton = null
         _binding = null
     }
