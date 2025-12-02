@@ -22,6 +22,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import io.realm.Realm
 import io.realm.RealmList
 import java.io.File
 import org.ole.planet.myplanet.R
@@ -234,7 +235,7 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
                      return@setOnMenuItemClickListener true
                  }
                  val labelAdded = AtomicBoolean(false)
-                 mRealm.executeTransactionAsync({ transactionRealm ->
+                 mRealm.executeTransactionAsync(Realm.Transaction { transactionRealm ->
                      val managedNews = transactionRealm.where(RealmNews::class.java)
                          .equalTo("id", newsId)
                          .findFirst()
@@ -249,7 +250,7 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
                              labelAdded.set(true)
                          }
                      }
-                 }, {
+                 }, Realm.Transaction.OnSuccess {
                      if (labelAdded.get()) {
                          org.ole.planet.myplanet.utilities.Utilities.toast(requireContext(), getString(R.string.label_added))
                          onDataChanged()
@@ -265,7 +266,7 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
     override fun onRemoveLabel(news: NewsItem, label: String) {
         val newsId = news.id ?: return
          val labelRemoved = AtomicBoolean(false)
-         mRealm.executeTransactionAsync({ transactionRealm ->
+         mRealm.executeTransactionAsync(Realm.Transaction { transactionRealm ->
              val managedNews = transactionRealm.where(RealmNews::class.java)
                  .equalTo("id", newsId)
                  .findFirst()
@@ -274,11 +275,14 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
                      labelRemoved.set(true)
                  }
              }
-         }, {
+         }, Realm.Transaction.OnSuccess {
              if (labelRemoved.get()) {
                  onDataChanged()
              }
          })
+    }
+
+    override fun onNewsItemClick(news: NewsItem) {
     }
 
     open fun getTeamName(): String = ""

@@ -266,12 +266,12 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
                      return@setOnMenuItemClickListener true
                  }
                  val labelAdded = AtomicBoolean(false)
-                 mRealm.executeTransactionAsync({ transactionRealm ->
+                 mRealm.executeTransactionAsync(Realm.Transaction { transactionRealm ->
                      val managedNews = transactionRealm.where(RealmNews::class.java)
                          .equalTo("id", newsId)
                          .findFirst()
                      managedNews?.labels?.add(selectedLabel)
-                 }, {
+                 }, Realm.Transaction.OnSuccess {
                      Utilities.toast(this, getString(R.string.label_added))
                      onDataChanged()
                  })
@@ -284,12 +284,12 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
 
     override fun onRemoveLabel(news: NewsItem, label: String) {
         val newsId = news.id ?: return
-         mRealm.executeTransactionAsync({ transactionRealm ->
+         mRealm.executeTransactionAsync(Realm.Transaction { transactionRealm ->
              val managedNews = transactionRealm.where(RealmNews::class.java)
                  .equalTo("id", newsId)
                  .findFirst()
              managedNews?.labels?.remove(label)
-         }, {
+         }, Realm.Transaction.OnSuccess {
              onDataChanged()
          })
     }

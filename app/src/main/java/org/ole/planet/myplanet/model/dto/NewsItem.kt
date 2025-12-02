@@ -6,6 +6,7 @@ data class NewsItem(
     val id: String?,
     val message: String?,
     val time: Long,
+    val dateText: String?,
     val userName: String?,
     val userImage: String?,
     val userId: String?,

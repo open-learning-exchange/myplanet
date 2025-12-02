@@ -34,7 +34,7 @@ class TeamCourseFragment : BaseTeamFragment() {
             showNoData(binding.tvNodata, it.itemCount, "teamCourses")
         }
     }
-    override fun onNewsItemClick(news: RealmNews?) {}
+    override fun onNewsItemClick(news: org.ole.planet.myplanet.model.dto.NewsItem) {}
     override fun clearImages() {
         imageList.clear()
         llImage?.removeAllViews()
