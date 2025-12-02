@@ -348,10 +348,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
 
     private suspend fun uploadExamResultWrapper() {
         try {
-            val successListener = object : SuccessListener {
-                override fun onSuccess(success: String?) {}
-            }
-            uploadManager.uploadExamResult(successListener)
+            uploadManager.uploadExamResult()
         } catch (e: Exception) {
             e.printStackTrace()
         }

@@ -612,7 +612,7 @@ class UploadManager @Inject constructor(
                 realm.copyFromRealm(list)
             }
 
-            logs.forEach { log ->
+            logs.forEach { log: RealmTeamLog ->
                 try {
                     val response = apiInterface.postDocSuspend(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/team_activities", RealmTeamLog.serializeTeamActivities(log, context))
                     val body = response.body()

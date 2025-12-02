@@ -683,13 +683,8 @@ class TeamRepositoryImpl @Inject constructor(
 
     private suspend fun uploadTeamActivities() {
         try {
-            val apiInterface = client?.create(ApiInterface::class.java)
-            withContext(Dispatchers.IO) {
-                uploadManager.uploadTeams()
-                executeTransaction { realm ->
-                    uploadManager.uploadTeamActivities(realm, apiInterface)
-                }
-            }
+            uploadManager.uploadTeams()
+            uploadManager.uploadTeamActivities()
         } catch (e: Exception) {
             e.printStackTrace()
         }
