@@ -161,7 +161,7 @@ class SettingActivity : AppCompatActivity() {
                         try {
                             val files = libraryList ?: withContext(Dispatchers.IO) {
                                 databaseService.withRealm { realm ->
-                                    getAllLibraryList(realm).also { libraryList = it }
+                                    realm.copyFromRealm(getAllLibraryList(realm)).also { libraryList = it }
                                 }
                             }
                             backgroundDownload(downloadAllFiles(files), requireContext())
