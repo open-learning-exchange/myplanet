@@ -13,18 +13,15 @@
         android:textStyle="bold"
         android:textColor="@color/hint_color"
         android:paddingBottom="16dp" />
-
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv_submissions"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1" />
-
     <Button
         android:id="@+id/btn_download_report"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Download Report"
         android:layout_marginTop="16dp" />
-
 </LinearLayout>
