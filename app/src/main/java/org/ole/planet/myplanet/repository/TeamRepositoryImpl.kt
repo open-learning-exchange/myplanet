@@ -148,30 +148,40 @@ class TeamRepositoryImpl @Inject constructor(
     override suspend fun getJoinRequestNotifications(userId: String?): List<JoinRequestNotification> {
         if (userId.isNullOrEmpty()) return emptyList()
         return withRealm { realm ->
-            realm.where(RealmMyTeam::class.java)
+            val teamIds = realm.where(RealmMyTeam::class.java)
                 .equalTo("userId", userId)
                 .equalTo("docType", "membership")
                 .equalTo("isLeader", true)
                 .findAll()
-                .flatMap { leadership ->
-                    realm.where(RealmMyTeam::class.java)
-                        .equalTo("teamId", leadership.teamId)
-                        .equalTo("docType", "request")
-                        .findAll()
-                        .mapNotNull { joinRequest ->
-                            val requestId = joinRequest._id ?: return@mapNotNull null
-                            val team = realm.where(RealmMyTeam::class.java)
-                                .equalTo("_id", leadership.teamId)
-                                .findFirst()
+                .mapNotNull { it.teamId }
+                .distinct()
 
-                            val requester = realm.where(RealmUserModel::class.java)
-                                .equalTo("id", joinRequest.userId)
-                                .findFirst()
+            if (teamIds.isEmpty()) {
+                return@withRealm emptyList()
+            }
 
-                            val requesterName = requester?.name ?: "Unknown User"
-                            val teamName = team?.name ?: "Unknown Team"
-                            JoinRequestNotification(requesterName, teamName, requestId)
-                        }
+            val joinRequests = realm.where(RealmMyTeam::class.java)
+                .`in`("teamId", teamIds.toTypedArray())
+                .equalTo("docType", "request")
+                .findAll()
+
+            joinRequests
+                .groupBy { "${it.userId}_${it.teamId}" }
+                .mapNotNull { (_, requests) ->
+                    val mostRecentRequest = requests.maxByOrNull { it.createdDate } ?: return@mapNotNull null
+                    val requestId = mostRecentRequest._id ?: return@mapNotNull null
+
+                    val team = realm.where(RealmMyTeam::class.java)
+                        .equalTo("_id", mostRecentRequest.teamId)
+                        .findFirst()
+
+                    val requester = realm.where(RealmUserModel::class.java)
+                        .equalTo("id", mostRecentRequest.userId)
+                        .findFirst()
+
+                    val requesterName = requester?.name ?: "Unknown User"
+                    val teamName = team?.name ?: "Unknown Team"
+                    JoinRequestNotification(requesterName, teamName, requestId)
                 }
         }
     }
