@@ -73,24 +73,26 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         initExam()
         viewLifecycleOwner.lifecycleScope.launch {
             val (copiedQuestions, copiedSub, certified) = withContext(Dispatchers.IO) {
-                val realmQuestions = mRealm.where(RealmExamQuestion::class.java).equalTo("examId", exam?.id).findAll()
-                var q: RealmQuery<*> = mRealm.where(RealmSubmission::class.java)
-                    .equalTo("userId", user?.id)
-                    .equalTo("parentId", if (!TextUtils.isEmpty(exam?.courseId)) {
-                        id + "@" + exam?.courseId
-                    } else {
-                        id
-                    }).sort("startTime", Sort.DESCENDING)
-                if (type == "exam") {
-                    q = q.equalTo("status", "pending")
-                }
-                val realmSub = q.findFirst() as RealmSubmission?
-                val courseId = exam?.courseId
-                val isCertified = isCourseCertified(mRealm, courseId)
+                Realm.getDefaultInstance().use { realm ->
+                    val realmQuestions = realm.where(RealmExamQuestion::class.java).equalTo("examId", exam?.id).findAll()
+                    var q: RealmQuery<*> = realm.where(RealmSubmission::class.java)
+                        .equalTo("userId", user?.id)
+                        .equalTo("parentId", if (!TextUtils.isEmpty(exam?.courseId)) {
+                            id + "@" + exam?.courseId
+                        } else {
+                            id
+                        }).sort("startTime", Sort.DESCENDING)
+                    if (type == "exam") {
+                        q = q.equalTo("status", "pending")
+                    }
+                    val realmSub = q.findFirst() as RealmSubmission?
+                    val courseId = exam?.courseId
+                    val isCertified = isCourseCertified(realm, courseId)
 
-                val copiedQuestions = mRealm.copyFromRealm(realmQuestions)
-                val copiedSub = realmSub?.let { mRealm.copyFromRealm(it) }
-                Triple(copiedQuestions, copiedSub, isCertified)
+                    val copiedQuestions = realm.copyFromRealm(realmQuestions)
+                    val copiedSub = realmSub?.let { realm.copyFromRealm(it) }
+                    Triple(copiedQuestions, copiedSub, isCertified)
+                }
             }
 
             questions = copiedQuestions
