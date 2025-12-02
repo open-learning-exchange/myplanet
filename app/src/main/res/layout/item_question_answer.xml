@@ -23,7 +23,6 @@
             android:textStyle="bold"
             android:visibility="gone"
             tools:visibility="visible" />
-
         <TextView
             android:id="@+id/tv_question_body"
             android:layout_width="match_parent"
@@ -31,14 +30,12 @@
             android:layout_marginTop="8dp"
             android:textColor="?android:attr/textColorPrimary"
             android:textSize="14sp" />
-
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:layout_marginTop="12dp"
             android:layout_marginBottom="12dp"
             android:background="?android:attr/listDivider" />
-
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -46,7 +43,6 @@
             android:textSize="12sp"
             android:text="Answer:"
             android:textStyle="bold" />
-
         <TextView
             android:id="@+id/tv_answer_value"
             android:layout_width="match_parent"
@@ -54,7 +50,6 @@
             android:layout_marginTop="4dp"
             android:textColor="?android:attr/textColorPrimary"
             android:textSize="14sp" />
-
         <TextView
             android:id="@+id/tv_question_type"
             android:layout_width="wrap_content"
@@ -64,6 +59,5 @@
             android:textSize="11sp"
             android:visibility="gone"
             tools:visibility="visible" />
-
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
