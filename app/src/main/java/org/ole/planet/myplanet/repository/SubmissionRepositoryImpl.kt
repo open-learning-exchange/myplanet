@@ -216,4 +216,23 @@ class SubmissionRepositoryImpl @Inject constructor(
             sub.status = "complete"
         }
     }
+
+    override suspend fun existsSubmission(courseId: String?, submissionType: String, userId: String?, examId: String?): Boolean {
+        return databaseService.withRealm { realm ->
+            val questions = realm.where(RealmExamQuestion::class.java)
+                .equalTo("examId", examId)
+                .findAll()
+
+            var isPresent = false
+            if (questions.isNotEmpty()) {
+                val parentId = "${questions.first()?.examId}@$courseId"
+                isPresent = realm.where(RealmSubmission::class.java)
+                    .equalTo("userId", userId)
+                    .equalTo("parentId", parentId)
+                    .equalTo("type", submissionType)
+                    .findFirst() != null
+            }
+            isPresent
+        }
+    }
 }
