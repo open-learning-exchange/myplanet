@@ -60,6 +60,5 @@
             android:nestedScrollingEnabled="false"
             tools:itemCount="14"
             tools:listitem="@layout/item_question_answer" />
-
     </LinearLayout>
 </ScrollView>
