@@ -98,11 +98,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        startCoursesSync()
-    }
-
     override fun getLayout(): Int {
         return R.layout.fragment_my_course
     }
@@ -283,6 +278,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
         realtimeSyncHelper = RealtimeSyncHelper(this, this)
         realtimeSyncHelper.setupRealtimeSync()
+        startCoursesSync()
     }
 
     private fun setupButtonVisibility() {
