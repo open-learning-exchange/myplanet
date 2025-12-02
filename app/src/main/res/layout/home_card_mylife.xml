@@ -55,8 +55,8 @@
             android:layout_weight="1"
             android:background="@color/card_bg">
 
-            <com.google.android.flexbox.FlexboxLayout
-                android:id="@+id/flexboxLayoutMyLife"
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerViewMyLife"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
                 app:alignContent="stretch"

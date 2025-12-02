@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.dashboard
 
 import android.os.Bundle
 import android.view.Gravity
-import android.view.LayoutInflater
 import android.view.View
 import android.widget.TextView
 import androidx.core.content.ContextCompat
@@ -10,13 +9,11 @@ import androidx.fragment.app.Fragment
 import io.realm.RealmObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
-import org.ole.planet.myplanet.databinding.ItemMyLifeBinding
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.ui.myhealth.MyHealthFragment
@@ -26,7 +23,7 @@ import org.ole.planet.myplanet.ui.references.ReferenceFragment
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment
-import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
+import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
@@ -58,19 +55,17 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         }
     }
 
-    private fun handleClickMyLife(title: String, v: View) {
-        v.setOnClickListener {
-            homeItemClickListener?.let { listener ->
-                when (title) {
-                    "mySubmissions" -> openIfLoggedIn { listener.openCallFragment(MySubmissionFragment()) }
-                    "References" -> listener.openCallFragment(ReferenceFragment())
-                    "Calendar" -> listener.openCallFragment(CalendarFragment())
-                    "mySurveys" -> openIfLoggedIn { listener.openCallFragment(MySubmissionFragment.newInstance("survey")) }
-                    "myAchievements" -> openIfLoggedIn { listener.openCallFragment(AchievementFragment()) }
-                    "myPersonals" -> openIfLoggedIn { listener.openCallFragment(MyPersonalsFragment()) }
-                    "myHealth" -> openIfLoggedIn { listener.openCallFragment(MyHealthFragment()) }
-                    else -> Utilities.toast(activity, getString(R.string.feature_not_available))
-                }
+    fun handleClickMyLife(title: String) {
+        homeItemClickListener?.let { listener ->
+            when (title) {
+                "mySubmissions" -> openIfLoggedIn { listener.openCallFragment(MySubmissionFragment()) }
+                "References" -> listener.openCallFragment(ReferenceFragment())
+                "Calendar" -> listener.openCallFragment(CalendarFragment())
+                "mySurveys" -> openIfLoggedIn { listener.openCallFragment(MySubmissionFragment.newInstance("survey")) }
+                "myAchievements" -> openIfLoggedIn { listener.openCallFragment(AchievementFragment()) }
+                "myPersonals" -> openIfLoggedIn { listener.openCallFragment(MyPersonalsFragment()) }
+                "myHealth" -> openIfLoggedIn { listener.openCallFragment(MyHealthFragment()) }
+                else -> Utilities.toast(activity, getString(R.string.feature_not_available))
             }
         }
     }
@@ -79,7 +74,7 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         if (model?.id?.startsWith("guest") == false) {
             action()
         } else {
-            guestDialog(requireContext(), profileDbHandler)
+            activity?.let { DialogUtils.guestDialog(it, profileDbHandler) }
         }
     }
 
@@ -110,32 +105,12 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         setBackgroundColor(textView, itemCnt)
     }
 
-    fun getLayout(itemCnt: Int, obj: RealmObject): View {
-        val itemMyLifeBinding = ItemMyLifeBinding.inflate(LayoutInflater.from(activity))
-        val v = itemMyLifeBinding.root
-        setBackgroundColor(v, itemCnt)
-
-        val title = (obj as RealmMyLife).title
-        val user = profileDbHandler.userModel
-        itemMyLifeBinding.img.setImageResource(resources.getIdentifier(obj.imageId, "drawable", requireActivity().packageName))
-        itemMyLifeBinding.tvName.text = title
-
-        if (title == getString(R.string.my_survey)) {
-            itemMyLifeBinding.tvCount.visibility = View.VISIBLE
-            if (isRealmInitialized()) {
-                val noOfSurvey = RealmSubmission.getNoOfSurveySubmissionByUser(user?.id, mRealm)
-                itemMyLifeBinding.tvCount.text = noOfSurvey.toString()
-            } else {
-                itemMyLifeBinding.tvCount.text = "0"
-            }
+    fun setBackgroundColor(v: View, count: Int) {
+        if (count % 2 == 0) {
+            v.setBackgroundResource(R.drawable.light_rect)
         } else {
-            itemMyLifeBinding.tvCount.visibility = View.GONE
+            v.setBackgroundResource(R.color.dashboard_item_alternative)
         }
-
-        if (title != null) {
-            handleClickMyLife(title, v)
-        }
-        return v
     }
 
     fun getMyLifeListBase(userId: String?): List<RealmMyLife> {
@@ -148,13 +123,5 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         myLifeList.add(RealmMyLife("ic_calendar", userId, getString(R.string.calendar)))
         myLifeList.add(RealmMyLife("ic_mypersonals", userId, getString(R.string.mypersonals)))
         return myLifeList
-    }
-
-    fun setBackgroundColor(v: View, count: Int) {
-        if (count % 2 == 0) {
-            v.setBackgroundResource(R.drawable.light_rect)
-        } else {
-            v.setBackgroundResource(R.color.dashboard_item_alternative)
-        }
     }
 }
