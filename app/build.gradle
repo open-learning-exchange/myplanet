@@ -194,7 +194,6 @@ dependencies {
     implementation(libs.photoView)
     implementation(libs.fab)
     implementation(libs.mpAndroidChart)
-    implementation(libs.circular.progress.view)
     implementation(libs.material)
     implementation(libs.gson)
     implementation(libs.hilt.android)

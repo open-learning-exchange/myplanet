@@ -1,6 +1,8 @@
 package org.ole.planet.myplanet.ui.courses
 
+import android.animation.ObjectAnimator
 import android.os.Bundle
+import android.view.animation.AccelerateDecelerateInterpolator
 import androidx.recyclerview.widget.GridLayoutManager
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -43,11 +45,17 @@ class CourseProgressActivity : BaseActivity() {
             val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
             if (progress != null) {
                 val maxProgress = progress["max"].asInt
-                if (maxProgress != 0) {
-                    binding.progressView.setProgress((progress["current"].asInt.toDouble() / maxProgress.toDouble() * 100).toInt(), true)
+                val currentProgress = progress["current"].asInt
+                val percentage = if (maxProgress != 0) {
+                    (currentProgress.toDouble() / maxProgress.toDouble() * 100).toInt()
                 } else {
-                    binding.progressView.setProgress(0, true)
+                    0
                 }
+                val animator = ObjectAnimator.ofInt(binding.progressView, "progress", percentage)
+                animator.duration = 600
+                animator.interpolator = AccelerateDecelerateInterpolator()
+                animator.start()
+                binding.progressText.text = "$percentage%"
             }
             binding.tvCourse.text = course?.courseTitle
             binding.tvProgress.text = getString(
