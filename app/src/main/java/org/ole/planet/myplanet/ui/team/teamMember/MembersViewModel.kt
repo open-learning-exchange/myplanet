@@ -24,7 +24,6 @@ data class MembersUiState(
 class MembersViewModel @Inject constructor(
     private val teamRepository: TeamRepository,
     private val userProfileDbHandler: UserProfileDbHandler,
-    private val databaseService: DatabaseService
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MembersUiState())
@@ -32,13 +31,9 @@ class MembersViewModel @Inject constructor(
 
     fun fetchMembers(teamId: String) {
         viewModelScope.launch(Dispatchers.IO) {
-            val (members, memberCount, isLeader) = databaseService.withRealm { realm ->
-                val requestedMembers = teamRepository.getRequestedMembers(teamId)
-                val unmanagedMembers = realm.copyFromRealm(requestedMembers)
-                val count = teamRepository.getJoinedMembers(teamId).size
-                val leader = teamRepository.isTeamLeader(teamId, userProfileDbHandler.userModel?.id)
-                Triple(unmanagedMembers, count, leader)
-            }
+            val members = teamRepository.getRequestedMembers(teamId)
+            val memberCount = teamRepository.getJoinedMembers(teamId).size
+            val isLeader = teamRepository.isTeamLeader(teamId, userProfileDbHandler.userModel?.id)
             withContext(Dispatchers.Main) {
                 _uiState.value = MembersUiState(members, isLeader, memberCount)
             }

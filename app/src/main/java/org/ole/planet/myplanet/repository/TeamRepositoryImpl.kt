@@ -725,13 +725,18 @@ class TeamRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getRequestedMembers(teamId: String): List<RealmUserModel> {
-        val teamMembers = queryList(RealmMyTeam::class.java) {
-            equalTo("teamId", teamId)
-            equalTo("docType", "request")
-        }.mapNotNull { it.userId }
+        return withRealm { realm ->
+            val teamMembers = realm.where(RealmMyTeam::class.java)
+                .equalTo("teamId", teamId)
+                .equalTo("docType", "request")
+                .findAll()
+                .mapNotNull { it.userId }
 
-        return queryList(RealmUserModel::class.java) {
-            `in`("id", teamMembers.toTypedArray())
+            val requestedMembers = realm.where(RealmUserModel::class.java)
+                .`in`("id", teamMembers.toTypedArray())
+                .findAll()
+
+            realm.copyFromRealm(requestedMembers)
         }
     }
 }
