@@ -11,10 +11,13 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
+import io.realm.RealmList
 import io.realm.RealmResults
 import io.realm.Sort
+import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
@@ -29,18 +32,23 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmTeamNotification
+import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.NewsRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
-import org.ole.planet.myplanet.ui.news.AdapterNews
+import org.ole.planet.myplanet.ui.news.AdapterNewsItem
+import org.ole.planet.myplanet.ui.news.AdapterNewsItem.OnNewsItemClickListener
+import org.ole.planet.myplanet.ui.news.NewsActions
+import org.ole.planet.myplanet.ui.news.ReplyActivity
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.SharedPrefManager
+import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
-class DiscussionListFragment : BaseTeamFragment() {
+class DiscussionListFragment : BaseTeamFragment(), OnNewsItemClickListener {
     private var _binding: FragmentDiscussionListBinding? = null
     private val binding get() = _binding!!
     private var updatedNewsList: RealmResults<RealmNews>? = null
@@ -135,7 +143,6 @@ class DiscussionListFragment : BaseTeamFragment() {
 
         updatedNewsList?.addChangeListener { results ->
             filteredNewsList = filterNewsList(results)
-            // Map to NewsItem
             val ids = filteredNewsList.mapNotNull { it?.id }
             viewLifecycleOwner.lifecycleScope.launch {
                 val items = withContext(Dispatchers.IO) {
@@ -149,9 +156,8 @@ class DiscussionListFragment : BaseTeamFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val realmNewsList = news // Getter 'news' returns List<RealmNews>
+        val realmNewsList = news
 
-        // Count update
         val count = realmNewsList.size
         mRealm.executeTransactionAsync { realm: Realm ->
             var notification = realm.where(RealmTeamNotification::class.java).equalTo("type", "chat").equalTo("parentId", getEffectiveTeamId()).findFirst()
@@ -164,7 +170,6 @@ class DiscussionListFragment : BaseTeamFragment() {
         }
         changeLayoutManager(resources.configuration.orientation, binding.rvDiscussion)
 
-        // Initial show
         val ids = realmNewsList.mapNotNull { it.id }
         viewLifecycleOwner.lifecycleScope.launch {
              val items = withContext(Dispatchers.IO) {
@@ -182,7 +187,7 @@ class DiscussionListFragment : BaseTeamFragment() {
                     val isPublicTeam = isPublicTeamFromFlow || team?.isPublic == true
                     val canPost = !isGuest && (isMember || isPublicTeam)
                     binding.addMessage.isVisible = canPost
-                    (binding.rvDiscussion.adapter as? AdapterNews)?.setNonTeamMember(!isMember)
+                    (binding.rvDiscussion.adapter as? AdapterNewsItem)?.setNonTeamMember(!isMember)
                 }
             }
         }
@@ -203,6 +208,11 @@ class DiscussionListFragment : BaseTeamFragment() {
             chatDetailFragment,
             addToBackStack = true
         )
+    }
+
+    // Legacy override
+    override fun onNewsItemClick(news: RealmNews?) {
+        // No-op
     }
 
     override fun clearImages() {
@@ -262,7 +272,7 @@ class DiscussionListFragment : BaseTeamFragment() {
         if (existingAdapter == null) {
             val isLeader = isTeamLeader()
             val adapterNews = activity?.let {
-                AdapterNews(it, user, null, getEffectiveTeamName(), isLeader)
+                AdapterNewsItem(it, user, null, getEffectiveTeamName(), isLeader)
             }
             adapterNews?.sharedPrefManager = sharedPrefManager
             adapterNews?.setListener(this)
@@ -273,7 +283,7 @@ class DiscussionListFragment : BaseTeamFragment() {
                 showNoData(binding.tvNodata, it.itemCount, "discussions")
             }
         } else {
-            (existingAdapter as? AdapterNews)?.let { adapter ->
+            (existingAdapter as? AdapterNewsItem)?.let { adapter ->
                 newsList?.let {
                     adapter.updateList(it)
                     showNoData(binding.tvNodata, adapter.itemCount, "discussions")
@@ -282,8 +292,13 @@ class DiscussionListFragment : BaseTeamFragment() {
         }
     }
 
-    override fun setData(list: List<NewsItem>?) {
+    fun setData(list: List<NewsItem>?) {
         showRecyclerView(list)
+    }
+
+    // Legacy
+    override fun setData(list: List<RealmNews?>?) {
+        // No-op
     }
 
     override fun onDestroyView() {
@@ -312,7 +327,134 @@ class DiscussionListFragment : BaseTeamFragment() {
         return team?.userId == user?.id
     }
 
-    override fun getTeamName(): String {
-        return getEffectiveTeamName()
+    override fun onMemberSelected(news: NewsItem) {
+        if (!isAdded) return
+        val userId = news.userId
+        if (userId != null) {
+            val userModel = mRealm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
+            val handler = profileDbHandler
+            val fragment = NewsActions.showMemberDetails(userModel, handler) ?: return
+            NavigationHelper.replaceFragment(
+                requireActivity().supportFragmentManager,
+                R.id.fragment_container,
+                fragment,
+                addToBackStack = true
+            )
+        }
+    }
+
+    override fun onDelete(news: NewsItem) {
+        val realmNews = mRealm.where(RealmNews::class.java).equalTo("id", news.id).findFirst()
+        if(realmNews != null) {
+             NewsActions.deletePost(mRealm, realmNews, mutableListOf(), getEffectiveTeamName(), null)
+             // Manually refresh via updatedNewsList listener?
+             // Deleting from Realm triggers RealmChangeListener in `updatedNewsList`.
+             // Which calls `setData` via mapper.
+             // So UI updates automatically.
+        }
+    }
+
+    override fun onEdit(news: NewsItem, holder: androidx.recyclerview.widget.RecyclerView.ViewHolder) {
+         val user = profileDbHandler.userModel
+         NewsActions.showEditAlert(requireContext(), mRealm, news.id, true, user, null, holder) { _, _, _ ->
+             // Update logic... Realm change should trigger update.
+         }
+    }
+
+    override fun onReply(news: NewsItem, holder: androidx.recyclerview.widget.RecyclerView.ViewHolder) {
+         val user = profileDbHandler.userModel
+         NewsActions.showEditAlert(requireContext(), mRealm, news.id, false, user, null, holder) { _, _, _ ->
+             // Update logic... Realm change should trigger update.
+         }
+    }
+
+    override fun onShare(news: NewsItem) {
+        androidx.appcompat.app.AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
+            .setTitle(R.string.share_with_community)
+            .setMessage(R.string.confirm_share_community)
+            .setPositiveButton(R.string.yes) { _, _ ->
+                val realmNews = mRealm.where(RealmNews::class.java).equalTo("id", news.id).findFirst()
+                if (realmNews != null) {
+                    val array = GsonUtils.gson.fromJson(realmNews.viewIn, JsonArray::class.java)
+                    val firstElement = array.get(0)
+                    val obj = firstElement.asJsonObject
+                    if (!obj.has("name")) {
+                        obj.addProperty("name", getEffectiveTeamName())
+                    }
+                    val ob = JsonObject()
+                    ob.addProperty("section", "community")
+                    val user = profileDbHandler.userModel
+                    ob.addProperty("_id", user?.planetCode + "@" + user?.parentCode)
+                    ob.addProperty("sharedDate", Calendar.getInstance().timeInMillis)
+                    array.add(ob)
+
+                    if (!mRealm.isInTransaction) {
+                        mRealm.beginTransaction()
+                    }
+                    realmNews.sharedBy = user?.id
+                    realmNews.viewIn = GsonUtils.gson.toJson(array)
+                    mRealm.commitTransaction()
+                    Utilities.toast(context, getString(R.string.shared_to_community))
+                }
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    override fun onAddLabel(news: NewsItem, label: String) {
+        val newsId = news.id
+        mRealm.executeTransactionAsync({ transactionRealm ->
+             val managedNews = transactionRealm.where(RealmNews::class.java)
+                 .equalTo("id", newsId)
+                 .findFirst()
+             if (managedNews != null) {
+                 var managedLabels = managedNews.labels
+                 if (managedLabels == null) {
+                     managedLabels = io.realm.RealmList()
+                     managedNews.labels = managedLabels
+                 }
+                 if (!managedLabels.contains(label)) {
+                     managedLabels.add(label)
+                 }
+             }
+        }, {
+             Utilities.toast(context, getString(R.string.label_added))
+        })
+    }
+
+    override fun onRemoveLabel(news: NewsItem, label: String) {
+        val newsId = news.id
+        mRealm.executeTransactionAsync({ transactionRealm ->
+             val managedNews = transactionRealm.where(RealmNews::class.java)
+                 .equalTo("id", newsId)
+                 .findFirst()
+             managedNews?.labels?.remove(label)
+        })
+    }
+
+    override fun showReply(news: NewsItem?, fromLogin: Boolean, nonTeamMember: Boolean) {
+        // BaseNewsFragment uses replyActivityLauncher which calls adapterNews (legacy).
+        // Since we use AdapterNewsItem, we should launch ReplyActivity manually and refresh manually if needed.
+        // But DiscussionListFragment relies on RealmChangeListener.
+        // If ReplyActivity modifies Realm, DiscussionListFragment updates automatically.
+        // So just launching activity is enough.
+        if (news != null) {
+            val intent = android.content.Intent(activity, ReplyActivity::class.java).putExtra("id", news.id)
+                .putExtra("fromLogin", fromLogin)
+                .putExtra("nonTeamMember", nonTeamMember)
+            startActivity(intent)
+        }
+    }
+
+    override fun addImage(llImage: ViewGroup?) {
+        super.addImage(llImage)
+    }
+
+    override fun getCurrentImageList(): RealmList<String>? {
+        return super.getCurrentImageList()
+    }
+
+    override fun onDataChanged() {
+        // Triggered by adapter if needed, but we rely on Realm listener.
     }
 }

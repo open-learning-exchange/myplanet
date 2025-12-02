@@ -250,7 +250,7 @@ class NewsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun createNews(map: HashMap<String?, String>, user: RealmUserModel?): RealmNews {
+    override suspend fun createNews(map: HashMap<String, String>, user: RealmUserModel?): RealmNews {
         return withRealmAsync { realm ->
             val managedNews = createNews(map, realm, user, null)
             realm.copyFromRealm(managedNews)

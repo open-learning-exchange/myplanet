@@ -38,7 +38,7 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
-import org.ole.planet.myplanet.ui.news.AdapterNews.OnNewsItemClickListener
+import org.ole.planet.myplanet.ui.news.AdapterNewsItem.OnNewsItemClickListener
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getImagePath
@@ -54,7 +54,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     @Inject
     lateinit var databaseService: DatabaseService
     var id: String? = null
-    private lateinit var newsAdapter: AdapterNews
+    private lateinit var newsAdapter: AdapterNewsItem
     var user: RealmUserModel? = null
     private lateinit var mRealm: Realm
 
@@ -98,7 +98,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         lifecycleScope.launch {
             val (news, list) = viewModel.getNewsItemWithReplies(id)
             if (news != null) {
-                newsAdapter = AdapterNews(this@ReplyActivity, user, news, "")
+                newsAdapter = AdapterNewsItem(this@ReplyActivity, user, news, "")
                 newsAdapter.sharedPrefManager = sharedPrefManager
                 newsAdapter.setListener(this@ReplyActivity)
                 newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
@@ -209,13 +209,13 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     }
 
     override fun onEdit(news: NewsItem, holder: RecyclerView.ViewHolder) {
-        NewsActions.showEditAlert(this, mRealm, news.id, true, user, this, holder) { _, _, _ ->
+        NewsActions.showEditAlert(this, mRealm, news.id, true, user, null, holder) { _, _, _ ->
             refreshData()
         }
     }
 
     override fun onReply(news: NewsItem, holder: RecyclerView.ViewHolder) {
-        NewsActions.showEditAlert(this, mRealm, news.id, false, user, this, holder) { _, _, _ ->
+        NewsActions.showEditAlert(this, mRealm, news.id, false, user, null, holder) { _, _, _ ->
             refreshData()
         }
     }
@@ -231,7 +231,6 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
                     val firstElement = array.get(0)
                     val obj = firstElement.asJsonObject
                     if (!obj.has("name")) {
-                         // Team name? ReplyActivity has no team context usually (empty teamName).
                         obj.addProperty("name", "")
                     }
                     val ob = JsonObject()

@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.ui.news
 
+import android.app.Activity
+import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
 import android.os.Trace
@@ -9,6 +11,8 @@ import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.EditText
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView.AdapterDataObserver
@@ -26,12 +30,14 @@ import org.ole.planet.myplanet.base.BaseNewsFragment
 import org.ole.planet.myplanet.databinding.FragmentNewsBinding
 import org.ole.planet.myplanet.model.NewsItem
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.NewsRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
+import org.ole.planet.myplanet.ui.news.AdapterNewsItem.OnNewsItemClickListener
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.GsonUtils
@@ -41,7 +47,7 @@ import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.textChanges
 
 @AndroidEntryPoint
-class NewsFragment : BaseNewsFragment() {
+class NewsFragment : BaseNewsFragment(), OnNewsItemClickListener {
     private var _binding: FragmentNewsBinding? = null
     private val binding get() = _binding!!
     var user: RealmUserModel? = null
@@ -49,7 +55,7 @@ class NewsFragment : BaseNewsFragment() {
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     @Inject
-    override lateinit var newsRepository: NewsRepository
+    lateinit var newsRepository: NewsRepository
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
     private var filteredNewsList: List<NewsItem> = listOf()
@@ -58,6 +64,20 @@ class NewsFragment : BaseNewsFragment() {
     private lateinit var etSearch: EditText
     private var selectedLabel: String = "All"
     private val labelDisplayToValue = mutableMapOf<String, String>()
+
+    private var adapterNewsItem: AdapterNewsItem? = null
+    private lateinit var replyLauncher: ActivityResultLauncher<Intent>
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        replyLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+             if (result.resultCode == Activity.RESULT_OK) {
+                 val newsId = result.data?.getStringExtra("newsId")
+                 newsId?.let { adapterNewsItem?.updateReplyBadge(it) }
+                 adapterNewsItem?.refreshCurrentItems()
+             }
+        }
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentNewsBinding.inflate(inflater, container, false)
@@ -163,7 +183,11 @@ class NewsFragment : BaseNewsFragment() {
         return "$planetCode@$parentCode"
     }
 
-    override fun setData(list: List<NewsItem>?) {
+    override fun setData(list: List<RealmNews?>?) {
+        // Legacy override - do nothing
+    }
+
+    fun setData(list: List<NewsItem>?) {
         if (!isAdded || list == null) return
 
         if (binding.rvNews.adapter == null) {
@@ -186,18 +210,17 @@ class NewsFragment : BaseNewsFragment() {
                     )
                 }
             }
-            // Sorting is done in repository
-            adapterNews = AdapterNews(requireActivity(), user, null)
-            adapterNews?.sharedPrefManager = sharedPrefManager
-            adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
-            adapterNews?.setListener(this)
-            adapterNews?.registerAdapterDataObserver(observer)
-            adapterNews?.updateList(list)
-            binding.rvNews.adapter = adapterNews
+            adapterNewsItem = AdapterNewsItem(requireActivity(), user, null)
+            adapterNewsItem?.sharedPrefManager = sharedPrefManager
+            adapterNewsItem?.setFromLogin(requireArguments().getBoolean("fromLogin"))
+            adapterNewsItem?.setListener(this)
+            adapterNewsItem?.registerAdapterDataObserver(observer)
+            adapterNewsItem?.updateList(list)
+            binding.rvNews.adapter = adapterNewsItem
         } else {
-            (binding.rvNews.adapter as? AdapterNews)?.updateList(list)
+            adapterNewsItem?.updateList(list)
         }
-        adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, "news") }
+        adapterNewsItem?.let { showNoData(binding.tvMessage, it.itemCount, "news") }
         binding.llAddNews.visibility = View.GONE
         binding.btnNewVoice.text = getString(R.string.new_voice)
     }
@@ -222,6 +245,15 @@ class NewsFragment : BaseNewsFragment() {
         }
     }
 
+    override fun showReply(news: NewsItem?, fromLogin: Boolean, nonTeamMember: Boolean) {
+        if (news != null) {
+            val intent = Intent(activity, ReplyActivity::class.java).putExtra("id", news.id)
+                .putExtra("fromLogin", fromLogin)
+                .putExtra("nonTeamMember", nonTeamMember)
+            replyLauncher.launch(intent)
+        }
+    }
+
     override fun clearImages() {
         imageList.clear()
         llImage?.removeAllViews()
@@ -241,15 +273,15 @@ class NewsFragment : BaseNewsFragment() {
 
     private val observer: AdapterDataObserver = object : AdapterDataObserver() {
         override fun onChanged() {
-            adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, "news") }
+            adapterNewsItem?.let { showNoData(binding.tvMessage, it.itemCount, "news") }
         }
 
         override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
-            adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, "news") }
+            adapterNewsItem?.let { showNoData(binding.tvMessage, it.itemCount, "news") }
         }
 
         override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) {
-            adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, "news") }
+            adapterNewsItem?.let { showNoData(binding.tvMessage, it.itemCount, "news") }
         }
     }
     
@@ -393,8 +425,125 @@ class NewsFragment : BaseNewsFragment() {
         return ""
     }
 
+    // Implement AdapterNewsItem.OnNewsItemClickListener methods
+    // ... onDelete, onEdit, onReply, onShare, onAddLabel, onRemoveLabel, onMemberSelected ...
+    // These were added to BaseNewsFragment in my failed attempt. Now I must implement them here OR in BaseNewsFragment.
+    // If I revert BaseNewsFragment, I lose them.
+    // So I implement them here.
+
+    override fun onMemberSelected(news: NewsItem) {
+        if (!isAdded) return
+        val userId = news.userId
+        if (userId != null) {
+            val userModel = mRealm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
+            val handler = profileDbHandler
+            val fragment = org.ole.planet.myplanet.ui.news.NewsActions.showMemberDetails(userModel, handler) ?: return
+            NavigationHelper.replaceFragment(
+                requireActivity().supportFragmentManager,
+                R.id.fragment_container,
+                fragment,
+                addToBackStack = true
+            )
+        }
+    }
+
+    override fun onDelete(news: NewsItem) {
+        val realmNews = mRealm.where(RealmNews::class.java).equalTo("id", news.id).findFirst()
+        if(realmNews != null) {
+             org.ole.planet.myplanet.ui.news.NewsActions.deletePost(mRealm, realmNews, mutableListOf(), "", null)
+             // listener null because I manually refresh
+             onDataChanged()
+        }
+    }
+
+    override fun onEdit(news: NewsItem, holder: androidx.recyclerview.widget.RecyclerView.ViewHolder) {
+         val user = profileDbHandler.userModel
+         org.ole.planet.myplanet.ui.news.NewsActions.showEditAlert(requireContext(), mRealm, news.id, true, user, null, holder) { _, _, _ ->
+             adapterNewsItem?.updateReplyBadge(news.id)
+         }
+    }
+
+    override fun onReply(news: NewsItem, holder: androidx.recyclerview.widget.RecyclerView.ViewHolder) {
+         val user = profileDbHandler.userModel
+         org.ole.planet.myplanet.ui.news.NewsActions.showEditAlert(requireContext(), mRealm, news.id, false, user, null, holder) { _, _, _ ->
+             adapterNewsItem?.updateReplyBadge(news.id)
+         }
+    }
+
+    override fun onShare(news: NewsItem) {
+        androidx.appcompat.app.AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
+            .setTitle(R.string.share_with_community)
+            .setMessage(R.string.confirm_share_community)
+            .setPositiveButton(R.string.yes) { _, _ ->
+                val realmNews = mRealm.where(RealmNews::class.java).equalTo("id", news.id).findFirst()
+                if (realmNews != null) {
+                    val array = GsonUtils.gson.fromJson(realmNews.viewIn, JsonArray::class.java)
+                    val firstElement = array.get(0)
+                    val obj = firstElement.asJsonObject
+                    if (!obj.has("name")) {
+                        obj.addProperty("name", "")
+                    }
+                    val ob = com.google.gson.JsonObject()
+                    ob.addProperty("section", "community")
+                    val user = profileDbHandler.userModel
+                    ob.addProperty("_id", user?.planetCode + "@" + user?.parentCode)
+                    ob.addProperty("sharedDate", java.util.Calendar.getInstance().timeInMillis)
+                    array.add(ob)
+
+                    if (!mRealm.isInTransaction) {
+                        mRealm.beginTransaction()
+                    }
+                    realmNews.sharedBy = user?.id
+                    realmNews.viewIn = GsonUtils.gson.toJson(array)
+                    mRealm.commitTransaction()
+                    org.ole.planet.myplanet.utilities.Utilities.toast(context, getString(R.string.shared_to_community))
+                    onDataChanged()
+                }
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    override fun onAddLabel(news: NewsItem, label: String) {
+        val newsId = news.id
+        mRealm.executeTransactionAsync({ transactionRealm ->
+             val managedNews = transactionRealm.where(RealmNews::class.java)
+                 .equalTo("id", newsId)
+                 .findFirst()
+             if (managedNews != null) {
+                 var managedLabels = managedNews.labels
+                 if (managedLabels == null) {
+                     managedLabels = io.realm.RealmList()
+                     managedNews.labels = managedLabels
+                 }
+                 if (!managedLabels.contains(label)) {
+                     managedLabels.add(label)
+                 }
+             }
+        }, {
+             org.ole.planet.myplanet.utilities.Utilities.toast(context, getString(R.string.label_added))
+             onDataChanged()
+        })
+    }
+
+    override fun onRemoveLabel(news: NewsItem, label: String) {
+        val newsId = news.id
+        mRealm.executeTransactionAsync({ transactionRealm ->
+             val managedNews = transactionRealm.where(RealmNews::class.java)
+                 .equalTo("id", newsId)
+                 .findFirst()
+             managedNews?.labels?.remove(label)
+        }, {
+             onDataChanged()
+        })
+    }
+
+    override fun getCurrentImageList(): io.realm.RealmList<String>? {
+        return if (::imageList.isInitialized) imageList else null
+    }
+
     override fun onDestroyView() {
-        adapterNews?.unregisterAdapterDataObserver(observer)
+        adapterNewsItem?.unregisterAdapterDataObserver(observer)
         if (isRealmInitialized()) {
             mRealm.close()
         }
