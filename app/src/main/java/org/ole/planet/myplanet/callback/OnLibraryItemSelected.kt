@@ -8,4 +8,5 @@ interface OnLibraryItemSelected {
     fun onSelectedListChange(list: MutableList<RealmMyLibrary?>)
     @JvmSuppressWildcards
     fun onTagClicked(realmTag: RealmTag)
+    fun onItemSelected(library: RealmMyLibrary)
 }
