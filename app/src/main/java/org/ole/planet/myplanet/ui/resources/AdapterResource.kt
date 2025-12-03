@@ -14,7 +14,6 @@ import com.google.android.flexbox.FlexboxLayout
 import com.google.gson.JsonObject
 import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
-import java.text.Normalizer
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -26,8 +25,6 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnLibraryItemSelected
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.RowLibraryBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
-import io.realm.Realm
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -43,10 +40,7 @@ class AdapterResource(
     private var libraryList: List<RealmMyLibrary?>,
     private var ratingMap: HashMap<String?, JsonObject>,
     private val tagRepository: TagRepository,
-    private val userModel: RealmUserModel?,
-    private val databaseService: DatabaseService,
-    private val isMyCourseLib: Boolean,
-    private val model: RealmUserModel?
+    private val userModel: RealmUserModel?
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private var diffJob: Job? = null
     private val selectedItems: MutableList<RealmMyLibrary?> = ArrayList()
@@ -58,8 +52,7 @@ class AdapterResource(
     private var isTitleAscending = false
     private val tagCache: MutableMap<String, List<RealmTag>> = mutableMapOf()
     private val tagRequestsInProgress: MutableSet<String> = mutableSetOf()
-    private var filterJob: Job? = null
-    private val normalizedTitlesCache: MutableMap<String, String> = mutableMapOf()
+    private var diffJob: Job? = null
 
     private data class DiffData(
         val id: String?,
@@ -100,89 +93,42 @@ class AdapterResource(
     }
 
     fun setLibraryList(libraryList: List<RealmMyLibrary?>) {
-        updateLibraryList(libraryList)
+        if (this.libraryList === libraryList) return
+        updateList(libraryList)
     }
 
-    fun updateLibraryList(libraryList: List<RealmMyLibrary?>) {
-        if (this.libraryList !== libraryList) {
-            updateList(libraryList)
-        }
-    }
+    private fun updateList(newList: List<RealmMyLibrary?>) {
+        diffJob?.cancel()
+        val oldList = libraryList.mapNotNull { it?.toDiffData() }
+        val newListMapped = newList.mapNotNull { it?.toDiffData() }
 
-    fun performFilter(
-        query: String,
-        tags: List<RealmTag>,
-        callback: (List<RealmMyLibrary?>) -> Unit
-    ) {
-        filterJob?.cancel()
-        filterJob = (context as? LifecycleOwner)?.lifecycleScope?.launch(Dispatchers.Default) {
-            databaseService.withRealm { realm ->
-                val tagFilteredList = filterLibraryByTag(tags, realm)
-                val titleFilteredList = if (query.isEmpty()) {
-                    tagFilteredList
-                } else {
-                    val normalizedQuery = normalizeText(query)
-                    val queryParts = normalizedQuery.split(" ").filterNot { it.isEmpty() }
-                    tagFilteredList.filter { library ->
-                        library?.let {
-                            val title = getCachedNormalizedTitle(it)
-                            queryParts.all { part -> title.contains(part) }
-                        } ?: false
+        diffJob = (context as? LifecycleOwner)?.lifecycleScope?.launch {
+            val diffResult = withContext(Dispatchers.Default) {
+                DiffUtils.calculateDiff(
+                    oldList,
+                    newListMapped,
+                    areItemsTheSame = { old, new -> old.id == new.id },
+                    areContentsTheSame = { old, new -> old == new },
+                    getChangePayload = { old, new ->
+                        val ratingChanged = old.averageRating != new.averageRating || old.timesRated != new.timesRated
+                        val otherContentChanged = old.title != new.title ||
+                                old.description != new.description ||
+                                old.createdDate != new.createdDate
+
+                        if (ratingChanged && !otherContentChanged) {
+                            RATING_PAYLOAD
+                        } else {
+                            null
+                        }
                     }
-                }
-                val unmanagedList = realm.copyFromRealm(titleFilteredList)
-                if (isActive) {
-                    withContext(Dispatchers.Main) {
-                        callback(unmanagedList)
-                    }
-                }
+                )
+            }
+
+            if (isActive) {
+                libraryList = newList
+                diffResult.dispatchUpdatesTo(this@AdapterResource)
             }
         }
-    }
-
-    private fun getCachedNormalizedTitle(library: RealmMyLibrary): String {
-        return normalizedTitlesCache.getOrPut(library.id ?: "") {
-            normalizeText(library.title ?: "")
-        }
-    }
-
-    private fun normalizeText(str: String): String {
-        return org.ole.planet.myplanet.utilities.TextUtils.normalizeText(str)
-    }
-
-    private fun filter(
-        tags: List<RealmTag>,
-        library: RealmMyLibrary?,
-        libraries: MutableList<RealmMyLibrary>,
-        realm: Realm
-    ) {
-        for (tg in tags) {
-            val count = realm.where(RealmTag::class.java).equalTo("db", "resources")
-                .equalTo("tagId", tg.id).equalTo("linkId", library?.id).count()
-            if (count > 0 && !libraries.contains(library)) {
-                library?.let { libraries.add(it) }
-            }
-        }
-    }
-
-    private fun filterLibraryByTag(tags: List<RealmTag>, realm: Realm): List<RealmMyLibrary> {
-        var list = realm.where(RealmMyLibrary::class.java).findAll()
-        list = if (isMyCourseLib) {
-            RealmMyLibrary.getMyLibraryByUserId(model?.id, list)
-        } else {
-            RealmMyLibrary.getOurLibrary(model?.id, list)
-        }
-
-        val libraries = if (tags.isNotEmpty()) {
-            val filteredLibraries = mutableListOf<RealmMyLibrary>()
-            for (library in list) {
-                filter(tags, library, filteredLibraries, realm)
-            }
-            filteredLibraries
-        } else {
-            list
-        }
-        return libraries
     }
 
     fun setListener(listener: OnLibraryItemSelected?) {
