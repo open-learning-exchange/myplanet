@@ -1,6 +1,8 @@
 package org.ole.planet.myplanet.utilities
 
+import android.app.Activity
 import android.content.Context
+import android.content.ContextWrapper
 import android.content.SharedPreferences
 import android.util.Patterns
 import android.webkit.MimeTypeMap
@@ -14,14 +16,31 @@ import org.ole.planet.myplanet.MainApplication
 
 object Utilities {
     fun isValidEmail(target: CharSequence): Boolean {
-        return !target.isNullOrEmpty() && Patterns.EMAIL_ADDRESS.matcher(target).matches()
+        return target.isNotEmpty() && Patterns.EMAIL_ADDRESS.matcher(target).matches()
+    }
+
+    private fun getActivityFromContext(context: Context?): Activity? {
+        var ctx = context
+        while (ctx is ContextWrapper) {
+            if (ctx is Activity) {
+                return ctx
+            }
+            ctx = ctx.baseContext
+        }
+        return null
     }
 
     @JvmStatic
     fun toast(context: Context?, message: CharSequence?, duration: Int = Toast.LENGTH_LONG) {
         context ?: return
         MainApplication.applicationScope.launch(Dispatchers.Main) {
-            Toast.makeText(context, message, duration).show()
+            val visualContext = getActivityFromContext(context) ?: context
+
+            try {
+                Toast.makeText(visualContext, message, duration).show()
+            } catch (e: IllegalAccessException) {
+                e.printStackTrace()
+            }
         }
     }
 
