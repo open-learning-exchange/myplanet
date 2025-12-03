@@ -80,7 +80,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
         return binding.root
     }
 
-     fun createTeamAlert(team: RealmMyTeam?) {
+     fun createTeamAlert(team: TeamData?) {
         alertCreateTeamBinding = AlertCreateTeamBinding.inflate(LayoutInflater.from(context))
         if (TextUtils.equals(type, "enterprise")) {
             alertCreateTeamBinding.spnTeamType.visibility = View.GONE
@@ -305,7 +305,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
         }
     }
 
-    override fun onEditTeam(team: RealmMyTeam?) {
+    override fun onEditTeam(team: TeamData?) {
         team?.let { createTeamAlert(it) }
     }
 
