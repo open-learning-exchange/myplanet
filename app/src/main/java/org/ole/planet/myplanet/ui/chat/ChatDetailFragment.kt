@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
+import android.util.Log
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
@@ -33,6 +34,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -153,19 +155,22 @@ class ChatDetailFragment : Fragment() {
             } else {
                 val message = "${binding.editGchatMessage.text}".replace("\n", " ")
                 mAdapter.addQuery(message)
-                when {
-                    _id.isNotEmpty() -> {
-                        val newRev = getLatestRev(_id) ?: _rev
-                        val requestBody = createContinueChatRequest(message, aiProvider, _id, newRev)
-                        launchRequest(requestBody, message, _id)
-                    }
-                    currentID.isNotEmpty() -> {
-                        val requestBody = createContinueChatRequest(message, aiProvider, currentID, _rev)
-                        launchRequest(requestBody, message, currentID)
-                    }
-                    else -> {
-                        val requestBody = createChatRequest(message, aiProvider)
-                        launchRequest(requestBody, message, null)
+
+                viewLifecycleOwner.lifecycleScope.launch {
+                    when {
+                        _id.isNotEmpty() -> {
+                            val newRev = getLatestRev(_id) ?: _rev
+                            val requestBody = createContinueChatRequest(message, aiProvider, _id, newRev)
+                            launchRequest(requestBody, message, _id)
+                        }
+                        currentID.isNotEmpty() -> {
+                            val requestBody = createContinueChatRequest(message, aiProvider, currentID, _rev)
+                            launchRequest(requestBody, message, currentID)
+                        }
+                        else -> {
+                            val requestBody = createChatRequest(message, aiProvider)
+                            launchRequest(requestBody, message, null)
+                        }
                     }
                 }
                 binding.editGchatMessage.text.clear()
@@ -439,13 +444,15 @@ class ChatDetailFragment : Fragment() {
         refreshInputState()
     }
 
-    private fun launchRequest(content: RequestBody, query: String, id: String?) {
-        disableUI()
-        val mapping = processServerUrl()
-        viewLifecycleOwner.lifecycleScope.launch {
-            withContext(Dispatchers.IO) { updateServerIfNecessary(mapping) }
-            sendChatRequest(content, query, id, id == null)
+    private suspend fun launchRequest(content: RequestBody, query: String, id: String?) {
+        withContext(Dispatchers.Main) {
+            disableUI()
         }
+        val mapping = processServerUrl()
+        withContext(Dispatchers.IO) {
+            updateServerIfNecessary(mapping)
+        }
+        sendChatRequest(content, query, id, id == null)
     }
 
     private fun disableUI() {
@@ -504,51 +511,59 @@ class ChatDetailFragment : Fragment() {
         return jsonRequestBody(jsonContent)
     }
 
-    private fun getLatestRev(id: String): String? {
+    private suspend fun getLatestRev(id: String): String? {
         return try {
-            databaseService.withRealm { realm ->
-                realm.refresh()
-                realm.where(RealmChatHistory::class.java)
-                    .equalTo("_id", id)
-                    .findAll()
-                    .maxByOrNull { rev -> rev._rev?.split("-")?.get(0)?.toIntOrNull() ?: 0 }
-                    ?._rev
+            withContext(Dispatchers.IO) {
+                val rev = withTimeoutOrNull(2000L) {
+                    databaseService.withRealm { realm ->
+                        realm.refresh()
+                        realm.where(RealmChatHistory::class.java)
+                            .equalTo("_id", id)
+                            .findAll()
+                            .maxByOrNull { rev -> rev._rev?.split("-")?.get(0)?.toIntOrNull() ?: 0 }
+                            ?._rev
+                    }
+                }
+                if (rev == null) {
+                    Log.w("ChatDetailFragment", "getLatestRev timed out or returned null for id: $id")
+                }
+                rev
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("ChatDetailFragment", "Exception in getLatestRev for id: $id", e)
             null
         }
     }
 
     private fun sendChatRequest(content: RequestBody, query: String, id: String?, newChat: Boolean) {
-        viewLifecycleOwner.lifecycleScope.launch {
-            chatApiHelper.sendChatRequest(content, object : Callback<ChatModel> {
-                override fun onResponse(call: Call<ChatModel>, response: Response<ChatModel>) {
-                    handleResponse(response, query, id)
-                }
+        chatApiHelper.sendChatRequest(content, object : Callback<ChatModel> {
+            override fun onResponse(call: Call<ChatModel>, response: Response<ChatModel>) {
+                handleResponse(response, query, id)
+            }
 
-                override fun onFailure(call: Call<ChatModel>, t: Throwable) {
-                    handleFailure(t.message, query, id)
-                }
-            })
-        }
+            override fun onFailure(call: Call<ChatModel>, t: Throwable) {
+                handleFailure(t.message, query, id)
+            }
+        })
     }
 
     private fun handleResponse(response: Response<ChatModel>, query: String, id: String?) {
-        val responseBody = response.body()
-        if (response.isSuccessful && responseBody != null) {
-            if (responseBody.status == "Success") {
-                responseBody.chat?.let { chatResponse ->
-                    processSuccessfulResponse(chatResponse, responseBody, query, id)
+        viewLifecycleOwner.lifecycleScope.launch {
+            val responseBody = response.body()
+            if (response.isSuccessful && responseBody != null) {
+                if (responseBody.status == "Success") {
+                    responseBody.chat?.let { chatResponse ->
+                        processSuccessfulResponse(chatResponse, responseBody, query, id)
+                    }
+                } else {
+                    showError(responseBody.message)
                 }
             } else {
-                showError(responseBody.message)
+                showError(response.message() ?: context?.getString(R.string.request_failed_please_retry))
+                id?.let { continueConversationRealm(it, query, "") }
             }
-        } else {
-            showError(response.message() ?: context?.getString(R.string.request_failed_please_retry))
-            id?.let { continueConversationRealm(it, query, "") }
+            enableUI()
         }
-        enableUI()
     }
 
     private fun processSuccessfulResponse(chatResponse: String, responseBody: ChatModel, query: String, id: String?) {
@@ -558,9 +573,11 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun handleFailure(errorMessage: String?, query: String, id: String?) {
-        showError(errorMessage)
-        id?.let { continueConversationRealm(it, query, "") }
-        enableUI()
+        viewLifecycleOwner.lifecycleScope.launch {
+            showError(errorMessage)
+            id?.let { continueConversationRealm(it, query, "") }
+            enableUI()
+        }
     }
 
     private fun showError(message: String?) {
