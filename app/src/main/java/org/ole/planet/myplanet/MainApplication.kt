@@ -9,7 +9,6 @@ import android.content.res.Configuration
 import android.os.Bundle
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
-import android.os.Trace
 import android.provider.Settings
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -285,14 +284,13 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     }
 
     private suspend fun loadAndApplyTheme() {
-        Trace.beginSection("Theme Loading")
         try {
             val savedThemeMode = withContext(Dispatchers.IO) {
                 getCurrentThemeMode()
             }
             applyThemeMode(savedThemeMode)
         } finally {
-            Trace.endSection()
+            // success
         }
     }
 
