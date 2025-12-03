@@ -6,12 +6,20 @@ import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNotification
+import org.ole.planet.myplanet.model.RealmTeamNotification
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
 
 class NotificationRepositoryImpl @Inject constructor(
         databaseService: DatabaseService,
     ) : RealmRepository(databaseService), NotificationRepository {
+
+    override suspend fun getNotificationsByParentIds(parentIds: List<String>): List<RealmTeamNotification> {
+        if (parentIds.isEmpty()) return emptyList()
+        return queryList(RealmTeamNotification::class.java) {
+            `in`("parentId", parentIds.toTypedArray())
+        }
+    }
 
     override suspend fun createNotificationIfMissing(
         type: String,

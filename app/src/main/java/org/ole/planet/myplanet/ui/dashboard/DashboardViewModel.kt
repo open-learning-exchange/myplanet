@@ -18,14 +18,18 @@ import org.ole.planet.myplanet.repository.CourseRepository
 import org.ole.planet.myplanet.repository.LibraryRepository
 import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.repository.SubmissionRepository
+import org.ole.planet.myplanet.model.TeamNotificationInfo
 import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.model.RealmTeamTask
 
 data class DashboardUiState(
     val unreadNotifications: Int = 0,
     val library: List<RealmMyLibrary> = emptyList(),
     val courses: List<RealmMyCourse> = emptyList(),
     val teams: List<RealmMyTeam> = emptyList(),
+    val teamNotifications: Map<String, TeamNotificationInfo> = emptyMap(),
+    val upcomingTasks: List<RealmTeamTask> = emptyList(),
 )
 
 @HiltViewModel
@@ -102,9 +106,36 @@ class DashboardViewModel @Inject constructor(
 
             launch {
                 teamRepository.getMyTeamsFlow(userId).collect { teams ->
-                    _uiState.update { it.copy(teams = teams) }
+                    val teamNotifications = getTeamNotificationInfo(teams)
+                    _uiState.update { it.copy(teams = teams, teamNotifications = teamNotifications) }
                 }
             }
+
+            launch {
+                val upcomingTasks = getUpcomingTasks(userId)
+                _uiState.update { it.copy(upcomingTasks = upcomingTasks) }
+            }
         }
+    }
+
+    private suspend fun getTeamNotificationInfo(teams: List<RealmMyTeam>): Map<String, TeamNotificationInfo> {
+        if (teams.isEmpty()) return emptyMap()
+        val teamIds = teams.mapNotNull { it._id }
+        if (teamIds.isEmpty()) return emptyMap()
+
+        val notifications = notificationRepository.getNotificationsByParentIds(teamIds).associateBy { it.parentId }
+        val chatCounts = teamRepository.getTeamChatCounts(teamIds)
+
+        return teamIds.associateWith { teamId ->
+            TeamNotificationInfo(
+                notification = notifications[teamId],
+                chatCount = chatCounts[teamId] ?: 0L
+            )
+        }
+    }
+
+    private suspend fun getUpcomingTasks(userId: String?): List<RealmTeamTask> {
+        if (userId.isNullOrBlank()) return emptyList()
+        return teamRepository.getUpcomingTasks(userId)
     }
 }

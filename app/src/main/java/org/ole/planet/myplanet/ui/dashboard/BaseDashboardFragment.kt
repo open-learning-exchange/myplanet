@@ -36,11 +36,10 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmOfflineActivity
-import org.ole.planet.myplanet.model.RealmTeamNotification
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.TeamNotificationInfo
 import org.ole.planet.myplanet.service.TransactionSyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_LOGIN
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
@@ -147,7 +146,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             viewModel.uiState.collect {
                 renderMyLibrary(it.library)
                 renderMyCourses(it.courses)
-                renderMyTeams(it.teams)
+                renderMyTeams(it.teams, it.teamNotifications, it.upcomingTasks)
             }
         }
     }
@@ -199,41 +198,45 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         }
     }
 
-    private fun renderMyTeams(teams: List<RealmMyTeam>) {
+    private fun renderMyTeams(
+        teams: List<RealmMyTeam>,
+        teamNotifications: Map<String, TeamNotificationInfo>,
+        upcomingTasks: List<RealmTeamTask>
+    ) {
         val flexboxLayout: FlexboxLayout = view?.findViewById(R.id.flexboxLayoutTeams) ?: return
         flexboxLayout.removeAllViews()
-        val userId = profileDbHandler.userModel?.id
         for ((count, ob) in teams.withIndex()) {
-            val v = LayoutInflater.from(activity).inflate(R.layout.item_home_my_team, flexboxLayout, false)
+            val v = LayoutInflater.from(activity)
+                .inflate(R.layout.item_home_my_team, flexboxLayout, false)
             val name = v.findViewById<TextView>(R.id.tv_name)
             setBackgroundColor(v, count)
             if (ob.teamType == "sync") {
                 name.setTypeface(null, Typeface.BOLD)
             }
             handleClick(ob._id, ob.name, TeamDetailFragment(), name)
-            showNotificationIcons(ob, v, userId)
+            val notificationInfo = teamNotifications[ob._id]
+            notificationInfo?.let { showNotificationIcons(v, it, upcomingTasks) }
             name.text = ob.name
             flexboxLayout.addView(v, params)
         }
         setCountText(teams.size, RealmMyTeam::class.java, requireView())
     }
 
-    private fun showNotificationIcons(ob: RealmObject, v: View, userId: String?) {
-        val current = Calendar.getInstance().timeInMillis
-        val tomorrow = Calendar.getInstance()
-        tomorrow.add(Calendar.DAY_OF_YEAR, 1)
+    private fun showNotificationIcons(
+        v: View,
+        notificationInfo: TeamNotificationInfo,
+        upcomingTasks: List<RealmTeamTask>
+    ) {
         val imgTask = v.findViewById<ImageView>(R.id.img_task)
         val imgChat = v.findViewById<ImageView>(R.id.img_chat)
-        val notification: RealmTeamNotification? = realm.where(RealmTeamNotification::class.java)
-            .equalTo("parentId", (ob as RealmMyTeam)._id).equalTo("type", "chat").findFirst()
-        val chatCount: Long = realm.where(RealmNews::class.java).equalTo("viewableBy", "teams")
-            .equalTo("viewableId", ob._id).count()
+
+        val notification = notificationInfo.notification
+        val chatCount = notificationInfo.chatCount
         if (notification != null) {
             imgChat.visibility = if (notification.lastCount < chatCount) View.VISIBLE else View.GONE
         }
-        val tasks = realm.where(RealmTeamTask::class.java).equalTo("assignee", userId)
-            .between("deadline", current, tomorrow.timeInMillis).findAll()
-        imgTask.visibility = if (tasks.isNotEmpty()) View.VISIBLE else View.GONE
+
+        imgTask.visibility = if (upcomingTasks.isNotEmpty()) View.VISIBLE else View.GONE
     }
 
     private fun myLifeListInit(flexboxLayout: FlexboxLayout) {

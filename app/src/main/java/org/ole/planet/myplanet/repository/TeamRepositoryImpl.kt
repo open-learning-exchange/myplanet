@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
+import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
@@ -742,6 +743,27 @@ class TeamRepositoryImpl @Inject constructor(
 
         return queryList(RealmUserModel::class.java) {
             `in`("id", teamMembers.toTypedArray())
+        }
+    }
+
+    override suspend fun getTeamChatCounts(teamIds: List<String>): Map<String, Long> {
+        if (teamIds.isEmpty()) return emptyMap()
+        return withRealm { realm ->
+            teamIds.associateWith { teamId ->
+                realm.where(RealmNews::class.java)
+                    .equalTo("viewableBy", "teams")
+                    .equalTo("viewableId", teamId)
+                    .count()
+            }
+        }
+    }
+
+    override suspend fun getUpcomingTasks(userId: String): List<RealmTeamTask> {
+        val now = Calendar.getInstance().timeInMillis
+        val tomorrow = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }.timeInMillis
+        return queryList(RealmTeamTask::class.java) {
+            equalTo("assignee", userId)
+            between("deadline", now, tomorrow)
         }
     }
 }

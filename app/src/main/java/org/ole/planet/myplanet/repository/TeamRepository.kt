@@ -106,4 +106,6 @@ interface TeamRepository {
     suspend fun getJoinedMembers(teamId: String): List<RealmUserModel>
     suspend fun getAssignee(userId: String): RealmUserModel?
     suspend fun getRequestedMembers(teamId: String): List<RealmUserModel>
+    suspend fun getTeamChatCounts(teamIds: List<String>): Map<String, Long>
+    suspend fun getUpcomingTasks(userId: String): List<RealmTeamTask>
 }
