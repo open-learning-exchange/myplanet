@@ -75,14 +75,19 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         _binding = FragmentTakeCourseBinding.inflate(inflater, container, false)
         mRealm = databaseService.realmInstance
         userModel = userProfileDbHandler.userModel
-        currentCourse = mRealm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        binding.tvCourseTitle.text = currentCourse?.courseTitle
         viewLifecycleOwner.lifecycleScope.launch {
+            // The Realm query is intentionally performed on the main thread.
+            // Realm instances and objects are thread-confined, and moving this query
+            // to a background dispatcher would cause a crash, as `mRealm` is created
+            // on the main thread. This approach still improves UI responsiveness by
+            // running the query after `onCreateView` has completed.
+            currentCourse = mRealm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
+            binding.tvCourseTitle.text = currentCourse?.courseTitle
             steps = courseRepository.getCourseSteps(courseId)
             if (steps.isEmpty()) {
                 binding.nextStep.visibility = View.GONE
