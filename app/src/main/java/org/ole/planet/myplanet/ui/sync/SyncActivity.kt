@@ -375,12 +375,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), CheckVersionCallback,
         editor.apply()
     }
 
-    fun authenticateUser(settings: SharedPreferences?, username: String?, password: String?, isManagerMode: Boolean): Boolean {
+    suspend fun authenticateUser(settings: SharedPreferences?, username: String?, password: String?, isManagerMode: Boolean): Boolean {
         return try {
             if (settings != null) {
                 this.settings = settings
             }
-            val isEmpty = databaseService.withRealm { realm -> realm.isEmpty }
+            val isEmpty = withContext(Dispatchers.IO) {
+                databaseService.withRealm { realm -> realm.isEmpty }
+            }
             if (isEmpty) {
                 alertDialogOkay(getString(R.string.server_not_configured_properly_connect_this_device_with_planet_server))
                 false
@@ -393,10 +395,12 @@ abstract class SyncActivity : ProcessUserDataActivity(), CheckVersionCallback,
         }
     }
 
-    private fun checkName(username: String?, password: String?, isManagerMode: Boolean): Boolean {
+    private suspend fun checkName(username: String?, password: String?, isManagerMode: Boolean): Boolean {
         try {
-            val user = databaseService.withRealm { realm ->
-                realm.where(RealmUserModel::class.java).equalTo("name", username).findFirst()?.let { realm.copyFromRealm(it) }
+            val user = withContext(Dispatchers.IO) {
+                databaseService.withRealm { realm ->
+                    realm.where(RealmUserModel::class.java).equalTo("name", username).findFirst()?.let { realm.copyFromRealm(it) }
+                }
             }
             user?.let {
                 if (it._id?.isEmpty() == true) {

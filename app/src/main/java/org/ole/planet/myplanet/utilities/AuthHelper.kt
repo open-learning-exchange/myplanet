@@ -11,6 +11,10 @@ import org.ole.planet.myplanet.datamanager.ManagerSync
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 
+import androidx.lifecycle.lifecycleScope
+import android.view.View
+import kotlinx.coroutines.launch
+
 object AuthHelper {
     private val specialCharPattern = Pattern.compile(
         ".*[ßäöüéèêæÆœøØ¿àìòùÀÈÌÒÙáíóúýÁÉÍÓÚÝâîôûÂÊÎÔÛãñõÃÑÕëïÿÄËÏÖÜŸåÅŒçÇðÐ].*"
@@ -52,40 +56,53 @@ object AuthHelper {
         val settings = activity.settings
         SecurePrefs.saveCredentials(activity, settings, name, password)
 
-        val isLoggedIn = activity.authenticateUser(settings, name, password, false)
-        if (isLoggedIn) {
-            Toast.makeText(activity, activity.getString(R.string.welcome, name), Toast.LENGTH_SHORT).show()
-            activity.onLogin()
-            activity.saveUsers(name, password, "member")
-            return
-        }
-
-        ManagerSync.instance.login(name, password, object : SyncListener {
-            override fun onSyncStarted() {
-                activity.customProgressDialog.setText(activity.getString(R.string.please_wait))
-                activity.customProgressDialog.show()
+        activity.lifecycleScope.launch {
+            activity.btnSignIn.isEnabled = false
+            val loadingSpinner = activity.findViewById<View>(R.id.loading_spinner)
+            loadingSpinner.visibility = View.VISIBLE
+            val isLoggedIn = activity.authenticateUser(settings, name, password, false)
+            if (isLoggedIn) {
+                Toast.makeText(activity, activity.getString(R.string.welcome, name), Toast.LENGTH_SHORT).show()
+                activity.onLogin()
+                activity.saveUsers(name, password, "member")
+                activity.btnSignIn.isEnabled = true
+                loadingSpinner.visibility = View.GONE
+                return@launch
             }
 
-            override fun onSyncComplete() {
-                activity.customProgressDialog.dismiss()
-                val log = activity.authenticateUser(activity.settings, name, password, true)
-                if (log) {
-                    Toast.makeText(activity.applicationContext, activity.getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
-                    activity.onLogin()
-                    activity.saveUsers(name, password, "member")
-                } else {
-                    activity.alertDialogOkay(activity.getString(R.string.err_msg_login))
+            ManagerSync.instance.login(name, password, object : SyncListener {
+                override fun onSyncStarted() {
+                    activity.customProgressDialog.setText(activity.getString(R.string.please_wait))
+                    activity.customProgressDialog.show()
                 }
-                activity.syncIconDrawable.stop()
-                activity.syncIconDrawable.selectDrawable(0)
-            }
 
-            override fun onSyncFailed(msg: String?) {
-                Toast.makeText(activity, msg, Toast.LENGTH_LONG).show()
-                activity.customProgressDialog.dismiss()
-                activity.syncIconDrawable.stop()
-                activity.syncIconDrawable.selectDrawable(0)
-            }
-        })
+                override fun onSyncComplete() {
+                    activity.customProgressDialog.dismiss()
+                    activity.lifecycleScope.launch {
+                        val log = activity.authenticateUser(activity.settings, name, password, true)
+                        if (log) {
+                            Toast.makeText(activity.applicationContext, activity.getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
+                            activity.onLogin()
+                            activity.saveUsers(name, password, "member")
+                        } else {
+                            activity.alertDialogOkay(activity.getString(R.string.err_msg_login))
+                        }
+                        activity.syncIconDrawable.stop()
+                        activity.syncIconDrawable.selectDrawable(0)
+                        activity.btnSignIn.isEnabled = true
+                        loadingSpinner.visibility = View.GONE
+                    }
+                }
+
+                override fun onSyncFailed(msg: String?) {
+                    Toast.makeText(activity, msg, Toast.LENGTH_LONG).show()
+                    activity.customProgressDialog.dismiss()
+                    activity.syncIconDrawable.stop()
+                    activity.syncIconDrawable.selectDrawable(0)
+                    activity.btnSignIn.isEnabled = true
+                    loadingSpinner.visibility = View.GONE
+                }
+            })
+        }
     }
 }
