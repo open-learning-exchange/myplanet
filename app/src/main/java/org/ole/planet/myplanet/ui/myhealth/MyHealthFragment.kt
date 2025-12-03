@@ -167,7 +167,7 @@ class MyHealthFragment : Fragment() {
         }
     }
 
-    private fun refreshHealthData() {
+    private suspend fun refreshHealthData() {
         if (!isAdded || requireActivity().isFinishing) return
 
         try {
@@ -212,12 +212,14 @@ class MyHealthFragment : Fragment() {
     }
 
     private fun setupInitialData() {
-        val currentUser = getCurrentUserProfileCopy()
-        userId = if (TextUtils.isEmpty(currentUser?._id)) currentUser?.id else currentUser?._id
-        getHealthRecords(userId)
+        viewLifecycleOwner.lifecycleScope.launch {
+            val currentUser = getCurrentUserProfileCopy()
+            userId = if (TextUtils.isEmpty(currentUser?._id)) currentUser?.id else currentUser?._id
+            getHealthRecords(userId)
+        }
     }
 
-    private fun getCurrentUserProfileCopy(): RealmUserModel? {
+    private suspend fun getCurrentUserProfileCopy(): RealmUserModel? {
         return userProfileDbHandler.getUserModelCopy()
     }
 

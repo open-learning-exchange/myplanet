@@ -63,13 +63,6 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTeamBinding.inflate(inflater, container, false)
-        user = userProfileDbHandler.getUserModelCopy()
-
-        if (user?.isGuest() == true) {
-            binding.addTeam.visibility = View.GONE
-        } else {
-            binding.addTeam.visibility = View.VISIBLE
-        }
 
         binding.addTeam.setOnClickListener { createTeamAlert(null) }
         binding.tvFragmentInfo.text = if (TextUtils.equals(type, "enterprise")) {
@@ -189,8 +182,17 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        viewLifecycleOwner.lifecycleScope.launch {
+            user = userProfileDbHandler.getUserModelCopy()
+            if (user?.isGuest() == true) {
+                binding.addTeam.visibility = View.GONE
+            } else {
+                binding.addTeam.visibility = View.VISIBLE
+            }
+            refreshTeamList()
+        }
+
         binding.rvTeamList.layoutManager = LinearLayoutManager(activity)
-        refreshTeamList()
         textWatcher = object : TextWatcher {
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
             override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {

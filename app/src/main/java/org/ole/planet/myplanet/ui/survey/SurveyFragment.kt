@@ -76,19 +76,6 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         super.onCreate(savedInstanceState)
         isTeam = arguments?.getBoolean("isTeam", false) == true
         teamId = arguments?.getString("teamId", null)
-        val userProfileModel = profileDbHandler.userModel
-        adapter = AdapterSurvey(
-            requireActivity(),
-            mRealm,
-            userProfileModel?.id,
-            isTeam,
-            teamId,
-            this,
-            settings,
-            profileDbHandler,
-            surveyInfoMap,
-            bindingDataMap
-        )
         prefManager = SharedPrefManager(requireContext())
         
         startExamSync()
@@ -166,7 +153,23 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         updateAdapterData(isTeamShareAllowed = false)
     }
 
-    override fun getAdapter(): RecyclerView.Adapter<*> = adapter
+    override fun getAdapter(): RecyclerView.Adapter<*> {
+        if (!::adapter.isInitialized) {
+            adapter = AdapterSurvey(
+                requireActivity(),
+                mRealm,
+                model?.id,
+                isTeam,
+                teamId,
+                this,
+                settings,
+                profileDbHandler,
+                surveyInfoMap,
+                bindingDataMap
+            )
+        }
+        return adapter
+    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -274,9 +277,9 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
     fun updateAdapterData(isTeamShareAllowed: Boolean? = null) {
         val useTeamShareAllowed = isTeamShareAllowed ?: currentIsTeamShareAllowed
         currentIsTeamShareAllowed = useTeamShareAllowed
-        val userProfileModel = profileDbHandler.userModel
         loadSurveysJob?.cancel()
         loadSurveysJob = launchWhenViewIsReady {
+            val userProfileModel = profileDbHandler.getUserModelCopy()
             currentSurveys = when {
                 isTeam && useTeamShareAllowed -> surveyRepository.getAdoptableTeamSurveys(teamId)
                 isTeam -> surveyRepository.getTeamOwnedSurveys(teamId)

@@ -48,5 +48,5 @@ interface UserRepository {
         payload: JsonObject
     )
 
-    fun getUserModel(): RealmUserModel?
+    suspend fun getUserModel(): RealmUserModel?
 }

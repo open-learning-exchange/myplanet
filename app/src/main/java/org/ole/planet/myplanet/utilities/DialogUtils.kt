@@ -50,11 +50,14 @@ object DialogUtils {
         cancel.contentDescription = context.getString(R.string.cancel)
 
         becomeMember.setOnClickListener {
-            val guest = true
-            val intent = Intent(context, BecomeMemberActivity::class.java)
-            intent.putExtra("username", profileDbHandler.userModel?.name)
-            intent.putExtra("guest", guest)
-            context.startActivity(intent)
+            val owner = context as? androidx.lifecycle.LifecycleOwner
+            owner?.lifecycleScope?.launch {
+                val guest = true
+                val intent = Intent(context, BecomeMemberActivity::class.java)
+                intent.putExtra("username", profileDbHandler.getUserModelCopy()?.name)
+                intent.putExtra("guest", guest)
+                context.startActivity(intent)
+            }
         }
         cancel.setOnClickListener {
             dialog.dismiss()

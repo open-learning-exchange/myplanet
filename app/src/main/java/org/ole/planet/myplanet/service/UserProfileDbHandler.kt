@@ -54,9 +54,7 @@ class UserProfileDbHandler @Inject constructor(
         }
     }
 
-    val userModel: RealmUserModel? get() = userRepository.getUserModel()
-
-    fun getUserModelCopy(): RealmUserModel? {
+    suspend fun getUserModelCopy(): RealmUserModel? {
         return userRepository.getUserModel()
     }
 
@@ -110,10 +108,15 @@ class UserProfileDbHandler @Inject constructor(
     }
 
 
-    val lastVisit: Long? get() = realmService.withRealm { realm ->
-        realm.where(RealmOfflineActivity::class.java).max("loginTime") as Long?
+    suspend fun getLastVisitTimestamp(): Long? {
+        return realmService.withRealmAsync { realm ->
+            realm.where(RealmOfflineActivity::class.java).max("loginTime") as Long?
+        }
     }
-    val offlineVisits: Int get() = getOfflineVisits(userModel)
+
+    suspend fun getOfflineVisits(): Int {
+        return getOfflineVisits(getUserModelCopy())
+    }
 
     fun getOfflineVisits(m: RealmUserModel?): Int {
         return realmService.withRealm { realm ->
@@ -178,14 +181,15 @@ class UserProfileDbHandler @Inject constructor(
         }
     }
 
-    val numberOfResourceOpen: String
-        get() = realmService.withRealm { realm ->
+    suspend fun getNumberOfResourceOpen(): String {
+        return realmService.withRealmAsync { realm ->
             val count = realm.where(RealmResourceActivity::class.java)
                 .equalTo("user", fullName)
                 .equalTo("type", KEY_RESOURCE_OPEN)
                 .count()
             if (count == 0L) "" else "Resource opened $count times."
         }
+    }
 
     suspend fun maxOpenedResource(): String {
         return withContext(Dispatchers.IO) {

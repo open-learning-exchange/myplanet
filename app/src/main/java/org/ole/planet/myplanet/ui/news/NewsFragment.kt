@@ -62,11 +62,7 @@ class NewsFragment : BaseNewsFragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentNewsBinding.inflate(inflater, container, false)
         llImage = binding.llImages
-        user = userProfileDbHandler.getUserModelCopy()
         setupUI(binding.newsFragmentParentLayout, requireActivity())
-        if (user?.id?.startsWith("guest") == true) {
-            binding.btnNewVoice.visibility = View.GONE
-        }
         etSearch = binding.root.findViewById(R.id.et_search)
         binding.btnNewVoice.setOnClickListener {
             binding.llAddNews.visibility = if (binding.llAddNews.isVisible) {
@@ -105,6 +101,10 @@ class NewsFragment : BaseNewsFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         viewLifecycleOwner.lifecycleScope.launch {
+            user = userProfileDbHandler.getUserModelCopy()
+            if (user?.id?.startsWith("guest") == true) {
+                binding.btnNewVoice.visibility = View.GONE
+            }
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 newsRepository.getCommunityNews(getUserIdentifier()).collect { news ->
                     kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
