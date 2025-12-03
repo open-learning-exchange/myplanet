@@ -26,7 +26,9 @@ import io.realm.Sort
 import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.NotificationCallback
 import org.ole.planet.myplanet.callback.SyncListener
@@ -102,15 +104,18 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             mRealm.commitTransaction()
         }
 
+        v.findViewById<TextView>(R.id.txtRole).text = getString(R.string.user_role, model?.getRoleAsString())
+
         if (isRealmInitialized()) {
             offlineActivitiesResults = mRealm.where(RealmOfflineActivity::class.java)
                 .equalTo("userName", profileDbHandler.userModel?.name)
                 .equalTo("type", KEY_LOGIN)
                 .findAllAsync()
+            offlineActivitiesResults.addChangeListener { results ->
+                val offlineVisitsCount = results.size
+                v.findViewById<TextView>(R.id.txtFullName).text = getString(R.string.user_name, fullName, offlineVisitsCount)
+            }
         }
-        v.findViewById<TextView>(R.id.txtRole).text = getString(R.string.user_role, model?.getRoleAsString())
-        val offlineVisits = profileDbHandler.offlineVisits
-        v.findViewById<TextView>(R.id.txtFullName).text = getString(R.string.user_name, fullName, offlineVisits)
     }
 
     override fun forceDownloadNewsImages() {
@@ -277,6 +282,16 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         }
     }
 
+    override fun onDestroyView() {
+        super.onDestroyView()
+        if (this::offlineActivitiesResults.isInitialized) {
+            offlineActivitiesResults.removeAllChangeListeners()
+        }
+        view?.findViewById<FlexboxLayout>(R.id.flexboxLayout)?.removeAllViews()
+        view?.findViewById<FlexboxLayout>(R.id.flexboxLayoutCourse)?.removeAllViews()
+        view?.findViewById<FlexboxLayout>(R.id.flexboxLayoutTeams)?.removeAllViews()
+    }
+
     override fun onDestroy() {
         if (isRealmInitialized()) {
             mRealm.removeAllChangeListeners()
@@ -327,10 +342,23 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         setUpMyLife(userId)
         myLifeListInit(myLifeFlex)
 
-
         if (isRealmInitialized() && mRealm.isInTransaction) {
             mRealm.commitTransaction()
         }
+        showPlaceholders()
+    }
+
+    private fun showPlaceholders() {
+        val flexboxLayout = view?.findViewById<FlexboxLayout>(R.id.flexboxLayout)
+        val flexboxLayoutCourse = view?.findViewById<FlexboxLayout>(R.id.flexboxLayoutCourse)
+        val flexboxLayoutTeams = view?.findViewById<FlexboxLayout>(R.id.flexboxLayoutTeams)
+
+        val placeholderView = LayoutInflater.from(activity).inflate(R.layout.item_placeholder_home, flexboxLayout, false)
+        flexboxLayout?.addView(placeholderView)
+        val placeholderViewCourse = LayoutInflater.from(activity).inflate(R.layout.item_placeholder_home, flexboxLayoutCourse, false)
+        flexboxLayoutCourse?.addView(placeholderViewCourse)
+        val placeholderViewTeams = LayoutInflater.from(activity).inflate(R.layout.item_placeholder_home, flexboxLayoutTeams, false)
+        flexboxLayoutTeams?.addView(placeholderViewTeams)
     }
 
     override fun showResourceDownloadDialog() {
