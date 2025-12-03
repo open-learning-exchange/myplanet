@@ -340,7 +340,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     override fun showUserResourceDialog() {
-        var dialog: AlertDialog? = null
         val alertHealthListBinding = AlertHealthListBinding.inflate(LayoutInflater.from(activity))
         alertHealthListBinding.etSearch.visibility = View.GONE
         alertHealthListBinding.spnSort.visibility = View.GONE
@@ -351,26 +350,29 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             startActivity(Intent(requireContext(), BecomeMemberActivity::class.java))
         }
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            val userModelList = viewModel.getUsersSortedByDate()
-            val adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, userModelList)
-            alertHealthListBinding.list.adapter = adapter
-            alertHealthListBinding.list.onItemClickListener = AdapterView.OnItemClickListener { _, _, i, _ ->
-                val selected = alertHealthListBinding.list.adapter.getItem(i) as RealmUserModel
-                showDownloadDialog(getLibraryList(realm, selected._id))
-                dialog?.dismiss()
-            }
-            alertHealthListBinding.loading.visibility = View.GONE
-            alertHealthListBinding.list.visibility = View.VISIBLE
-        }
-
-        dialog = AlertDialog.Builder(requireActivity())
+        val dialog = AlertDialog.Builder(requireActivity())
             .setTitle(getString(R.string.select_member))
             .setView(alertHealthListBinding.root)
             .setCancelable(false)
             .setNegativeButton(R.string.dismiss, null)
             .create()
 
+        val job = viewLifecycleOwner.lifecycleScope.launch {
+            val userModelList = viewModel.getUsersSortedByDate()
+            if (dialog.isShowing) {
+                val adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, userModelList)
+                alertHealthListBinding.list.adapter = adapter
+                alertHealthListBinding.list.onItemClickListener = AdapterView.OnItemClickListener { _, _, i, _ ->
+                    val selected = alertHealthListBinding.list.adapter.getItem(i) as RealmUserModel
+                    showDownloadDialog(getLibraryList(realm, selected._id))
+                    dialog.dismiss()
+                }
+                alertHealthListBinding.loading.visibility = View.GONE
+                alertHealthListBinding.list.visibility = View.VISIBLE
+            }
+        }
+
+        dialog.setOnDismissListener { job.cancel() }
         dialog.show()
     }
 
