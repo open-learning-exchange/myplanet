@@ -11,7 +11,6 @@ import android.graphics.PorterDuff
 import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.Bundle
-import android.os.Trace
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
@@ -53,7 +52,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
-import kotlinx.coroutines.withTimeoutOrNull
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
@@ -130,6 +128,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private var notificationsShownThisSession = false
     private var lastNotificationCheckTime = 0L
     private val notificationCheckThrottleMs = 5000L
+    private var heavyInitJob: kotlinx.coroutines.Job? = null
+    private var notificationPreloadJob: kotlinx.coroutines.Job? = null
     private var systemNotificationReceiver: BroadcastReceiver? = null
     private var onGlobalLayoutListener: android.view.ViewTreeObserver.OnGlobalLayoutListener? = null
     private lateinit var mRealm: Realm
@@ -139,40 +139,46 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        Trace.beginSection("DashboardActivity.onCreate")
         super.onCreate(savedInstanceState)
+        postponeEnterTransition()
         mRealm = databaseService.realmInstance
         checkUser()
         initViews()
-        notificationManager = NotificationUtils.getInstance(this)
-
-        collectUiState()
-
-        lifecycleScope.launch {
-            deferredSetup()
-        }
-        Trace.endSection()
-    }
-
-    private suspend fun deferredSetup() {
         updateAppTitle()
-        if (handleGuestAccess()) return
-        setupNavigation()
-        handleInitialFragment()
-        setupToolbarActions()
-        hideWifi()
-        libraryListener = RealmChangeListener { onRealmDataChanged() }
-        submissionListener = RealmChangeListener { onRealmDataChanged() }
-        taskListener = RealmChangeListener { onRealmDataChanged() }
-        addBackPressCallback()
-        handleNotificationIntent(intent)
-        binding.root.post {
-            setupSystemNotificationReceiver()
-            checkIfShouldShowNotifications()
-            setupRealmListeners()
-            challengeHelper.evaluateChallengeDialog()
+        notificationManager = NotificationUtils.getInstance(this)
+        if (handleGuestAccess()) {
+            startPostponedEnterTransition()
             reportFullyDrawn()
+            return
         }
+        binding.root.viewTreeObserver.addOnPreDrawListener(object : android.view.ViewTreeObserver.OnPreDrawListener {
+            override fun onPreDraw(): Boolean {
+                binding.root.viewTreeObserver.removeOnPreDrawListener(this)
+                heavyInitJob = lifecycleScope.launch {
+                    android.os.Trace.beginSection("DashboardActivity.heavyInit")
+                    try {
+                        setupNavigation()
+                        handleInitialFragment()
+                        setupToolbarActions()
+                        hideWifi()
+                        libraryListener = RealmChangeListener { onRealmDataChanged() }
+                        submissionListener = RealmChangeListener { onRealmDataChanged() }
+                        taskListener = RealmChangeListener { onRealmDataChanged() }
+                        addBackPressCallback()
+                        handleNotificationIntent(intent)
+                        collectUiState()
+                        setupSystemNotificationReceiver()
+                        setupRealmListeners()
+                        challengeHelper.evaluateChallengeDialog()
+                    } finally {
+                        android.os.Trace.endSection()
+                        startPostponedEnterTransition()
+                        reportFullyDrawn()
+                    }
+                }
+                return true
+            }
+        })
     }
 
     private fun collectUiState() {
@@ -209,31 +215,25 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    private suspend fun updateAppTitle() {
-        val title = withTimeoutOrNull(5000L) {
-            withContext(Dispatchers.IO) {
-                try {
-                    val userProfileModel = profileDbHandler.userModel
-                    if (userProfileModel != null) {
-                        val name = userProfileModel.getFullName().takeIf { !it.isNullOrBlank() }
-                            ?: userProfileModel.name
-                        val communityName = settings.getString("communityName", "")
-                        if (user?.planetCode.isNullOrEmpty()) {
-                            "${getString(R.string.planet)} $communityName"
-                        } else {
-                            "${getString(R.string.planet)} ${user?.planetCode}"
-                        }
-                    } else {
-                        getString(R.string.app_project_name)
-                    }
-                } catch (e: Exception) {
-                    null
+    private fun updateAppTitle() {
+        try {
+            val userProfileModel = profileDbHandler.userModel
+            if (userProfileModel != null) {
+                var name: String? = userProfileModel.getFullName()
+                if (name.isNullOrBlank()) {
+                    name = profileDbHandler.userModel?.name
                 }
+                val communityName = settings.getString("communityName", "")
+                binding.appBarBell.appTitleName.text = if (user?.planetCode == "") {
+                    "${getString(R.string.planet)} $communityName"
+                } else {
+                    "${getString(R.string.planet)} ${user?.planetCode}"
+                }
+            } else {
+                binding.appBarBell.appTitleName.text = getString(R.string.app_project_name)
             }
-        } ?: getString(R.string.app_project_name)
-
-        withContext(Dispatchers.Main) {
-            binding.appBarBell.appTitleName.text = title
+        } catch (err: Exception) {
+            throw RuntimeException(err)
         }
     }
 
@@ -606,14 +606,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    private fun checkIfShouldShowNotifications() {
+    private fun checkIfShouldShowNotifications(): kotlinx.coroutines.Job {
         val fromLogin = intent.getBooleanExtra("from_login", false)
         if (fromLogin || !notificationsShownThisSession) {
             notificationsShownThisSession = true
-            lifecycleScope.launch {
-                kotlinx.coroutines.delay(1000)
-                checkAndCreateNewNotifications()
-            }
+        }
+        return lifecycleScope.launch(Dispatchers.IO) {
+            kotlinx.coroutines.delay(1000)
+            checkAndCreateNewNotifications()
         }
     }
 
@@ -1216,6 +1216,17 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         menuInflater.inflate(R.menu.menu_bell_dashboard, menu)
         bindGoOnlineMenu(menu)
         return super.onCreateOptionsMenu(menu)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        notificationPreloadJob = checkIfShouldShowNotifications()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        notificationPreloadJob?.cancel()
+        heavyInitJob?.cancel()
     }
 
     override fun onResume() {
