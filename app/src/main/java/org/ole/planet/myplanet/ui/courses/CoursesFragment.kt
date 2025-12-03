@@ -740,24 +740,51 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             return
         }
 
+        val search = etSearch.text.toString()
+        val tags = searchTags.toList()
+        val grade = gradeLevel
+        val subject = subjectLevel
+        val userId = model?.id
+
         viewLifecycleOwner.lifecycleScope.launch {
-            val (map, progressMap, filteredCourseList) = withContext(Dispatchers.IO) {
-                if (!mRealm.isInTransaction) {
-                    mRealm.refresh()
+            val (map, progressMap, copiedList) = withContext(Dispatchers.IO) {
+                io.realm.Realm.getDefaultInstance().use { realm ->
+                    val ratingsMap = getRatings(realm, "course", userId)
+                    val courseProgressMap = getCourseProgress(realm, userId)
+                    val isFilterApplied = search.isNotEmpty() || tags.isNotEmpty() || grade.isNotEmpty() || subject.isNotEmpty()
+
+                    val results = if (!isFilterApplied) {
+                        realm.where(RealmMyCourse::class.java).findAll()
+                    } else {
+                        var query = realm.where(RealmMyCourse::class.java)
+                        if (search.isNotEmpty()) {
+                            query = query.contains("courseTitle", search, io.realm.Case.INSENSITIVE)
+                        }
+                        if (grade.isNotEmpty()) {
+                            query = query.equalTo("gradeLevel", grade)
+                        }
+                        if (subject.isNotEmpty()) {
+                            query = query.equalTo("subjectLevel", subject)
+                        }
+                        if (tags.isNotEmpty()) {
+                            val tagNames = tags.map { it.name }.toTypedArray()
+                            query = query.`in`("tags.name", tagNames)
+                        }
+                        query.findAll()
+                    }
+
+                    val sortedList = results
+                        .filter { !it.courseTitle.isNullOrBlank() }
+                        .sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
+
+                    val copiedCourses = realm.copyFromRealm(sortedList)
+                    Triple(ratingsMap, courseProgressMap, copiedCourses)
                 }
-                val map = getRatings(mRealm, "course", model?.id)
-                val progressMap = getCourseProgress(mRealm, model?.id)
-                val filteredCourseList = if (etSearch.text.toString().isEmpty() && searchTags.isEmpty() && gradeLevel.isEmpty() && subjectLevel.isEmpty()) {
-                    getFullCourseList()
-                } else {
-                    filterCourseByTag(etSearch.text.toString(), searchTags)
-                }
-                Triple(map, progressMap, filteredCourseList)
             }
 
             withContext(Dispatchers.Main) {
                 adapterCourses = AdapterCourses(
-                    requireActivity(), filteredCourseList, map, userProfileDbHandler,
+                    requireActivity(), copiedList, map, userProfileDbHandler,
                     tagRepository, this@CoursesFragment
                 )
                 adapterCourses.setProgressMap(progressMap)
