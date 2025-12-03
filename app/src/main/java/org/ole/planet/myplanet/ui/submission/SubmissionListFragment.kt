@@ -73,7 +73,7 @@ class SubmissionListFragment : Fragment() {
             .sort("lastUpdateTime", Sort.DESCENDING)
             .findAll()
 
-        adapter.submitList(submissions.toList())
+        adapter.submitList(mRealm.copyFromRealm(submissions))
 
         binding.btnDownloadReport.setOnClickListener {
             generateReport(submissions.toList())
