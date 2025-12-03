@@ -424,7 +424,8 @@ class Service @Inject constructor(
                 val body = JsonObject().apply {
                     add("keys", GsonUtils.gson.toJsonTree(chunk))
                 }
-                val chunkResponse = retrofitInterface.postJsonObject(
+                val chunkResponse = retrofitInterface.postDoc(
+                    null,
                     "application/json",
                     "https://planet.earth.ole.org/db/communityregistrationrequests/_all_docs?include_docs=true",
                     body
