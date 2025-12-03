@@ -11,6 +11,7 @@ import android.graphics.PorterDuff
 import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.Bundle
+import android.os.Trace
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
@@ -48,6 +49,7 @@ import io.realm.RealmResults
 import javax.inject.Inject
 import kotlin.math.ceil
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -131,6 +133,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private var systemNotificationReceiver: BroadcastReceiver? = null
     private var onGlobalLayoutListener: android.view.ViewTreeObserver.OnGlobalLayoutListener? = null
     private lateinit var mRealm: Realm
+    private var deferredSetupJob: Job? = null
 
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(LocaleHelper.onAttach(base))
@@ -138,30 +141,56 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        postponeEnterTransition()
         mRealm = databaseService.realmInstance
-        checkUser()
         initViews()
-        updateAppTitle()
         notificationManager = NotificationUtils.getInstance(this)
-        if (handleGuestAccess()) return
-        setupNavigation()
-        handleInitialFragment()
-        setupToolbarActions()
-        hideWifi()
         libraryListener = RealmChangeListener { onRealmDataChanged() }
         submissionListener = RealmChangeListener { onRealmDataChanged() }
         taskListener = RealmChangeListener { onRealmDataChanged() }
-
         addBackPressCallback()
         handleNotificationIntent(intent)
         collectUiState()
-
         binding.root.post {
             setupSystemNotificationReceiver()
-            checkIfShouldShowNotifications()
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        deferredSetupJob = lifecycleScope.launch(Dispatchers.IO) {
+            performDeferredSetup()
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        deferredSetupJob?.cancel()
+    }
+
+    private suspend fun performDeferredSetup() {
+        Trace.beginSection("DashboardActivity.performDeferredSetup")
+        try {
+            checkUser()
+            withContext(Dispatchers.Main) {
+                updateAppTitle()
+                if (handleGuestAccess()) {
+                    reportFullyDrawn()
+                    return@withContext
+                }
+                setupNavigation()
+                handleInitialFragment()
+                setupToolbarActions()
+                hideWifi()
+            }
             setupRealmListeners()
+            checkIfShouldShowNotifications()
+            withContext(Dispatchers.Main) {
             challengeHelper.evaluateChallengeDialog()
-            reportFullyDrawn()
+                reportFullyDrawn()
+            }
+        } finally {
+            Trace.endSection()
         }
     }
 
