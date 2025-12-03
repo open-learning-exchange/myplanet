@@ -264,9 +264,17 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
-    fun filterLibraryByTag(s: String, tags: List<RealmTag>): List<RealmMyLibrary> {
-        val normalizedSearchTerm = normalizeText(s)
-        var list = getData(s, RealmMyLibrary::class.java)
+    fun filterLibraryByTag(
+        s: String,
+        tags: List<RealmTag>,
+        libraries: List<RealmMyLibrary> = emptyList()
+    ): List<RealmMyLibrary> {
+        var list = if (libraries.isNotEmpty()) {
+            libraries
+        } else {
+            getData(s, RealmMyLibrary::class.java)
+        }
+
         list = if (isMyCourseLib) {
             getMyLibraryByUserId(model?.id, list)
         } else {
@@ -283,13 +291,24 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             list
         }
 
-        return libraries
+    return applyTagFilter(list, tags)
     }
 
     fun normalizeText(str: String): String {
         return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
             .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
     }
+
+fun applyTagFilter(libraries: List<RealmMyLibrary>, tags: List<RealmTag>): List<RealmMyLibrary> {
+    if (tags.isEmpty()) {
+        return libraries
+    }
+    val filteredLibraries = mutableListOf<RealmMyLibrary>()
+    for (library in libraries) {
+        filter(tags, library, filteredLibraries)
+    }
+    return filteredLibraries
+}
 
     fun filterCourseByTag(s: String, tags: List<RealmTag>): List<RealmMyCourse> {
         if (tags.isEmpty() && s.isEmpty()) {
