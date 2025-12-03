@@ -51,6 +51,13 @@
             android:textColor="@color/daynight_textColor" />
     </com.google.android.material.textfield.TextInputLayout>
 
+    <ProgressBar
+        android:id="@+id/search_progress"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:visibility="gone" />
+
     <ListView
         android:id="@+id/list"
         android:layout_width="match_parent"
