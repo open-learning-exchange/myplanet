@@ -405,61 +405,64 @@ class Service @Inject constructor(
         }
     }
 
-    suspend fun syncPlanetServers(callback: SuccessListener) {
-        try {
-            val response = withContext(Dispatchers.IO) {
-                retrofitInterface.getJsonObject("", "https://planet.earth.ole.org/db/communityregistrationrequests/_all_docs?include_docs=true").execute()
+    suspend fun syncPlanetServers() {
+        withContext(Dispatchers.IO) {
+            val idsResponse = retrofitInterface.getJsonObject(
+                "",
+                "https://planet.earth.ole.org/db/communityregistrationrequests/_all_docs"
+            ).execute()
+
+            if (!idsResponse.isSuccessful || idsResponse.body() == null) {
+                throw IOException("Failed to fetch document IDs: ${idsResponse.code()}")
             }
 
-            if (response.isSuccessful && response.body() != null) {
-                val arr = JsonUtils.getJsonArray("rows", response.body())
-                val startTime = System.currentTimeMillis()
-                println("Realm transaction started")
+            val docIds = JsonUtils.getJsonArray("rows", idsResponse.body())
+                .map { it.asJsonObject["id"].asString }
 
-                val transactionResult = runCatching {
-                    withContext(Dispatchers.IO) {
-                        databaseService.withRealm { backgroundRealm ->
-                            backgroundRealm.executeTransaction { realm1 ->
-                                realm1.delete(RealmCommunity::class.java)
-                                for (j in arr) {
-                                    var jsonDoc = j.asJsonObject
-                                    jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-                                    val id = JsonUtils.getString("_id", jsonDoc)
-                                    val community = realm1.createObject(RealmCommunity::class.java, id)
-                                    if (JsonUtils.getString("name", jsonDoc) == "learning") {
-                                        community.weight = 0
-                                    }
-                                    community.localDomain = JsonUtils.getString("localDomain", jsonDoc)
-                                    community.name = JsonUtils.getString("name", jsonDoc)
-                                    community.parentDomain = JsonUtils.getString("parentDomain", jsonDoc)
-                                    community.registrationRequest = JsonUtils.getString("registrationRequest", jsonDoc)
-                                }
-                            }
+            val allDocs = mutableListOf<JsonObject>()
+            for (chunk in docIds.chunked(200)) {
+                val body = JsonObject().apply {
+                    add("keys", GsonUtils.gson.toJsonTree(chunk))
+                }
+                val chunkResponse = retrofitInterface.postJsonObject(
+                    "application/json",
+                    "https://planet.earth.ole.org/db/communityregistrationrequests/_all_docs?include_docs=true",
+                    body
+                ).execute()
+
+                if (!chunkResponse.isSuccessful || chunkResponse.body() == null) {
+                    throw IOException("Failed to fetch document chunk: ${chunkResponse.code()}")
+                }
+
+                val chunkArr = JsonUtils.getJsonArray("rows", chunkResponse.body())
+                chunkArr.forEach {
+                    if (it.asJsonObject.has("doc") && !it.asJsonObject.get("doc").isJsonNull) {
+                        val doc = JsonUtils.getJsonObject("doc", it.asJsonObject)
+                        allDocs.add(doc)
+                    }
+                }
+            }
+
+            val startTime = System.currentTimeMillis()
+            println("Realm transaction started")
+            databaseService.withRealm { backgroundRealm ->
+                backgroundRealm.executeTransaction { realm ->
+                    realm.delete(RealmCommunity::class.java)
+                    for (jsonDoc in allDocs) {
+                        val id = JsonUtils.getString("_id", jsonDoc)
+                        val community = realm.createObject(RealmCommunity::class.java, id)
+                        if (JsonUtils.getString("name", jsonDoc) == "learning") {
+                            community.weight = 0
                         }
+                        community.localDomain = JsonUtils.getString("localDomain", jsonDoc)
+                        community.name = JsonUtils.getString("name", jsonDoc)
+                        community.parentDomain = JsonUtils.getString("parentDomain", jsonDoc)
+                        community.registrationRequest = JsonUtils.getString("registrationRequest", jsonDoc)
                     }
                 }
-
-                val endTime = System.currentTimeMillis()
-                println("Realm transaction finished in ${endTime - startTime}ms")
-
-                withContext(Dispatchers.Main) {
-                    transactionResult.onSuccess {
-                        callback.onSuccess(context.getString(R.string.server_sync_successfully))
-                    }.onFailure { e ->
-                        e.printStackTrace()
-                        callback.onSuccess(context.getString(R.string.server_sync_has_failed))
-                    }
-                }
-            } else {
-                withContext(Dispatchers.Main) {
-                    callback.onSuccess(context.getString(R.string.server_sync_has_failed))
-                }
             }
-        } catch (t: Throwable) {
-            t.printStackTrace()
-            withContext(Dispatchers.Main) {
-                callback.onSuccess(context.getString(R.string.server_sync_has_failed))
-            }
+            val endTime = System.currentTimeMillis()
+            println("Realm transaction finished in ${endTime - startTime}ms")
         }
     }
 

@@ -286,8 +286,12 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         setUpLanguageButton()
         if (NetworkUtils.isNetworkConnected) {
             lifecycleScope.launch {
-                service.syncPlanetServers { success: String? ->
-                    toast(this@LoginActivity, success)
+                try {
+                    service.syncPlanetServers()
+                    toast(this@LoginActivity, getString(R.string.server_sync_successfully))
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    toast(this@LoginActivity, getString(R.string.server_sync_has_failed))
                 }
             }
         }
