@@ -20,13 +20,16 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayout
 import dagger.hilt.android.AndroidEntryPoint
+import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.RealmResults
 import io.realm.Sort
 import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.NotificationCallback
 import org.ole.planet.myplanet.callback.SyncListener
@@ -120,16 +123,31 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             now[Calendar.YEAR] = i
             now[Calendar.MONTH] = i1
             now[Calendar.DAY_OF_MONTH] = i2
-            val imageList = realm.where(RealmMyLibrary::class.java).equalTo("isPrivate", true)
-                .greaterThan("createdDate", now.timeInMillis).equalTo("mediaType", "image")
-                .findAll()
-            val urls = ArrayList<String>()
-            getUrlsAndStartDownload(imageList, urls) },
+            viewLifecycleOwner.lifecycleScope.launch {
+                val imageList = getLibraryForImageDownload(now.timeInMillis)
+                withContext(Dispatchers.Main) {
+                    val urls = ArrayList<String>()
+                    getUrlsAndStartDownload(imageList, urls)
+                }
+            }
+        },
             now[Calendar.YEAR], now[Calendar.MONTH], now[Calendar.DAY_OF_MONTH]
         )
         dpd.setTitle(getString(R.string.read_offline_news_from))
         dpd.show()
     }
+
+    private suspend fun getLibraryForImageDownload(timestamp: Long): List<RealmMyLibrary> =
+        withContext(Dispatchers.IO) {
+            Realm.getDefaultInstance().use { realm ->
+                val imageList = realm.where(RealmMyLibrary::class.java)
+                    .equalTo("isPrivate", true)
+                    .greaterThan("createdDate", timestamp)
+                    .equalTo("mediaType", "image")
+                    .findAll()
+                realm.copyFromRealm(imageList)
+            }
+        }
 
     override fun downloadDictionary() {
         val list = ArrayList<String>()
