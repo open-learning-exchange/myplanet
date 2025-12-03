@@ -12,8 +12,14 @@ import io.realm.Realm
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.datamanager.ApiInterface
+import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.DocumentResponse
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.insert
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
@@ -33,7 +39,9 @@ import retrofit2.Response
 @Singleton
 class TransactionSyncManager @Inject constructor(
     private val apiInterface: ApiInterface,
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val databaseService: DatabaseService,
+    @ApplicationScope private val applicationScope: CoroutineScope
 ) {
     fun authenticate(): Boolean {
         try {
@@ -50,18 +58,28 @@ class TransactionSyncManager @Inject constructor(
         return false
     }
 
-    fun syncAllHealthData(mRealm: Realm, settings: SharedPreferences, listener: SyncListener) {
+    fun syncAllHealthData(settings: SharedPreferences, listener: SyncListener) {
         listener.onSyncStarted()
         val userName = SecurePrefs.getUserName(context, settings) ?: ""
         val password = SecurePrefs.getPassword(context, settings) ?: ""
         val header = "Basic ${Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)}"
-        mRealm.executeTransactionAsync({ realm: Realm ->
-            val users = realm.where(RealmUserModel::class.java).isNotEmpty("_id").findAll()
-            for (userModel in users) {
-                syncHealthData(userModel, header)
+
+        applicationScope.launch(Dispatchers.IO) {
+            try {
+                databaseService.executeTransactionAsync { realm ->
+                    val users = realm.where(RealmUserModel::class.java).isNotEmpty("_id").findAll()
+                    for (userModel in users) {
+                        syncHealthData(userModel, header)
+                    }
+                }
+                withContext(Dispatchers.Main) {
+                    listener.onSyncComplete()
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    listener.onSyncFailed(e.message)
+                }
             }
-        }, { listener.onSyncComplete() }) { error: Throwable ->
-            error.message?.let { listener.onSyncFailed(it) }
         }
     }
 
@@ -88,7 +106,6 @@ class TransactionSyncManager @Inject constructor(
     }
 
     fun syncKeyIv(
-        mRealm: Realm,
         settings: SharedPreferences,
         listener: SyncListener,
         userProfileDbHandler: UserProfileDbHandler
@@ -99,11 +116,21 @@ class TransactionSyncManager @Inject constructor(
         val password = SecurePrefs.getPassword(context, settings) ?: ""
         val header = "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)
         val id = model?.id
-        mRealm.executeTransactionAsync({ realm: Realm ->
-            val userModel = realm.where(RealmUserModel::class.java).equalTo("id", id).findFirst()
-            syncHealthData(userModel, header)
-        }, { listener.onSyncComplete() }) { error: Throwable ->
-            error.message?.let { listener.onSyncFailed(it) }
+
+        applicationScope.launch(Dispatchers.IO) {
+            try {
+                databaseService.executeTransactionAsync { realm ->
+                    val userModel = realm.where(RealmUserModel::class.java).equalTo("id", id).findFirst()
+                    syncHealthData(userModel, header)
+                }
+                withContext(Dispatchers.Main) {
+                    listener.onSyncComplete()
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    listener.onSyncFailed(e.message)
+                }
+            }
         }
     }
 

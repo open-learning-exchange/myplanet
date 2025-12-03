@@ -7,7 +7,11 @@ import android.view.View
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import io.realm.RealmObject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.databinding.ItemMyLifeBinding
@@ -35,18 +39,23 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         v.setOnClickListener {
             if (homeItemClickListener != null) {
                 if (f is TeamDetailFragment) {
-                    if (!isRealmInitialized()) {
-                        return@setOnClickListener
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        var teamType = ""
+                        databaseService.withRealm { realm ->
+                            val teamObject = realm.where(RealmMyTeam::class.java).equalTo("_id", id).findFirst()
+                            teamType = teamObject?.type ?: ""
+                        }
+                        withContext(Dispatchers.Main) {
+                            val optimizedFragment = TeamDetailFragment.newInstance(
+                                teamId = id ?: "",
+                                teamName = title ?: "",
+                                teamType = teamType,
+                                isMyTeam = true
+                            )
+                            prefData.setTeamName(title)
+                            homeItemClickListener?.openCallFragment(optimizedFragment)
+                        }
                     }
-                    val teamObject = mRealm.where(RealmMyTeam::class.java)?.equalTo("_id", id)?.findFirst()
-                    val optimizedFragment = TeamDetailFragment.newInstance(
-                        teamId = id ?: "",
-                        teamName = title ?: "",
-                        teamType = teamObject?.type ?: "",
-                        isMyTeam = true
-                    )
-                    prefData.setTeamName(title)
-                    homeItemClickListener?.openCallFragment(optimizedFragment)
                 } else {
                     val b = Bundle()
                     b.putString("id", id)
@@ -110,7 +119,7 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         setBackgroundColor(textView, itemCnt)
     }
 
-    fun getLayout(itemCnt: Int, obj: RealmObject): View {
+    fun getLayout(itemCnt: Int, obj: RealmObject, surveyCount: Int = 0): View {
         val itemMyLifeBinding = ItemMyLifeBinding.inflate(LayoutInflater.from(activity))
         val v = itemMyLifeBinding.root
         setBackgroundColor(v, itemCnt)
@@ -122,12 +131,7 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
 
         if (title == getString(R.string.my_survey)) {
             itemMyLifeBinding.tvCount.visibility = View.VISIBLE
-            if (isRealmInitialized()) {
-                val noOfSurvey = RealmSubmission.getNoOfSurveySubmissionByUser(user?.id, mRealm)
-                itemMyLifeBinding.tvCount.text = noOfSurvey.toString()
-            } else {
-                itemMyLifeBinding.tvCount.text = "0"
-            }
+            itemMyLifeBinding.tvCount.text = surveyCount.toString()
         } else {
             itemMyLifeBinding.tvCount.visibility = View.GONE
         }
