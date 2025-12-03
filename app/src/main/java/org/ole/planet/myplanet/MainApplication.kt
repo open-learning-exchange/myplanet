@@ -24,11 +24,13 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Provider
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
 import org.ole.planet.myplanet.callback.TeamPageListener
@@ -143,20 +145,22 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                     urlString
                 }
 
-                val url = URL(formattedUrl)
-                val responseCode = withContext(Dispatchers.IO) {
-                    val connection = url.openConnection() as HttpURLConnection
-                    try {
-                        connection.requestMethod = "GET"
-                        connection.connectTimeout = 5000
-                        connection.readTimeout = 5000
-                        connection.connect()
-                        connection.responseCode
-                    } finally {
-                        connection.disconnect()
+                withTimeoutOrNull(10000L) {
+                    val url = URL(formattedUrl)
+                    val responseCode = withContext(Dispatchers.IO) {
+                        val connection = url.openConnection() as HttpURLConnection
+                        try {
+                            connection.requestMethod = "GET"
+                            connection.connectTimeout = 5000
+                            connection.readTimeout = 5000
+                            connection.connect()
+                            connection.responseCode
+                        } finally {
+                            connection.disconnect()
+                        }
                     }
-                }
-                responseCode in 200..299
+                    responseCode in 200..299
+                } ?: false
             } catch (e: Exception) {
                 e.printStackTrace()
                 false
@@ -179,20 +183,24 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     private var isActivityChangingConfigurations = false
     private var isFirstLaunch = true
     private lateinit var anrWatchdog: ANRWatchdog
+    private val firstActivityResumed = CompletableDeferred<Unit>()
 
     override fun onCreate() {
+        android.os.Trace.beginSection("AppOnCreate")
         super.onCreate()
         setupCriticalProperties()
+        applicationScope.launch { loadAndApplyTheme() }
         performDeferredInitialization()
-        setupStrictMode()
         registerExceptionHandler()
         setupLifecycleCallbacks()
+        android.os.Trace.endSection()
     }
 
     private fun performDeferredInitialization() {
         applicationScope.launch {
+            firstActivityResumed.await()
+            setupStrictMode()
             initApp()
-            loadAndApplyTheme()
             ensureApiClientInitialized()
             initializeDatabaseConnection()
             setupAnrWatchdog()
@@ -288,7 +296,9 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             val savedThemeMode = withContext(Dispatchers.IO) {
                 getCurrentThemeMode()
             }
-            applyThemeMode(savedThemeMode)
+            withContext(Dispatchers.Main) {
+                applyThemeMode(savedThemeMode)
+            }
         } finally {
             // success
         }
@@ -379,6 +389,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     override fun onActivityResumed(activity: Activity) {
         if (isFirstLaunch) {
             isFirstLaunch = false
+            firstActivityResumed.complete(Unit)
         }
     }
 
