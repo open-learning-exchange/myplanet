@@ -740,25 +740,31 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             return
         }
 
-        if (!mRealm.isInTransaction) {
-            mRealm.refresh()
-        }
-        val map = getRatings(mRealm, "course", model?.id)
-        val progressMap = getCourseProgress(mRealm, model?.id)
+        viewLifecycleOwner.lifecycleScope.launch {
+            val (map, progressMap, filteredCourseList) = withContext(Dispatchers.IO) {
+                if (!mRealm.isInTransaction) {
+                    mRealm.refresh()
+                }
+                val map = getRatings(mRealm, "course", model?.id)
+                val progressMap = getCourseProgress(mRealm, model?.id)
+                val filteredCourseList = if (etSearch.text.toString().isEmpty() && searchTags.isEmpty() && gradeLevel.isEmpty() && subjectLevel.isEmpty()) {
+                    getFullCourseList()
+                } else {
+                    filterCourseByTag(etSearch.text.toString(), searchTags)
+                }
+                Triple(map, progressMap, filteredCourseList)
+            }
 
-        val filteredCourseList = if (etSearch.text.toString().isEmpty() && searchTags.isEmpty() && gradeLevel.isEmpty() && subjectLevel.isEmpty()) {
-            getFullCourseList()
-        } else {
-            filterCourseByTag(etSearch.text.toString(), searchTags)
+            withContext(Dispatchers.Main) {
+                adapterCourses = AdapterCourses(
+                    requireActivity(), filteredCourseList, map, userProfileDbHandler,
+                    tagRepository, this@CoursesFragment
+                )
+                adapterCourses.setProgressMap(progressMap)
+                adapterCourses.setListener(this@CoursesFragment)
+                adapterCourses.setRatingChangeListener(this@CoursesFragment)
+                recyclerView.adapter = adapterCourses
+            }
         }
-
-        adapterCourses = AdapterCourses(
-            requireActivity(), filteredCourseList, map, userProfileDbHandler,
-            tagRepository, this@CoursesFragment
-        )
-        adapterCourses.setProgressMap(progressMap)
-        adapterCourses.setListener(this)
-        adapterCourses.setRatingChangeListener(this)
-        recyclerView.adapter = adapterCourses
     }
 }
