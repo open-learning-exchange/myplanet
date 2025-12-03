@@ -33,6 +33,7 @@
     <string name="menu_home">Home</string>
     <string name="menu_library">Library</string>
     <string name="menu_courses">Courses</string>
+    <string name="course_not_found">Course not found</string>
     <string name="menu_surveys">Surveys</string>
     <string name="menu_logout">Logout</string>
     <string name="menu_feedback">Feedback</string>
