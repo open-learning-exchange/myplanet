@@ -204,36 +204,29 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         flexboxLayout.removeAllViews()
         val userId = profileDbHandler.userModel?.id
         for ((count, ob) in teams.withIndex()) {
-            val v = LayoutInflater.from(activity).inflate(R.layout.item_home_my_team, flexboxLayout, false)
+            val v = LayoutInflater.from(activity)
+                .inflate(R.layout.item_home_my_team, flexboxLayout, false)
             val name = v.findViewById<TextView>(R.id.tv_name)
             setBackgroundColor(v, count)
             if (ob.teamType == "sync") {
                 name.setTypeface(null, Typeface.BOLD)
             }
             handleClick(ob._id, ob.name, TeamDetailFragment(), name)
-            showNotificationIcons(ob, v, userId)
+            viewLifecycleOwner.lifecycleScope.launch {
+                val notificationInfo = viewModel.getTeamNotificationInfo(ob._id, userId)
+                showNotificationIcons(notificationInfo, v)
+            }
             name.text = ob.name
             flexboxLayout.addView(v, params)
         }
         setCountText(teams.size, RealmMyTeam::class.java, requireView())
     }
 
-    private fun showNotificationIcons(ob: RealmObject, v: View, userId: String?) {
-        val current = Calendar.getInstance().timeInMillis
-        val tomorrow = Calendar.getInstance()
-        tomorrow.add(Calendar.DAY_OF_YEAR, 1)
+    private fun showNotificationIcons(info: TeamNotificationInfo, v: View) {
         val imgTask = v.findViewById<ImageView>(R.id.img_task)
         val imgChat = v.findViewById<ImageView>(R.id.img_chat)
-        val notification: RealmTeamNotification? = realm.where(RealmTeamNotification::class.java)
-            .equalTo("parentId", (ob as RealmMyTeam)._id).equalTo("type", "chat").findFirst()
-        val chatCount: Long = realm.where(RealmNews::class.java).equalTo("viewableBy", "teams")
-            .equalTo("viewableId", ob._id).count()
-        if (notification != null) {
-            imgChat.visibility = if (notification.lastCount < chatCount) View.VISIBLE else View.GONE
-        }
-        val tasks = realm.where(RealmTeamTask::class.java).equalTo("assignee", userId)
-            .between("deadline", current, tomorrow.timeInMillis).findAll()
-        imgTask.visibility = if (tasks.isNotEmpty()) View.VISIBLE else View.GONE
+        imgChat.visibility = if (info.hasChat) View.VISIBLE else View.GONE
+        imgTask.visibility = if (info.hasTasks) View.VISIBLE else View.GONE
     }
 
     private fun myLifeListInit(flexboxLayout: FlexboxLayout) {

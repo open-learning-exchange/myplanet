@@ -18,8 +18,14 @@ import org.ole.planet.myplanet.repository.CourseRepository
 import org.ole.planet.myplanet.repository.LibraryRepository
 import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.repository.SubmissionRepository
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.RealmTeamNotification
+import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import java.util.Calendar
 
 data class DashboardUiState(
     val unreadNotifications: Int = 0,
@@ -107,4 +113,38 @@ class DashboardViewModel @Inject constructor(
             }
         }
     }
+
+    suspend fun getTeamNotificationInfo(teamId: String, userId: String?): TeamNotificationInfo =
+        withContext(Dispatchers.IO) {
+            var hasChat = false
+            var hasTasks = false
+
+            teamRepository.getRealmInstance().use { realm ->
+                val notification = realm.where(RealmTeamNotification::class.java)
+                    .equalTo("parentId", teamId)
+                    .equalTo("type", "chat")
+                    .findFirst()
+
+                val chatCount = realm.where(RealmNews::class.java)
+                    .equalTo("viewableBy", "teams")
+                    .equalTo("viewableId", teamId)
+                    .count()
+
+                if (notification != null) {
+                    hasChat = notification.lastCount < chatCount
+                }
+
+                val current = Calendar.getInstance().timeInMillis
+                val tomorrow = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }.timeInMillis
+
+                val tasks = realm.where(RealmTeamTask::class.java)
+                    .equalTo("assignee", userId)
+                    .between("deadline", current, tomorrow)
+                    .findAll()
+
+                hasTasks = tasks.isNotEmpty()
+            }
+
+            TeamNotificationInfo(hasTasks, hasChat)
+        }
 }
