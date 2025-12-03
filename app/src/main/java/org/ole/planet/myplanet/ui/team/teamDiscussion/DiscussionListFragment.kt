@@ -26,10 +26,12 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmTeamNotification
+import org.ole.planet.myplanet.model.dto.NewsItem
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.news.AdapterNews
+import org.ole.planet.myplanet.ui.news.NewsMapper
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.GsonUtils
@@ -45,7 +47,7 @@ class DiscussionListFragment : BaseTeamFragment() {
     lateinit var userProfileDbHandler: UserProfileDbHandler
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
-    private var filteredNewsList: List<RealmNews?> = listOf()
+    private var filteredNewsList: List<NewsItem?> = listOf()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentDiscussionListBinding.inflate(inflater, container, false)
@@ -165,11 +167,11 @@ class DiscussionListFragment : BaseTeamFragment() {
         }
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {
+    override fun onNewsItemClick(news: NewsItem) {
         val bundle = Bundle()
-        bundle.putString("newsId", news?.newsId)
-        bundle.putString("newsRev", news?.newsRev)
-        bundle.putString("conversations", news?.conversations)
+        bundle.putString("newsId", news.newsId)
+        bundle.putString("newsRev", news.newsRev)
+        bundle.putString("conversations", news.conversations)
 
         val chatDetailFragment = ChatDetailFragment()
         chatDetailFragment.arguments = bundle
@@ -187,19 +189,19 @@ class DiscussionListFragment : BaseTeamFragment() {
         llImage?.removeAllViews()
     }
 
-    private fun filterNewsList(results: RealmResults<RealmNews>): List<RealmNews?> {
-        val filteredList: MutableList<RealmNews?> = ArrayList()
+    private fun filterNewsList(results: RealmResults<RealmNews>): List<NewsItem?> {
+        val filteredList: MutableList<NewsItem?> = ArrayList()
         val effectiveTeamId = getEffectiveTeamId()
 
         for (news in results) {
             if (!TextUtils.isEmpty(news.viewableBy) && news.viewableBy.equals("teams", ignoreCase = true) && news.viewableId.equals(effectiveTeamId, ignoreCase = true)) {
-                filteredList.add(news)
+                filteredList.add(NewsMapper.map(news, mRealm, user, teamId, getEffectiveTeamName()))
             } else if (!TextUtils.isEmpty(news.viewIn)) {
                 val ar = GsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
                 for (e in ar) {
                     val ob = e.asJsonObject
                     if (ob["_id"].asString.equals(effectiveTeamId, ignoreCase = true)) {
-                        filteredList.add(news)
+                        filteredList.add(NewsMapper.map(news, mRealm, user, teamId, getEffectiveTeamName()))
                     }
                 }
             }
@@ -207,21 +209,21 @@ class DiscussionListFragment : BaseTeamFragment() {
         return filteredList
     }
 
-    private val news: List<RealmNews>
+    private val news: List<NewsItem?>
         get() {
             val realmNewsList: List<RealmNews> = mRealm.where(RealmNews::class.java).isEmpty("replyTo").sort("time", Sort.DESCENDING).findAll()
-            val list: MutableList<RealmNews> = ArrayList()
+            val list: MutableList<NewsItem?> = ArrayList()
             val effectiveTeamId = getEffectiveTeamId()
 
             for (news in realmNewsList) {
                 if (!TextUtils.isEmpty(news.viewableBy) && news.viewableBy.equals("teams", ignoreCase = true) && news.viewableId.equals(effectiveTeamId, ignoreCase = true)) {
-                    list.add(news)
+                    list.add(NewsMapper.map(news, mRealm, user, teamId, getEffectiveTeamName()))
                 } else if (!TextUtils.isEmpty(news.viewIn)) {
                     val ar = GsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
                     for (e in ar) {
                         val ob = e.asJsonObject
                         if (ob["_id"].asString.equals(effectiveTeamId, ignoreCase = true)) {
-                            list.add(news)
+                            list.add(NewsMapper.map(news, mRealm, user, teamId, getEffectiveTeamName()))
                         }
                     }
                 }
@@ -234,17 +236,15 @@ class DiscussionListFragment : BaseTeamFragment() {
         changeLayoutManager(newConfig.orientation, binding.rvDiscussion)
     }
 
-    private fun showRecyclerView(realmNewsList: List<RealmNews?>?) {
+    private fun showRecyclerView(realmNewsList: List<NewsItem?>?) {
         val existingAdapter = binding.rvDiscussion.adapter
         if (existingAdapter == null) {
             val adapterNews = activity?.let {
-                AdapterNews(it, user, null, getEffectiveTeamName(), teamId, userProfileDbHandler, databaseService)
+                AdapterNews(it, user, null, false, userProfileDbHandler)
             }
-            adapterNews?.sharedPrefManager = sharedPrefManager
-            adapterNews?.setmRealm(mRealm)
             adapterNews?.setListener(this)
             if (!isMemberFlow.value) adapterNews?.setNonTeamMember(true)
-            realmNewsList?.let { adapterNews?.updateList(it) }
+            adapterNews?.submitList(realmNewsList)
             binding.rvDiscussion.adapter = adapterNews
             adapterNews?.let {
                 showNoData(binding.tvNodata, it.itemCount, "discussions")
@@ -252,14 +252,14 @@ class DiscussionListFragment : BaseTeamFragment() {
         } else {
             (existingAdapter as? AdapterNews)?.let { adapter ->
                 realmNewsList?.let {
-                    adapter.updateList(it)
+                    adapter.submitList(it)
                     showNoData(binding.tvNodata, adapter.itemCount, "discussions")
                 }
             }
         }
     }
 
-    override fun setData(list: List<RealmNews?>?) {
+    override fun setData(list: List<NewsItem?>?) {
         showRecyclerView(list)
     }
 

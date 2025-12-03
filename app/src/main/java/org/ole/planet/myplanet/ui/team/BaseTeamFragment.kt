@@ -13,8 +13,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.base.BaseNewsFragment
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.dto.NewsItem
 import org.ole.planet.myplanet.repository.TeamRepository
 
 private val Realm.isOpen: Boolean
@@ -22,7 +22,7 @@ private val Realm.isOpen: Boolean
 
 @AndroidEntryPoint
 abstract class BaseTeamFragment : BaseNewsFragment() {
-    var user: RealmUserModel? = null
+    override var user: RealmUserModel? = null
     var teamId: String = ""
         set(value) {
             if (field != value) {
@@ -50,7 +50,7 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
         loadTeamData()
     }
 
-    override fun setData(list: List<RealmNews?>?) {}
+    override fun setData(list: List<NewsItem?>?) {}
 
     private fun loadTeamData() {
         val shouldQueryTeam = shouldQueryTeamFromRealm()

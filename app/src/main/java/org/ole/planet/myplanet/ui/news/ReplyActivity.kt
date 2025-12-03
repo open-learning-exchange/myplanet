@@ -17,6 +17,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
@@ -27,8 +28,8 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityReplyBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.dto.NewsItem
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.news.AdapterNews.OnNewsItemClickListener
@@ -88,25 +89,21 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         id ?: return
         lifecycleScope.launch {
             val (news, list) = viewModel.getNewsWithReplies(id)
-            databaseService.withRealm { realm ->
-                newsAdapter = AdapterNews(this@ReplyActivity, user, news, "", null, userProfileDbHandler, databaseService)
-                newsAdapter.sharedPrefManager = sharedPrefManager
-                newsAdapter.setListener(this@ReplyActivity)
-                newsAdapter.setmRealm(realm)
-                newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
-                newsAdapter.setNonTeamMember(intent.getBooleanExtra("nonTeamMember", false))
-                newsAdapter.setImageList(imageList)
-                newsAdapter.updateList(list)
-                activityReplyBinding.rvReply.adapter = newsAdapter
-            }
+            newsAdapter = AdapterNews(this@ReplyActivity, user, news, intent.getBooleanExtra("fromLogin", false), userProfileDbHandler)
+            newsAdapter.setListener(this@ReplyActivity)
+            val newList = mutableListOf<NewsItem>()
+            news?.let { newList.add(it) }
+            newList.addAll(list)
+            newsAdapter.submitList(newList)
+            activityReplyBinding.rvReply.adapter = newsAdapter
         }
     }
 
     override fun onResume() {
         super.onResume()
         refreshData()
-
     }
+
     private fun refreshData() {
         id?.let { showData(it) }
     }
@@ -115,8 +112,8 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         refreshData()
     }
 
-    override fun showReply(news: RealmNews?, fromLogin: Boolean, nonTeamMember: Boolean) {
-        startActivity(Intent(this, ReplyActivity::class.java).putExtra("id", news?.id))
+    override fun showReply(news: NewsItem, fromLogin: Boolean, nonTeamMember: Boolean) {
+        startActivity(Intent(this, ReplyActivity::class.java).putExtra("id", news.id))
     }
 
     override fun addImage(llImage: ViewGroup?) {
@@ -126,9 +123,11 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         openFolderLauncher.launch(Intent.createChooser(intent, "Select Image"))
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {}
+    override fun onNewsItemClick(news: NewsItem) {}
 
-    override fun onMemberSelected(userModel: RealmUserModel?) {
+    override fun onMemberSelected(userId: String?, leader: RealmUserModel?) {
+        val user = userId?.let { databaseService.realmInstance.where(RealmUserModel::class.java).equalTo("id", it).findFirst() }
+        val userModel = user ?: leader
         val fragment = NewsActions.showMemberDetails(userModel, userProfileDbHandler) ?: return
         NavigationHelper.replaceFragment(
             supportFragmentManager,
@@ -137,6 +136,31 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
             addToBackStack = true
         )
     }
+
+    override fun onEdit(news: NewsItem) {
+        databaseService.withRealm { realm ->
+            NewsActions.showEditAlert(this, realm, news, true, user, this,
+                object : RecyclerView.ViewHolder(View(this)) {})
+        }
+    }
+
+    override fun onDelete(news: NewsItem) {
+        databaseService.withRealm { realm ->
+            NewsActions.deletePost(realm, news, "", this)
+        }
+    }
+
+    override fun onReply(news: NewsItem) {
+        databaseService.withRealm { realm ->
+            NewsActions.showEditAlert(this, realm, news, false, user, this,
+                object : RecyclerView.ViewHolder(View(this)) {})
+        }
+    }
+
+    override fun onShare(news: NewsItem) {
+        // Not implemented
+    }
+
 
     override fun clearImages() {
         imageList.clear()
@@ -190,13 +214,8 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         newsAdapter.setImageList(imageList)
     }
 
-
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == android.R.id.home) finish()
         return super.onOptionsItemSelected(item)
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
     }
 }

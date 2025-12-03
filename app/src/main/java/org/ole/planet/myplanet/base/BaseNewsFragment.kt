@@ -25,8 +25,8 @@ import java.io.File
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ImageThumbBinding
-import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.dto.NewsItem
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.news.AdapterNews
 import org.ole.planet.myplanet.ui.news.AdapterNews.OnNewsItemClickListener
@@ -46,6 +46,7 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
     protected var adapterNews: AdapterNews? = null
     lateinit var openFolderLauncher: ActivityResultLauncher<Intent>
     private lateinit var replyActivityLauncher: ActivityResultLauncher<Intent>
+    open var user: RealmUserModel? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -68,15 +69,13 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
         replyActivityLauncher = registerForActivityResult(
             ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
             if (result.resultCode == Activity.RESULT_OK) {
-                val newsId = result.data?.getStringExtra("newsId")
-                newsId.let { adapterNews?.updateReplyBadge(it) }
-                adapterNews?.refreshCurrentItems()
+                onDataChanged()
             }
         }
     }
 
     override fun onDataChanged() {
-        adapterNews?.refreshCurrentItems()
+        // To be implemented by subclasses
     }
 
     override fun onAttach(context: Context) {
@@ -84,17 +83,17 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
         if (context is OnHomeItemClickListener) homeItemClickListener = context
     }
 
-    override fun showReply(news: RealmNews?, fromLogin: Boolean, nonTeamMember: Boolean) {
-        if (news != null) {
-            val intent = Intent(activity, ReplyActivity::class.java).putExtra("id", news.id)
-                .putExtra("fromLogin", fromLogin)
-                .putExtra("nonTeamMember", nonTeamMember)
-            replyActivityLauncher.launch(intent)
-        }
+    override fun showReply(news: NewsItem, fromLogin: Boolean, nonTeamMember: Boolean) {
+        val intent = Intent(activity, ReplyActivity::class.java).putExtra("id", news.id)
+            .putExtra("fromLogin", fromLogin)
+            .putExtra("nonTeamMember", nonTeamMember)
+        replyActivityLauncher.launch(intent)
     }
 
-    override fun onMemberSelected(userModel: RealmUserModel?) {
+    override fun onMemberSelected(userId: String?, leader: RealmUserModel?) {
         if (!isAdded) return
+        val user = userId?.let { mRealm.where(RealmUserModel::class.java).equalTo("id", it).findFirst() }
+        val userModel = user ?: leader
         val handler = profileDbHandler
         val fragment = NewsActions.showMemberDetails(userModel, handler) ?: return
         NavigationHelper.replaceFragment(
@@ -105,7 +104,26 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
         )
     }
 
-    abstract fun setData(list: List<RealmNews?>?)
+    override fun onEdit(news: NewsItem) {
+        NewsActions.showEditAlert(requireContext(), mRealm, news, true, user, this,
+            object : RecyclerView.ViewHolder(View(requireContext())) {})
+    }
+
+    override fun onDelete(news: NewsItem) {
+        NewsActions.deletePost(mRealm, news, "", this)
+    }
+
+    override fun onReply(news: NewsItem) {
+        NewsActions.showEditAlert(requireContext(), mRealm, news, false, user, this,
+            object : RecyclerView.ViewHolder(View(requireContext())) {})
+    }
+
+    override fun onShare(news: NewsItem) {
+        // To be implemented by subclasses
+    }
+
+
+    abstract fun setData(list: List<NewsItem?>?)
     fun showNoData(v: View?, count: Int?, source: String) {
         count?.let { BaseRecyclerFragment.showNoData(v, it, source) }
     }
