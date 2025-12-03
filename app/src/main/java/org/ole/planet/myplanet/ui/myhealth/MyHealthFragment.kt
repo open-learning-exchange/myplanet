@@ -281,15 +281,14 @@ class MyHealthFragment : Fragment() {
 
     private fun selectPatient() {
         viewLifecycleOwner.lifecycleScope.launch {
-            val users = withContext(Dispatchers.IO) {
-                Realm.getDefaultInstance().use { realm ->
-                    val results = realm.where(RealmUserModel::class.java).sort("joinDate", Sort.DESCENDING).findAll()
-                    realm.copyFromRealm(results)
-                }
-            }
-            withContext(Dispatchers.Main) {
+            val users = userRepository.getUsers("joinDate", Sort.DESCENDING)
+            if (isAdded) {
                 userModelList = users
-                adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, userModelList)
+                adapter = UserListArrayAdapter(
+                    requireActivity(),
+                    android.R.layout.simple_list_item_1,
+                    userModelList
+                )
                 alertHealthListBinding = AlertHealthListBinding.inflate(LayoutInflater.from(context))
                 alertHealthListBinding?.btnAddMember?.setOnClickListener {
                     startActivity(Intent(requireContext(), BecomeMemberActivity::class.java))
@@ -319,7 +318,7 @@ class MyHealthFragment : Fragment() {
             override fun onNothingSelected(p0: AdapterView<*>?) {}
 
             override fun onItemSelected(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) {
-                viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                viewLifecycleOwner.lifecycleScope.launch {
                     val (sortBy, sort) = when (p2) {
                         0 -> "joinDate" to Sort.DESCENDING
                         1 -> "joinDate" to Sort.ASCENDING
@@ -327,18 +326,13 @@ class MyHealthFragment : Fragment() {
                         else -> "name" to Sort.DESCENDING
                     }
 
-                    val sortedList = Realm.getDefaultInstance().use { realm ->
-                        val results = realm.where(RealmUserModel::class.java).sort(sortBy, sort).findAll()
-                        realm.copyFromRealm(results)
-                    }
+                    val sortedList = userRepository.getUsers(sortBy, sort)
 
-                    withContext(Dispatchers.Main) {
-                        if (isAdded) {
-                            userModelList = sortedList
-                            adapter.clear()
-                            adapter.addAll(userModelList)
-                            adapter.notifyDataSetChanged()
-                        }
+                    if (isAdded) {
+                        userModelList = sortedList
+                        adapter.clear()
+                        adapter.addAll(userModelList)
+                        adapter.notifyDataSetChanged()
                     }
                 }
             }

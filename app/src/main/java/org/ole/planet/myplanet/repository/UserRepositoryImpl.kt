@@ -31,6 +31,12 @@ class UserRepositoryImpl @Inject constructor(
         return queryList(RealmUserModel::class.java)
     }
 
+    override suspend fun getUsers(sortBy: String, sort: io.realm.Sort): List<RealmUserModel> {
+        return queryList(RealmUserModel::class.java) {
+            sort(sortBy, sort)
+        }
+    }
+
     override suspend fun getMonthlyLoginCounts(
         userId: String,
         startMillis: Long,
