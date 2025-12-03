@@ -13,7 +13,10 @@ import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.AdapterDataObserver
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.gson.JsonArray
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -58,6 +61,9 @@ class NewsFragment : BaseNewsFragment() {
     private lateinit var etSearch: EditText
     private var selectedLabel: String = "All"
     private val labelDisplayToValue = mutableMapOf<String, String>()
+    private var currentPage = 0
+    private var isLoading = false
+    private lateinit var scrollListener: RecyclerView.OnScrollListener
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentNewsBinding.inflate(inflater, container, false)
@@ -104,26 +110,29 @@ class NewsFragment : BaseNewsFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                newsRepository.getCommunityNews(getUserIdentifier()).collect { news ->
-                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                        val filtered = news.map { it as RealmNews? }
-                        val labels = collectAllLabels(filtered)
-                        val labelFiltered = applyLabelFilter(filtered)
-                        val searchFiltered =
-                            applySearchFilter(labelFiltered, etSearch.text.toString().trim())
-                        if (_binding != null) {
-                            filteredNewsList = filtered
-                            labelFilteredList = labelFiltered
-                            searchFilteredList = searchFiltered
-                            setupLabelFilter(labels)
-                            setData(searchFilteredList)
-                        }
-                    }
+        loadNews()
+        binding.swipeRefreshLayout.setOnRefreshListener {
+            currentPage = 0
+            filteredNewsList = emptyList()
+            adapterNews?.updateList(filteredNewsList)
+            loadNews()
+            binding.swipeRefreshLayout.isRefreshing = false
+        }
+        scrollListener = object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                super.onScrolled(recyclerView, dx, dy)
+                val layoutManager = recyclerView.layoutManager as LinearLayoutManager
+                val visibleItemCount = layoutManager.childCount
+                val totalItemCount = layoutManager.itemCount
+                val firstVisibleItemPosition = layoutManager.findFirstVisibleItemPosition()
+
+                if (!isLoading && (visibleItemCount + firstVisibleItemPosition) >= totalItemCount && firstVisibleItemPosition >= 0) {
+                    currentPage++
+                    loadNews()
                 }
             }
         }
+        binding.rvNews.addOnScrollListener(scrollListener)
         binding.btnSubmit.setOnClickListener {
             val message = binding.etMessage.text.toString().trim { it <= ' ' }
             if (message.isEmpty()) {
@@ -405,10 +414,35 @@ class NewsFragment : BaseNewsFragment() {
         return ""
     }
 
+    private fun loadNews() {
+        if (!isAdded || isLoading) return
+        isLoading = true
+        viewLifecycleOwner.lifecycleScope.launch {
+            val news = newsRepository.getCommunityNews(getUserIdentifier(), currentPage)
+            if (_binding != null) {
+                val filtered = news.map { it as RealmNews? }
+                if (currentPage == 0) {
+                    filteredNewsList = filtered
+                    val labels = collectAllLabels(filteredNewsList)
+                    setupLabelFilter(labels)
+                } else {
+                    filteredNewsList = filteredNewsList + filtered
+                }
+                labelFilteredList = applyLabelFilter(filteredNewsList)
+                searchFilteredList = applySearchFilter(labelFilteredList, etSearch.text.toString().trim())
+                setData(searchFilteredList)
+            }
+            isLoading = false
+        }
+    }
+
     override fun onDestroyView() {
         adapterNews?.unregisterAdapterDataObserver(observer)
         if (isRealmInitialized()) {
             mRealm.close()
+        }
+        if (::scrollListener.isInitialized) {
+            binding.rvNews.removeOnScrollListener(scrollListener)
         }
         _binding = null
         super.onDestroyView()

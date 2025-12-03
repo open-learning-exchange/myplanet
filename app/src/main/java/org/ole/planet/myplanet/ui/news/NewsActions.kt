@@ -202,6 +202,11 @@ object NewsActions {
         map["messagePlanetCode"] = news?.messagePlanetCode ?: ""
         map["viewIn"] = news?.viewIn ?: ""
         currentUser?.let { createNews(map, realm, it, imageList, true) }
+
+        val parentNews = realm.where(RealmNews::class.java).equalTo("id", news?.id).findFirst()
+        parentNews?.let {
+            it.replyCount = it.replyCount + 1
+        }
         if (shouldCommit) realm.commitTransaction()
     }
 
@@ -276,7 +281,17 @@ object NewsActions {
                         .equalTo("id", newsItem.id)
                         .findFirst()
                 }
-                
+
+                if (!managedNews?.replyTo.isNullOrEmpty()) {
+                    val parentNews = realm.where(RealmNews::class.java)
+                        .equalTo("id", managedNews?.replyTo)
+                        .findFirst()
+                    parentNews?.let {
+                        if (it.replyCount > 0) {
+                            it.replyCount--
+                        }
+                    }
+                }
                 managedNews?.deleteFromRealm()
             }
         } else {

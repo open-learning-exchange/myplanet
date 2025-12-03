@@ -17,6 +17,7 @@ preferenceKtx = "1.2.1"
 recyclerview = "1.4.0"
 securityCrypto = "1.1.0"
 slidingpanelayout = "1.2.0"
+swiperefreshlayout = "1.1.0"
 workRuntime = "2.11.0"
 materialDialogs = "0.9.6.0"
 materialCalendarView = "1.9.2"
@@ -60,6 +61,7 @@ preference-ktx = { module = "androidx.preference:preference-ktx", version.ref = 
 recyclerview = { module = "androidx.recyclerview:recyclerview", version.ref = "recyclerview" }
 security-crypto = { module = "androidx.security:security-crypto", version.ref = "securityCrypto" }
 slidingpanelayout = { module = "androidx.slidingpanelayout:slidingpanelayout", version.ref = "slidingpanelayout" }
+swiperefreshlayout = { module = "androidx.swiperefreshlayout:swiperefreshlayout", version.ref = "swiperefreshlayout" }
 work-runtime = { module = "androidx.work:work-runtime", version.ref = "workRuntime" }
 material-dialogs-commons = { module = "com.afollestad.material-dialogs:commons", version.ref = "materialDialogs" }
 material-calendar-view = { module = "com.applandeo:material-calendar-view", version.ref = "materialCalendarView" }

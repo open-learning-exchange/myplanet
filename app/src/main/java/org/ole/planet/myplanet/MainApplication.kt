@@ -39,6 +39,7 @@ import org.ole.planet.myplanet.di.ApplicationScopeEntryPoint
 import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.di.WorkerDependenciesEntryPoint
 import org.ole.planet.myplanet.model.RealmApkLog
+import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.service.AutoSyncWorker
 import org.ole.planet.myplanet.service.NetworkMonitorWorker
 import org.ole.planet.myplanet.service.StayOnlineWorker
@@ -195,9 +196,30 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             loadAndApplyTheme()
             ensureApiClientInitialized()
             initializeDatabaseConnection()
+            backfillReplyCounts()
             setupAnrWatchdog()
             scheduleWorkersOnStart()
             observeNetworkForDownloads()
+        }
+    }
+
+    private fun backfillReplyCounts() {
+        val PREF_KEY_REPLY_COUNT_BACKFILLED = "reply_count_backfilled"
+        if (!preferences.getBoolean(PREF_KEY_REPLY_COUNT_BACKFILLED, false)) {
+            applicationScope.launch {
+                databaseService.executeTransactionAsync { realm ->
+                    val allNews = realm.where(RealmNews::class.java).findAll()
+                    val replies = realm.where(RealmNews::class.java).isNotEmpty("replyTo").findAll()
+
+                    val replyCountsByParentId = replies.groupBy { it.replyTo }
+                        .mapValues { it.value.size }
+
+                    for (news in allNews) {
+                        news.replyCount = replyCountsByParentId[news.id] ?: 0
+                    }
+                }
+                preferences.edit().putBoolean(PREF_KEY_REPLY_COUNT_BACKFILLED, true).apply()
+            }
         }
     }
     private fun initApp() {

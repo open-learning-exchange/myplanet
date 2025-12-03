@@ -186,6 +186,7 @@ dependencies {
     implementation(libs.recyclerview)
     implementation(libs.security.crypto)
     implementation(libs.slidingpanelayout)
+    implementation(libs.swiperefreshlayout)
     implementation(libs.work.runtime)
     implementation(libs.material.dialogs.commons)
     implementation(libs.material.calendar.view)

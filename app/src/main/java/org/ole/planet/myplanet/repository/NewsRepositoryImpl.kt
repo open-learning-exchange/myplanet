@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
 
+const val PAGE_SIZE = 50
 class NewsRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     private val gson: Gson,
@@ -77,23 +78,41 @@ class NewsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getCommunityNews(userIdentifier: String): Flow<List<RealmNews>> {
-        val allNewsFlow = queryListFlow(RealmNews::class.java) {
-            isEmpty("replyTo")
-            equalTo("docType", "message", Case.INSENSITIVE)
-            sort("time", Sort.DESCENDING)
-        }
-        .flowOn(Dispatchers.Main) // Realm async queries require a Looper thread.
+    override suspend fun getCommunityNews(userIdentifier: String, page: Int): List<RealmNews> {
+        return withRealm { realm ->
+            val potentiallyVisibleNews = realm.where(RealmNews::class.java)
+                .isEmpty("replyTo")
+                .equalTo("docType", "message", Case.INSENSITIVE)
+                .beginGroup()
+                .equalTo("viewableBy", "community", Case.INSENSITIVE)
+                .or()
+                .contains("viewIn", userIdentifier)
+                .endGroup()
+                .sort("time", Sort.DESCENDING)
+                .findAll()
 
-        return allNewsFlow.map { allNews ->
-            // allNews are unmanaged copies (POJOs) created by copyFromRealm in queryListFlow.
-            // It is safe to process them on a background thread.
-            allNews.filter { news ->
-                isVisibleToUser(news, userIdentifier)
-            }.map { news ->
-                news.sortDate = news.calculateSortDate()
-                news
+            val visibleNewsIds = potentiallyVisibleNews
+                .filter { isVisibleToUser(it, userIdentifier) }
+                .map { it.id }
+
+            val startIndex = page * PAGE_SIZE
+            if (startIndex >= visibleNewsIds.size) {
+                return@withRealm emptyList()
             }
-        }.flowOn(Dispatchers.Default)
+
+            val endIndex = (startIndex + PAGE_SIZE).coerceAtMost(visibleNewsIds.size)
+            val paginatedIds = visibleNewsIds.subList(startIndex, endIndex).toTypedArray()
+
+            if (paginatedIds.isEmpty()) {
+                return@withRealm emptyList()
+            }
+
+            val paginatedNews = realm.where(RealmNews::class.java)
+                .`in`("id", paginatedIds)
+                .sort("time", Sort.DESCENDING)
+                .findAll()
+
+            realm.copyFromRealm(paginatedNews)
+        }
     }
 }

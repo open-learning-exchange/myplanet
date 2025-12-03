@@ -57,6 +57,7 @@ open class RealmNews : RealmObject() {
     var isEdited: Boolean = false
     var editedTime: Long = 0
     var sharedBy: String? = null
+    var replyCount = 0
     @Ignore
     var sortDate: Long = 0
 
