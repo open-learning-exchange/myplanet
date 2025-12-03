@@ -145,10 +145,21 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     private fun observeUiState() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.uiState.collect {
+                renderMyLife(it.myLife)
                 renderMyLibrary(it.library)
                 renderMyCourses(it.courses)
                 renderMyTeams(it.teams)
             }
+        }
+    }
+
+    private fun renderMyLife(myLife: List<RealmMyLife>) {
+        val flexboxLayout: FlexboxLayout = view?.findViewById(R.id.flexboxLayoutMyLife) ?: return
+        flexboxLayout.removeAllViews()
+        val dbMylife: MutableList<RealmMyLife> = ArrayList()
+        for (item in myLife) if (item.isVisible) dbMylife.add(item)
+        for ((itemCnt, items) in dbMylife.withIndex()) {
+            flexboxLayout.addView(getLayout(itemCnt, items), params)
         }
     }
 
@@ -236,14 +247,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         imgTask.visibility = if (tasks.isNotEmpty()) View.VISIBLE else View.GONE
     }
 
-    private fun myLifeListInit(flexboxLayout: FlexboxLayout) {
-        val dbMylife: MutableList<RealmMyLife> = ArrayList()
-        val rawMylife: List<RealmMyLife> = RealmMyLife.getMyLifeByUserId(realm, settings)
-        for (item in rawMylife) if (item.isVisible) dbMylife.add(item)
-        for ((itemCnt, items) in dbMylife.withIndex()) {
-            flexboxLayout.addView(getLayout(itemCnt, items), params)
-        }
-    }
 
     private fun setUpMyLife(userId: String?) {
         databaseService.withRealm { realm ->
@@ -325,8 +328,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
         val userId = settings?.getString("userId", "--")
         setUpMyLife(userId)
-        myLifeListInit(myLifeFlex)
-
 
         if (isRealmInitialized() && mRealm.isInTransaction) {
             mRealm.commitTransaction()

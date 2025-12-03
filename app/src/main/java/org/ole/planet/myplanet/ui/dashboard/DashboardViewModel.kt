@@ -12,10 +12,12 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.repository.CourseRepository
 import org.ole.planet.myplanet.repository.LibraryRepository
+import org.ole.planet.myplanet.repository.LifeRepository
 import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.TeamRepository
@@ -26,12 +28,14 @@ data class DashboardUiState(
     val library: List<RealmMyLibrary> = emptyList(),
     val courses: List<RealmMyCourse> = emptyList(),
     val teams: List<RealmMyTeam> = emptyList(),
+    val myLife: List<RealmMyLife> = emptyList(),
 )
 
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val libraryRepository: LibraryRepository,
+    private val lifeRepository: LifeRepository,
     private val courseRepository: CourseRepository,
     private val teamRepository: TeamRepository,
     private val submissionRepository: SubmissionRepository,
@@ -89,6 +93,12 @@ class DashboardViewModel @Inject constructor(
         if (userId == null) return
         userContentJob?.cancel()
         userContentJob = viewModelScope.launch {
+            launch {
+                _uiState.update {
+                    it.copy(myLife = lifeRepository.getMyLife(userId))
+                }
+            }
+
             launch {
                 val myLibrary = libraryRepository.getMyLibrary(userId)
                 _uiState.update { it.copy(library = myLibrary) }
