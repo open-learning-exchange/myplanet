@@ -6,12 +6,15 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.callback.BaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.TableDataUpdate
 import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
+import org.ole.planet.myplanet.utilities.DiffUtils
 
 interface DiffRefreshableAdapter {
     fun refreshWithDiff()
@@ -77,6 +80,22 @@ class RealtimeSyncHelper(
                 adapter is ListAdapter<*, *> -> {
                     (adapter as ListAdapter<Any, *>).let { listAdapter ->
                         listAdapter.submitList(listAdapter.currentList.toList())
+                    }
+                }
+                adapter is AdapterItemList<*> -> {
+                    val adapterItemList = adapter as AdapterItemList<Any>
+                    val newList = adapterItemList.getList()
+                    val oldList = adapterItemList.getOldList()
+                    withContext(Dispatchers.Default) {
+                        val diffResult = DiffUtils.calculateDiff(
+                            oldList,
+                            newList,
+                            areItemsTheSame = { old, new -> old == new },
+                            areContentsTheSame = { old, new -> old == new }
+                        )
+                        withContext(Dispatchers.Main) {
+                            diffResult.dispatchUpdatesTo(adapter)
+                        }
                     }
                 }
                 else -> adapter.notifyDataSetChanged()
