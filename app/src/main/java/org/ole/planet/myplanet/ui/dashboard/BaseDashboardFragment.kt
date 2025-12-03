@@ -245,13 +245,10 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         }
     }
 
-    private fun setUpMyLife(userId: String?) {
-        databaseService.withRealm { realm ->
+    private suspend fun setUpMyLife(userId: String?) {
+        databaseService.executeTransactionAsync { realm ->
             val realmObjects = RealmMyLife.getMyLifeByUserId(realm, settings)
             if (realmObjects.isEmpty()) {
-                if (!realm.isInTransaction) {
-                    realm.beginTransaction()
-                }
                 val myLifeListBase = getMyLifeListBase(userId)
                 var ml: RealmMyLife
                 var weight = 1
@@ -264,7 +261,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
                     ml.isVisible = true
                     weight++
                 }
-                realm.commitTransaction()
             }
         }
     }
@@ -324,8 +320,10 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         myLifeFlex.flexDirection = FlexDirection.ROW
 
         val userId = settings?.getString("userId", "--")
-        setUpMyLife(userId)
-        myLifeListInit(myLifeFlex)
+        viewLifecycleOwner.lifecycleScope.launch {
+            setUpMyLife(userId)
+            myLifeListInit(myLifeFlex)
+        }
 
 
         if (isRealmInitialized() && mRealm.isInTransaction) {
