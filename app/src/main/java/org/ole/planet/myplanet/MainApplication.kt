@@ -195,7 +195,9 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             loadAndApplyTheme()
             ensureApiClientInitialized()
             initializeDatabaseConnection()
-            setupAnrWatchdog()
+        }
+        setupAnrWatchdog()
+        applicationScope.launch {
             scheduleWorkersOnStart()
             observeNetworkForDownloads()
         }
@@ -245,17 +247,15 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         }
     }
 
-    private suspend fun setupAnrWatchdog() {
-        withContext(Dispatchers.Default) {
-            anrWatchdog = ANRWatchdog(timeout = 5000L, listener = object : ANRWatchdog.ANRListener {
-                override fun onAppNotResponding(message: String, blockedThread: Thread, duration: Long) {
-                    applicationScope.launch {
-                        createLog("anr", "ANR detected! Duration: ${duration}ms\n $message")
-                    }
+    private fun setupAnrWatchdog() {
+        anrWatchdog = ANRWatchdog(timeout = 5000L, listener = object : ANRWatchdog.ANRListener {
+            override fun onAppNotResponding(message: String, blockedThread: Thread, duration: Long) {
+                applicationScope.launch {
+                    createLog("anr", "ANR detected! Duration: ${duration}ms\n $message")
                 }
-            })
-            anrWatchdog.start()
-        }
+            }
+        })
+        anrWatchdog.start()
     }
 
     private suspend fun scheduleWorkersOnStart() {
