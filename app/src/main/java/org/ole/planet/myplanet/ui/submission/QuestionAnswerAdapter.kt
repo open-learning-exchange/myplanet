@@ -9,22 +9,22 @@ import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import org.ole.planet.myplanet.databinding.ItemQuestionAnswerBinding
+import androidx.recyclerview.widget.ListAdapter
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmExamQuestion
+import org.ole.planet.myplanet.utilities.DiffUtils
 
 data class QuestionAnswerPair(
     val question: RealmExamQuestion,
     val answer: RealmAnswer?
 )
 
-class QuestionAnswerAdapter : RecyclerView.Adapter<QuestionAnswerAdapter.ViewHolder>() {
-    private var questionAnswerPairs = mutableListOf<QuestionAnswerPair>()
-
-    fun updateData(pairs: List<QuestionAnswerPair>) {
-        questionAnswerPairs.clear()
-        questionAnswerPairs.addAll(pairs)
-        notifyDataSetChanged()
-        Log.d("RecyclerViewDebug", "Adapter notified of ${questionAnswerPairs.size} items")
+class QuestionAnswerAdapter : ListAdapter<QuestionAnswerPair, QuestionAnswerAdapter.ViewHolder>(DIFF_CALLBACK) {
+    companion object {
+        private val DIFF_CALLBACK = DiffUtils.itemCallback(
+            areItemsTheSame = { oldItem, newItem -> oldItem.question._id == newItem.question._id },
+            areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
+        )
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -37,13 +37,8 @@ class QuestionAnswerAdapter : RecyclerView.Adapter<QuestionAnswerAdapter.ViewHol
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.bind(questionAnswerPairs[position])
-        if (position < 5 || position >= questionAnswerPairs.size - 2) {
-            Log.d("RecyclerViewDebug", "Binding item at position $position")
-        }
+        holder.bind(getItem(position))
     }
-
-    override fun getItemCount(): Int = questionAnswerPairs.size
 
     class ViewHolder(private val binding: ItemQuestionAnswerBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(pair: QuestionAnswerPair) {
