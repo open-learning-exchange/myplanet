@@ -49,6 +49,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     private var _binding: FragmentTakeExamBinding? = null
     private val binding get() = _binding!!
     private var isCertified = false
+    private var questionList: List<RealmExamQuestion>? = null
 
     private val answerCache = mutableMapOf<String, AnswerData>()
 
@@ -70,40 +71,83 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        postponeEnterTransition()
         initExam()
-        questions = mRealm.where(RealmExamQuestion::class.java).equalTo("examId", exam?.id).findAll()
-        binding.tvQuestionCount.text = getString(R.string.Q1, questions?.size)
-        var q: RealmQuery<*> = mRealm.where(RealmSubmission::class.java)
-            .equalTo("userId", user?.id)
-            .equalTo("parentId", if (!TextUtils.isEmpty(exam?.courseId)) {
-                id + "@" + exam?.courseId
-            } else {
-                id
-            }).sort("startTime", Sort.DESCENDING)
-        if (type == "exam") {
-            q = q.equalTo("status", "pending")
-        }
-        sub = q.findFirst() as RealmSubmission?
-        val courseId = exam?.courseId
-        isCertified = isCourseCertified(mRealm, courseId)
 
-        if ((questions?.size ?: 0) > 0) {
-            if (type == "exam") {
-                clearAllExistingAnswers {
-                    createSubmission()
-                    startExam(questions?.get(currentIndex))
+        binding.container.visibility = View.GONE
+        binding.loadingIndicator.visibility = View.VISIBLE
+
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+            var copiedInitialQuestions: List<RealmExamQuestion>
+            var allCopiedQuestions: List<RealmExamQuestion>? = null
+            var submissionId: String?
+
+            Realm.getDefaultInstance().use { realm ->
+                val questionQuery = realm.where(RealmExamQuestion::class.java).equalTo("examId", exam?.id)
+                val totalQuestions = questionQuery.count()
+                val chunked = totalQuestions > 100
+
+                val initialResults = if (chunked) {
+                    questionQuery.limit(20).findAll()
+                } else {
+                    questionQuery.findAll()
+                }
+                copiedInitialQuestions = realm.copyFromRealm(initialResults)
+
+                if (chunked) {
+                    val allResults = questionQuery.findAll()
+                    allCopiedQuestions = realm.copyFromRealm(allResults)
+                }
+
+                val submissionResult = realm.where(RealmSubmission::class.java)
+                    .equalTo("userId", user?.id)
+                    .equalTo("parentId", if (!TextUtils.isEmpty(exam?.courseId)) id + "@" + exam?.courseId else id)
+                    .sort("startTime", Sort.DESCENDING)
+                    .let { query ->
+                        if (type == "exam") query.equalTo("status", "pending") else query
+                    }.findFirst()
+                submissionId = submissionResult?._id
+            }
+
+            withContext(Dispatchers.Main) {
+                this.questionList = copiedInitialQuestions
+                if (submissionId != null) {
+                    sub = mRealm.where(RealmSubmission::class.java).equalTo("_id", submissionId).findFirst()
+                }
+                binding.tvQuestionCount.text = getString(R.string.Q1, questionList?.size)
+                val courseId = exam?.courseId
+                isCertified = isCourseCertified(mRealm, courseId)
+
+                if ((questionList?.size ?: 0) > 0) {
+                    if (type == "exam") {
+                        clearAllExistingAnswers {
+                            createSubmission()
+                            startExam(questionList?.get(currentIndex))
+                            updateNavButtons()
+                        }
+                    } else {
+                        createSubmission()
+                        startExam(questionList?.get(currentIndex))
+                        updateNavButtons()
+                    }
+                    binding.container.visibility = View.VISIBLE
+                } else {
+                    binding.btnSubmit.visibility = View.GONE
+                    binding.tvQuestionCount.setText(R.string.no_questions)
+                    Snackbar.make(binding.tvQuestionCount, R.string.no_questions_available, Snackbar.LENGTH_LONG).show()
+                    binding.container.visibility = View.GONE
+                }
+                binding.loadingIndicator.visibility = View.GONE
+                startPostponedEnterTransition()
+            }
+
+            if (allCopiedQuestions != null) {
+                withContext(Dispatchers.Main) {
+                    this.questionList = allCopiedQuestions
+                    binding.tvQuestionCount.text = getString(R.string.Q, currentIndex + 1, questionList?.size)
                     updateNavButtons()
                 }
-            } else {
-                createSubmission()
-                startExam(questions?.get(currentIndex))
-                updateNavButtons()
             }
-        } else {
-            binding.container.visibility = View.GONE
-            binding.btnSubmit.visibility = View.GONE
-            binding.tvQuestionCount.setText(R.string.no_questions)
-            Snackbar.make(binding.tvQuestionCount, R.string.no_questions_available, Snackbar.LENGTH_LONG).show()
         }
 
         binding.btnBack.setOnClickListener {
@@ -120,10 +164,10 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: Editable?) {
-                val questionsSize = questions?.size ?: 0
+                val questionsSize = questionList?.size ?: 0
                 if (currentIndex < 0 || currentIndex >= questionsSize) return
 
-                val currentQuestion = questions?.get(currentIndex)
+                val currentQuestion = questionList?.get(currentIndex)
                 currentQuestion?.id?.let { questionId ->
                     val answerData = answerCache.getOrPut(questionId) { AnswerData() }
                     when (currentQuestion.type) {
@@ -141,10 +185,10 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     private fun saveCurrentAnswer() {
-        val questionsSize = questions?.size ?: 0
+        val questionsSize = questionList?.size ?: 0
         if (currentIndex < 0 || currentIndex >= questionsSize) return
 
-        val currentQuestion = questions?.get(currentIndex) ?: return
+        val currentQuestion = questionList?.get(currentIndex) ?: return
         val questionId = currentQuestion.id ?: return
         val answerData = answerCache.getOrPut(questionId) { AnswerData() }
 
@@ -172,22 +216,22 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     private fun goToPreviousQuestion() {
         if (currentIndex > 0) {
             currentIndex--
-            startExam(questions?.get(currentIndex))
+            startExam(questionList?.get(currentIndex))
             updateNavButtons()
         }
     }
 
     private fun goToNextQuestion() {
-        if (currentIndex < (questions?.size ?: 0) - 1) {
+        if (currentIndex < (questionList?.size ?: 0) - 1) {
             currentIndex++
-            startExam(questions?.get(currentIndex))
+            startExam(questionList?.get(currentIndex))
             updateNavButtons()
         }
     }
 
     private fun updateNavButtons() {
         binding.btnBack.visibility = if (currentIndex == 0) View.GONE else View.VISIBLE
-        val isLastQuestion = currentIndex == (questions?.size ?: 0) - 1
+        val isLastQuestion = currentIndex == (questionList?.size ?: 0) - 1
         val isCurrentQuestionAnswered = isQuestionAnswered()
 
         binding.btnNext.visibility = if (isLastQuestion || !isCurrentQuestionAnswered) View.GONE else View.VISIBLE
@@ -196,10 +240,10 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     private fun isQuestionAnswered(): Boolean {
-        val questionsSize = questions?.size ?: 0
+        val questionsSize = questionList?.size ?: 0
         if (currentIndex < 0 || currentIndex >= questionsSize) return false
 
-        val currentQuestion = questions?.get(currentIndex)
+        val currentQuestion = questionList?.get(currentIndex)
         val questionId = currentQuestion?.id ?: return false
         val answerData = answerCache[questionId]
 
@@ -323,7 +367,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     override fun startExam(question: RealmExamQuestion?) {
-        binding.tvQuestionCount.text = getString(R.string.Q, currentIndex + 1, questions?.size)
+        binding.tvQuestionCount.text = getString(R.string.Q, currentIndex + 1, questionList?.size)
         setButtonText()
         binding.groupChoices.removeAllViews()
         binding.llCheckbox.removeAllViews()
@@ -467,7 +511,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     private fun setButtonText() {
-        if (currentIndex == (questions?.size?.minus(1) ?: 0)) {
+        if (currentIndex == (questionList?.size?.minus(1) ?: 0)) {
             binding.btnSubmit.setText(R.string.finish)
         } else {
             binding.btnSubmit.setText(R.string.submit)
@@ -565,7 +609,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
     override fun onClick(view: View) {
         if (view.id == R.id.btn_submit) {
-            if (questions != null && currentIndex in 0 until (questions?.size ?: 0)) {
+            if (questionList != null && currentIndex in 0 until (questionList?.size ?: 0)) {
                 saveCurrentAnswer()
 
                 if (!isQuestionAnswered()) {
@@ -599,10 +643,10 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
 
     private fun updateAnsDb(): Boolean {
-        val questionsSize = questions?.size ?: 0
+        val questionsSize = questionList?.size ?: 0
         if (currentIndex < 0 || currentIndex >= questionsSize) return true
 
-        val currentQuestion = questions?.get(currentIndex) ?: return true
+        val currentQuestion = questionList?.get(currentIndex) ?: return true
         val otherText = if (binding.etAnswer.isVisible) {
             binding.etAnswer.text.toString()
         } else {
@@ -625,7 +669,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             binding.etAnswer.isVisible,
             type ?: "exam",
             currentIndex,
-            questions?.size ?: 0
+            questionList?.size ?: 0
         )
         return result
     }
@@ -637,10 +681,10 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             handleUnchecked(compoundButton)
         }
 
-        val questionsSize = questions?.size ?: 0
+        val questionsSize = questionList?.size ?: 0
         if (currentIndex < 0 || currentIndex >= questionsSize) return
 
-        val currentQuestion = questions?.get(currentIndex)
+        val currentQuestion = questionList?.get(currentIndex)
         currentQuestion?.id?.let { questionId ->
             val answerData = answerCache.getOrPut(questionId) { AnswerData() }
 
