@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.launch
+import androidx.lifecycle.repeatOnLifecycle
 import org.ole.planet.myplanet.base.BaseMemberFragment
 import org.ole.planet.myplanet.callback.MemberChangeListener
 import org.ole.planet.myplanet.model.RealmNews
@@ -25,12 +26,7 @@ class MembersFragment : BaseMemberFragment() {
 
     private val viewModel: MembersViewModel by viewModels()
     private lateinit var currentUser: RealmUserModel
-    private var memberChangeListener: MemberChangeListener = object : MemberChangeListener {
-        override fun onMemberChanged() {
-            viewModel.fetchMembers(teamId)
-        }
-    }
-
+    private var memberChangeListener: MemberChangeListener? = null
     fun setMemberChangeListener(listener: MemberChangeListener) {
         this.memberChangeListener = listener
     }
@@ -44,13 +40,22 @@ class MembersFragment : BaseMemberFragment() {
         super.onViewCreated(view, savedInstanceState)
         teamId?.let { viewModel.fetchMembers(it) }
         viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.uiState.collect { uiState ->
-                (adapter as? AdapterMemberRequest)?.setData(
-                    uiState.members,
-                    uiState.isLeader,
-                    uiState.memberCount
-                )
-                showNoData(binding.tvNodata, uiState.members.size, "members")
+            viewLifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
+                launch {
+                    viewModel.uiState.collect { uiState ->
+                        (adapter as? AdapterMemberRequest)?.setData(
+                            uiState.members,
+                            uiState.isLeader,
+                            uiState.memberCount
+                        )
+                        showNoData(binding.tvNodata, uiState.members.size, "members")
+                    }
+                }
+                launch {
+                    viewModel.successAction.collect {
+                        memberChangeListener?.onMemberChanged()
+                    }
+                }
             }
         }
     }
@@ -67,11 +72,10 @@ class MembersFragment : BaseMemberFragment() {
     override val adapter: RecyclerView.Adapter<*> by lazy {
         AdapterMemberRequest(
             requireActivity(),
-            mutableListOf(),
             currentUser,
-            memberChangeListener,
-            teamRepository,
-        ).apply { setTeamId(teamId) }
+        ) { user, isAccepted ->
+            viewModel.respondToRequest(teamId, user, isAccepted)
+        }.apply { setTeamId(teamId) }
     }
 
     override val layoutManager: RecyclerView.LayoutManager
