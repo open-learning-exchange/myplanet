@@ -1173,5 +1173,7 @@
     <string name="cannot_assign_completed_task">No se puede asignar una tarea completada</string>
     <string name="assign_to">Asignar a (Opcional)</string>
     <string name="click_to_assign_member">Haz clic para asignar un miembro del equipo</string>
+    <string name="saving">Guardando…</string>
+    <string name="achievement_saved">Logro actualizado</string>
 
 </resources>
