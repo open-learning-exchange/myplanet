@@ -217,7 +217,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         val currentLevels = levels.toSet()
         val libsToFilter = cachedLibraries
         val ratings = cachedRatings
-        val selected = selectedItems?.toList() ?: emptyList()
+        val selected = selectedItems?.filterNotNull() ?: emptyList()
 
         renderJob = lifecycleScope.launch {
             val (items, itemCount) = withContext(Dispatchers.IO) {
