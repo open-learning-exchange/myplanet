@@ -86,14 +86,18 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
     }
 
     override fun onUpload(personal: RealmMyPersonal?) {
-        pg.setText("Please wait......")
+        pg.setText("Please wait...")
         pg.show()
         if (personal != null) {
-            uploadManager.uploadMyPersonal(personal) { s: String? ->
-                if (s != null) {
-                    Utilities.toast(activity, s)
+            viewLifecycleOwner.lifecycleScope.launch {
+                try {
+                    val result = uploadManager.uploadMyPersonal(personal)
+                    Utilities.toast(activity, result)
+                } catch (e: Exception) {
+                    Utilities.toast(activity, "Upload failed: ${e.message}")
+                } finally {
+                    pg.dismiss()
                 }
-                pg.dismiss()
             }
         }
     }

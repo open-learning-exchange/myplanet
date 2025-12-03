@@ -420,55 +420,56 @@ class UploadManager @Inject constructor(
         }
     }
 
-    suspend fun uploadMyPersonal(personal: RealmMyPersonal, listener: SuccessListener) {
-        val apiInterface = client.create(ApiInterface::class.java)
+    suspend fun uploadMyPersonal(personal: RealmMyPersonal): String {
+        val apiInterface = client?.create(ApiInterface::class.java)
 
         if (!personal.isUploaded) {
-            apiInterface.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/resources", RealmMyPersonal.serialize(personal, context)).enqueue(object : Callback<JsonObject?> {
-                override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
-                    val `object` = response.body()
+            return withContext(Dispatchers.IO) {
+                try {
+                    val response = apiInterface?.postDoc(
+                        UrlUtils.header,
+                        "application/json",
+                        "${UrlUtils.getUrl()}/resources",
+                        RealmMyPersonal.serialize(personal, context)
+                    )?.execute()
+
+                    val `object` = response?.body()
                     if (`object` != null) {
                         val rev = getString("rev", `object`)
                         val id = getString("id", `object`)
 
-                        // Use coroutine scope to call suspend function
-                        CoroutineScope(Dispatchers.IO).launch {
-                            try {
-                                databaseService.executeTransactionAsync { transactionRealm ->
-                                    val managedPersonal = personal.id?.takeIf { it.isNotEmpty() }?.let { personalId ->
-                                        transactionRealm.where(RealmMyPersonal::class.java)
-                                            .equalTo("id", personalId)
-                                            .findFirst()
-                                    } ?: personal._id?.takeIf { it.isNotEmpty() }?.let { existingId ->
-                                        transactionRealm.where(RealmMyPersonal::class.java)
-                                            .equalTo("_id", existingId)
-                                            .findFirst()
-                                    }
-
-                                    managedPersonal?.let { realmPersonal ->
-                                        realmPersonal.isUploaded = true
-                                        realmPersonal._rev = rev
-                                        realmPersonal._id = id
-                                    } ?: throw IllegalStateException("Personal resource not found")
-                                }
-                                uploadAttachment(id, rev, personal, listener)
-                            } catch (error: Exception) {
-                                listener.onSuccess(
-                                    "Error updating personal resource: ${error.message ?: "Unknown error"}"
-                                )
+                        databaseService.executeTransactionAsync { transactionRealm ->
+                            val managedPersonal = personal.id?.takeIf { it.isNotEmpty() }?.let { personalId ->
+                                transactionRealm.where(RealmMyPersonal::class.java)
+                                    .equalTo("id", personalId)
+                                    .findFirst()
+                            } ?: personal._id?.takeIf { it.isNotEmpty() }?.let { existingId ->
+                                transactionRealm.where(RealmMyPersonal::class.java)
+                                    .equalTo("_id", existingId)
+                                    .findFirst()
                             }
-                        }
-                    } else {
-                        listener.onSuccess("Failed to upload personal resource: No response")
-                    }
-                }
 
-                override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
-                    listener.onSuccess("Unable to upload resource: ${t.message}")
+                            managedPersonal?.let { realmPersonal ->
+                                realmPersonal.isUploaded = true
+                                realmPersonal._rev = rev
+                                realmPersonal._id = id
+                            } ?: throw IllegalStateException("Personal resource not found")
+                        }
+
+                        uploadAttachment(id, rev, personal, object : SuccessListener {
+                            override fun onSuccess(success: String?) {}
+                        })
+                        "Personal resource uploaded successfully"
+                    } else {
+                        "Failed to upload personal resource: No response"
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    "Unable to upload resource: ${e.message}"
                 }
-            })
+            }
         } else {
-            listener.onSuccess("Resource already uploaded")
+            return "Resource already uploaded"
         }
     }
 
