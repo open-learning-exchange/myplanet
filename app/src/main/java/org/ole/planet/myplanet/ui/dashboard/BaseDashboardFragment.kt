@@ -29,7 +29,6 @@ import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.NotificationCallback
-import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.ItemLibraryHomeBinding
 import org.ole.planet.myplanet.model.RealmMyCourse
@@ -55,8 +54,7 @@ import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
-open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCallback,
-    SyncListener {
+open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCallback {
     private val viewModel: DashboardViewModel by viewModels()
     private val realm get() = requireRealmInstance()
     private var fullName: String? = null
@@ -370,22 +368,48 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
     override fun syncKeyId() {
         if (model?.getRoleAsString()?.contains("health") == true) {
-            settings?.let { transactionSyncManager.syncAllHealthData(realm, it, this) }
+            settings?.let {
+                transactionSyncManager.syncAllHealthData(
+                    realm,
+                    it,
+                    onStart = { onSyncStarted() },
+                    onComplete = { error ->
+                        if (error == null) {
+                            onSyncComplete()
+                        } else {
+                            onSyncFailed(error.message)
+                        }
+                    }
+                )
+            }
         } else {
-            settings?.let { transactionSyncManager.syncKeyIv(realm, it, this, profileDbHandler) }
+            settings?.let {
+                transactionSyncManager.syncKeyIv(
+                    realm,
+                    it,
+                    profileDbHandler,
+                    onStart = { onSyncStarted() },
+                    onComplete = { error ->
+                        if (error == null) {
+                            onSyncComplete()
+                        } else {
+                            onSyncFailed(error.message)
+                        }
+                    }
+                )
+            }
         }
     }
 
-    override fun onSyncStarted() {
+    private fun onSyncStarted() {
         di?.show()
     }
 
-    override fun onSyncComplete() {
+    private fun onSyncComplete() {
         di?.dismiss()
     }
 
-    override fun onSyncFailed(msg: String?) {
+    private fun onSyncFailed(msg: String?) {
         di?.dismiss()
     }
-
 }

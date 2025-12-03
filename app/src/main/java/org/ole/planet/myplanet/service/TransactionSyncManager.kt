@@ -12,7 +12,6 @@ import io.realm.Realm
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
-import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.model.DocumentResponse
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.insert
@@ -50,8 +49,13 @@ class TransactionSyncManager @Inject constructor(
         return false
     }
 
-    fun syncAllHealthData(mRealm: Realm, settings: SharedPreferences, listener: SyncListener) {
-        listener.onSyncStarted()
+    fun syncAllHealthData(
+        mRealm: Realm,
+        settings: SharedPreferences,
+        onStart: () -> Unit = {},
+        onComplete: (Throwable?) -> Unit = {}
+    ) {
+        onStart()
         val userName = SecurePrefs.getUserName(context, settings) ?: ""
         val password = SecurePrefs.getPassword(context, settings) ?: ""
         val header = "Basic ${Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)}"
@@ -60,8 +64,10 @@ class TransactionSyncManager @Inject constructor(
             for (userModel in users) {
                 syncHealthData(userModel, header)
             }
-        }, { listener.onSyncComplete() }) { error: Throwable ->
-            error.message?.let { listener.onSyncFailed(it) }
+        }, {
+            onComplete(null)
+        }) { error ->
+            onComplete(error)
         }
     }
 
@@ -90,10 +96,11 @@ class TransactionSyncManager @Inject constructor(
     fun syncKeyIv(
         mRealm: Realm,
         settings: SharedPreferences,
-        listener: SyncListener,
-        userProfileDbHandler: UserProfileDbHandler
+        userProfileDbHandler: UserProfileDbHandler,
+        onStart: () -> Unit = {},
+        onComplete: (Throwable?) -> Unit = {}
     ) {
-        listener.onSyncStarted()
+        onStart()
         val model = userProfileDbHandler.userModel
         val userName = SecurePrefs.getUserName(context, settings) ?: ""
         val password = SecurePrefs.getPassword(context, settings) ?: ""
@@ -102,8 +109,10 @@ class TransactionSyncManager @Inject constructor(
         mRealm.executeTransactionAsync({ realm: Realm ->
             val userModel = realm.where(RealmUserModel::class.java).equalTo("id", id).findFirst()
             syncHealthData(userModel, header)
-        }, { listener.onSyncComplete() }) { error: Throwable ->
-            error.message?.let { listener.onSyncFailed(it) }
+        }, {
+            onComplete(null)
+        }) { error ->
+            onComplete(error)
         }
     }
 
