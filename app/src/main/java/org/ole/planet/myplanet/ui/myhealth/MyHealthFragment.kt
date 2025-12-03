@@ -13,11 +13,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
-import android.widget.AdapterView.OnItemClickListener
 import android.widget.AdapterView.OnItemSelectedListener
 import android.widget.Button
 import android.widget.EditText
-import android.widget.ListView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatSpinner
 import androidx.core.content.ContextCompat
@@ -41,7 +39,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.BaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.callback.TableDataUpdate
-import org.ole.planet.myplanet.databinding.AlertHealthListBinding
+import org.ole.planet.myplanet.databinding.AlertHealthListRecyclerBinding
 import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
 import org.ole.planet.myplanet.databinding.FragmentVitalSignBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -79,12 +77,12 @@ class MyHealthFragment : Fragment() {
     private var _binding: FragmentVitalSignBinding? = null
     private val binding get() = _binding!!
     private lateinit var alertMyPersonalBinding: AlertMyPersonalBinding
-    private var alertHealthListBinding: AlertHealthListBinding? = null
+    private var alertHealthListBinding: AlertHealthListRecyclerBinding? = null
     var userId: String? = null
     lateinit var mRealm: Realm
     var userModel: RealmUserModel? = null
     lateinit var userModelList: List<RealmUserModel>
-    lateinit var adapter: UserListArrayAdapter
+    lateinit var adapter: UserListAdapter
     private lateinit var healthAdapter: AdapterHealthExamination
     var dialog: AlertDialog? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
@@ -289,22 +287,24 @@ class MyHealthFragment : Fragment() {
             }
             withContext(Dispatchers.Main) {
                 userModelList = users
-                adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, userModelList)
-                alertHealthListBinding = AlertHealthListBinding.inflate(LayoutInflater.from(context))
+                alertHealthListBinding = AlertHealthListRecyclerBinding.inflate(LayoutInflater.from(context))
+
+                adapter = UserListAdapter { selected ->
+                    userId = if (selected._id.isNullOrEmpty()) selected.id else selected._id
+                    getHealthRecords(userId)
+                    dialog?.dismiss()
+                }
+
                 alertHealthListBinding?.btnAddMember?.setOnClickListener {
                     startActivity(Intent(requireContext(), BecomeMemberActivity::class.java))
                 }
 
                 alertHealthListBinding?.let { binding ->
-                    setTextWatcher(binding.etSearch, binding.btnAddMember, binding.list)
+                    binding.list.layoutManager = LinearLayoutManager(context)
+                    setTextWatcher(binding.etSearch, binding.btnAddMember)
                     binding.list.adapter = adapter
-                    binding.list.onItemClickListener = OnItemClickListener { _: AdapterView<*>?, _: View, i: Int, _: Long ->
-                        val selected = binding.list.adapter.getItem(i) as RealmUserModel
-                        userId = if (selected._id.isNullOrEmpty()) selected.id else selected._id
-                        getHealthRecords(userId)
-                        dialog?.dismiss()
-                    }
-                    sortList(binding.spnSort, binding.list)
+                    adapter.submitList(userModelList)
+                    sortList(binding.spnSort)
                     dialog = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
                         .setTitle(getString(R.string.select_health_member)).setView(binding.root)
                         .setCancelable(false).setNegativeButton(R.string.dismiss, null).create()
@@ -314,7 +314,7 @@ class MyHealthFragment : Fragment() {
         }
     }
 
-    private fun sortList(spnSort: AppCompatSpinner, lv: ListView) {
+    private fun sortList(spnSort: AppCompatSpinner) {
         spnSort.onItemSelectedListener = object : OnItemSelectedListener {
             override fun onNothingSelected(p0: AdapterView<*>?) {}
 
@@ -334,10 +334,7 @@ class MyHealthFragment : Fragment() {
 
                     withContext(Dispatchers.Main) {
                         if (isAdded) {
-                            userModelList = sortedList
-                            adapter.clear()
-                            adapter.addAll(userModelList)
-                            adapter.notifyDataSetChanged()
+                            adapter.submitList(sortedList)
                         }
                     }
                 }
@@ -345,7 +342,7 @@ class MyHealthFragment : Fragment() {
         }
     }
 
-    private fun setTextWatcher(etSearch: EditText, btnAddMember: Button, lv: ListView) {
+    private fun setTextWatcher(etSearch: EditText, btnAddMember: Button) {
         var timer: CountDownTimer? = null
         textWatcher = object : TextWatcher {
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
@@ -361,10 +358,8 @@ class MyHealthFragment : Fragment() {
                             .contains("lastName", editable.toString(), Case.INSENSITIVE).or()
                             .contains("name", editable.toString(), Case.INSENSITIVE)
                             .sort("joinDate", Sort.DESCENDING).findAll()
-
-                        val adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, userModelList)
-                        lv.adapter = adapter
-                        btnAddMember.visibility = if (adapter.count == 0) View.VISIBLE else View.GONE
+                        adapter.submitList(userModelList)
+                        btnAddMember.visibility = if (adapter.itemCount == 0) View.VISIBLE else View.GONE
                     }
                 }.start()
             }
