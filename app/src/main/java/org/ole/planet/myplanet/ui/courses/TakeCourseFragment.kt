@@ -23,6 +23,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentTakeCourseBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -73,23 +74,45 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTakeCourseBinding.inflate(inflater, container, false)
-        mRealm = databaseService.realmInstance
-        userModel = userProfileDbHandler.userModel
-        currentCourse = mRealm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        binding.tvCourseTitle.text = currentCourse?.courseTitle
+        binding.loadingIndicator.visibility = View.VISIBLE
+        binding.contentLayout.visibility = View.GONE
+        mRealm = databaseService.realmInstance
+        userModel = userProfileDbHandler.userModel
         viewLifecycleOwner.lifecycleScope.launch {
-            steps = courseRepository.getCourseSteps(courseId)
+            val course: RealmMyCourse? = withTimeoutOrNull(3000) {
+                withContext(Dispatchers.IO) {
+                    databaseService.realmInstance.use { realm ->
+                        val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
+                        if (course != null) {
+                            realm.copyFromRealm(course)
+                        } else {
+                            null
+                        }
+                    }
+                }
+            }
+            binding.loadingIndicator.visibility = View.GONE
+            if (course == null) {
+                Toast.makeText(requireContext(), getString(R.string.failed_to_load_course), Toast.LENGTH_LONG).show()
+                requireActivity().supportFragmentManager.popBackStack()
+                return@launch
+            }
+            binding.contentLayout.visibility = View.VISIBLE
+            currentCourse = course
+            binding.tvCourseTitle.text = currentCourse?.courseTitle
+            withContext(Dispatchers.IO) {
+                steps = courseRepository.getCourseSteps(courseId)
+                currentStep = getCourseProgress()
+            }
             if (steps.isEmpty()) {
                 binding.nextStep.visibility = View.GONE
                 binding.previousStep.visibility = View.GONE
             }
-
-            currentStep = getCourseProgress()
             position = if (currentStep > 0) currentStep else 0
             setNavigationButtons()
             binding.viewPager2.adapter =
@@ -98,10 +121,8 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                     courseId,
                     steps.mapNotNull { it?.id }.toTypedArray()
                 )
-
             binding.viewPager2.isUserInputEnabled = false
             binding.viewPager2.setCurrentItem(position, false)
-
             binding.viewPager2.registerOnPageChangeCallback(object :
                 ViewPager2.OnPageChangeCallback() {
                 override fun onPageSelected(position: Int) {
@@ -109,9 +130,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                     this@TakeCourseFragment.onPageSelected(position)
                 }
             })
-
             updateStepDisplay(position)
-
             if (position == 0) {
                 binding.previousStep.visibility = View.GONE
             }
