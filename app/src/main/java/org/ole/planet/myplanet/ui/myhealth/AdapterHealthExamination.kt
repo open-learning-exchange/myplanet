@@ -27,14 +27,12 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 
-class AdapterHealthExamination(private val context: Context, private val mh: RealmMyHealthPojo, private val userModel: RealmUserModel?) : ListAdapter<RealmMyHealthPojo, ViewHolderMyHealthExamination>(HealthExaminationDiffCallback()) {
-    private lateinit var mRealm: Realm
-    private val displayNameCache = mutableMapOf<String, String>()
-    fun setmRealm(mRealm: Realm?) {
-        if (mRealm != null) {
-            this.mRealm = mRealm
-        }
-    }
+class AdapterHealthExamination(
+    private val context: Context,
+    private val mh: RealmMyHealthPojo,
+    private val userModel: RealmUserModel?,
+    private val userNameMap: Map<String, String?>
+) : ListAdapter<RealmMyHealthPojo, ViewHolderMyHealthExamination>(HealthExaminationDiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderMyHealthExamination {
         val rowExaminationBinding = RowExaminationBinding.inflate(
@@ -54,10 +52,7 @@ class AdapterHealthExamination(private val context: Context, private val mh: Rea
 
         val createdBy = getString("createdBy", encrypted)
         if (!TextUtils.isEmpty(createdBy) && !TextUtils.equals(createdBy, userModel?.id)) {
-            val name = displayNameCache.getOrPut(createdBy) {
-                val model = mRealm.where(RealmUserModel::class.java).equalTo("id", createdBy).findFirst()
-                model?.getFullName() ?: createdBy.split(colonRegex).dropLastWhile { it.isEmpty() }.toTypedArray().getOrNull(1) ?: createdBy
-            }
+            val name = userNameMap[createdBy] ?: createdBy.split(colonRegex).dropLastWhile { it.isEmpty() }.toTypedArray().getOrNull(1) ?: createdBy
             binding.txtDate.text = context.getString(R.string.two_strings, binding.txtDate.text, name).trimIndent()
             holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.md_grey_50))
         } else {

@@ -435,8 +435,21 @@ class MyHealthFragment : Fragment() {
                     binding.tvNoRecords.visibility = View.GONE
                     binding.tvDataPlaceholder.visibility = View.VISIBLE
 
-                    healthAdapter = AdapterHealthExamination(requireActivity(), mh, currentUser)
-                    healthAdapter.setmRealm(mRealm)
+                    val userIds = list.mapNotNull {
+                        it.getEncryptedDataAsJson(currentUser)?.let { json ->
+                            org.ole.planet.myplanet.utilities.JsonUtils.getString("createdBy", json)
+                        }
+                    }.distinct()
+
+                    val userMap = mRealm.where(RealmUserModel::class.java)
+                        .`in`("id", userIds.toTypedArray())
+                        .findAll()
+                        .mapNotNull { user ->
+                            user.id?.let { id -> id to user.getFullName() }
+                        }
+                        .toMap()
+
+                    healthAdapter = AdapterHealthExamination(requireActivity(), mh, currentUser, userMap)
                     binding.rvRecords.apply {
                         layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
                         isNestedScrollingEnabled = false
