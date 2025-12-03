@@ -25,7 +25,7 @@ class TaskNotificationWorker(appContext: Context, workerParams: WorkerParameters
         val userProfileDbHandler = entryPoint.userProfileDbHandler()
         val teamRepository = entryPoint.teamRepository()
 
-        val user = userProfileDbHandler.userModel
+        val user = userProfileDbHandler.getUserModelCopy()
         val userId = user?.id
         if (!userId.isNullOrBlank()) {
             val tasks = runCatching {
@@ -37,7 +37,7 @@ class TaskNotificationWorker(appContext: Context, workerParams: WorkerParameters
                     create(
                         applicationContext,
                         R.drawable.ole_logo,
-                        task.title,
+                        task.title ?: "",
                         "Task expires on " + formatDate(task.deadline, ""),
                     )
                 }

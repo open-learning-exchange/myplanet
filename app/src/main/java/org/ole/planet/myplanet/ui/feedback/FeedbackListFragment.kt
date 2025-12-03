@@ -69,7 +69,6 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentFeedbackListBinding.inflate(inflater, container, false)
-        userModel = userProfileDbHandler.userModel
 
         binding.fab.setOnClickListener {
             val feedbackFragment = FeedbackFragment()
@@ -168,10 +167,13 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        adapterFeedback = AdapterFeedback()
-        binding.rvFeedback.layoutManager = LinearLayoutManager(activity)
-        binding.rvFeedback.adapter = adapterFeedback
-        onFeedbackSubmitted()
+        viewLifecycleOwner.lifecycleScope.launch {
+            userModel = userProfileDbHandler.getUserModelCopy()
+            adapterFeedback = AdapterFeedback()
+            binding.rvFeedback.layoutManager = LinearLayoutManager(activity)
+            binding.rvFeedback.adapter = adapterFeedback
+            onFeedbackSubmitted()
+        }
     }
 
     override fun onDestroyView() {

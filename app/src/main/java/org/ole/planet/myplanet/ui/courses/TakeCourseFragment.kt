@@ -74,7 +74,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTakeCourseBinding.inflate(inflater, container, false)
         mRealm = databaseService.realmInstance
-        userModel = userProfileDbHandler.userModel
         currentCourse = mRealm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
         return binding.root
     }
@@ -83,6 +82,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         super.onViewCreated(view, savedInstanceState)
         binding.tvCourseTitle.text = currentCourse?.courseTitle
         viewLifecycleOwner.lifecycleScope.launch {
+            userModel = userProfileDbHandler.getUserModelCopy()
             steps = courseRepository.getCourseSteps(courseId)
             if (steps.isEmpty()) {
                 binding.nextStep.visibility = View.GONE
@@ -326,7 +326,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
     private fun getCourseProgress(): Int {
         return databaseService.withRealm { realm ->
-            val user = userProfileDbHandler.userModel
+            val user = userModel
             val courseProgressMap = RealmCourseProgress.getCourseProgress(realm, user?.id)
             courseProgressMap[courseId]?.asJsonObject?.get("current")?.asInt ?: 0
         }

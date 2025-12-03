@@ -25,7 +25,7 @@ class MembersFragment : BaseMemberFragment() {
     lateinit var userProfileDbHandler: UserProfileDbHandler
 
     private val viewModel: MembersViewModel by viewModels()
-    private lateinit var currentUser: RealmUserModel
+    private var currentUser: RealmUserModel? = null
     private var memberChangeListener: MemberChangeListener? = null
     fun setMemberChangeListener(listener: MemberChangeListener) {
         this.memberChangeListener = listener
@@ -33,12 +33,15 @@ class MembersFragment : BaseMemberFragment() {
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        currentUser = userProfileDbHandler.userModel ?: RealmUserModel()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        teamId?.let { viewModel.fetchMembers(it) }
+        viewLifecycleOwner.lifecycleScope.launch {
+            currentUser = userProfileDbHandler.getUserModelCopy()
+            teamId?.let { viewModel.fetchMembers(it) }
+        }
+
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
                 launch {
@@ -72,7 +75,7 @@ class MembersFragment : BaseMemberFragment() {
     override val adapter: RecyclerView.Adapter<*> by lazy {
         AdapterMemberRequest(
             requireActivity(),
-            currentUser,
+            currentUser ?: RealmUserModel(),
         ) { user, isAccepted ->
             viewModel.respondToRequest(teamId, user, isAccepted)
         }.apply { setTeamId(teamId) }

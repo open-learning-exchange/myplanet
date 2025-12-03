@@ -37,7 +37,7 @@ class SubmissionViewModel @Inject constructor(
     fun loadSubmissions(type: String, query: String) {
         viewModelScope.launch {
             if (allSubmissions.isEmpty()) {
-                val user = userProfileDbHandler.userModel
+                val user = userProfileDbHandler.getUserModelCopy()
                 allSubmissions = submissionRepository.getSubmissionsByUserId(user?.id ?: "")
                 _exams.value = HashMap(submissionRepository.getExamMapForSubmissions(allSubmissions))
             }
@@ -46,7 +46,7 @@ class SubmissionViewModel @Inject constructor(
     }
 
     private suspend fun filterSubmissions(type: String, query: String) {
-        val user = userProfileDbHandler.userModel
+        val user = userProfileDbHandler.getUserModelCopy()
         var filtered = allSubmissions
 
         filtered = when (type) {

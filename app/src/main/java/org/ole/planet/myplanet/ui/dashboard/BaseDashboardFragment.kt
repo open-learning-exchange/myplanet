@@ -340,7 +340,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
     override fun showResourceDownloadDialog() {
         viewLifecycleOwner.lifecycleScope.launch {
-            showDownloadDialog(getLibraryList(realm))
+            showDownloadDialog(getLibraryListSuspend(realm))
         }
     }
 
@@ -377,7 +377,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         if (model?.getRoleAsString()?.contains("health") == true) {
             settings?.let { transactionSyncManager.syncAllHealthData(realm, it, this) }
         } else {
-            settings?.let { transactionSyncManager.syncKeyIv(realm, it, this, profileDbHandler) }
+            settings?.let { transactionSyncManager.syncKeyIv(realm, it, this, model?.id) }
         }
     }
 

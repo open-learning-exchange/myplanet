@@ -158,12 +158,11 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
             adapter = AdapterSurvey(
                 requireActivity(),
                 mRealm,
-                model?.id,
+                model,
                 isTeam,
                 teamId,
                 this,
                 settings,
-                profileDbHandler,
                 surveyInfoMap,
                 bindingDataMap
             )

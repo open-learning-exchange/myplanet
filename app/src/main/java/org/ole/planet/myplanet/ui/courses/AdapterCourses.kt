@@ -42,7 +42,7 @@ class AdapterCourses(
     private val context: Context,
     private var courseList: List<RealmMyCourse?>,
     private val map: HashMap<String?, JsonObject>,
-    private val userProfileDbHandler: UserProfileDbHandler,
+    private var userModel: RealmUserModel?,
     private val tagRepository: TagRepository,
     private val lifecycleOwner: LifecycleOwner
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
@@ -55,7 +55,6 @@ class AdapterCourses(
     private var isAscending = true
     private var isTitleAscending = false
     private var areAllSelected = false
-    var userModel: RealmUserModel?= null
     private val tagCache: MutableMap<String, List<RealmTag>> = mutableMapOf()
     private val tagRequestsInProgress: MutableSet<String> = mutableSetOf()
 
@@ -189,7 +188,6 @@ class AdapterCourses(
         holder.rowCourseBinding.courseProgress.max = course.getNumberOfSteps()
         displayTagCloud(holder, position)
 
-        userModel = userProfileDbHandler.userModel
         val isGuest = userModel?.isGuest() ?: true
         if (!isGuest) setupRatingBar(holder, course)
         setupCheckbox(holder, course, position, isGuest)

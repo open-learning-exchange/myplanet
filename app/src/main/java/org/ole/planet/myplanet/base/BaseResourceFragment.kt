@@ -189,87 +189,7 @@ abstract class BaseResourceFragment : Fragment() {
         if (!isAdded) return
         Service(requireContext()).isPlanetAvailable(object : PlanetAvailableListener {
             override fun isAvailable() {
-                if (!isAdded) return
-                viewLifecycleOwner.lifecycleScope.launch {
-                    val userId = profileDbHandler.getUserModelCopy()?.id
-                    val librariesForDialog = if (userId.isNullOrBlank()) {
-                        dbMyLibrary
-                    } else {
-                        val userLibraries =
-                            dbMyLibrary.filter { it?.userId?.contains(userId) == true }
-                        if (userLibraries.isEmpty()) dbMyLibrary else userLibraries
-                    }
-
-                    if (librariesForDialog.isEmpty()) {
-                        return@launch
-                    }
-
-                    activity?.let { fragmentActivity ->
-                        val inflater = fragmentActivity.layoutInflater
-                        val rootView = fragmentActivity.findViewById<ViewGroup>(android.R.id.content)
-                        convertView =
-                            inflater.inflate(R.layout.my_library_alertdialog, rootView, false)
-
-                        val alertDialogBuilder =
-                            AlertDialog.Builder(fragmentActivity, R.style.AlertDialogTheme)
-                        alertDialogBuilder.setView(convertView)
-                            .setTitle(R.string.download_suggestion)
-                            .setPositiveButton(R.string.download_selected) { _: DialogInterface?, _: Int ->
-                                lv?.selectedItemsList?.let {
-                                    addToLibrary(librariesForDialog, it)
-                                    downloadFiles(librariesForDialog, it)
-                                }?.let { startDownload(it) }
-                            }.setNeutralButton(R.string.download_all) { _: DialogInterface?, _: Int ->
-                                lv?.selectedItemsList?.let {
-                                    addAllToLibrary(librariesForDialog)
-                                }
-                                startDownload(downloadAllFiles(librariesForDialog))
-                            }.setNegativeButton(R.string.txt_cancel, null)
-                        downloadSuggestionDialog?.dismiss()
-                        downloadSuggestionDialog = alertDialogBuilder.create()
-                        downloadSuggestionDialog?.let { dialog ->
-                            createListView(librariesForDialog, dialog)
-                            dialog.setOnDismissListener {
-                                downloadSuggestionDialog = null
-                            }
-                            dialog.show()
-                            dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled =
-                                (lv?.selectedItemsList?.size
-                                    ?: 0) > 0
-                        }
-                    }
-                }
-            }
-                    val inflater = fragmentActivity.layoutInflater
-                    val rootView = fragmentActivity.findViewById<ViewGroup>(android.R.id.content)
-                    convertView = inflater.inflate(R.layout.my_library_alertdialog, rootView, false)
-
-                    val alertDialogBuilder = AlertDialog.Builder(fragmentActivity, R.style.AlertDialogTheme)
-                    alertDialogBuilder.setView(convertView)
-                        .setTitle(R.string.download_suggestion)
-                        .setPositiveButton(R.string.download_selected) { _: DialogInterface?, _: Int ->
-                            lv?.selectedItemsList?.let {
-                                addToLibrary(librariesForDialog, it)
-                                downloadFiles(librariesForDialog, it)
-                            }?.let { startDownload(it) }
-                        }.setNeutralButton(R.string.download_all) { _: DialogInterface?, _: Int ->
-                            lv?.selectedItemsList?.let {
-                                addAllToLibrary(librariesForDialog)
-                            }
-                            startDownload(downloadAllFiles(librariesForDialog))
-                        }.setNegativeButton(R.string.txt_cancel, null)
-                    downloadSuggestionDialog?.dismiss()
-                    downloadSuggestionDialog = alertDialogBuilder.create()
-                    downloadSuggestionDialog?.let { dialog ->
-                        createListView(librariesForDialog, dialog)
-                        dialog.setOnDismissListener {
-                            downloadSuggestionDialog = null
-                        }
-                        dialog.show()
-                        dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = (lv?.selectedItemsList?.size
-                            ?: 0) > 0
-                    }
-                }
+                onPlanetAvailable(dbMyLibrary)
             }
 
             override fun notAvailable() {
@@ -279,6 +199,63 @@ abstract class BaseResourceFragment : Fragment() {
                 }
             }
         })
+    }
+
+    private fun onPlanetAvailable(dbMyLibrary: List<RealmMyLibrary?>) {
+        if (!isAdded) return
+        viewLifecycleOwner.lifecycleScope.launch {
+            val userId = profileDbHandler.getUserModelCopy()?.id
+            val librariesForDialog = if (userId.isNullOrBlank()) {
+                dbMyLibrary
+            } else {
+                val userLibraries =
+                    dbMyLibrary.filter { it?.userId?.contains(userId) == true }
+                if (userLibraries.isEmpty()) dbMyLibrary else userLibraries
+            }
+
+            if (librariesForDialog.isEmpty()) {
+                return@launch
+            }
+
+            activity?.let { fragmentActivity ->
+                val inflater = fragmentActivity.layoutInflater
+                val rootView = fragmentActivity.findViewById<ViewGroup>(android.R.id.content)
+                convertView =
+                    inflater.inflate(R.layout.my_library_alertdialog, rootView, false)
+
+                val alertDialogBuilder =
+                    AlertDialog.Builder(fragmentActivity, R.style.AlertDialogTheme)
+                alertDialogBuilder.setView(convertView)
+                    .setTitle(R.string.download_suggestion)
+                    .setPositiveButton(R.string.download_selected) { _: DialogInterface?, _: Int ->
+                        lv?.selectedItemsList?.let { selected ->
+                            viewLifecycleOwner.lifecycleScope.launch {
+                                addToLibrary(librariesForDialog, selected)
+                                val urls = downloadFiles(librariesForDialog, selected)
+                                startDownload(urls)
+                            }
+                        }
+                    }.setNeutralButton(R.string.download_all) { _: DialogInterface?, _: Int ->
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            addAllToLibrary(librariesForDialog)
+                            val urls = downloadAllFiles(librariesForDialog)
+                            startDownload(urls)
+                        }
+                    }.setNegativeButton(R.string.txt_cancel, null)
+                downloadSuggestionDialog?.dismiss()
+                downloadSuggestionDialog = alertDialogBuilder.create()
+                downloadSuggestionDialog?.let { dialog ->
+                    createListView(librariesForDialog, dialog)
+                    dialog.setOnDismissListener {
+                        downloadSuggestionDialog = null
+                    }
+                    dialog.show()
+                    dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled =
+                        (lv?.selectedItemsList?.size
+                            ?: 0) > 0
+                }
+            }
+        }
     }
 
     fun showPendingSurveyDialog() {
@@ -419,7 +396,7 @@ abstract class BaseResourceFragment : Fragment() {
         }
     }
 
-    suspend fun getLibraryList(mRealm: Realm): List<RealmMyLibrary> {
+    suspend fun getLibraryListSuspend(mRealm: Realm): List<RealmMyLibrary> {
         return libraryRepository.getLibraryListForUser(
             settings.getString("userId", "--")
         )
@@ -468,67 +445,63 @@ abstract class BaseResourceFragment : Fragment() {
         tvSelected?.text = selected
     }
 
-    fun addToLibrary(libraryItems: List<RealmMyLibrary?>, selectedItems: ArrayList<Int>) {
+    suspend fun addToLibrary(libraryItems: List<RealmMyLibrary?>, selectedItems: ArrayList<Int>) {
         if (!isRealmInitialized()) return
         
-        viewLifecycleOwner.lifecycleScope.launch {
-            val userId = profileDbHandler.getUserModelCopy()?.id ?: return@launch
+        val userId = profileDbHandler.getUserModelCopy()?.id ?: return
 
-            try {
-                if (!mRealm.isInTransaction) {
-                    mRealm.beginTransaction()
-                }
-
-                selectedItems.forEach { index ->
-                    val item = libraryItems[index]
-                    if (item?.userId?.contains(userId) == false) {
-                        item.setUserId(userId)
-                        RealmRemovedLog.onAdd(mRealm, "resources", userId, item.resourceId)
-                    }
-                }
-
-                if (mRealm.isInTransaction) {
-                    mRealm.commitTransaction()
-                }
-            } catch (e: Exception) {
-                if (mRealm.isInTransaction) {
-                    mRealm.cancelTransaction()
-                }
-                throw e
+        try {
+            if (!mRealm.isInTransaction) {
+                mRealm.beginTransaction()
             }
-            Utilities.toast(activity, getString(R.string.added_to_my_library))
+
+            selectedItems.forEach { index ->
+                val item = libraryItems[index]
+                if (item?.userId?.contains(userId) == false) {
+                    item.setUserId(userId)
+                    RealmRemovedLog.onAdd(mRealm, "resources", userId, item.resourceId)
+                }
+            }
+
+            if (mRealm.isInTransaction) {
+                mRealm.commitTransaction()
+            }
+        } catch (e: Exception) {
+            if (mRealm.isInTransaction) {
+                mRealm.cancelTransaction()
+            }
+            throw e
         }
+        Utilities.toast(activity, getString(R.string.added_to_my_library))
     }
 
-    fun addAllToLibrary(libraryItems: List<RealmMyLibrary?>) {
+    suspend fun addAllToLibrary(libraryItems: List<RealmMyLibrary?>) {
         if (!isRealmInitialized()) return
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            val userId = profileDbHandler.getUserModelCopy()?.id ?: return@launch
+        val userId = profileDbHandler.getUserModelCopy()?.id ?: return
 
-            try {
-                if (!mRealm.isInTransaction) {
-                    mRealm.beginTransaction()
-                }
-
-                libraryItems.forEach { libraryItem ->
-                    if (libraryItem?.userId?.contains(userId) == false) {
-                        libraryItem.setUserId(userId, mRealm)
-                        RealmRemovedLog.onAdd(mRealm, "resources", userId, libraryItem.resourceId)
-                    }
-                }
-
-                if (mRealm.isInTransaction) {
-                    mRealm.commitTransaction()
-                }
-            } catch (e: Exception) {
-                if (mRealm.isInTransaction) {
-                    mRealm.cancelTransaction()
-                }
-                throw e
+        try {
+            if (!mRealm.isInTransaction) {
+                mRealm.beginTransaction()
             }
-            Utilities.toast(activity, getString(R.string.added_to_my_library))
+
+            libraryItems.forEach { libraryItem ->
+                if (libraryItem?.userId?.contains(userId) == false) {
+                    libraryItem.setUserId(userId, mRealm)
+                    RealmRemovedLog.onAdd(mRealm, "resources", userId, libraryItem.resourceId)
+                }
+            }
+
+            if (mRealm.isInTransaction) {
+                mRealm.commitTransaction()
+            }
+        } catch (e: Exception) {
+            if (mRealm.isInTransaction) {
+                mRealm.cancelTransaction()
+            }
+            throw e
         }
+        Utilities.toast(activity, getString(R.string.added_to_my_library))
     }
 
     override fun onDestroyView() {

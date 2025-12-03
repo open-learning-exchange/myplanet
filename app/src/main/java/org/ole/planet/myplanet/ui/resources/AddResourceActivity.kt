@@ -54,12 +54,14 @@ class AddResourceActivity : AppCompatActivity() {
         EdgeToEdgeUtils.setupEdgeToEdgeWithKeyboard(this, binding.root)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
-        userModel = userProfileDbHandler.userModel
         resourceUrl = intent.getStringExtra("resource_local_url")
         levels = RealmList()
         subjects = RealmList()
         resourceFor = RealmList()
-        initializeViews()
+        lifecycleScope.launch {
+            userModel = userProfileDbHandler.getUserModelCopy()
+            initializeViews()
+        }
     }
 
     private fun initializeViews() {

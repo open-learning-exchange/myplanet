@@ -91,16 +91,14 @@ class TransactionSyncManager @Inject constructor(
         mRealm: Realm,
         settings: SharedPreferences,
         listener: SyncListener,
-        userProfileDbHandler: UserProfileDbHandler
+        userId: String?
     ) {
         listener.onSyncStarted()
-        val model = userProfileDbHandler.userModel
         val userName = SecurePrefs.getUserName(context, settings) ?: ""
         val password = SecurePrefs.getPassword(context, settings) ?: ""
         val header = "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)
-        val id = model?.id
         mRealm.executeTransactionAsync({ realm: Realm ->
-            val userModel = realm.where(RealmUserModel::class.java).equalTo("id", id).findFirst()
+            val userModel = realm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
             syncHealthData(userModel, header)
         }, { listener.onSyncComplete() }) { error: Throwable ->
             error.message?.let { listener.onSyncFailed(it) }

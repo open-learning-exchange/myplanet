@@ -41,11 +41,11 @@ class CourseProgressActivity : BaseActivity() {
         EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
         initActionBar()
         courseId = intent.getStringExtra("courseId").toString()
-        user = userProfileDbHandler.userModel
 
         binding.rvProgress.layoutManager = GridLayoutManager(this, 4)
 
         lifecycleScope.launch {
+            user = userProfileDbHandler.getUserModelCopy()
             val data = loadData(courseId, user?.id)
             if (data != null) {
                 updateUI(data)

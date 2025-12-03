@@ -118,16 +118,18 @@ class PDFReaderActivity : AppCompatActivity(), AudioRecordListener {
         Utilities.toast(this, getString(R.string.recording_stopped))
         cancelAll(this)
         updateTranslation(outputFile)
-        val userModel = userProfileDbHandler.userModel
-        if (userModel != null) {
-            AddResourceFragment.showAlert(
-                this,
-                outputFile,
-                myPersonalRepository,
-                userModel.id,
-                userModel.name,
-                lifecycleScope
-            ) {}
+        lifecycleScope.launch {
+            val userModel = userProfileDbHandler.getUserModelCopy()
+            if (userModel != null) {
+                AddResourceFragment.showAlert(
+                    this@PDFReaderActivity,
+                    outputFile,
+                    myPersonalRepository,
+                    userModel.id,
+                    userModel.name,
+                    lifecycleScope
+                ) {}
+            }
         }
         binding.fabRecord.setImageResource(R.drawable.ic_mic)
     }

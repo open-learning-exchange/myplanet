@@ -40,7 +40,7 @@ class AdapterResource(
     private var libraryList: List<RealmMyLibrary?>,
     private var ratingMap: HashMap<String?, JsonObject>,
     private val tagRepository: TagRepository,
-    private val userModel: RealmUserModel?
+    private var userModel: RealmUserModel?
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private var diffJob: Job? = null
     private val selectedItems: MutableList<RealmMyLibrary?> = ArrayList()
@@ -98,6 +98,11 @@ class AdapterResource(
 
     fun setListener(listener: OnLibraryItemSelected?) {
         this.listener = listener
+    }
+
+    fun setUserModel(user: RealmUserModel?) {
+        this.userModel = user
+        notifyDataSetChanged()
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {

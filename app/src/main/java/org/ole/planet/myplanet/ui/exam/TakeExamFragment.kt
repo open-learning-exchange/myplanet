@@ -64,46 +64,48 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     override fun onCreateView(inflater: LayoutInflater, parent: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTakeExamBinding.inflate(inflater, parent, false)
         listAns = HashMap()
-        user = userProfileDbHandler.userModel
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        initExam()
-        questions = mRealm.where(RealmExamQuestion::class.java).equalTo("examId", exam?.id).findAll()
-        binding.tvQuestionCount.text = getString(R.string.Q1, questions?.size)
-        var q: RealmQuery<*> = mRealm.where(RealmSubmission::class.java)
-            .equalTo("userId", user?.id)
-            .equalTo("parentId", if (!TextUtils.isEmpty(exam?.courseId)) {
-                id + "@" + exam?.courseId
-            } else {
-                id
-            }).sort("startTime", Sort.DESCENDING)
-        if (type == "exam") {
-            q = q.equalTo("status", "pending")
-        }
-        sub = q.findFirst() as RealmSubmission?
-        val courseId = exam?.courseId
-        isCertified = isCourseCertified(mRealm, courseId)
-
-        if ((questions?.size ?: 0) > 0) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            user = userProfileDbHandler.getUserModelCopy()
+            initExam()
+            questions = mRealm.where(RealmExamQuestion::class.java).equalTo("examId", exam?.id).findAll()
+            binding.tvQuestionCount.text = getString(R.string.Q1, questions?.size)
+            var q: RealmQuery<*> = mRealm.where(RealmSubmission::class.java)
+                .equalTo("userId", user?.id)
+                .equalTo("parentId", if (!TextUtils.isEmpty(exam?.courseId)) {
+                    id + "@" + exam?.courseId
+                } else {
+                    id
+                }).sort("startTime", Sort.DESCENDING)
             if (type == "exam") {
-                clearAllExistingAnswers {
+                q = q.equalTo("status", "pending")
+            }
+            sub = q.findFirst() as RealmSubmission?
+            val courseId = exam?.courseId
+            isCertified = isCourseCertified(mRealm, courseId)
+
+            if ((questions?.size ?: 0) > 0) {
+                if (type == "exam") {
+                    clearAllExistingAnswers {
+                        createSubmission()
+                        startExam(questions?.get(currentIndex))
+                        updateNavButtons()
+                    }
+                } else {
                     createSubmission()
                     startExam(questions?.get(currentIndex))
                     updateNavButtons()
                 }
             } else {
-                createSubmission()
-                startExam(questions?.get(currentIndex))
-                updateNavButtons()
+                binding.container.visibility = View.GONE
+                binding.btnSubmit.visibility = View.GONE
+                binding.tvQuestionCount.setText(R.string.no_questions)
+                Snackbar.make(binding.tvQuestionCount, R.string.no_questions_available, Snackbar.LENGTH_LONG).show()
             }
-        } else {
-            binding.container.visibility = View.GONE
-            binding.btnSubmit.visibility = View.GONE
-            binding.tvQuestionCount.setText(R.string.no_questions)
-            Snackbar.make(binding.tvQuestionCount, R.string.no_questions_available, Snackbar.LENGTH_LONG).show()
         }
 
         binding.btnBack.setOnClickListener {
@@ -115,8 +117,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             goToNextQuestion()
         }
 
-
-        binding.etAnswer.addTextChangedListener(object : TextWatcher {
+        answerTextWatcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: Editable?) {
@@ -137,7 +138,8 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                 }
                 updateNavButtons()
             }
-        })
+        }
+        binding.etAnswer.addTextChangedListener(answerTextWatcher)
     }
 
     private fun saveCurrentAnswer() {
@@ -306,7 +308,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         membershipDoc.teamId = teamId
         sub?.membershipDoc = membershipDoc
 
-        val userModel = userProfileDbHandler.userModel
+        val userModel = user
 
         try {
             val userJson = JSONObject()

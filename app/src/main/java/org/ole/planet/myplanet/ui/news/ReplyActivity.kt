@@ -70,10 +70,12 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         title = "Reply"
         imageList = RealmList()
         id = intent.getStringExtra("id")
-        user = userProfileDbHandler.userModel
-        activityReplyBinding.rvReply.layoutManager = LinearLayoutManager(this)
-        activityReplyBinding.rvReply.isNestedScrollingEnabled = false
-        showData(id)
+        lifecycleScope.launch {
+            user = userProfileDbHandler.getUserModelCopy()
+            activityReplyBinding.rvReply.layoutManager = LinearLayoutManager(this@ReplyActivity)
+            activityReplyBinding.rvReply.isNestedScrollingEnabled = false
+            showData(id)
+        }
         openFolderLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
             if (result.resultCode == RESULT_OK && result.data != null) {
                 val url = result.data?.data

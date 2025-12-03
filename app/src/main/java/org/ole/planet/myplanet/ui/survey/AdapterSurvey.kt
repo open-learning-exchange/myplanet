@@ -21,6 +21,7 @@ import org.ole.planet.myplanet.model.RealmMembershipDoc
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.SurveyBindingData
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
@@ -28,12 +29,11 @@ import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 class AdapterSurvey(
     private val context: Context,
     private val mRealm: Realm,
-    private val userId: String?,
+    private val userModel: RealmUserModel?,
     private val isTeam: Boolean,
     val teamId: String?,
     private val surveyAdoptListener: SurveyAdoptListener,
     private val settings: SharedPreferences,
-    private val userProfileDbHandler: UserProfileDbHandler,
     private val surveyInfoMap: Map<String, SurveyInfo>,
     private val bindingDataMap: Map<String, SurveyBindingData>
 ) : ListAdapter<RealmStepExam, AdapterSurvey.ViewHolderSurvey>(SurveyDiffCallback()) {
@@ -156,7 +156,7 @@ class AdapterSurvey(
                     else -> context.getString(R.string.record_survey)
                 }
 
-                if (userId?.startsWith("guest") == true) {
+                if (userModel?.id?.startsWith("guest") == true) {
                     startSurvey.visibility = View.GONE
                 }
 
@@ -168,7 +168,6 @@ class AdapterSurvey(
         }
 
         fun adoptSurvey(exam: RealmStepExam, teamId: String?) {
-            val userModel = userProfileDbHandler.userModel
             val sParentCode = settings.getString("parentCode", "")
             val planetCode = settings.getString("planetCode", "")
 

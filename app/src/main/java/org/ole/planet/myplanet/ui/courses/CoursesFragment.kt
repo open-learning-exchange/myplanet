@@ -208,7 +208,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 requireActivity(),
                 sortedCourseList,
                 map,
-                userProfileDbHandler,
+                model,
                 tagRepository,
                 this@CoursesFragment
             )
@@ -245,7 +245,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             requireActivity(),
             sortedCourseList,
             map,
-            userProfileDbHandler,
+            model,
             tagRepository,
             this@CoursesFragment
         )
@@ -267,22 +267,26 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        userModel = userProfileDbHandler.userModel
-        searchTags = ArrayList()
-        initializeView()
-        updateCheckBoxState(false)
-        setupButtonVisibility()
-        setupEventListeners()
-        clearTags()
-        showNoData(tvMessage, adapterCourses.itemCount, "courses")
-        setupUI(requireView().findViewById(R.id.my_course_parent_layout), requireActivity())
+        viewLifecycleOwner.lifecycleScope.launch {
+            userModel = userProfileDbHandler.getUserModelCopy()
+            searchTags = ArrayList()
+            initializeView()
+            updateCheckBoxState(false)
+            setupButtonVisibility()
+            setupEventListeners()
+            clearTags()
+            if (::adapterCourses.isInitialized) {
+                showNoData(tvMessage, adapterCourses.itemCount, "courses")
+            }
+            setupUI(requireView().findViewById(R.id.my_course_parent_layout), requireActivity())
 
-        if (!isMyCourseLib) tvFragmentInfo.setText(R.string.our_courses)
-        additionalSetup()
-        setupMyProgressButton()
+            if (!isMyCourseLib) tvFragmentInfo.setText(R.string.our_courses)
+            additionalSetup()
+            setupMyProgressButton()
 
-        realtimeSyncHelper = RealtimeSyncHelper(this, this)
-        realtimeSyncHelper.setupRealtimeSync()
+            realtimeSyncHelper = RealtimeSyncHelper(this@CoursesFragment, this@CoursesFragment)
+            realtimeSyncHelper.setupRealtimeSync()
+        }
     }
 
     private fun setupButtonVisibility() {
@@ -753,7 +757,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         }
 
         adapterCourses = AdapterCourses(
-            requireActivity(), filteredCourseList, map, userProfileDbHandler,
+            requireActivity(), filteredCourseList, map, model,
             tagRepository, this@CoursesFragment
         )
         adapterCourses.setProgressMap(progressMap)
