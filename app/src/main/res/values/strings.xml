@@ -1175,5 +1175,6 @@
     <string name="click_to_assign_member">Click to assign a team member</string>
     <string name="saving">Saving…</string>
     <string name="achievement_saved">Achievement Updated</string>
+    <string name="unknown_error">Unknown error</string>
 
 </resources>

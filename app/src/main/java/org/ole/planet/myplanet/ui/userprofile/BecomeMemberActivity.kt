@@ -6,12 +6,14 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.widget.ArrayAdapter
+import androidx.lifecycle.lifecycleScope
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import java.util.Calendar
 import java.util.Locale
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
@@ -27,11 +29,14 @@ import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class BecomeMemberActivity : BaseActivity() {
     private lateinit var activityBecomeMemberBinding: ActivityBecomeMemberBinding
     private lateinit var mRealm: Realm
+    @Inject
+    lateinit var memberService: Service
     var dob: String = ""
     var guest: Boolean = false
     private var usernameWatcher: TextWatcher? = null
@@ -142,25 +147,32 @@ class BecomeMemberActivity : BaseActivity() {
         add("roles", roles)
     }
 
-    private fun addMember(info: MemberInfo, realm: Realm) {
+    private fun addMember(info: MemberInfo) {
         val obj = buildMemberJson(info)
         val customProgressDialog = CustomProgressDialog(this).apply {
             setText(getString(R.string.creating_member_account))
-            show()
         }
 
-        Service(this).becomeMember(obj, object : Service.CreateUserCallback {
-            override fun onSuccess(success: String) {
-                runOnUiThread { Utilities.toast(this@BecomeMemberActivity, success) }
-            }
-        }, object : SecurityDataCallback {
-            override fun onSecurityDataUpdated() {
-                runOnUiThread {
+        lifecycleScope.launch {
+            try {
+                customProgressDialog.show()
+                val result = memberService.becomeMemberSuspend(obj, object : SecurityDataCallback {
+                    override fun onSecurityDataUpdated() {
+                        autoLoginNewMember(info.username, info.password)
+                    }
+                })
+
+                result.onSuccess { message ->
+                    Utilities.toast(this@BecomeMemberActivity, message)
+                }.onFailure { error ->
+                    Utilities.toast(this@BecomeMemberActivity, error.message ?: getString(R.string.unknown_error))
+                }
+            } finally {
+                if (customProgressDialog.isShowing()) {
                     customProgressDialog.dismiss()
-                    autoLoginNewMember(info.username, info.password)
                 }
             }
-        })
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -200,7 +212,7 @@ class BecomeMemberActivity : BaseActivity() {
         activityBecomeMemberBinding.btnSubmit.setOnClickListener {
             val info = collectMemberInfo()
             if (validateMemberInfo(info, mRealm)) {
-                addMember(info, mRealm)
+                addMember(info)
             }
         }
     }
