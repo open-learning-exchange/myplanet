@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.dashboard
 import android.app.DatePickerDialog
 import android.content.Intent
 import android.graphics.Typeface
+import android.os.Trace
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
@@ -26,7 +27,10 @@ import io.realm.Sort
 import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.NotificationCallback
 import org.ole.planet.myplanet.callback.SyncListener
@@ -63,6 +67,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     private var params = LinearLayout.LayoutParams(250, 100)
     private var di: DialogUtils.CustomProgressDialog? = null
     private lateinit var offlineActivitiesResults: RealmResults<RealmOfflineActivity>
+    private var dashboardJob: Job? = null
 
     @Inject
     lateinit var transactionSyncManager: TransactionSyncManager
@@ -111,6 +116,19 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         v.findViewById<TextView>(R.id.txtRole).text = getString(R.string.user_role, model?.getRoleAsString())
         val offlineVisits = profileDbHandler.offlineVisits
         v.findViewById<TextView>(R.id.txtFullName).text = getString(R.string.user_name, fullName, offlineVisits)
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: android.os.Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        postponeEnterTransition()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        dashboardJob = viewLifecycleOwner.lifecycleScope.launch {
+            loadDashboardData()
+            startPostponedEnterTransition()
+        }
     }
 
     override fun forceDownloadNewsImages() {
@@ -288,6 +306,11 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         super.onDestroy()
     }
 
+    override fun onStop() {
+        super.onStop()
+        dashboardJob?.cancel()
+    }
+
     private fun setCountText(countText: Int, c: Class<*>, v: View) {
         when (c) {
             RealmMyCourse::class.java -> {
@@ -308,28 +331,40 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         v.visibility = if (count == 0) View.GONE else View.VISIBLE
     }
 
-    fun initView(view: View) {
-        view.findViewById<View>(R.id.imageView).setOnClickListener {
-            homeItemClickListener?.openCallFragment(UserProfileFragment())
-        }
-        view.findViewById<View>(R.id.txtFullName).setOnClickListener {
-            homeItemClickListener?.openCallFragment(UserProfileFragment())
-        }
-        viewModel.loadUserContent(settings?.getString("userId", "--"))
-        observeUiState()
+    private suspend fun loadDashboardData() {
+        Trace.beginSection("DashboardLoad")
+        try {
+            withContext(Dispatchers.IO) {
+                val userId = settings?.getString("userId", "--")
+                setUpMyLife(userId)
+                viewModel.loadUserContent(userId)
+            }
+            withContext(Dispatchers.Main) {
+                view?.let {
+                    onLoaded(it)
+                    it.findViewById<View>(R.id.imageView).setOnClickListener {
+                        homeItemClickListener?.openCallFragment(UserProfileFragment())
+                    }
+                    it.findViewById<View>(R.id.txtFullName).setOnClickListener {
+                        homeItemClickListener?.openCallFragment(UserProfileFragment())
+                    }
 
-        view.findViewById<FlexboxLayout>(R.id.flexboxLayoutCourse).flexDirection = FlexDirection.ROW
-        view.findViewById<FlexboxLayout>(R.id.flexboxLayoutTeams).flexDirection = FlexDirection.ROW
-        val myLifeFlex = view.findViewById<FlexboxLayout>(R.id.flexboxLayoutMyLife)
-        myLifeFlex.flexDirection = FlexDirection.ROW
+                    it.findViewById<FlexboxLayout>(R.id.flexboxLayoutCourse).flexDirection =
+                        FlexDirection.ROW
+                    it.findViewById<FlexboxLayout>(R.id.flexboxLayoutTeams).flexDirection =
+                        FlexDirection.ROW
+                    val myLifeFlex = it.findViewById<FlexboxLayout>(R.id.flexboxLayoutMyLife)
+                    myLifeFlex.flexDirection = FlexDirection.ROW
+                    myLifeListInit(myLifeFlex)
 
-        val userId = settings?.getString("userId", "--")
-        setUpMyLife(userId)
-        myLifeListInit(myLifeFlex)
-
-
-        if (isRealmInitialized() && mRealm.isInTransaction) {
-            mRealm.commitTransaction()
+                    if (isRealmInitialized() && mRealm.isInTransaction) {
+                        mRealm.commitTransaction()
+                    }
+                }
+                observeUiState()
+            }
+        } finally {
+            Trace.endSection()
         }
     }
 
