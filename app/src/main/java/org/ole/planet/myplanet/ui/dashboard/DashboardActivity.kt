@@ -11,6 +11,7 @@ import android.graphics.PorterDuff
 import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.Bundle
+import android.os.Trace
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
@@ -52,6 +53,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
@@ -137,12 +139,23 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        Trace.beginSection("DashboardActivity.onCreate")
         super.onCreate(savedInstanceState)
         mRealm = databaseService.realmInstance
         checkUser()
         initViews()
-        updateAppTitle()
         notificationManager = NotificationUtils.getInstance(this)
+
+        collectUiState()
+
+        lifecycleScope.launch {
+            deferredSetup()
+        }
+        Trace.endSection()
+    }
+
+    private suspend fun deferredSetup() {
+        updateAppTitle()
         if (handleGuestAccess()) return
         setupNavigation()
         handleInitialFragment()
@@ -151,11 +164,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         libraryListener = RealmChangeListener { onRealmDataChanged() }
         submissionListener = RealmChangeListener { onRealmDataChanged() }
         taskListener = RealmChangeListener { onRealmDataChanged() }
-
         addBackPressCallback()
         handleNotificationIntent(intent)
-        collectUiState()
-
         binding.root.post {
             setupSystemNotificationReceiver()
             checkIfShouldShowNotifications()
@@ -199,25 +209,31 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    private fun updateAppTitle() {
-        try {
-            val userProfileModel = profileDbHandler.userModel
-            if (userProfileModel != null) {
-                var name: String? = userProfileModel.getFullName()
-                if (name.isNullOrBlank()) {
-                    name = profileDbHandler.userModel?.name
+    private suspend fun updateAppTitle() {
+        val title = withTimeoutOrNull(5000L) {
+            withContext(Dispatchers.IO) {
+                try {
+                    val userProfileModel = profileDbHandler.userModel
+                    if (userProfileModel != null) {
+                        val name = userProfileModel.getFullName().takeIf { !it.isNullOrBlank() }
+                            ?: userProfileModel.name
+                        val communityName = settings.getString("communityName", "")
+                        if (user?.planetCode.isNullOrEmpty()) {
+                            "${getString(R.string.planet)} $communityName"
+                        } else {
+                            "${getString(R.string.planet)} ${user?.planetCode}"
+                        }
+                    } else {
+                        getString(R.string.app_project_name)
+                    }
+                } catch (e: Exception) {
+                    null
                 }
-                val communityName = settings.getString("communityName", "")
-                binding.appBarBell.appTitleName.text = if (user?.planetCode == "") {
-                    "${getString(R.string.planet)} $communityName"
-                } else {
-                    "${getString(R.string.planet)} ${user?.planetCode}"
-                }
-            } else {
-                binding.appBarBell.appTitleName.text = getString(R.string.app_project_name)
             }
-        } catch (err: Exception) {
-            throw RuntimeException(err)
+        } ?: getString(R.string.app_project_name)
+
+        withContext(Dispatchers.Main) {
+            binding.appBarBell.appTitleName.text = title
         }
     }
 
