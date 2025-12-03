@@ -8,6 +8,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Case
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -25,6 +26,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 @AndroidEntryPoint
 class DictionaryActivity : BaseActivity() {
     private lateinit var fragmentDictionaryBinding: FragmentDictionaryBinding
+    private var searchJob: Job? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         fragmentDictionaryBinding = FragmentDictionaryBinding.inflate(layoutInflater)
@@ -105,29 +107,42 @@ class DictionaryActivity : BaseActivity() {
 
     private fun setClickListener() {
         fragmentDictionaryBinding.btnSearch.setOnClickListener {
+            if (searchJob?.isActive == true) {
+                return@setOnClickListener
+            }
+            searchJob = lifecycleScope.launch {
+                val searchText = fragmentDictionaryBinding.etSearch.text.toString()
+                val result = searchDictionary(searchText)
+                if (result != null) {
+                    fragmentDictionaryBinding.tvResult.text = result
+                } else {
+                    Utilities.toast(
+                        this@DictionaryActivity,
+                        getString(R.string.word_not_available_in_our_database)
+                    )
+                }
+            }
+        }
+    }
+    private suspend fun searchDictionary(searchText: String): CharSequence? {
+        return withContext(Dispatchers.IO) {
+            var result: CharSequence? = null
             databaseService.withRealm { realm ->
                 val dict = realm.where(RealmDictionary::class.java)
-                    .equalTo(
-                        "word",
-                        fragmentDictionaryBinding.etSearch.text.toString(),
-                        Case.INSENSITIVE
-                    )
+                    .equalTo("word", searchText, Case.INSENSITIVE)
                     .findFirst()
                 if (dict != null) {
-                    fragmentDictionaryBinding.tvResult.text = HtmlCompat.fromHtml(
+                    val formattedResult = HtmlCompat.fromHtml(
                         "Definition of '<b>" + dict.word + "</b>'<br/><br/>\n " +
                             "<b>" + dict.definition + "\n</b><br/><br/><br/>" +
                             "<b>Synonym : </b>" + dict.synonym + "\n<br/><br/>" +
                             "<b>Antonoym : </b>" + dict.antonym + "\n<br/>",
                         HtmlCompat.FROM_HTML_MODE_LEGACY
                     )
-                } else {
-                    Utilities.toast(
-                        this,
-                        getString(R.string.word_not_available_in_our_database)
-                    )
+                    result = formattedResult
                 }
             }
+            result
         }
     }
 }
