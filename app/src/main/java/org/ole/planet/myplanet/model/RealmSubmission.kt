@@ -46,10 +46,12 @@ open class RealmSubmission : RealmObject() {
     companion object {
         @JvmStatic
         fun insert(mRealm: Realm, submission: JsonObject) {
+
             if (submission.has("_attachments")) {
                 return
             }
 
+            val id = JsonUtils.getString("_id", submission)
             var transactionStarted = false
 
             try {
@@ -58,8 +60,9 @@ open class RealmSubmission : RealmObject() {
                     transactionStarted = true
                 }
 
-                val id = JsonUtils.getString("_id", submission)
                 var sub = mRealm.where(RealmSubmission::class.java).equalTo("_id", id).findFirst()
+                val isNewSubmission = sub == null
+
                 if (sub == null) {
                     sub = mRealm.createObject(RealmSubmission::class.java, id)
                 }
@@ -68,7 +71,7 @@ open class RealmSubmission : RealmObject() {
                 sub?._rev = JsonUtils.getString("_rev", submission)
                 sub?.grade = JsonUtils.getLong("grade", submission)
                 sub?.type = JsonUtils.getString("type", submission)
-                sub?.uploaded = JsonUtils.getString("status", submission) == "graded"
+                sub?.uploaded = JsonUtils.getString("_rev", submission).isNotEmpty()
                 sub?.startTime = JsonUtils.getLong("startTime", submission)
                 sub?.lastUpdateTime = JsonUtils.getLong("lastUpdateTime", submission)
                 sub?.parentId = JsonUtils.getString("parentId", submission)
@@ -105,6 +108,13 @@ open class RealmSubmission : RealmObject() {
                     if (us[0].startsWith("org.couchdb.user:")) us[0] else "org.couchdb.user:${us[0]}"
                 } else {
                     userId
+                }
+
+                if (submission.has("answers")) {
+                    val answersArray = submission.get("answers").asJsonArray
+                    for (i in 0 until answersArray.size()) {
+                        val answer = answersArray[i].asJsonObject
+                    }
                 }
 
                 if (submission.has("answers")) {
