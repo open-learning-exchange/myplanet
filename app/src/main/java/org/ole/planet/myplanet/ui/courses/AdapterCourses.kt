@@ -19,6 +19,7 @@ import com.google.gson.JsonObject
 import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnCourseItemSelected
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
@@ -385,7 +386,9 @@ class AdapterCourses(
                 tagCache[courseId] = tags
                 val adapterPosition = holder.bindingAdapterPosition
                 if (adapterPosition != RecyclerView.NO_POSITION) {
-                    notifyItemChanged(adapterPosition, TAG_PAYLOAD)
+                    withContext(kotlinx.coroutines.Dispatchers.Main) {
+                        notifyItemChanged(adapterPosition, TAG_PAYLOAD)
+                    }
                 }
             } finally {
                 tagRequestsInProgress.remove(courseId)
