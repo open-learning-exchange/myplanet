@@ -137,7 +137,7 @@ class QuestionAnswerAdapter : ListAdapter<QuestionAnswerPair, QuestionAnswerAdap
 
 class QuestionAnswerDiffCallback : DiffUtil.ItemCallback<QuestionAnswerPair>() {
     override fun areItemsTheSame(oldItem: QuestionAnswerPair, newItem: QuestionAnswerPair): Boolean {
-        return oldItem.question._id == newItem.question._id
+        return oldItem.question.id == newItem.question.id
     }
 
     override fun areContentsTheSame(oldItem: QuestionAnswerPair, newItem: QuestionAnswerPair): Boolean {
