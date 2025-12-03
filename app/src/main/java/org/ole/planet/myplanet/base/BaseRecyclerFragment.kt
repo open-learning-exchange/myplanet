@@ -264,31 +264,8 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
-    fun filterLibraryByTag(s: String, tags: List<RealmTag>): List<RealmMyLibrary> {
-        val normalizedSearchTerm = normalizeText(s)
-        var list = getData(s, RealmMyLibrary::class.java)
-        list = if (isMyCourseLib) {
-            getMyLibraryByUserId(model?.id, list)
-        } else {
-            getOurLibrary(model?.id, list)
-        }
-
-        val libraries = if (tags.isNotEmpty()) {
-            val filteredLibraries = mutableListOf<RealmMyLibrary>()
-            for (library in list) {
-                filter(tags, library, filteredLibraries)
-            }
-            filteredLibraries
-        } else {
-            list
-        }
-
-        return libraries
-    }
-
     fun normalizeText(str: String): String {
-        return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
-            .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
+        return org.ole.planet.myplanet.utilities.TextUtils.normalizeText(str)
     }
 
     fun filterCourseByTag(s: String, tags: List<RealmTag>): List<RealmMyCourse> {
@@ -323,14 +300,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                 library?.let { libraries.add(it) }
             }
         }
-    }
-
-    fun applyFilter(libraries: List<RealmMyLibrary>): List<RealmMyLibrary> {
-        val newList: MutableList<RealmMyLibrary> = ArrayList()
-        for (l in libraries) {
-            if (isValidFilter(l)) newList.add(l)
-        }
-        return newList
     }
 
     private fun applyCourseFilter(courses: List<RealmMyCourse>): List<RealmMyCourse> {
