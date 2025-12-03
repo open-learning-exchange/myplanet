@@ -9,6 +9,8 @@ import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import org.ole.planet.myplanet.databinding.ItemQuestionAnswerBinding
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmExamQuestion
 
@@ -17,16 +19,7 @@ data class QuestionAnswerPair(
     val answer: RealmAnswer?
 )
 
-class QuestionAnswerAdapter : RecyclerView.Adapter<QuestionAnswerAdapter.ViewHolder>() {
-    private var questionAnswerPairs = mutableListOf<QuestionAnswerPair>()
-
-    fun updateData(pairs: List<QuestionAnswerPair>) {
-        questionAnswerPairs.clear()
-        questionAnswerPairs.addAll(pairs)
-        notifyDataSetChanged()
-        Log.d("RecyclerViewDebug", "Adapter notified of ${questionAnswerPairs.size} items")
-    }
-
+class QuestionAnswerAdapter : ListAdapter<QuestionAnswerPair, QuestionAnswerAdapter.ViewHolder>(QuestionAnswerDiffCallback()) {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = ItemQuestionAnswerBinding.inflate(
             LayoutInflater.from(parent.context),
@@ -37,13 +30,12 @@ class QuestionAnswerAdapter : RecyclerView.Adapter<QuestionAnswerAdapter.ViewHol
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.bind(questionAnswerPairs[position])
-        if (position < 5 || position >= questionAnswerPairs.size - 2) {
+        val pair = getItem(position)
+        holder.bind(pair)
+        if (position < 5 || position >= itemCount - 2) {
             Log.d("RecyclerViewDebug", "Binding item at position $position")
         }
     }
-
-    override fun getItemCount(): Int = questionAnswerPairs.size
 
     class ViewHolder(private val binding: ItemQuestionAnswerBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(pair: QuestionAnswerPair) {
@@ -140,5 +132,15 @@ class QuestionAnswerAdapter : RecyclerView.Adapter<QuestionAnswerAdapter.ViewHol
             }
             return null
         }
+    }
+}
+
+class QuestionAnswerDiffCallback : DiffUtil.ItemCallback<QuestionAnswerPair>() {
+    override fun areItemsTheSame(oldItem: QuestionAnswerPair, newItem: QuestionAnswerPair): Boolean {
+        return oldItem.question._id == newItem.question._id
+    }
+
+    override fun areContentsTheSame(oldItem: QuestionAnswerPair, newItem: QuestionAnswerPair): Boolean {
+        return oldItem == newItem
     }
 }
