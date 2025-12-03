@@ -53,9 +53,34 @@ class DatabaseService(context: Context) {
 
     suspend fun executeTransactionAsync(transaction: (Realm) -> Unit) {
         withContext(Dispatchers.IO) {
+            // Get the actual caller (skip DatabaseService and coroutine frames)
+            val caller = Thread.currentThread().stackTrace
+                .firstOrNull {
+                    !it.className.startsWith("org.ole.planet.myplanet.datamanager.DatabaseService") &&
+                    !it.className.startsWith("kotlin.coroutines") &&
+                    !it.className.startsWith("kotlinx.coroutines") &&
+                    !it.className.startsWith("dalvik.system") &&
+                    !it.className.startsWith("java.lang.Thread")
+                }
+                ?.let { "${it.className}.${it.methodName}:${it.lineNumber}" }
+                ?: "Unknown"
+
+            val getInstanceTime = System.currentTimeMillis()
+            android.util.Log.d("RatingPerformance", "[${getInstanceTime}] TX from: $caller")
+
             Realm.getDefaultInstance().use { realm ->
+                val transactionStartTime = System.currentTimeMillis()
                 realm.executeTransaction { transactionRealm ->
+                    val waitTime = System.currentTimeMillis() - transactionStartTime
+                    if (waitTime > 100) {
+                        android.util.Log.w("RatingPerformance", "[${transactionStartTime}] ⚠️ SLOW: $caller waited ${waitTime}ms!")
+                    }
+                    val operationStartTime = System.currentTimeMillis()
                     transaction(transactionRealm)
+                    val operationTime = System.currentTimeMillis() - operationStartTime
+                    if (operationTime > 5000) {
+                        android.util.Log.e("RatingPerformance", "[${operationStartTime}] 🔥 BLOCKING: $caller took ${operationTime}ms to execute!")
+                    }
                 }
             }
         }
