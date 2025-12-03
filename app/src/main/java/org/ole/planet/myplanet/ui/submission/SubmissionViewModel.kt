@@ -32,6 +32,9 @@ class SubmissionViewModel @Inject constructor(
     private val _submissionCounts = MutableStateFlow<Map<String?, Int>>(emptyMap())
     val submissionCounts: StateFlow<Map<String?, Int>> = _submissionCounts
 
+    private val _submissionsByParent = MutableStateFlow<List<RealmSubmission>>(emptyList())
+    val submissionsByParent: StateFlow<List<RealmSubmission>> = _submissionsByParent
+
     private var allSubmissions: List<RealmSubmission> = emptyList()
 
     fun loadSubmissions(type: String, query: String) {
@@ -91,5 +94,14 @@ class SubmissionViewModel @Inject constructor(
             }
         }.toMap()
         _userNames.value = userNameMap
+    }
+
+    fun loadSubmissions(parentId: String, userId: String) {
+        viewModelScope.launch {
+            submissionRepository.getSubmissionsByParentId(parentId, userId)
+                .collect { submissions ->
+                    _submissionsByParent.value = submissions
+                }
+        }
     }
 }

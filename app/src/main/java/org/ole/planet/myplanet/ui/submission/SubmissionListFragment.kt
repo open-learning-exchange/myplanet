@@ -1,29 +1,34 @@
 package org.ole.planet.myplanet.ui.submission
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
-import io.realm.Sort
-import java.io.File
-import org.ole.planet.myplanet.callback.OnHomeItemClickListener
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.databinding.FragmentSubmissionListBinding
 import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.utilities.SubmissionPdfGenerator
+import java.io.File
 
 @AndroidEntryPoint
 class SubmissionListFragment : Fragment() {
     private var _binding: FragmentSubmissionListBinding? = null
     private val binding get() = _binding!!
-    private lateinit var mRealm: Realm
+    private val viewModel: SubmissionViewModel by viewModels()
     private var parentId: String? = null
     private var examTitle: String? = null
     private var userId: String? = null
+    private lateinit var adapter: SubmissionListAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,53 +47,78 @@ class SubmissionListFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        mRealm = Realm.getDefaultInstance()
-
         binding.tvTitle.text = examTitle ?: "Submissions"
 
         setupRecyclerView()
+        observeSubmissions()
         loadSubmissions()
-    }
 
-    override fun onResume() {
-        super.onResume()
-        loadSubmissions()
+        binding.btnDownloadReport.setOnClickListener {
+            generateReport(adapter.currentList)
+        }
     }
 
     private fun setupRecyclerView() {
+        adapter = SubmissionListAdapter(requireContext()) { submission, action ->
+            when (action) {
+                "view" -> openSubmissionDetail(submission.id)
+                "download" -> generateSubmissionPdf(submission)
+            }
+        }
         binding.rvSubmissions.layoutManager = LinearLayoutManager(context)
-        binding.rvSubmissions.addItemDecoration(
-            DividerItemDecoration(context, DividerItemDecoration.VERTICAL)
-        )
+        binding.rvSubmissions.addItemDecoration(DividerItemDecoration(context, DividerItemDecoration.VERTICAL))
+        binding.rvSubmissions.adapter = adapter
+    }
+
+    private fun observeSubmissions() {
+        lifecycleScope.launch {
+            viewModel.submissionsByParent.collect { submissions ->
+                adapter.submitList(submissions)
+            }
+        }
     }
 
     private fun loadSubmissions() {
-        val submissions = mRealm.where(RealmSubmission::class.java)
-            .equalTo("parentId", parentId)
-            .equalTo("userId", userId)
-            .sort("lastUpdateTime", Sort.DESCENDING)
-            .findAll()
+        parentId?.let { pId ->
+            userId?.let { uId ->
+                viewModel.loadSubmissions(pId, uId)
+            }
+        }
+    }
 
-        val listener = activity as? OnHomeItemClickListener
-        val adapter = SubmissionListAdapter(
-            requireContext(),
-            submissions.toList(),
-            listener
-        )
-        binding.rvSubmissions.adapter = adapter
+    private fun openSubmissionDetail(id: String?) {
+        val b = Bundle()
+        b.putString("id", id)
+        val fragment = SubmissionDetailFragment()
+        fragment.arguments = b
+        parentFragmentManager.beginTransaction()
+            .replace(org.ole.planet.myplanet.R.id.content_frame, fragment)
+            .addToBackStack(null)
+            .commit()
+    }
 
-        binding.btnDownloadReport.setOnClickListener {
-            generateReport(submissions.toList())
+    private fun generateSubmissionPdf(submission: RealmSubmission) {
+        val mRealm = Realm.getDefaultInstance()
+        val file = SubmissionPdfGenerator.generateSubmissionPdf(requireContext(), submission, mRealm)
+        mRealm.close()
+
+        if (file != null) {
+            Toast.makeText(context, "PDF saved to ${file.absolutePath}", Toast.LENGTH_LONG).show()
+            openPdf(file)
+        } else {
+            Toast.makeText(context, "Failed to generate PDF", Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun generateReport(submissions: List<RealmSubmission>) {
-        val file = org.ole.planet.myplanet.utilities.SubmissionPdfGenerator.generateMultipleSubmissionsPdf(
+        val mRealm = Realm.getDefaultInstance()
+        val file = SubmissionPdfGenerator.generateMultipleSubmissionsPdf(
             requireContext(),
             submissions,
             examTitle ?: "Submissions",
             mRealm
         )
+        mRealm.close()
 
         if (file != null) {
             Toast.makeText(context, "Report saved to ${file.absolutePath}", Toast.LENGTH_LONG).show()
@@ -100,14 +130,14 @@ class SubmissionListFragment : Fragment() {
 
     private fun openPdf(file: File) {
         try {
-            val uri = androidx.core.content.FileProvider.getUriForFile(
+            val uri = FileProvider.getUriForFile(
                 requireContext(),
                 "${requireContext().packageName}.provider",
                 file
             )
-            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+            val intent = Intent(Intent.ACTION_VIEW).apply {
                 setDataAndType(uri, "application/pdf")
-                flags = android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
             }
             startActivity(intent)
         } catch (e: Exception) {
@@ -117,7 +147,6 @@ class SubmissionListFragment : Fragment() {
     }
 
     override fun onDestroyView() {
-        mRealm.close()
         _binding = null
         super.onDestroyView()
     }

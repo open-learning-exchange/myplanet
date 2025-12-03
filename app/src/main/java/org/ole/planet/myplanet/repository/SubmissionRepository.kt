@@ -23,4 +23,5 @@ interface SubmissionRepository {
     suspend fun createSurveySubmission(examId: String, userId: String?)
     suspend fun saveSubmission(submission: RealmSubmission)
     suspend fun markSubmissionComplete(id: String, payload: com.google.gson.JsonObject)
+    suspend fun getSubmissionsByParentId(parentId: String, userId: String): kotlinx.coroutines.flow.Flow<List<RealmSubmission>>
 }

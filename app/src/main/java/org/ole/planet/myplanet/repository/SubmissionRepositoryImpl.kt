@@ -7,12 +7,23 @@ import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
+import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
 
 class SubmissionRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
 ) : RealmRepository(databaseService), SubmissionRepository {
+    override suspend fun getSubmissionsByParentId(parentId: String, userId: String): Flow<List<RealmSubmission>> {
+        val query = { realm: io.realm.Realm ->
+            realm.where(RealmSubmission::class.java)
+                .equalTo("parentId", parentId)
+                .equalTo("userId", userId)
+                .sort("lastUpdateTime", Sort.DESCENDING)
+                .findAllAsync()
+        }
+        return queryListFlow(query)
+    }
 
     private fun RealmSubmission.examIdFromParentId(): String? {
         return parentId?.substringBefore("@")
