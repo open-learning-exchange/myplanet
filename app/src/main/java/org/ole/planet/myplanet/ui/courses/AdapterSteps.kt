@@ -4,6 +4,8 @@ import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -14,27 +16,19 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowStepsBinding
-import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.repository.SubmissionRepository
-import org.ole.planet.myplanet.utilities.DiffUtils
 
 class AdapterSteps(
     private val context: Context,
-    private var list: List<RealmCourseStep>,
     private val submissionRepository: SubmissionRepository,
     private val providedScope: CoroutineScope? = null
-) : RecyclerView.Adapter<AdapterSteps.ViewHolder>() {
+) : ListAdapter<StepItem, AdapterSteps.ViewHolder>(STEP_ITEM_COMPARATOR) {
     private val descriptionVisibilityMap = mutableMapOf<String, Boolean>()
     private var currentlyVisibleStepId: String? = null
     private var internalScope: CoroutineScope? = null
     private val coroutineScope: CoroutineScope
         get() = providedScope ?: internalScope!!
     private val examQuestionCountCache = mutableMapOf<String, Int>()
-    init {
-        for (step in list) {
-            step.id?.let { descriptionVisibilityMap.getOrPut(it) { false } }
-        }
-    }
 
     override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
         super.onAttachedToRecyclerView(recyclerView)
@@ -48,7 +42,7 @@ class AdapterSteps(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.bind(list[position])
+        holder.bind(getItem(position))
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int, payloads: MutableList<Any>) {
@@ -61,21 +55,11 @@ class AdapterSteps(
         }
     }
 
-    fun setData(newList: List<RealmCourseStep>) {
-        val diffResult = DiffUtils.calculateDiff(list, newList, areItemsTheSame = { old, new ->
-            old.id == new.id
-        }, areContentsTheSame = { old, new ->
-            old == new
-        })
-        list = newList
-        for (step in newList) {
+    override fun submitList(list: List<StepItem>?) {
+        list?.forEach { step ->
             step.id?.let { descriptionVisibilityMap.getOrPut(it) { false } }
         }
-        diffResult.dispatchUpdatesTo(this)
-    }
-
-    override fun getItemCount(): Int {
-        return list.size
+        super.submitList(list)
     }
 
     inner class ViewHolder(private val rowStepsBinding: RowStepsBinding) : RecyclerView.ViewHolder(rowStepsBinding.root) {
@@ -85,14 +69,14 @@ class AdapterSteps(
             itemView.setOnClickListener {
                 val position = bindingAdapterPosition
                 if (position != RecyclerView.NO_POSITION) {
-                    list.getOrNull(position)?.id?.let { stepId ->
+                    getItem(position)?.id?.let { stepId ->
                         toggleDescriptionVisibility(stepId)
                     }
                 }
             }
         }
 
-        fun bind(step: RealmCourseStep) {
+        fun bind(step: StepItem) {
             rowStepsBinding.tvTitle.text = step.stepTitle
             rowStepsBinding.tvDescription.text = context.getString(R.string.test_size, 0)
             loadJob?.cancel()
@@ -112,7 +96,7 @@ class AdapterSteps(
                             return@launch
                         }
                         val adapterPosition = bindingAdapterPosition
-                        val currentStepId = list.getOrNull(adapterPosition)?.id
+                        val currentStepId = getItem(adapterPosition)?.id
                         if (currentStepId == stepId) {
                             rowStepsBinding.tvDescription.text = context.getString(R.string.test_size, size)
                         }
@@ -125,7 +109,7 @@ class AdapterSteps(
         fun updateDescriptionVisibility() {
             val position = bindingAdapterPosition
             if (position != RecyclerView.NO_POSITION) {
-                val stepId = list.getOrNull(position)?.id
+                val stepId = getItem(position)?.id
                 if (stepId != null) {
                     if (descriptionVisibilityMap[stepId] == true) {
                         rowStepsBinding.tvDescription.visibility = View.VISIBLE
@@ -147,22 +131,20 @@ class AdapterSteps(
         val newVisibility = !currentVisibility
 
         if (newVisibility) {
-            // Hide the previously visible item if there is one
             currentlyVisibleStepId?.let {
                 if (it != stepId) {
                     descriptionVisibilityMap[it] = false
-                    val oldPosition = list.indexOfFirst { step -> step.id == it }
+                    val oldPosition = currentList.indexOfFirst { step -> step.id == it }
                     if (oldPosition != -1) notifyItemChanged(oldPosition, false)
                 }
             }
             currentlyVisibleStepId = stepId
         } else if (currentlyVisibleStepId == stepId) {
-            // If the currently visible item is collapsed, clear the tracker
             currentlyVisibleStepId = null
         }
 
         descriptionVisibilityMap[stepId] = newVisibility
-        val position = list.indexOfFirst { it.id == stepId }
+        val position = currentList.indexOfFirst { it.id == stepId }
         if (position != -1) {
             notifyItemChanged(position, newVisibility)
         }
@@ -177,5 +159,15 @@ class AdapterSteps(
         super.onDetachedFromRecyclerView(recyclerView)
         internalScope?.cancel()
         internalScope = null
+    }
+
+    companion object {
+        private val STEP_ITEM_COMPARATOR = object : DiffUtil.ItemCallback<StepItem>() {
+            override fun areItemsTheSame(oldItem: StepItem, newItem: StepItem): Boolean =
+                oldItem.id == newItem.id
+
+            override fun areContentsTheSame(oldItem: StepItem, newItem: StepItem): Boolean =
+                oldItem == newItem
+        }
     }
 }
