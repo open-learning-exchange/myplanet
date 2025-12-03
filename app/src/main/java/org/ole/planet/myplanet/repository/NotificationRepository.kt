@@ -15,6 +15,6 @@ interface NotificationRepository {
     suspend fun getSurveyId(relatedId: String?): String?
     suspend fun getTaskDetails(relatedId: String?): Triple<String, String?, String?>?
     suspend fun getJoinRequestTeamId(relatedId: String?): String?
-    fun getJoinRequestDetails(relatedId: String?): Pair<String, String>
-    fun getTaskTeamName(taskTitle: String): String?
+    suspend fun getJoinRequestDetails(relatedId: String?): Pair<String, String>
+    suspend fun getTaskTeamName(taskTitle: String): String?
 }

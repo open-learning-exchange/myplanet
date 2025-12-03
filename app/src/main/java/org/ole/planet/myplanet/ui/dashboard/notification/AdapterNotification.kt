@@ -5,9 +5,12 @@ import android.text.Html
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.lifecycle.findViewTreeLifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import java.util.regex.Pattern
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNotificationsBinding
 import org.ole.planet.myplanet.model.RealmNotification
@@ -49,8 +52,10 @@ class AdapterNotification(
 
         fun bind(notification: RealmNotification) {
             val context = rowNotificationsBinding.root.context
-            val currentNotification = formatNotificationMessage(notification, context)
-            rowNotificationsBinding.title.text = Html.fromHtml(currentNotification, Html.FROM_HTML_MODE_LEGACY)
+            itemView.findViewTreeLifecycleOwner()?.lifecycleScope?.launch {
+                val currentNotification = formatNotificationMessage(notification, context)
+                rowNotificationsBinding.title.text = Html.fromHtml(currentNotification, Html.FROM_HTML_MODE_LEGACY)
+            }
             if (notification.isRead) {
                 rowNotificationsBinding.btnMarkAsRead.visibility = View.GONE
                 rowNotificationsBinding.root.alpha = 0.5f
@@ -67,7 +72,7 @@ class AdapterNotification(
             }
         }
 
-        private fun formatNotificationMessage(notification: RealmNotification, context: Context): String {
+        private suspend fun formatNotificationMessage(notification: RealmNotification, context: Context): String {
             return when (notification.type.lowercase()) {
                 "survey" -> context.getString(R.string.pending_survey_notification) + " ${notification.message}"
                 "task" -> {
@@ -105,7 +110,7 @@ class AdapterNotification(
             }
         }
 
-        private fun formatTaskNotification(context: Context, taskTitle: String, dateValue: String): String {
+        private suspend fun formatTaskNotification(context: Context, taskTitle: String, dateValue: String): String {
             val teamName = notificationRepository.getTaskTeamName(taskTitle)
             return if (teamName != null) {
                 "<b>$teamName</b>: ${context.getString(R.string.task_notification, taskTitle, dateValue)}"

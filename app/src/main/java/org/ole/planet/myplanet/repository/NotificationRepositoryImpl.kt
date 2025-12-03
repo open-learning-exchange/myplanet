@@ -3,6 +3,8 @@ package org.ole.planet.myplanet.repository
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNotification
@@ -47,40 +49,44 @@ class NotificationRepositoryImpl @Inject constructor(
     override suspend fun getUnreadCount(userId: String?): Int {
         if (userId == null) return 0
 
-        return count(RealmNotification::class.java) {
-            equalTo("userId", userId)
-            equalTo("isRead", false)
-        }.toInt()
+        return withContext(Dispatchers.IO) {
+            count(RealmNotification::class.java) {
+                equalTo("userId", userId)
+                equalTo("isRead", false)
+            }.toInt()
+        }
     }
 
     override suspend fun updateResourceNotification(userId: String?, resourceCount: Int) {
         userId ?: return
 
-        val notificationId = "$userId:resource:count"
-        val existingNotification = findByField(RealmNotification::class.java, "id", notificationId)
+        withContext(Dispatchers.IO) {
+            val notificationId = "$userId:resource:count"
+            val existingNotification = findByField(RealmNotification::class.java, "id", notificationId)
 
-        if (resourceCount > 0) {
-            val previousCount = existingNotification?.message?.toIntOrNull() ?: 0
-            val countChanged = previousCount != resourceCount
+            if (resourceCount > 0) {
+                val previousCount = existingNotification?.message?.toIntOrNull() ?: 0
+                val countChanged = previousCount != resourceCount
 
-            val notification = existingNotification?.apply {
-                message = "$resourceCount"
-                relatedId = "$resourceCount"
-                if (countChanged) {
-                    this.isRead = false
+                val notification = existingNotification?.apply {
+                    message = "$resourceCount"
+                    relatedId = "$resourceCount"
+                    if (countChanged) {
+                        this.isRead = false
+                        this.createdAt = Date()
+                    }
+                } ?: RealmNotification().apply {
+                    this.id = notificationId
+                    this.userId = userId
+                    this.type = "resource"
+                    this.message = "$resourceCount"
+                    this.relatedId = "$resourceCount"
                     this.createdAt = Date()
                 }
-            } ?: RealmNotification().apply {
-                this.id = notificationId
-                this.userId = userId
-                this.type = "resource"
-                this.message = "$resourceCount"
-                this.relatedId = "$resourceCount"
-                this.createdAt = Date()
+                save(notification)
+            } else {
+                existingNotification?.let { delete(RealmNotification::class.java, "id", it.id) }
             }
-            save(notification)
-        } else {
-            existingNotification?.let { delete(RealmNotification::class.java, "id", it.id) }
         }
     }
 
@@ -105,30 +111,34 @@ class NotificationRepositoryImpl @Inject constructor(
         val actualUserId = userId ?: return emptySet()
         val updatedIds = mutableSetOf<String>()
         val now = Date()
-        executeTransaction { realm ->
-            realm.where(RealmNotification::class.java)
-                .equalTo("userId", actualUserId)
-                .equalTo("isRead", false)
-                .findAll()
-                ?.forEach { notification ->
-                    notification.isRead = true
-                    notification.createdAt = now
-                    updatedIds.add(notification.id)
-                }
+        withContext(Dispatchers.IO) {
+            executeTransaction { realm ->
+                realm.where(RealmNotification::class.java)
+                    .equalTo("userId", actualUserId)
+                    .equalTo("isRead", false)
+                    .findAll()
+                    ?.forEach { notification ->
+                        notification.isRead = true
+                        notification.createdAt = now
+                        updatedIds.add(notification.id)
+                    }
+            }
         }
         return updatedIds
     }
 
     override suspend fun getNotifications(userId: String, filter: String): List<RealmNotification> {
-        return queryList(RealmNotification::class.java) {
-            equalTo("userId", userId)
-            notEqualTo("message", "INVALID")
-            isNotEmpty("message")
-            when (filter) {
-                "read" -> equalTo("isRead", true)
-                "unread" -> equalTo("isRead", false)
+        return withContext(Dispatchers.IO) {
+            queryList(RealmNotification::class.java) {
+                equalTo("userId", userId)
+                notEqualTo("message", "INVALID")
+                isNotEmpty("message")
+                when (filter) {
+                    "read" -> equalTo("isRead", true)
+                    "unread" -> equalTo("isRead", false)
+                }
+                sort("isRead", io.realm.Sort.ASCENDING, "createdAt", io.realm.Sort.DESCENDING)
             }
-            sort("isRead", io.realm.Sort.ASCENDING, "createdAt", io.realm.Sort.DESCENDING)
         }
     }
 
@@ -178,35 +188,39 @@ class NotificationRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun getJoinRequestDetails(relatedId: String?): Pair<String, String> {
-        return databaseService.withRealm { realm ->
-            val joinRequest = realm.where(RealmMyTeam::class.java)
-                .equalTo("_id", relatedId)
-                .equalTo("docType", "request")
-                .findFirst()
-            val team = joinRequest?.teamId?.let { tid ->
-                realm.where(RealmMyTeam::class.java)
-                    .equalTo("_id", tid)
+    override suspend fun getJoinRequestDetails(relatedId: String?): Pair<String, String> {
+        return withContext(Dispatchers.IO) {
+            databaseService.withRealm { realm ->
+                val joinRequest = realm.where(RealmMyTeam::class.java)
+                    .equalTo("_id", relatedId)
+                    .equalTo("docType", "request")
                     .findFirst()
+                val team = joinRequest?.teamId?.let { tid ->
+                    realm.where(RealmMyTeam::class.java)
+                        .equalTo("_id", tid)
+                        .findFirst()
+                }
+                val requester = joinRequest?.userId?.let { uid ->
+                    realm.where(RealmUserModel::class.java)
+                        .equalTo("id", uid)
+                        .findFirst()
+                }
+                Pair(requester?.name ?: "Unknown User", team?.name ?: "Unknown Team")
             }
-            val requester = joinRequest?.userId?.let { uid ->
-                realm.where(RealmUserModel::class.java)
-                    .equalTo("id", uid)
-                    .findFirst()
-            }
-            Pair(requester?.name ?: "Unknown User", team?.name ?: "Unknown Team")
         }
     }
 
-    override fun getTaskTeamName(taskTitle: String): String? {
-        return databaseService.withRealm { realm ->
-            val taskObj = realm.where(RealmTeamTask::class.java)
-                .equalTo("title", taskTitle)
-                .findFirst()
-            val team = realm.where(RealmMyTeam::class.java)
-                .equalTo("_id", taskObj?.teamId)
-                .findFirst()
-            team?.name
+    override suspend fun getTaskTeamName(taskTitle: String): String? {
+        return withContext(Dispatchers.IO) {
+            databaseService.withRealm { realm ->
+                val taskObj = realm.where(RealmTeamTask::class.java)
+                    .equalTo("title", taskTitle)
+                    .findFirst()
+                val team = realm.where(RealmMyTeam::class.java)
+                    .equalTo("_id", taskObj?.teamId)
+                    .findFirst()
+                team?.name
+            }
         }
     }
 }
