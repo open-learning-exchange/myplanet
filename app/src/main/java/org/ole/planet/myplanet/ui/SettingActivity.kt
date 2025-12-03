@@ -12,6 +12,7 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
+import com.google.android.material.snackbar.Snackbar
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -155,16 +156,25 @@ class SettingActivity : AppCompatActivity() {
             autoDownload?.onPreferenceChangeListener = OnPreferenceChangeListener { preference, newValue ->
                 val isChecked = newValue as Boolean
                 if (isChecked) {
+                    Snackbar.make(requireView(), "Preparing downloads...", Snackbar.LENGTH_SHORT).show()
                     preference.isEnabled = false
                     defaultPref.edit { putBoolean("beta_auto_download", true) }
                     lifecycleScope.launch {
                         try {
-                            val files = libraryList ?: withContext(Dispatchers.IO) {
-                                databaseService.withRealm { realm ->
-                                    realm.copyFromRealm(getAllLibraryList(realm)).also { libraryList = it }
+                            withTimeout(30000L) {
+                                val files = libraryList ?: withContext(Dispatchers.IO) {
+                                    databaseService.withRealm { realm ->
+                                        realm.copyFromRealm(getAllLibraryList(realm)).also { libraryList = it }
+                                    }
                                 }
+                                backgroundDownload(downloadAllFiles(files), requireContext())
                             }
-                            backgroundDownload(downloadAllFiles(files), requireContext())
+                            Snackbar.make(requireView(), "Downloads started.", Snackbar.LENGTH_SHORT).show()
+                        } catch (e: TimeoutCancellationException) {
+                            Snackbar.make(requireView(), "Error: Timed out preparing downloads.", Snackbar.LENGTH_LONG).show()
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                            Snackbar.make(requireView(), "Error: Failed to start downloads.", Snackbar.LENGTH_LONG).show()
                         } finally {
                             preference.isEnabled = true
                         }
