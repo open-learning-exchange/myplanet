@@ -182,6 +182,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
     override fun onCreate() {
         super.onCreate()
+        context = this
         setupCriticalProperties()
         performDeferredInitialization()
         setupStrictMode()
@@ -201,7 +202,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         }
     }
     private fun initApp() {
-        context = this
         applicationScope.launch(Dispatchers.Default) {
             startListenNetworkState()
         }
