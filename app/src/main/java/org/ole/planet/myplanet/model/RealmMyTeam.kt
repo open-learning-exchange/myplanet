@@ -255,7 +255,7 @@ open class RealmMyTeam : RealmObject() {
             if (docType.isNotEmpty()) {
                 query = query.equalTo("docType", docType)
             }
-            val myTeam = query.findAll()
+            val myTeam = query.limit(50).findAll()
             val list = mutableListOf<RealmUserModel>()
             for (team in myTeam) {
                 val model = mRealm.where(RealmUserModel::class.java)

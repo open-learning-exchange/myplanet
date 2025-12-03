@@ -62,6 +62,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     private val backPressedInterval: Long = 2000
     private var teamList = java.util.ArrayList<String?>()
     private var teamAdapter: ArrayAdapter<String?>? = null
+    private var lastFetchedTeamId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -431,33 +432,51 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
 
     fun getTeamMembers() {
         selectedTeamId = prefData.getSelectedTeamId().toString()
-        if (selectedTeamId?.isNotEmpty() == true) {
-            users = databaseService.withRealm { realm ->
-                RealmMyTeam.getUsers(selectedTeamId, realm, "membership").map { realm.copyFromRealm(it) }.toMutableList()
+        if (selectedTeamId == lastFetchedTeamId && users != null) {
+            mAdapter?.submitList(prefData.getSavedUsers().toMutableList())
+            return
+        }
+
+        binding.teamMembersProgress.visibility = View.VISIBLE
+        binding.recyclerView.isEnabled = false
+
+        lifecycleScope.launch {
+            try {
+                val userList = withContext(Dispatchers.IO) {
+                    if (selectedTeamId?.isNotEmpty() == true) {
+                        users = databaseService.withRealm { realm ->
+                            RealmMyTeam.getUsers(selectedTeamId, realm, "membership").map { realm.copyFromRealm(it) }.toMutableList()
+                        }
+                        val teamUserList = (users as? MutableList<RealmUserModel>)?.map {
+                            User(it.name ?: "", it.name ?: "", "", it.userImage ?: "", "team")
+                        } ?: emptyList()
+
+                        val existingUsers = prefData.getSavedUsers().toMutableList()
+                        val filteredExistingUsers = existingUsers.filter { it.source != "team" }
+                        val updatedUserList = teamUserList.filterNot { user -> filteredExistingUsers.any { it.name == user.name } } + filteredExistingUsers
+                        prefData.setSavedUsers(updatedUserList)
+                        lastFetchedTeamId = selectedTeamId
+                    }
+                    prefData.getSavedUsers().toMutableList()
+                }
+
+                updateTeamDropdown()
+
+                if (mAdapter == null) {
+                    mAdapter = TeamListAdapter(this@LoginActivity)
+                    binding.recyclerView.layoutManager = LinearLayoutManager(this@LoginActivity)
+                    binding.recyclerView.adapter = mAdapter
+                }
+                mAdapter?.submitList(userList)
+
+                binding.recyclerView.isNestedScrollingEnabled = true
+                binding.recyclerView.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
+                binding.recyclerView.isVerticalScrollBarEnabled = true
+            } finally {
+                binding.teamMembersProgress.visibility = View.GONE
+                binding.recyclerView.isEnabled = true
             }
-            val userList = (users as? MutableList<RealmUserModel>)?.map {
-                User(it.name ?: "", it.name ?: "", "", it.userImage ?: "", "team")
-            } ?: emptyList()
-
-            val existingUsers = prefData.getSavedUsers().toMutableList()
-            val filteredExistingUsers = existingUsers.filter { it.source != "team" }
-            val updatedUserList = userList.filterNot { user -> filteredExistingUsers.any { it.name == user.name } } + filteredExistingUsers
-            prefData.setSavedUsers(updatedUserList)
         }
-
-        updateTeamDropdown()
-
-        if (mAdapter == null) {
-            mAdapter = TeamListAdapter(this)
-            binding.recyclerView.layoutManager = LinearLayoutManager(this)
-            binding.recyclerView.adapter = mAdapter
-        }
-        mAdapter?.submitList(prefData.getSavedUsers().toMutableList())
-
-        binding.recyclerView.isNestedScrollingEnabled = true
-        binding.recyclerView.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
-        binding.recyclerView.isVerticalScrollBarEnabled = true
-
     }
     override fun onItemClick(user: User) {
         if (user.password?.isEmpty() == true && user.source != "guest") {
