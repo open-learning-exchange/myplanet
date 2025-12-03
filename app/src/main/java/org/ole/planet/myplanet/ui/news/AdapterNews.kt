@@ -23,6 +23,10 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.github.chrisbanes.photoview.PhotoView
 import com.google.gson.JsonArray
@@ -58,7 +62,16 @@ import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.makeExpandable
 
-class AdapterNews(var context: Context, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userProfileDbHandler: UserProfileDbHandler, private val databaseService: DatabaseService) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
+class AdapterNews(
+    var context: Context,
+    private var currentUser: RealmUserModel?,
+    private val parentNews: RealmNews?,
+    private val teamName: String = "",
+    private val teamId: String? = null,
+    private val userProfileDbHandler: UserProfileDbHandler,
+    private val databaseService: DatabaseService,
+    private val coroutineScope: CoroutineScope,
+) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem ->
             if (oldItem === newItem) return@itemCallback true
@@ -106,6 +119,25 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         val raw = settings.getString("communityLeaders", "") ?: ""
         RealmUserModel.parseLeadersJson(raw)
     }
+    private fun preloadUsers(list: List<RealmNews?>) {
+        coroutineScope.launch(Dispatchers.Main) {
+            val userIds = list.mapNotNull { it?.userId }.distinct()
+            if (userIds.isEmpty()) return@launch
+
+            val detachedUsers = withContext(Dispatchers.IO) {
+                databaseService.withRealm { realm ->
+                    val users = realm.where(RealmUserModel::class.java)
+                        .`in`("id", userIds.toTypedArray())
+                        .findAll()
+                    realm.copyFromRealm(users)
+                }
+            }
+            detachedUsers.forEach { user ->
+                user.id?.let { userCache[it] = user }
+            }
+        }
+    }
+
 
     fun setImageList(imageList: RealmList<String>?) {
         this.imageList = imageList
@@ -234,33 +266,32 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
 
     private fun configureUser(holder: ViewHolderNews, news: RealmNews): RealmUserModel? {
         val userId = news.userId
-        val userModel = when {
-            userId.isNullOrEmpty() -> null
-            userCache.containsKey(userId) -> userCache[userId]
-            ::mRealm.isInitialized -> {
-                val managedUser = mRealm.where(RealmUserModel::class.java)
-                    .equalTo("id", userId)
-                    .findFirst()
-                val detachedUser = managedUser?.let {
-                    try {
-                        mRealm.copyFromRealm(it)
-                    } catch (e: Exception) {
-                        null
+        val userModel = if (userId.isNullOrEmpty()) {
+            null
+        } else {
+            userCache[userId]
+        }
+
+        if (userModel == null && !userId.isNullOrEmpty()) {
+            coroutineScope.launch(Dispatchers.Main) {
+                val detachedUser = withContext(Dispatchers.IO) {
+                    databaseService.withRealm { realm ->
+                        val user = realm.where(RealmUserModel::class.java)
+                            .equalTo("id", userId)
+                            .findFirst()
+                        user?.let { realm.copyFromRealm(it) }
                     }
                 }
                 if (detachedUser != null) {
                     userCache[userId] = detachedUser
-                } else if (managedUser == null) {
-                    userCache[userId] = null
+                    notifyItemChanged(holder.bindingAdapterPosition)
                 }
-                detachedUser ?: managedUser
             }
-            else -> null
         }
+
         val userFullName = userModel?.getFullNameWithMiddleName()?.trim()
         if (userModel != null && currentUser != null) {
-            holder.binding.tvName.text =
-                if (userFullName.isNullOrEmpty()) news.userName else userFullName
+            holder.binding.tvName.text = if (userFullName.isNullOrEmpty()) news.userName else userFullName
             ImageUtils.loadImage(userModel.userImage, holder.binding.imgUser)
             showHideButtons(news, holder)
         } else {
@@ -393,6 +424,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
 
     private fun submitListSafely(list: List<RealmNews?>, commitCallback: Runnable? = null) {
         userCache.clear()
+        preloadUsers(list)
         val detachedList = list.map { news ->
             if (news?.isValid == true && ::mRealm.isInitialized) {
                 try {
