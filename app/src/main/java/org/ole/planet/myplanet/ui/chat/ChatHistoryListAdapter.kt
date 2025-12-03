@@ -27,11 +27,6 @@ import org.ole.planet.myplanet.ui.news.GrandChildAdapter
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.GsonUtils
 
-data class ChatShareTargets(
-    val community: RealmMyTeam?,
-    val teams: List<RealmMyTeam>,
-    val enterprises: List<RealmMyTeam>,
-)
 
 class ChatHistoryListAdapter(
     private val context: Context,

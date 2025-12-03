@@ -842,12 +842,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         actionView.setOnClickListener(onClickListener)
     }
 
-    fun refreshChatHistoryList() {
-        val fragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
-        if (fragment is ChatHistoryListFragment) {
-            fragment.refreshChatHistoryList()
-        }
-    }
 
     private fun hideWifi() {
         val navMenu = binding.appBarBell.bellToolbar.menu

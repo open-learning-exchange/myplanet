@@ -12,7 +12,7 @@ import android.view.ViewGroup
 import androidx.activity.OnBackPressedCallback
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.slidingpanelayout.widget.SlidingPaneLayout
 import com.google.android.material.snackbar.Snackbar
@@ -20,6 +20,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.util.HashMap
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
@@ -32,12 +33,7 @@ import org.ole.planet.myplanet.databinding.FragmentChatHistoryListBinding
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.RealmChatHistory
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.NewsRepository
-import org.ole.planet.myplanet.repository.TeamRepository
-import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
@@ -49,8 +45,7 @@ import org.ole.planet.myplanet.utilities.SharedPrefManager
 class ChatHistoryListFragment : Fragment() {
     private var _binding: FragmentChatHistoryListBinding? = null
     private val binding get() = _binding!!
-    private lateinit var sharedViewModel: ChatViewModel
-    var user: RealmUserModel? = null
+    private val sharedViewModel: ChatViewModel by activityViewModels()
     private var isFullSearch: Boolean = false
     private var isQuestion: Boolean = false
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
@@ -59,18 +54,9 @@ class ChatHistoryListFragment : Fragment() {
     @AppPreferences
     lateinit var settings: SharedPreferences
     private val serverUrlMapper = ServerUrlMapper()
-    private var sharedNewsMessages: List<RealmNews> = emptyList()
-    private var shareTargets = ChatShareTargets(null, emptyList(), emptyList())
     private var searchBarWatcher: TextWatcher? = null
-    
     @Inject
     lateinit var syncManager: SyncManager
-    @Inject
-    lateinit var chatRepository: ChatRepository
-    @Inject
-    lateinit var userRepository: UserRepository
-    @Inject
-    lateinit var teamRepository: TeamRepository
     @Inject
     lateinit var newsRepository: NewsRepository
     @Inject
@@ -82,7 +68,6 @@ class ChatHistoryListFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        sharedViewModel = ViewModelProvider(requireActivity())[ChatViewModel::class.java]
         prefManager = SharedPrefManager(requireContext())
         startChatHistorySync()
     }
@@ -90,6 +75,11 @@ class ChatHistoryListFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentChatHistoryListBinding.inflate(inflater, container, false)
         return binding.root
+    }
+
+    override fun onResume() {
+        super.onResume()
+        sharedViewModel.loadChatHistoryData(forceRefresh = true)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -124,7 +114,13 @@ class ChatHistoryListFragment : Fragment() {
             }
         }
 
-        refreshChatHistoryList()
+        viewLifecycleOwner.lifecycleScope.launch {
+            sharedViewModel.chatHistoryData.collectLatest { data ->
+                data?.let {
+                    updateUi(it)
+                }
+            }
+        }
 
         searchBarWatcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -176,11 +172,6 @@ class ChatHistoryListFragment : Fragment() {
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-        refreshChatHistoryList()
-    }
-
     private fun startChatHistorySync() {
         val isFastSync = settings.getBoolean("fastSync", false)
         if (isFastSync && !prefManager.isChatHistorySynced()) {
@@ -220,8 +211,7 @@ class ChatHistoryListFragment : Fragment() {
                             customProgressDialog?.dismiss()
                             customProgressDialog = null
                             prefManager.setChatHistorySynced(true)
-
-                            refreshChatHistoryList()
+                            sharedViewModel.loadChatHistoryData(forceRefresh = true)
                         }
                     }
                 }
@@ -233,7 +223,7 @@ class ChatHistoryListFragment : Fragment() {
                         if (isAdded) {
                             customProgressDialog?.dismiss()
                             customProgressDialog = null
-                            refreshChatHistoryList()
+                            sharedViewModel.loadChatHistoryData(forceRefresh = true)
 
                             Snackbar.make(binding.root, "Sync failed: ${msg ?: "Unknown error"}", Snackbar.LENGTH_LONG)
                                 .setAction("Retry") { startChatHistorySync() }.show()
@@ -249,75 +239,39 @@ class ChatHistoryListFragment : Fragment() {
         }
     }
 
-    fun refreshChatHistoryList() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            val currentUser = loadCurrentUser()
-            sharedNewsMessages = chatRepository.getPlanetNewsMessages(currentUser?.planetCode)
-            val list = chatRepository.getChatHistoryForUser(currentUser?.name)
-            shareTargets = loadShareTargets()
-
-            val adapter = binding.recyclerView.adapter as? ChatHistoryListAdapter
-            if (adapter == null) {
-                val newAdapter = ChatHistoryListAdapter(
-                    requireContext(),
-                    list,
-                    currentUser,
-                    sharedNewsMessages,
-                    shareTargets,
-                    ::shareChat,
-                )
-                newAdapter.setChatHistoryItemClickListener(object : ChatHistoryListAdapter.ChatHistoryItemClickListener {
-                    override fun onChatHistoryItemClicked(conversations: List<Conversation>?, id: String, rev: String?, aiProvider: String?) {
-                        conversations?.let { sharedViewModel.setSelectedChatHistory(it) }
-                        sharedViewModel.setSelectedId(id)
-                        rev?.let { sharedViewModel.setSelectedRev(it) }
-                        aiProvider?.let { sharedViewModel.setSelectedAiProvider(it) }
-                        binding.slidingPaneLayout.openPane()
-                    }
-                })
-                binding.recyclerView.adapter = newAdapter
-            } else {
-                adapter.updateCachedData(currentUser, sharedNewsMessages)
-                adapter.updateShareTargets(shareTargets)
-                adapter.updateChatHistory(list)
-                binding.searchBar.visibility = View.VISIBLE
-                binding.recyclerView.visibility = View.VISIBLE
-            }
-
-            showNoData(binding.noChats, list.size, "chatHistory")
-            if (list.isEmpty()) {
-                binding.searchBar.visibility = View.GONE
-                binding.recyclerView.visibility = View.GONE
-            }
-        }
-    }
-
-    private suspend fun loadCurrentUser(): RealmUserModel? {
-        val cachedUser = user
-        if (cachedUser != null) {
-            return cachedUser
-        }
-        val userId = settings.getString("userId", "")
-        if (userId.isNullOrEmpty()) {
-            return null
-        }
-        val fetchedUser = userRepository.getUserById(userId)
-        user = fetchedUser
-        return fetchedUser
-    }
-
-    private suspend fun loadShareTargets(): ChatShareTargets {
-        val teams = teamRepository.getShareableTeams()
-        val enterprises = teamRepository.getShareableEnterprises()
-        val parentCode = settings.getString("parentCode", "")
-        val communityName = settings.getString("communityName", "")
-        val communityId = if (!communityName.isNullOrBlank() && !parentCode.isNullOrBlank()) {
-            "$communityName@$parentCode"
+    private fun updateUi(data: ChatHistoryData) {
+        val adapter = binding.recyclerView.adapter as? ChatHistoryListAdapter
+        if (adapter == null) {
+            val newAdapter = ChatHistoryListAdapter(
+                requireContext(),
+                data.chatHistory,
+                data.user,
+                data.sharedNewsMessages,
+                data.shareTargets,
+                ::shareChat,
+            )
+            newAdapter.setChatHistoryItemClickListener(object : ChatHistoryListAdapter.ChatHistoryItemClickListener {
+                override fun onChatHistoryItemClicked(conversations: List<Conversation>?, id: String, rev: String?, aiProvider: String?) {
+                    conversations?.let { sharedViewModel.setSelectedChatHistory(it) }
+                    sharedViewModel.setSelectedId(id)
+                    rev?.let { sharedViewModel.setSelectedRev(it) }
+                    aiProvider?.let { sharedViewModel.setSelectedAiProvider(it) }
+                    binding.slidingPaneLayout.openPane()
+                }
+            })
+            binding.recyclerView.adapter = newAdapter
         } else {
-            null
+            adapter.updateCachedData(data.user, data.sharedNewsMessages)
+            adapter.updateShareTargets(data.shareTargets)
+            adapter.updateChatHistory(data.chatHistory)
+            binding.searchBar.visibility = View.VISIBLE
+            binding.recyclerView.visibility = View.VISIBLE
         }
-        val community = communityId?.let { teamRepository.getTeamById(it) }
-        return ChatShareTargets(community, teams, enterprises)
+        showNoData(binding.noChats, data.chatHistory.size, "chatHistory")
+        if (data.chatHistory.isEmpty()) {
+            binding.searchBar.visibility = View.GONE
+            binding.recyclerView.visibility = View.GONE
+        }
     }
 
     private fun shareChat(map: HashMap<String?, String>, chatHistory: RealmChatHistory) {
@@ -325,14 +279,15 @@ class ChatHistoryListFragment : Fragment() {
             return
         }
         viewLifecycleOwner.lifecycleScope.launch {
-            val currentUser = loadCurrentUser()
+            val currentUser = sharedViewModel.chatHistoryData.value?.user
             val createdNews = newsRepository.createNews(map, currentUser)
-            if (currentUser?.planetCode != null) {
-                sharedNewsMessages = sharedNewsMessages + createdNews
-            }
-            (binding.recyclerView.adapter as? ChatHistoryListAdapter)?.let { adapter ->
-                adapter.updateCachedData(currentUser, sharedNewsMessages)
-                adapter.notifyChatShared(chatHistory._id)
+
+            val currentData = sharedViewModel.chatHistoryData.value
+            if (currentUser?.planetCode != null && currentData != null) {
+                val updatedSharedNewsMessages = currentData.sharedNewsMessages + createdNews
+                val updatedData = currentData.copy(sharedNewsMessages = updatedSharedNewsMessages)
+                updateUi(updatedData)
+                (binding.recyclerView.adapter as? ChatHistoryListAdapter)?.notifyChatShared(chatHistory._id)
             }
         }
     }
@@ -368,7 +323,7 @@ class ChatHistoryListFragment : Fragment() {
             override fun onTableDataUpdated(update: TableDataUpdate) {
                 if (update.table == "chats" && update.shouldRefreshUI) {
                     viewLifecycleOwner.lifecycleScope.launch {
-                        refreshChatHistoryList()
+                        sharedViewModel.loadChatHistoryData(forceRefresh = true)
                     }
                 }
             }
