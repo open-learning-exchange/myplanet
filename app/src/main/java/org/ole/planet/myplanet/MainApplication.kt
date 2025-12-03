@@ -187,12 +187,12 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         setupStrictMode()
         registerExceptionHandler()
         setupLifecycleCallbacks()
-        configureTheme()
     }
 
     private fun performDeferredInitialization() {
         applicationScope.launch {
             initApp()
+            loadAndApplyTheme()
             ensureApiClientInitialized()
             initializeDatabaseConnection()
             setupAnrWatchdog()
@@ -283,9 +283,15 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         onAppStarted()
     }
 
-    private fun configureTheme() {
-        val savedThemeMode = getCurrentThemeMode()
-        applyThemeMode(savedThemeMode)
+    private suspend fun loadAndApplyTheme() {
+        try {
+            val savedThemeMode = withContext(Dispatchers.IO) {
+                getCurrentThemeMode()
+            }
+            applyThemeMode(savedThemeMode)
+        } finally {
+            // success
+        }
     }
 
     private suspend fun observeNetworkForDownloads() {

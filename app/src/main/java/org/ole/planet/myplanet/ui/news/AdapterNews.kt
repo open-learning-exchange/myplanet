@@ -35,9 +35,6 @@ import java.io.File
 import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNewsBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -81,14 +78,11 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
 
             try {
                 if (!oldItem.isValid || !newItem.isValid) return@itemCallback false
-                
-                oldItem.id == newItem.id &&
-                    oldItem.time == newItem.time &&
-                    oldItem.isEdited == newItem.isEdited &&
-                    oldItem.message == newItem.message &&
-                    oldItem.userName == newItem.userName &&
-                    oldItem.userId == newItem.userId &&
-                    oldItem.sharedBy == newItem.sharedBy
+
+                oldItem.id == newItem.id && oldItem.time == newItem.time &&
+                        oldItem.isEdited == newItem.isEdited && oldItem.message == newItem.message &&
+                        oldItem.userName == newItem.userName && oldItem.userId == newItem.userId &&
+                        oldItem.sharedBy == newItem.sharedBy
             } catch (e: Exception) {
                 false
             }
@@ -168,41 +162,22 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
             val news = getNews(holder, position)
 
             if (news?.isValid == true) {
-                holder.itemView.findViewTreeLifecycleOwner()?.lifecycleScope?.launch {
-                    val viewHolder = holder
-                    val sharedTeamName = extractSharedTeamName(news)
-
-                    withContext(Dispatchers.Main) {
-                        resetViews(viewHolder)
-                    }
-
-                    var (replies, userModel, isLeader) = withContext(Dispatchers.IO) {
-                        Triple(getReplies(news), fetchUser(news), isTeamLeader())
-                    }
-
-                    withContext(Dispatchers.Main) {
-                        if (holder.adapterPosition == position) {
-                            val userFullName = userModel?.getFullNameWithMiddleName()?.trim()
-                            viewHolder.binding.tvName.text = if (userFullName.isNullOrEmpty()) news.userName else userFullName
-                            ImageUtils.loadImage(userModel?.userImage, viewHolder.binding.imgUser)
-                            if (userModel != null && currentUser != null) {
-                                showHideButtons(news, viewHolder)
-                            }
-                            updateReplyCount(viewHolder, replies, position)
-                            showShareButton(viewHolder, news)
-                        setMessageAndDate(viewHolder, news, sharedTeamName)
-                        configureEditDeleteButtons(viewHolder, news)
-                        loadImage(viewHolder.binding, news)
-                        showReplyButton(viewHolder, news, position)
-                        val canManageLabels = canAddLabel(news)
-                        labelManager?.setupAddLabelMenu(viewHolder.binding, news, canManageLabels)
-                        news.let { labelManager?.showChips(viewHolder.binding, it, canManageLabels) }
-                        handleChat(viewHolder, news)
-                        val currentLeader = getCurrentLeader(userModel, news)
-                        setMemberClickListeners(viewHolder, userModel, currentLeader)
-                        }
-                    }
-                }
+                val viewHolder = holder
+                val sharedTeamName = extractSharedTeamName(news)
+                resetViews(viewHolder)
+                updateReplyCount(viewHolder = viewHolder, getReplies(news), position)
+                val userModel = configureUser(viewHolder, news)
+                showShareButton(viewHolder, news)
+                setMessageAndDate(viewHolder, news, sharedTeamName)
+                configureEditDeleteButtons(viewHolder, news)
+                loadImage(viewHolder.binding, news)
+                showReplyButton(viewHolder, news, position)
+                val canManageLabels = canAddLabel(news)
+                labelManager?.setupAddLabelMenu(viewHolder.binding, news, canManageLabels)
+                news.let { labelManager?.showChips(viewHolder.binding, it, canManageLabels) }
+                handleChat(viewHolder, news)
+                val currentLeader = getCurrentLeader(userModel, news)
+                setMemberClickListeners(viewHolder, userModel, currentLeader)
             }
         }
     }
@@ -257,33 +232,42 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         }
     }
 
-    private suspend fun fetchUser(news: RealmNews): RealmUserModel? {
+    private fun configureUser(holder: ViewHolderNews, news: RealmNews): RealmUserModel? {
         val userId = news.userId
-        return withContext(Dispatchers.IO) {
-            when {
-                userId.isNullOrEmpty() -> null
-                userCache.containsKey(userId) -> userCache[userId]
-                ::mRealm.isInitialized -> {
-                    val managedUser = mRealm.where(RealmUserModel::class.java)
-                        .equalTo("id", userId)
-                        .findFirst()
-                    val detachedUser = managedUser?.let {
-                        try {
-                            mRealm.copyFromRealm(it)
-                        } catch (e: Exception) {
-                            null
-                        }
+        val userModel = when {
+            userId.isNullOrEmpty() -> null
+            userCache.containsKey(userId) -> userCache[userId]
+            ::mRealm.isInitialized -> {
+                val managedUser = mRealm.where(RealmUserModel::class.java)
+                    .equalTo("id", userId)
+                    .findFirst()
+                val detachedUser = managedUser?.let {
+                    try {
+                        mRealm.copyFromRealm(it)
+                    } catch (e: Exception) {
+                        null
                     }
-                    if (detachedUser != null) {
-                        userCache[userId] = detachedUser
-                    } else if (managedUser == null) {
-                        userCache[userId] = null
-                    }
-                    detachedUser ?: managedUser
                 }
-                else -> null
+                if (detachedUser != null) {
+                    userCache[userId] = detachedUser
+                } else if (managedUser == null) {
+                    userCache[userId] = null
+                }
+                detachedUser ?: managedUser
             }
+            else -> null
         }
+        val userFullName = userModel?.getFullNameWithMiddleName()?.trim()
+        if (userModel != null && currentUser != null) {
+            holder.binding.tvName.text =
+                if (userFullName.isNullOrEmpty()) news.userName else userFullName
+            ImageUtils.loadImage(userModel.userImage, holder.binding.imgUser)
+            showHideButtons(news, holder)
+        } else {
+            holder.binding.tvName.text = news.userName
+            ImageUtils.loadImage(null, holder.binding.imgUser)
+        }
+        return userModel
     }
 
     private fun setMessageAndDate(holder: ViewHolderNews, news: RealmNews, sharedTeamName: String) {
@@ -562,7 +546,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
                     false,
                     currentUser,
                     listener,
-                     viewHolder,
+                    viewHolder,
                 ) { holder, news, i -> showReplyButton(holder, news, i) }
             }
         } else {
@@ -626,7 +610,6 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
                                 .findFirst()
                         }
                     }
-                    
                     managedNews?.sharedBy = currentUser?.id
                     managedNews?.viewIn = GsonUtils.gson.toJson(array)
                     mRealm.commitTransaction()
@@ -831,5 +814,4 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
             adapterPosition = position
         }
     }
-
 }
