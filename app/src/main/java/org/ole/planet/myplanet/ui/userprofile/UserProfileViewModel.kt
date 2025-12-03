@@ -116,6 +116,12 @@ class UserProfileViewModel @Inject constructor(
     val numberOfResourceOpen: String
         get() = userProfileDbHandler.numberOfResourceOpen
 
-    val maxOpenedResource: String
-        get() = userProfileDbHandler.maxOpenedResource
+    private val _maxOpenedResource = MutableStateFlow("")
+    val maxOpenedResource: StateFlow<String> = _maxOpenedResource.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            _maxOpenedResource.value = userProfileDbHandler.maxOpenedResource()
+        }
+    }
 }
