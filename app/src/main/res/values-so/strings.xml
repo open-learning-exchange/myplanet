@@ -1173,7 +1173,7 @@
     <string name="cannot_assign_completed_task">Lama xil saari karo shaqo la dhammeeyay</string>
     <string name="assign_to">U xilsaar (Ikhtiyaari)</string>
     <string name="click_to_assign_member">Guji si aad u doorato xubin koox</string>
-    <string name="saving">Saving…</string>
-    <string name="achievement_saved">Achievement Updated</string>
+    <string name="saving">Keydinaya…</string>
+    <string name="achievement_saved">Guusha waa la cusbooneysiiyay</string>
 
 </resources>
