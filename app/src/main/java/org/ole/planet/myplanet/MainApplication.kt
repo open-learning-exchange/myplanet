@@ -188,6 +188,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     override fun onCreate() {
         android.os.Trace.beginSection("AppOnCreate")
         super.onCreate()
+        context = this
         setupCriticalProperties()
         applicationScope.launch { loadAndApplyTheme() }
         performDeferredInitialization()
@@ -209,7 +210,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         }
     }
     private fun initApp() {
-        context = this
         applicationScope.launch(Dispatchers.Default) {
             startListenNetworkState()
         }
