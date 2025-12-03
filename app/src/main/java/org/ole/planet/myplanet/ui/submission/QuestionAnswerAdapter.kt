@@ -21,8 +21,8 @@ data class QuestionAnswerPair(
 
 class QuestionAnswerAdapter : ListAdapter<QuestionAnswerPair, QuestionAnswerAdapter.ViewHolder>(DIFF_CALLBACK) {
     companion object {
-        private val DIFF_CALLBACK = DiffUtils.itemCallback(
-            areItemsTheSame = { oldItem, newItem -> oldItem.question._id == newItem.question._id },
+        private val DIFF_CALLBACK = DiffUtils.itemCallback<QuestionAnswerPair>(
+            areItemsTheSame = { oldItem, newItem -> oldItem.question.id == newItem.question.id },
             areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
         )
     }
