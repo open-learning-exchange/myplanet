@@ -1173,5 +1173,7 @@
     <string name="cannot_assign_completed_task">Impossible d\'attribuer une tâche terminée</string>
     <string name="assign_to">Attribuer à (Optionnel)</string>
     <string name="click_to_assign_member">Cliquez pour attribuer un membre de l\'équipe</string>
+    <string name="saving">Enregistrement…</string>
+    <string name="achievement_saved">Réalisation mise à jour</string>
 
 </resources>
