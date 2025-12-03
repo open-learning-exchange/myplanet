@@ -309,14 +309,14 @@ class ChatHistoryListFragment : Fragment() {
         }
     }
 
-    private fun loadCurrentUser(userId: String?): RealmUserModel? {
+    private suspend fun loadCurrentUser(userId: String?): RealmUserModel? {
         if (userId.isNullOrEmpty()) {
             return null
         }
         return userRepository.getUserById(userId)
     }
 
-    private fun loadShareTargets(parentCode: String?, communityName: String?): ChatShareTargets {
+    private suspend fun loadShareTargets(parentCode: String?, communityName: String?): ChatShareTargets {
         val teams = teamRepository.getShareableTeams()
         val enterprises = teamRepository.getShareableEnterprises()
         val communityId = if (!communityName.isNullOrBlank() && !parentCode.isNullOrBlank()) {
