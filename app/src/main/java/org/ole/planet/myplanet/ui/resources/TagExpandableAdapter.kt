@@ -137,21 +137,28 @@ class TagExpandableAdapter(private var tagList: List<RealmTag>, private val chil
             { old, new -> old.name == new.name }
         )
         tagList = filteredList
+        var hasNotified = false
         diffResult.dispatchUpdatesTo(object : ListUpdateCallback {
+            private fun notifyOnce() {
+                if (!hasNotified) {
+                    notifyDataSetChanged()
+                    hasNotified = true
+                }
+            }
             override fun onInserted(position: Int, count: Int) {
-                notifyDataSetChanged()
+                notifyOnce()
             }
 
             override fun onRemoved(position: Int, count: Int) {
-                notifyDataSetChanged()
+                notifyOnce()
             }
 
             override fun onMoved(fromPosition: Int, toPosition: Int) {
-                notifyDataSetChanged()
+                notifyOnce()
             }
 
             override fun onChanged(position: Int, count: Int, payload: Any?) {
-                notifyDataSetChanged()
+                notifyOnce()
             }
         })
     }
