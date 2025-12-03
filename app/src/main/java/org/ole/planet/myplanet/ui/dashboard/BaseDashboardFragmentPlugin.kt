@@ -7,6 +7,7 @@ import android.view.View
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import io.realm.Realm
 import io.realm.RealmObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
@@ -33,27 +34,12 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
     fun handleClick(id: String?, title: String?, f: Fragment, v: TextView) {
         v.text = title
         v.setOnClickListener {
-            if (homeItemClickListener != null) {
-                if (f is TeamDetailFragment) {
-                    if (!isRealmInitialized()) {
-                        return@setOnClickListener
-                    }
-                    val teamObject = mRealm.where(RealmMyTeam::class.java)?.equalTo("_id", id)?.findFirst()
-                    val optimizedFragment = TeamDetailFragment.newInstance(
-                        teamId = id ?: "",
-                        teamName = title ?: "",
-                        teamType = teamObject?.type ?: "",
-                        isMyTeam = true
-                    )
-                    prefData.setTeamName(title)
-                    homeItemClickListener?.openCallFragment(optimizedFragment)
-                } else {
-                    val b = Bundle()
-                    b.putString("id", id)
-                    f.arguments = b
-                    prefData.setTeamName(title)
-                    homeItemClickListener?.openCallFragment(f)
-                }
+            homeItemClickListener?.let {
+                val b = Bundle()
+                b.putString("id", id)
+                f.arguments = b
+                prefData.setTeamName(title)
+                it.openCallFragment(f)
             }
         }
     }
@@ -110,7 +96,7 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         setBackgroundColor(textView, itemCnt)
     }
 
-    fun getLayout(itemCnt: Int, obj: RealmObject): View {
+    fun getLayout(realm: Realm, itemCnt: Int, obj: RealmObject): View {
         val itemMyLifeBinding = ItemMyLifeBinding.inflate(LayoutInflater.from(activity))
         val v = itemMyLifeBinding.root
         setBackgroundColor(v, itemCnt)
@@ -122,12 +108,8 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
 
         if (title == getString(R.string.my_survey)) {
             itemMyLifeBinding.tvCount.visibility = View.VISIBLE
-            if (isRealmInitialized()) {
-                val noOfSurvey = RealmSubmission.getNoOfSurveySubmissionByUser(user?.id, mRealm)
-                itemMyLifeBinding.tvCount.text = noOfSurvey.toString()
-            } else {
-                itemMyLifeBinding.tvCount.text = "0"
-            }
+            val noOfSurvey = RealmSubmission.getNoOfSurveySubmissionByUser(user?.id, realm)
+            itemMyLifeBinding.tvCount.text = noOfSurvey.toString()
         } else {
             itemMyLifeBinding.tvCount.visibility = View.GONE
         }

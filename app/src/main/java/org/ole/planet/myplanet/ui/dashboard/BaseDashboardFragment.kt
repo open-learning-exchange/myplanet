@@ -58,7 +58,6 @@ import org.ole.planet.myplanet.utilities.Utilities
 open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCallback,
     SyncListener {
     private val viewModel: DashboardViewModel by viewModels()
-    private val realm get() = requireRealmInstance()
     private var fullName: String? = null
     private var params = LinearLayout.LayoutParams(250, 100)
     private var di: DialogUtils.CustomProgressDialog? = null
@@ -98,15 +97,16 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             imageView.setImageResource(R.drawable.profile)
         }
 
-        if (isRealmInitialized() && mRealm.isInTransaction) {
-            mRealm.commitTransaction()
-        }
-
-        if (isRealmInitialized()) {
-            offlineActivitiesResults = mRealm.where(RealmOfflineActivity::class.java)
-                .equalTo("userName", profileDbHandler.userModel?.name)
-                .equalTo("type", KEY_LOGIN)
-                .findAllAsync()
+        lifecycleScope.launch {
+            databaseService.withRealm { realm ->
+                if (realm.isInTransaction) {
+                    realm.commitTransaction()
+                }
+                offlineActivitiesResults = realm.where(RealmOfflineActivity::class.java)
+                    .equalTo("userName", profileDbHandler.userModel?.name)
+                    .equalTo("type", KEY_LOGIN)
+                    .findAllAsync()
+            }
         }
         v.findViewById<TextView>(R.id.txtRole).text = getString(R.string.user_role, model?.getRoleAsString())
         val offlineVisits = profileDbHandler.offlineVisits
@@ -120,13 +120,16 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             now[Calendar.YEAR] = i
             now[Calendar.MONTH] = i1
             now[Calendar.DAY_OF_MONTH] = i2
-            val imageList = realm.where(RealmMyLibrary::class.java).equalTo("isPrivate", true)
-                .greaterThan("createdDate", now.timeInMillis).equalTo("mediaType", "image")
-                .findAll()
-            val urls = ArrayList<String>()
-            getUrlsAndStartDownload(imageList, urls) },
-            now[Calendar.YEAR], now[Calendar.MONTH], now[Calendar.DAY_OF_MONTH]
-        )
+            lifecycleScope.launch {
+                databaseService.withRealm { realm ->
+                    val imageList = realm.where(RealmMyLibrary::class.java).equalTo("isPrivate", true)
+                        .greaterThan("createdDate", now.timeInMillis).equalTo("mediaType", "image")
+                        .findAll()
+                    val urls = ArrayList<String>()
+                    getUrlsAndStartDownload(imageList, urls)
+                }
+            }
+        }, now[Calendar.YEAR], now[Calendar.MONTH], now[Calendar.DAY_OF_MONTH])
         dpd.setTitle(getString(R.string.read_offline_news_from))
         dpd.show()
     }
@@ -210,7 +213,21 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             if (ob.teamType == "sync") {
                 name.setTypeface(null, Typeface.BOLD)
             }
-            handleClick(ob._id, ob.name, TeamDetailFragment(), name)
+            name.setOnClickListener {
+                lifecycleScope.launch {
+                    databaseService.withRealm { realm ->
+                        val teamObject = realm.where(RealmMyTeam::class.java)?.equalTo("_id", ob._id)?.findFirst()
+                        val optimizedFragment = TeamDetailFragment.newInstance(
+                            teamId = ob._id ?: "",
+                            teamName = ob.name ?: "",
+                            teamType = teamObject?.teamType ?: "",
+                            isMyTeam = true
+                        )
+                        prefData.setTeamName(ob.name)
+                        homeItemClickListener?.openCallFragment(optimizedFragment)
+                    }
+                }
+            }
             showNotificationIcons(ob, v, userId)
             name.text = ob.name
             flexboxLayout.addView(v, params)
@@ -219,52 +236,62 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     private fun showNotificationIcons(ob: RealmObject, v: View, userId: String?) {
-        val current = Calendar.getInstance().timeInMillis
-        val tomorrow = Calendar.getInstance()
-        tomorrow.add(Calendar.DAY_OF_YEAR, 1)
-        val imgTask = v.findViewById<ImageView>(R.id.img_task)
-        val imgChat = v.findViewById<ImageView>(R.id.img_chat)
-        val notification: RealmTeamNotification? = realm.where(RealmTeamNotification::class.java)
-            .equalTo("parentId", (ob as RealmMyTeam)._id).equalTo("type", "chat").findFirst()
-        val chatCount: Long = realm.where(RealmNews::class.java).equalTo("viewableBy", "teams")
-            .equalTo("viewableId", ob._id).count()
-        if (notification != null) {
-            imgChat.visibility = if (notification.lastCount < chatCount) View.VISIBLE else View.GONE
+        lifecycleScope.launch {
+            databaseService.withRealm { realm ->
+                val current = Calendar.getInstance().timeInMillis
+                val tomorrow = Calendar.getInstance()
+                tomorrow.add(Calendar.DAY_OF_YEAR, 1)
+                val imgTask = v.findViewById<ImageView>(R.id.img_task)
+                val imgChat = v.findViewById<ImageView>(R.id.img_chat)
+                val notification: RealmTeamNotification? = realm.where(RealmTeamNotification::class.java)
+                    .equalTo("parentId", (ob as RealmMyTeam)._id).equalTo("type", "chat").findFirst()
+                val chatCount: Long = realm.where(RealmNews::class.java).equalTo("viewableBy", "teams")
+                    .equalTo("viewableId", ob._id).count()
+                if (notification != null) {
+                    imgChat.visibility = if (notification.lastCount < chatCount) View.VISIBLE else View.GONE
+                }
+                val tasks = realm.where(RealmTeamTask::class.java).equalTo("assignee", userId)
+                    .between("deadline", current, tomorrow.timeInMillis).findAll()
+                imgTask.visibility = if (tasks.isNotEmpty()) View.VISIBLE else View.GONE
+            }
         }
-        val tasks = realm.where(RealmTeamTask::class.java).equalTo("assignee", userId)
-            .between("deadline", current, tomorrow.timeInMillis).findAll()
-        imgTask.visibility = if (tasks.isNotEmpty()) View.VISIBLE else View.GONE
     }
 
     private fun myLifeListInit(flexboxLayout: FlexboxLayout) {
-        val dbMylife: MutableList<RealmMyLife> = ArrayList()
-        val rawMylife: List<RealmMyLife> = RealmMyLife.getMyLifeByUserId(realm, settings)
-        for (item in rawMylife) if (item.isVisible) dbMylife.add(item)
-        for ((itemCnt, items) in dbMylife.withIndex()) {
-            flexboxLayout.addView(getLayout(itemCnt, items), params)
+        lifecycleScope.launch {
+            databaseService.withRealm { realm ->
+                val dbMylife: MutableList<RealmMyLife> = ArrayList()
+                val rawMylife: List<RealmMyLife> = RealmMyLife.getMyLifeByUserId(realm, settings)
+                for (item in rawMylife) if (item.isVisible) dbMylife.add(item)
+                for ((itemCnt, items) in dbMylife.withIndex()) {
+                    flexboxLayout.addView(getLayout(realm, itemCnt, items), params)
+                }
+            }
         }
     }
 
     private fun setUpMyLife(userId: String?) {
-        databaseService.withRealm { realm ->
-            val realmObjects = RealmMyLife.getMyLifeByUserId(realm, settings)
-            if (realmObjects.isEmpty()) {
-                if (!realm.isInTransaction) {
-                    realm.beginTransaction()
+        lifecycleScope.launch {
+            databaseService.withRealm { realm ->
+                val realmObjects = RealmMyLife.getMyLifeByUserId(realm, settings)
+                if (realmObjects.isEmpty()) {
+                    if (!realm.isInTransaction) {
+                        realm.beginTransaction()
+                    }
+                    val myLifeListBase = getMyLifeListBase(userId)
+                    var ml: RealmMyLife
+                    var weight = 1
+                    for (item in myLifeListBase) {
+                        ml = realm.createObject(RealmMyLife::class.java, UUID.randomUUID().toString())
+                        ml.title = item.title
+                        ml.imageId = item.imageId
+                        ml.weight = weight
+                        ml.userId = item.userId
+                        ml.isVisible = true
+                        weight++
+                    }
+                    realm.commitTransaction()
                 }
-                val myLifeListBase = getMyLifeListBase(userId)
-                var ml: RealmMyLife
-                var weight = 1
-                for (item in myLifeListBase) {
-                    ml = realm.createObject(RealmMyLife::class.java, UUID.randomUUID().toString())
-                    ml.title = item.title
-                    ml.imageId = item.imageId
-                    ml.weight = weight
-                    ml.userId = item.userId
-                    ml.isVisible = true
-                    weight++
-                }
-                realm.commitTransaction()
             }
         }
     }
@@ -277,16 +304,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         }
     }
 
-    override fun onDestroy() {
-        if (isRealmInitialized()) {
-            mRealm.removeAllChangeListeners()
-            if (mRealm.isInTransaction) {
-                mRealm.cancelTransaction()
-            }
-            mRealm.close()
-        }
-        super.onDestroy()
-    }
 
     private fun setCountText(countText: Int, c: Class<*>, v: View) {
         when (c) {
@@ -327,52 +344,69 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         setUpMyLife(userId)
         myLifeListInit(myLifeFlex)
 
-
-        if (isRealmInitialized() && mRealm.isInTransaction) {
-            mRealm.commitTransaction()
+        lifecycleScope.launch {
+            databaseService.withRealm { realm ->
+                if (realm.isInTransaction) {
+                    realm.commitTransaction()
+                }
+            }
         }
     }
 
     override fun showResourceDownloadDialog() {
         viewLifecycleOwner.lifecycleScope.launch {
-            showDownloadDialog(getLibraryList(realm))
+            databaseService.withRealm { realm ->
+                showDownloadDialog(getLibraryList(realm))
+            }
         }
     }
 
     override fun showUserResourceDialog() {
         var dialog: AlertDialog? = null
-        val userModelList = realm.where(RealmUserModel::class.java).sort("joinDate", Sort.DESCENDING).findAll()
-        val adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, userModelList)
-        val alertHealthListBinding = AlertHealthListBinding.inflate(LayoutInflater.from(activity))
-        alertHealthListBinding.etSearch.visibility = View.GONE
-        alertHealthListBinding.spnSort.visibility = View.GONE
+        lifecycleScope.launch {
+            val userList = databaseService.withRealm { realm ->
+                realm.copyFromRealm(realm.where(RealmUserModel::class.java).sort("joinDate", Sort.DESCENDING).findAll())
+            }
 
-        alertHealthListBinding.btnAddMember.setOnClickListener {
-            startActivity(Intent(requireContext(), BecomeMemberActivity::class.java))
+            val adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, userList)
+            val alertHealthListBinding = AlertHealthListBinding.inflate(LayoutInflater.from(activity))
+            alertHealthListBinding.etSearch.visibility = View.GONE
+            alertHealthListBinding.spnSort.visibility = View.GONE
+
+            alertHealthListBinding.btnAddMember.setOnClickListener {
+                startActivity(Intent(requireContext(), BecomeMemberActivity::class.java))
+            }
+
+            alertHealthListBinding.list.adapter = adapter
+            alertHealthListBinding.list.onItemClickListener = AdapterView.OnItemClickListener { _, _, i, _ ->
+                val selectedUserId = (alertHealthListBinding.list.adapter.getItem(i) as RealmUserModel)._id
+                lifecycleScope.launch {
+                    databaseService.withRealm { realm ->
+                        showDownloadDialog(getLibraryList(realm, selectedUserId))
+                    }
+                }
+                dialog?.dismiss()
+            }
+
+            dialog = AlertDialog.Builder(requireActivity())
+                .setTitle(getString(R.string.select_member))
+                .setView(alertHealthListBinding.root)
+                .setCancelable(false)
+                .setNegativeButton(R.string.dismiss, null)
+                .create()
+            dialog?.show()
         }
-
-        alertHealthListBinding.list.adapter = adapter
-        alertHealthListBinding.list.onItemClickListener = AdapterView.OnItemClickListener { _, _, i, _ ->
-            val selected = alertHealthListBinding.list.adapter.getItem(i) as RealmUserModel
-            showDownloadDialog(getLibraryList(realm, selected._id))
-            dialog?.dismiss()
-        }
-
-        dialog = AlertDialog.Builder(requireActivity())
-            .setTitle(getString(R.string.select_member))
-            .setView(alertHealthListBinding.root)
-            .setCancelable(false)
-            .setNegativeButton(R.string.dismiss, null)
-            .create()
-
-        dialog.show()
     }
 
     override fun syncKeyId() {
-        if (model?.getRoleAsString()?.contains("health") == true) {
-            settings?.let { transactionSyncManager.syncAllHealthData(realm, it, this) }
-        } else {
-            settings?.let { transactionSyncManager.syncKeyIv(realm, it, this, profileDbHandler) }
+        lifecycleScope.launch {
+            databaseService.withRealm { realm ->
+                if (model?.getRoleAsString()?.contains("health") == true) {
+                    settings?.let { transactionSyncManager.syncAllHealthData(realm, it, this@BaseDashboardFragment) }
+                } else {
+                    settings?.let { transactionSyncManager.syncKeyIv(realm, it, this@BaseDashboardFragment, profileDbHandler) }
+                }
+            }
         }
     }
 
