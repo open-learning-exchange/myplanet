@@ -13,4 +13,13 @@ class LifeRepositoryImpl @Inject constructor(private val databaseService: Databa
             }
         }
     }
+
+    override suspend fun updateMyLifeListOrder(list: List<RealmMyLife>) {
+        databaseService.withRealmAsync { realm ->
+            list.forEachIndexed { index, myLife ->
+                val realmMyLife = realm.where(RealmMyLife::class.java).equalTo("_id", myLife._id).findFirst()
+                realmMyLife?.weight = index
+            }
+        }
+    }
 }
