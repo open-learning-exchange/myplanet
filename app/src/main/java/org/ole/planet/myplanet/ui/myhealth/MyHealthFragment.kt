@@ -374,114 +374,135 @@ class MyHealthFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        showRecords()
+        viewLifecycleOwner.lifecycleScope.launch {
+            showRecords()
+        }
     }
 
-    private fun showRecords() {
+    private suspend fun showRecords() {
         if (!isAdded || _binding == null) return
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            val currentUser = userModel
-            if (currentUser == null) {
-                binding.layoutUserDetail.visibility = View.GONE
-                binding.tvMessage.visibility = View.VISIBLE
-                binding.tvMessage.text = getString(R.string.health_record_not_available)
-                binding.txtOtherNeed.text = getString(R.string.empty_text)
-                binding.txtSpecialNeeds.text = getString(R.string.empty_text)
-                binding.txtBirthPlace.text = getString(R.string.empty_text)
-                binding.txtEmergencyContact.text = getString(R.string.empty_text)
+        val currentUser = userModel
+        if (currentUser == null) {
+            binding.layoutUserDetail.visibility = View.GONE
+            binding.tvMessage.visibility = View.VISIBLE
+            binding.tvMessage.text = getString(R.string.health_record_not_available)
+            clearHealthData()
+            return
+        }
+
+        binding.layoutUserDetail.visibility = View.VISIBLE
+        binding.tvMessage.visibility = View.GONE
+        binding.txtFullName.text = getString(R.string.three_strings, currentUser.firstName, currentUser.middleName, currentUser.lastName)
+        binding.txtEmail.text = Utilities.checkNA(currentUser.email)
+        binding.txtLanguage.text = Utilities.checkNA(currentUser.language)
+        binding.txtDob.text = Utilities.checkNA(currentUser.dob)
+        binding.rvRecords.visibility = View.GONE
+        binding.tvNoRecords.visibility = View.GONE
+        binding.tvDataPlaceholder.visibility = View.VISIBLE
+        binding.pbMyHealth.visibility = View.VISIBLE
+
+        val mh = withContext(Dispatchers.IO) {
+            databaseService.realmInstance.use { realm ->
+                var healthPojo = realm.where(RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
+                if (healthPojo == null) {
+                    healthPojo = realm.where(RealmMyHealthPojo::class.java).equalTo("userId", userId).findFirst()
+                }
+                healthPojo?.let { realm.copyFromRealm(it) }
+            }
+        }
+
+        if (mh != null) {
+            val mm = getHealthProfile(mh)
+            if (mm == null) {
+                binding.pbMyHealth.visibility = View.GONE
                 binding.rvRecords.adapter = null
-                binding.rvRecords.visibility = View.GONE
                 binding.tvNoRecords.visibility = View.VISIBLE
                 binding.tvDataPlaceholder.visibility = View.GONE
-                return@launch
+                Utilities.toast(activity, getString(R.string.health_record_not_available))
+                return
             }
+            val myHealths = mm.profile
+            binding.txtOtherNeed.text = Utilities.checkNA(myHealths?.notes)
+            binding.txtSpecialNeeds.text = Utilities.checkNA(myHealths?.specialNeeds)
+            binding.txtBirthPlace.text = Utilities.checkNA(currentUser.birthPlace)
+            val contact = myHealths?.emergencyContact?.takeIf { it.isNotBlank() }
+            binding.txtEmergencyContact.text = getString(
+                R.string.emergency_contact_details,
+                Utilities.checkNA(myHealths?.emergencyContactName),
+                Utilities.checkNA(myHealths?.emergencyContactType),
+                Utilities.checkNA(contact)
+            ).trimIndent()
 
-            binding.layoutUserDetail.visibility = View.VISIBLE
-            binding.tvMessage.visibility = View.GONE
-            binding.txtFullName.text = getString(R.string.three_strings, currentUser.firstName, currentUser.middleName, currentUser.lastName)
-            binding.txtEmail.text = Utilities.checkNA(currentUser.email)
-            binding.txtLanguage.text = Utilities.checkNA(currentUser.language)
-            binding.txtDob.text = Utilities.checkNA(currentUser.dob)
-            var mh = mRealm.where(RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
-            if (mh == null) {
-                mh = mRealm.where(RealmMyHealthPojo::class.java).equalTo("userId", userId).findFirst()
-            }
-            if (mh != null) {
-                val mm = getHealthProfile(mh)
-                if (mm == null) {
-                    binding.rvRecords.adapter = null
-                    binding.tvNoRecords.visibility = View.VISIBLE
-                    binding.tvDataPlaceholder.visibility = View.GONE
-                    Utilities.toast(activity, getString(R.string.health_record_not_available))
-                    return@launch
+            val list = getExaminations(mm)
+            binding.pbMyHealth.visibility = View.GONE
+
+            if (list.isNotEmpty()) {
+                binding.rvRecords.visibility = View.VISIBLE
+                binding.tvNoRecords.visibility = View.GONE
+                binding.tvDataPlaceholder.visibility = View.VISIBLE
+
+                healthAdapter = AdapterHealthExamination(requireActivity(), mh, currentUser)
+                healthAdapter.setmRealm(mRealm)
+                binding.rvRecords.apply {
+                    layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
+                    isNestedScrollingEnabled = false
+                    adapter = healthAdapter
                 }
-                val myHealths = mm.profile
-                binding.txtOtherNeed.text = Utilities.checkNA(myHealths?.notes)
-                binding.txtSpecialNeeds.text = Utilities.checkNA(myHealths?.specialNeeds)
-                binding.txtBirthPlace.text = Utilities.checkNA(currentUser.birthPlace)
-                val contact = myHealths?.emergencyContact?.takeIf { it.isNotBlank() }
-                binding.txtEmergencyContact.text = getString(
-                    R.string.emergency_contact_details,
-                    Utilities.checkNA(myHealths?.emergencyContactName),
-                    Utilities.checkNA(myHealths?.emergencyContactType),
-                    Utilities.checkNA(contact)
-                ).trimIndent()
-
-                val list = getExaminations(mm)
-
-                if (list != null && list.isNotEmpty()) {
-                    binding.rvRecords.visibility = View.VISIBLE
-                    binding.tvNoRecords.visibility = View.GONE
-                    binding.tvDataPlaceholder.visibility = View.VISIBLE
-
-                    healthAdapter = AdapterHealthExamination(requireActivity(), mh, currentUser)
-                    healthAdapter.setmRealm(mRealm)
-                    binding.rvRecords.apply {
-                        layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
-                        isNestedScrollingEnabled = false
-                        adapter = healthAdapter
+                healthAdapter.submitList(list)
+                binding.rvRecords.post {
+                    val lastPosition = list.size - 1
+                    if (lastPosition >= 0) {
+                        binding.rvRecords.scrollToPosition(lastPosition)
                     }
-                    healthAdapter.submitList(list)
-                    binding.rvRecords.post {
-                        val lastPosition = list.size - 1
-                        if (lastPosition >= 0) {
-                            binding.rvRecords.scrollToPosition(lastPosition)
-                        }
-                    }
-                } else {
-                    binding.rvRecords.visibility = View.GONE
-                    binding.tvNoRecords.visibility = View.GONE
-                    binding.tvDataPlaceholder.visibility = View.VISIBLE
                 }
             } else {
-                binding.txtOtherNeed.text = getString(R.string.empty_text)
-                binding.txtSpecialNeeds.text = getString(R.string.empty_text)
-                binding.txtBirthPlace.text = getString(R.string.empty_text)
-                binding.txtEmergencyContact.text = getString(R.string.empty_text)
-                binding.rvRecords.adapter = null
                 binding.rvRecords.visibility = View.GONE
                 binding.tvNoRecords.visibility = View.VISIBLE
                 binding.tvDataPlaceholder.visibility = View.GONE
+            }
+        } else {
+            binding.pbMyHealth.visibility = View.GONE
+            clearHealthData()
+        }
+    }
+
+    private fun clearHealthData() {
+        binding.txtOtherNeed.text = getString(R.string.empty_text)
+        binding.txtSpecialNeeds.text = getString(R.string.empty_text)
+        binding.txtBirthPlace.text = getString(R.string.empty_text)
+        binding.txtEmergencyContact.text = getString(R.string.empty_text)
+        binding.rvRecords.adapter = null
+        binding.rvRecords.visibility = View.GONE
+        binding.tvNoRecords.visibility = View.VISIBLE
+        binding.tvDataPlaceholder.visibility = View.GONE
+    }
+
+    private suspend fun getExaminations(mm: RealmMyHealth): List<RealmMyHealthPojo> {
+        return withContext(Dispatchers.IO) {
+            databaseService.realmInstance.use { realm ->
+                val healths = realm.where(RealmMyHealthPojo::class.java)
+                    .equalTo("profileId", mm.userKey)
+                    .sort("createdDate", Sort.DESCENDING)
+                    .limit(50)
+                    .findAll()
+                realm.copyFromRealm(healths)
             }
         }
     }
 
-    private fun getExaminations(mm: RealmMyHealth): List<RealmMyHealthPojo>? {
-        val healths = mRealm.where(RealmMyHealthPojo::class.java)?.equalTo("profileId", mm.userKey)?.findAll()
-        return healths
-    }
-
-    private fun getHealthProfile(mh: RealmMyHealthPojo): RealmMyHealth? {
-        val json = AndroidDecrypter.decrypt(mh.data, userModel?.key, userModel?.iv)
-        return if (TextUtils.isEmpty(json)) {
-            null
-        } else {
-            try {
-                GsonUtils.gson.fromJson(json, RealmMyHealth::class.java)
-            } catch (e: Exception) {
-                e.printStackTrace()
+    private suspend fun getHealthProfile(mh: RealmMyHealthPojo): RealmMyHealth? {
+        return withContext(Dispatchers.IO) {
+            val json = AndroidDecrypter.decrypt(mh.data, userModel?.key, userModel?.iv)
+            if (TextUtils.isEmpty(json)) {
                 null
+            } else {
+                try {
+                    GsonUtils.gson.fromJson(json, RealmMyHealth::class.java)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    null
+                }
             }
         }
     }

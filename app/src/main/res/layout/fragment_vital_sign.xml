@@ -6,6 +6,12 @@
     android:layout_height="match_parent"
     tools:context=".ui.myhealth.MyHealthFragment"
     android:background="@color/secondary_bg">
+    <ProgressBar
+        android:id="@+id/pb_my_health"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:visibility="gone" />
 
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
