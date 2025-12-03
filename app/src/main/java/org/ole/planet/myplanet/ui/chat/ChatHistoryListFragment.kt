@@ -45,6 +45,9 @@ import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 
+private data class Quartet<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
+
+
 @AndroidEntryPoint
 class ChatHistoryListFragment : Fragment() {
     private var _binding: FragmentChatHistoryListBinding? = null
@@ -61,6 +64,7 @@ class ChatHistoryListFragment : Fragment() {
     private val serverUrlMapper = ServerUrlMapper()
     private var sharedNewsMessages: List<RealmNews> = emptyList()
     private var shareTargets = ChatShareTargets(null, emptyList(), emptyList())
+    private var memoizedShareTargets: ChatShareTargets? = null
     private var searchBarWatcher: TextWatcher? = null
     
     @Inject
@@ -251,16 +255,29 @@ class ChatHistoryListFragment : Fragment() {
 
     fun refreshChatHistoryList() {
         viewLifecycleOwner.lifecycleScope.launch {
-            val currentUser = loadCurrentUser()
-            sharedNewsMessages = chatRepository.getPlanetNewsMessages(currentUser?.planetCode)
-            val list = chatRepository.getChatHistoryForUser(currentUser?.name)
-            shareTargets = loadShareTargets()
+            val cachedUser = user
+            val cachedTargets = memoizedShareTargets
+            val (currentUser, newsMessages, chatHistory, targets) = withContext(Dispatchers.IO) {
+                val currentUser = cachedUser ?: loadCurrentUser(settings.getString("userId", ""))
+                val newsMessages = chatRepository.getPlanetNewsMessages(currentUser?.planetCode)
+                val chatHistory = chatRepository.getChatHistoryForUser(currentUser?.name)
+                val targets = cachedTargets ?: loadShareTargets(
+                    settings.getString("parentCode", ""),
+                    settings.getString("communityName", "")
+                )
+                Quartet(currentUser, newsMessages, chatHistory, targets)
+            }
+
+            user = currentUser
+            sharedNewsMessages = newsMessages
+            shareTargets = targets
+            memoizedShareTargets = targets
 
             val adapter = binding.recyclerView.adapter as? ChatHistoryListAdapter
             if (adapter == null) {
                 val newAdapter = ChatHistoryListAdapter(
                     requireContext(),
-                    list,
+                    chatHistory,
                     currentUser,
                     sharedNewsMessages,
                     shareTargets,
@@ -279,38 +296,29 @@ class ChatHistoryListFragment : Fragment() {
             } else {
                 adapter.updateCachedData(currentUser, sharedNewsMessages)
                 adapter.updateShareTargets(shareTargets)
-                adapter.updateChatHistory(list)
+                adapter.updateChatHistory(chatHistory)
                 binding.searchBar.visibility = View.VISIBLE
                 binding.recyclerView.visibility = View.VISIBLE
             }
 
-            showNoData(binding.noChats, list.size, "chatHistory")
-            if (list.isEmpty()) {
+            showNoData(binding.noChats, chatHistory.size, "chatHistory")
+            if (chatHistory.isEmpty()) {
                 binding.searchBar.visibility = View.GONE
                 binding.recyclerView.visibility = View.GONE
             }
         }
     }
 
-    private suspend fun loadCurrentUser(): RealmUserModel? {
-        val cachedUser = user
-        if (cachedUser != null) {
-            return cachedUser
-        }
-        val userId = settings.getString("userId", "")
+    private fun loadCurrentUser(userId: String?): RealmUserModel? {
         if (userId.isNullOrEmpty()) {
             return null
         }
-        val fetchedUser = userRepository.getUserById(userId)
-        user = fetchedUser
-        return fetchedUser
+        return userRepository.getUserById(userId)
     }
 
-    private suspend fun loadShareTargets(): ChatShareTargets {
+    private fun loadShareTargets(parentCode: String?, communityName: String?): ChatShareTargets {
         val teams = teamRepository.getShareableTeams()
         val enterprises = teamRepository.getShareableEnterprises()
-        val parentCode = settings.getString("parentCode", "")
-        val communityName = settings.getString("communityName", "")
         val communityId = if (!communityName.isNullOrBlank() && !parentCode.isNullOrBlank()) {
             "$communityName@$parentCode"
         } else {
@@ -325,7 +333,7 @@ class ChatHistoryListFragment : Fragment() {
             return
         }
         viewLifecycleOwner.lifecycleScope.launch {
-            val currentUser = loadCurrentUser()
+            val currentUser = user
             val createdNews = newsRepository.createNews(map, currentUser)
             if (currentUser?.planetCode != null) {
                 sharedNewsMessages = sharedNewsMessages + createdNews
