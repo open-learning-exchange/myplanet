@@ -24,6 +24,8 @@ import io.realm.Sort
 import java.util.Date
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -61,6 +63,12 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         var otherText: String = ""
     )
 
+    data class ExamData(
+        val questions: List<RealmExamQuestion>,
+        val submissionId: String?,
+        val isCertified: Boolean
+    )
+
     override fun onCreateView(inflater: LayoutInflater, parent: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTakeExamBinding.inflate(inflater, parent, false)
         listAns = HashMap()
@@ -71,39 +79,13 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         initExam()
-        questions = mRealm.where(RealmExamQuestion::class.java).equalTo("examId", exam?.id).findAll()
-        binding.tvQuestionCount.text = getString(R.string.Q1, questions?.size)
-        var q: RealmQuery<*> = mRealm.where(RealmSubmission::class.java)
-            .equalTo("userId", user?.id)
-            .equalTo("parentId", if (!TextUtils.isEmpty(exam?.courseId)) {
-                id + "@" + exam?.courseId
-            } else {
-                id
-            }).sort("startTime", Sort.DESCENDING)
-        if (type == "exam") {
-            q = q.equalTo("status", "pending")
-        }
-        sub = q.findFirst() as RealmSubmission?
-        val courseId = exam?.courseId
-        isCertified = isCourseCertified(mRealm, courseId)
+        postponeEnterTransition()
+        binding.progressBar.visibility = View.VISIBLE
+        binding.contentLayout.visibility = View.GONE
 
-        if ((questions?.size ?: 0) > 0) {
-            if (type == "exam") {
-                clearAllExistingAnswers {
-                    createSubmission()
-                    startExam(questions?.get(currentIndex))
-                    updateNavButtons()
-                }
-            } else {
-                createSubmission()
-                startExam(questions?.get(currentIndex))
-                updateNavButtons()
-            }
-        } else {
-            binding.container.visibility = View.GONE
-            binding.btnSubmit.visibility = View.GONE
-            binding.tvQuestionCount.setText(R.string.no_questions)
-            Snackbar.make(binding.tvQuestionCount, R.string.no_questions_available, Snackbar.LENGTH_LONG).show()
+        viewLifecycleOwner.lifecycleScope.launch {
+            val data = loadExamData()
+            setupUiWithData(data)
         }
 
         binding.btnBack.setOnClickListener {
@@ -138,6 +120,80 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                 updateNavButtons()
             }
         })
+    }
+
+    private suspend fun loadExamData(): ExamData = withContext(Dispatchers.IO) {
+        var backgroundRealm: Realm? = null
+        try {
+            backgroundRealm = Realm.getDefaultInstance()
+            val questionsDeferred = async {
+                backgroundRealm.where(RealmExamQuestion::class.java).equalTo("examId", exam?.id).findAll()
+            }
+            val submissionDeferred = async {
+                var q: RealmQuery<*> = backgroundRealm.where(RealmSubmission::class.java)
+                    .equalTo("userId", user?.id)
+                    .equalTo("parentId", if (!TextUtils.isEmpty(exam?.courseId)) {
+                        id + "@" + exam?.courseId
+                    } else {
+                        id
+                    }).sort("startTime", Sort.DESCENDING)
+                if (type == "exam") {
+                    q = q.equalTo("status", "pending")
+                }
+                q.findFirst() as RealmSubmission?
+            }
+            val isCertifiedDeferred = async {
+                val courseId = exam?.courseId
+                isCourseCertified(backgroundRealm, courseId)
+            }
+
+            val questionsResult = questionsDeferred.await()
+            val submissionResult = submissionDeferred.await()
+            val isCertifiedResult = isCertifiedDeferred.await()
+
+            ExamData(
+                questions = backgroundRealm.copyFromRealm(questionsResult),
+                submissionId = submissionResult?.id,
+                isCertified = isCertifiedResult
+            )
+        } finally {
+            backgroundRealm?.close()
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        viewLifecycleOwner.lifecycleScope.coroutineContext.cancelChildren()
+    }
+
+    private fun setupUiWithData(data: ExamData) {
+        questions = data.questions
+        sub = mRealm.where(RealmSubmission::class.java).equalTo("id", data.submissionId).findFirst()
+        isCertified = data.isCertified
+
+        binding.progressBar.visibility = View.GONE
+        binding.contentLayout.visibility = View.VISIBLE
+        startPostponedEnterTransition()
+
+        if (questions?.isNotEmpty() == true) {
+            binding.tvQuestionCount.text = getString(R.string.Q1, questions?.size)
+            if (type == "exam") {
+                clearAllExistingAnswers {
+                    createSubmission()
+                    questions?.get(currentIndex)?.let { startExam(it) }
+                    updateNavButtons()
+                }
+            } else {
+                createSubmission()
+                questions?.get(currentIndex)?.let { startExam(it) }
+                updateNavButtons()
+            }
+        } else {
+            binding.container.visibility = View.GONE
+            binding.btnSubmit.visibility = View.GONE
+            binding.tvQuestionCount.setText(R.string.no_questions)
+            Snackbar.make(binding.tvQuestionCount, R.string.no_questions_available, Snackbar.LENGTH_LONG).show()
+        }
     }
 
     private fun saveCurrentAnswer() {

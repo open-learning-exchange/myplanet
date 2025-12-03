@@ -52,7 +52,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     var type: String? = "exam"
     var currentIndex = 0
     private var stepNumber = 0
-    var questions: RealmResults<RealmExamQuestion>? = null
+    var questions: List<RealmExamQuestion>? = null
     var ans = ""
     var user: RealmUserModel? = null
     var sub: RealmSubmission? = null
