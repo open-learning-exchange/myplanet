@@ -24,6 +24,7 @@ class SubmissionListFragment : Fragment() {
     private var parentId: String? = null
     private var examTitle: String? = null
     private var userId: String? = null
+    private lateinit var adapter: SubmissionListAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,6 +61,9 @@ class SubmissionListFragment : Fragment() {
         binding.rvSubmissions.addItemDecoration(
             DividerItemDecoration(context, DividerItemDecoration.VERTICAL)
         )
+        val listener = activity as? OnHomeItemClickListener
+        adapter = SubmissionListAdapter(requireContext(), listener)
+        binding.rvSubmissions.adapter = adapter
     }
 
     private fun loadSubmissions() {
@@ -69,13 +73,7 @@ class SubmissionListFragment : Fragment() {
             .sort("lastUpdateTime", Sort.DESCENDING)
             .findAll()
 
-        val listener = activity as? OnHomeItemClickListener
-        val adapter = SubmissionListAdapter(
-            requireContext(),
-            submissions.toList(),
-            listener
-        )
-        binding.rvSubmissions.adapter = adapter
+        adapter.submitList(submissions.toList())
 
         binding.btnDownloadReport.setOnClickListener {
             generateReport(submissions.toList())
