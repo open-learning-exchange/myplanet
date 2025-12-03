@@ -109,7 +109,6 @@ class UserProfileDbHandler @Inject constructor(
         }
     }
 
-
     val lastVisit: Long? get() = realmService.withRealm { realm ->
         realm.where(RealmOfflineActivity::class.java).max("loginTime") as Long?
     }
@@ -187,27 +186,30 @@ class UserProfileDbHandler @Inject constructor(
             if (count == 0L) "" else "Resource opened $count times."
         }
 
-    val maxOpenedResource: String
-        get() = realmService.withRealm { realm ->
-            val activities = realm.where(RealmResourceActivity::class.java)
-                .equalTo("user", fullName)
-                .equalTo("type", KEY_RESOURCE_OPEN)
-                .findAll()
+    suspend fun maxOpenedResource(): String {
+        return withContext(Dispatchers.IO) {
+            realmService.withRealm { realm ->
+                val activities = realm.where(RealmResourceActivity::class.java)
+                    .equalTo("user", fullName)
+                    .equalTo("type", KEY_RESOURCE_OPEN)
+                    .findAll()
 
-            if (activities.isEmpty()) {
-                return@withRealm ""
+                if (activities.isEmpty()) {
+                    return@withRealm ""
+                }
+
+                val mostOpenedResource = activities
+                    .groupBy { it.resourceId }
+                    .maxByOrNull { it.value.size }
+
+                mostOpenedResource?.let {
+                    val resourceTitle = it.value.first().title
+                    val count = it.value.size
+                    "$resourceTitle opened $count times"
+                } ?: ""
             }
-
-            val mostOpenedResource = activities
-                .groupBy { it.resourceId }
-                .maxByOrNull { it.value.size }
-
-            mostOpenedResource?.let {
-                val resourceTitle = it.value.first().title
-                val count = it.value.size
-                "$resourceTitle opened $count times"
-            } ?: ""
         }
+    }
 
     companion object {
         const val KEY_LOGIN = "login"

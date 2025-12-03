@@ -44,6 +44,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.CheckboxListView
 import org.ole.planet.myplanet.utilities.DialogUtils.getDialog
+import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -82,11 +83,36 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     
     private fun setListeners() {
         fragmentEditAchievementBinding.btnUpdate.setOnClickListener {
-            if (!aRealm.isInTransaction) aRealm.beginTransaction()
-            setUserInfo()
-            setAchievementInfo()
-            aRealm.commitTransaction()
-            NavigationHelper.popBackStack(parentFragmentManager)
+            val achievementId = user?.id + "@" + user?.planetCode
+            val header = fragmentEditAchievementBinding.etAchievement.text.toString().trim { it <= ' ' }
+            val goals = fragmentEditAchievementBinding.etGoals.text.toString().trim { it <= ' ' }
+            val purpose = fragmentEditAchievementBinding.etPurpose.text.toString().trim { it <= ' ' }
+            val sendToNation = fragmentEditAchievementBinding.cbSendToNation.isChecked.toString() + ""
+            val achievementsJson = if (achievementArray != null) GsonUtils.gson.toJson(achievementArray) else "[]"
+            val referencesJson = if (referenceArray != null) GsonUtils.gson.toJson(referenceArray) else "[]"
+
+            fragmentEditAchievementBinding.btnUpdate.isEnabled = false
+            Utilities.toast(activity, getString(R.string.saving))
+
+            lifecycleScope.launch {
+                databaseService.withRealmAsync { realm ->
+                    realm.executeTransaction { transactionRealm ->
+                        val achievement = transactionRealm.where(RealmAchievement::class.java)
+                            .equalTo("_id", achievementId)
+                            .findFirst()
+                        if (achievement != null) {
+                            achievement.achievementsHeader = header
+                            achievement.goals = goals
+                            achievement.purpose = purpose
+                            achievement.sendToNation = sendToNation
+                            achievement.setAchievements(GsonUtils.gson.fromJson(achievementsJson, JsonArray::class.java))
+                            achievement.setReferences(GsonUtils.gson.fromJson(referencesJson, JsonArray::class.java))
+                        }
+                    }
+                }
+                Utilities.toast(activity, getString(R.string.achievement_saved))
+                NavigationHelper.popBackStack(parentFragmentManager)
+            }
         }
         fragmentEditAchievementBinding.btnCancel.setOnClickListener {
             NavigationHelper.popBackStack(parentFragmentManager)
@@ -345,16 +371,6 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         myLibraryAlertdialogBinding.alertDialogListView.choiceMode = ListView.CHOICE_MODE_MULTIPLE
         myLibraryAlertdialogBinding.alertDialogListView.adapter = adapter
         return myLibraryAlertdialogBinding.alertDialogListView
-    }
-
-    private fun setUserInfo() {}
-    private fun setAchievementInfo() {
-        achievement?.achievementsHeader = fragmentEditAchievementBinding.etAchievement.text.toString().trim { it <= ' ' }
-        achievement?.goals = fragmentEditAchievementBinding.etGoals.text.toString().trim { it <= ' ' }
-        achievement?.purpose = fragmentEditAchievementBinding.etPurpose.text.toString().trim { it <= ' ' }
-        achievement?.setAchievements(achievementArray!!)
-        achievement?.setReferences(referenceArray)
-        achievement?.sendToNation = fragmentEditAchievementBinding.cbSendToNation.isChecked.toString() + ""
     }
 
     override fun onDestroyView() {

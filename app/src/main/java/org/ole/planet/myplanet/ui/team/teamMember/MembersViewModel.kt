@@ -5,8 +5,12 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TeamRepository
@@ -25,7 +29,9 @@ class MembersViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MembersUiState())
-    val uiState: StateFlow<MembersUiState> = _uiState
+    val uiState: StateFlow<MembersUiState> = _uiState.asStateFlow()
+    private val _successAction = MutableSharedFlow<Unit>()
+    val successAction = _successAction.asSharedFlow()
 
     fun fetchMembers(teamId: String) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -33,6 +39,27 @@ class MembersViewModel @Inject constructor(
             val memberCount = teamRepository.getJoinedMembers(teamId).size
             val isLeader = teamRepository.isTeamLeader(teamId, userProfileDbHandler.userModel?.id)
             _uiState.value = MembersUiState(members, isLeader, memberCount)
+        }
+    }
+
+    fun respondToRequest(teamId: String?, user: RealmUserModel, isAccepted: Boolean) {
+        if (teamId.isNullOrBlank() || user.id.isNullOrBlank()) return
+
+        val originalState = _uiState.value
+        val optimisticState = originalState.copy(
+            members = originalState.members.filter { it.id != user.id }
+        )
+        _uiState.value = optimisticState
+
+        viewModelScope.launch(Dispatchers.IO) {
+            val result = teamRepository.respondToMemberRequest(teamId, user.id!!, isAccepted)
+            if (result.isSuccess) {
+                teamRepository.syncTeamActivities()
+                _successAction.emit(Unit)
+                fetchMembers(teamId)
+            } else {
+                _uiState.value = originalState
+            }
         }
     }
 }

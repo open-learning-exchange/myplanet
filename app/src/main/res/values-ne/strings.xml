@@ -1173,5 +1173,7 @@
     <string name="cannot_assign_completed_task">पूरा भएको कार्य सौंप्न सकिँदैन</string>
     <string name="assign_to">सौंप्नुहोस् (वैकल्पिक)</string>
     <string name="click_to_assign_member">टोली सदस्य सौंप्न क्लिक गर्नुहोस्</string>
+    <string name="saving">सुरक्षित गरिदै…</string>
+    <string name="achievement_saved">उपलब्धि अद्यावधिक गरियो</string>
 
 </resources>
