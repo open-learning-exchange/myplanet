@@ -41,7 +41,6 @@ import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.UrlUtils
 
-
 private data class AchievementData(
     val goals: String = "",
     val purpose: String = "",
@@ -50,6 +49,7 @@ private data class AchievementData(
     val achievementResources: List<RealmMyLibrary> = emptyList(),
     val references: List<String> = emptyList()
 )
+
 @AndroidEntryPoint
 class AchievementFragment : BaseContainerFragment() {
     private var _binding: FragmentAchievementBinding? = null
