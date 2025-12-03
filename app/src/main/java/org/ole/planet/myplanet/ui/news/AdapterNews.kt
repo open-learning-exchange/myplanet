@@ -8,6 +8,7 @@ import android.content.SharedPreferences
 import android.graphics.Color
 import android.os.Build
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -15,6 +16,7 @@ import android.widget.ImageView
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.cardview.widget.CardView
+import androidx.collection.LruCache
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toDrawable
 import androidx.lifecycle.findViewTreeLifecycleOwner
@@ -29,6 +31,9 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Case
 import io.realm.Realm
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import io.realm.RealmList
 import io.realm.Sort
 import java.io.File
@@ -106,6 +111,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         val raw = settings.getString("communityLeaders", "") ?: ""
         RealmUserModel.parseLeadersJson(raw)
     }
+    private val fileCache = LruCache<String, String>(100)
 
     fun setImageList(imageList: RealmList<String>?) {
         this.imageList = imageList
@@ -720,68 +726,100 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
 
     private fun loadLibraryImage(binding: RowNewsBinding, resourceId: String?) {
         if (resourceId == null) return
-        val library = mRealm.where(RealmMyLibrary::class.java)
-            .equalTo("_id", resourceId)
-            .findFirst()
+        binding.imgNews.visibility = View.VISIBLE
+        binding.imgNews.setImageResource(R.drawable.ic_loading)
 
-        val basePath = context.getExternalFilesDir(null)
-        if (library != null && basePath != null) {
-            val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
-            if (imageFile.exists()) {
+        binding.root.findViewTreeLifecycleOwner()?.lifecycleScope?.launch {
+            val imagePath = getImagePath(resourceId)
+            if (imagePath.isNotEmpty()) {
+                val imageFile = File(imagePath)
                 val request = Glide.with(binding.imgNews.context)
-                val isGif = library.resourceLocalAddress?.lowercase(Locale.getDefault())?.endsWith(".gif") == true
+                val isGif = imagePath.lowercase(Locale.getDefault()).endsWith(".gif")
                 val target = if (isGif) {
                     request.asGif().load(imageFile)
                 } else {
                     request.load(imageFile)
                 }
-                target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().placeholder(R.drawable.ic_loading)
+                target.diskCacheStrategy(DiskCacheStrategy.ALL)
+                    .fitCenter()
+                    .placeholder(R.drawable.ic_loading)
                     .error(R.drawable.ic_loading)
                     .into(binding.imgNews)
-                binding.imgNews.visibility = View.VISIBLE
+
                 binding.imgNews.setOnClickListener {
                     showZoomableImage(it.context, imageFile.toString())
                 }
+            } else {
+                binding.imgNews.visibility = View.GONE
             }
         }
     }
 
     private fun addLibraryImageToContainer(binding: RowNewsBinding, resourceId: String?) {
         if (resourceId == null) return
-        val library = mRealm.where(RealmMyLibrary::class.java)
-            .equalTo("_id", resourceId)
-            .findFirst()
+        val imageView = ImageView(context)
+        val size = (100 * context.resources.displayMetrics.density).toInt()
+        val margin = (4 * context.resources.displayMetrics.density).toInt()
+        val params = ViewGroup.MarginLayoutParams(size, size)
+        params.setMargins(margin, margin, margin, margin)
+        imageView.layoutParams = params
+        imageView.scaleType = ImageView.ScaleType.CENTER_CROP
+        imageView.setImageResource(R.drawable.ic_loading)
+        binding.llNewsImages.addView(imageView)
 
-        val basePath = context.getExternalFilesDir(null)
-        if (library != null && basePath != null) {
-            val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
-            if (imageFile.exists()) {
-                val imageView = ImageView(context)
-                val size = (100 * context.resources.displayMetrics.density).toInt()
-                val margin = (4 * context.resources.displayMetrics.density).toInt()
-                val params = ViewGroup.MarginLayoutParams(size, size)
-                params.setMargins(margin, margin, margin, margin)
-                imageView.layoutParams = params
-                imageView.scaleType = ImageView.ScaleType.CENTER_CROP
-
+        binding.root.findViewTreeLifecycleOwner()?.lifecycleScope?.launch {
+            val imagePath = getImagePath(resourceId)
+            if (imagePath.isNotEmpty()) {
+                val imageFile = File(imagePath)
                 val request = Glide.with(context)
-                val isGif = library.resourceLocalAddress?.lowercase(Locale.getDefault())?.endsWith(".gif") == true
+                val isGif = imagePath.lowercase(Locale.getDefault()).endsWith(".gif")
                 val target = if (isGif) {
                     request.asGif().load(imageFile)
                 } else {
                     request.load(imageFile)
                 }
-                target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().placeholder(R.drawable.ic_loading)
+                target.diskCacheStrategy(DiskCacheStrategy.ALL)
+                    .fitCenter()
+                    .placeholder(R.drawable.ic_loading)
                     .error(R.drawable.ic_loading)
                     .into(imageView)
 
                 imageView.setOnClickListener {
                     showZoomableImage(context, imageFile.toString())
                 }
-
-                binding.llNewsImages.addView(imageView)
+            } else {
+                binding.llNewsImages.removeView(imageView)
             }
         }
+    }
+
+    private suspend fun getImagePath(resourceId: String): String = withContext(Dispatchers.IO) {
+        val cachedPath = fileCache.get(resourceId)
+        if (cachedPath != null) {
+            return@withContext cachedPath
+        }
+
+        var path = ""
+        try {
+            databaseService.withRealm { realm ->
+                val library = realm.where(RealmMyLibrary::class.java)
+                    .equalTo("_id", resourceId)
+                    .findFirst()
+
+                val basePath = context.getExternalFilesDir(null)
+                if (library != null && basePath != null && library.resourceLocalAddress?.isNotEmpty() == true) {
+                    val imageFile =
+                        File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
+                    if (imageFile.exists()) {
+                        path = imageFile.absolutePath
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("AdapterNews", "Error getting image path for $resourceId", e)
+        }
+        fileCache.put(resourceId, path)
+        path
     }
 
     private fun showZoomableImage(context: Context, imageUrl: String) {
