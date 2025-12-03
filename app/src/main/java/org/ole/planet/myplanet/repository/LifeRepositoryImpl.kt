@@ -5,11 +5,15 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLife
 
 class LifeRepositoryImpl @Inject constructor(
-    private val databaseService: DatabaseService
+    databaseService: DatabaseService
 ) : RealmRepository(databaseService), LifeRepository {
     override suspend fun getMyLife(userId: String?): List<RealmMyLife> {
-        return queryList {
-            it.where(RealmMyLife::class.java).equalTo("userId", userId).findAll().sort("weight")
+        return withRealm { realm ->
+            val results = realm.where(RealmMyLife::class.java)
+                .equalTo("userId", userId)
+                .findAll()
+                .sort("weight")
+            realm.copyFromRealm(results)
         }
     }
 
