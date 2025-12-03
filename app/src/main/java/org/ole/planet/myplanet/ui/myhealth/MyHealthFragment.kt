@@ -34,6 +34,7 @@ import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
@@ -94,6 +95,7 @@ class MyHealthFragment : Fragment() {
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
     private var textWatcher: TextWatcher? = null
+    private var searchJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -346,27 +348,28 @@ class MyHealthFragment : Fragment() {
     }
 
     private fun setTextWatcher(etSearch: EditText, btnAddMember: Button, lv: ListView) {
-        var timer: CountDownTimer? = null
         textWatcher = object : TextWatcher {
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
             override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
 
             override fun afterTextChanged(editable: Editable) {
-                timer?.cancel()
-                timer = object : CountDownTimer(1000, 1500) {
-                    override fun onTick(millisUntilFinished: Long) {}
-                    override fun onFinish() {
-                        val userModelList = mRealm.where(RealmUserModel::class.java)
-                            .contains("firstName", editable.toString(), Case.INSENSITIVE).or()
-                            .contains("lastName", editable.toString(), Case.INSENSITIVE).or()
-                            .contains("name", editable.toString(), Case.INSENSITIVE)
-                            .sort("joinDate", Sort.DESCENDING).findAll()
+                searchJob?.cancel()
+                searchJob = viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                    kotlinx.coroutines.delay(300)
+                    val userModelList = mRealm.where(RealmUserModel::class.java)
+                        .contains("firstName", editable.toString(), Case.INSENSITIVE).or()
+                        .contains("lastName", editable.toString(), Case.INSENSITIVE).or()
+                        .contains("name", editable.toString(), Case.INSENSITIVE)
+                        .sort("joinDate", Sort.DESCENDING)
+                        .limit(20)
+                        .findAll()
 
+                    withContext(Dispatchers.Main) {
                         val adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, userModelList)
                         lv.adapter = adapter
                         btnAddMember.visibility = if (adapter.count == 0) View.VISIBLE else View.GONE
                     }
-                }.start()
+                }
             }
         }
         etSearch.addTextChangedListener(textWatcher)

@@ -10,6 +10,7 @@ import com.google.gson.JsonParser
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
+import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 import java.io.File
 import java.io.InputStream
@@ -34,7 +35,9 @@ open class RealmUserModel : RealmObject() {
     var rolesList: RealmList<String?>? = null
     var userAdmin: Boolean? = null
     var joinDate: Long = 0
+    @Index
     var firstName: String? = null
+    @Index
     var lastName: String? = null
     var middleName: String? = null
     var email: String? = null
