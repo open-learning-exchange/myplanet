@@ -187,34 +187,38 @@ class UserProfileDbHandler @Inject constructor(
             if (count == 0L) "" else "Resource opened $count times."
         }
 
-    val maxOpenedResource: String
-        get() = realmService.withRealm { realm ->
-            val result = realm.where(RealmResourceActivity::class.java)
-                .equalTo("user", fullName)
-                .equalTo("type", KEY_RESOURCE_OPEN)
-                .findAll()
-                .where()
-                .distinct("resourceId")
-                .findAll()
-
-            var maxCount = 0L
-            var maxOpenedResource = ""
-
-            for (realmResourceActivities in result) {
-                val count = realm.where(RealmResourceActivity::class.java)
+    suspend fun maxOpenedResource(): String {
+        return withContext(Dispatchers.IO) {
+            realmService.withRealm { realm ->
+                val activities = realm.where(RealmResourceActivity::class.java)
                     .equalTo("user", fullName)
                     .equalTo("type", KEY_RESOURCE_OPEN)
-                    .equalTo("resourceId", realmResourceActivities.resourceId)
-                    .count()
+                    .findAll()
 
-                if (count > maxCount) {
-                    maxCount = count
-                    maxOpenedResource = "${realmResourceActivities.title}"
+                if (activities.isEmpty()) {
+                    return@withRealm ""
+                }
+
+                val resourceCounts = activities
+                    .groupBy { it.resourceId }
+                    .mapValues { entry ->
+                        val count = entry.value.size
+                        val title = entry.value.first().title
+                        Pair(count, title)
+                    }
+
+                val maxEntry = resourceCounts.maxByOrNull { it.value.first }
+
+                if (maxEntry == null || maxEntry.value.first == 0) {
+                    ""
+                } else {
+                    val maxCount = maxEntry.value.first
+                    val title = maxEntry.value.second
+                    "$title opened $maxCount times"
                 }
             }
-
-            if (maxCount == 0L) "" else "$maxOpenedResource opened $maxCount times"
         }
+    }
 
     companion object {
         const val KEY_LOGIN = "login"
