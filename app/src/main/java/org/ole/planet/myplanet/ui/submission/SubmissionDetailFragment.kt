@@ -5,11 +5,19 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.gson.Gson
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import io.realm.Realm
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import org.ole.planet.myplanet.databinding.FragmentSubmissionDetailBinding
+import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
@@ -19,7 +27,6 @@ import org.ole.planet.myplanet.utilities.TimeUtils
 class SubmissionDetailFragment : Fragment() {
     private var _binding: FragmentSubmissionDetailBinding? = null
     private val binding get() = _binding!!
-    private lateinit var mRealm: Realm
     private var submissionId: String? = null
     private lateinit var adapter: QuestionAnswerAdapter
 
@@ -30,10 +37,7 @@ class SubmissionDetailFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        mRealm = Realm.getDefaultInstance()
         submissionId = arguments?.getString("id")
-
         setupRecyclerView()
         loadSubmissionDetails()
     }
@@ -41,14 +45,12 @@ class SubmissionDetailFragment : Fragment() {
     private fun setupRecyclerView() {
         adapter = QuestionAnswerAdapter()
 
-        // Use a LinearLayoutManager that forces full height calculation
         val layoutManager = object : LinearLayoutManager(context) {
             override fun canScrollVertically(): Boolean {
                 return false
             }
 
             override fun onMeasure(recycler: RecyclerView.Recycler, state: RecyclerView.State, widthSpec: Int, heightSpec: Int) {
-                // Use state.itemCount for more reliable count
                 val count = state.itemCount
                 if (count == 0 || adapter.itemCount == 0) {
                     super.onMeasure(recycler, state, widthSpec, heightSpec)
@@ -85,73 +87,157 @@ class SubmissionDetailFragment : Fragment() {
     }
 
     private fun loadSubmissionDetails() {
-        submissionId?.let { id ->
-            var submission = mRealm.where(RealmSubmission::class.java)
-                .equalTo("id", id)
-                .or()
-                .equalTo("_id", id)
-                .findFirst()
+        viewLifecycleOwner.lifecycleScope.launch {
+            val (submissionInfo, questionAnswerList) = withContext(Dispatchers.IO) {
+                Realm.getDefaultInstance().use { realm ->
+                    val submission = submissionId?.let { id ->
+                        realm.where(RealmSubmission::class.java)
+                            .equalTo("id", id)
+                            .or()
+                            .equalTo("_id", id)
+                            .findFirst()
+                            ?: realm.where(RealmSubmission::class.java)
+                                .contains("parentId", id)
+                                .findFirst()
+                    }
 
-            if (submission == null) {
-                submission = mRealm.where(RealmSubmission::class.java)
-                    .contains("parentId", id)
-                    .findFirst()
+                    if (submission != null) {
+                        val unmanagedSubmission = realm.copyFromRealm(submission)
+
+                        var examId = unmanagedSubmission.parentId
+                        if (unmanagedSubmission.parentId?.contains("@") == true) {
+                            examId = unmanagedSubmission.parentId!!.split("@")[0]
+                        }
+
+                        val exam = realm.where(RealmStepExam::class.java)
+                            .equalTo("id", examId)
+                            .findFirst()
+                        val unmanagedExam = exam?.let { realm.copyFromRealm(it) }
+
+                        val submittedBy = try {
+                            val userJson = unmanagedSubmission.user?.let { JSONObject(it) }
+                            userJson?.optString("name") ?: ""
+                        } catch (e: Exception) {
+                            val user = realm.where(RealmUserModel::class.java)
+                                .equalTo("id", unmanagedSubmission.userId)
+                                .findFirst()
+                            user?.let { realm.copyFromRealm(it) }?.name ?: ""
+                        }
+
+                        val info = SubmissionInfo(
+                            title = unmanagedExam?.name ?: "Submission Details",
+                            status = "Status: ${unmanagedSubmission.status ?: "Unknown"}",
+                            date = "Date: ${TimeUtils.getFormattedDate(unmanagedSubmission.startTime)}",
+                            submittedBy = "Submitted by: $submittedBy"
+                        )
+
+                        val questions = realm.where(RealmExamQuestion::class.java)
+                            .equalTo("examId", getExamId(unmanagedSubmission.parentId))
+                            .findAll()
+                        val unmanagedQuestions = realm.copyFromRealm(questions)
+
+                        val qnaList = unmanagedQuestions.map { question ->
+                            val answer = unmanagedSubmission.answers?.find { it.questionId == question.id }
+                            QuestionAnswerInfo(
+                                questionHeader = question.header,
+                                questionBody = question.body,
+                                answer = answer?.let {
+                                    AnswerInfo(
+                                        value = formatAnswer(it, question),
+                                        isPassed = it.isPassed
+                                    )
+                                },
+                                type = question.type
+                            )
+                        }
+                        Pair(info, qnaList)
+                    } else {
+                        Pair(null, emptyList())
+                    }
+                }
             }
 
-            submission?.let {
-                displaySubmissionInfo(it)
-                loadQuestionsAndAnswers(it)
+            submissionInfo?.let {
+                binding.tvSubmissionTitle.text = it.title
+                binding.tvSubmissionStatus.text = it.status
+                binding.tvSubmissionDate.text = it.date
+                binding.tvSubmittedBy.text = it.submittedBy
             }
+            adapter.updateData(questionAnswerList)
         }
     }
 
-    private fun displaySubmissionInfo(submission: RealmSubmission) {
-        var examId = submission.parentId
-        if (submission.parentId?.contains("@") == true) {
-            examId = submission.parentId!!.split("@")[0]
+    private fun formatAnswer(answer: RealmAnswer?, question: RealmExamQuestion): String {
+        if (answer == null) {
+            return "No answer provided"
         }
 
-        val exam = mRealm.where(RealmStepExam::class.java)
-            .equalTo("id", examId)
-            .findFirst()
-
-        binding.tvSubmissionTitle.text = exam?.name ?: "Submission Details"
-        binding.tvSubmissionStatus.text = "Status: ${submission.status ?: "Unknown"}"
-        binding.tvSubmissionDate.text = "Date: ${TimeUtils.getFormattedDate(submission.startTime)}"
-
-        showSubmittedBy(submission)
+        return when {
+            !answer.value.isNullOrEmpty() -> {
+                answer.value!!
+            }
+            answer.valueChoices != null && answer.valueChoices!!.isNotEmpty() -> {
+                formatMultipleChoiceAnswer(answer.valueChoices!!, question)
+            }
+            else -> "No answer provided"
+        }
     }
 
-    private fun showSubmittedBy(submission: RealmSubmission) {
+    private fun formatMultipleChoiceAnswer(choices: List<String>, question: RealmExamQuestion): String {
+        val selectedChoices = mutableListOf<String>()
+
         try {
-            val userJson = submission.user?.let { JSONObject(it) }
-            if (userJson != null) {
-                binding.tvSubmittedBy.text = "Submitted by: ${userJson.optString("name")}"
+            val questionChoicesJson = if (!question.choices.isNullOrEmpty()) {
+                Gson().fromJson(question.choices, JsonArray::class.java)
+            } else {
+                JsonArray()
+            }
+
+            for (choice in choices) {
+                try {
+                    val choiceJson = Gson().fromJson(choice, JsonObject::class.java)
+                    val choiceId = choiceJson.get("id")?.asString
+                    val choiceText = choiceJson.get("text")?.asString
+
+                    if (!choiceText.isNullOrEmpty()) {
+                        selectedChoices.add(choiceText)
+                    } else if (!choiceId.isNullOrEmpty()) {
+                        val matchingChoice = findChoiceTextById(choiceId, questionChoicesJson)
+                        if (matchingChoice != null) {
+                            selectedChoices.add(matchingChoice)
+                        } else {
+                            selectedChoices.add(choiceId)
+                        }
+                    }
+                } catch (e: Exception) {
+                    selectedChoices.add(choice)
+                }
             }
         } catch (e: Exception) {
-            val user = mRealm.where(RealmUserModel::class.java)
-                .equalTo("id", submission.userId)
-                .findFirst()
-            if (user != null) {
-                binding.tvSubmittedBy.text = "Submitted by: ${user.name}"
+            return choices.joinToString(", ")
+        }
+
+        return if (selectedChoices.isNotEmpty()) {
+            selectedChoices.joinToString(", ")
+        } else {
+            "No selection made"
+        }
+    }
+
+    private fun findChoiceTextById(choiceId: String, questionChoices: JsonArray): String? {
+        for (i in 0 until questionChoices.size()) {
+            try {
+                val choice = questionChoices[i].asJsonObject
+                if (choice.get("id")?.asString == choiceId) {
+                    return choice.get("text")?.asString
+                }
+            } catch (e: Exception) {
+                continue
             }
         }
+        return null
     }
 
-    private fun loadQuestionsAndAnswers(submission: RealmSubmission) {
-        val examId = getExamId(submission.parentId)
-
-        val questions = mRealm.where(RealmExamQuestion::class.java)
-            .equalTo("examId", examId)
-            .findAll()
-
-        val questionAnswerPairs = questions.map { question ->
-            val answer = submission.answers?.find { it.questionId == question.id }
-            QuestionAnswerPair(question, answer)
-        }
-
-        adapter.updateData(questionAnswerPairs)
-    }
 
     private fun getExamId(parentId: String?): String? {
         return if (parentId?.contains("@") == true) {
@@ -161,9 +247,7 @@ class SubmissionDetailFragment : Fragment() {
         }
     }
 
-
     override fun onDestroyView() {
-        mRealm.close()
         _binding = null
         super.onDestroyView()
     }
