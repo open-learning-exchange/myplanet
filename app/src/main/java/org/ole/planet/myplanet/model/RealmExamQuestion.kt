@@ -6,6 +6,7 @@ import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.RealmResults
+import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 import java.util.Locale
 import org.ole.planet.myplanet.utilities.GsonUtils
@@ -17,6 +18,7 @@ open class RealmExamQuestion : RealmObject() {
     var header: String? = null
     var body: String? = null
     var type: String? = null
+    @Index
     var examId: String? = null
     private var correctChoice: RealmList<String>? = null
     var marks: String? = null
