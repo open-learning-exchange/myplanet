@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.dictionary
 
 import android.os.Bundle
+import android.view.View
 import androidx.core.text.HtmlCompat
 import androidx.lifecycle.lifecycleScope
 import com.google.gson.JsonArray
