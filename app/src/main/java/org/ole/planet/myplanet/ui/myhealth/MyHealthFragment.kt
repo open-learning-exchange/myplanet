@@ -435,9 +435,31 @@ class MyHealthFragment : Fragment() {
                     binding.tvNoRecords.visibility = View.GONE
                     binding.tvDataPlaceholder.visibility = View.VISIBLE
 
-                    val userIds = list.mapNotNull { it.getEncryptedDataAsJson(currentUser)?.let { json -> getString("createdBy", json) } }.distinct()
+                    val userIds = list.mapNotNull {
+                        it.getEncryptedDataAsJson(currentUser)?.let { json ->
+                            json.get("createdBy")?.asString
+                        }
+                    }.distinct()
                     val userMap = withContext(Dispatchers.IO) {
-                        mRealm.where(RealmUserModel::class.java).`in`("id", userIds.toTypedArray()).findAll().associateBy { it.id }
+                        if (userIds.isEmpty()) {
+                            emptyMap<String, RealmUserModel>()
+                        } else {
+                            Realm.getDefaultInstance().use { realm ->
+                                val query = realm.where(RealmUserModel::class.java)
+                                query.beginGroup()
+                                userIds.forEachIndexed { index, userId ->
+                                    if (index > 0) {
+                                        query.or()
+                                    }
+                                    query.equalTo("id", userId)
+                                }
+                                query.endGroup()
+                                val users = query.findAll()
+                                realm.copyFromRealm(users)
+                                    .filter { it.id != null }
+                                    .associateBy { it.id!! }
+                            }
+                        }
                     }
 
                     healthAdapter = AdapterHealthExamination(requireActivity(), mh, currentUser, userMap)
