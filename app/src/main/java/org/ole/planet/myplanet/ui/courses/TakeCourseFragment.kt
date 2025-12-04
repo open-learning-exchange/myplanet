@@ -217,7 +217,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             }
             
             val detachedUserModel = userModel
-            val detachedCurrentCourse = currentCourse?.let { mRealm.copyFromRealm(it) }
+            val detachedCurrentCourse = currentCourse
 
             withContext(Dispatchers.IO) {
                 val backgroundRealm = databaseService.realmInstance
