@@ -120,6 +120,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
     override fun onViewCreated(view: View, savedInstanceState: android.os.Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        onLoaded(view)
         postponeEnterTransition()
     }
 
@@ -342,8 +343,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             withContext(Dispatchers.Main) {
                 view?.let {
                     it.findViewById<View>(R.id.loading_indicator)?.visibility = View.GONE
-                    it.findViewById<View>(R.id.dashboard_content)?.visibility = View.VISIBLE
-                    onLoaded(it)
+                    it.findViewById<View>(R.id.dynamic_content_container)?.visibility = View.VISIBLE
                     it.findViewById<View>(R.id.imageView).setOnClickListener {
                         homeItemClickListener?.openCallFragment(UserProfileFragment())
                     }
