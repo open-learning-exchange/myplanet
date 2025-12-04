@@ -154,6 +154,39 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         Trace.endSection()
     }
 
+    private fun collectUiState() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                dashboardViewModel.uiState.collect { state ->
+                    updateNotificationBadge(state.unreadNotifications) {
+                        openNotificationsList(user?.id ?: "")
+                    }
+                }
+            }
+        }
+    }
+
+    private fun initViews() {
+        binding = ActivityDashboardBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
+        setupUI(binding.activityDashboardParentLayout, this@DashboardActivity)
+        topbarSetting()
+        setSupportActionBar(binding.appBarBell.bellToolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(false)
+        supportActionBar?.title = null
+        navigationView = binding.topBarNavigation
+        navigationView.labelVisibilityMode = NavigationBarView.LABEL_VISIBILITY_LABELED
+        binding.appBarBell.bellToolbar.inflateMenu(R.menu.menu_bell_dashboard)
+        service = Service(this)
+        tl = findViewById(R.id.tab_layout)
+        onGlobalLayoutListener = android.view.ViewTreeObserver.OnGlobalLayoutListener { topBarVisible() }
+        binding.root.viewTreeObserver.addOnGlobalLayoutListener(onGlobalLayoutListener)
+        binding.appBarBell.ivSetting.setOnClickListener {
+            startActivity(Intent(this, SettingActivity::class.java))
+        }
+    }
+
     private suspend fun deferredSetup() {
         updateAppTitle()
         if (handleGuestAccess()) return
@@ -173,41 +206,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             challengeHelper.evaluateChallengeDialog()
             reportFullyDrawn()
         }
-    }
-
-    private fun collectUiState() {
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                dashboardViewModel.uiState.collect { state ->
-                    updateNotificationBadge(state.unreadNotifications) {
-                        openNotificationsList(user?.id ?: "")
-                    }
-                }
-            }
-        }
-    }
-
-    private fun initViews() {
-        binding = ActivityDashboardBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-        EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
-        setupUI(binding.activityDashboardParentLayout, this@DashboardActivity)
-        setSupportActionBar(binding.myToolbar)
-        supportActionBar?.setDisplayHomeAsUpEnabled(false)
-        supportActionBar?.setTitle(R.string.app_project_name)
-        binding.myToolbar.setTitleTextColor(Color.WHITE)
-        binding.myToolbar.setSubtitleTextColor(Color.WHITE)
-        navigationView = binding.topBarNavigation
-        navigationView.labelVisibilityMode = NavigationBarView.LABEL_VISIBILITY_LABELED
-        binding.appBarBell.bellToolbar.inflateMenu(R.menu.menu_bell_dashboard)
-        service = Service(this)
-        tl = findViewById(R.id.tab_layout)
-        onGlobalLayoutListener = android.view.ViewTreeObserver.OnGlobalLayoutListener { topBarVisible() }
-        binding.root.viewTreeObserver.addOnGlobalLayoutListener(onGlobalLayoutListener)
-        binding.appBarBell.ivSetting.setOnClickListener {
-            startActivity(Intent(this, SettingActivity::class.java))
-        }
-        topbarSetting()
     }
 
     private suspend fun updateAppTitle() {
@@ -233,9 +231,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
         } ?: getString(R.string.app_project_name)
 
-        withContext(Dispatchers.Main) {
-            binding.appBarBell.appTitleName.text = title
-        }
+        binding.appBarBell.appTitleName.text = title
     }
 
     private fun handleGuestAccess(): Boolean {
@@ -282,6 +278,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
         result?.actionBarDrawerToggle?.isDrawerIndicatorEnabled = true
         dl = result?.drawerLayout
+        topbarSetting()
 
         lifecycleScope.launch {
             delay(50)
@@ -1016,7 +1013,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         result = headerResult?.let {
             DrawerBuilder().withActivity(this).withFullscreen(true).withTranslucentStatusBar(true).withTranslucentNavigationBar(true)
                 .withSliderBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimary))
-                .withToolbar(binding.myToolbar)
+                .withToolbar(binding.appBarBell.bellToolbar)
                 .withAccountHeader(it).withHeaderHeight(dimenHolder)
                 .addDrawerItems(*drawerItems).addStickyDrawerItems(*drawerItemsFooter)
                 .withOnDrawerItemClickListener { _: View?, _: Int, drawerItem: IDrawerItem<*, *>? ->
