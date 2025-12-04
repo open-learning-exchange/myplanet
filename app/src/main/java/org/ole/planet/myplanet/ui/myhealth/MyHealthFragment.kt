@@ -282,13 +282,10 @@ class MyHealthFragment : Fragment() {
     private fun selectPatient() {
         viewLifecycleOwner.lifecycleScope.launch {
             val users = userRepository.getUsers("joinDate", Sort.DESCENDING)
-            if (isAdded) {
+            withContext(Dispatchers.Main) {
+                if (!isAdded) return@withContext
                 userModelList = users
-                adapter = UserListArrayAdapter(
-                    requireActivity(),
-                    android.R.layout.simple_list_item_1,
-                    userModelList
-                )
+                adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, userModelList)
                 alertHealthListBinding = AlertHealthListBinding.inflate(LayoutInflater.from(context))
                 alertHealthListBinding?.btnAddMember?.setOnClickListener {
                     startActivity(Intent(requireContext(), BecomeMemberActivity::class.java))
@@ -325,10 +322,9 @@ class MyHealthFragment : Fragment() {
                         2 -> "name" to Sort.ASCENDING
                         else -> "name" to Sort.DESCENDING
                     }
-
                     val sortedList = userRepository.getUsers(sortBy, sort)
-
-                    if (isAdded) {
+                    withContext(Dispatchers.Main) {
+                        if (!isAdded) return@withContext
                         userModelList = sortedList
                         adapter.clear()
                         adapter.addAll(userModelList)
