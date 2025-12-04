@@ -346,15 +346,20 @@ class MyHealthFragment : Fragment() {
                 timer = object : CountDownTimer(1000, 1500) {
                     override fun onTick(millisUntilFinished: Long) {}
                     override fun onFinish() {
-                        val userModelList = mRealm.where(RealmUserModel::class.java)
-                            .contains("firstName", editable.toString(), Case.INSENSITIVE).or()
-                            .contains("lastName", editable.toString(), Case.INSENSITIVE).or()
-                            .contains("name", editable.toString(), Case.INSENSITIVE)
-                            .sort("joinDate", Sort.DESCENDING).findAll()
-
-                        val adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, userModelList)
-                        lv.adapter = adapter
-                        btnAddMember.visibility = if (adapter.count == 0) View.VISIBLE else View.GONE
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            val userModelList = userRepository.searchUsers(editable.toString())
+                            withContext(Dispatchers.Main) {
+                                if (!isAdded) return@withContext
+                                val adapter = UserListArrayAdapter(
+                                    requireActivity(),
+                                    android.R.layout.simple_list_item_1,
+                                    userModelList
+                                )
+                                lv.adapter = adapter
+                                btnAddMember.visibility =
+                                    if (adapter.count == 0) View.VISIBLE else View.GONE
+                            }
+                        }
                     }
                 }.start()
             }
@@ -373,17 +378,19 @@ class MyHealthFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             val currentUser = userModel
             if (currentUser == null) {
-                binding.layoutUserDetail.visibility = View.GONE
-                binding.tvMessage.visibility = View.VISIBLE
-                binding.tvMessage.text = getString(R.string.health_record_not_available)
-                binding.txtOtherNeed.text = getString(R.string.empty_text)
-                binding.txtSpecialNeeds.text = getString(R.string.empty_text)
-                binding.txtBirthPlace.text = getString(R.string.empty_text)
-                binding.txtEmergencyContact.text = getString(R.string.empty_text)
-                binding.rvRecords.adapter = null
-                binding.rvRecords.visibility = View.GONE
-                binding.tvNoRecords.visibility = View.VISIBLE
-                binding.tvDataPlaceholder.visibility = View.GONE
+                withContext(Dispatchers.Main) {
+                    binding.layoutUserDetail.visibility = View.GONE
+                    binding.tvMessage.visibility = View.VISIBLE
+                    binding.tvMessage.text = getString(R.string.health_record_not_available)
+                    binding.txtOtherNeed.text = getString(R.string.empty_text)
+                    binding.txtSpecialNeeds.text = getString(R.string.empty_text)
+                    binding.txtBirthPlace.text = getString(R.string.empty_text)
+                    binding.txtEmergencyContact.text = getString(R.string.empty_text)
+                    binding.rvRecords.adapter = null
+                    binding.rvRecords.visibility = View.GONE
+                    binding.tvNoRecords.visibility = View.VISIBLE
+                    binding.tvDataPlaceholder.visibility = View.GONE
+                }
                 return@launch
             }
 
