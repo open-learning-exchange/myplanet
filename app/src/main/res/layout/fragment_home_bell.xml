@@ -7,10 +7,14 @@
     android:background="@color/colorPrimary"
     tools:context="org.ole.planet.myplanet.ui.dashboard.DashboardFragment">
 
+    <include layout="@layout/loading_indicator" />
+
     <LinearLayout
+        android:id="@+id/dashboard_content"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:visibility="gone">
 
         <include
             android:id="@+id/cardProfileBell"
