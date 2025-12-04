@@ -117,8 +117,8 @@ open class RealmRepository(protected val databaseService: DatabaseService) {
     protected suspend fun <T> withRealm(
         ensureLatest: Boolean = false,
         operation: (Realm) -> T,
-    ): T {
-        return databaseService.withRealmAsync { realm ->
+    ): T = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        databaseService.withRealm { realm ->
             if (ensureLatest) {
                 realm.refresh()
             }
