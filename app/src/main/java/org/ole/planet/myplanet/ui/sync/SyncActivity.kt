@@ -56,6 +56,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
+import org.ole.planet.myplanet.datamanager.ApiClient
 import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.Service
@@ -288,6 +289,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), CheckVersionCallback,
     }
 
     suspend fun isServerReachable(processedUrl: String?, type: String): Boolean {
+        ApiClient.ensureInitialized()
         return withContext(Dispatchers.IO) {
             val apiInterface = client?.create(ApiInterface::class.java)
             try {

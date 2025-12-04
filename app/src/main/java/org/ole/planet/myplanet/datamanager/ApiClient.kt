@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.datamanager
 
+import org.ole.planet.myplanet.MainApplication
 import java.io.IOException
 import java.net.SocketTimeoutException
 import kotlinx.coroutines.delay
@@ -9,6 +10,10 @@ import retrofit2.Retrofit
 
 object ApiClient {
     lateinit var client: Retrofit
+
+    suspend fun ensureInitialized() {
+        MainApplication.apiClientInitialized.await()
+    }
 
     suspend fun <T> executeWithRetryAndWrap(operation: suspend () -> Response<T>?): Response<T>? {
         return RetryUtils.retry(
