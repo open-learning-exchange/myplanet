@@ -197,17 +197,20 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                 }
             }
             
-            val detachedUserModel = userModel
-            val detachedCurrentCourse = currentCourse?.let { mRealm.copyFromRealm(it) }
-
+            val userId = userModel?.id
             withContext(Dispatchers.IO) {
-                val backgroundRealm = databaseService.realmInstance
-                try {
-                    createActivity(backgroundRealm, detachedUserModel, detachedCurrentCourse)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                } finally {
-                    backgroundRealm.close()
+                if (userId != null && courseId != null) {
+                    databaseService.realmInstance.use { backgroundRealm ->
+                        try {
+                            val user = backgroundRealm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
+                            val course = backgroundRealm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
+                            if (user != null && course != null) {
+                                createActivity(backgroundRealm, user, course)
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
                 }
             }
 
