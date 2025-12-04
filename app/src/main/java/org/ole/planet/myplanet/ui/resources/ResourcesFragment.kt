@@ -150,6 +150,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             withContext(Dispatchers.Main) {
                 adapterLibrary.setLibraryList(finalList)
                 showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+                checkList()
             }
         }
     }
@@ -217,7 +218,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 }
             }
             adapterLibrary.setRatingMap(map!!)
-            checkList()
         } catch (e: Exception) {
             e.printStackTrace()
         }
