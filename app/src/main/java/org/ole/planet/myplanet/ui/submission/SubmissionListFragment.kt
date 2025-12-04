@@ -82,7 +82,7 @@ class SubmissionListFragment : Fragment() {
             SubmissionItem(
                 id = it.id,
                 lastUpdateTime = it.lastUpdateTime,
-                status = it.status,
+                status = it.status ?: "",
                 uploaded = it.uploaded
             )
         }
