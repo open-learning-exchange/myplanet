@@ -155,10 +155,13 @@ class AdapterResource(
 
     fun selectAllItems(selectAll: Boolean) {
         if (selectAll) {
-            selectedItems.clear()
-            selectedItems.addAll(currentList)
+            currentList.forEach {
+                if (!selectedItems.contains(it)) {
+                    selectedItems.add(it)
+                }
+            }
         } else {
-            selectedItems.clear()
+            selectedItems.removeAll(currentList)
         }
         notifyItemRangeChanged(0, currentList.size, SELECTION_PAYLOAD)
         if (listener != null) {

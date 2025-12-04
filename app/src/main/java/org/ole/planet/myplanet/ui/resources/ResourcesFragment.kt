@@ -151,6 +151,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 adapterLibrary.setLibraryList(finalList)
                 showNoData(tvMessage, adapterLibrary.itemCount, "resources")
                 checkList()
+                updateSelectAllCheckboxState()
             }
         }
     }
@@ -330,16 +331,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     private fun setupSelectAllListener() {
         selectAll.setOnClickListener {
-            hideButton()
-            val allSelected = selectedItems?.size == adapterLibrary.getLibraryList().size
-            adapterLibrary.selectAllItems(!allSelected)
-            if (allSelected) {
-                selectAll.isChecked = false
-                selectAll.text = getString(R.string.select_all)
-            } else {
-                selectAll.isChecked = true
-                selectAll.text = getString(R.string.unselect_all)
-            }
+            val allVisibleItemsSelected = selectedItems?.containsAll(adapterLibrary.currentList) == true
+            adapterLibrary.selectAllItems(!allVisibleItemsSelected)
         }
     }
 
@@ -461,6 +454,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         selectedItems = list
         changeButtonStatus()
         hideButton()
+        updateSelectAllCheckboxState()
     }
 
     override fun onTagClicked(realmTag: RealmTag) {
@@ -496,13 +490,13 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     private fun changeButtonStatus() {
         tvAddToLib.isEnabled = (selectedItems?.size ?: 0) > 0
-        if (adapterLibrary.areAllSelected()) {
-            selectAll.isChecked = true
-            selectAll.text = getString(R.string.unselect_all)
-        } else {
-            selectAll.isChecked = false
-            selectAll.text = getString(R.string.select_all)
-        }
+        updateSelectAllCheckboxState()
+    }
+
+    private fun updateSelectAllCheckboxState() {
+        val allVisibleItemsSelected = adapterLibrary.currentList.isNotEmpty() && selectedItems?.containsAll(adapterLibrary.currentList) == true
+        selectAll.isChecked = allVisibleItemsSelected
+        selectAll.text = if (allVisibleItemsSelected) getString(R.string.unselect_all) else getString(R.string.select_all)
     }
 
     override fun chipDeleted(i: Int, s: String) {
