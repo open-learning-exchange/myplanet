@@ -187,4 +187,16 @@ class UserRepositoryImpl @Inject constructor(
                 ?.let { realm.copyFromRealm(it) }
         }
     }
+
+    override suspend fun getUserModelSuspending(): RealmUserModel? {
+        val userId = settings.getString("userId", null)?.takeUnless { it.isBlank() } ?: return null
+        return withRealm { realm ->
+            realm.where(RealmUserModel::class.java)
+                .equalTo("id", userId)
+                .or()
+                .equalTo("_id", userId)
+                .findFirst()
+                ?.let { realm.copyFromRealm(it) }
+        }
+    }
 }
