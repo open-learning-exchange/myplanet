@@ -42,7 +42,8 @@ class AdapterResource(
     private var libraryList: List<RealmMyLibrary?>,
     private var ratingMap: HashMap<String?, JsonObject>,
     private val tagRepository: TagRepository,
-    private val userModel: RealmUserModel?
+    private val userModel: RealmUserModel?,
+    private val databaseService: org.ole.planet.myplanet.datamanager.DatabaseService
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>(), DiffRefreshableAdapter {
     private var diffJob: Job? = null
     private val selectedItems: MutableList<RealmMyLibrary?> = ArrayList()
@@ -55,23 +56,11 @@ class AdapterResource(
     private val tagCache: MutableMap<String, List<RealmTag>> = mutableMapOf()
     private val tagRequestsInProgress: MutableSet<String> = mutableSetOf()
 
-    private data class DiffData(
-        val _id: String?,
-        val _rev: String?,
-        val uploadDate: String?
-    )
-
     companion object {
         private const val TAGS_PAYLOAD = "payload_tags"
         private const val RATING_PAYLOAD = "payload_rating"
         private const val SELECTION_PAYLOAD = "payload_selection"
     }
-
-    private fun RealmMyLibrary.toDiffData() = DiffData(
-        _id = this._id,
-        _rev = this._rev,
-        uploadDate = this.uploadDate
-    )
 
     init {
         if (context is OnHomeItemClickListener) {
@@ -88,7 +77,7 @@ class AdapterResource(
     }
 
     fun setLibraryList(libraryList: List<RealmMyLibrary?>) {
-        updateList(libraryList)
+        dispatchDiff(libraryList)
     }
 
     fun setListener(listener: OnLibraryItemSelected?) {
@@ -279,12 +268,12 @@ class AdapterResource(
 
     fun toggleTitleSortOrder() {
         isTitleAscending = !isTitleAscending
-        updateList(sortLibraryListByTitle())
+        dispatchDiff(sortLibraryListByTitle())
     }
 
     fun toggleSortOrder() {
         isAscending = !isAscending
-        updateList(sortLibraryList())
+        dispatchDiff(sortLibraryList())
     }
 
     private fun sortLibraryListByTitle(): List<RealmMyLibrary?> {
@@ -307,23 +296,18 @@ class AdapterResource(
         return libraryList.size
     }
 
-    private fun updateList(newList: List<RealmMyLibrary?>) {
+    private fun dispatchDiff(newList: List<RealmMyLibrary?>) {
+        val oldList = ArrayList(this.libraryList)
         diffJob?.cancel()
-        val oldList = libraryList.mapNotNull { it?.toDiffData() }
-        val newListMapped = newList.mapNotNull { it?.toDiffData() }
-
         diffJob = (context as? LifecycleOwner)?.lifecycleScope?.launch {
             val diffResult = withContext(Dispatchers.Default) {
                 DiffUtils.calculateDiff(
                     oldList,
-                    newListMapped,
-                    areItemsTheSame = { old, new -> old._id == new._id },
-                    areContentsTheSame = { old, new ->
-                        old._rev == new._rev && old.uploadDate == new.uploadDate
-                    }
+                    newList,
+                    areItemsTheSame = { old, new -> old?.id == new?.id },
+                    areContentsTheSame = { old, new -> old == new }
                 )
             }
-
             if (isActive) {
                 libraryList = newList
                 diffResult.dispatchUpdatesTo(this@AdapterResource)
@@ -404,31 +388,10 @@ class AdapterResource(
 
     override fun refreshWithDiff() {
         (context as? LifecycleOwner)?.lifecycleScope?.launch {
-            val newLibraryList = withContext(Dispatchers.IO) {
-                Realm.getDefaultInstance().use { realm ->
-                    realm.copyFromRealm(realm.where(RealmMyLibrary::class.java).findAll())
-                }
+            val newLibraryList = databaseService.withRealmAsync { realm ->
+                realm.copyFromRealm(realm.where(RealmMyLibrary::class.java).findAll())
             }
-            triggerDiff(newLibraryList)
-        }
-    }
-
-    private fun triggerDiff(newList: List<RealmMyLibrary?>) {
-        val oldList = ArrayList(this.libraryList)
-        diffJob?.cancel()
-        diffJob = (context as? LifecycleOwner)?.lifecycleScope?.launch {
-            val diffResult = withContext(Dispatchers.Default) {
-                DiffUtils.calculateDiff(
-                    oldList,
-                    newList,
-                    areItemsTheSame = { old, new -> old?.id == new?.id },
-                    areContentsTheSame = { old, new -> old == new }
-                )
-            }
-            if (isActive) {
-                libraryList = newList
-                diffResult.dispatchUpdatesTo(this@AdapterResource)
-            }
+            dispatchDiff(newLibraryList)
         }
     }
 }
