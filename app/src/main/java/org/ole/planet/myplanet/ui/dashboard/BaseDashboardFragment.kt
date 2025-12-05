@@ -41,6 +41,7 @@ import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmTeamNotification
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.TeamNotificationInfo
 import org.ole.planet.myplanet.service.TransactionSyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_LOGIN
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
@@ -211,29 +212,23 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
                 name.setTypeface(null, Typeface.BOLD)
             }
             handleClick(ob._id, ob.name, TeamDetailFragment(), name)
-            showNotificationIcons(ob, v, userId)
+            if (userId != null && ob._id != null) {
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val info = viewModel.getTeamNotificationInfo(ob._id!!, userId)
+                    showNotificationIcons(v, info)
+                }
+            }
             name.text = ob.name
             flexboxLayout.addView(v, params)
         }
         setCountText(teams.size, RealmMyTeam::class.java, requireView())
     }
 
-    private fun showNotificationIcons(ob: RealmObject, v: View, userId: String?) {
-        val current = Calendar.getInstance().timeInMillis
-        val tomorrow = Calendar.getInstance()
-        tomorrow.add(Calendar.DAY_OF_YEAR, 1)
+    private fun showNotificationIcons(v: View, info: TeamNotificationInfo) {
         val imgTask = v.findViewById<ImageView>(R.id.img_task)
         val imgChat = v.findViewById<ImageView>(R.id.img_chat)
-        val notification: RealmTeamNotification? = realm.where(RealmTeamNotification::class.java)
-            .equalTo("parentId", (ob as RealmMyTeam)._id).equalTo("type", "chat").findFirst()
-        val chatCount: Long = realm.where(RealmNews::class.java).equalTo("viewableBy", "teams")
-            .equalTo("viewableId", ob._id).count()
-        if (notification != null) {
-            imgChat.visibility = if (notification.lastCount < chatCount) View.VISIBLE else View.GONE
-        }
-        val tasks = realm.where(RealmTeamTask::class.java).equalTo("assignee", userId)
-            .between("deadline", current, tomorrow.timeInMillis).findAll()
-        imgTask.visibility = if (tasks.isNotEmpty()) View.VISIBLE else View.GONE
+        imgChat.visibility = if (info.hasChat) View.VISIBLE else View.GONE
+        imgTask.visibility = if (info.hasTask) View.VISIBLE else View.GONE
     }
 
     private fun myLifeListInit(flexboxLayout: FlexboxLayout) {
@@ -245,13 +240,10 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         }
     }
 
-    private fun setUpMyLife(userId: String?) {
-        databaseService.withRealm { realm ->
+    private suspend fun setUpMyLife(userId: String?) {
+        databaseService.executeTransactionAsync { realm ->
             val realmObjects = RealmMyLife.getMyLifeByUserId(realm, settings)
             if (realmObjects.isEmpty()) {
-                if (!realm.isInTransaction) {
-                    realm.beginTransaction()
-                }
                 val myLifeListBase = getMyLifeListBase(userId)
                 var ml: RealmMyLife
                 var weight = 1
@@ -264,7 +256,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
                     ml.isVisible = true
                     weight++
                 }
-                realm.commitTransaction()
             }
         }
     }
@@ -324,8 +315,10 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         myLifeFlex.flexDirection = FlexDirection.ROW
 
         val userId = settings?.getString("userId", "--")
-        setUpMyLife(userId)
-        myLifeListInit(myLifeFlex)
+        viewLifecycleOwner.lifecycleScope.launch {
+            setUpMyLife(userId)
+            myLifeListInit(myLifeFlex)
+        }
 
 
         if (isRealmInitialized() && mRealm.isInTransaction) {
