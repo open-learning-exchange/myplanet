@@ -6,9 +6,13 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentSubmissionListBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -60,39 +64,52 @@ class SubmissionListFragment : Fragment() {
     }
 
     private fun loadSubmissions() {
-        databaseService.withRealm { realm ->
-            val submissions = realm.where(RealmSubmission::class.java)
-                .equalTo("parentId", parentId)
-                .equalTo("userId", userId)
-                .sort("lastUpdateTime", Sort.DESCENDING)
-                .findAll()
-            val listener = activity as? OnHomeItemClickListener
-            val adapter = SubmissionListAdapter(
-                requireContext(),
-                submissions.toList(),
-                databaseService,
-                listener
-            )
-            binding.rvSubmissions.adapter = adapter
-            binding.btnDownloadReport.setOnClickListener {
-                generateReport(submissions.toList())
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+            val submissions = databaseService.withRealm { realm ->
+                realm.where(RealmSubmission::class.java)
+                    .equalTo("parentId", parentId)
+                    .equalTo("userId", userId)
+                    .sort("lastUpdateTime", Sort.DESCENDING)
+                    .findAll()
+                    .let { realm.copyFromRealm(it) }
+            }
+
+            withContext(Dispatchers.Main) {
+                if (!isAdded || _binding == null) return@withContext
+
+                val listener = activity as? OnHomeItemClickListener
+                val adapter = SubmissionListAdapter(
+                    requireContext(),
+                    submissions,
+                    databaseService,
+                    listener
+                )
+                binding.rvSubmissions.adapter = adapter
+                binding.btnDownloadReport.setOnClickListener {
+                    generateReport(submissions)
+                }
             }
         }
     }
 
     private fun generateReport(submissions: List<RealmSubmission>) {
-        databaseService.withRealm { realm ->
-            val file = org.ole.planet.myplanet.utilities.SubmissionPdfGenerator.generateMultipleSubmissionsPdf(
-                requireContext(),
-                submissions,
-                examTitle ?: "Submissions",
-                realm
-            )
-            if (file != null) {
-                Toast.makeText(context, "Report saved to ${file.absolutePath}", Toast.LENGTH_LONG).show()
-                openPdf(file)
-            } else {
-                Toast.makeText(context, "Failed to generate report", Toast.LENGTH_SHORT).show()
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+            val file = databaseService.withRealm { realm ->
+                org.ole.planet.myplanet.utilities.SubmissionPdfGenerator.generateMultipleSubmissionsPdf(
+                    requireContext(),
+                    submissions,
+                    examTitle ?: "Submissions",
+                    realm
+                )
+            }
+            withContext(Dispatchers.Main) {
+                if (!isAdded) return@withContext
+                if (file != null) {
+                    Toast.makeText(context, "Report saved to ${file.absolutePath}", Toast.LENGTH_LONG).show()
+                    openPdf(file)
+                } else {
+                    Toast.makeText(context, "Failed to generate report", Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }
