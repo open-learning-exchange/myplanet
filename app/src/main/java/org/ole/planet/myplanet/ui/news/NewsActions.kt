@@ -150,39 +150,6 @@ object NewsActions {
         listener?.onDataChanged()
     }
 
-    fun showEditAlert(
-        context: Context,
-        realm: Realm,
-        id: String?,
-        isEdit: Boolean,
-        currentUser: RealmUserModel?,
-        listener: AdapterNews.OnNewsItemClickListener?,
-        viewHolder: RecyclerView.ViewHolder,
-        updateReplyButton: (RecyclerView.ViewHolder, RealmNews?, Int) -> Unit = { _, _, _ -> }
-    ) {
-        val components = createEditDialogComponents(context, listener)
-        val message = components.view.findViewById<TextView>(R.id.cust_msg)
-        message.text = context.getString(if (isEdit) R.string.edit_post else R.string.reply)
-        val icon = components.view.findViewById<ImageView>(R.id.alert_icon)
-        icon.setImageResource(R.drawable.ic_edit)
-
-        val news = realm.where(RealmNews::class.java).equalTo("id", id).findFirst()
-        if (isEdit) {
-            components.editText.setText(context.getString(R.string.message_placeholder, news?.message))
-            loadExistingImages(context, news, components.imageLayout)
-        }
-        val dialog = AlertDialog.Builder(context, R.style.ReplyAlertDialog)
-            .setView(components.view)
-            .setPositiveButton(R.string.button_submit, null)
-            .setNegativeButton(R.string.cancel) { d, _ -> d.dismiss() }
-            .create()
-        dialog.show()
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-            val currentImageList = listener?.getCurrentImageList()
-            handlePositiveButton(dialog, isEdit, components, news, realm, currentUser, currentImageList, listener)
-            updateReplyButton(viewHolder,news,viewHolder.bindingAdapterPosition)
-        }
-    }
 
     private fun postReply(
         realm: Realm,

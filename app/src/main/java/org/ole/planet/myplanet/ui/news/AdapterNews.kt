@@ -189,6 +189,51 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         return ViewHolderNews(binding)
     }
 
+    private data class ClickTag(val holder: ViewHolderNews, val news: RealmNews, val position: Int)
+
+    private val onEditClickListener = View.OnClickListener { view ->
+        val (holder, news, _) = view.tag as ClickTag
+        showEditReplyDialog(true, news, holder) { h, updatedNews, p ->
+            showReplyButton(h, updatedNews, p)
+            notifyItemChanged(p)
+        }
+    }
+
+    private var editReplyDialog: AlertDialog? = null
+    private var confirmationDialog: AlertDialog? = null
+
+    private fun showConfirmationDialog(
+        message: String,
+        onConfirm: () -> Unit
+    ) {
+        if (confirmationDialog == null) {
+            confirmationDialog = AlertDialog.Builder(context, R.style.AlertDialogTheme)
+                .setNegativeButton(R.string.cancel, null)
+                .create()
+        }
+
+        confirmationDialog?.apply {
+            setMessage(message)
+            setButton(DialogInterface.BUTTON_POSITIVE, context.getString(R.string.ok)) { _, _ ->
+                onConfirm()
+            }
+            show()
+        }
+    }
+
+    private val onDeleteClickListener = View.OnClickListener { view ->
+        val (holder, news, _) = view.tag as ClickTag
+        showConfirmationDialog(context.getString(R.string.delete_record)) {
+            val currentList = currentList.toMutableList()
+            val pos = holder.adapterPosition
+            val adjustedPos = if (parentNews != null && pos > 0) pos - 1 else pos
+            if (adjustedPos >= 0 && adjustedPos < currentList.size) {
+                currentList.removeAt(adjustedPos)
+                submitListSafely(currentList)
+            }
+            NewsActions.deletePost(mRealm, news, currentList.toMutableList(), teamName, listener)
+        }
+    }
     @SuppressLint("SetTextI18n")
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
@@ -333,39 +378,13 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         }
 
         if (news.userId == currentUser?._id || news.sharedBy == currentUser?._id) {
-            holder.binding.imgDelete.setOnClickListener {
-                AlertDialog.Builder(context, R.style.AlertDialogTheme)
-                    .setMessage(R.string.delete_record)
-                    .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
-                        val currentList = currentList.toMutableList()
-                        val pos = holder.adapterPosition
-                        val adjustedPos = if (parentNews != null && pos > 0) pos - 1 else pos
-                        if (adjustedPos >= 0 && adjustedPos < currentList.size) {
-                            currentList.removeAt(adjustedPos)
-                            submitListSafely(currentList)
-                        }
-                        NewsActions.deletePost(mRealm, news, currentList.toMutableList(), teamName, listener)
-                    }
-                    .setNegativeButton(R.string.cancel, null)
-                    .show()
-            }
+            holder.binding.imgDelete.tag = ClickTag(holder, news, holder.adapterPosition)
+            holder.binding.imgDelete.setOnClickListener(onDeleteClickListener)
         }
 
         if (news.userId == currentUser?._id) {
-            holder.binding.imgEdit.setOnClickListener {
-                NewsActions.showEditAlert(
-                    context,
-                    mRealm,
-                    news.id,
-                    true,
-                    currentUser,
-                    listener,
-                    holder,
-                ) { holder, updatedNews, position ->
-                    showReplyButton(holder, updatedNews, position)
-                    notifyItemChanged(position)
-                }
-            }
+            holder.binding.imgEdit.tag = ClickTag(holder, news, holder.adapterPosition)
+            holder.binding.imgEdit.setOnClickListener(onEditClickListener)
         } else {
             holder.binding.imgEdit.visibility = View.GONE
         }
@@ -555,21 +574,51 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
 
     private fun shouldShowReplyButton(): Boolean = canReply()
 
+    private fun showEditReplyDialog(
+        isEdit: Boolean,
+        news: RealmNews?,
+        holder: RecyclerView.ViewHolder,
+        updateReplyButton: (RecyclerView.ViewHolder, RealmNews?, Int) -> Unit
+    ) {
+        val components = NewsActions.createEditDialogComponents(context, listener)
+        val message = components.view.findViewById<TextView>(R.id.cust_msg)
+        message.text = context.getString(if (isEdit) R.string.edit_post else R.string.reply)
+        val icon = components.view.findViewById<ImageView>(R.id.alert_icon)
+        icon.setImageResource(R.drawable.ic_edit)
+
+        if (isEdit) {
+            components.editText.setText(context.getString(R.string.message_placeholder, news?.message))
+        }
+
+        editReplyDialog = AlertDialog.Builder(context, R.style.ReplyAlertDialog)
+            .setView(components.view)
+            .setPositiveButton(R.string.button_submit, null)
+            .setNegativeButton(R.string.cancel) { d, _ -> d.dismiss() }
+            .create()
+
+        editReplyDialog?.show()
+        editReplyDialog?.getButton(AlertDialog.BUTTON_POSITIVE)?.setOnClickListener {
+            val currentImageList = listener?.getCurrentImageList()
+            NewsActions.handlePositiveButton(
+                editReplyDialog!!, isEdit, components, news, mRealm, currentUser, currentImageList, listener
+            )
+            updateReplyButton(holder, news, holder.bindingAdapterPosition)
+        }
+    }
+
+    private val onReplyClickListener = View.OnClickListener { view ->
+        val (holder, news, position) = view.tag as ClickTag
+        showEditReplyDialog(false, news, holder) { h, updatedNews, p ->
+            showReplyButton(h, updatedNews, p)
+        }
+    }
+
     private fun showReplyButton(holder: RecyclerView.ViewHolder, finalNews: RealmNews?, position: Int) {
         val viewHolder = holder as ViewHolderNews
         if (shouldShowReplyButton()) {
             viewHolder.binding.btnReply.visibility = if (nonTeamMember) View.GONE else View.VISIBLE
-            viewHolder.binding.btnReply.setOnClickListener {
-                NewsActions.showEditAlert(
-                    context,
-                    mRealm,
-                    finalNews?.id,
-                    false,
-                    currentUser,
-                    listener,
-                    viewHolder,
-                ) { holder, news, i -> showReplyButton(holder, news, i) }
-            }
+            viewHolder.binding.btnReply.tag = ClickTag(viewHolder, finalNews!!, position)
+            viewHolder.binding.btnReply.setOnClickListener(onReplyClickListener)
         } else {
             viewHolder.binding.btnReply.visibility = View.GONE
         }
@@ -603,42 +652,37 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         viewHolder.binding.btnShare.setVisibility(canShare(news))
 
         viewHolder.binding.btnShare.setOnClickListener {
-            AlertDialog.Builder(context, R.style.AlertDialogTheme)
-                .setTitle(R.string.share_with_community)
-                .setMessage(R.string.confirm_share_community)
-                .setPositiveButton(R.string.yes) { _, _ ->
-                    val array = GsonUtils.gson.fromJson(news?.viewIn, JsonArray::class.java)
-                    val firstElement = array.get(0)
-                    val obj = firstElement.asJsonObject
-                    if(!obj.has("name")){
-                        obj.addProperty("name", teamName)
-                    }
-                    val ob = JsonObject()
-                    ob.addProperty("section", "community")
-                    ob.addProperty("_id", currentUser?.planetCode + "@" + currentUser?.parentCode)
-                    ob.addProperty("sharedDate", Calendar.getInstance().timeInMillis)
-                    array.add(ob)
-                    if (!mRealm.isInTransaction) {
-                        mRealm.beginTransaction()
-                    }
-
-                    val managedNews = news?.let { newsItem ->
-                        if (newsItem.isManaged) {
-                            newsItem
-                        } else {
-                            mRealm.where(RealmNews::class.java)
-                                .equalTo("id", newsItem.id)
-                                .findFirst()
-                        }
-                    }
-                    managedNews?.sharedBy = currentUser?.id
-                    managedNews?.viewIn = GsonUtils.gson.toJson(array)
-                    mRealm.commitTransaction()
-                    Utilities.toast(context, context.getString(R.string.shared_to_community))
-                    viewHolder.binding.btnShare.visibility = View.GONE
+            showConfirmationDialog(context.getString(R.string.confirm_share_community)) {
+                val array = GsonUtils.gson.fromJson(news?.viewIn, JsonArray::class.java)
+                val firstElement = array.get(0)
+                val obj = firstElement.asJsonObject
+                if(!obj.has("name")){
+                    obj.addProperty("name", teamName)
                 }
-                .setNegativeButton(R.string.cancel, null)
-                .show()
+                val ob = JsonObject()
+                ob.addProperty("section", "community")
+                ob.addProperty("_id", currentUser?.planetCode + "@" + currentUser?.parentCode)
+                ob.addProperty("sharedDate", Calendar.getInstance().timeInMillis)
+                array.add(ob)
+                if (!mRealm.isInTransaction) {
+                    mRealm.beginTransaction()
+                }
+
+                val managedNews = news?.let { newsItem ->
+                    if (newsItem.isManaged) {
+                        newsItem
+                    } else {
+                        mRealm.where(RealmNews::class.java)
+                            .equalTo("id", newsItem.id)
+                            .findFirst()
+                    }
+                }
+                managedNews?.sharedBy = currentUser?.id
+                managedNews?.viewIn = GsonUtils.gson.toJson(array)
+                mRealm.commitTransaction()
+                Utilities.toast(context, context.getString(R.string.shared_to_community))
+                viewHolder.binding.btnShare.visibility = View.GONE
+            }
         }
     }
 
@@ -803,15 +847,24 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         }
     }
 
+    private var zoomableImageDialog: Dialog? = null
+    private lateinit var photoView: PhotoView
+
+    private fun initZoomableImageDialog() {
+        if (zoomableImageDialog == null) {
+            zoomableImageDialog = Dialog(context, android.R.style.Theme_Black_NoTitleBar_Fullscreen).apply {
+                val view = LayoutInflater.from(context).inflate(R.layout.dialog_zoomable_image, null)
+                photoView = view.findViewById(R.id.photoView)
+                val closeButton: ImageView = view.findViewById(R.id.closeButton)
+                setContentView(view)
+                window?.setBackgroundDrawable(Color.BLACK.toDrawable())
+                closeButton.setOnClickListener { dismiss() }
+            }
+        }
+    }
+
     private fun showZoomableImage(context: Context, imageUrl: String) {
-        val dialog = Dialog(context, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
-        val view = LayoutInflater.from(context).inflate(R.layout.dialog_zoomable_image, null)
-        val photoView = view.findViewById<PhotoView>(R.id.photoView)
-        val closeButton = view.findViewById<ImageView>(R.id.closeButton)
-
-        dialog.setContentView(view)
-        dialog.window?.setBackgroundDrawable(Color.BLACK.toDrawable())
-
+        initZoomableImageDialog()
         val request = Glide.with(photoView.context)
         val file = File(imageUrl)
         val target = if (imageUrl.lowercase(Locale.getDefault()).endsWith(".gif")) {
@@ -820,10 +873,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
             request.load(file).error(request.load(imageUrl))
         }
         target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().error(R.drawable.ic_loading).into(photoView)
-
-        closeButton.setOnClickListener { dialog.dismiss() }
-
-        dialog.show()
+        zoomableImageDialog?.show()
     }
 
     internal inner class ViewHolderNews(val binding: RowNewsBinding) : RecyclerView.ViewHolder(binding.root) {
