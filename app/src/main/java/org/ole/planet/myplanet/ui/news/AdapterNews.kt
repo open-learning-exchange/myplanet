@@ -23,6 +23,11 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.github.chrisbanes.photoview.PhotoView
 import com.google.gson.JsonArray
@@ -58,7 +63,7 @@ import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.makeExpandable
 
-class AdapterNews(var context: Context, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userProfileDbHandler: UserProfileDbHandler, private val databaseService: DatabaseService) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
+class AdapterNews(var context: Context, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userProfileDbHandler: UserProfileDbHandler, private val databaseService: DatabaseService, private val scope: CoroutineScope) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem ->
             if (oldItem === newItem) return@itemCallback true
@@ -105,6 +110,36 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     private val leadersList: List<RealmUserModel> by lazy {
         val raw = settings.getString("communityLeaders", "") ?: ""
         RealmUserModel.parseLeadersJson(raw)
+    }
+    private var _isTeamLeader: Boolean? = null
+
+    init {
+        fetchTeamLeaderStatus()
+    }
+
+    private fun fetchTeamLeaderStatus() {
+        if (teamId == null) {
+            _isTeamLeader = false
+            return
+        }
+        scope.launch {
+            val isLeader = withTimeoutOrNull(2000) {
+                withContext(Dispatchers.IO) {
+                    try {
+                        databaseService.withRealm { realm ->
+                            val team = realm.where(RealmMyTeam::class.java)
+                                .equalTo("teamId", teamId)
+                                .equalTo("isLeader", true)
+                                .findFirst()
+                            team?.userId == currentUser?._id
+                        }
+                    } catch (e: Exception) {
+                        false
+                    }
+                }
+            }
+            _isTeamLeader = isLeader
+        }
     }
 
     fun setImageList(imageList: RealmList<String>?) {
@@ -454,26 +489,12 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     }
 
     fun isTeamLeader(): Boolean {
-        if(teamId==null)return false
-        return try {
-            if (::mRealm.isInitialized && !mRealm.isClosed) {
-                val team = mRealm.where(RealmMyTeam::class.java)
-                    .equalTo("teamId", teamId)
-                    .equalTo("isLeader", true)
-                    .findFirst()
-                team?.userId == currentUser?._id
-            } else {
-                databaseService.withRealm { realm ->
-                    val team = realm.where(RealmMyTeam::class.java)
-                        .equalTo("teamId", teamId)
-                        .equalTo("isLeader", true)
-                        .findFirst()
-                    team?.userId == currentUser?._id
-                }
-            }
-        } catch (e: Exception) {
-            false
-        }
+        return _isTeamLeader ?: false
+    }
+
+    fun invalidateTeamLeaderCache() {
+        _isTeamLeader = null
+        fetchTeamLeaderStatus()
     }
 
     private fun getReplies(finalNews: RealmNews?): List<RealmNews> {
@@ -677,10 +698,11 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     private fun loadSingleImage(binding: RowNewsBinding, path: String?) {
         if (path == null) return
         val request = Glide.with(binding.imgNews.context)
+        val file = File(path)
         val target = if (path.lowercase(Locale.getDefault()).endsWith(".gif")) {
-            request.asGif().load(if (File(path).exists()) File(path) else path)
+            request.asGif().load(file).error(request.asGif().load(path))
         } else {
-            request.load(if (File(path).exists()) File(path) else path)
+            request.load(file).error(request.load(path))
         }
         target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().placeholder(R.drawable.ic_loading)
             .error(R.drawable.ic_loading)
@@ -702,10 +724,11 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         imageView.scaleType = ImageView.ScaleType.CENTER_CROP
 
         val request = Glide.with(context)
+        val file = File(path)
         val target = if (path.lowercase(Locale.getDefault()).endsWith(".gif")) {
-            request.asGif().load(if (File(path).exists()) File(path) else path)
+            request.asGif().load(file).error(request.asGif().load(path))
         } else {
-            request.load(if (File(path).exists()) File(path) else path)
+            request.load(file).error(request.load(path))
         }
         target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().placeholder(R.drawable.ic_loading)
             .error(R.drawable.ic_loading)
@@ -727,21 +750,19 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         val basePath = context.getExternalFilesDir(null)
         if (library != null && basePath != null) {
             val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
-            if (imageFile.exists()) {
-                val request = Glide.with(binding.imgNews.context)
-                val isGif = library.resourceLocalAddress?.lowercase(Locale.getDefault())?.endsWith(".gif") == true
-                val target = if (isGif) {
-                    request.asGif().load(imageFile)
-                } else {
-                    request.load(imageFile)
-                }
-                target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().placeholder(R.drawable.ic_loading)
-                    .error(R.drawable.ic_loading)
-                    .into(binding.imgNews)
-                binding.imgNews.visibility = View.VISIBLE
-                binding.imgNews.setOnClickListener {
-                    showZoomableImage(it.context, imageFile.toString())
-                }
+            val request = Glide.with(binding.imgNews.context)
+            val isGif = library.resourceLocalAddress?.lowercase(Locale.getDefault())?.endsWith(".gif") == true
+            val target = if (isGif) {
+                request.asGif().load(imageFile)
+            } else {
+                request.load(imageFile)
+            }
+            target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().placeholder(R.drawable.ic_loading)
+                .error(R.drawable.ic_loading)
+                .into(binding.imgNews)
+            binding.imgNews.visibility = View.VISIBLE
+            binding.imgNews.setOnClickListener {
+                showZoomableImage(it.context, imageFile.toString())
             }
         }
     }
@@ -755,32 +776,30 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         val basePath = context.getExternalFilesDir(null)
         if (library != null && basePath != null) {
             val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
-            if (imageFile.exists()) {
-                val imageView = ImageView(context)
-                val size = (100 * context.resources.displayMetrics.density).toInt()
-                val margin = (4 * context.resources.displayMetrics.density).toInt()
-                val params = ViewGroup.MarginLayoutParams(size, size)
-                params.setMargins(margin, margin, margin, margin)
-                imageView.layoutParams = params
-                imageView.scaleType = ImageView.ScaleType.CENTER_CROP
+            val imageView = ImageView(context)
+            val size = (100 * context.resources.displayMetrics.density).toInt()
+            val margin = (4 * context.resources.displayMetrics.density).toInt()
+            val params = ViewGroup.MarginLayoutParams(size, size)
+            params.setMargins(margin, margin, margin, margin)
+            imageView.layoutParams = params
+            imageView.scaleType = ImageView.ScaleType.CENTER_CROP
 
-                val request = Glide.with(context)
-                val isGif = library.resourceLocalAddress?.lowercase(Locale.getDefault())?.endsWith(".gif") == true
-                val target = if (isGif) {
-                    request.asGif().load(imageFile)
-                } else {
-                    request.load(imageFile)
-                }
-                target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().placeholder(R.drawable.ic_loading)
-                    .error(R.drawable.ic_loading)
-                    .into(imageView)
-
-                imageView.setOnClickListener {
-                    showZoomableImage(context, imageFile.toString())
-                }
-
-                binding.llNewsImages.addView(imageView)
+            val request = Glide.with(context)
+            val isGif = library.resourceLocalAddress?.lowercase(Locale.getDefault())?.endsWith(".gif") == true
+            val target = if (isGif) {
+                request.asGif().load(imageFile)
+            } else {
+                request.load(imageFile)
             }
+            target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().placeholder(R.drawable.ic_loading)
+                .error(R.drawable.ic_loading)
+                .into(imageView)
+
+            imageView.setOnClickListener {
+                showZoomableImage(context, imageFile.toString())
+            }
+
+            binding.llNewsImages.addView(imageView)
         }
     }
 
@@ -794,12 +813,11 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         dialog.window?.setBackgroundDrawable(Color.BLACK.toDrawable())
 
         val request = Glide.with(photoView.context)
+        val file = File(imageUrl)
         val target = if (imageUrl.lowercase(Locale.getDefault()).endsWith(".gif")) {
-            val file = File(imageUrl)
-            if (file.exists()) request.asGif().load(file) else request.asGif().load(imageUrl)
+            request.asGif().load(file).error(request.asGif().load(imageUrl))
         } else {
-            val file = File(imageUrl)
-            if (file.exists()) request.load(file) else request.load(imageUrl)
+            request.load(file).error(request.load(imageUrl))
         }
         target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().error(R.drawable.ic_loading).into(photoView)
 
