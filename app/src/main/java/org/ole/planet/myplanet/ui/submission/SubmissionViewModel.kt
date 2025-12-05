@@ -9,9 +9,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
-import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -29,11 +27,13 @@ class SubmissionViewModel @Inject constructor(
 
     private val userId by lazy { userProfileDbHandler.userModel?.id ?: "" }
 
+    private val submissionsFlow = flow { emitAll(submissionRepository.getSubmissionsFlow(userId)) }
+
     val submissionItems: StateFlow<List<SubmissionItem>> =
         combine(
             _type,
             _query,
-            submissionRepository.getSubmissionsFlow(userId)
+            submissionsFlow
         ) { type, query, submissions ->
             val filteredSubs = submissions.filter { sub ->
                 when (type) {
