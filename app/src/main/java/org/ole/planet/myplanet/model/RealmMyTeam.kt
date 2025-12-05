@@ -205,25 +205,6 @@ open class RealmMyTeam : RealmObject() {
         }
 
         @JvmStatic
-        suspend fun requestToJoin(teamId: String?, userId: String?, userPlanetCode: String?, teamType: String?) {
-            withContext(Dispatchers.IO) {
-                Realm.getDefaultInstance().use { realm ->
-                    realm.executeTransaction {
-                        val team = it.createObject(RealmMyTeam::class.java, AndroidDecrypter.generateIv())
-                        team.docType = "request"
-                        team.createdDate = Date().time
-                        team.teamType = teamType
-                        team.userId = userId
-                        team.teamId = teamId
-                        team.updated = true
-                        team.teamPlanetCode = userPlanetCode
-                        team.userPlanetCode = userPlanetCode
-                    }
-                }
-            }
-        }
-
-        @JvmStatic
         fun getRequestedMember(teamId: String, realm: Realm): MutableList<RealmUserModel> {
             return getUsers(teamId, realm, "request")
         }
