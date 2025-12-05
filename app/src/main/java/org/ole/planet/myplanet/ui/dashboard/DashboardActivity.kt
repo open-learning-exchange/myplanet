@@ -138,23 +138,46 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        postponeEnterTransition()
         mRealm = databaseService.realmInstance
         checkUser()
         initViews()
         updateAppTitle()
         notificationManager = NotificationUtils.getInstance(this)
         if (handleGuestAccess()) return
-        setupNavigation()
+
+        // Core UI setup that needs to happen synchronously
         handleInitialFragment()
+        addBackPressCallback()
+        collectUiState()
+
+        // Defer heavy initialization until after the first frame
+        lifecycleScope.launch {
+            initializeDashboard()
+        }
+
+        // Start the transition after the first frame is drawn
+        val content: View = findViewById(android.R.id.content)
+        content.viewTreeObserver.addOnPreDrawListener(
+            object : android.view.ViewTreeObserver.OnPreDrawListener {
+                override fun onPreDraw(): Boolean {
+                    // Check if the initial data is ready
+                    content.viewTreeObserver.removeOnPreDrawListener(this)
+                    startPostponedEnterTransition()
+                    return true
+                }
+            }
+        )
+    }
+
+    private fun initializeDashboard() {
+        setupNavigation()
         setupToolbarActions()
         hideWifi()
         libraryListener = RealmChangeListener { onRealmDataChanged() }
         submissionListener = RealmChangeListener { onRealmDataChanged() }
         taskListener = RealmChangeListener { onRealmDataChanged() }
-
-        addBackPressCallback()
         handleNotificationIntent(intent)
-        collectUiState()
         setupRealmListeners()
 
         binding.root.post {
