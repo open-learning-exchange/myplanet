@@ -143,4 +143,6 @@ class DashboardViewModel @Inject constructor(
             }
         }
     }
+
+    suspend fun getUsersSortedByDate() = userRepository.getAllUsersSortedByDate()
 }
