@@ -81,11 +81,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         viewLifecycleOwner.lifecycleScope.launch {
-            // The Realm query is intentionally performed on the main thread.
-            // Realm instances and objects are thread-confined, and moving this query
-            // to a background dispatcher would cause a crash, as `mRealm` is created
-            // on the main thread. This approach still improves UI responsiveness by
-            // running the query after `onCreateView` has completed.
             currentCourse = mRealm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
             binding.tvCourseTitle.text = currentCourse?.courseTitle
             steps = courseRepository.getCourseSteps(courseId)
