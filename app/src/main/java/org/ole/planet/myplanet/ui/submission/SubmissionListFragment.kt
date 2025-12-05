@@ -70,7 +70,7 @@ class SubmissionListFragment : Fragment() {
                 .equalTo("userId", userId)
                 .sort("lastUpdateTime", Sort.DESCENDING)
                 .findAll()
-            adapter.submitList(submissions.toList())
+            adapter.submitList(realm.copyFromRealm(submissions))
             binding.btnDownloadReport.setOnClickListener {
                 generateReport(submissions.toList())
             }
