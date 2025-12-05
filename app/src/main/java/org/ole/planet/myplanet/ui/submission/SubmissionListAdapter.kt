@@ -9,9 +9,9 @@ import android.widget.Toast
 import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
-import io.realm.Realm
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ItemSubmissionBinding
+import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.utilities.SubmissionPdfGenerator
 import org.ole.planet.myplanet.utilities.TimeUtils
@@ -19,11 +19,9 @@ import org.ole.planet.myplanet.utilities.TimeUtils
 class SubmissionListAdapter(
     private val context: Context,
     private val submissions: List<RealmSubmission>,
+    private val databaseService: DatabaseService,
     private val listener: OnHomeItemClickListener?
 ) : RecyclerView.Adapter<SubmissionListAdapter.ViewHolder>() {
-
-    private val mRealm = Realm.getDefaultInstance()
-
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = ItemSubmissionBinding.inflate(LayoutInflater.from(context), parent, false)
         return ViewHolder(binding)
@@ -62,13 +60,15 @@ class SubmissionListAdapter(
         }
 
         private fun generateSubmissionPdf(submission: RealmSubmission) {
-            val file = SubmissionPdfGenerator.generateSubmissionPdf(context, submission, mRealm)
-
-            if (file != null) {
-                Toast.makeText(context, "PDF saved to ${file.absolutePath}", Toast.LENGTH_LONG).show()
-                openPdf(file)
-            } else {
-                Toast.makeText(context, "Failed to generate PDF", Toast.LENGTH_SHORT).show()
+            databaseService.withRealm { realm ->
+                val file = SubmissionPdfGenerator.generateSubmissionPdf(context, submission, realm)
+                if (file != null) {
+                    Toast.makeText(context, "PDF saved to ${file.absolutePath}", Toast.LENGTH_LONG)
+                        .show()
+                    openPdf(file)
+                } else {
+                    Toast.makeText(context, "Failed to generate PDF", Toast.LENGTH_SHORT).show()
+                }
             }
         }
 

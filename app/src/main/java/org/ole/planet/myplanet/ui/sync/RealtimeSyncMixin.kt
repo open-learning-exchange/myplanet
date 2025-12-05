@@ -13,10 +13,6 @@ import org.ole.planet.myplanet.callback.BaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.TableDataUpdate
 import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
 
-interface DiffRefreshableAdapter {
-    fun refreshWithDiff()
-}
-
 interface RealtimeSyncMixin {
     fun getWatchedTables(): List<String>
     fun onDataUpdated(table: String, update: TableDataUpdate)
@@ -79,7 +75,6 @@ class RealtimeSyncHelper(
                         listAdapter.submitList(listAdapter.currentList.toList())
                     }
                 }
-                else -> adapter.notifyDataSetChanged()
             }
         }
     }

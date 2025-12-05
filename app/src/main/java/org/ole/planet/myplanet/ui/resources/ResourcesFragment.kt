@@ -645,11 +645,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         return listOf("resources")
     }
     
-    override fun onDataUpdated(table: String, update: TableDataUpdate) {
-        if (table == "resources" && update.shouldRefreshUI) {
-            refreshResourcesData()
-        }
-    }
+    override fun onDataUpdated(table: String, update: TableDataUpdate) {}
+
+    override fun shouldAutoRefresh(table: String): Boolean = true
     
     override fun getSyncRecyclerView(): RecyclerView? {
         return if (::recyclerView.isInitialized) recyclerView else null

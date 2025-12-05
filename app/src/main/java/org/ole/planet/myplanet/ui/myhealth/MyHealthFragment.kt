@@ -5,7 +5,6 @@ import android.content.Context.MODE_PRIVATE
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
-import android.os.CountDownTimer
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
@@ -210,6 +209,7 @@ class MyHealthFragment : Fragment() {
 
         binding.rvRecords.addItemDecoration(DividerItemDecoration(activity, DividerItemDecoration.VERTICAL))
 
+        adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, mutableListOf())
         setupInitialData()
         setupButtons()
     }
@@ -226,13 +226,13 @@ class MyHealthFragment : Fragment() {
 
     private fun setupButtons() {
         val isHealthProvider = userModel?.rolesList?.contains("health") ?: false
-        binding.btnnewPatient.visibility =
-            if (isHealthProvider) View.VISIBLE else View.GONE
-
+//        binding.btnnewPatient.visibility =
+//            if (isHealthProvider) View.VISIBLE else View.GONE
+//
         binding.btnnewPatient.setOnClickListener {
-            if (isHealthProvider) {
+//            if (isHealthProvider) {
                 selectPatient()
-            }
+//            }
         }
         binding.updateHealth.visibility = View.VISIBLE
 
@@ -292,15 +292,17 @@ class MyHealthFragment : Fragment() {
             }
             withContext(Dispatchers.Main) {
                 userModelList = users
-                adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, userModelList)
+                adapter.clear()
+                adapter.addAll(userModelList)
+                adapter.notifyDataSetChanged()
                 alertHealthListBinding = AlertHealthListBinding.inflate(LayoutInflater.from(context))
                 alertHealthListBinding?.btnAddMember?.setOnClickListener {
                     startActivity(Intent(requireContext(), BecomeMemberActivity::class.java))
                 }
 
                 alertHealthListBinding?.let { binding ->
-                    setTextWatcher(binding.etSearch, binding.btnAddMember, binding.list)
                     binding.list.adapter = adapter
+                    setTextWatcher(binding.etSearch, binding.btnAddMember, binding.list)
                     binding.list.onItemClickListener = OnItemClickListener { _: AdapterView<*>?, _: View, i: Int, _: Long ->
                         val selected = binding.list.adapter.getItem(i) as RealmUserModel
                         userId = if (selected._id.isNullOrEmpty()) selected.id else selected._id
@@ -455,8 +457,34 @@ class MyHealthFragment : Fragment() {
                     binding.tvNoRecords.visibility = View.GONE
                     binding.tvDataPlaceholder.visibility = View.VISIBLE
 
-                    healthAdapter = AdapterHealthExamination(requireActivity(), mh, currentUser)
-                    healthAdapter.setmRealm(mRealm)
+                    val userIds = list.mapNotNull {
+                        it.getEncryptedDataAsJson(currentUser).let { json ->
+                            json.get("createdBy")?.asString
+                        }
+                    }.distinct()
+                    val userMap = withContext(Dispatchers.IO) {
+                        if (userIds.isEmpty()) {
+                            emptyMap<String, RealmUserModel>()
+                        } else {
+                            Realm.getDefaultInstance().use { realm ->
+                                val query = realm.where(RealmUserModel::class.java)
+                                query.beginGroup()
+                                userIds.forEachIndexed { index, userId ->
+                                    if (index > 0) {
+                                        query.or()
+                                    }
+                                    query.equalTo("id", userId)
+                                }
+                                query.endGroup()
+                                val users = query.findAll()
+                                realm.copyFromRealm(users)
+                                    .filter { it.id != null }
+                                    .associateBy { it.id!! }
+                            }
+                        }
+                    }
+
+                    healthAdapter = AdapterHealthExamination(requireActivity(), mh, currentUser, userMap)
                     binding.rvRecords.apply {
                         layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
                         isNestedScrollingEnabled = false

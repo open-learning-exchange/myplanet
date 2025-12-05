@@ -10,16 +10,22 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.RealmTeamNotification
+import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.model.TeamNotificationInfo
 import org.ole.planet.myplanet.repository.CourseRepository
 import org.ole.planet.myplanet.repository.LibraryRepository
 import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import java.util.Calendar
 
 data class DashboardUiState(
     val unreadNotifications: Int = 0,
@@ -35,7 +41,8 @@ class DashboardViewModel @Inject constructor(
     private val courseRepository: CourseRepository,
     private val teamRepository: TeamRepository,
     private val submissionRepository: SubmissionRepository,
-    private val notificationRepository: NotificationRepository
+    private val notificationRepository: NotificationRepository,
+    private val databaseService: DatabaseService
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
@@ -85,6 +92,35 @@ class DashboardViewModel @Inject constructor(
         return notificationRepository.getUnreadCount(userId)
     }
 
+    suspend fun getTeamNotificationInfo(teamId: String, userId: String): TeamNotificationInfo {
+        return databaseService.withRealmAsync { realm ->
+            val current = System.currentTimeMillis()
+            val tomorrow = Calendar.getInstance()
+            tomorrow.add(Calendar.DAY_OF_YEAR, 1)
+
+            val notification = realm.where(RealmTeamNotification::class.java)
+                .equalTo("parentId", teamId)
+                .equalTo("type", "chat")
+                .findFirst()
+
+            val chatCount = realm.where(RealmNews::class.java)
+                .equalTo("viewableBy", "teams")
+                .equalTo("viewableId", teamId)
+                .count()
+
+            val hasChat = notification != null && notification.lastCount < chatCount
+
+            val tasks = realm.where(RealmTeamTask::class.java)
+                .equalTo("assignee", userId)
+                .between("deadline", current, tomorrow.timeInMillis)
+                .findAll()
+
+            val hasTask = tasks.isNotEmpty()
+
+            TeamNotificationInfo(hasTask, hasChat)
+        }
+    }
+
     fun loadUserContent(userId: String?) {
         if (userId == null) return
         userContentJob?.cancel()
@@ -107,4 +143,6 @@ class DashboardViewModel @Inject constructor(
             }
         }
     }
+
+    suspend fun getUsersSortedByDate() = userRepository.getAllUsersSortedByDate()
 }
