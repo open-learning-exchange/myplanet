@@ -8,6 +8,8 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ItemSubmissionBinding
@@ -18,21 +20,18 @@ import org.ole.planet.myplanet.utilities.TimeUtils
 
 class SubmissionListAdapter(
     private val context: Context,
-    private val submissions: List<RealmSubmission>,
     private val databaseService: DatabaseService,
     private val listener: OnHomeItemClickListener?
-) : RecyclerView.Adapter<SubmissionListAdapter.ViewHolder>() {
+) : ListAdapter<RealmSubmission, SubmissionListAdapter.ViewHolder>(DIFF_CALLBACK) {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = ItemSubmissionBinding.inflate(LayoutInflater.from(context), parent, false)
         return ViewHolder(binding)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val submission = submissions[position]
+        val submission = getItem(position)
         holder.bind(submission, position + 1)
     }
-
-    override fun getItemCount(): Int = submissions.size
 
     inner class ViewHolder(private val binding: ItemSubmissionBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(submission: RealmSubmission, number: Int) {
@@ -91,6 +90,18 @@ class SubmissionListAdapter(
                     "Could not open PDF. File saved at: ${file.absolutePath}",
                     Toast.LENGTH_LONG
                 ).show()
+            }
+        }
+    }
+
+    companion object {
+        private val DIFF_CALLBACK = object : DiffUtil.ItemCallback<RealmSubmission>() {
+            override fun areItemsTheSame(oldItem: RealmSubmission, newItem: RealmSubmission): Boolean {
+                return oldItem.id == newItem.id
+            }
+
+            override fun areContentsTheSame(oldItem: RealmSubmission, newItem: RealmSubmission): Boolean {
+                return oldItem == newItem
             }
         }
     }
