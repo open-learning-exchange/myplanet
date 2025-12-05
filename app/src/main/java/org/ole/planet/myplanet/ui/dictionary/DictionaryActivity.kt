@@ -51,10 +51,18 @@ class DictionaryActivity : BaseActivity() {
     }
 
     private suspend fun loadDictionaryIfNeeded() {
-        var isEmpty = true
-        databaseService.withRealm { realm ->
-            isEmpty = realm.where(RealmDictionary::class.java).count() == 0L
+        if (isFinishing) return
+
+        val isEmpty = withContext(Dispatchers.IO) {
+            var empty = true
+            databaseService.withRealm { realm ->
+                empty = realm.where(RealmDictionary::class.java).count() == 0L
+            }
+            empty
         }
+
+        if (isFinishing) return
+
         if (isEmpty) {
             val context = this@DictionaryActivity
             val json = withContext(Dispatchers.IO) {
@@ -68,6 +76,9 @@ class DictionaryActivity : BaseActivity() {
                     null
                 }
             }
+
+            if (isFinishing) return
+
             json?.let { jsonArray ->
                 databaseService.withRealm { realm ->
                     realm.executeTransactionAsync { bgRealm ->
