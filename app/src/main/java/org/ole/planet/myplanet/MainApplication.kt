@@ -183,6 +183,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     private lateinit var anrWatchdog: ANRWatchdog
 
     override fun onCreate() {
+        android.os.Trace.beginSection("AppOnCreate")
         super.onCreate()
         context = this
         setupCriticalProperties()
@@ -190,6 +191,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         setupStrictMode()
         registerExceptionHandler()
         setupLifecycleCallbacks()
+        android.os.Trace.endSection()
     }
 
     private fun performDeferredInitialization() {
@@ -247,6 +249,19 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             StrictMode.setVmPolicy(vmPolicy)
         }
     }
+
+    /**
+     * How to Capture and Analyze ANR Traces
+     *
+     * 1. **Capture Traces:**
+     *    - When an ANR occurs, Android generates a trace file in `/data/anr/traces.txt`.
+     *    - Use ADB to pull this file: `adb pull /data/anr/traces.txt`
+     *
+     * 2. **Analyze Traces:**
+     *    - Open `traces.txt` in a text editor.
+     *    - Look for the main thread's stack trace to identify the bottleneck.
+     *    - The trace shows the state of all threads, helping to diagnose deadlocks and long-running operations.
+     */
 
     private suspend fun setupAnrWatchdog() {
         withContext(Dispatchers.Default) {
