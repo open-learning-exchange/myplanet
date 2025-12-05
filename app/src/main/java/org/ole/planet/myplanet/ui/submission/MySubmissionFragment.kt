@@ -18,16 +18,12 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.databinding.FragmentMySubmissionBinding
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 
 @AndroidEntryPoint
 class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
     private var _binding: FragmentMySubmissionBinding? = null
     private val binding get() = _binding!!
     private val viewModel: SubmissionViewModel by viewModels()
-
-    @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
 
     private lateinit var textWatcher: TextWatcher
     private lateinit var adapter: AdapterMySubmission
@@ -57,26 +53,9 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
         viewModel.setFilter(type ?: "", "")
 
         viewLifecycleOwner.lifecycleScope.launch {
-            launch {
-                viewModel.submissions.collectLatest { submissions ->
-                    adapter.submitList(submissions)
-                    updateEmptyState(submissions.size)
-                }
-            }
-            launch {
-                viewModel.exams.collectLatest { exams ->
-                    adapter.setExams(exams)
-                }
-            }
-            launch {
-                viewModel.userNames.collectLatest { names ->
-                    adapter.setUserNames(names)
-                }
-            }
-            launch {
-                viewModel.submissionCounts.collectLatest { counts ->
-                    adapter.setSubmissionCounts(counts)
-                }
+            viewModel.submissionItems.collectLatest { submissionItems ->
+                adapter.submitList(submissionItems)
+                updateEmptyState(submissionItems.size)
             }
         }
 
@@ -89,11 +68,6 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
         }
         binding.etSearch.addTextChangedListener(textWatcher)
         showHideRadioButton()
-    }
-
-    override fun onResume() {
-        super.onResume()
-        // Filter is already set in onViewCreated and maintained by ViewModel
     }
 
     private fun showHideRadioButton() {
