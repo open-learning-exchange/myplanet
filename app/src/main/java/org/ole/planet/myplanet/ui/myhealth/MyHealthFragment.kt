@@ -207,6 +207,7 @@ class MyHealthFragment : Fragment() {
 
         binding.rvRecords.addItemDecoration(DividerItemDecoration(activity, DividerItemDecoration.VERTICAL))
 
+        adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, mutableListOf())
         setupInitialData()
         setupButtons()
     }
@@ -289,15 +290,17 @@ class MyHealthFragment : Fragment() {
             }
             withContext(Dispatchers.Main) {
                 userModelList = users
-                adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, userModelList)
+                adapter.clear()
+                adapter.addAll(userModelList)
+                adapter.notifyDataSetChanged()
                 alertHealthListBinding = AlertHealthListBinding.inflate(LayoutInflater.from(context))
                 alertHealthListBinding?.btnAddMember?.setOnClickListener {
                     startActivity(Intent(requireContext(), BecomeMemberActivity::class.java))
                 }
 
                 alertHealthListBinding?.let { binding ->
-                    setTextWatcher(binding.etSearch, binding.btnAddMember, binding.list)
                     binding.list.adapter = adapter
+                    setTextWatcher(binding.etSearch, binding.btnAddMember)
                     binding.list.onItemClickListener = OnItemClickListener { _: AdapterView<*>?, _: View, i: Int, _: Long ->
                         val selected = binding.list.adapter.getItem(i) as RealmUserModel
                         userId = if (selected._id.isNullOrEmpty()) selected.id else selected._id
@@ -345,7 +348,7 @@ class MyHealthFragment : Fragment() {
         }
     }
 
-    private fun setTextWatcher(etSearch: EditText, btnAddMember: Button, lv: ListView) {
+    private fun setTextWatcher(etSearch: EditText, btnAddMember: Button) {
         var timer: CountDownTimer? = null
         textWatcher = object : TextWatcher {
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
@@ -356,15 +359,26 @@ class MyHealthFragment : Fragment() {
                 timer = object : CountDownTimer(1000, 1500) {
                     override fun onTick(millisUntilFinished: Long) {}
                     override fun onFinish() {
-                        val userModelList = mRealm.where(RealmUserModel::class.java)
-                            .contains("firstName", editable.toString(), Case.INSENSITIVE).or()
-                            .contains("lastName", editable.toString(), Case.INSENSITIVE).or()
-                            .contains("name", editable.toString(), Case.INSENSITIVE)
-                            .sort("joinDate", Sort.DESCENDING).findAll()
+                        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                            var unmanagedUserModelList: List<RealmUserModel> = emptyList()
+                            Realm.getDefaultInstance().use { realm ->
+                                val userModelList = realm.where(RealmUserModel::class.java)
+                                    .contains("firstName", editable.toString(), Case.INSENSITIVE).or()
+                                    .contains("lastName", editable.toString(), Case.INSENSITIVE).or()
+                                    .contains("name", editable.toString(), Case.INSENSITIVE)
+                                    .sort("joinDate", Sort.DESCENDING).findAll()
+                                unmanagedUserModelList = realm.copyFromRealm(userModelList)
+                            }
 
-                        val adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, userModelList)
-                        lv.adapter = adapter
-                        btnAddMember.visibility = if (adapter.count == 0) View.VISIBLE else View.GONE
+                            withContext(Dispatchers.Main) {
+                                if (isAdded) {
+                                    adapter.clear()
+                                    adapter.addAll(unmanagedUserModelList)
+                                    adapter.notifyDataSetChanged()
+                                    btnAddMember.visibility = if (adapter.count == 0) View.VISIBLE else View.GONE
+                                }
+                            }
+                        }
                     }
                 }.start()
             }
@@ -435,8 +449,34 @@ class MyHealthFragment : Fragment() {
                     binding.tvNoRecords.visibility = View.GONE
                     binding.tvDataPlaceholder.visibility = View.VISIBLE
 
-                    healthAdapter = AdapterHealthExamination(requireActivity(), mh, currentUser)
-                    healthAdapter.setmRealm(mRealm)
+                    val userIds = list.mapNotNull {
+                        it.getEncryptedDataAsJson(currentUser)?.let { json ->
+                            json.get("createdBy")?.asString
+                        }
+                    }.distinct()
+                    val userMap = withContext(Dispatchers.IO) {
+                        if (userIds.isEmpty()) {
+                            emptyMap<String, RealmUserModel>()
+                        } else {
+                            Realm.getDefaultInstance().use { realm ->
+                                val query = realm.where(RealmUserModel::class.java)
+                                query.beginGroup()
+                                userIds.forEachIndexed { index, userId ->
+                                    if (index > 0) {
+                                        query.or()
+                                    }
+                                    query.equalTo("id", userId)
+                                }
+                                query.endGroup()
+                                val users = query.findAll()
+                                realm.copyFromRealm(users)
+                                    .filter { it.id != null }
+                                    .associateBy { it.id!! }
+                            }
+                        }
+                    }
+
+                    healthAdapter = AdapterHealthExamination(requireActivity(), mh, currentUser, userMap)
                     binding.rvRecords.apply {
                         layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
                         isNestedScrollingEnabled = false

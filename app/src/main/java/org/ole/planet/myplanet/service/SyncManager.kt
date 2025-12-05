@@ -149,6 +149,7 @@ class SyncManager constructor(
         isSyncing = false
         settings.edit { putLong("LastSync", Date().time) }
         listener?.onSyncComplete()
+        listener = null
         _syncStatus.value = SyncStatus.Success("Sync completed")
         try {
             if (!betaSync) {
@@ -549,6 +550,7 @@ class SyncManager constructor(
     fun cancelBackgroundSync() {
         backgroundSync?.cancel()
         backgroundSync = null
+        listener = null
     }
 
     private suspend fun resourceTransactionSync(realm: Realm) {

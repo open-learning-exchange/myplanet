@@ -11,19 +11,20 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
 import io.realm.Sort
-import java.io.File
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentSubmissionListBinding
+import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.utilities.SubmissionPdfGenerator
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class SubmissionListFragment : Fragment() {
     private var _binding: FragmentSubmissionListBinding? = null
     private val binding get() = _binding!!
-    private lateinit var mRealm: Realm
+    @Inject
+    lateinit var databaseService: DatabaseService
     private var parentId: String? = null
     private var examTitle: String? = null
     private var userId: String? = null
@@ -45,11 +46,7 @@ class SubmissionListFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        mRealm = Realm.getDefaultInstance()
-
         binding.tvTitle.text = examTitle ?: "Submissions"
-
         setupRecyclerView()
         loadSubmissions()
     }
@@ -72,57 +69,62 @@ class SubmissionListFragment : Fragment() {
     }
 
     private fun loadSubmissions() {
-        val submissions = mRealm.where(RealmSubmission::class.java)
-            .equalTo("parentId", parentId)
-            .equalTo("userId", userId)
-            .sort("lastUpdateTime", Sort.DESCENDING)
-            .findAll()
+        databaseService.withRealm { realm ->
+            val submissions = realm.where(RealmSubmission::class.java)
+                .equalTo("parentId", parentId)
+                .equalTo("userId", userId)
+                .sort("lastUpdateTime", Sort.DESCENDING)
+                .findAll()
 
-        val submissionItems = submissions.map {
-            SubmissionItem(
-                id = it.id,
-                lastUpdateTime = it.lastUpdateTime,
-                status = it.status ?: "",
-                uploaded = it.uploaded
-            )
-        }
-        adapter.submitList(submissionItems)
+            val submissionItems = submissions.map {
+                SubmissionItem(
+                    id = it.id,
+                    lastUpdateTime = it.lastUpdateTime,
+                    status = it.status ?: "",
+                    uploaded = it.uploaded
+                )
+            }
+            adapter.submitList(submissionItems)
 
-        binding.btnDownloadReport.setOnClickListener {
-            generateReport(submissions.toList())
+            binding.btnDownloadReport.setOnClickListener {
+                generateReport(submissions.toList())
+            }
         }
     }
 
     private fun generateSubmissionPdf(submissionId: String?) {
-        val submission = mRealm.where(RealmSubmission::class.java).equalTo("id", submissionId).findFirst()
-        if (submission != null) {
-            val file = SubmissionPdfGenerator.generateSubmissionPdf(requireContext(), submission, mRealm)
-            if (file != null) {
-                Toast.makeText(requireContext(), "PDF saved to ${file.absolutePath}", Toast.LENGTH_LONG).show()
-                openPdf(file)
-            } else {
-                Toast.makeText(requireContext(), "Failed to generate PDF", Toast.LENGTH_SHORT).show()
+        databaseService.withRealm { realm ->
+            val submission = realm.where(RealmSubmission::class.java).equalTo("id", submissionId).findFirst()
+            if (submission != null) {
+                val file = SubmissionPdfGenerator.generateSubmissionPdf(requireContext(), submission, realm)
+                if (file != null) {
+                    Toast.makeText(requireContext(), "PDF saved to ${file.absolutePath}", Toast.LENGTH_LONG).show()
+                    openPdf(file)
+                } else {
+                    Toast.makeText(requireContext(), "Failed to generate PDF", Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }
 
     private fun generateReport(submissions: List<RealmSubmission>) {
-        val file = org.ole.planet.myplanet.utilities.SubmissionPdfGenerator.generateMultipleSubmissionsPdf(
-            requireContext(),
-            submissions,
-            examTitle ?: "Submissions",
-            mRealm
-        )
-
-        if (file != null) {
-            Toast.makeText(context, "Report saved to ${file.absolutePath}", Toast.LENGTH_LONG).show()
-            openPdf(file)
-        } else {
-            Toast.makeText(context, "Failed to generate report", Toast.LENGTH_SHORT).show()
+        databaseService.withRealm { realm ->
+            val file = SubmissionPdfGenerator.generateMultipleSubmissionsPdf(
+                requireContext(),
+                submissions,
+                examTitle ?: "Submissions",
+                realm
+            )
+            if (file != null) {
+                Toast.makeText(context, "Report saved to ${file.absolutePath}", Toast.LENGTH_LONG).show()
+                openPdf(file)
+            } else {
+                Toast.makeText(context, "Failed to generate report", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
-    private fun openPdf(file: File) {
+    private fun openPdf(file: java.io.File) {
         try {
             val uri = FileProvider.getUriForFile(
                 requireContext(),
@@ -141,7 +143,6 @@ class SubmissionListFragment : Fragment() {
     }
 
     override fun onDestroyView() {
-        mRealm.close()
         _binding = null
         super.onDestroyView()
     }
