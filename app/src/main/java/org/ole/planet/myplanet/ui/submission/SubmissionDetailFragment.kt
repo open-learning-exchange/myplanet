@@ -14,6 +14,7 @@ import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.dto.QuestionMapper
 import org.ole.planet.myplanet.utilities.TimeUtils
 
 class SubmissionDetailFragment : Fragment() {
@@ -145,12 +146,12 @@ class SubmissionDetailFragment : Fragment() {
             .equalTo("examId", examId)
             .findAll()
 
-        val questionAnswerPairs = questions.map { question ->
+        val questionAnswerViewModels = questions.map { question ->
             val answer = submission.answers?.find { it.questionId == question.id }
-            QuestionAnswerPair(question, answer)
+            QuestionMapper.toViewModel(question, answer)
         }
 
-        adapter.submitList(questionAnswerPairs)
+        adapter.submitList(questionAnswerViewModels)
     }
 
     private fun getExamId(parentId: String?): String? {

@@ -13,13 +13,10 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmExamQuestion
+import org.ole.planet.myplanet.model.dto.QuestionAnswerViewModel
+import org.ole.planet.myplanet.model.dto.QuestionChoice
 
-data class QuestionAnswerPair(
-    val question: RealmExamQuestion,
-    val answer: RealmAnswer?
-)
-
-class QuestionAnswerAdapter : ListAdapter<QuestionAnswerPair, QuestionAnswerAdapter.ViewHolder>(QuestionAnswerDiffCallback()) {
+class QuestionAnswerAdapter : ListAdapter<QuestionAnswerViewModel, QuestionAnswerAdapter.ViewHolder>(QuestionAnswerDiffCallback()) {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = ItemQuestionAnswerBinding.inflate(
             LayoutInflater.from(parent.context),
@@ -38,7 +35,7 @@ class QuestionAnswerAdapter : ListAdapter<QuestionAnswerPair, QuestionAnswerAdap
     }
 
     class ViewHolder(private val binding: ItemQuestionAnswerBinding) : RecyclerView.ViewHolder(binding.root) {
-        fun bind(pair: QuestionAnswerPair) {
+        fun bind(pair: QuestionAnswerViewModel) {
             val question = pair.question
             val answer = pair.answer
 
@@ -51,7 +48,7 @@ class QuestionAnswerAdapter : ListAdapter<QuestionAnswerPair, QuestionAnswerAdap
 
             binding.tvQuestionBody.text = question.body ?: "No question text"
 
-            val answerText = formatAnswer(answer, question)
+            val answerText = formatAnswer(answer, pair.answerChoiceTexts)
             binding.tvAnswerValue.text = answerText
 
             if (question.type != null) {
@@ -62,7 +59,7 @@ class QuestionAnswerAdapter : ListAdapter<QuestionAnswerPair, QuestionAnswerAdap
             }
         }
 
-        private fun formatAnswer(answer: RealmAnswer?, question: RealmExamQuestion): String {
+        private fun formatAnswer(answer: RealmAnswer?, answerChoiceTexts: List<String>): String {
             if (answer == null) {
                 return "No answer provided"
             }
@@ -71,76 +68,21 @@ class QuestionAnswerAdapter : ListAdapter<QuestionAnswerPair, QuestionAnswerAdap
                 !answer.value.isNullOrEmpty() -> {
                     answer.value!!
                 }
-                answer.valueChoices != null && answer.valueChoices!!.isNotEmpty() -> {
-                    formatMultipleChoiceAnswer(answer.valueChoices!!, question)
+                answerChoiceTexts.isNotEmpty() -> {
+                    answerChoiceTexts.joinToString(", ")
                 }
                 else -> "No answer provided"
             }
         }
-
-        private fun formatMultipleChoiceAnswer(choices: List<String>, question: RealmExamQuestion): String {
-            val selectedChoices = mutableListOf<String>()
-
-            try {
-                val questionChoicesJson = if (!question.choices.isNullOrEmpty()) {
-                    Gson().fromJson(question.choices, JsonArray::class.java)
-                } else {
-                    JsonArray()
-                }
-
-                for (choice in choices) {
-                    try {
-                        val choiceJson = Gson().fromJson(choice, JsonObject::class.java)
-                        val choiceId = choiceJson.get("id")?.asString
-                        val choiceText = choiceJson.get("text")?.asString
-
-                        if (!choiceText.isNullOrEmpty()) {
-                            selectedChoices.add(choiceText)
-                        } else if (!choiceId.isNullOrEmpty()) {
-                            val matchingChoice = findChoiceTextById(choiceId, questionChoicesJson)
-                            if (matchingChoice != null) {
-                                selectedChoices.add(matchingChoice)
-                            } else {
-                                selectedChoices.add(choiceId)
-                            }
-                        }
-                    } catch (e: Exception) {
-                        selectedChoices.add(choice)
-                    }
-                }
-            } catch (e: Exception) {
-                return choices.joinToString(", ")
-            }
-
-            return if (selectedChoices.isNotEmpty()) {
-                selectedChoices.joinToString(", ")
-            } else {
-                "No selection made"
-            }
-        }
-
-        private fun findChoiceTextById(choiceId: String, questionChoices: JsonArray): String? {
-            for (i in 0 until questionChoices.size()) {
-                try {
-                    val choice = questionChoices[i].asJsonObject
-                    if (choice.get("id")?.asString == choiceId) {
-                        return choice.get("text")?.asString
-                    }
-                } catch (e: Exception) {
-                    continue
-                }
-            }
-            return null
-        }
     }
 }
 
-class QuestionAnswerDiffCallback : DiffUtil.ItemCallback<QuestionAnswerPair>() {
-    override fun areItemsTheSame(oldItem: QuestionAnswerPair, newItem: QuestionAnswerPair): Boolean {
+class QuestionAnswerDiffCallback : DiffUtil.ItemCallback<QuestionAnswerViewModel>() {
+    override fun areItemsTheSame(oldItem: QuestionAnswerViewModel, newItem: QuestionAnswerViewModel): Boolean {
         return oldItem.question.id == newItem.question.id
     }
 
-    override fun areContentsTheSame(oldItem: QuestionAnswerPair, newItem: QuestionAnswerPair): Boolean {
+    override fun areContentsTheSame(oldItem: QuestionAnswerViewModel, newItem: QuestionAnswerViewModel): Boolean {
         return oldItem == newItem
     }
 }
