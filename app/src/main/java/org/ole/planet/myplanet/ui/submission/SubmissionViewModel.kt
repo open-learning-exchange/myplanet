@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.submission.SubmissionItem
 import javax.inject.Inject
 
 @HiltViewModel
@@ -72,24 +73,31 @@ class SubmissionViewModel @Inject constructor(
         Triple(uniqueSubmissions, submissionCountMap, filtered)
     }.shareIn(viewModelScope, SharingStarted.Lazily, 1)
 
-    val submissions: StateFlow<List<RealmSubmission>> = filteredSubmissionsRaw.map { it.first }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    val submissionCounts: StateFlow<Map<String?, Int>> = filteredSubmissionsRaw.map { it.second }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
-
-    val userNames: StateFlow<Map<String, String>> = submissions.mapLatest { uniqueSubmissions ->
-        val submitterIds = uniqueSubmissions.mapNotNull { it.userId }.toSet()
-        submitterIds.mapNotNull { id ->
-            val userModel = userRepository.getUserById(id)
-            val displayName = userModel?.name
-            if (displayName.isNullOrBlank()) {
-                null
-            } else {
-                id to displayName
+    val submissionItems: StateFlow<List<SubmissionItem>> =
+        combine(
+            filteredSubmissionsRaw,
+            exams
+        ) { (uniqueSubmissions, submissionCountMap), examMap ->
+            val submitterIds = uniqueSubmissions.mapNotNull { it.userId }.toSet()
+            val userNames = submitterIds.associateWith { id ->
+                userRepository.getUserById(id)?.name?.takeIf { it.isNotBlank() }
             }
-        }.toMap()
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+
+            uniqueSubmissions.map { sub ->
+                SubmissionItem(
+                    id = sub.id,
+                    parentId = sub.parentId,
+                    type = sub.type,
+                    userId = sub.userId,
+                    status = sub.status,
+                    startTime = sub.startTime,
+                    lastUpdateTime = sub.lastUpdateTime,
+                    examName = examMap[sub.parentId]?.name,
+                    userName = userNames[sub.userId],
+                    count = submissionCountMap[sub.id] ?: 1
+                )
+            }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun setFilter(type: String, query: String) {
         _type.value = type

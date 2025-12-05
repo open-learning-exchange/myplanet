@@ -13,35 +13,20 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import org.json.JSONObject
-import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.RowMysurveyBinding
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.ui.exam.TakeExamFragment
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
 
 class AdapterMySubmission(
     private val context: Context,
-    private val lifecycleScope: CoroutineScope,
-) : ListAdapter<RealmSubmission, AdapterMySubmission.ViewHolderMySurvey>(
+) : ListAdapter<SubmissionItem, AdapterMySubmission.ViewHolderMySurvey>(
     DiffUtils.itemCallback(
-        areItemsTheSame = { oldItem, newItem ->
-            oldItem.id == newItem.id
-        },
-        areContentsTheSame = { oldItem, newItem ->
-            oldItem.id == newItem.id &&
-                oldItem.status == newItem.status &&
-                oldItem.lastUpdateTime == newItem.lastUpdateTime
-        }
+        areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id },
+        areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
     )
 ) {
-    private var examHashMap: HashMap<String?, RealmStepExam> = hashMapOf()
-    private var submissionCountMap: Map<String?, Int> = emptyMap()
-    private var userNames: Map<String, String> = emptyMap()
     private var listener: OnHomeItemClickListener? = null
     private var type = ""
 
@@ -49,21 +34,6 @@ class AdapterMySubmission(
         if (context is OnHomeItemClickListener) {
             listener = context
         }
-    }
-
-    fun setExams(exams: HashMap<String?, RealmStepExam>) {
-        this.examHashMap = exams
-        notifyDataSetChanged()
-    }
-
-    fun setSubmissionCounts(counts: Map<String?, Int>) {
-        this.submissionCountMap = counts
-        notifyDataSetChanged()
-    }
-
-    fun setUserNames(names: Map<String, String>) {
-        this.userNames = names
-        notifyDataSetChanged()
     }
 
     fun setType(type: String?) {
@@ -80,59 +50,32 @@ class AdapterMySubmission(
     override fun onBindViewHolder(holder: ViewHolderMySurvey, position: Int) {
         val submission = getItem(position)
         val binding = holder.binding
+        binding.title.text = submission.examName
         binding.status.text = submission.status
         binding.date.text = getFormattedDate(submission.startTime)
-        showSubmittedBy(holder, binding, submission)
-        if (examHashMap.containsKey(submission.parentId)) {
-            binding.title.text = examHashMap[submission.parentId]?.name
+        if (submission.userName.isNullOrBlank()) {
+            binding.submittedBy.visibility = View.GONE
+            binding.submittedBy.text = ""
+        } else {
+            binding.submittedBy.visibility = View.VISIBLE
+            binding.submittedBy.text = submission.userName
         }
 
-        val count = submissionCountMap[submission.id] ?: 1
-        if (count > 1) {
+        if (submission.count > 1) {
             binding.submissionCount.visibility = View.VISIBLE
-            binding.submissionCount.text = "($count)"
+            binding.submissionCount.text = "(${submission.count})"
         } else {
             binding.submissionCount.visibility = View.GONE
         }
 
         holder.itemView.setOnClickListener {
-            if (count > 1) {
+            if (submission.count > 1) {
                 showAllSubmissions(submission)
             } else {
                 if (type == "survey") {
                     openSurvey(listener, submission.id, true, false, "")
                 } else {
                     openSubmissionDetail(listener, submission.id)
-                }
-            }
-        }
-    }
-
-    override fun onViewRecycled(holder: ViewHolderMySurvey) {
-        super.onViewRecycled(holder)
-        holder.job?.cancel()
-    }
-
-    private fun showSubmittedBy(holder: ViewHolderMySurvey, binding: RowMysurveyBinding, submission: RealmSubmission) {
-        holder.job?.cancel()
-        holder.job = lifecycleScope.launch {
-            val resolvedName = withContext(Dispatchers.Default) {
-                runCatching {
-                    submission.user?.takeIf { it.isNotBlank() }?.let { userJson ->
-                        JSONObject(userJson).optString("name").takeIf { name -> name.isNotBlank() }
-                    }
-                }.getOrNull()
-            }
-
-            val finalName = resolvedName ?: userNames[submission.userId]
-
-            withContext(Dispatchers.Main) {
-                if (finalName.isNullOrBlank()) {
-                    binding.submittedBy.visibility = View.GONE
-                    binding.submittedBy.text = ""
-                } else {
-                    binding.submittedBy.visibility = View.VISIBLE
-                    binding.submittedBy.text = finalName
                 }
             }
         }
@@ -148,12 +91,10 @@ class AdapterMySubmission(
         }
     }
 
-    private fun showAllSubmissions(submission: RealmSubmission) {
-        val examTitle = examHashMap[submission.parentId]?.name ?: "Submissions"
-
+    private fun showAllSubmissions(submission: SubmissionItem) {
         val b = Bundle()
         b.putString("parentId", submission.parentId)
-        b.putString("examTitle", examTitle)
+        b.putString("examTitle", submission.examName ?: "Submissions")
         b.putString("userId", submission.userId)
 
         val fragment = SubmissionListFragment()
@@ -162,9 +103,7 @@ class AdapterMySubmission(
         listener?.openCallFragment(fragment)
     }
 
-    class ViewHolderMySurvey(val binding: RowMysurveyBinding) : RecyclerView.ViewHolder(binding.root) {
-        var job: Job? = null
-    }
+    class ViewHolderMySurvey(val binding: RowMysurveyBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {
         @JvmStatic
