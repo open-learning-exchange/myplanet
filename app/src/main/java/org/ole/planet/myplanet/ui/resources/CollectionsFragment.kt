@@ -9,6 +9,7 @@ import android.view.ViewGroup
 import android.widget.CompoundButton
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Locale
 import javax.inject.Inject
@@ -23,18 +24,20 @@ import org.ole.planet.myplanet.repository.TagRepository
 import org.ole.planet.myplanet.utilities.KeyboardUtils
 
 @AndroidEntryPoint
-class CollectionsFragment : DialogFragment(), TagExpandableAdapter.OnClickTagItem, CompoundButton.OnCheckedChangeListener {
+class CollectionsFragment : DialogFragment(), TagRecyclerAdapter.OnClickTagItem, CompoundButton.OnCheckedChangeListener {
     private var _binding: FragmentCollectionsBinding? = null
     private val binding get() = _binding!!
     @Inject
     lateinit var tagRepository: TagRepository
-    private lateinit var list: List<RealmTag>
-    private var filteredList: ArrayList<RealmTag> = ArrayList()
-    private lateinit var adapter: TagExpandableAdapter
+    private var allTags: List<RealmTag> = emptyList()
+    private var tagAdapterItems = mutableListOf<TagAdapterItem>()
+    private val expandedParentIds = mutableSetOf<String>()
+    private lateinit var adapter: TagRecyclerAdapter
     private var dbType: String? = null
     private var listener: TagClickListener? = null
     private var selectedItemsList: ArrayList<RealmTag> = ArrayList()
     private var textWatcher: TextWatcher? = null
+    private var childMap: HashMap<String, List<RealmTag>> = HashMap()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,8 +53,57 @@ class CollectionsFragment : DialogFragment(), TagExpandableAdapter.OnClickTagIte
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        setListAdapter()
+        setupRecyclerView()
+        loadTags()
         setListeners()
+    }
+
+    private fun setupRecyclerView() {
+        adapter = TagRecyclerAdapter(this)
+        binding.listTags.layoutManager = LinearLayoutManager(requireContext())
+        binding.listTags.adapter = adapter
+    }
+
+    private fun loadTags() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            allTags = tagRepository.getTags(dbType)
+            childMap = tagRepository.buildChildMap()
+            selectedItemsList = ArrayList(recentList)
+            adapter.setSelectMultiple(true)
+            adapter.setSelectedItems(selectedItemsList)
+            buildAndSubmitList()
+            binding.btnOk.visibility = View.VISIBLE
+        }
+    }
+
+    private fun buildAndSubmitList(filterText: String = "") {
+        val filteredParents = allTags.filter { tag ->
+            val name = tag.name?.lowercase(Locale.ROOT) ?: ""
+            name.contains(filterText) || childMap[tag.id]?.any { child ->
+                child.name?.lowercase(Locale.ROOT)?.contains(filterText) == true
+            } == true
+        }
+
+        tagAdapterItems = filteredParents.map { parentTag ->
+            val children = childMap[parentTag.id]?.map { TagAdapterItem.Child(it) } ?: emptyList()
+            TagAdapterItem.Parent(parentTag, children).apply {
+                isExpanded = expandedParentIds.contains(parentTag.id)
+            }
+        }.toMutableList()
+        updateAdapterList()
+    }
+
+    private fun updateAdapterList() {
+        val displayList = mutableListOf<TagAdapterItem>()
+        tagAdapterItems.forEach { item ->
+            if (item is TagAdapterItem.Parent) {
+                displayList.add(item)
+                if (item.isExpanded) {
+                    displayList.addAll(item.children)
+                }
+            }
+        }
+        adapter.submitList(displayList)
     }
 
     private fun setListeners() {
@@ -62,39 +114,11 @@ class CollectionsFragment : DialogFragment(), TagExpandableAdapter.OnClickTagIte
         textWatcher = object : TextWatcher {
             override fun beforeTextChanged(charSequence: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(charSequence: CharSequence?, start: Int, before: Int, count: Int) {
-                charSequence?.let { filterTags(it.toString()) }
+                buildAndSubmitList(charSequence.toString().lowercase(Locale.ROOT))
             }
             override fun afterTextChanged(editable: Editable?) {}
         }
         binding.etFilter.addTextChangedListener(textWatcher)
-    }
-
-    private fun filterTags(charSequence: String) {
-        filteredList.clear()
-        if (charSequence.isEmpty()) {
-            adapter.setTagList(list)
-            return
-        }
-        list.forEach { t ->
-            if (t.name?.lowercase(Locale.ROOT)?.contains(charSequence.lowercase(Locale.ROOT)) == true) {
-                filteredList.add(t)
-            }
-        }
-        adapter.setTagList(filteredList)
-    }
-
-    private fun setListAdapter() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            list = tagRepository.getTags(dbType)
-            selectedItemsList = ArrayList(recentList)
-            val childMap = tagRepository.buildChildMap()
-            binding.listTags.setGroupIndicator(null)
-            adapter = TagExpandableAdapter(list, childMap, selectedItemsList)
-            adapter.setSelectMultiple(true)
-            adapter.setClickListener(this@CollectionsFragment)
-            binding.listTags.setAdapter(adapter)
-            binding.btnOk.visibility = View.VISIBLE
-        }
     }
 
     override fun onTagClicked(tag: RealmTag) {
@@ -102,19 +126,30 @@ class CollectionsFragment : DialogFragment(), TagExpandableAdapter.OnClickTagIte
         dismiss()
     }
 
-    override fun onCheckboxTagSelected(tags: RealmTag) {
-        if (selectedItemsList.contains(tags)) {
-            selectedItemsList.remove(tags)
+    override fun onCheckboxTagSelected(tag: RealmTag, isChecked: Boolean) {
+        if (isChecked) {
+            if (!selectedItemsList.any { it.id == tag.id }) {
+                selectedItemsList.add(tag)
+            }
         } else {
-            selectedItemsList.add(tags)
+            selectedItemsList.removeAll { it.id == tag.id }
         }
+        adapter.setSelectedItems(selectedItemsList)
+    }
+
+    override fun onParentTagClicked(parent: TagAdapterItem.Parent) {
+        parent.isExpanded = !parent.isExpanded
+        if (parent.isExpanded) {
+            expandedParentIds.add(parent.id)
+        } else {
+            expandedParentIds.remove(parent.id)
+        }
+        updateAdapterList()
     }
 
     override fun onCheckedChanged(compoundButton: CompoundButton, b: Boolean) {
         MainApplication.isCollectionSwitchOn = b
         adapter.setSelectMultiple(b)
-        adapter.setTagList(list)
-        binding.listTags.setAdapter(adapter)
         binding.btnOk.visibility = if (b) View.VISIBLE else View.GONE
     }
 
@@ -141,5 +176,4 @@ class CollectionsFragment : DialogFragment(), TagExpandableAdapter.OnClickTagIte
     fun setListener(listener: TagClickListener) {
         this.listener = listener
     }
-
 }
