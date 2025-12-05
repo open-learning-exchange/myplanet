@@ -10,14 +10,17 @@ import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowJoinedUserBinding
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.team.teamMember.MemberDetailFragment
 import org.ole.planet.myplanet.utilities.DiffUtils
 
-internal class AdapterLeader(var context: Context) :
-    ListAdapter<RealmUserModel, AdapterLeader.ViewHolderLeader>(
-        DiffUtils.itemCallback(
-            areItemsTheSame = { oldItem, newItem -> oldItem.name == newItem.name },
+internal class AdapterLeader(
+    var context: Context,
+    private val userProfileDbHandler: UserProfileDbHandler
+) : ListAdapter<RealmUserModel, AdapterLeader.ViewHolderLeader>(
+    DiffUtils.itemCallback(
+        areItemsTheSame = { oldItem, newItem -> oldItem.name == newItem.name },
             areContentsTheSame = { oldItem, newItem ->
                 oldItem.firstName == newItem.firstName &&
                     oldItem.lastName == newItem.lastName &&
