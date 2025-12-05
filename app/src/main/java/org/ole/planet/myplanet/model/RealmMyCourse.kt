@@ -11,6 +11,7 @@ import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.RealmResults
+import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 import io.realm.kotlin.where
 import org.ole.planet.myplanet.MainApplication.Companion.context
@@ -27,6 +28,7 @@ open class RealmMyCourse : RealmObject() {
     var id: String? = null
     var userId: RealmList<String>? = null
         private set
+    @Index
     var courseId: String? = null
     var courseRev: String? = null
     var languageOfInstruction: String? = null

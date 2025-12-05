@@ -20,6 +20,7 @@
     <string name="btn_back">Dib</string>
     <string name="btn_sign_in">Soo gal</string>
     <string name="btn_sync_save">Keyd</string>
+    <string name="loading">Soo dejinta...</string>
     <string name="select_team">xulo koox</string>
     <string name="err_msg_name">Geli magaca isticmaalaha</string>
     <string name="err_msg_password">Geli erayga sirta ah</string>
@@ -1173,5 +1174,7 @@
     <string name="cannot_assign_completed_task">Lama xil saari karo shaqo la dhammeeyay</string>
     <string name="assign_to">U xilsaar (Ikhtiyaari)</string>
     <string name="click_to_assign_member">Guji si aad u doorato xubin koox</string>
+    <string name="saving">Keydinaya…</string>
+    <string name="achievement_saved">Guusha waa la cusbooneysiiyay</string>
 
 </resources>

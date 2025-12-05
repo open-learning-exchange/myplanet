@@ -7,6 +7,7 @@ import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.RealmResults
+import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 import java.util.Date
 import kotlinx.coroutines.Dispatchers
@@ -24,8 +25,10 @@ open class RealmMyTeam : RealmObject() {
     var _id: String? = null
     var _rev: String? = null
     var courses: RealmList<String>? = null
+    @Index
     var teamId: String? = null
     var name: String? = null
+    @Index
     var userId: String? = null
     var description: String? = null
     var requests: String? = null
@@ -38,6 +41,7 @@ open class RealmMyTeam : RealmObject() {
     var teamPlanetCode: String? = null
     var userPlanetCode: String? = null
     var parentCode: String? = null
+    @Index
     var docType: String? = null
     var title: String? = null
     var route: String? = null
@@ -60,8 +64,6 @@ open class RealmMyTeam : RealmObject() {
     var updatedDate: Long = 0
 
     companion object {
-        private val concatenatedLinks = ArrayList<String>()
-
         @JvmStatic
         fun populateTeamFields(doc: JsonObject, team: RealmMyTeam, includeCourses: Boolean = false) {
             team.userId = JsonUtils.getString("userId", doc)
@@ -114,11 +116,12 @@ open class RealmMyTeam : RealmObject() {
         private fun processDescription(description: String?) {
             val links = extractLinks(description ?: "")
             val baseUrl = getUrl()
+            val concatenatedLinks = LinkedHashSet<String>()
             for (link in links) {
                 val concatenatedLink = "$baseUrl/$link"
                 concatenatedLinks.add(concatenatedLink)
             }
-            openDownloadService(context, concatenatedLinks, true)
+            openDownloadService(context, ArrayList(concatenatedLinks), true)
         }
 
         @JvmStatic
@@ -199,25 +202,6 @@ open class RealmMyTeam : RealmObject() {
         @JvmStatic
         fun insert(mRealm: Realm, doc: JsonObject) {
             insertMyTeams(doc, mRealm)
-        }
-
-        @JvmStatic
-        suspend fun requestToJoin(teamId: String?, userId: String?, userPlanetCode: String?, teamType: String?) {
-            withContext(Dispatchers.IO) {
-                Realm.getDefaultInstance().use { realm ->
-                    realm.executeTransaction {
-                        val team = it.createObject(RealmMyTeam::class.java, AndroidDecrypter.generateIv())
-                        team.docType = "request"
-                        team.createdDate = Date().time
-                        team.teamType = teamType
-                        team.userId = userId
-                        team.teamId = teamId
-                        team.updated = true
-                        team.teamPlanetCode = userPlanetCode
-                        team.userPlanetCode = userPlanetCode
-                    }
-                }
-            }
         }
 
         @JvmStatic

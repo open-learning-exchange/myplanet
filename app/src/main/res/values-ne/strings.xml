@@ -19,6 +19,7 @@
     <string name="hint_name">प्रयोगकर्तानाम</string>
     <string name="btn_back">पछाडी जाउ</string>
     <string name="btn_sign_in">साइन इन गर्नुहोस्</string>
+    <string name="loading">लोड हुँदैछ...</string>
     <string name="select_team">टोली चयन गर्नुहोस्</string>
     <string name="btn_sync_save">सुरक्षित गर्नुहोस्</string>
     <string name="err_msg_name">तपाईंको प्रयोगकर्तानाम लेख्नुहोस्</string>
@@ -1173,5 +1174,7 @@
     <string name="cannot_assign_completed_task">पूरा भएको कार्य सौंप्न सकिँदैन</string>
     <string name="assign_to">सौंप्नुहोस् (वैकल्पिक)</string>
     <string name="click_to_assign_member">टोली सदस्य सौंप्न क्लिक गर्नुहोस्</string>
+    <string name="saving">सुरक्षित गरिदै…</string>
+    <string name="achievement_saved">उपलब्धि अद्यावधिक गरियो</string>
 
 </resources>

@@ -56,12 +56,9 @@ class AdapterResource(
     private val tagRequestsInProgress: MutableSet<String> = mutableSetOf()
 
     private data class DiffData(
-        val id: String?,
-        val title: String?,
-        val description: String?,
-        val createdDate: Long?,
-        val averageRating: String?,
-        val timesRated: Int?
+        val _id: String?,
+        val _rev: String?,
+        val uploadDate: String?
     )
 
     companion object {
@@ -71,12 +68,9 @@ class AdapterResource(
     }
 
     private fun RealmMyLibrary.toDiffData() = DiffData(
-        id = this.id,
-        title = this.title,
-        description = this.description,
-        createdDate = this.createdDate,
-        averageRating = this.averageRating,
-        timesRated = this.timesRated
+        _id = this._id,
+        _rev = this._rev,
+        uploadDate = this.uploadDate
     )
 
     init {
@@ -94,7 +88,6 @@ class AdapterResource(
     }
 
     fun setLibraryList(libraryList: List<RealmMyLibrary?>) {
-        if (this.libraryList === libraryList) return
         updateList(libraryList)
     }
 
@@ -324,19 +317,9 @@ class AdapterResource(
                 DiffUtils.calculateDiff(
                     oldList,
                     newListMapped,
-                    areItemsTheSame = { old, new -> old.id == new.id },
-                    areContentsTheSame = { old, new -> old == new },
-                    getChangePayload = { old, new ->
-                        val ratingChanged = old.averageRating != new.averageRating || old.timesRated != new.timesRated
-                        val otherContentChanged = old.title != new.title ||
-                                old.description != new.description ||
-                                old.createdDate != new.createdDate
-
-                        if (ratingChanged && !otherContentChanged) {
-                            RATING_PAYLOAD
-                        } else {
-                            null
-                        }
+                    areItemsTheSame = { old, new -> old._id == new._id },
+                    areContentsTheSame = { old, new ->
+                        old._rev == new._rev && old.uploadDate == new.uploadDate
                     }
                 )
             }

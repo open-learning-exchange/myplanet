@@ -136,6 +136,20 @@ class UserProfileFragment : Fragment() {
         }
     }
 
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.maxOpenedResource.collect {
+                    if (isAdded) {
+                        setupStatsRecycler()
+                    }
+                }
+            }
+        }
+    }
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentUserProfileBinding.inflate(inflater, container, false)
         initializeDependencies()
@@ -444,7 +458,7 @@ class UserProfileFragment : Fragment() {
             getString(R.string.community_name) to Utilities.checkNA(model?.planetCode),
             getString(R.string.last_login) to viewModel.lastVisit?.let { TimeUtils.getRelativeTime(it) },
             getString(R.string.total_visits_overall) to viewModel.offlineVisits.toString(),
-            getString(R.string.most_opened_resource) to Utilities.checkNA(viewModel.maxOpenedResource),
+            getString(R.string.most_opened_resource) to Utilities.checkNA(viewModel.maxOpenedResource.value),
             getString(R.string.number_of_resources_opened) to Utilities.checkNA(viewModel.numberOfResourceOpen)
         )
     }

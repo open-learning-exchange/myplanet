@@ -4,6 +4,7 @@ import android.content.res.Configuration
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -26,7 +27,9 @@ import org.ole.planet.myplanet.model.RealmUserModel
 class JoinedMemberFragment : BaseMemberFragment() {
     private var memberChangeListener: MemberChangeListener = object : MemberChangeListener {
         override fun onMemberChanged() {
-            // fallback listener to prevent crash
+            viewLifecycleOwner.lifecycleScope.launch {
+                loadAndDisplayJoinedMembers()
+            }
         }
     }
     private var adapterJoined: AdapterJoinedMember? = null
@@ -58,21 +61,19 @@ class JoinedMemberFragment : BaseMemberFragment() {
                         getString(R.string.no_visit)
                     }
                     val visitCount = RealmTeamLog.getVisitCount(realm, member.name, teamId)
-                    val offlineVisits = profileDbHandler?.getOfflineVisits(member)?.toString() ?: "0"
-                    val profileLastVisit = profileDbHandler?.getLastVisit(member) ?: ""
-                    JoinedMemberData(
-                        member,
-                        visitCount,
-                        lastVisitDate,
-                        offlineVisits,
-                        profileLastVisit,
-                        member.id == leaderId
+                    val offlineVisits = "${profileDbHandler.getOfflineVisits(member)}"
+                    val profileLastVisit = profileDbHandler.getLastVisit(member)
+                    JoinedMemberData(member, visitCount, lastVisitDate, offlineVisits,
+                        profileLastVisit, member.id == leaderId
                     )
                 }
             }
         }
         cachedJoinedMembers = joinedMembersData
-        adapterJoined?.updateMembers(joinedMembersData)
+        val currentUserId = user?.id
+        val isLoggedInUserLeader = joinedMembersData.any { it.user.id == currentUserId && it.isLeader }
+
+        adapterJoined?.updateData(joinedMembersData, isLoggedInUserLeader)
         showNoData(binding.tvNodata, joinedMembersData.size, "members")
     }
 
@@ -96,9 +97,7 @@ class JoinedMemberFragment : BaseMemberFragment() {
                 val currentUserId = user?.id
                 val isLeader = members.any { it.user.id == currentUserId && it.isLeader }
                 adapterJoined = AdapterJoinedMember(
-                    requireActivity(),
-                    members.toMutableList(),
-                    isLeader,
+                    requireActivity(), members.toMutableList(), isLeader, currentUserId,
                     object : AdapterJoinedMember.MemberActionListener {
                         override fun onRemoveMember(member: JoinedMemberData, position: Int) {
                             handleRemoveMember(member)
@@ -107,11 +106,51 @@ class JoinedMemberFragment : BaseMemberFragment() {
                         override fun onMakeLeader(member: JoinedMemberData) {
                             member.user.id?.let { handleMakeLeader(it) }
                         }
+
+                        override fun onLeaveTeam() {
+                            handleLeaveTeam()
+                        }
                     }
                 )
             }
             return adapterJoined as AdapterJoinedMember
         }
+
+    private fun handleLeaveTeam() {
+        AlertDialog.Builder(requireContext())
+            .setMessage(R.string.confirm_exit)
+            .setPositiveButton(R.string.yes) { _, _ ->
+                val currentUser = user
+                viewLifecycleOwner.lifecycleScope.launch {
+                    try {
+                        val nextLeaderId = databaseService.withRealm { realm ->
+                            getNextOfKinSync(realm)?.id
+                        }
+
+                        if (nextLeaderId != null) {
+                            databaseService.executeTransactionAsync { realm ->
+                                makeLeaderSync(realm, nextLeaderId)
+                            }
+                        }
+
+                        currentUser?.id?.let { userId ->
+                            teamRepository.removeMember(teamId, userId)
+                        }
+
+                        loadAndDisplayJoinedMembers()
+                        memberChangeListener.onMemberChanged()
+
+                        Toast.makeText(requireContext(), getString(R.string.left_team), Toast.LENGTH_SHORT).show()
+
+                        requireActivity().supportFragmentManager.popBackStack()
+                    } catch (e: Exception) {
+                        Toast.makeText(requireContext(), "Error leaving team: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+            .setNegativeButton(R.string.no, null)
+            .show()
+    }
 
     override val layoutManager: RecyclerView.LayoutManager
         get() {
