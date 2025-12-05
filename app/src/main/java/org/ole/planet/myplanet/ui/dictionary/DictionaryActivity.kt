@@ -105,27 +105,36 @@ class DictionaryActivity : BaseActivity() {
 
     private fun setClickListener() {
         fragmentDictionaryBinding.btnSearch.setOnClickListener {
-            databaseService.withRealm { realm ->
-                val dict = realm.where(RealmDictionary::class.java)
-                    .equalTo(
-                        "word",
-                        fragmentDictionaryBinding.etSearch.text.toString(),
-                        Case.INSENSITIVE
-                    )
-                    .findFirst()
-                if (dict != null) {
-                    fragmentDictionaryBinding.tvResult.text = HtmlCompat.fromHtml(
-                        "Definition of '<b>" + dict.word + "</b>'<br/><br/>\n " +
-                            "<b>" + dict.definition + "\n</b><br/><br/><br/>" +
-                            "<b>Synonym : </b>" + dict.synonym + "\n<br/><br/>" +
-                            "<b>Antonoym : </b>" + dict.antonym + "\n<br/>",
-                        HtmlCompat.FROM_HTML_MODE_LEGACY
-                    )
-                } else {
-                    Utilities.toast(
-                        this,
-                        getString(R.string.word_not_available_in_our_database)
-                    )
+            lifecycleScope.launch {
+                try {
+                    val searchString = fragmentDictionaryBinding.etSearch.text.toString()
+                    val result = withContext(Dispatchers.IO) {
+                        databaseService.withRealm { realm ->
+                            realm.where(RealmDictionary::class.java)
+                                .equalTo("word", searchString, Case.INSENSITIVE)
+                                .findFirst()
+                                ?.let { realm.copyFromRealm(it) }
+                        }
+                    }
+
+                    withContext(Dispatchers.Main) {
+                        if (result != null) {
+                            fragmentDictionaryBinding.tvResult.text = HtmlCompat.fromHtml(
+                                "Definition of '<b>" + result.word + "</b>'<br/><br/>\n " +
+                                        "<b>" + result.definition + "\n</b><br/><br/><br/>" +
+                                        "<b>Synonym : </b>" + result.synonym + "\n<br/><br/>" +
+                                        "<b>Antonoym : </b>" + result.antonym + "\n<br/>",
+                                HtmlCompat.FROM_HTML_MODE_LEGACY
+                            )
+                        } else {
+                            Utilities.toast(
+                                this@DictionaryActivity,
+                                getString(R.string.word_not_available_in_our_database)
+                            )
+                        }
+                    }
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    // Lifecycle cancellation. No action needed.
                 }
             }
         }
