@@ -25,6 +25,7 @@ class SubmissionListFragment : Fragment() {
     private var parentId: String? = null
     private var examTitle: String? = null
     private var userId: String? = null
+    private lateinit var adapter: SubmissionListAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,7 +44,10 @@ class SubmissionListFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.tvTitle.text = examTitle ?: "Submissions"
+        val listener = activity as? OnHomeItemClickListener
+        adapter = SubmissionListAdapter(requireContext(), databaseService, listener)
         setupRecyclerView()
+        binding.rvSubmissions.adapter = adapter
         loadSubmissions()
     }
 
@@ -66,14 +70,7 @@ class SubmissionListFragment : Fragment() {
                 .equalTo("userId", userId)
                 .sort("lastUpdateTime", Sort.DESCENDING)
                 .findAll()
-            val listener = activity as? OnHomeItemClickListener
-            val adapter = SubmissionListAdapter(
-                requireContext(),
-                submissions.toList(),
-                databaseService,
-                listener
-            )
-            binding.rvSubmissions.adapter = adapter
+            adapter.submitList(submissions.toList())
             binding.btnDownloadReport.setOnClickListener {
                 generateReport(submissions.toList())
             }
