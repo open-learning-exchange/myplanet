@@ -26,25 +26,19 @@ interface ApiInterface {
     fun getDocuments(@Header("Authorization") header: String?, @Url url: String?): Call<DocumentResponse>
 
     @GET
-    fun getJsonObject(@Header("Authorization") header: String?, @Url url: String?): Call<JsonObject>
-
-    @GET
-    suspend fun getJsonObjectSuspended(@Header("Authorization") header: String?, @Url url: String?): Response<JsonObject>
+    suspend fun getJsonObject(@Header("Authorization") header: String?, @Url url: String?): Response<JsonObject>
 
     @POST
     fun findDocs(@Header("Authorization") header: String?, @Header("Content-Type") c: String?, @Url url: String?, @Body s: JsonObject?): Call<JsonObject>
 
     @POST
-    fun postDoc(@Header("Authorization") header: String?, @Header("Content-Type") c: String?, @Url url: String?, @Body s: JsonObject?): Call<JsonObject>
-
-    @POST
-    suspend fun postDocSuspend(@Header("Authorization") header: String?, @Header("Content-Type") c: String?, @Url url: String?, @Body s: JsonObject?): Response<JsonObject>
+    suspend fun postDoc(@Header("Authorization") header: String?, @Header("Content-Type") c: String?, @Url url: String?, @Body s: JsonObject?): Response<JsonObject>
 
     @PUT
     fun uploadResource(@HeaderMap headerMap: Map<String, String>, @Url url: String?, @Body body: RequestBody?): Call<JsonObject>
 
     @PUT
-    fun putDoc(@Header("Authorization") header: String?, @Header("Content-Type") c: String?, @Url url: String?, @Body s: JsonObject?): Call<JsonObject>
+    suspend fun putDoc(@Header("Authorization") header: String?, @Header("Content-Type") c: String?, @Url url: String?, @Body s: JsonObject?): Response<JsonObject>
 
     @GET
     suspend fun checkVersion(@Url serverUrl: String?): Response<MyPlanet>

@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -67,9 +68,15 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
 
     @Inject
     lateinit var userRepository: UserRepository
+    private var uploadJob: Job? = null
     lateinit var settings: SharedPreferences
     val customProgressDialog: DialogUtils.CustomProgressDialog by lazy {
         DialogUtils.CustomProgressDialog(this)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        uploadJob?.cancel()
     }
 
     @JvmField
@@ -182,19 +189,20 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
 
     fun startUpload(source: String, userName: String? = null, securityCallback: SecurityDataCallback? = null) {
         if (source == "becomeMember") {
-            uploadToShelfService.uploadSingleUserData(userName, object : SuccessListener {
-                override fun onSuccess(success: String?) {
-                    uploadToShelfService.uploadSingleUserHealth("org.couchdb.user:${userName}", object : SuccessListener {
-                        override fun onSuccess(success: String?) {
-                            userName?.let { name ->
-                                fetchAndLogUserSecurityData(name, securityCallback)
-                            } ?: run {
-                                securityCallback?.onSecurityDataUpdated()
-                            }
-                        }
-                    })
+            lifecycleScope.launch {
+                try {
+                    uploadToShelfService.uploadSingleUserData(userName)
+                    uploadToShelfService.uploadSingleUserHealth("org.couchdb.user:${userName}")
+                    userName?.let { name ->
+                        fetchAndLogUserSecurityData(name, securityCallback)
+                    } ?: run {
+                        securityCallback?.onSecurityDataUpdated()
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    securityCallback?.onSecurityDataUpdated()
                 }
-            })
+            }
             return
         } else if (source == "login") {
             lifecycleScope.launch(Dispatchers.IO) {
@@ -205,7 +213,7 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         customProgressDialog.setText(this.getString(R.string.uploading_data_to_server_please_wait))
         customProgressDialog.show()
 
-        lifecycleScope.launch {
+        uploadJob = lifecycleScope.launch {
             val asyncOperationsCounter = AtomicInteger(0)
             val totalAsyncOperations = 6
 
@@ -233,9 +241,15 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
             uploadManager.uploadSubmissions()
             uploadManager.uploadCrashLog()
 
-            uploadToShelfService.uploadUserData {
-                uploadToShelfService.uploadHealth()
-                checkAllOperationsComplete()
+            lifecycleScope.launch {
+                try {
+                    uploadToShelfService.uploadUserData()
+                    uploadToShelfService.uploadHealth()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                } finally {
+                    checkAllOperationsComplete()
+                }
             }
 
             uploadManager.uploadUserActivities(object : SuccessListener {
@@ -331,7 +345,7 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
             try {
                 val apiInterface = client?.create(ApiInterface::class.java)
                 val userDocUrl = "${UrlUtils.getUrl()}/tablet_users/org.couchdb.user:$name"
-                val response = apiInterface?.getJsonObject(UrlUtils.header, userDocUrl)?.execute()
+                val response = apiInterface?.getJsonObject(UrlUtils.header, userDocUrl)
 
                 if (response?.isSuccessful == true && response.body() != null) {
                     val userDoc = response.body()
