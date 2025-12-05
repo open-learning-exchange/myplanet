@@ -454,6 +454,7 @@ class MyHealthFragment : Fragment() {
                             json.get("createdBy")?.asString
                         }
                     }.distinct()
+
                     val userMap = withContext(Dispatchers.IO) {
                         if (userIds.isEmpty()) {
                             emptyMap<String, RealmUserModel>()
