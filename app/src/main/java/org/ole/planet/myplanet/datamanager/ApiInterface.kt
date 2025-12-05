@@ -46,6 +46,9 @@ interface ApiInterface {
     @PUT
     fun putDoc(@Header("Authorization") header: String?, @Header("Content-Type") c: String?, @Url url: String?, @Body s: JsonObject?): Call<JsonObject>
 
+    @PUT
+    suspend fun putDocSuspend(@Header("Authorization") header: String?, @Header("Content-Type") c: String?, @Url url: String?, @Body s: JsonObject?): Response<JsonObject>
+
     @GET
     suspend fun checkVersion(@Url serverUrl: String?): Response<MyPlanet>
 
