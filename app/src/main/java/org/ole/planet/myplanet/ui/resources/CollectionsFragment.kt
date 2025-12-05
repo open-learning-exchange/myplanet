@@ -7,32 +7,25 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CompoundButton
-import android.widget.Toast
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Locale
-import javax.inject.Inject
 import kotlin.collections.ArrayList
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.TagClickListener
 import org.ole.planet.myplanet.databinding.FragmentCollectionsBinding
 import org.ole.planet.myplanet.model.RealmTag
-import org.ole.planet.myplanet.repository.TagRepository
 import org.ole.planet.myplanet.utilities.KeyboardUtils
-
 
 @AndroidEntryPoint
 class CollectionsFragment : DialogFragment(), TagExpandableAdapter.OnClickTagItem, CompoundButton.OnCheckedChangeListener {
     private var _binding: FragmentCollectionsBinding? = null
     private val binding get() = _binding!!
-    @Inject
-    lateinit var tagRepository: TagRepository
     private val viewModel: CollectionsViewModel by viewModels()
     private lateinit var list: List<RealmTag>
     private var filteredList: ArrayList<RealmTag> = ArrayList()
@@ -56,9 +49,9 @@ class CollectionsFragment : DialogFragment(), TagExpandableAdapter.OnClickTagIte
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        viewModel.getTags(dbType)
         observeViewModel()
         setListeners()
+        viewModel.fetchTags(dbType)
     }
 
     private fun setListeners() {
@@ -92,27 +85,27 @@ class CollectionsFragment : DialogFragment(), TagExpandableAdapter.OnClickTagIte
 
     private fun observeViewModel() {
         viewLifecycleOwner.lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.uiState.collect { uiState ->
-                    when (uiState) {
-                        is UiState.Loading -> {
-                            binding.loadingIndicator.visibility = View.VISIBLE
-                        }
-                        is UiState.Success -> {
-                            binding.loadingIndicator.visibility = View.GONE
-                            list = uiState.tags
-                            selectedItemsList = ArrayList(recentList)
-                            binding.listTags.setGroupIndicator(null)
-                            adapter = TagExpandableAdapter(list, uiState.childMap, selectedItemsList)
-                            adapter.setSelectMultiple(true)
-                            adapter.setClickListener(this@CollectionsFragment)
-                            binding.listTags.setAdapter(adapter)
-                            binding.btnOk.visibility = View.VISIBLE
-                        }
-                        is UiState.Error -> {
-                            binding.loadingIndicator.visibility = View.GONE
-                            Toast.makeText(requireContext(), uiState.message, Toast.LENGTH_LONG).show()
-                        }
+            viewModel.uiState.collectLatest { state ->
+                when (state) {
+                    is CollectionsUiState.Loading -> {
+                        binding.loadingProgressBar.visibility = View.VISIBLE
+                        binding.listTags.visibility = View.GONE
+                    }
+                    is CollectionsUiState.Success -> {
+                        binding.loadingProgressBar.visibility = View.GONE
+                        binding.listTags.visibility = View.VISIBLE
+                        list = state.tags
+                        selectedItemsList = ArrayList(recentList)
+                        binding.listTags.setGroupIndicator(null)
+                        adapter = TagExpandableAdapter(list, state.childMap, selectedItemsList)
+                        adapter.setSelectMultiple(true)
+                        adapter.setClickListener(this@CollectionsFragment)
+                        binding.listTags.setAdapter(adapter)
+                        binding.btnOk.visibility = View.VISIBLE
+                    }
+                    is CollectionsUiState.Error -> {
+                        binding.loadingProgressBar.visibility = View.GONE
+                        binding.listTags.visibility = View.GONE
                     }
                 }
             }
