@@ -83,7 +83,13 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         viewLifecycleOwner.lifecycleScope.launch {
-            currentCourse = mRealm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
+            currentCourse = withContext(Dispatchers.IO) {
+                databaseService.withRealm { realm ->
+                    realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()?.let {
+                        realm.copyFromRealm(it)
+                    }
+                }
+            }
             binding.tvCourseTitle.text = currentCourse?.courseTitle
             steps = courseRepository.getCourseSteps(courseId)
             if (steps.isEmpty()) {
@@ -207,7 +213,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             }
             
             val detachedUserModel = userModel
-            val detachedCurrentCourse = currentCourse?.let { mRealm.copyFromRealm(it) }
+            val detachedCurrentCourse = currentCourse
 
             withContext(Dispatchers.IO) {
                 val backgroundRealm = databaseService.realmInstance
@@ -317,15 +323,21 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private fun addRemoveCourse() {
-        if (!mRealm.isInTransaction) mRealm.beginTransaction()
-        if (currentCourse?.userId?.contains(userModel?.id) == true) {
-            currentCourse?.removeUserId(userModel?.id)
-            onRemove(mRealm, "courses", userModel?.id, courseId)
-        } else {
-            currentCourse?.setUserId(userModel?.id)
-            onAdd(mRealm, "courses", userModel?.id, courseId)
+        val isJoining = currentCourse?.userId?.contains(userModel?.id) != true
+        mRealm.executeTransaction { realm ->
+            val managedCourse = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
+            managedCourse?.let { course ->
+                if (isJoining) {
+                    course.setUserId(userModel?.id)
+                    onAdd(realm, "courses", userModel?.id, courseId)
+                } else {
+                    course.removeUserId(userModel?.id)
+                    onRemove(realm, "courses", userModel?.id, courseId)
+                }
+                currentCourse = realm.copyFromRealm(course)
+            }
         }
-        Utilities.toast(activity, "course ${(if (currentCourse?.userId?.contains(userModel?.id) == true) {
+        Utilities.toast(activity, "course ${(if (isJoining) {
             getString(R.string.added_to)
         } else {
             getString(R.string.removed_from)
