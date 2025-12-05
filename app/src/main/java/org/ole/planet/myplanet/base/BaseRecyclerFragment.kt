@@ -103,9 +103,31 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     private fun initDeleteButton() {
-        tvDelete?.let {
-            it.visibility = View.VISIBLE
-            it.setOnClickListener { deleteSelected(false) }
+        tvDelete?.setOnClickListener {
+            if (selectedItems.isNullOrEmpty()) {
+                toast(requireContext(), getString(R.string.no_items_selected_for_deletion))
+                return@setOnClickListener
+            }
+
+            AlertDialog.Builder(requireContext())
+                .setTitle(R.string.delete_confirmation)
+                .setMessage(R.string.are_you_sure_you_want_to_delete_selected_items)
+                .setPositiveButton(R.string.delete) { _, _ ->
+                    prgDialog.show()
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        try {
+                            deleteSelected(false)
+                            toast(requireContext(), getString(R.string.items_deleted_successfully))
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                            toast(requireContext(), getString(R.string.error_deleting_items))
+                        } finally {
+                            prgDialog.dismiss()
+                        }
+                    }
+                }
+                .setNegativeButton(R.string.cancel, null)
+                .show()
         }
     }
 
@@ -187,43 +209,53 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
-    fun deleteSelected(deleteProgress: Boolean) {
-        selectedItems?.forEach { item ->
-            try {
-                if (!mRealm.isInTransaction) {
-                    mRealm.beginTransaction()
+    suspend fun deleteSelected(deleteProgress: Boolean) {
+        val itemsToDelete = selectedItems?.mapNotNull { it as? RealmObject } ?: emptyList()
+        if (itemsToDelete.isEmpty()) return
+
+        databaseService.executeTransactionAsync { realm ->
+            itemsToDelete.forEach { obj ->
+                if (deleteProgress && obj is RealmMyCourse) {
+                    realm.where(RealmCourseProgress::class.java).equalTo("courseId", obj.courseId).findAll().deleteAllFromRealm()
+                    val examList = realm.where(RealmStepExam::class.java).equalTo("courseId", obj.courseId).findAll()
+                    examList.forEach { exam ->
+                        realm.where(RealmSubmission::class.java)
+                            .equalTo("parentId", exam.id)
+                            .notEqualTo("type", "survey")
+                            .equalTo("uploaded", false)
+                            .findAll()
+                            .deleteAllFromRealm()
+                    }
                 }
-                val `object` = item as RealmObject
-                deleteCourseProgress(deleteProgress, `object`)
-                removeFromShelf(`object`)
-                if (mRealm.isInTransaction) {
-                    mRealm.commitTransaction()
+
+                if (obj is RealmMyLibrary) {
+                    val myObject = realm.where(RealmMyLibrary::class.java).equalTo("resourceId", obj.resourceId).findFirst()
+                    myObject?.removeUserId(model?.id)
+                    model?.id?.let { userId ->
+                        obj.resourceId?.let { resourceId ->
+                            RealmRemovedLog.onRemove(realm, "resources", userId, resourceId)
+                        }
+                    }
+                } else if (obj is RealmMyCourse) {
+                    val myObject = realm.where(RealmMyCourse::class.java).equalTo("courseId", obj.courseId).findFirst()
+                    myObject?.removeUserId(model?.id)
+                    model?.id?.let { userId ->
+                        obj.courseId?.let { courseId ->
+                            RealmRemovedLog.onRemove(realm, "courses", userId, courseId)
+                        }
+                    }
                 }
-            } catch (e: Exception) {
-                if (mRealm.isInTransaction) {
-                    mRealm.cancelTransaction()
-                }
-                throw e
             }
         }
-        recyclerView.adapter = getAdapter()
-        showNoData(tvMessage, getAdapter().itemCount, "")
+
+        selectedItems?.clear()
+        val adapter = getAdapter()
+        (adapter as? RecyclerView.Adapter)?.notifyDataSetChanged()
+        showNoData(tvMessage, adapter.itemCount, "")
     }
 
     fun countSelected(): Int {
         return selectedItems?.size ?: 0
-    }
-
-    private fun deleteCourseProgress(deleteProgress: Boolean, `object`: RealmObject) {
-        if (deleteProgress && `object` is RealmMyCourse) {
-            mRealm.where(RealmCourseProgress::class.java).equalTo("courseId", `object`.courseId).findAll().deleteAllFromRealm()
-            val examList: List<RealmStepExam> = mRealm.where(RealmStepExam::class.java).equalTo("courseId", `object`.courseId).findAll()
-            for (exam in examList) {
-                mRealm.where(RealmSubmission::class.java).equalTo("parentId", exam.id)
-                    .notEqualTo("type", "survey").equalTo("uploaded", false).findAll()
-                    .deleteAllFromRealm()
-            }
-        }
     }
 
     private fun checkAndAddToList(course: RealmMyCourse?, courses: MutableList<RealmMyCourse>, tags: List<RealmTag>) {

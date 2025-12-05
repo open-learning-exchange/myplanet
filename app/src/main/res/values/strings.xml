@@ -1177,4 +1177,9 @@
     <string name="saving">Saving…</string>
     <string name="achievement_saved">Achievement Updated</string>
 
+    <string name="are_you_sure_you_want_to_delete_selected_items">Are you sure you want to delete selected items?</string>
+    <string name="items_deleted_successfully">Items deleted successfully</string>
+    <string name="error_deleting_items">Error deleting items</string>
+    <string name="no_items_selected_for_deletion">No items selected for deletion</string>
+    <string name="delete_confirmation">Delete Confirmation</string>
 </resources>

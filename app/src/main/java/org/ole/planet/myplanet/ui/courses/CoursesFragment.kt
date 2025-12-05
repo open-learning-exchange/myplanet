@@ -322,10 +322,14 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             }
             alertDialogBuilder.setMessage(message)
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                    deleteSelected(true)
-                    val newFragment = CoursesFragment()
-                    recreateFragment(newFragment)
-                    checkList()
+                    prgDialog.show()
+                    lifecycleScope.launch {
+                        try {
+                            deleteSelected(true)
+                        } finally {
+                            prgDialog.dismiss()
+                        }
+                    }
                 }
                 .setNegativeButton(R.string.no, null).show()
         }
@@ -339,10 +343,14 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             }
             alertDialogBuilder.setMessage(message)
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                    deleteSelected(true)
-                    val newFragment = CoursesFragment()
-                    recreateFragment(newFragment)
-                    checkList()
+                    prgDialog.show()
+                    lifecycleScope.launch {
+                        try {
+                            deleteSelected(true)
+                        } finally {
+                            prgDialog.dismiss()
+                        }
+                    }
                 }
                 .setNegativeButton(R.string.no, null).show()
         }
