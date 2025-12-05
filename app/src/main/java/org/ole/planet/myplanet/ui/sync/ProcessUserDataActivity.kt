@@ -327,11 +327,11 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
     }
 
     fun fetchAndLogUserSecurityData(name: String, securityCallback: SecurityDataCallback? = null) {
-        lifecycleScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch {
             try {
                 val apiInterface = client?.create(ApiInterface::class.java)
                 val userDocUrl = "${UrlUtils.getUrl()}/tablet_users/org.couchdb.user:$name"
-                val response = apiInterface?.getJsonObject(UrlUtils.header, userDocUrl)?.execute()
+                val response = apiInterface?.getUser(UrlUtils.header, userDocUrl)
 
                 if (response?.isSuccessful == true && response.body() != null) {
                     val userDoc = response.body()
