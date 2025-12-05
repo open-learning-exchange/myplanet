@@ -740,25 +740,58 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             return
         }
 
-        if (!mRealm.isInTransaction) {
-            mRealm.refresh()
-        }
-        val map = getRatings(mRealm, "course", model?.id)
-        val progressMap = getCourseProgress(mRealm, model?.id)
+        val search = etSearch.text.toString()
+        val tags = searchTags.toList()
+        val grade = gradeLevel
+        val subject = subjectLevel
+        val userId = model?.id
 
-        val filteredCourseList = if (etSearch.text.toString().isEmpty() && searchTags.isEmpty() && gradeLevel.isEmpty() && subjectLevel.isEmpty()) {
-            getFullCourseList()
-        } else {
-            filterCourseByTag(etSearch.text.toString(), searchTags)
-        }
+        viewLifecycleOwner.lifecycleScope.launch {
+            val (map, progressMap, copiedList) = withContext(Dispatchers.IO) {
+                io.realm.Realm.getDefaultInstance().use { realm ->
+                    val ratingsMap = getRatings(realm, "course", userId)
+                    val courseProgressMap = getCourseProgress(realm, userId)
+                    val isFilterApplied = search.isNotEmpty() || tags.isNotEmpty() || grade.isNotEmpty() || subject.isNotEmpty()
 
-        adapterCourses = AdapterCourses(
-            requireActivity(), filteredCourseList, map, userProfileDbHandler,
-            tagRepository, this@CoursesFragment
-        )
-        adapterCourses.setProgressMap(progressMap)
-        adapterCourses.setListener(this)
-        adapterCourses.setRatingChangeListener(this)
-        recyclerView.adapter = adapterCourses
+                    val results = if (!isFilterApplied) {
+                        realm.where(RealmMyCourse::class.java).findAll()
+                    } else {
+                        var query = realm.where(RealmMyCourse::class.java)
+                        if (search.isNotEmpty()) {
+                            query = query.contains("courseTitle", search, io.realm.Case.INSENSITIVE)
+                        }
+                        if (grade.isNotEmpty()) {
+                            query = query.equalTo("gradeLevel", grade)
+                        }
+                        if (subject.isNotEmpty()) {
+                            query = query.equalTo("subjectLevel", subject)
+                        }
+                        if (tags.isNotEmpty()) {
+                            val tagNames = tags.map { it.name }.toTypedArray()
+                            query = query.`in`("tags.name", tagNames)
+                        }
+                        query.findAll()
+                    }
+
+                    val sortedList = results
+                        .filter { !it.courseTitle.isNullOrBlank() }
+                        .sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
+
+                    val copiedCourses = realm.copyFromRealm(sortedList)
+                    Triple(ratingsMap, courseProgressMap, copiedCourses)
+                }
+            }
+
+            withContext(Dispatchers.Main) {
+                adapterCourses = AdapterCourses(
+                    requireActivity(), copiedList, map, userProfileDbHandler,
+                    tagRepository, this@CoursesFragment
+                )
+                adapterCourses.setProgressMap(progressMap)
+                adapterCourses.setListener(this@CoursesFragment)
+                adapterCourses.setRatingChangeListener(this@CoursesFragment)
+                recyclerView.adapter = adapterCourses
+            }
+        }
     }
 }
