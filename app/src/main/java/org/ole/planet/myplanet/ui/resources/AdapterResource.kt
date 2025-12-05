@@ -182,10 +182,6 @@ class AdapterResource(
         onSelectedListChangeListener?.invoke(selectedItems)
     }
 
-    fun areAllSelected(): Boolean {
-        return selectedItems.size == libraryList.size
-    }
-
     private fun openLibrary(library: LibraryItem) {
         onItemClickListener?.invoke(library)
     }

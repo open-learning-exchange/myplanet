@@ -44,7 +44,6 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmTag.Companion.getTagsArray
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.dto.LibraryItem
-import org.ole.planet.myplanet.repository.LibraryRepository
 import org.ole.planet.myplanet.repository.TagRepository
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
@@ -89,9 +88,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     @Inject
     lateinit var tagRepository: TagRepository
-
-    @Inject
-    lateinit var libraryRepository: LibraryRepository
 
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
@@ -194,9 +190,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
                 val filteredLibraryList: List<LibraryItem> =
                     if (currentSearchTags.isEmpty() && searchQuery.isEmpty()) {
-                        applyFilter(libraryItems)
+                        applyFilterToLibraryItems(libraryItems)
                     } else {
-                        applyFilter(filterLibraryByTag(searchQuery, currentSearchTags))
+                        applyFilterToLibraryItems(filterLibraryItemsByTag(searchQuery, currentSearchTags))
                     }
 
                 adapterLibrary.setLibraryList(filteredLibraryList)
@@ -210,7 +206,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
     }
 
-    private fun filterLibraryByTag(query: String, tags: List<RealmTag>): List<LibraryItem> {
+    private fun filterLibraryItemsByTag(query: String, tags: List<RealmTag>): List<LibraryItem> {
         var list = libraryItems
         if (tags.isNotEmpty()) {
             list = list.filter { item ->
@@ -227,7 +223,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         return list
     }
 
-    private fun applyFilter(list: List<LibraryItem>): List<LibraryItem> {
+    private fun applyFilterToLibraryItems(list: List<LibraryItem>): List<LibraryItem> {
          var filteredList = list
         if (subjects.isNotEmpty()) {
             filteredList = filteredList.filter { item ->
@@ -274,10 +270,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             lifecycleScope.launch {
                  val tagId = tagItem.id
                  val realmTag = withContext(Dispatchers.IO) {
-                     // Safe access using databaseService if needed, but here we query by ID
-                     // Using a query to fetch the tag and copy it from realm.
-                     // Assuming mRealm is available but it is on Main thread. We cannot use it here!
-                     // We must use databaseService.withRealm or similar.
                      databaseService.withRealm { realm ->
                          realm.where(RealmTag::class.java).equalTo("id", tagId).findFirst()?.let { realm.copyFromRealm(it) }
                      }
@@ -329,19 +321,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
              withContext(Dispatchers.IO) {
                  itemsToDelete.forEach { item ->
                      item.resourceId?.let { resourceId ->
-                         // Remove user ID from the resource
                          libraryRepository.updateUserLibrary(resourceId, userId, isAdd = false)
-                         // Also handle progress deletion if needed. Base class logic for progress deletion is complex
-                         // and coupled to RealmObject.
-                         // "deleteCourseProgress" and "removeFromShelf" in base class.
-                         // libraryRepository.updateUserLibrary(..., isAdd=false) effectively removes from shelf (userId removal).
-                         // Progress deletion:
-                         // if (deleteProgress) { ... }
-                         // I should add a method to LibraryRepository to delete progress if I want to fully support it.
-                         // But usually removing from library doesn't delete progress unless explicit?
-                         // Base implementation deletes progress if 'deleteProgress' is true.
-                         // I will skip progress deletion implementation for now as it requires Course/Submission repositories updates,
-                         // or assume 'removeFromShelf' (userId removal) is the main goal here for "Delete" button which usually just removes from My Library.
                      }
                  }
              }
@@ -408,8 +388,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             if (selectedLibraryItems.isNotEmpty()) {
                 confirmation = createAlertDialog()
                 confirmation?.show()
-                addToMyList() // Calls override
-                // selectedItems clear handled in addToMyList
+                addSelectedItemsToMyList()
                 tvAddToLib.isEnabled = false
                 checkList()
             }
@@ -421,10 +400,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             AlertDialog.Builder(this.context, R.style.AlertDialogTheme)
                 .setMessage(R.string.confirm_removal)
                 .setPositiveButton(R.string.yes) { _, _ ->
-                    deleteSelected(true) // Calls override
-                    // Recreate fragment logic might be needed to refresh UI fully if list changes
-                    // Base implementation recreates fragment? No, it sets adapter.
-                    // My override calls refreshResourcesData().
+                    deleteSelectedItems()
                 }
                 .setNegativeButton(R.string.no, null).show()
         }
@@ -435,8 +411,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
                 adapterLibrary.setLibraryList(
-                    applyFilter(
-                        filterLibraryByTag(
+                    applyFilterToLibraryItems(
+                        filterLibraryItemsByTag(
                             etSearch.text.toString().trim(), searchTags
                         )
                     )
@@ -582,7 +558,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             mediums.clear()
             subjects.clear()
             languages.clear()
-            adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag("", searchTags)))
+            adapterLibrary.setLibraryList(applyFilterToLibraryItems(filterLibraryItemsByTag("", searchTags)))
             showNoData(tvMessage, adapterLibrary.itemCount, "resources")
         }
     }
@@ -603,7 +579,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         chipCloud.setDeleteListener(this)
         if (!searchTags.contains(realmTag)) searchTags.add(realmTag)
         chipCloud.addChips(searchTags)
-        adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.text.toString(), searchTags)))
+        adapterLibrary.setLibraryList(applyFilterToLibraryItems(filterLibraryItemsByTag(etSearch.text.toString(), searchTags)))
         showTagText(searchTags, tvSelected)
         showNoData(tvMessage, adapterLibrary.itemCount, "resources")
     }
@@ -614,14 +590,14 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         li.add(tag)
         searchTags = li
         tvSelected.text = getString(R.string.tag_selected, tag.name)
-        adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.text.toString(), li)))
+        adapterLibrary.setLibraryList(applyFilterToLibraryItems(filterLibraryItemsByTag(etSearch.text.toString(), li)))
         showNoData(tvMessage, adapterLibrary.itemCount, "resources")
     }
 
     override fun onOkClicked(list: List<RealmTag>?) {
         if (list?.isEmpty() == true) {
             searchTags.clear()
-            adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.text.toString(), searchTags)))
+            adapterLibrary.setLibraryList(applyFilterToLibraryItems(filterLibraryItemsByTag(etSearch.text.toString(), searchTags)))
             showNoData(tvMessage, adapterLibrary.itemCount, "resources")
         } else {
             for (tag in list ?: emptyList()) {
@@ -643,7 +619,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     override fun chipDeleted(i: Int, s: String) {
         searchTags.removeAt(i)
-        adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.text.toString(), searchTags)))
+        adapterLibrary.setLibraryList(applyFilterToLibraryItems(filterLibraryItemsByTag(etSearch.text.toString(), searchTags)))
         showNoData(tvMessage, adapterLibrary.itemCount, "resources")
     }
 
@@ -652,7 +628,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         this.languages = languages
         this.mediums = mediums
         this.levels = levels
-        adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.text.toString().trim { it <= ' ' }, searchTags)))
+        adapterLibrary.setLibraryList(applyFilterToLibraryItems(filterLibraryItemsByTag(etSearch.text.toString().trim { it <= ' ' }, searchTags)))
         showNoData(tvMessage, adapterLibrary.itemCount, "resources")
     }
 

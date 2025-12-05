@@ -6,6 +6,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onAdd
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onRemove
+import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.dto.LibraryItem
 import org.ole.planet.myplanet.model.dto.TagItem
 
@@ -18,28 +19,41 @@ class LibraryRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getLibraryItems(): List<LibraryItem> {
-        return queryList(RealmMyLibrary::class.java).map {
-            LibraryItem(
-                id = it.id,
-                _id = it._id,
-                _rev = it._rev,
-                title = it.title,
-                description = it.description,
-                timesRated = it.timesRated,
-                averageRating = it.averageRating,
-                createdDate = it.createdDate,
-                uploadDate = it.uploadDate,
-                resourceOffline = it.isResourceOffline(),
-                resourceId = it.resourceId,
-                resourceLocalAddress = it.resourceLocalAddress,
-                filename = it.filename,
-                mediaType = it.mediaType,
-                language = it.language,
-                subject = it.subject?.toList(),
-                level = it.level?.toList(),
-                userId = it.userId?.toList(),
-                tags = it.tag?.map { tag -> TagItem(tag.id, tag._id, tag.name) } ?: emptyList()
-            )
+        return withRealm { realm ->
+            val libs = realm.where(RealmMyLibrary::class.java).findAll()
+            val linkTags = realm.where(RealmTag::class.java).equalTo("db", "resources").isNotNull("linkId").findAll()
+            val allTags = realm.where(RealmTag::class.java).isNotNull("name").findAll()
+
+            val tagMap = allTags.associate { it.id to TagItem(it.id, it._id, it.name) }
+
+            val resourceTagMap = linkTags.groupBy { it.linkId }
+                .mapValues { entry ->
+                    entry.value.mapNotNull { linkTag -> tagMap[linkTag.tagId] }
+                }
+
+            libs.map { it ->
+                LibraryItem(
+                    id = it.id,
+                    _id = it._id,
+                    _rev = it._rev,
+                    title = it.title,
+                    description = it.description,
+                    timesRated = it.timesRated,
+                    averageRating = it.averageRating,
+                    createdDate = it.createdDate,
+                    uploadDate = it.uploadDate,
+                    resourceOffline = it.isResourceOffline(),
+                    resourceId = it.resourceId,
+                    resourceLocalAddress = it.resourceLocalAddress,
+                    filename = it.filename,
+                    mediaType = it.mediaType,
+                    language = it.language,
+                    subject = it.subject?.toList(),
+                    level = it.level?.toList(),
+                    userId = it.userId?.toList(),
+                    tags = resourceTagMap[it.resourceId] ?: emptyList()
+                )
+            }
         }
     }
 
