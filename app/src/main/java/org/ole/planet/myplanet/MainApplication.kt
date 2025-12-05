@@ -26,6 +26,7 @@ import javax.inject.Provider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -89,6 +90,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             return "0"
         }
         lateinit var applicationScope: CoroutineScope
+        val apiClientInitialized = CompletableDeferred<Unit>()
 
         fun createLog(type: String, error: String = "") {
             applicationScope.launch {
@@ -220,6 +222,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                 this@MainApplication,
                 ApiClientEntryPoint::class.java
             ).apiClient()
+            apiClientInitialized.complete(Unit)
         }
     }
     
