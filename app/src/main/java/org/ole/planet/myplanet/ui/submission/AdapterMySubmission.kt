@@ -21,18 +21,13 @@ import org.ole.planet.myplanet.databinding.RowMysurveyBinding
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.ui.exam.TakeExamFragment
-import org.ole.planet.myplanet.ui.submission.AdapterMySubmission.ViewHolderMySurvey
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
 
 class AdapterMySubmission(
     private val context: Context,
-    list: List<RealmSubmission>?,
-    private val examHashMap: HashMap<String?, RealmStepExam>?,
-    private val submissionCountMap: Map<String?, Int> = emptyMap(),
-    private val nameResolver: (String?) -> String?,
     private val lifecycleScope: CoroutineScope,
-) : ListAdapter<RealmSubmission, ViewHolderMySurvey>(
+) : ListAdapter<RealmSubmission, AdapterMySubmission.ViewHolderMySurvey>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem ->
             oldItem.id == newItem.id
@@ -44,6 +39,9 @@ class AdapterMySubmission(
         }
     )
 ) {
+    private var examHashMap: HashMap<String?, RealmStepExam> = hashMapOf()
+    private var submissionCountMap: Map<String?, Int> = emptyMap()
+    private var userNames: Map<String, String> = emptyMap()
     private var listener: OnHomeItemClickListener? = null
     private var type = ""
 
@@ -51,14 +49,27 @@ class AdapterMySubmission(
         if (context is OnHomeItemClickListener) {
             listener = context
         }
-        if (list != null && list.isEmpty()) {
-            Toast.makeText(
-                context.applicationContext,
-                context.getString(R.string.no_items),
-                Toast.LENGTH_SHORT
-            ).show()
+    }
+
+    fun setExams(exams: HashMap<String?, RealmStepExam>) {
+        this.examHashMap = exams
+        notifyDataSetChanged()
+    }
+
+    fun setSubmissionCounts(counts: Map<String?, Int>) {
+        this.submissionCountMap = counts
+        notifyDataSetChanged()
+    }
+
+    fun setUserNames(names: Map<String, String>) {
+        this.userNames = names
+        notifyDataSetChanged()
+    }
+
+    fun setType(type: String?) {
+        if (type != null) {
+            this.type = type
         }
-        submitList(list)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderMySurvey {
@@ -72,7 +83,7 @@ class AdapterMySubmission(
         binding.status.text = submission.status
         binding.date.text = getFormattedDate(submission.startTime)
         showSubmittedBy(holder, binding, submission)
-        if (examHashMap?.containsKey(submission.parentId) == true) {
+        if (examHashMap.containsKey(submission.parentId)) {
             binding.title.text = examHashMap[submission.parentId]?.name
         }
 
@@ -105,21 +116,23 @@ class AdapterMySubmission(
     private fun showSubmittedBy(holder: ViewHolderMySurvey, binding: RowMysurveyBinding, submission: RealmSubmission) {
         holder.job?.cancel()
         holder.job = lifecycleScope.launch {
-            val resolvedName = withContext(Dispatchers.IO) {
+            val resolvedName = withContext(Dispatchers.Default) {
                 runCatching {
                     submission.user?.takeIf { it.isNotBlank() }?.let { userJson ->
                         JSONObject(userJson).optString("name").takeIf { name -> name.isNotBlank() }
                     }
-                }.getOrNull() ?: nameResolver(submission.userId)
+                }.getOrNull()
             }
 
+            val finalName = resolvedName ?: userNames[submission.userId]
+
             withContext(Dispatchers.Main) {
-                if (resolvedName.isNullOrBlank()) {
+                if (finalName.isNullOrBlank()) {
                     binding.submittedBy.visibility = View.GONE
                     binding.submittedBy.text = ""
                 } else {
                     binding.submittedBy.visibility = View.VISIBLE
-                    binding.submittedBy.text = resolvedName
+                    binding.submittedBy.text = finalName
                 }
             }
         }
@@ -135,14 +148,8 @@ class AdapterMySubmission(
         }
     }
 
-    fun setType(type: String?) {
-        if (type != null) {
-            this.type = type
-        }
-    }
-
     private fun showAllSubmissions(submission: RealmSubmission) {
-        val examTitle = examHashMap?.get(submission.parentId)?.name ?: "Submissions"
+        val examTitle = examHashMap[submission.parentId]?.name ?: "Submissions"
 
         val b = Bundle()
         b.putString("parentId", submission.parentId)
