@@ -106,8 +106,10 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             currentCourse = course
             binding.tvCourseTitle.text = currentCourse?.courseTitle
             withContext(Dispatchers.IO) {
-                steps = courseRepository.getCourseSteps(courseId)
-                currentStep = getCourseProgress()
+                databaseService.realmInstance.use { realm ->
+                    steps = courseRepository.getCourseSteps(courseId)
+                    currentStep = getCourseProgress(realm)
+                }
             }
             if (steps.isEmpty()) {
                 binding.nextStep.visibility = View.GONE
@@ -343,12 +345,10 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         setCourseData()
     }
 
-    private fun getCourseProgress(): Int {
-        return databaseService.withRealm { realm ->
-            val user = userProfileDbHandler.userModel
-            val courseProgressMap = RealmCourseProgress.getCourseProgress(realm, user?.id)
-            courseProgressMap[courseId]?.asJsonObject?.get("current")?.asInt ?: 0
-        }
+    private fun getCourseProgress(realm: Realm): Int {
+        val user = userProfileDbHandler.userModel
+        val courseProgressMap = RealmCourseProgress.getCourseProgress(realm, user?.id)
+        return courseProgressMap[courseId]?.asJsonObject?.get("current")?.asInt ?: 0
     }
 
     private fun checkSurveyCompletion() {
