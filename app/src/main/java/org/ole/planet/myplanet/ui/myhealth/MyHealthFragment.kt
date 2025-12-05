@@ -5,7 +5,6 @@ import android.content.Context.MODE_PRIVATE
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
-import android.os.CountDownTimer
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
@@ -22,6 +21,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatSpinner
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -72,10 +72,9 @@ class MyHealthFragment : Fragment() {
     lateinit var syncManager: SyncManager
     @Inject
     lateinit var databaseService: DatabaseService
-    @Inject
-    lateinit var userRepository: UserRepository
     private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
     private lateinit var realtimeSyncListener: BaseRealtimeSyncListener
+    private val viewModel: MyHealthViewModel by viewModels()
     private var _binding: FragmentVitalSignBinding? = null
     private val binding get() = _binding!!
     private lateinit var alertMyPersonalBinding: AlertMyPersonalBinding
@@ -262,7 +261,11 @@ class MyHealthFragment : Fragment() {
                 null
             } else {
                 withContext(Dispatchers.IO) {
-                    userRepository.getUserByAnyId(normalizedId)
+                    databaseService.realmInstance.where(RealmUserModel::class.java)
+                        .equalTo("_id", normalizedId)
+                        .or()
+                        .equalTo("id", normalizedId)
+                        .findFirst()
                 }
             }
             if (!isAdded || _binding == null) {
@@ -281,39 +284,51 @@ class MyHealthFragment : Fragment() {
     }
 
     private fun selectPatient() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            val users = withContext(Dispatchers.IO) {
-                Realm.getDefaultInstance().use { realm ->
-                    val results = realm.where(RealmUserModel::class.java).sort("joinDate", Sort.DESCENDING).findAll()
-                    realm.copyFromRealm(results)
-                }
-            }
-            withContext(Dispatchers.Main) {
-                userModelList = users
-                adapter.clear()
-                adapter.addAll(userModelList)
-                adapter.notifyDataSetChanged()
-                alertHealthListBinding = AlertHealthListBinding.inflate(LayoutInflater.from(context))
-                alertHealthListBinding?.btnAddMember?.setOnClickListener {
-                    startActivity(Intent(requireContext(), BecomeMemberActivity::class.java))
-                }
+        alertHealthListBinding = AlertHealthListBinding.inflate(LayoutInflater.from(context))
+        alertHealthListBinding?.btnAddMember?.setOnClickListener {
+            startActivity(Intent(requireContext(), BecomeMemberActivity::class.java))
+        }
 
-                alertHealthListBinding?.let { binding ->
-                    binding.list.adapter = adapter
-                    setTextWatcher(binding.etSearch, binding.btnAddMember)
-                    binding.list.onItemClickListener = OnItemClickListener { _: AdapterView<*>?, _: View, i: Int, _: Long ->
-                        val selected = binding.list.adapter.getItem(i) as RealmUserModel
-                        userId = if (selected._id.isNullOrEmpty()) selected.id else selected._id
-                        getHealthRecords(userId)
-                        dialog?.dismiss()
+        alertHealthListBinding?.let { binding ->
+            binding.list.adapter = adapter
+            setTextWatcher(binding.etSearch, binding.btnAddMember)
+            binding.list.onItemClickListener = OnItemClickListener { _, _, i, _ ->
+                val selected = binding.list.adapter.getItem(i) as RealmUserModel
+                userId = if (selected._id.isNullOrEmpty()) selected.id else selected._id
+                getHealthRecords(userId)
+                dialog?.dismiss()
+            }
+            sortList(binding.spnSort, binding.list)
+
+            viewLifecycleOwner.lifecycleScope.launch {
+                viewModel.searchState.collect { state ->
+                    when (state) {
+                        is SearchState.Loading -> {
+                            binding.loading.visibility = View.VISIBLE
+                        }
+                        is SearchState.Success -> {
+                            binding.loading.visibility = View.GONE
+                            adapter.clear()
+                            adapter.addAll(state.users)
+                            adapter.notifyDataSetChanged()
+                            userModelList = state.users
+                            binding.btnAddMember.visibility = if (adapter.count == 0) View.VISIBLE else View.GONE
+                        }
+                        is SearchState.Error -> {
+                            binding.loading.visibility = View.GONE
+                            Snackbar.make(binding.root, "Error searching users", Snackbar.LENGTH_SHORT).show()
+                        }
+                        is SearchState.Idle -> {
+                            viewModel.searchUsers("") // Initial load
+                        }
                     }
-                    sortList(binding.spnSort, binding.list)
-                    dialog = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
-                        .setTitle(getString(R.string.select_health_member)).setView(binding.root)
-                        .setCancelable(false).setNegativeButton(R.string.dismiss, null).create()
-                    dialog?.show()
                 }
             }
+
+            dialog = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
+                .setTitle(getString(R.string.select_health_member)).setView(binding.root)
+                .setCancelable(false).setNegativeButton(R.string.dismiss, null).create()
+            dialog?.show()
         }
     }
 
@@ -349,38 +364,11 @@ class MyHealthFragment : Fragment() {
     }
 
     private fun setTextWatcher(etSearch: EditText, btnAddMember: Button) {
-        var timer: CountDownTimer? = null
         textWatcher = object : TextWatcher {
-            override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
-            override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
-
-            override fun afterTextChanged(editable: Editable) {
-                timer?.cancel()
-                timer = object : CountDownTimer(1000, 1500) {
-                    override fun onTick(millisUntilFinished: Long) {}
-                    override fun onFinish() {
-                        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-                            var unmanagedUserModelList: List<RealmUserModel> = emptyList()
-                            Realm.getDefaultInstance().use { realm ->
-                                val userModelList = realm.where(RealmUserModel::class.java)
-                                    .contains("firstName", editable.toString(), Case.INSENSITIVE).or()
-                                    .contains("lastName", editable.toString(), Case.INSENSITIVE).or()
-                                    .contains("name", editable.toString(), Case.INSENSITIVE)
-                                    .sort("joinDate", Sort.DESCENDING).findAll()
-                                unmanagedUserModelList = realm.copyFromRealm(userModelList)
-                            }
-
-                            withContext(Dispatchers.Main) {
-                                if (isAdded) {
-                                    adapter.clear()
-                                    adapter.addAll(unmanagedUserModelList)
-                                    adapter.notifyDataSetChanged()
-                                    btnAddMember.visibility = if (adapter.count == 0) View.VISIBLE else View.GONE
-                                }
-                            }
-                        }
-                    }
-                }.start()
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                viewModel.searchUsers(s.toString())
             }
         }
         etSearch.addTextChangedListener(textWatcher)
