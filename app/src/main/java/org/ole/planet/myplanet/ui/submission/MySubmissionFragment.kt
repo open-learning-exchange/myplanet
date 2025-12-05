@@ -18,24 +18,19 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.databinding.FragmentMySubmissionBinding
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-
-data class SubmissionWithCount(
-    val submission: RealmSubmission,
-    val count: Int,
-    val allSubmissions: List<RealmSubmission>
-)
 
 @AndroidEntryPoint
 class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
     private var _binding: FragmentMySubmissionBinding? = null
     private val binding get() = _binding!!
     private val viewModel: SubmissionViewModel by viewModels()
+
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
+
     private lateinit var textWatcher: TextWatcher
+    private lateinit var adapter: AdapterMySubmission
     var type: String? = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -54,21 +49,41 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
         binding.rvMysurvey.addItemDecoration(
             DividerItemDecoration(activity, DividerItemDecoration.VERTICAL)
         )
-        viewModel.loadSubmissions(type ?: "", "")
+
+        adapter = AdapterMySubmission(requireActivity(), viewLifecycleOwner.lifecycleScope)
+        adapter.setType(type)
+        binding.rvMysurvey.adapter = adapter
+
+        viewModel.setFilter(type ?: "", "")
 
         viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.submissions.collectLatest { submissions ->
-                val exams = viewModel.exams.value
-                val userNames = viewModel.userNames.value
-                val submissionCounts = viewModel.submissionCounts.value
-                setData(submissions, exams, userNames, submissionCounts)
+            launch {
+                viewModel.submissions.collectLatest { submissions ->
+                    adapter.submitList(submissions)
+                    updateEmptyState(submissions.size)
+                }
+            }
+            launch {
+                viewModel.exams.collectLatest { exams ->
+                    adapter.setExams(exams)
+                }
+            }
+            launch {
+                viewModel.userNames.collectLatest { names ->
+                    adapter.setUserNames(names)
+                }
+            }
+            launch {
+                viewModel.submissionCounts.collectLatest { counts ->
+                    adapter.setSubmissionCounts(counts)
+                }
             }
         }
 
         textWatcher = object : TextWatcher {
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
             override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {
-                viewModel.loadSubmissions(type ?: "", charSequence.toString())
+                viewModel.setFilter(type ?: "", charSequence.toString())
             }
             override fun afterTextChanged(editable: Editable) {}
         }
@@ -78,7 +93,7 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
 
     override fun onResume() {
         super.onResume()
-        viewModel.loadSubmissions(type ?: "", binding.etSearch.text.toString())
+        // Filter is already set in onViewCreated and maintained by ViewModel
     }
 
     private fun showHideRadioButton() {
@@ -99,24 +114,11 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
         } else {
             "exam"
         }
-        viewModel.loadSubmissions(type ?: "", binding.etSearch.text.toString())
+        adapter.setType(type)
+        viewModel.setFilter(type ?: "", binding.etSearch.text.toString())
     }
 
-    private fun setData(
-        submissions: List<RealmSubmission>,
-        exams: HashMap<String?, RealmStepExam>,
-        userNameMap: Map<String, String>,
-        submissionCountMap: Map<String?, Int>
-    ) {
-        val adapter = AdapterMySubmission(
-            requireActivity(),
-            submissions,
-            exams,
-            submissionCountMap,
-            nameResolver = { userId -> userId?.let { userNameMap[it] } },
-            viewLifecycleOwner.lifecycleScope
-        )
-        val itemCount = adapter.itemCount
+    private fun updateEmptyState(itemCount: Int) {
         val s = binding.etSearch.text.toString()
 
         if (s.isEmpty()) {
@@ -139,9 +141,6 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
                 binding.tlSearch.visibility = View.VISIBLE
             }
         }
-
-        adapter.setType(type)
-        binding.rvMysurvey.adapter = adapter
     }
 
     override fun onDestroyView() {
