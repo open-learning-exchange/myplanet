@@ -98,11 +98,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        startCoursesSync()
-    }
-
     override fun getLayout(): Int {
         return R.layout.fragment_my_course
     }
@@ -283,6 +278,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
         realtimeSyncHelper = RealtimeSyncHelper(this, this)
         realtimeSyncHelper.setupRealtimeSync()
+        startCoursesSync()
     }
 
     private fun setupButtonVisibility() {
@@ -715,12 +711,20 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     override fun onDataUpdated(table: String, update: TableDataUpdate) {
         if (table == "courses" && update.shouldRefreshUI) {
             if (::adapterCourses.isInitialized) {
-                refreshCoursesData()
+                val map = getRatings(mRealm, "course", model?.id)
+                val progressMap = getCourseProgress(mRealm, model?.id)
+                val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java)
+                    .filterIsInstance<RealmMyCourse?>()
+                    .filter { !it?.courseTitle.isNullOrBlank() }
+                val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
+                adapterCourses.updateData(sortedCourseList, map, progressMap)
             } else {
                 recyclerView.adapter = getAdapter()
             }
         }
     }
+
+    override fun shouldAutoRefresh(table: String): Boolean = false
 
     override fun getSyncRecyclerView(): RecyclerView? {
         return if (::recyclerView.isInitialized) recyclerView else null

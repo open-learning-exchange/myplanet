@@ -120,6 +120,51 @@ class AdapterCourses(
         dispatchDiff(courseList)
     }
 
+    fun updateData(
+        newCourseList: List<RealmMyCourse?>,
+        newMap: HashMap<String?, JsonObject>,
+        newProgressMap: HashMap<String?, JsonObject>?
+    ) {
+        val oldMap = HashMap(map)
+        val oldProgressMap = progressMap?.let { HashMap(it) }
+
+        val diffResult = DiffUtils.calculateDiff(
+            courseList,
+            newCourseList,
+            areItemsTheSame = { old, new -> old?.id == new?.id },
+            areContentsTheSame = { old, new ->
+                val ratingSame = oldMap[old?.courseId] == newMap[new?.courseId]
+                val progressSame = oldProgressMap?.get(old?.courseId) == newProgressMap?.get(new?.courseId)
+
+                old?.courseTitle == new?.courseTitle &&
+                        old?.description == new?.description &&
+                        old?.gradeLevel == new?.gradeLevel &&
+                        old?.subjectLevel == new?.subjectLevel &&
+                        old?.createdDate == new?.createdDate &&
+                        old?.isMyCourse == new?.isMyCourse &&
+                        old?.getNumberOfSteps() == new?.getNumberOfSteps() &&
+                        ratingSame &&
+                        progressSame
+            },
+            getChangePayload = { old, new ->
+                val bundle = Bundle()
+                if (oldMap[old?.courseId] != newMap[new?.courseId]) {
+                    bundle.putBoolean(RATING_PAYLOAD, true)
+                }
+                if (oldProgressMap?.get(old?.courseId) != newProgressMap?.get(new?.courseId)) {
+                    bundle.putBoolean(PROGRESS_PAYLOAD, true)
+                }
+                if (bundle.isEmpty) null else bundle
+            }
+        )
+
+        courseList = newCourseList
+        map.clear()
+        map.putAll(newMap)
+        this.progressMap = newProgressMap
+        diffResult.dispatchUpdatesTo(this)
+    }
+
     private fun sortCourseListByTitle(list: List<RealmMyCourse?>): List<RealmMyCourse?> {
         return list.sortedWith { course1: RealmMyCourse?, course2: RealmMyCourse? ->
             if (isTitleAscending) {
