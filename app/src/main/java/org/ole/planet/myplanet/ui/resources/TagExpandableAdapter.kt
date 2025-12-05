@@ -16,6 +16,9 @@ import org.ole.planet.myplanet.databinding.RowAdapterNavigationParentBinding
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.utilities.DiffUtils
 
+// TODO: For better performance and maintainability, consider refactoring this to a RecyclerView with a ListAdapter.
+// ExpandableListView is generally less efficient than RecyclerView, especially for large or complex data sets.
+// A ListAdapter with DiffUtil would provide better performance for data updates.
 class TagExpandableAdapter(private var tagList: List<RealmTag>, private val childMap: HashMap<String, List<RealmTag>>, private val selectedItemsList: ArrayList<RealmTag>) : BaseExpandableListAdapter() {
     private var clickListener: OnClickTagItem? = null
     private var isSelectMultiple = false
@@ -130,37 +133,8 @@ class TagExpandableAdapter(private var tagList: List<RealmTag>, private val chil
     }
 
     fun setTagList(filteredList: List<RealmTag>) {
-        val diffResult = DiffUtils.calculateDiff(
-            tagList,
-            filteredList,
-            { old, new -> old.id == new.id },
-            { old, new -> old.name == new.name }
-        )
         tagList = filteredList
-        var hasNotified = false
-        diffResult.dispatchUpdatesTo(object : ListUpdateCallback {
-            private fun notifyOnce() {
-                if (!hasNotified) {
-                    notifyDataSetChanged()
-                    hasNotified = true
-                }
-            }
-            override fun onInserted(position: Int, count: Int) {
-                notifyOnce()
-            }
-
-            override fun onRemoved(position: Int, count: Int) {
-                notifyOnce()
-            }
-
-            override fun onMoved(fromPosition: Int, toPosition: Int) {
-                notifyOnce()
-            }
-
-            override fun onChanged(position: Int, count: Int, payload: Any?) {
-                notifyOnce()
-            }
-        })
+        notifyDataSetChanged()
     }
 
     interface OnClickTagItem {
