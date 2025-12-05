@@ -57,6 +57,7 @@ class Service @Inject constructor(
     private val databaseService: DatabaseService,
     @ApplicationScope private val serviceScope: CoroutineScope,
     private val userRepository: UserRepository,
+    private val uploadToShelfService: UploadToShelfService,
 ) {
     constructor(context: Context) : this(
         context,
@@ -76,19 +77,16 @@ class Service @Inject constructor(
             context.applicationContext,
             RepositoryEntryPoint::class.java
         ).userRepository(),
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            AutoSyncEntryPoint::class.java
+        ).uploadToShelfService(),
     )
 
     private val preferences: SharedPreferences = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
     private val configurationManager =
         ConfigurationManager(context, preferences, retrofitInterface)
-    private fun getUploadToShelfService(): UploadToShelfService {
-        val entryPoint = EntryPointAccessors.fromApplication(
-            context.applicationContext,
-            AutoSyncEntryPoint::class.java
-        )
-        return entryPoint.uploadToShelfService()
-    }
 
     fun healthAccess(listener: SuccessListener) {
         try {
@@ -379,7 +377,7 @@ class Service @Inject constructor(
             }
 
             if (userModel != null) {
-                getUploadToShelfService().saveKeyIv(retrofitInterface, userModel, obj)
+                uploadToShelfService.saveKeyIv(retrofitInterface, userModel, obj)
                 withContext(Dispatchers.Main) {
                     if (context is ProcessUserDataActivity) {
                         val userName = obj["name"].asString
