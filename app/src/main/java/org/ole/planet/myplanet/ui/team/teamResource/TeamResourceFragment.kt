@@ -65,18 +65,23 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdat
         val safeActivity = activity ?: return
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val libraries = teamRepository.getTeamResources(teamId).toMutableList()
+            val libraries = teamRepository.getTeamResources(teamId)
             val canRemoveResources = teamRepository.isTeamLeader(teamId, user?.id)
-            adapterLibrary = AdapterTeamResource(
-                safeActivity,
-                libraries,
-                canRemoveResources,
-                this@TeamResourceFragment,
-            ) { resource, position ->
-                handleResourceRemoval(resource, position)
+
+            if (!::adapterLibrary.isInitialized) {
+                adapterLibrary = AdapterTeamResource(
+                    safeActivity,
+                    canRemoveResources,
+                    this@TeamResourceFragment,
+                ) { resource, position ->
+                    handleResourceRemoval(resource, position)
+                }
+                binding.rvResource.layoutManager = GridLayoutManager(safeActivity, 3)
+                binding.rvResource.adapter = adapterLibrary
             }
-            binding.rvResource.layoutManager = GridLayoutManager(safeActivity, 3)
-            binding.rvResource.adapter = adapterLibrary
+
+            val unmanagedLibraries = realm.copyFromRealm(libraries)
+            adapterLibrary.submitList(unmanagedLibraries)
             checkAndShowNoData()
         }
     }

@@ -4,18 +4,19 @@ import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.RowTeamResourceBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.utilities.DiffUtils
 
 class AdapterTeamResource(
     private val context: Context,
-    private val list: MutableList<RealmMyLibrary>,
     private val canRemoveResources: Boolean,
     private val updateListener: ResourceUpdateListner,
     private val onRemoveResource: (RealmMyLibrary, Int) -> Unit,
-) : RecyclerView.Adapter<AdapterTeamResource.ViewHolderTeamResource>() {
+) : ListAdapter<RealmMyLibrary, AdapterTeamResource.ViewHolderTeamResource>(ITEM_CALLBACK) {
 
     private var listener: OnHomeItemClickListener? = null
 
@@ -34,7 +35,7 @@ class AdapterTeamResource(
         val adapterPosition = holder.bindingAdapterPosition
         if (adapterPosition == RecyclerView.NO_POSITION) return
 
-        val resource = list[adapterPosition]
+        val resource = getItem(adapterPosition)
 
         holder.binding.apply {
             tvTitle.text = resource.title
@@ -49,23 +50,27 @@ class AdapterTeamResource(
                 setOnClickListener {
                     val currentPosition = holder.bindingAdapterPosition
                     if (currentPosition != RecyclerView.NO_POSITION) {
-                        onRemoveResource(list[currentPosition], currentPosition)
+                        onRemoveResource(getItem(currentPosition), currentPosition)
                     }
                 }
             }
         }
     }
 
-    override fun getItemCount(): Int {
-        return list.size
-    }
-
     fun removeResourceAt(position: Int) {
-        if (position < 0 || position >= list.size) return
-        list.removeAt(position)
-        notifyItemRemoved(position)
+        if (position < 0 || position >= currentList.size) return
+        val newList = currentList.toMutableList()
+        newList.removeAt(position)
+        submitList(newList)
         updateListener.onResourceListUpdated()
     }
 
     class ViewHolderTeamResource(val binding: RowTeamResourceBinding) : RecyclerView.ViewHolder(binding.root)
+
+    companion object {
+        private val ITEM_CALLBACK = DiffUtils.itemCallback<RealmMyLibrary>(
+            areItemsTheSame = { oldItem, newItem -> oldItem.resource_id == newItem.resource_id },
+            areContentsTheSame = { oldItem, newItem -> oldItem.title == newItem.title && oldItem.description == newItem.description }
+        )
+    }
 }
