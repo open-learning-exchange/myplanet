@@ -236,6 +236,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         if (BuildConfig.DEBUG) {
             val threadPolicy = StrictMode.ThreadPolicy.Builder()
                 .detectAll()
+                .detectDiskReads()
+                .detectDiskWrites()
                 .penaltyLog()
                 .build()
             StrictMode.setThreadPolicy(threadPolicy)

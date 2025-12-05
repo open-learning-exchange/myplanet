@@ -67,7 +67,7 @@ class AutoSyncWorker(
     }
 
     override fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean) {
-        startDownloadUpdate(context, UrlUtils.getApkUpdateUrl(info?.localapkpath), null)
+        startDownloadUpdate(context, UrlUtils.getApkUpdateUrl(info?.localapkpath), null, workerScope)
     }
 
     override fun onCheckingVersion() {}
