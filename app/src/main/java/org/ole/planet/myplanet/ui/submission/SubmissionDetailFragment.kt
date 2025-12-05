@@ -150,7 +150,7 @@ class SubmissionDetailFragment : Fragment() {
             QuestionAnswerPair(question, answer)
         }
 
-        adapter.updateData(questionAnswerPairs)
+        adapter.submitList(questionAnswerPairs)
     }
 
     private fun getExamId(parentId: String?): String? {
