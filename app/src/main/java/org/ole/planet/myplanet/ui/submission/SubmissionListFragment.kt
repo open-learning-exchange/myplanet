@@ -6,15 +6,19 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
+import io.realm.Sort
+import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentSubmissionListBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmSubmission
-import javax.inject.Inject
-import io.realm.Sort
 
 @AndroidEntryPoint
 class SubmissionListFragment : Fragment() {
@@ -81,18 +85,40 @@ class SubmissionListFragment : Fragment() {
     }
 
     private fun generateReport(submissions: List<RealmSubmission>) {
-        databaseService.withRealm { realm ->
-            val file = org.ole.planet.myplanet.utilities.SubmissionPdfGenerator.generateMultipleSubmissionsPdf(
-                requireContext(),
-                submissions,
-                examTitle ?: "Submissions",
-                realm
-            )
-            if (file != null) {
-                Toast.makeText(context, "Report saved to ${file.absolutePath}", Toast.LENGTH_LONG).show()
-                openPdf(file)
-            } else {
+        val submissionIds = submissions.mapNotNull { it._id }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            binding.btnDownloadReport.isEnabled = false
+            binding.progressBar.visibility = View.VISIBLE
+            try {
+                val file = withContext(Dispatchers.IO) {
+                    databaseService.withRealm { realm ->
+                        val managedSubmissions = realm.where(RealmSubmission::class.java)
+                            .`in`("_id", submissionIds.toTypedArray())
+                            .findAll()
+                        val unmanagedSubmissions = realm.copyFromRealm(managedSubmissions)
+                        org.ole.planet.myplanet.utilities.SubmissionPdfGenerator.generateMultipleSubmissionsPdf(
+                            requireContext(),
+                            unmanagedSubmissions,
+                            examTitle ?: "Submissions",
+                            realm
+                        )
+                    }
+                }
+                if (file != null) {
+                    Toast.makeText(context, "Report saved to ${file.absolutePath}", Toast.LENGTH_LONG).show()
+                    openPdf(file)
+                } else {
+                    Toast.makeText(context, "Failed to generate report", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
                 Toast.makeText(context, "Failed to generate report", Toast.LENGTH_SHORT).show()
+            } finally {
+                if (isAdded) {
+                    binding.btnDownloadReport.isEnabled = true
+                    binding.progressBar.visibility = View.GONE
+                }
             }
         }
     }
