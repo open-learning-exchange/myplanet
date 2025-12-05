@@ -51,6 +51,11 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
+private data class CommunityCache(
+    val data: JsonObject,
+    val timestamp: Long,
+)
+
 class Service @Inject constructor(
     private val context: Context,
     private val retrofitInterface: ApiInterface,
@@ -85,6 +90,7 @@ class Service @Inject constructor(
 
     private val preferences: SharedPreferences = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
+    private var communityCache: CommunityCache? = null
     private val configurationManager =
         ConfigurationManager(context, preferences, retrofitInterface)
 
@@ -405,48 +411,21 @@ class Service @Inject constructor(
 
     suspend fun syncPlanetServers(callback: SuccessListener) {
         try {
-            val response = withContext(Dispatchers.IO) {
-                retrofitInterface.getJsonObject("", "https://planet.earth.ole.org/db/communityregistrationrequests/_all_docs?include_docs=true").execute()
+            val cache = communityCache
+            if (cache != null && System.currentTimeMillis() - cache.timestamp < 5 * 60 * 1000) {
+                processCommunityData(cache.data, callback)
+                return
             }
 
+            val response = retrofitInterface.getJsonObjectSuspended(
+                "",
+                "https://planet.earth.ole.org/db/communityregistrationrequests/_all_docs?include_docs=true"
+            )
+
             if (response.isSuccessful && response.body() != null) {
-                val arr = JsonUtils.getJsonArray("rows", response.body())
-                val startTime = System.currentTimeMillis()
-                println("Realm transaction started")
-
-                val transactionResult = runCatching {
-                    withContext(Dispatchers.IO) {
-                        databaseService.withRealm { backgroundRealm ->
-                            backgroundRealm.executeTransaction { realm1 ->
-                                realm1.delete(RealmCommunity::class.java)
-                                for (j in arr) {
-                                    var jsonDoc = j.asJsonObject
-                                    jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-                                    val id = JsonUtils.getString("_id", jsonDoc)
-                                    val community = realm1.createObject(RealmCommunity::class.java, id)
-                                    if (JsonUtils.getString("name", jsonDoc) == "learning") {
-                                        community.weight = 0
-                                    }
-                                    community.localDomain = JsonUtils.getString("localDomain", jsonDoc)
-                                    community.name = JsonUtils.getString("name", jsonDoc)
-                                    community.parentDomain = JsonUtils.getString("parentDomain", jsonDoc)
-                                    community.registrationRequest = JsonUtils.getString("registrationRequest", jsonDoc)
-                                }
-                            }
-                        }
-                    }
-                }
-
-                val endTime = System.currentTimeMillis()
-                println("Realm transaction finished in ${endTime - startTime}ms")
-
-                withContext(Dispatchers.Main) {
-                    transactionResult.onSuccess {
-                        callback.onSuccess(context.getString(R.string.server_sync_successfully))
-                    }.onFailure { e ->
-                        e.printStackTrace()
-                        callback.onSuccess(context.getString(R.string.server_sync_has_failed))
-                    }
+                response.body()?.let {
+                    communityCache = CommunityCache(it, System.currentTimeMillis())
+                    processCommunityData(it, callback)
                 }
             } else {
                 withContext(Dispatchers.Main) {
@@ -456,6 +435,48 @@ class Service @Inject constructor(
         } catch (t: Throwable) {
             t.printStackTrace()
             withContext(Dispatchers.Main) {
+                callback.onSuccess(context.getString(R.string.server_sync_has_failed))
+            }
+        }
+    }
+
+    private suspend fun processCommunityData(data: JsonObject, callback: SuccessListener) {
+        val arr = JsonUtils.getJsonArray("rows", data)
+        val startTime = System.currentTimeMillis()
+        println("Realm transaction started")
+
+        val transactionResult = runCatching {
+            withContext(Dispatchers.IO) {
+                databaseService.withRealm { backgroundRealm ->
+                    backgroundRealm.executeTransaction { realm1 ->
+                        realm1.delete(RealmCommunity::class.java)
+                        for (j in arr) {
+                            var jsonDoc = j.asJsonObject
+                            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
+                            val id = JsonUtils.getString("_id", jsonDoc)
+                            val community = realm1.createObject(RealmCommunity::class.java, id)
+                            if (JsonUtils.getString("name", jsonDoc) == "learning") {
+                                community.weight = 0
+                            }
+                            community.localDomain = JsonUtils.getString("localDomain", jsonDoc)
+                            community.name = JsonUtils.getString("name", jsonDoc)
+                            community.parentDomain = JsonUtils.getString("parentDomain", jsonDoc)
+                            community.registrationRequest =
+                                JsonUtils.getString("registrationRequest", jsonDoc)
+                        }
+                    }
+                }
+            }
+        }
+
+        val endTime = System.currentTimeMillis()
+        println("Realm transaction finished in ${endTime - startTime}ms")
+
+        withContext(Dispatchers.Main) {
+            transactionResult.onSuccess {
+                callback.onSuccess(context.getString(R.string.server_sync_successfully))
+            }.onFailure { e ->
+                e.printStackTrace()
                 callback.onSuccess(context.getString(R.string.server_sync_has_failed))
             }
         }
