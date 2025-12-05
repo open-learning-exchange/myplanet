@@ -868,7 +868,7 @@ class UploadManager @Inject constructor(
 
                                     var msg = getString("message", `object`)
                                     msg += """
-                                    
+
                                     $markdown
                                     """.trimIndent()
                                     `object`.addProperty("message", msg)
