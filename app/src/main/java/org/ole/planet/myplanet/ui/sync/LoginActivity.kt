@@ -64,6 +64,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     private var teamAdapter: ArrayAdapter<String?>? = null
     private var isUserInteracting = false
     private var cachedTeams: List<RealmMyTeam>? = null
+    private var cachedUsers: List<User>? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityLoginBinding.inflate(layoutInflater)
@@ -458,32 +459,47 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     }
 
     fun getTeamMembers() {
-        selectedTeamId = prefData.getSelectedTeamId().toString()
-        if (selectedTeamId?.isNotEmpty() == true) {
-            users = databaseService.withRealm { realm ->
-                RealmMyTeam.getUsers(selectedTeamId, realm, "membership").map { realm.copyFromRealm(it) }.toMutableList()
-            }
-            val userList = (users as? MutableList<RealmUserModel>)?.map {
-                User(it.name ?: "", it.name ?: "", "", it.userImage ?: "", "team")
-            } ?: emptyList()
-
-            val existingUsers = prefData.getSavedUsers().toMutableList()
-            val filteredExistingUsers = existingUsers.filter { it.source != "team" }
-            val updatedUserList = userList.filterNot { user -> filteredExistingUsers.any { it.name == user.name } } + filteredExistingUsers
-            prefData.setSavedUsers(updatedUserList)
+        if (cachedUsers != null) {
+            updateAdapterWithUsers(cachedUsers!!)
+            return
         }
+        lifecycleScope.launch(Dispatchers.IO) {
+            selectedTeamId = prefData.getSelectedTeamId().toString()
+            if (selectedTeamId?.isNotEmpty() == true) {
+                users = databaseService.withRealm { realm ->
+                    RealmMyTeam.getUsers(selectedTeamId, realm, "membership").map { realm.copyFromRealm(it) }.toMutableList()
+                }
+                val userList = (users as? MutableList<RealmUserModel>)?.map {
+                    User(it.name ?: "", it.name ?: "", "", it.userImage ?: "", "team")
+                } ?: emptyList()
 
+                val existingUsers = prefData.getSavedUsers().toMutableList()
+                val filteredExistingUsers = existingUsers.filter { it.source != "team" }
+                val updatedUserList = userList.filterNot { user -> filteredExistingUsers.any { it.name == user.name } } + filteredExistingUsers
+                prefData.setSavedUsers(updatedUserList)
+            }
+
+            val latestUsers = prefData.getSavedUsers()
+            cachedUsers = latestUsers
+
+            withContext(Dispatchers.Main) {
+                if (!isFinishing && !isDestroyed) {
+                    updateAdapterWithUsers(latestUsers)
+                }
+            }
+        }
+    }
+
+    private fun updateAdapterWithUsers(users: List<User>) {
         if (mAdapter == null) {
             mAdapter = TeamListAdapter(this)
             binding.recyclerView.layoutManager = LinearLayoutManager(this)
             binding.recyclerView.adapter = mAdapter
         }
-        mAdapter?.submitList(prefData.getSavedUsers().toMutableList())
-
+        mAdapter?.submitList(users.toMutableList())
         binding.recyclerView.isNestedScrollingEnabled = true
         binding.recyclerView.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
         binding.recyclerView.isVerticalScrollBarEnabled = true
-
     }
     override fun onItemClick(user: User) {
         if (user.password?.isEmpty() == true && user.source != "guest") {
