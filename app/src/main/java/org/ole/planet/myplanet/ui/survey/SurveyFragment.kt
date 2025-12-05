@@ -276,26 +276,35 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         currentIsTeamShareAllowed = useTeamShareAllowed
         val userProfileModel = profileDbHandler.userModel
         loadSurveysJob?.cancel()
-        loadSurveysJob = launchWhenViewIsReady {
-            currentSurveys = when {
-                isTeam && useTeamShareAllowed -> surveyRepository.getAdoptableTeamSurveys(teamId)
-                isTeam -> surveyRepository.getTeamOwnedSurveys(teamId)
-                else -> surveyRepository.getIndividualSurveys()
+        loadSurveysJob = viewLifecycleOwner.lifecycleScope.launch {
+            binding.loadingSpinner.visibility = View.VISIBLE
+            try {
+                val (surveys, infos, data) = withContext(Dispatchers.IO) {
+                    val currentSurveys = when {
+                        isTeam && useTeamShareAllowed -> surveyRepository.getAdoptableTeamSurveys(teamId)
+                        isTeam -> surveyRepository.getTeamOwnedSurveys(teamId)
+                        else -> surveyRepository.getIndividualSurveys()
+                    }
+                    val surveyInfos = surveyRepository.getSurveyInfos(
+                        isTeam,
+                        teamId,
+                        userProfileModel?.id,
+                        currentSurveys
+                    )
+                    val bindingData = surveyRepository.getSurveyBindingData(currentSurveys, teamId)
+                    Triple(currentSurveys, surveyInfos, bindingData)
+                }
+                currentSurveys = surveys
+                surveyInfoMap.clear()
+                surveyInfoMap.putAll(infos)
+                bindingDataMap.clear()
+                bindingDataMap.putAll(data)
+                applySearchFilter()
+            } finally {
+                if (isAdded && _binding != null) {
+                    binding.loadingSpinner.visibility = View.GONE
+                }
             }
-            val surveyInfos = surveyRepository.getSurveyInfos(
-                isTeam,
-                teamId,
-                userProfileModel?.id,
-                currentSurveys
-            )
-            surveyInfoMap.clear()
-            surveyInfoMap.putAll(surveyInfos)
-
-            val bindingData = surveyRepository.getSurveyBindingData(currentSurveys, teamId)
-            bindingDataMap.clear()
-            bindingDataMap.putAll(bindingData)
-
-            applySearchFilter()
         }
     }
 
