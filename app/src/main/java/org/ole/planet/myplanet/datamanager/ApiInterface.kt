@@ -69,4 +69,7 @@ interface ApiInterface {
 
     @GET
     suspend fun getConfiguration(@Url url: String?): Response<JsonObject>
+
+    @GET
+    suspend fun getCommunityRegistrationRequests(@Url url: String): Response<JsonObject>
 }
