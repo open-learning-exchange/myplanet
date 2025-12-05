@@ -570,7 +570,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), CheckVersionCallback,
                     cancelAll(activityContext)
 
                     if (activityContext is LoginActivity) {
-                        activityContext.updateTeamDropdown()
+                        activityContext.invalidateTeamsCacheAndReload()
                     }
                 }
             } catch (e: Exception) {

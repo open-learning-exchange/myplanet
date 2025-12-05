@@ -11,8 +11,10 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import java.util.Date
 import java.util.UUID
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
@@ -31,6 +33,14 @@ import org.ole.planet.myplanet.utilities.CustomClickableSpan
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 
+private data class CourseStepData(
+    val step: RealmCourseStep,
+    val resources: List<RealmMyLibrary>,
+    val stepExams: List<RealmStepExam>,
+    val stepSurvey: List<RealmStepExam>,
+    val userHasCourse: Boolean
+)
+
 class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     private lateinit var fragmentCourseStepBinding: FragmentCourseStepBinding
     var stepId: String? = null
@@ -41,6 +51,8 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     var user: RealmUserModel? = null
     private var stepNumber = 0
     private var saveInProgress: Job? = null
+    private var loadDataJob: Job? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) {
@@ -90,60 +102,87 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         }
         saveInProgress?.invokeOnCompletion { saveInProgress = null }
     }
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
+
+    private suspend fun loadStepData(): CourseStepData = withContext(Dispatchers.IO) {
         databaseService.withRealm { realm ->
-            step = realm.where(RealmCourseStep::class.java)
+            val step = realm.where(RealmCourseStep::class.java)
                 .equalTo("id", stepId)
                 .findFirst()
                 ?.let { realm.copyFromRealm(it) }!!
-            resources = realm.where(RealmMyLibrary::class.java)
+            val resources = realm.where(RealmMyLibrary::class.java)
                 .equalTo("stepId", stepId)
                 .findAll()
                 .let { realm.copyFromRealm(it) }
-            stepExams = realm.where(RealmStepExam::class.java)
+            val stepExams = realm.where(RealmStepExam::class.java)
                 .equalTo("stepId", stepId)
                 .equalTo("type", "courses")
                 .findAll()
                 .let { realm.copyFromRealm(it) }
-            stepSurvey = realm.where(RealmStepExam::class.java)
+            val stepSurvey = realm.where(RealmStepExam::class.java)
                 .equalTo("stepId", stepId)
                 .equalTo("type", "surveys")
                 .findAll()
                 .let { realm.copyFromRealm(it) }
+            val userHasCourse = isMyCourse(user?.id, step.courseId, realm)
+            CourseStepData(step, resources, stepExams, stepSurvey, userHasCourse)
         }
-        fragmentCourseStepBinding.btnResources.text = getString(R.string.resources_size, resources.size)
-        hideTestIfNoQuestion()
-        fragmentCourseStepBinding.tvTitle.text = step.stepTitle
-        val markdownContentWithLocalPaths = prependBaseUrlToImages(
-            step.description,
-            "file://${MainApplication.context.getExternalFilesDir(null)}/ole/",
-            600,
-            350
-        )
-        setMarkdownText(fragmentCourseStepBinding.description, markdownContentWithLocalPaths)
-        fragmentCourseStepBinding.description.movementMethod = LinkMovementMethod.getInstance()
-        val userHasCourse = databaseService.withRealm { realm ->
-            isMyCourse(user?.id, step.courseId, realm)
-        }
-        if (!userHasCourse) {
-            fragmentCourseStepBinding.btnTakeTest.visibility = View.GONE
-            fragmentCourseStepBinding.btnTakeSurvey.visibility = View.GONE
-        }
-        setListeners()
-        val textWithSpans = fragmentCourseStepBinding.description.text
-        if (textWithSpans is Spannable) {
-            val urlSpans = textWithSpans.getSpans(0, textWithSpans.length, URLSpan::class.java)
-            for (urlSpan in urlSpans) {
-                val start = textWithSpans.getSpanStart(urlSpan)
-                val end = textWithSpans.getSpanEnd(urlSpan)
-                val dynamicTitle = textWithSpans.subSequence(start, end).toString()
-                textWithSpans.setSpan(CustomClickableSpan(urlSpan.url, dynamicTitle, requireActivity()), start, end, textWithSpans.getSpanFlags(urlSpan))
-                textWithSpans.removeSpan(urlSpan)
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        loadDataJob = viewLifecycleOwner.lifecycleScope.launch {
+            val data = loadStepData()
+            if (viewLifecycleOwner.lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) {
+                step = data.step
+                resources = data.resources
+                stepExams = data.stepExams
+                stepSurvey = data.stepSurvey
+
+                fragmentCourseStepBinding.btnResources.text =
+                    getString(R.string.resources_size, resources.size)
+                hideTestIfNoQuestion()
+                fragmentCourseStepBinding.tvTitle.text = step.stepTitle
+                val markdownContentWithLocalPaths = prependBaseUrlToImages(
+                    step.description,
+                    "file://${MainApplication.context.getExternalFilesDir(null)}/ole/",
+                    600,
+                    350
+                )
+                setMarkdownText(
+                    fragmentCourseStepBinding.description,
+                    markdownContentWithLocalPaths
+                )
+                fragmentCourseStepBinding.description.movementMethod =
+                    LinkMovementMethod.getInstance()
+
+                if (!data.userHasCourse) {
+                    fragmentCourseStepBinding.btnTakeTest.visibility = View.GONE
+                    fragmentCourseStepBinding.btnTakeSurvey.visibility = View.GONE
+                }
+
+                setListeners()
+                val textWithSpans = fragmentCourseStepBinding.description.text
+                if (textWithSpans is Spannable) {
+                    val urlSpans =
+                        textWithSpans.getSpans(0, textWithSpans.length, URLSpan::class.java)
+                    for (urlSpan in urlSpans) {
+                        val start = textWithSpans.getSpanStart(urlSpan)
+                        val end = textWithSpans.getSpanEnd(urlSpan)
+                        val dynamicTitle = textWithSpans.subSequence(start, end).toString()
+                        textWithSpans.setSpan(
+                            CustomClickableSpan(
+                                urlSpan.url,
+                                dynamicTitle,
+                                requireActivity()
+                            ), start, end, textWithSpans.getSpanFlags(urlSpan)
+                        )
+                        textWithSpans.removeSpan(urlSpan)
+                    }
+                }
+                if (isVisible && data.userHasCourse) {
+                    launchSaveCourseProgress()
+                }
             }
-        }
-        if (isVisible && userHasCourse) {
-            launchSaveCourseProgress()
         }
     }
 
@@ -224,4 +263,8 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
 
     override fun onImageCapture(fileUri: String?) {}
 
+    override fun onDestroyView() {
+        super.onDestroyView()
+        loadDataJob?.cancel()
+    }
 }
