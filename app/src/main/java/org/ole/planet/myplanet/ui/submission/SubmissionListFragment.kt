@@ -71,8 +71,7 @@ class SubmissionListFragment : Fragment() {
                 requireContext(),
                 submissions.toList(),
                 databaseService,
-                listener,
-                viewLifecycleOwner.lifecycleScope
+                listener
             )
             binding.rvSubmissions.adapter = adapter
             binding.btnDownloadReport.setOnClickListener {
