@@ -77,14 +77,14 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         _binding = FragmentTakeCourseBinding.inflate(inflater, container, false)
         mRealm = databaseService.realmInstance
         userModel = userProfileDbHandler.userModel
-        currentCourse = mRealm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        binding.tvCourseTitle.text = currentCourse?.courseTitle
         viewLifecycleOwner.lifecycleScope.launch {
+            currentCourse = mRealm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
+            binding.tvCourseTitle.text = currentCourse?.courseTitle
             steps = courseRepository.getCourseSteps(courseId)
             if (steps.isEmpty()) {
                 binding.nextStep.visibility = View.GONE
