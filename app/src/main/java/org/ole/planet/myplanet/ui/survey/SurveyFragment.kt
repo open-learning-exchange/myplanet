@@ -301,14 +301,14 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
 
     private fun applySearchFilter() {
         val searchText = _binding?.layoutSearch?.etSearch?.text?.toString().orEmpty()
-        if (searchText.isNotEmpty()) {
-            adapter.updateData(search(searchText, currentSurveys)) {
-                updateUIState()
-                recyclerView.scrollToPosition(0)
-            }
+        val list = if (searchText.isNotEmpty()) {
+            search(searchText, currentSurveys)
         } else {
-            adapter.updateDataAfterSearch(currentSurveys) {
-                updateUIState()
+            currentSurveys
+        }
+        adapter.submitList(list) {
+            updateUIState()
+            if (searchText.isNotEmpty()) {
                 recyclerView.scrollToPosition(0)
             }
         }
@@ -326,9 +326,11 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
 
     override fun onDataUpdated(table: String, update: TableDataUpdate) {
         if (table == "exams" && update.shouldRefreshUI) {
-            updateAdapterData(isTeamShareAllowed = false)
+            updateAdapterData(currentIsTeamShareAllowed)
         }
     }
+
+    override fun shouldAutoRefresh(table: String): Boolean = false
 
     override fun getSyncRecyclerView(): RecyclerView? {
         return if (::recyclerView.isInitialized) recyclerView else null

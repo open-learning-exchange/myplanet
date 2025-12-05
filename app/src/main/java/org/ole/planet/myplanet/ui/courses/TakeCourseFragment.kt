@@ -60,6 +60,8 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     lateinit var steps: List<RealmCourseStep?>
     var position = 0
     private var currentStep = 0
+    private var cachedCourseProgress: Int? = null
+    private val isFetchingProgress = java.util.concurrent.atomic.AtomicBoolean(false)
     private var joinDialog: AlertDialog? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -74,6 +76,8 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTakeCourseBinding.inflate(inflater, container, false)
+        mRealm = databaseService.realmInstance
+        userModel = userProfileDbHandler.userModel
         return binding.root
     }
 
@@ -81,8 +85,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         super.onViewCreated(view, savedInstanceState)
         binding.loadingIndicator.visibility = View.VISIBLE
         binding.contentLayout.visibility = View.GONE
-        mRealm = databaseService.realmInstance
-        userModel = userProfileDbHandler.userModel
+
         viewLifecycleOwner.lifecycleScope.launch {
             val course: RealmMyCourse? = withTimeoutOrNull(3000) {
                 withContext(Dispatchers.IO) {
@@ -105,16 +108,26 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             binding.contentLayout.visibility = View.VISIBLE
             currentCourse = course
             binding.tvCourseTitle.text = currentCourse?.courseTitle
+
             withContext(Dispatchers.IO) {
-                databaseService.realmInstance.use { realm ->
-                    steps = courseRepository.getCourseSteps(courseId)
-                    currentStep = getCourseProgress(realm)
+                steps = courseRepository.getCourseSteps(courseId)
+
+                if (cachedCourseProgress == null && isFetchingProgress.compareAndSet(false, true)) {
+                    try {
+                        cachedCourseProgress = getCourseProgress()
+                    } finally {
+                        isFetchingProgress.set(false)
+                    }
                 }
             }
+
+            currentStep = cachedCourseProgress ?: 0
+
             if (steps.isEmpty()) {
                 binding.nextStep.visibility = View.GONE
                 binding.previousStep.visibility = View.GONE
             }
+
             position = if (currentStep > 0) currentStep else 0
             setNavigationButtons()
             binding.viewPager2.adapter =
@@ -217,7 +230,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                     binding.btnRemove.visibility = View.GONE
                 }
             }
-            
+
             val detachedUserModel = userModel
             val detachedCurrentCourse = currentCourse
 
@@ -345,10 +358,14 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         setCourseData()
     }
 
-    private fun getCourseProgress(realm: Realm): Int {
-        val user = userProfileDbHandler.userModel
-        val courseProgressMap = RealmCourseProgress.getCourseProgress(realm, user?.id)
-        return courseProgressMap[courseId]?.asJsonObject?.get("current")?.asInt ?: 0
+    private suspend fun getCourseProgress(): Int {
+        return withContext(Dispatchers.IO) {
+            databaseService.withRealm { realm ->
+                val user = userProfileDbHandler.userModel
+                val courseProgressMap = RealmCourseProgress.getCourseProgress(realm, user?.id)
+                courseProgressMap[courseId]?.asJsonObject?.get("current")?.asInt ?: 0
+            }
+        }
     }
 
     private fun checkSurveyCompletion() {
