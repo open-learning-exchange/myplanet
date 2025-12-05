@@ -4,11 +4,15 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ItemSubmissionBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -20,7 +24,8 @@ class SubmissionListAdapter(
     private val context: Context,
     private val submissions: List<RealmSubmission>,
     private val databaseService: DatabaseService,
-    private val listener: OnHomeItemClickListener?
+    private val listener: OnHomeItemClickListener?,
+    private val lifecycleOwner: LifecycleOwner
 ) : RecyclerView.Adapter<SubmissionListAdapter.ViewHolder>() {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = ItemSubmissionBinding.inflate(LayoutInflater.from(context), parent, false)
@@ -60,14 +65,27 @@ class SubmissionListAdapter(
         }
 
         private fun generateSubmissionPdf(submission: RealmSubmission) {
-            databaseService.withRealm { realm ->
-                val file = SubmissionPdfGenerator.generateSubmissionPdf(context, submission, realm)
-                if (file != null) {
-                    Toast.makeText(context, "PDF saved to ${file.absolutePath}", Toast.LENGTH_LONG)
-                        .show()
-                    openPdf(file)
-                } else {
-                    Toast.makeText(context, "Failed to generate PDF", Toast.LENGTH_SHORT).show()
+            lifecycleOwner.lifecycleScope.launch {
+                binding.btnDownloadPdf.isEnabled = false
+                binding.progressBar.visibility = View.VISIBLE
+                try {
+                    val file = databaseService.withRealm { realm ->
+                        SubmissionPdfGenerator.generateSubmissionPdf(context, submission, realm)
+                    }
+                    if (file != null) {
+                        Toast.makeText(
+                            context,
+                            "PDF saved to ${file.absolutePath}",
+                            Toast.LENGTH_LONG
+                        ).show()
+                        openPdf(file)
+                    } else {
+                        Toast.makeText(context, "Failed to generate PDF", Toast.LENGTH_SHORT)
+                            .show()
+                    }
+                } finally {
+                    binding.btnDownloadPdf.isEnabled = true
+                    binding.progressBar.visibility = View.GONE
                 }
             }
         }
