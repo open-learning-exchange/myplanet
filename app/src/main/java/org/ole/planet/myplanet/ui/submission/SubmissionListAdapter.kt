@@ -9,6 +9,10 @@ import android.widget.Toast
 import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ItemSubmissionBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -20,7 +24,8 @@ class SubmissionListAdapter(
     private val context: Context,
     private val submissions: List<RealmSubmission>,
     private val databaseService: DatabaseService,
-    private val listener: OnHomeItemClickListener?
+    private val listener: OnHomeItemClickListener?,
+    private val scope: CoroutineScope,
 ) : RecyclerView.Adapter<SubmissionListAdapter.ViewHolder>() {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = ItemSubmissionBinding.inflate(LayoutInflater.from(context), parent, false)
@@ -60,14 +65,48 @@ class SubmissionListAdapter(
         }
 
         private fun generateSubmissionPdf(submission: RealmSubmission) {
-            databaseService.withRealm { realm ->
-                val file = SubmissionPdfGenerator.generateSubmissionPdf(context, submission, realm)
-                if (file != null) {
-                    Toast.makeText(context, "PDF saved to ${file.absolutePath}", Toast.LENGTH_LONG)
-                        .show()
-                    openPdf(file)
-                } else {
-                    Toast.makeText(context, "Failed to generate PDF", Toast.LENGTH_SHORT).show()
+            val submissionId = submission.id ?: return
+            binding.btnDownloadPdf.isEnabled = false
+            scope.launch(Dispatchers.IO) {
+                try {
+                    databaseService.withRealm { realm ->
+                        val backgroundSubmission = realm.where(RealmSubmission::class.java).equalTo("id", submissionId).findFirst()
+                        if (backgroundSubmission == null) {
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(
+                                    context,
+                                    "Submission not found",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                            return@withRealm
+                        }
+                        val file = SubmissionPdfGenerator.generateSubmissionPdf(
+                            context,
+                            backgroundSubmission,
+                            realm
+                        )
+                        withContext(Dispatchers.Main) {
+                            if (file != null) {
+                                Toast.makeText(
+                                    context,
+                                    "PDF saved to ${file.absolutePath}",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                                openPdf(file)
+                            } else {
+                                Toast.makeText(
+                                    context,
+                                    "Failed to generate PDF",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
+                    }
+                } finally {
+                    withContext(Dispatchers.Main) {
+                        binding.btnDownloadPdf.isEnabled = true
+                    }
                 }
             }
         }
