@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.datamanager
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.os.Trace
 import android.text.TextUtils
 import androidx.core.content.edit
 import androidx.core.net.toUri
@@ -412,27 +413,36 @@ class Service @Inject constructor(
             if (response.isSuccessful && response.body() != null) {
                 val arr = JsonUtils.getJsonArray("rows", response.body())
                 val startTime = System.currentTimeMillis()
-                println("Realm transaction started")
 
                 val transactionResult = runCatching {
                     withContext(Dispatchers.IO) {
-                        databaseService.withRealm { backgroundRealm ->
-                            backgroundRealm.executeTransaction { realm1 ->
-                                realm1.delete(RealmCommunity::class.java)
-                                for (j in arr) {
-                                    var jsonDoc = j.asJsonObject
-                                    jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-                                    val id = JsonUtils.getString("_id", jsonDoc)
-                                    val community = realm1.createObject(RealmCommunity::class.java, id)
-                                    if (JsonUtils.getString("name", jsonDoc) == "learning") {
-                                        community.weight = 0
+                        Trace.beginSection("SyncPlanetServersTransaction")
+                        try {
+                            databaseService.withRealm { backgroundRealm ->
+                                backgroundRealm.executeTransaction { realm1 ->
+                                    realm1.delete(RealmCommunity::class.java)
+                                }
+                                val chunks = arr.asSequence().chunked(100)
+                                chunks.forEach { chunk ->
+                                    backgroundRealm.executeTransaction { realm1 ->
+                                        for (j in chunk) {
+                                            var jsonDoc = j.asJsonObject
+                                            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
+                                            val id = JsonUtils.getString("_id", jsonDoc)
+                                            val community = realm1.createObject(RealmCommunity::class.java, id)
+                                            if (JsonUtils.getString("name", jsonDoc) == "learning") {
+                                                community.weight = 0
+                                            }
+                                            community.localDomain = JsonUtils.getString("localDomain", jsonDoc)
+                                            community.name = JsonUtils.getString("name", jsonDoc)
+                                            community.parentDomain = JsonUtils.getString("parentDomain", jsonDoc)
+                                            community.registrationRequest = JsonUtils.getString("registrationRequest", jsonDoc)
+                                        }
                                     }
-                                    community.localDomain = JsonUtils.getString("localDomain", jsonDoc)
-                                    community.name = JsonUtils.getString("name", jsonDoc)
-                                    community.parentDomain = JsonUtils.getString("parentDomain", jsonDoc)
-                                    community.registrationRequest = JsonUtils.getString("registrationRequest", jsonDoc)
                                 }
                             }
+                        } finally {
+                            Trace.endSection()
                         }
                     }
                 }
