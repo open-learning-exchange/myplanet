@@ -6,8 +6,6 @@ import android.graphics.Paint
 import android.graphics.pdf.PdfDocument
 import android.os.Environment
 import io.realm.Realm
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
@@ -24,103 +22,101 @@ object SubmissionPdfGenerator {
     private const val MARGIN = 50f
     private const val LINE_HEIGHT = 20f
 
-    suspend fun generateSubmissionPdf(
+    fun generateSubmissionPdf(
         context: Context,
         submission: RealmSubmission,
         realm: Realm
     ): File? {
-        return withContext(Dispatchers.IO) {
-            try {
-                val document = PdfDocument()
-                var pageNumber = 1
-                var pageInfo = PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber).create()
-                var page = document.startPage(pageInfo)
-                var canvas = page.canvas
-                var yPosition = MARGIN
+        return try {
+            val document = PdfDocument()
+            var pageNumber = 1
+            var pageInfo = PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber).create()
+            var page = document.startPage(pageInfo)
+            var canvas = page.canvas
+            var yPosition = MARGIN
 
-                val titlePaint = Paint().apply {
-                    textSize = 20f
-                    isFakeBoldText = true
+            val titlePaint = Paint().apply {
+                textSize = 20f
+                isFakeBoldText = true
+            }
+            val headerPaint = Paint().apply {
+                textSize = 16f
+                isFakeBoldText = true
+            }
+            val normalPaint = Paint().apply {
+                textSize = 12f
+            }
+
+            val examId = getExamId(submission.parentId)
+            val exam = realm.where(RealmStepExam::class.java)
+                .equalTo("id", examId)
+                .findFirst()
+
+            canvas.drawText(exam?.name ?: "Submission Report", MARGIN, yPosition, titlePaint)
+            yPosition += LINE_HEIGHT * 2
+
+            canvas.drawText("Status: ${submission.status}", MARGIN, yPosition, normalPaint)
+            yPosition += LINE_HEIGHT
+            canvas.drawText(
+                "Date: ${TimeUtils.getFormattedDateWithTime(submission.lastUpdateTime)}",
+                MARGIN,
+                yPosition,
+                normalPaint
+            )
+            yPosition += LINE_HEIGHT * 2
+
+            val questions = realm.where(RealmExamQuestion::class.java)
+                .equalTo("examId", examId)
+                .findAll()
+
+            questions.forEachIndexed { index, question ->
+                if (yPosition > PAGE_HEIGHT - MARGIN - 100) {
+                    document.finishPage(page)
+                    pageNumber++
+                    pageInfo =
+                        PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber)
+                            .create()
+                    page = document.startPage(pageInfo)
+                    canvas = page.canvas
+                    yPosition = MARGIN
                 }
-                val headerPaint = Paint().apply {
-                    textSize = 16f
-                    isFakeBoldText = true
-                }
-                val normalPaint = Paint().apply {
-                    textSize = 12f
-                }
 
-                val examId = getExamId(submission.parentId)
-                val exam = realm.where(RealmStepExam::class.java)
-                    .equalTo("id", examId)
-                    .findFirst()
-
-                canvas.drawText(exam?.name ?: "Submission Report", MARGIN, yPosition, titlePaint)
-                yPosition += LINE_HEIGHT * 2
-
-                canvas.drawText("Status: ${submission.status}", MARGIN, yPosition, normalPaint)
-                yPosition += LINE_HEIGHT
-                canvas.drawText(
-                    "Date: ${TimeUtils.getFormattedDateWithTime(submission.lastUpdateTime)}",
+                val questionText = "Q${index + 1}: ${question.body ?: ""}"
+                yPosition = drawMultilineText(
+                    canvas,
+                    questionText,
                     MARGIN,
                     yPosition,
-                    normalPaint
+                    headerPaint,
+                    PAGE_WIDTH - (2 * MARGIN)
                 )
+                yPosition += LINE_HEIGHT / 2
+
+                val answer = submission.answers?.find { it.questionId == question.id }
+                val answerText = formatAnswer(answer)
+                canvas.drawText("A: $answerText", MARGIN + 20, yPosition, normalPaint)
                 yPosition += LINE_HEIGHT * 2
-
-                val questions = realm.where(RealmExamQuestion::class.java)
-                    .equalTo("examId", examId)
-                    .findAll()
-
-                questions.forEachIndexed { index, question ->
-                    if (yPosition > PAGE_HEIGHT - MARGIN - 100) {
-                        document.finishPage(page)
-                        pageNumber++
-                        pageInfo =
-                            PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber)
-                                .create()
-                        page = document.startPage(pageInfo)
-                        canvas = page.canvas
-                        yPosition = MARGIN
-                    }
-
-                    val questionText = "Q${index + 1}: ${question.body ?: ""}"
-                    yPosition = drawMultilineText(
-                        canvas,
-                        questionText,
-                        MARGIN,
-                        yPosition,
-                        headerPaint,
-                        PAGE_WIDTH - (2 * MARGIN)
-                    )
-                    yPosition += LINE_HEIGHT / 2
-
-                    val answer = submission.answers?.find { it.questionId == question.id }
-                    val answerText = formatAnswer(answer)
-                    canvas.drawText("A: $answerText", MARGIN + 20, yPosition, normalPaint)
-                    yPosition += LINE_HEIGHT * 2
-                }
-
-                document.finishPage(page)
-
-                val fileName = "submission_${submission.id}_${System.currentTimeMillis()}.pdf"
-                val directory =
-                    File(context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "Submissions")
-                if (!directory.exists()) {
-                    directory.mkdirs()
-                }
-
-                val file = File(directory, fileName)
-                val outputStream = FileOutputStream(file)
-                document.writeTo(outputStream)
-                document.close()
-                outputStream.close()
-
-                file
-            } catch (e: Exception) {
-                e.printStackTrace()
-                null
             }
+
+            document.finishPage(page)
+
+            val fileName = "submission_${submission.id}_${System.currentTimeMillis()}.pdf"
+            val directory =
+                File(context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "Submissions")
+            if (!directory.exists()) {
+                directory.mkdirs()
+            }
+
+            val file = File(directory, fileName)
+            val outputStream = FileOutputStream(file)
+            document.writeTo(outputStream)
+            document.close()
+            outputStream.close()
+
+            file
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
         }
     }
 

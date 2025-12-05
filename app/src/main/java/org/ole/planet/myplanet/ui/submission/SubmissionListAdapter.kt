@@ -12,7 +12,9 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ItemSubmissionBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -69,8 +71,10 @@ class SubmissionListAdapter(
                 binding.btnDownloadPdf.isEnabled = false
                 binding.progressBar.visibility = View.VISIBLE
                 try {
-                    val file = databaseService.withRealm { realm ->
-                        SubmissionPdfGenerator.generateSubmissionPdf(context, submission, realm)
+                    val file = withContext(Dispatchers.IO) {
+                        databaseService.withRealm { realm ->
+                            SubmissionPdfGenerator.generateSubmissionPdf(context, submission, realm)
+                        }
                     }
                     if (file != null) {
                         Toast.makeText(
