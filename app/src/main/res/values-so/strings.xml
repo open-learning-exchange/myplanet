@@ -20,6 +20,7 @@
     <string name="btn_back">Dib</string>
     <string name="btn_sign_in">Soo gal</string>
     <string name="btn_sync_save">Keyd</string>
+    <string name="loading">Soo dejinta...</string>
     <string name="select_team">xulo koox</string>
     <string name="err_msg_name">Geli magaca isticmaalaha</string>
     <string name="err_msg_password">Geli erayga sirta ah</string>

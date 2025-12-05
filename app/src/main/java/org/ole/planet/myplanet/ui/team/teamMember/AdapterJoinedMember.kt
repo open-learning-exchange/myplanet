@@ -32,13 +32,24 @@ class AdapterJoinedMember(
     private val context: Context,
     private var list: MutableList<JoinedMemberData>,
     private var isLoggedInUserTeamLeader: Boolean,
-    private val currentUserId: String?,
     private val actionListener: MemberActionListener
 ) : RecyclerView.Adapter<AdapterJoinedMember.ViewHolderUser>() {
+
+    fun updateMembers(newMembers: List<JoinedMemberData>) {
+        val oldList = ArrayList(list)
+        list.clear()
+        list.addAll(newMembers)
+        DiffUtils.calculateDiff(
+            oldList,
+            newMembers,
+            areItemsTheSame = { old, new -> old.user.id == new.user.id },
+            areContentsTheSame = { old, new -> old == new }
+        ).dispatchUpdatesTo(this)
+    }
+
     interface MemberActionListener {
         fun onRemoveMember(member: JoinedMemberData, position: Int)
         fun onMakeLeader(member: JoinedMemberData)
-        fun onLeaveTeam()
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderUser {
@@ -123,22 +134,17 @@ class AdapterJoinedMember(
         }
     }
 
-    private fun checkUserAndShowOverflowMenu(binding: RowJoinedUserBinding, position: Int) {
+    private fun checkUserAndShowOverflowMenu(
+        binding: RowJoinedUserBinding,
+        position: Int
+    ) {
         if (isLoggedInUserTeamLeader && list.size > 1) {
             binding.icMore.visibility = View.VISIBLE
             binding.icMore.setOnClickListener {
-                val currentMember = list[position]
-                val isOwnCard = currentMember.user.id == currentUserId
-
-                val overflowMenuOptions = if (isOwnCard) {
-                    arrayOf(context.getString(R.string.leave))
-                } else {
-                    arrayOf(
-                        context.getString(R.string.remove),
-                        context.getString(R.string.make_leader)
-                    )
-                }
-
+                val overflowMenuOptions = arrayOf(
+                    context.getString(R.string.remove),
+                    context.getString(R.string.make_leader)
+                )
                 val builder = AlertDialog.Builder(context, R.style.AlertDialogTheme)
                 val adapter = object : ArrayAdapter<CharSequence>(
                     context,
@@ -153,15 +159,9 @@ class AdapterJoinedMember(
                     }
                 }
                 builder.setAdapter(adapter) { _, i ->
-                    if (isOwnCard) {
-                        when (i) {
-                            0 -> actionListener.onLeaveTeam()
-                        }
-                    } else {
-                        when (i) {
-                            0 -> actionListener.onRemoveMember(list[position], position)
-                            1 -> actionListener.onMakeLeader(list[position])
-                        }
+                    when (i) {
+                        0 -> actionListener.onRemoveMember(list[position], position)
+                        1 -> actionListener.onMakeLeader(list[position])
                     }
                 }.setNegativeButton(R.string.dismiss, null).show()
             }

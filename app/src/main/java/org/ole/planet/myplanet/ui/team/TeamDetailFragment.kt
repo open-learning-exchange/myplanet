@@ -27,7 +27,6 @@ import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMemberCount
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -350,7 +349,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
                     val userId = user?.id
                     val userPlanetCode = user?.planetCode
                     val teamType = team?.teamType
-                    teamRepository.requestToJoin(teamId, userId, userPlanetCode, teamType)
+                    RealmMyTeam.requestToJoin(teamId, userId, userPlanetCode, teamType)
                     binding.btnLeave.text = getString(R.string.requested)
                     binding.btnLeave.isEnabled = false
                     teamRepository.syncTeamActivities()

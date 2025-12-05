@@ -19,6 +19,7 @@
     <string name="hint_name">Nombre</string>
     <string name="btn_back">Volver</string>
     <string name="btn_sign_in">Iniciar sesión</string>
+    <string name="loading">Cargando...</string>
     <string name="select_team">seleccionar equipo</string>
     <string name="btn_sync_save">Guardar</string>
     <string name="err_msg_name">Ingresa tu nombre de usuario</string>
