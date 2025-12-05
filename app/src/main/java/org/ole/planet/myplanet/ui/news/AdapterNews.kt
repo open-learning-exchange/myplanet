@@ -23,6 +23,11 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.github.chrisbanes.photoview.PhotoView
 import com.google.gson.JsonArray
@@ -58,7 +63,7 @@ import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.makeExpandable
 
-class AdapterNews(var context: Context, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userProfileDbHandler: UserProfileDbHandler, private val databaseService: DatabaseService) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
+class AdapterNews(var context: Context, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userProfileDbHandler: UserProfileDbHandler, private val databaseService: DatabaseService, private val scope: CoroutineScope) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem ->
             if (oldItem === newItem) return@itemCallback true
@@ -105,6 +110,36 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     private val leadersList: List<RealmUserModel> by lazy {
         val raw = settings.getString("communityLeaders", "") ?: ""
         RealmUserModel.parseLeadersJson(raw)
+    }
+    private var _isTeamLeader: Boolean? = null
+
+    init {
+        fetchTeamLeaderStatus()
+    }
+
+    private fun fetchTeamLeaderStatus() {
+        if (teamId == null) {
+            _isTeamLeader = false
+            return
+        }
+        scope.launch {
+            val isLeader = withTimeoutOrNull(2000) {
+                withContext(Dispatchers.IO) {
+                    try {
+                        databaseService.withRealm { realm ->
+                            val team = realm.where(RealmMyTeam::class.java)
+                                .equalTo("teamId", teamId)
+                                .equalTo("isLeader", true)
+                                .findFirst()
+                            team?.userId == currentUser?._id
+                        }
+                    } catch (e: Exception) {
+                        false
+                    }
+                }
+            }
+            _isTeamLeader = isLeader
+        }
     }
 
     fun setImageList(imageList: RealmList<String>?) {
@@ -454,26 +489,12 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     }
 
     fun isTeamLeader(): Boolean {
-        if(teamId==null)return false
-        return try {
-            if (::mRealm.isInitialized && !mRealm.isClosed) {
-                val team = mRealm.where(RealmMyTeam::class.java)
-                    .equalTo("teamId", teamId)
-                    .equalTo("isLeader", true)
-                    .findFirst()
-                team?.userId == currentUser?._id
-            } else {
-                databaseService.withRealm { realm ->
-                    val team = realm.where(RealmMyTeam::class.java)
-                        .equalTo("teamId", teamId)
-                        .equalTo("isLeader", true)
-                        .findFirst()
-                    team?.userId == currentUser?._id
-                }
-            }
-        } catch (e: Exception) {
-            false
-        }
+        return _isTeamLeader ?: false
+    }
+
+    fun invalidateTeamLeaderCache() {
+        _isTeamLeader = null
+        fetchTeamLeaderStatus()
     }
 
     private fun getReplies(finalNews: RealmNews?): List<RealmNews> {
