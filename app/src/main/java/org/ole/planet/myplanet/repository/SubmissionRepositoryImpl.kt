@@ -4,6 +4,7 @@ import io.realm.Case
 import io.realm.Sort
 import java.util.Date
 import javax.inject.Inject
+import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
@@ -16,6 +17,12 @@ class SubmissionRepositoryImpl @Inject constructor(
 
     private fun RealmSubmission.examIdFromParentId(): String? {
         return parentId?.substringBefore("@")
+    }
+
+    override suspend fun getSubmissionsFlow(userId: String): Flow<List<RealmSubmission>> {
+        return queryListFlow(RealmSubmission::class.java) {
+            equalTo("userId", userId)
+        }
     }
 
     override suspend fun getPendingSurveys(userId: String?): List<RealmSubmission> {

@@ -62,7 +62,8 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     private val backPressedInterval: Long = 2000
     private var teamList = java.util.ArrayList<String?>()
     private var teamAdapter: ArrayAdapter<String?>? = null
-
+    private var isUserInteracting = false
+    private var cachedTeams: List<RealmMyTeam>? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityLoginBinding.inflate(layoutInflater)
@@ -163,6 +164,11 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         selectDarkModeButton.setOnClickListener {
             ThemeManager.showThemeDialog(this)
         }
+
+        teamList.add(getString(R.string.loading))
+        teamAdapter = ArrayAdapter(this, R.layout.spinner_item_white, teamList)
+        teamAdapter?.setDropDownViewResource(R.layout.custom_simple_list_item_1)
+        binding.team.adapter = teamAdapter
     }
 
     private fun declareElements() {
@@ -305,16 +311,31 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             override fun afterTextChanged(s: Editable) {}
         })
         if (getUrl().isNotEmpty()) {
-            updateTeamDropdown()
+            loadTeamsAsync()
         }
     }
 
-    fun updateTeamDropdown() {
-        val teams: List<RealmMyTeam>? = databaseService.withRealm { realm ->
-            realm.where(RealmMyTeam::class.java)
-                .isEmpty("teamId").equalTo("status", "active").findAll()?.let { realm.copyFromRealm(it) }
+    fun loadTeamsAsync() {
+        if (cachedTeams != null) {
+            setupTeamDropdown(cachedTeams)
+            return
         }
+        lifecycleScope.launch {
+            val teams = withContext(Dispatchers.IO) {
+                databaseService.withRealm { realm ->
+                    realm.where(RealmMyTeam::class.java)
+                        .isEmpty("teamId")
+                        .equalTo("status", "active")
+                        .findAll()
+                        ?.let { realm.copyFromRealm(it) }
+                }
+            }
+            cachedTeams = teams
+            setupTeamDropdown(teams)
+        }
+    }
 
+    private fun setupTeamDropdown(teams: List<RealmMyTeam>?) {
         if (!teams.isNullOrEmpty()) {
             binding.team.visibility = View.VISIBLE
             teamAdapter = ArrayAdapter(this, R.layout.spinner_item_white, teamList)
@@ -338,20 +359,27 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                     }
                 }
             }
-
+            binding.team.setOnTouchListener { _, _ ->
+                isUserInteracting = true
+                false
+            }
             binding.team.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
                 override fun onItemSelected(parentView: AdapterView<*>?, selectedItemView: View?, position: Int, id: Long) {
-                    if (position > 0) {
-                        val selectedTeam = teams[position - 1]
-                        val currentTeamId = prefData.getSelectedTeamId()
-                        if (currentTeamId != selectedTeam._id) {
-                            prefData.setSelectedTeamId(selectedTeam._id)
-                            getTeamMembers()
+                    if (isUserInteracting) {
+                        if (position > 0) {
+                            val selectedTeam = teams[position - 1]
+                            val currentTeamId = prefData.getSelectedTeamId()
+                            if (currentTeamId != selectedTeam._id) {
+                                prefData.setSelectedTeamId(selectedTeam._id)
+                                getTeamMembers()
+                            }
                         }
+                        isUserInteracting = false
                     }
                 }
-
-                override fun onNothingSelected(parentView: AdapterView<*>?) {}
+                override fun onNothingSelected(parentView: AdapterView<*>?) {
+                    isUserInteracting = false
+                }
             }
         } else {
             binding.team.visibility = View.GONE
@@ -444,8 +472,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             val updatedUserList = userList.filterNot { user -> filteredExistingUsers.any { it.name == user.name } } + filteredExistingUsers
             prefData.setSavedUsers(updatedUserList)
         }
-
-        updateTeamDropdown()
 
         if (mAdapter == null) {
             mAdapter = TeamListAdapter(this)
@@ -575,6 +601,11 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
 
     fun getCustomDeviceName(): String? {
         return settings.getString("customDeviceName", NetworkUtils.getDeviceName())
+    }
+
+    fun invalidateTeamsCacheAndReload() {
+        cachedTeams = null
+        loadTeamsAsync()
     }
 
     private fun resetGuestAsMember(username: String?) {
