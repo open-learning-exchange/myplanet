@@ -6,6 +6,8 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onAdd
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onRemove
+import org.ole.planet.myplanet.model.dto.LibraryItem
+import org.ole.planet.myplanet.model.dto.TagItem
 
 class LibraryRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
@@ -13,6 +15,32 @@ class LibraryRepositoryImpl @Inject constructor(
 
     override suspend fun getAllLibraryItems(): List<RealmMyLibrary> {
         return queryList(RealmMyLibrary::class.java)
+    }
+
+    override suspend fun getLibraryItems(): List<LibraryItem> {
+        return queryList(RealmMyLibrary::class.java).map {
+            LibraryItem(
+                id = it.id,
+                _id = it._id,
+                _rev = it._rev,
+                title = it.title,
+                description = it.description,
+                timesRated = it.timesRated,
+                averageRating = it.averageRating,
+                createdDate = it.createdDate,
+                uploadDate = it.uploadDate,
+                resourceOffline = it.isResourceOffline(),
+                resourceId = it.resourceId,
+                resourceLocalAddress = it.resourceLocalAddress,
+                filename = it.filename,
+                mediaType = it.mediaType,
+                language = it.language,
+                subject = it.subject?.toList(),
+                level = it.level?.toList(),
+                userId = it.userId?.toList(),
+                tags = it.tag?.map { tag -> TagItem(tag.id, tag._id, tag.name) } ?: emptyList()
+            )
+        }
     }
 
     override suspend fun getLibraryItemById(id: String): RealmMyLibrary? {

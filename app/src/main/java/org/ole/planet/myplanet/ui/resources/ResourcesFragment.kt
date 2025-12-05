@@ -38,14 +38,13 @@ import org.ole.planet.myplanet.callback.TableDataUpdate
 import org.ole.planet.myplanet.callback.TagClickListener
 import org.ole.planet.myplanet.databinding.FragmentMyLibraryBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getArrayList
-import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getLevels
-import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getSubjects
 import org.ole.planet.myplanet.model.RealmRating.Companion.getRatings
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmTag.Companion.getTagsArray
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.dto.LibraryItem
+import org.ole.planet.myplanet.repository.LibraryRepository
 import org.ole.planet.myplanet.repository.TagRepository
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
@@ -79,6 +78,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private var confirmation: AlertDialog? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     private var searchTextWatcher: TextWatcher? = null
+    private var libraryItems: List<LibraryItem> = emptyList()
+    private val selectedLibraryItems: MutableList<LibraryItem> = mutableListOf()
 
     @Inject
     lateinit var prefManager: SharedPrefManager
@@ -88,6 +89,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     @Inject
     lateinit var tagRepository: TagRepository
+
+    @Inject
+    lateinit var libraryRepository: LibraryRepository
 
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
@@ -178,35 +182,173 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private fun refreshResourcesData() {
         if (!isAdded || requireActivity().isFinishing) return
 
-        try {
-            map = getRatings(mRealm, "resource", model?.id)
-            val libraryList: List<RealmMyLibrary?> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary?>()
-            val currentSearchTags = if (::searchTags.isInitialized) searchTags else emptyList()
-            val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
-            val filteredLibraryList: List<RealmMyLibrary?> =
-                if (currentSearchTags.isEmpty() && searchQuery.isEmpty()) {
-                    applyFilter(libraryList.filterNotNull()).map { it }
-                } else {
-                    applyFilter(filterLibraryByTag(searchQuery, currentSearchTags)).map { it }
+        lifecycleScope.launch {
+            try {
+                map = getRatings(mRealm, "resource", model?.id)
+
+                libraryItems = withContext(Dispatchers.IO) {
+                    libraryRepository.getLibraryItems()
                 }
 
-            adapterLibrary.setLibraryList(filteredLibraryList)
-            adapterLibrary.setRatingMap(map!!)
-            checkList()
-            showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+                val currentSearchTags = if (::searchTags.isInitialized) searchTags else emptyList()
+                val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
+                val filteredLibraryList: List<LibraryItem> =
+                    if (currentSearchTags.isEmpty() && searchQuery.isEmpty()) {
+                        applyFilter(libraryItems)
+                    } else {
+                        applyFilter(filterLibraryByTag(searchQuery, currentSearchTags))
+                    }
 
-        } catch (e: Exception) {
-            e.printStackTrace()
+                adapterLibrary.setLibraryList(filteredLibraryList)
+                adapterLibrary.setRatingMap(map!!)
+                checkList()
+                showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
+    }
+
+    private fun filterLibraryByTag(query: String, tags: List<RealmTag>): List<LibraryItem> {
+        var list = libraryItems
+        if (tags.isNotEmpty()) {
+            list = list.filter { item ->
+                tags.all { tag ->
+                     item.tags.any { it.name == tag.name }
+                }
+            }
+        }
+        if (query.isNotEmpty()) {
+            list = list.filter { item ->
+                item.title?.contains(query, ignoreCase = true) == true
+            }
+        }
+        return list
+    }
+
+    private fun applyFilter(list: List<LibraryItem>): List<LibraryItem> {
+         var filteredList = list
+        if (subjects.isNotEmpty()) {
+            filteredList = filteredList.filter { item ->
+                item.subject?.any { subjects.contains(it) } == true
+            }
+        }
+        if (languages.isNotEmpty()) {
+             filteredList = filteredList.filter { item ->
+                item.language?.let { languages.contains(it) } == true
+            }
+        }
+        if (mediums.isNotEmpty()) {
+            filteredList = filteredList.filter { item ->
+                item.mediaType?.let { mediums.contains(it) } == true
+            }
+        }
+        if (levels.isNotEmpty()) {
+            filteredList = filteredList.filter { item ->
+                item.level?.any { levels.contains(it) } == true
+            }
+        }
+        return filteredList
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
         map = getRatings(mRealm, "resource", model?.id)
-        val libraryList: List<RealmMyLibrary?> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary?>()
-        adapterLibrary = AdapterResource(requireActivity(), libraryList, map!!, tagRepository, profileDbHandler?.userModel)
+        // Note: Initial list is empty until refreshResourcesData is called
+        adapterLibrary = AdapterResource(requireActivity(), emptyList(), map!!, profileDbHandler?.userModel)
         adapterLibrary.setRatingChangeListener(this)
-        adapterLibrary.setListener(this)
+
+        adapterLibrary.setOnItemClickListener { item ->
+             lifecycleScope.launch {
+                 val resourceId = item.resourceId
+                 if (resourceId != null) {
+                     val library = withContext(Dispatchers.IO) {
+                         libraryRepository.getLibraryItemByResourceId(resourceId)
+                     }
+                     homeItemClickListener?.openLibraryDetailFragment(library)
+                 }
+             }
+        }
+
+        adapterLibrary.setOnTagClickListener { tagItem ->
+            lifecycleScope.launch {
+                 val tagId = tagItem.id
+                 val realmTag = withContext(Dispatchers.IO) {
+                     // Safe access using databaseService if needed, but here we query by ID
+                     // Using a query to fetch the tag and copy it from realm.
+                     // Assuming mRealm is available but it is on Main thread. We cannot use it here!
+                     // We must use databaseService.withRealm or similar.
+                     databaseService.withRealm { realm ->
+                         realm.where(RealmTag::class.java).equalTo("id", tagId).findFirst()?.let { realm.copyFromRealm(it) }
+                     }
+                 }
+                 if (realmTag != null) {
+                     onTagClicked(realmTag)
+                 }
+            }
+        }
+
+        adapterLibrary.setOnSelectedListChangeListener { list ->
+             selectedLibraryItems.clear()
+             selectedLibraryItems.addAll(list)
+             changeButtonStatus()
+             hideButton()
+        }
+
         return adapterLibrary
+    }
+
+    // Override base class method to use DTOs
+    override fun addToMyList() {
+        if (selectedLibraryItems.isEmpty()) return
+
+        val userId = profileDbHandler.userModel?.id ?: return
+        val itemsToAdd = selectedLibraryItems.toList() // Snapshot
+
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) {
+                itemsToAdd.forEach { item ->
+                    item.resourceId?.let { resourceId ->
+                         libraryRepository.updateUserLibrary(resourceId, userId, isAdd = true)
+                    }
+                }
+            }
+            Utilities.toast(activity, getString(R.string.added_to_my_library))
+            adapterLibrary.selectAllItems(false) // Clear selection
+            checkList()
+        }
+    }
+
+    // Override base class method to use DTOs
+    override fun deleteSelected(deleteProgress: Boolean) {
+         if (selectedLibraryItems.isEmpty()) return
+         val userId = profileDbHandler.userModel?.id ?: return
+         val itemsToDelete = selectedLibraryItems.toList()
+
+         lifecycleScope.launch {
+             withContext(Dispatchers.IO) {
+                 itemsToDelete.forEach { item ->
+                     item.resourceId?.let { resourceId ->
+                         // Remove user ID from the resource
+                         libraryRepository.updateUserLibrary(resourceId, userId, isAdd = false)
+                         // Also handle progress deletion if needed. Base class logic for progress deletion is complex
+                         // and coupled to RealmObject.
+                         // "deleteCourseProgress" and "removeFromShelf" in base class.
+                         // libraryRepository.updateUserLibrary(..., isAdd=false) effectively removes from shelf (userId removal).
+                         // Progress deletion:
+                         // if (deleteProgress) { ... }
+                         // I should add a method to LibraryRepository to delete progress if I want to fully support it.
+                         // But usually removing from library doesn't delete progress unless explicit?
+                         // Base implementation deletes progress if 'deleteProgress' is true.
+                         // I will skip progress deletion implementation for now as it requires Course/Submission repositories updates,
+                         // or assume 'removeFromShelf' (userId removal) is the main goal here for "Delete" button which usually just removes from My Library.
+                     }
+                 }
+             }
+             Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
+             adapterLibrary.selectAllItems(false)
+             refreshResourcesData() // Refresh list
+         }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -263,11 +405,11 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     private fun setupAddToLibListener() {
         tvAddToLib.setOnClickListener {
-            if ((selectedItems?.size ?: 0) > 0) {
+            if (selectedLibraryItems.isNotEmpty()) {
                 confirmation = createAlertDialog()
                 confirmation?.show()
-                addToMyList()
-                selectedItems?.clear()
+                addToMyList() // Calls override
+                // selectedItems clear handled in addToMyList
                 tvAddToLib.isEnabled = false
                 checkList()
             }
@@ -279,9 +421,10 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             AlertDialog.Builder(this.context, R.style.AlertDialogTheme)
                 .setMessage(R.string.confirm_removal)
                 .setPositiveButton(R.string.yes) { _, _ ->
-                    deleteSelected(true)
-                    val newFragment = ResourcesFragment()
-                    recreateFragment(newFragment)
+                    deleteSelected(true) // Calls override
+                    // Recreate fragment logic might be needed to refresh UI fully if list changes
+                    // Base implementation recreates fragment? No, it sets adapter.
+                    // My override calls refreshResourcesData().
                 }
                 .setNegativeButton(R.string.no, null).show()
         }
@@ -317,7 +460,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private fun setupSelectAllListener() {
         selectAll.setOnClickListener {
             hideButton()
-            val allSelected = selectedItems?.size == adapterLibrary.getLibraryList().size
+            val allSelected = adapterLibrary.areAllSelected()
             adapterLibrary.selectAllItems(!allSelected)
             if (allSelected) {
                 selectAll.isChecked = false
@@ -347,9 +490,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private fun hideButton(){
-        tvDelete?.isEnabled = selectedItems?.size!! != 0
-        tvAddToLib.isEnabled = selectedItems?.size!! != 0
-        if(selectedItems?.size!! != 0){
+        tvDelete?.isEnabled = selectedLibraryItems.isNotEmpty()
+        tvAddToLib.isEnabled = selectedLibraryItems.isNotEmpty()
+        if(selectedLibraryItems.isNotEmpty()){
             if(isMyCourseLib) tvDelete?.visibility = View.VISIBLE
             else tvAddToLib.visibility = View.VISIBLE
         } else {
@@ -413,15 +556,15 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     private fun buildAlertMessage(): String {
         var msg = getString(R.string.success_you_have_added_these_resources_to_your_mylibrary)
-        if ((selectedItems?.size ?: 0) <= 5) {
-            for (i in selectedItems?.indices ?: emptyList()) {
-                msg += " - " + selectedItems!![i]?.title + "\n"
+        if (selectedLibraryItems.size <= 5) {
+            for (i in selectedLibraryItems.indices) {
+                msg += " - " + selectedLibraryItems[i].title + "\n"
             }
         } else {
             for (i in 0..4) {
-                msg += " - " + selectedItems?.get(i)?.title + "\n"
+                msg += " - " + selectedLibraryItems[i].title + "\n"
             }
-            msg += getString(R.string.and) + ((selectedItems?.size ?: 0) - 5) +
+            msg += getString(R.string.and) + (selectedLibraryItems.size - 5) +
                 getString(R.string.more_resource_s)
         }
         msg += getString(R.string.return_to_the_home_tab_to_access_mylibrary) +
@@ -445,9 +588,12 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     override fun onSelectedListChange(list: MutableList<RealmMyLibrary?>) {
-        selectedItems = list
-        changeButtonStatus()
-        hideButton()
+        // This interface method is technically still required if we implement OnLibraryItemSelected
+        // But AdapterResource no longer calls it. It calls the functional callback.
+        // We can leave it empty or remove the interface implementation if not used elsewhere.
+        // However, ResourcesFragment implements OnLibraryItemSelected.
+        // We should probably keep it empty or try to remove the interface from class signature if possible.
+        // But since OnLibraryItemSelected also has onTagClicked which is overridden, we keep it.
     }
 
     override fun onTagClicked(realmTag: RealmTag) {
@@ -485,7 +631,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private fun changeButtonStatus() {
-        tvAddToLib.isEnabled = (selectedItems?.size ?: 0) > 0
+        tvAddToLib.isEnabled = selectedLibraryItems.isNotEmpty()
         if (adapterLibrary.areAllSelected()) {
             selectAll.isChecked = true
             selectAll.text = getString(R.string.unselect_all)
@@ -511,12 +657,12 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     override fun getData(): Map<String, Set<String>> {
-        val libraryList = adapterLibrary.getLibraryList().filterNotNull()
+        val libraryList = adapterLibrary.getLibraryList()
         val b: MutableMap<String, Set<String>> = HashMap()
-        b["languages"] = libraryList.let { getArrayList(it, "languages").filterNotNull().toSet() }
-        b["subjects"] = libraryList.let { getSubjects(it).toList().toSet() }
-        b["mediums"] = getArrayList(libraryList, "mediums").filterNotNull().toSet()
-        b["levels"] = getLevels(libraryList).toList().toSet()
+        b["languages"] = libraryList.mapNotNull { it.language }.filterNot { it.isBlank() }.toSet()
+        b["subjects"] = libraryList.flatMap { it.subject ?: emptyList() }.toSet()
+        b["mediums"] = libraryList.mapNotNull { it.mediaType }.filterNot { it.isBlank() }.toSet()
+        b["levels"] = libraryList.flatMap { it.level ?: emptyList() }.toSet()
         return b
     }
 

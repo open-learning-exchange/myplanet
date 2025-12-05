@@ -1,9 +1,11 @@
 package org.ole.planet.myplanet.repository
 
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.dto.LibraryItem
 
 interface LibraryRepository {
     suspend fun getAllLibraryItems(): List<RealmMyLibrary>
+    suspend fun getLibraryItems(): List<LibraryItem>
     suspend fun getLibraryItemById(id: String): RealmMyLibrary?
     suspend fun getLibraryItemByResourceId(resourceId: String): RealmMyLibrary?
     suspend fun getLibraryItemsByIds(ids: Collection<String>): List<RealmMyLibrary>
