@@ -183,30 +183,61 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     private lateinit var anrWatchdog: ANRWatchdog
 
     override fun onCreate() {
+        android.os.Trace.beginSection("Application_onCreate")
         super.onCreate()
         context = this
+        android.os.Trace.beginSection("setupCriticalProperties")
         setupCriticalProperties()
-        performDeferredInitialization()
+        android.os.Trace.endSection()
+
+        android.os.Trace.beginSection("setupStrictMode")
         setupStrictMode()
+        android.os.Trace.endSection()
+
+        android.os.Trace.beginSection("registerExceptionHandler")
         registerExceptionHandler()
+        android.os.Trace.endSection()
+
+        android.os.Trace.beginSection("setupLifecycleCallbacks")
         setupLifecycleCallbacks()
+        android.os.Trace.endSection()
+
+        applicationScope.launch(Dispatchers.Default) {
+            android.os.Trace.beginSection("runDeferredInitialization")
+            runDeferredInitialization()
+            android.os.Trace.endSection()
+        }
+        android.os.Trace.endSection()
     }
 
-    private fun performDeferredInitialization() {
-        applicationScope.launch {
-            initApp()
-            loadAndApplyTheme()
-            ensureApiClientInitialized()
-            initializeDatabaseConnection()
-            setupAnrWatchdog()
-            scheduleWorkersOnStart()
-            observeNetworkForDownloads()
-        }
-    }
-    private fun initApp() {
-        applicationScope.launch(Dispatchers.Default) {
-            startListenNetworkState()
-        }
+    private suspend fun runDeferredInitialization() {
+        android.os.Trace.beginSection("initApp")
+        startListenNetworkState()
+        android.os.Trace.endSection()
+
+        android.os.Trace.beginSection("loadAndApplyTheme")
+        loadAndApplyTheme()
+        android.os.Trace.endSection()
+
+        android.os.Trace.beginSection("ensureApiClientInitialized")
+        ensureApiClientInitialized()
+        android.os.Trace.endSection()
+
+        android.os.Trace.beginSection("initializeDatabaseConnection")
+        initializeDatabaseConnection()
+        android.os.Trace.endSection()
+
+        android.os.Trace.beginSection("setupAnrWatchdog")
+        setupAnrWatchdog()
+        android.os.Trace.endSection()
+
+        android.os.Trace.beginSection("scheduleWorkersOnStart")
+        scheduleWorkersOnStart()
+        android.os.Trace.endSection()
+
+        android.os.Trace.beginSection("observeNetworkForDownloads")
+        observeNetworkForDownloads()
+        android.os.Trace.endSection()
     }
 
     private fun setupCriticalProperties() {
@@ -291,7 +322,9 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             val savedThemeMode = withContext(Dispatchers.IO) {
                 getCurrentThemeMode()
             }
-            applyThemeMode(savedThemeMode)
+            withContext(Dispatchers.Main) {
+                applyThemeMode(savedThemeMode)
+            }
         } finally {
             // success
         }
