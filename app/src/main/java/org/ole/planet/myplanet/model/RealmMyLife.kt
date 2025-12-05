@@ -37,30 +37,6 @@ open class RealmMyLife : RealmObject {
                 .sort("weight")
         }
 
-        @JvmStatic
-        fun updateWeight(weight: Int, id: String?, userId: String?) {
-            MainApplication.applicationScope.launch {
-                val databaseService = (MainApplication.context as MainApplication).databaseService
-                databaseService.executeTransactionAsync { realm ->
-                    val targetItem = realm.where(RealmMyLife::class.java)
-                        .equalTo("_id", id)
-                        .findFirst()
-
-                    targetItem?.let { item ->
-                        val currentWeight = item.weight
-                        item.weight = weight
-
-                        val otherItem = realm.where(RealmMyLife::class.java)
-                            .equalTo("userId", userId)
-                            .equalTo("weight", weight)
-                            .notEqualTo("_id", id)
-                            .findFirst()
-
-                        otherItem?.weight = currentWeight
-                    }
-                }
-            }
-        }
 
         @JvmStatic
         fun updateVisibility(isVisible: Boolean, id: String?) {

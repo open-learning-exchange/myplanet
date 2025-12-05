@@ -31,8 +31,9 @@ class AdapterHealthExamination(
     private val context: Context,
     private val mh: RealmMyHealthPojo,
     private val userModel: RealmUserModel?,
-    private val userNameMap: Map<String, String?>
+    private val userMap: Map<String, RealmUserModel>
 ) : ListAdapter<RealmMyHealthPojo, ViewHolderMyHealthExamination>(HealthExaminationDiffCallback()) {
+    private val displayNameCache = mutableMapOf<String, String>()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderMyHealthExamination {
         val rowExaminationBinding = RowExaminationBinding.inflate(
@@ -52,7 +53,10 @@ class AdapterHealthExamination(
 
         val createdBy = getString("createdBy", encrypted)
         if (!TextUtils.isEmpty(createdBy) && !TextUtils.equals(createdBy, userModel?.id)) {
-            val name = userNameMap[createdBy] ?: createdBy.split(colonRegex).dropLastWhile { it.isEmpty() }.toTypedArray().getOrNull(1) ?: createdBy
+            val name = displayNameCache.getOrPut(createdBy) {
+                val model = userMap[createdBy]
+                model?.getFullName() ?: createdBy.split(colonRegex).dropLastWhile { it.isEmpty() }.toTypedArray().getOrNull(1) ?: createdBy
+            }
             binding.txtDate.text = context.getString(R.string.two_strings, binding.txtDate.text, name).trimIndent()
             holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.md_grey_50))
         } else {

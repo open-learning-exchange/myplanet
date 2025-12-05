@@ -59,6 +59,8 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     lateinit var steps: List<RealmCourseStep?>
     var position = 0
     private var currentStep = 0
+    private var cachedCourseProgress: Int? = null
+    private val isFetchingProgress = java.util.concurrent.atomic.AtomicBoolean(false)
     private var joinDialog: AlertDialog? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -75,21 +77,28 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         _binding = FragmentTakeCourseBinding.inflate(inflater, container, false)
         mRealm = databaseService.realmInstance
         userModel = userProfileDbHandler.userModel
-        currentCourse = mRealm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        binding.tvCourseTitle.text = currentCourse?.courseTitle
         viewLifecycleOwner.lifecycleScope.launch {
+            currentCourse = mRealm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
+            binding.tvCourseTitle.text = currentCourse?.courseTitle
             steps = courseRepository.getCourseSteps(courseId)
             if (steps.isEmpty()) {
                 binding.nextStep.visibility = View.GONE
                 binding.previousStep.visibility = View.GONE
             }
 
-            currentStep = getCourseProgress()
+            if (cachedCourseProgress == null && isFetchingProgress.compareAndSet(false, true)) {
+                try {
+                    cachedCourseProgress = getCourseProgress()
+                } finally {
+                    isFetchingProgress.set(false)
+                }
+            }
+            currentStep = cachedCourseProgress ?: 0
             position = if (currentStep > 0) currentStep else 0
             setNavigationButtons()
             binding.viewPager2.adapter =
@@ -324,11 +333,13 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         setCourseData()
     }
 
-    private fun getCourseProgress(): Int {
-        return databaseService.withRealm { realm ->
-            val user = userProfileDbHandler.userModel
-            val courseProgressMap = RealmCourseProgress.getCourseProgress(realm, user?.id)
-            courseProgressMap[courseId]?.asJsonObject?.get("current")?.asInt ?: 0
+    private suspend fun getCourseProgress(): Int {
+        return withContext(Dispatchers.IO) {
+            databaseService.withRealm { realm ->
+                val user = userProfileDbHandler.userModel
+                val courseProgressMap = RealmCourseProgress.getCourseProgress(realm, user?.id)
+                courseProgressMap[courseId]?.asJsonObject?.get("current")?.asInt ?: 0
+            }
         }
     }
 
