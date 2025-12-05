@@ -6,10 +6,14 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.CompoundButton
 import android.widget.RadioGroup
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.afollestad.materialdialogs.DialogAction
 import com.afollestad.materialdialogs.MaterialDialog
 import io.realm.Sort
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
@@ -294,17 +298,27 @@ fun SyncActivity.setupManualConfigEnabled(binding: DialogServerUrlBinding, dialo
     editor.putString("serverProtocol", getString(R.string.http_protocol)).apply()
     showConfigurationUIElements(binding, true, dialog)
 
-    val communities: List<RealmCommunity> = databaseService.withRealm { realm ->
-        realm.where(RealmCommunity::class.java).sort("weight", Sort.ASCENDING).findAll().let { realm.copyFromRealm(it) }
-    }
-    val nonEmptyCommunities = communities.filter { !TextUtils.isEmpty(it.name) }
-    binding.spnCloud.adapter = ArrayAdapter(this, R.layout.spinner_item_white, nonEmptyCommunities)
-    binding.spnCloud.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-        override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-            onChangeServerUrl()
-        }
+    val placeholder = getString(R.string.loading)
+    binding.spnCloud.adapter = ArrayAdapter(this, R.layout.spinner_item_white, listOf(placeholder))
 
-        override fun onNothingSelected(parent: AdapterView<*>?) {}
+    lifecycleScope.launch {
+        val communities = withContext(Dispatchers.IO) {
+            databaseService.withRealm { realm ->
+                realm.where(RealmCommunity::class.java)
+                    .sort("weight", Sort.ASCENDING)
+                    .findAll()
+                    .let { realm.copyFromRealm(it) }
+            }
+        }
+        val nonEmptyCommunities = communities.filter { !TextUtils.isEmpty(it.name) }
+        binding.spnCloud.adapter = ArrayAdapter(this@setupManualConfigEnabled, R.layout.spinner_item_white, nonEmptyCommunities)
+        binding.spnCloud.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                onChangeServerUrl()
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
     }
 
     binding.switchServerUrl.setOnCheckedChangeListener { _: CompoundButton?, b: Boolean ->
