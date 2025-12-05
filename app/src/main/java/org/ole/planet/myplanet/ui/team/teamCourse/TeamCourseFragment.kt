@@ -22,17 +22,22 @@ class TeamCourseFragment : BaseTeamFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        setupCoursesList()
-    }
-    
-    private fun setupCoursesList() {
-        val courses = mRealm.where(RealmMyCourse::class.java).`in`("id", team?.courses?.toTypedArray<String>()).findAll()
-        adapterTeamCourse = settings?.let { AdapterTeamCourse(requireActivity(), courses.toMutableList(), mRealm, teamId, it) }
+        val teamCreator = team?.userId ?: ""
+        adapterTeamCourse = settings?.let {
+            AdapterTeamCourse(requireActivity(), teamCreator, it)
+        }
         binding.rvCourse.layoutManager = LinearLayoutManager(activity)
         binding.rvCourse.adapter = adapterTeamCourse
-        adapterTeamCourse?.let {
-            showNoData(binding.tvNodata, it.itemCount, "teamCourses")
-        }
+        setupCoursesList()
+    }
+
+    private fun setupCoursesList() {
+        val courses = mRealm.where(RealmMyCourse::class.java)
+            .`in`("id", team?.courses?.toTypedArray<String>())
+            .findAll()
+        val courseList = mRealm.copyFromRealm(courses)
+        adapterTeamCourse?.submitList(courseList)
+        showNoData(binding.tvNodata, courseList.size, "teamCourses")
     }
     override fun onNewsItemClick(news: RealmNews?) {}
     override fun clearImages() {
