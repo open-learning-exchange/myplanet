@@ -81,7 +81,7 @@ class SyncManager constructor(
     private var betaSync = false
     private val _syncStatus = MutableStateFlow<SyncStatus>(SyncStatus.Idle)
     val syncStatus: StateFlow<SyncStatus> = _syncStatus
-    private val syncDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
+    private val syncDispatcher = Dispatchers.IO
     private val initializationJob: Job by lazy {
         syncScope.launch {
             improvedSyncManager.get().initialize()
@@ -148,8 +148,10 @@ class SyncManager constructor(
         cancel(context, 111)
         isSyncing = false
         settings.edit { putLong("LastSync", Date().time) }
-        listener?.onSyncComplete()
-        listener = null
+        syncScope.launch(Dispatchers.Main) {
+            listener?.onSyncComplete()
+            listener = null
+        }
         _syncStatus.value = SyncStatus.Success("Sync completed")
         try {
             if (!betaSync) {
@@ -158,17 +160,26 @@ class SyncManager constructor(
                 td?.interrupt()
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            createLog("SyncManager destroy", "${e.message}")
         }
     }
 
     private fun authenticateAndSync(type: String, syncTables: List<String>?) {
         backgroundSync = syncScope.launch(syncDispatcher) {
-            if (transactionSyncManager.authenticate()) {
-                startSync(type, syncTables)
-            } else {
-                handleException(context.getString(R.string.invalid_configuration))
-                cleanupMainSync()
+            try {
+                if (transactionSyncManager.authenticate()) {
+                    startSync(type, syncTables)
+                } else {
+                    withContext(Dispatchers.Main) {
+                        handleException(context.getString(R.string.invalid_configuration))
+                        cleanupMainSync()
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    handleException(e.message)
+                    cleanupMainSync()
+                }
             }
         }
     }
@@ -195,97 +206,97 @@ class SyncManager constructor(
                 val syncJobs = listOf(
                     async {
                         logger.startProcess("tablet_users_sync")
-                        transactionSyncManager.syncDb(realm, "tablet_users")
+                        transactionSyncManager.syncDb("tablet_users")
                         logger.endProcess("tablet_users_sync")
                     },
                     async {
                         logger.startProcess("library_sync")
-                        myLibraryTransactionSync(realm)
+                        myLibraryTransactionSync()
                         logger.endProcess("library_sync")
                     },
                     async {
                         logger.startProcess("courses_sync")
-                        transactionSyncManager.syncDb(realm, "courses")
+                        transactionSyncManager.syncDb("courses")
                         logger.endProcess("courses_sync")
                     },
                     async {
                         logger.startProcess("exams_sync")
-                        transactionSyncManager.syncDb(realm, "exams")
+                        transactionSyncManager.syncDb("exams")
                         logger.endProcess("exams_sync")
                     },
                     async {
                         logger.startProcess("ratings_sync")
-                        transactionSyncManager.syncDb(realm, "ratings")
+                        transactionSyncManager.syncDb("ratings")
                         logger.endProcess("ratings_sync")
                     },
                     async {
                         logger.startProcess("courses_progress_sync")
-                        transactionSyncManager.syncDb(realm, "courses_progress")
+                        transactionSyncManager.syncDb("courses_progress")
                         logger.endProcess("courses_progress_sync")
                     },
                     async {
                         logger.startProcess("achievements_sync")
-                        transactionSyncManager.syncDb(realm, "achievements")
+                        transactionSyncManager.syncDb("achievements")
                         logger.endProcess("achievements_sync")
                     },
                     async {
                         logger.startProcess("tags_sync")
-                        transactionSyncManager.syncDb(realm, "tags")
+                        transactionSyncManager.syncDb("tags")
                         logger.endProcess("tags_sync")
                     },
                     async {
                         logger.startProcess("submissions_sync")
-                        transactionSyncManager.syncDb(realm, "submissions")
+                        transactionSyncManager.syncDb("submissions")
                         logger.endProcess("submissions_sync")
                     },
                     async {
                         logger.startProcess("news_sync")
-                        transactionSyncManager.syncDb(realm, "news")
+                        transactionSyncManager.syncDb("news")
                         logger.endProcess("news_sync")
                     },
                     async {
                         logger.startProcess("feedback_sync")
-                        transactionSyncManager.syncDb(realm, "feedback")
+                        transactionSyncManager.syncDb("feedback")
                         logger.endProcess("feedback_sync")
                     },
                     async {
                         logger.startProcess("teams_sync")
-                        transactionSyncManager.syncDb(realm, "teams")
+                        transactionSyncManager.syncDb("teams")
                         logger.endProcess("teams_sync")
                     },
                     async {
                         logger.startProcess("tasks_sync")
-                        transactionSyncManager.syncDb(realm, "tasks")
+                        transactionSyncManager.syncDb("tasks")
                         logger.endProcess("tasks_sync")
                     },
                     async {
                         logger.startProcess("login_activities_sync")
-                        transactionSyncManager.syncDb(realm, "login_activities")
+                        transactionSyncManager.syncDb("login_activities")
                         logger.endProcess("login_activities_sync")
                     },
                     async {
                         logger.startProcess("meetups_sync")
-                        transactionSyncManager.syncDb(realm, "meetups")
+                        transactionSyncManager.syncDb("meetups")
                         logger.endProcess("meetups_sync")
                     },
                     async {
                         logger.startProcess("health_sync")
-                        transactionSyncManager.syncDb(realm, "health")
+                        transactionSyncManager.syncDb("health")
                         logger.endProcess("health_sync")
                     },
                     async {
                         logger.startProcess("certifications_sync")
-                        transactionSyncManager.syncDb(realm, "certifications")
+                        transactionSyncManager.syncDb("certifications")
                         logger.endProcess("certifications_sync")
                     },
                     async {
                         logger.startProcess("team_activities_sync")
-                        transactionSyncManager.syncDb(realm, "team_activities")
+                        transactionSyncManager.syncDb("team_activities")
                         logger.endProcess("team_activities_sync")
                     },
                     async {
                         logger.startProcess("chat_history_sync")
-                        transactionSyncManager.syncDb(realm, "chat_history")
+                        transactionSyncManager.syncDb("chat_history")
                         logger.endProcess("chat_history_sync")
                     }
                 )
@@ -297,7 +308,7 @@ class SyncManager constructor(
             logger.endProcess("admin_sync")
 
             logger.startProcess("resource_sync")
-            resourceTransactionSync(realm)
+            resourceTransactionSync()
             logger.endProcess("resource_sync")
 
             logger.startProcess("on_synced")
@@ -316,7 +327,7 @@ class SyncManager constructor(
             val syncEndTime = System.currentTimeMillis()
             val totalSyncTime = syncEndTime - syncStartTime
             Log.d("PerformanceTest", "=== SYNC FAILED after ${totalSyncTime}ms ===")
-            err.printStackTrace()
+            createLog("SyncManager startFullSync", "${err.message}")
             handleException(err.message)
         } finally {
             realm.close()
@@ -337,35 +348,35 @@ class SyncManager constructor(
                     syncJobs.add(
                         async {
                             logger.startProcess("tablet_users_sync")
-                            transactionSyncManager.syncDb(realm, "tablet_users")
+                            transactionSyncManager.syncDb("tablet_users")
                             logger.endProcess("tablet_users_sync")
                         })
 
                     syncJobs.add(
                         async {
                             logger.startProcess("login_activities_sync")
-                            transactionSyncManager.syncDb(realm, "login_activities")
+                            transactionSyncManager.syncDb("login_activities")
                             logger.endProcess("login_activities_sync")
                         })
 
                     syncJobs.add(
                         async {
                             logger.startProcess("tags_sync")
-                            transactionSyncManager.syncDb(realm, "tags")
+                            transactionSyncManager.syncDb("tags")
                             logger.endProcess("tags_sync")
                         })
 
                     syncJobs.add(
                         async {
                             logger.startProcess("teams_sync")
-                            transactionSyncManager.syncDb(realm, "teams")
+                            transactionSyncManager.syncDb("teams")
                             logger.endProcess("teams_sync")
                         })
 
                     syncJobs.add(
                         async {
                             logger.startProcess("news_sync")
-                            transactionSyncManager.syncDb(realm, "news")
+                            transactionSyncManager.syncDb("news")
                             logger.endProcess("news_sync")
                         })
                 }
@@ -374,14 +385,14 @@ class SyncManager constructor(
                     syncJobs.add(
                         async {
                             logger.startProcess("library_sync")
-                            myLibraryTransactionSync(realm)
+                            myLibraryTransactionSync()
                             logger.endProcess("library_sync")
                         })
 
                     syncJobs.add(
                         async {
                             logger.startProcess("resource_sync")
-                            resourceTransactionSync(realm)
+                            resourceTransactionSync()
                             logger.endProcess("resource_sync")
                         })
                 }
@@ -390,28 +401,28 @@ class SyncManager constructor(
                     syncJobs.add(
                         async {
                             logger.startProcess("library_sync")
-                            myLibraryTransactionSync(realm)
+                            myLibraryTransactionSync()
                             logger.endProcess("library_sync")
                         })
 
                     syncJobs.add(
                         async {
                             logger.startProcess("courses_sync")
-                            transactionSyncManager.syncDb(realm, "courses")
+                            transactionSyncManager.syncDb("courses")
                             logger.endProcess("courses_sync")
                         })
 
                     syncJobs.add(
                         async {
                             logger.startProcess("courses_progress_sync")
-                            transactionSyncManager.syncDb(realm, "courses_progress")
+                            transactionSyncManager.syncDb("courses_progress")
                             logger.endProcess("courses_progress_sync")
                         })
 
                     syncJobs.add(
                         async {
                             logger.startProcess("ratings_sync")
-                            transactionSyncManager.syncDb(realm, "ratings")
+                            transactionSyncManager.syncDb("ratings")
                             logger.endProcess("ratings_sync")
                         })
                 }
@@ -420,7 +431,7 @@ class SyncManager constructor(
                     syncJobs.add(
                         async {
                             logger.startProcess("tasks_sync")
-                            transactionSyncManager.syncDb(realm, "tasks")
+                            transactionSyncManager.syncDb("tasks")
                             logger.endProcess("tasks_sync")
                         })
                 }
@@ -429,7 +440,7 @@ class SyncManager constructor(
                     syncJobs.add(
                         async {
                             logger.startProcess("meetups_sync")
-                            transactionSyncManager.syncDb(realm, "meetups")
+                            transactionSyncManager.syncDb("meetups")
                             logger.endProcess("meetups_sync")
                         })
                 }
@@ -438,7 +449,7 @@ class SyncManager constructor(
                     syncJobs.add(
                         async {
                             logger.startProcess("team_activities_sync")
-                            transactionSyncManager.syncDb(realm, "team_activities")
+                            transactionSyncManager.syncDb("team_activities")
                             logger.endProcess("team_activities_sync")
                         })
                 }
@@ -447,7 +458,7 @@ class SyncManager constructor(
                     syncJobs.add(
                         async {
                             logger.startProcess("chat_history_sync")
-                            transactionSyncManager.syncDb(realm, "chat_history")
+                            transactionSyncManager.syncDb("chat_history")
                             logger.endProcess("chat_history_sync")
                         })
                 }
@@ -456,7 +467,7 @@ class SyncManager constructor(
                     syncJobs.add(
                         async {
                             logger.startProcess("feedback_sync")
-                            transactionSyncManager.syncDb(realm, "feedback")
+                            transactionSyncManager.syncDb("feedback")
                             logger.endProcess("feedback_sync")
                         })
                 }
@@ -465,7 +476,7 @@ class SyncManager constructor(
                     syncJobs.add(
                         async {
                             logger.startProcess("achievements_sync")
-                            transactionSyncManager.syncDb(realm, "achievements")
+                            transactionSyncManager.syncDb("achievements")
                             logger.endProcess("achievements_sync")
                         })
                 }
@@ -474,14 +485,14 @@ class SyncManager constructor(
                     syncJobs.add(
                         async {
                             logger.startProcess("health_sync")
-                            transactionSyncManager.syncDb(realm, "health")
+                            transactionSyncManager.syncDb("health")
                             logger.endProcess("health_sync")
                         })
 
                     syncJobs.add(
                         async {
                             logger.startProcess("certifications_sync")
-                            transactionSyncManager.syncDb(realm, "certifications")
+                            transactionSyncManager.syncDb("certifications")
                             logger.endProcess("certifications_sync")
                         })
                 }
@@ -490,14 +501,14 @@ class SyncManager constructor(
                     syncJobs.add(
                         async {
                             logger.startProcess("exams_sync")
-                            transactionSyncManager.syncDb(realm, "exams")
+                            transactionSyncManager.syncDb("exams")
                             logger.endProcess("exams_sync")
                         })
 
                     syncJobs.add(
                         async {
                             logger.startProcess("submissions_sync")
-                            transactionSyncManager.syncDb(realm, "submissions")
+                            transactionSyncManager.syncDb("submissions")
                             logger.endProcess("submissions_sync")
                         })
                 }
@@ -515,7 +526,7 @@ class SyncManager constructor(
 
             logger.stopLogging()
         } catch (err: Exception) {
-            err.printStackTrace()
+            createLog("SyncManager startFastSync", "${err.message}")
             handleException(err.message)
         } finally {
             realm.close()
@@ -529,7 +540,7 @@ class SyncManager constructor(
         if (!betaSync) {
             try {
             } catch (e: Exception) {
-                e.printStackTrace()
+                createLog("SyncManager cleanupMainSync", "${e.message}")
             }
             td?.interrupt()
         } else {
@@ -553,7 +564,7 @@ class SyncManager constructor(
         listener = null
     }
 
-    private suspend fun resourceTransactionSync(realm: Realm) {
+    private suspend fun resourceTransactionSync() {
         val resourceSyncStartTime = System.currentTimeMillis()
         Log.d("PerformanceTest", "resourceTransactionSync: Starting resource sync")
 
@@ -585,20 +596,19 @@ class SyncManager constructor(
                 val batchStartTime = System.currentTimeMillis()
 
                 try {
-                    var response: JsonObject? = null
+                    var batchBody: JsonObject? = null
                     ApiClient.executeWithRetryAndWrap {
                         apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/resources/_all_docs?include_docs=true&limit=$batchSize&skip=$skip").execute()
                     }?.let {
-                        response = it.body()
+                        batchBody = it.body()
                     }
 
-                    if (response == null) {
+                    if (batchBody == null) {
                         skip += batchSize
                         continue
                     }
 
-                    val rows = getJsonArray("rows", response)
-
+                    val rows = getJsonArray("rows", batchBody)
                     if (rows.size() == 0) {
                         break
                     }
@@ -627,7 +637,7 @@ class SyncManager constructor(
 
                             val savedIds = mutableListOf<String>()
                             for ((_, chunk) in chunks.withIndex()) {
-                                realm.executeTransaction { realmTx ->
+                                databaseService.executeTransactionAsync { realmTx ->
                                     val chunkDocuments = JsonArray()
                                     chunk.forEach { (doc, _) -> chunkDocuments.add(doc) }
 
@@ -650,11 +660,10 @@ class SyncManager constructor(
                                 processedItems += idsWeAreProcessing.size
                             }
                         } catch (e: Exception) {
-                            e.printStackTrace()
-
+                            createLog("SyncManager resourceTransactionSync", "chunk processing: ${e.message}")
                             for ((doc, _) in validDocuments) {
                                 try {
-                                    realm.executeTransaction { realmTx ->
+                                    databaseService.executeTransactionAsync { realmTx ->
                                         val singleDocArray = JsonArray()
                                         singleDocArray.add(doc)
                                         val singleIds = save(singleDocArray, realmTx)
@@ -664,14 +673,12 @@ class SyncManager constructor(
                                         }
                                     }
                                 } catch (e2: Exception) {
-                                    e2.printStackTrace()
+                                    createLog("SyncManager resourceTransactionSync", "single doc processing: ${e2.message}")
                                 }
                             }
                         }
                     }
-
                     skip += rows.size()
-
                     val batchEndTime = System.currentTimeMillis()
                     val batchTime = batchEndTime - batchStartTime
                     if (batchCount % 10 == 0) {
@@ -683,29 +690,29 @@ class SyncManager constructor(
                         }
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    createLog("SyncManager resourceTransactionSync", "batch processing: ${e.message}")
                     skip += batchSize
                 }
             }
-
             try {
                 val validNewIds = newIds.filter { !it.isNullOrBlank() }
                 if (validNewIds.isNotEmpty() && validNewIds.size == newIds.size) {
                     Log.d("PerformanceTest", "resourceTransactionSync: Removing deleted resources (${newIds.size - validNewIds.size} items)")
-                    removeDeletedResource(validNewIds, realm)
+                    databaseService.executeTransactionAsync { realm ->
+                        removeDeletedResource(validNewIds, realm)
+                    }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                createLog("SyncManager resourceTransactionSync", "delete resources: ${e.message}")
             }
             logger.endProcess("resource_sync", processedItems)
-
             val resourceSyncEndTime = System.currentTimeMillis()
             val resourceSyncTime = resourceSyncEndTime - resourceSyncStartTime
             val minutes = resourceSyncTime / 60000
             val seconds = (resourceSyncTime % 60000) / 1000
             Log.d("PerformanceTest", "resourceTransactionSync: Completed in ${minutes}m ${seconds}s (${resourceSyncTime}ms) - Processed $processedItems items")
         } catch (e: Exception) {
-            e.printStackTrace()
+            createLog("SyncManager resourceTransactionSync", "overall: ${e.message}")
             logger.endProcess("resource_sync", processedItems)
             val resourceSyncEndTime = System.currentTimeMillis()
             Log.d("PerformanceTest", "resourceTransactionSync: Failed after ${resourceSyncEndTime - resourceSyncStartTime}ms")
@@ -716,7 +723,9 @@ class SyncManager constructor(
         if (listener != null) {
             isSyncing = false
             MainApplication.syncFailedCount++
-            listener?.onSyncFailed(message)
+            syncScope.launch(Dispatchers.Main) {
+                listener?.onSyncFailed(message)
+            }
             _syncStatus.value = SyncStatus.Error(message ?: "Unknown error")
         }
     }
@@ -814,37 +823,6 @@ class SyncManager constructor(
         }
     }
 
-    private suspend fun myLibraryTransactionSync(realm: Realm) {
-        val logger = SyncTimeLogger
-        logger.startProcess("library_sync")
-        var processedItems = 0
-
-        try {
-            val shelvesWithData = getShelvesWithDataBatchOptimized()
-
-            if (shelvesWithData.isEmpty()) {
-                return
-            }
-
-            coroutineScope {
-                val semaphore = Semaphore(3)
-                val shelfJobs = shelvesWithData.map { shelfId ->
-                    async(Dispatchers.IO) {
-                        semaphore.withPermit {
-                            processShelfParallel(shelfId, apiInterface)
-                        }
-                    }
-                }
-
-                processedItems = shelfJobs.awaitAll().sum()
-            }
-            saveConcatenatedLinksToPrefs()
-            logger.endProcess("library_sync", processedItems)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            logger.endProcess("library_sync", processedItems)
-        }
-    }
 
     private suspend fun processShelfParallel(shelfId: String, apiInterface: ApiInterface): Int {
         var processedItems = 0
@@ -881,7 +859,7 @@ class SyncManager constructor(
                 processedItems = dataJobs.awaitAll().sum()
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            createLog("SyncManager processShelfParallel", "${e.message}")
         }
 
         return processedItems
@@ -950,7 +928,7 @@ class SyncManager constructor(
                                     }
                                     processedCount++
                                 } catch (e: Exception) {
-                                    e.printStackTrace()
+                                    createLog("SyncManager processShelfDataOptimizedSync", "insert: ${e.message}")
                                 }
                             }
                         }
@@ -959,13 +937,36 @@ class SyncManager constructor(
             }
 
         } catch (e: Exception) {
-            e.printStackTrace()
+            createLog("SyncManager processShelfDataOptimizedSync", "overall: ${e.message}")
         }
         return processedCount
     }
 
-    private fun <T> safeRealmOperation(operation: (Realm) -> T): T? {
-        return ThreadSafeRealmHelper.withRealm(databaseService, operation)
+    private suspend fun myLibraryTransactionSync() {
+        val logger = SyncTimeLogger
+        logger.startProcess("library_sync")
+        var processedItems = 0
+        try {
+            val shelvesWithData = getShelvesWithDataBatchOptimized()
+            if (shelvesWithData.isEmpty()) {
+                return
+            }
+            coroutineScope {
+                val semaphore = Semaphore(3)
+                val shelfJobs = shelvesWithData.map { shelfId ->
+                    async(Dispatchers.IO) {
+                        semaphore.withPermit {
+                            processShelfParallel(shelfId, apiInterface)
+                        }
+                    }
+                }
+                processedItems = shelfJobs.awaitAll().sum()
+            }
+            saveConcatenatedLinksToPrefs()
+            logger.endProcess("library_sync", processedItems)
+        } catch (e: Exception) {
+            createLog("SyncManager myLibraryTransactionSync", "${e.message}")
+            logger.endProcess("library_sync", processedItems)
+        }
     }
-
 }
