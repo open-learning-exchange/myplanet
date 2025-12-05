@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.submission
 
+import android.app.ProgressDialog
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -8,6 +9,7 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.LifecycleOwner
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ItemSubmissionBinding
@@ -36,11 +38,20 @@ class SubmissionListAdapter(
 
     inner class ViewHolder(private val binding: ItemSubmissionBinding) :
         RecyclerView.ViewHolder(binding.root) {
+        private val progressDialog = ProgressDialog(context).apply {
+            setMessage("Generating PDF...")
+            setCancelable(true)
+            setOnCancelListener {
+                pdfGeneratorViewModel.cancel()
+            }
+        }
+
         fun bind(submission: RealmSubmission, number: Int) {
             binding.tvSubmissionNumber.text = "#$number"
             binding.tvSubmissionDate.text =
                 TimeUtils.getFormattedDateWithTime(submission.lastUpdateTime)
             binding.tvSubmissionStatus.text = submission.status
+
             binding.tvSyncStatus.text = if (submission.uploaded) "✅" else "❌"
 
             binding.btnViewDetails.setOnClickListener {
@@ -49,6 +60,29 @@ class SubmissionListAdapter(
 
             binding.btnDownloadPdf.setOnClickListener {
                 generateSubmissionPdf(submission)
+            }
+
+            pdfGeneratorViewModel.pdfGenerationState.observe(context as LifecycleOwner) { state ->
+                when (state) {
+                    is PdfGenerationState.Loading -> progressDialog.show()
+                    is PdfGenerationState.Success -> {
+                        progressDialog.dismiss()
+                        Toast.makeText(
+                            context,
+                            "PDF saved to ${state.file.absolutePath}",
+                            Toast.LENGTH_LONG
+                        )
+                            .show()
+                        openPdf(state.file)
+                    }
+
+                    is PdfGenerationState.Error -> {
+                        progressDialog.dismiss()
+                        Toast.makeText(context, state.message, Toast.LENGTH_SHORT).show()
+                    }
+
+                    else -> progressDialog.dismiss()
+                }
             }
         }
 

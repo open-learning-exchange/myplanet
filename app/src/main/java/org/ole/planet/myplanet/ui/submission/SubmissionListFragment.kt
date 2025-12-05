@@ -5,23 +5,27 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
+import io.realm.Sort
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentSubmissionListBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmSubmission
 import javax.inject.Inject
-import io.realm.Sort
 
 @AndroidEntryPoint
 class SubmissionListFragment : Fragment() {
     private var _binding: FragmentSubmissionListBinding? = null
     private val binding get() = _binding!!
+
     @Inject
     lateinit var databaseService: DatabaseService
+    private val pdfGeneratorViewModel: PdfGeneratorViewModel by viewModels()
     private var parentId: String? = null
     private var examTitle: String? = null
     private var userId: String? = null
@@ -35,7 +39,9 @@ class SubmissionListFragment : Fragment() {
         }
     }
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
+    ): View {
         _binding = FragmentSubmissionListBinding.inflate(inflater, container, false)
         return binding.root
     }
@@ -45,6 +51,10 @@ class SubmissionListFragment : Fragment() {
         binding.tvTitle.text = examTitle ?: "Submissions"
         setupRecyclerView()
         loadSubmissions()
+        observePdfGeneration()
+        binding.btnCancelPdf.setOnClickListener {
+            pdfGeneratorViewModel.cancel()
+        }
     }
 
     override fun onResume() {
@@ -72,7 +82,7 @@ class SubmissionListFragment : Fragment() {
                 submissions.toList(),
                 databaseService,
                 listener,
-                viewLifecycleOwner
+                pdfGeneratorViewModel
             )
             binding.rvSubmissions.adapter = adapter
             binding.btnDownloadReport.setOnClickListener {
@@ -83,17 +93,40 @@ class SubmissionListFragment : Fragment() {
 
     private fun generateReport(submissions: List<RealmSubmission>) {
         databaseService.withRealm { realm ->
-            val file = org.ole.planet.myplanet.utilities.SubmissionPdfGenerator.generateMultipleSubmissionsPdf(
-                requireContext(),
-                submissions,
-                examTitle ?: "Submissions",
-                realm
-            )
+            val file =
+                org.ole.planet.myplanet.utilities.SubmissionPdfGenerator.generateMultipleSubmissionsPdf(
+                    requireContext(),
+                    submissions,
+                    examTitle ?: "Submissions",
+                    realm
+                )
             if (file != null) {
-                Toast.makeText(context, "Report saved to ${file.absolutePath}", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, "Report saved to ${file.absolutePath}", Toast.LENGTH_LONG)
+                    .show()
                 openPdf(file)
             } else {
                 Toast.makeText(context, "Failed to generate report", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun observePdfGeneration() {
+        pdfGeneratorViewModel.pdfGenerationState.observe(viewLifecycleOwner) { state ->
+            binding.pdfGenerationContainer.isVisible = state is PdfGenerationState.Loading
+            when (state) {
+                is PdfGenerationState.Success -> {
+                    Toast.makeText(
+                        context,
+                        "PDF saved to ${state.file.absolutePath}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    openPdf(state.file)
+                }
+                is PdfGenerationState.Error -> {
+                    Toast.makeText(context, state.message, Toast.LENGTH_SHORT).show()
+                }
+                else -> {
+                }
             }
         }
     }
@@ -112,7 +145,11 @@ class SubmissionListFragment : Fragment() {
             startActivity(intent)
         } catch (e: Exception) {
             e.printStackTrace()
-            Toast.makeText(context, "Could not open PDF. File saved at: ${file.absolutePath}", Toast.LENGTH_LONG).show()
+            Toast.makeText(
+                context,
+                "Could not open PDF. File saved at: ${file.absolutePath}",
+                Toast.LENGTH_LONG
+            ).show()
         }
     }
 

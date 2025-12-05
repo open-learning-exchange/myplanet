@@ -6,8 +6,12 @@ import android.graphics.Paint
 import android.graphics.pdf.PdfDocument
 import android.os.Environment
 import io.realm.Realm
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.datamanager.DatabaseService
 import java.io.File
 import java.io.FileOutputStream
+import java.security.MessageDigest
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -21,6 +25,110 @@ object SubmissionPdfGenerator {
     private const val PAGE_HEIGHT = 842
     private const val MARGIN = 50f
     private const val LINE_HEIGHT = 20f
+
+    suspend fun generateSubmissionPdfAsync(
+        context: Context,
+        submission: RealmSubmission,
+        databaseService: DatabaseService
+    ): File? = withContext(Dispatchers.IO) {
+        return@withContext databaseService.withRealm { realm ->
+            try {
+                val fileName = generateFileName(submission)
+                val directory =
+                    File(context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "Submissions")
+                if (!directory.exists()) {
+                    directory.mkdirs()
+                }
+                val file = File(directory, fileName)
+                if (file.exists()) {
+                    return@withRealm file
+                }
+
+                val document = PdfDocument()
+                var pageNumber = 1
+                var pageInfo =
+                    PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber).create()
+                var page = document.startPage(pageInfo)
+                var canvas = page.canvas
+                var yPosition = MARGIN
+
+                val titlePaint = Paint().apply {
+                    textSize = 20f
+                    isFakeBoldText = true
+                }
+                val headerPaint = Paint().apply {
+                    textSize = 16f
+                    isFakeBoldText = true
+                }
+                val normalPaint = Paint().apply {
+                    textSize = 12f
+                }
+
+                val examId = getExamId(submission.parentId)
+                val exam = realm.where(RealmStepExam::class.java)
+                    .equalTo("id", examId)
+                    .findFirst()
+
+                canvas.drawText(exam?.name ?: "Submission Report", MARGIN, yPosition, titlePaint)
+                yPosition += LINE_HEIGHT * 2
+
+                canvas.drawText("Status: ${submission.status}", MARGIN, yPosition, normalPaint)
+                yPosition += LINE_HEIGHT
+                canvas.drawText(
+                    "Date: ${TimeUtils.getFormattedDateWithTime(submission.lastUpdateTime)}",
+                    MARGIN,
+                    yPosition,
+                    normalPaint
+                )
+                yPosition += LINE_HEIGHT * 2
+
+                val questions = realm.where(RealmExamQuestion::class.java)
+                    .equalTo("examId", examId)
+                    .findAll()
+
+                questions.forEachIndexed { index, question ->
+                    if (yPosition > PAGE_HEIGHT - MARGIN - 100) {
+                        document.finishPage(page)
+                        pageNumber++
+                        pageInfo =
+                            PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber)
+                                .create()
+                        page = document.startPage(pageInfo)
+                        canvas = page.canvas
+                        yPosition = MARGIN
+                    }
+
+                    val questionText = "Q${index + 1}: ${question.body ?: ""}"
+                    yPosition = drawMultilineText(
+                        canvas,
+                        questionText,
+                        MARGIN,
+                        yPosition,
+                        headerPaint,
+                        PAGE_WIDTH - (2 * MARGIN)
+                    )
+                    yPosition += LINE_HEIGHT / 2
+
+                    val answer = submission.answers?.find { it.questionId == question.id }
+                    val answerText = formatAnswer(answer)
+                    canvas.drawText("A: $answerText", MARGIN + 20, yPosition, normalPaint)
+                    yPosition += LINE_HEIGHT * 2
+                }
+
+                document.finishPage(page)
+
+                val outputStream = FileOutputStream(file)
+                document.writeTo(outputStream)
+                document.close()
+                outputStream.close()
+                file
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            }
+        }
+    }
+
 
     fun generateSubmissionPdf(
         context: Context,
@@ -57,12 +165,7 @@ object SubmissionPdfGenerator {
 
             canvas.drawText("Status: ${submission.status}", MARGIN, yPosition, normalPaint)
             yPosition += LINE_HEIGHT
-            canvas.drawText(
-                "Date: ${TimeUtils.getFormattedDateWithTime(submission.lastUpdateTime)}",
-                MARGIN,
-                yPosition,
-                normalPaint
-            )
+            canvas.drawText("Date: ${TimeUtils.getFormattedDateWithTime(submission.lastUpdateTime)}", MARGIN, yPosition, normalPaint)
             yPosition += LINE_HEIGHT * 2
 
             val questions = realm.where(RealmExamQuestion::class.java)
@@ -73,23 +176,14 @@ object SubmissionPdfGenerator {
                 if (yPosition > PAGE_HEIGHT - MARGIN - 100) {
                     document.finishPage(page)
                     pageNumber++
-                    pageInfo =
-                        PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber)
-                            .create()
+                    pageInfo = PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber).create()
                     page = document.startPage(pageInfo)
                     canvas = page.canvas
                     yPosition = MARGIN
                 }
 
                 val questionText = "Q${index + 1}: ${question.body ?: ""}"
-                yPosition = drawMultilineText(
-                    canvas,
-                    questionText,
-                    MARGIN,
-                    yPosition,
-                    headerPaint,
-                    PAGE_WIDTH - (2 * MARGIN)
-                )
+                yPosition = drawMultilineText(canvas, questionText, MARGIN, yPosition, headerPaint, PAGE_WIDTH - (2 * MARGIN))
                 yPosition += LINE_HEIGHT / 2
 
                 val answer = submission.answers?.find { it.questionId == question.id }
@@ -101,8 +195,7 @@ object SubmissionPdfGenerator {
             document.finishPage(page)
 
             val fileName = "submission_${submission.id}_${System.currentTimeMillis()}.pdf"
-            val directory =
-                File(context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "Submissions")
+            val directory = File(context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "Submissions")
             if (!directory.exists()) {
                 directory.mkdirs()
             }
@@ -274,5 +367,22 @@ object SubmissionPdfGenerator {
         } else {
             parentId
         }
+    }
+
+    private fun generateFileName(submission: RealmSubmission): String {
+        val content = StringBuilder()
+        content.append(submission.id)
+        content.append(submission.lastUpdateTime)
+        submission.answers?.forEach {
+            content.append(it.questionId)
+            content.append(it.value)
+        }
+        return "submission_${sha256(content.toString())}.pdf"
+    }
+
+    private fun sha256(base: String): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        val hash = digest.digest(base.toByteArray(Charsets.UTF_8))
+        return hash.fold("") { str, it -> str + "%02x".format(it) }
     }
 }
