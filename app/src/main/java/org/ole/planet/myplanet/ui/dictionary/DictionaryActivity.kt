@@ -105,25 +105,33 @@ class DictionaryActivity : BaseActivity() {
 
     private fun setClickListener() {
         fragmentDictionaryBinding.btnSearch.setOnClickListener {
-            databaseService.withRealm { realm ->
-                val dict = realm.where(RealmDictionary::class.java)
-                    .equalTo(
-                        "word",
-                        fragmentDictionaryBinding.etSearch.text.toString(),
-                        Case.INSENSITIVE
-                    )
-                    .findFirst()
+            fragmentDictionaryBinding.tvResult.text = getString(R.string.searching)
+            lifecycleScope.launch {
+                val dict = withContext(Dispatchers.IO) {
+                    var dictionaryEntry: RealmDictionary? = null
+                    databaseService.withRealm { realm ->
+                        val result = realm.where(RealmDictionary::class.java)
+                            .equalTo("word", fragmentDictionaryBinding.etSearch.text.toString(), Case.INSENSITIVE)
+                            .findFirst()
+                        if (result != null) {
+                            dictionaryEntry = realm.copyFromRealm(result)
+                        }
+                    }
+                    dictionaryEntry
+                }
+
                 if (dict != null) {
                     fragmentDictionaryBinding.tvResult.text = HtmlCompat.fromHtml(
                         "Definition of '<b>" + dict.word + "</b>'<br/><br/>\n " +
-                            "<b>" + dict.definition + "\n</b><br/><br/><br/>" +
-                            "<b>Synonym : </b>" + dict.synonym + "\n<br/><br/>" +
-                            "<b>Antonoym : </b>" + dict.antonym + "\n<br/>",
+                                "<b>" + dict.definition + "\n</b><br/><br/><br/>" +
+                                "<b>Synonym : </b>" + dict.synonym + "\n<br/><br/>" +
+                                "<b>Antonoym : </b>" + dict.antonym + "\n<br/>",
                         HtmlCompat.FROM_HTML_MODE_LEGACY
                     )
                 } else {
+                    fragmentDictionaryBinding.tvResult.text = ""
                     Utilities.toast(
-                        this,
+                        this@DictionaryActivity,
                         getString(R.string.word_not_available_in_our_database)
                     )
                 }
