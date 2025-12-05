@@ -69,7 +69,7 @@ class AdapterTeamResource(
 
     companion object {
         private val ITEM_CALLBACK = DiffUtils.itemCallback<RealmMyLibrary>(
-            areItemsTheSame = { oldItem, newItem -> oldItem.resource_id == newItem.resource_id },
+            areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id },
             areContentsTheSame = { oldItem, newItem -> oldItem.title == newItem.title && oldItem.description == newItem.description }
         )
     }
