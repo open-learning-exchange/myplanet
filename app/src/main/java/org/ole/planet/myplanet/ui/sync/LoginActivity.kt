@@ -521,19 +521,29 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         builder.setMessage("Continue only if this is you")
         builder.setCancelable(false)
         builder.setNegativeButton("cancel") { dialog: DialogInterface, _: Int -> dialog.dismiss() }
-        builder.setPositiveButton("continue") { dialog: DialogInterface, _: Int ->
-            dialog.dismiss()
-            val model = databaseService.withRealm { realm ->
-                RealmUserModel.createGuestUser(username, realm, settings)?.let { realm.copyFromRealm(it) }
-            }
-            if (model == null) {
-                toast(this, getString(R.string.unable_to_login))
-            } else {
-                saveUserInfoPref(settings, "", model)
-                onLogin()
+        builder.setPositiveButton("continue", null)
+        val dialog = builder.create()
+        dialog.setOnShowListener {
+            val positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            positiveButton.setOnClickListener {
+                positiveButton.isEnabled = false
+                lifecycleScope.launch {
+                    val model = withContext(Dispatchers.IO) {
+                        databaseService.withRealm { realm ->
+                            RealmUserModel.createGuestUser(username, realm, settings)?.let { realm.copyFromRealm(it) }
+                        }
+                    }
+                    if (model == null) {
+                        toast(this@LoginActivity, getString(R.string.unable_to_login))
+                        positiveButton.isEnabled = true
+                    } else {
+                        saveUserInfoPref(settings, "", model)
+                        onLogin()
+                        dialog.dismiss()
+                    }
+                }
             }
         }
-        val dialog = builder.create()
         dialog.show()
     }
 
