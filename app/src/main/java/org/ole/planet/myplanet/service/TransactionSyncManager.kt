@@ -26,6 +26,8 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getJsonArray
 import org.ole.planet.myplanet.utilities.JsonUtils.getJsonObject
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.SecurePrefs
+import kotlinx.coroutines.CoroutineScope
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import retrofit2.Response
@@ -33,7 +35,8 @@ import retrofit2.Response
 @Singleton
 class TransactionSyncManager @Inject constructor(
     private val apiInterface: ApiInterface,
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    @ApplicationScope private val scope: CoroutineScope
 ) {
     fun authenticate(): Boolean {
         try {

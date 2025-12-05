@@ -155,11 +155,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         addBackPressCallback()
         handleNotificationIntent(intent)
         collectUiState()
+        setupRealmListeners()
 
         binding.root.post {
             setupSystemNotificationReceiver()
             checkIfShouldShowNotifications()
-            setupRealmListeners()
             challengeHelper.evaluateChallengeDialog()
             reportFullyDrawn()
         }

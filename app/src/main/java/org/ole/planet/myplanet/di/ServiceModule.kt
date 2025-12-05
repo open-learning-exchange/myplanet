@@ -71,4 +71,14 @@ object ServiceModule {
     ): UploadToShelfService {
         return UploadToShelfService(context, databaseService, preferences)
     }
+
+    @Provides
+    @Singleton
+    fun provideTransactionSyncManager(
+        apiInterface: ApiInterface,
+        @ApplicationContext context: Context,
+        @ApplicationScope scope: CoroutineScope
+    ): TransactionSyncManager {
+        return TransactionSyncManager(apiInterface, context, scope)
+    }
 }
