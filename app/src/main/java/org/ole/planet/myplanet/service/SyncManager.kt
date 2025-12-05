@@ -185,133 +185,140 @@ class SyncManager constructor(
     private suspend fun startFullSync() {
         val syncStartTime = System.currentTimeMillis()
         Log.d("PerformanceTest", "=== FULL SYNC STARTED at ${java.text.SimpleDateFormat("HH:mm:ss").format(java.util.Date())} ===")
-        val realm = databaseService.realmInstance
         try {
-            val logger = SyncTimeLogger
-            logger.startLogging()
+            databaseService.withRealm { realm ->
+                val logger = SyncTimeLogger
+                logger.startLogging()
 
-            initializeSync()
-            coroutineScope {
-                val syncJobs = listOf(
-                    async {
-                        logger.startProcess("tablet_users_sync")
-                        transactionSyncManager.syncDb(realm, "tablet_users")
-                        logger.endProcess("tablet_users_sync")
-                    },
-                    async {
-                        logger.startProcess("library_sync")
-                        myLibraryTransactionSync(realm)
-                        logger.endProcess("library_sync")
-                    },
-                    async {
-                        logger.startProcess("courses_sync")
-                        transactionSyncManager.syncDb(realm, "courses")
-                        logger.endProcess("courses_sync")
-                    },
-                    async {
-                        logger.startProcess("exams_sync")
-                        transactionSyncManager.syncDb(realm, "exams")
-                        logger.endProcess("exams_sync")
-                    },
-                    async {
-                        logger.startProcess("ratings_sync")
-                        transactionSyncManager.syncDb(realm, "ratings")
-                        logger.endProcess("ratings_sync")
-                    },
-                    async {
-                        logger.startProcess("courses_progress_sync")
-                        transactionSyncManager.syncDb(realm, "courses_progress")
-                        logger.endProcess("courses_progress_sync")
-                    },
-                    async {
-                        logger.startProcess("achievements_sync")
-                        transactionSyncManager.syncDb(realm, "achievements")
-                        logger.endProcess("achievements_sync")
-                    },
-                    async {
-                        logger.startProcess("tags_sync")
-                        transactionSyncManager.syncDb(realm, "tags")
-                        logger.endProcess("tags_sync")
-                    },
-                    async {
-                        logger.startProcess("submissions_sync")
-                        transactionSyncManager.syncDb(realm, "submissions")
-                        logger.endProcess("submissions_sync")
-                    },
-                    async {
-                        logger.startProcess("news_sync")
-                        transactionSyncManager.syncDb(realm, "news")
-                        logger.endProcess("news_sync")
-                    },
-                    async {
-                        logger.startProcess("feedback_sync")
-                        transactionSyncManager.syncDb(realm, "feedback")
-                        logger.endProcess("feedback_sync")
-                    },
-                    async {
-                        logger.startProcess("teams_sync")
-                        transactionSyncManager.syncDb(realm, "teams")
-                        logger.endProcess("teams_sync")
-                    },
-                    async {
-                        logger.startProcess("tasks_sync")
-                        transactionSyncManager.syncDb(realm, "tasks")
-                        logger.endProcess("tasks_sync")
-                    },
-                    async {
-                        logger.startProcess("login_activities_sync")
-                        transactionSyncManager.syncDb(realm, "login_activities")
-                        logger.endProcess("login_activities_sync")
-                    },
-                    async {
-                        logger.startProcess("meetups_sync")
-                        transactionSyncManager.syncDb(realm, "meetups")
-                        logger.endProcess("meetups_sync")
-                    },
-                    async {
-                        logger.startProcess("health_sync")
-                        transactionSyncManager.syncDb(realm, "health")
-                        logger.endProcess("health_sync")
-                    },
-                    async {
-                        logger.startProcess("certifications_sync")
-                        transactionSyncManager.syncDb(realm, "certifications")
-                        logger.endProcess("certifications_sync")
-                    },
-                    async {
-                        logger.startProcess("team_activities_sync")
-                        transactionSyncManager.syncDb(realm, "team_activities")
-                        logger.endProcess("team_activities_sync")
-                    },
-                    async {
-                        logger.startProcess("chat_history_sync")
-                        transactionSyncManager.syncDb(realm, "chat_history")
-                        logger.endProcess("chat_history_sync")
-                    }
+                initializeSync()
+                coroutineScope {
+                    val syncJobs = listOf(
+                        async {
+                            logger.startProcess("tablet_users_sync")
+                            transactionSyncManager.syncDb(realm, "tablet_users")
+                            logger.endProcess("tablet_users_sync")
+                        },
+                        async {
+                            logger.startProcess("library_sync")
+                            myLibraryTransactionSync(realm)
+                            logger.endProcess("library_sync")
+                        },
+                        async {
+                            logger.startProcess("courses_sync")
+                            transactionSyncManager.syncDb(realm, "courses")
+                            logger.endProcess("courses_sync")
+                        },
+                        async {
+                            logger.startProcess("exams_sync")
+                            transactionSyncManager.syncDb(realm, "exams")
+                            logger.endProcess("exams_sync")
+                        },
+                        async {
+                            logger.startProcess("ratings_sync")
+                            transactionSyncManager.syncDb(realm, "ratings")
+                            logger.endProcess("ratings_sync")
+                        },
+                        async {
+                            logger.startProcess("courses_progress_sync")
+                            transactionSyncManager.syncDb(realm, "courses_progress")
+                            logger.endProcess("courses_progress_sync")
+                        },
+                        async {
+                            logger.startProcess("achievements_sync")
+                            transactionSyncManager.syncDb(realm, "achievements")
+                            logger.endProcess("achievements_sync")
+                        },
+                        async {
+                            logger.startProcess("tags_sync")
+                            transactionSyncManager.syncDb(realm, "tags")
+                            logger.endProcess("tags_sync")
+                        },
+                        async {
+                            logger.startProcess("submissions_sync")
+                            transactionSyncManager.syncDb(realm, "submissions")
+                            logger.endProcess("submissions_sync")
+                        },
+                        async {
+                            logger.startProcess("news_sync")
+                            transactionSyncManager.syncDb(realm, "news")
+                            logger.endProcess("news_sync")
+                        },
+                        async {
+                            logger.startProcess("feedback_sync")
+                            transactionSyncManager.syncDb(realm, "feedback")
+                            logger.endProcess("feedback_sync")
+                        },
+                        async {
+                            logger.startProcess("teams_sync")
+                            transactionSyncManager.syncDb(realm, "teams")
+                            logger.endProcess("teams_sync")
+                        },
+                        async {
+                            logger.startProcess("tasks_sync")
+                            transactionSyncManager.syncDb(realm, "tasks")
+                            logger.endProcess("tasks_sync")
+                        },
+                        async {
+                            logger.startProcess("login_activities_sync")
+                            transactionSyncManager.syncDb(realm, "login_activities")
+                            logger.endProcess("login_activities_sync")
+                        },
+                        async {
+                            logger.startProcess("meetups_sync")
+                            transactionSyncManager.syncDb(realm, "meetups")
+                            logger.endProcess("meetups_sync")
+                        },
+                        async {
+                            logger.startProcess("health_sync")
+                            transactionSyncManager.syncDb(realm, "health")
+                            logger.endProcess("health_sync")
+                        },
+                        async {
+                            logger.startProcess("certifications_sync")
+                            transactionSyncManager.syncDb(realm, "certifications")
+                            logger.endProcess("certifications_sync")
+                        },
+                        async {
+                            logger.startProcess("team_activities_sync")
+                            transactionSyncManager.syncDb(realm, "team_activities")
+                            logger.endProcess("team_activities_sync")
+                        },
+                        async {
+                            logger.startProcess("chat_history_sync")
+                            transactionSyncManager.syncDb(realm, "chat_history")
+                            logger.endProcess("chat_history_sync")
+                        }
+                    )
+                    syncJobs.awaitAll()
+                }
+
+                logger.startProcess("admin_sync")
+                ManagerSync.instance.syncAdmin()
+                logger.endProcess("admin_sync")
+
+                logger.startProcess("resource_sync")
+                resourceTransactionSync(realm)
+                logger.endProcess("resource_sync")
+
+                logger.startProcess("on_synced")
+                onSynced(realm, settings)
+                logger.endProcess("on_synced")
+
+                logger.stopLogging()
+
+                val syncEndTime = System.currentTimeMillis()
+                val totalSyncTime = syncEndTime - syncStartTime
+                val minutes = totalSyncTime / 60000
+                val seconds = (totalSyncTime % 60000) / 1000
+                Log.d(
+                    "PerformanceTest",
+                    "=== FULL SYNC COMPLETED at ${java.text.SimpleDateFormat("HH:mm:ss").format(java.util.Date())} ==="
                 )
-                syncJobs.awaitAll()
+                Log.d(
+                    "PerformanceTest",
+                    "=== TOTAL SYNC TIME: ${minutes}m ${seconds}s (${totalSyncTime}ms) ==="
+                )
             }
-
-            logger.startProcess("admin_sync")
-            ManagerSync.instance.syncAdmin()
-            logger.endProcess("admin_sync")
-
-            logger.startProcess("resource_sync")
-            resourceTransactionSync(realm)
-            logger.endProcess("resource_sync")
-
-            logger.startProcess("on_synced")
-            onSynced(realm, settings)
-            logger.endProcess("on_synced")
-
-            logger.stopLogging()
-
-            val syncEndTime = System.currentTimeMillis()
-            val totalSyncTime = syncEndTime - syncStartTime
-            val minutes = totalSyncTime / 60000
-            val seconds = (totalSyncTime % 60000) / 1000
-            Log.d("PerformanceTest", "=== FULL SYNC COMPLETED at ${java.text.SimpleDateFormat("HH:mm:ss").format(java.util.Date())} ===")
-            Log.d("PerformanceTest", "=== TOTAL SYNC TIME: ${minutes}m ${seconds}s (${totalSyncTime}ms) ===")
         } catch (err: Exception) {
             val syncEndTime = System.currentTimeMillis()
             val totalSyncTime = syncEndTime - syncStartTime
@@ -319,7 +326,6 @@ class SyncManager constructor(
             err.printStackTrace()
             handleException(err.message)
         } finally {
-            realm.close()
             destroy()
         }
     }
