@@ -377,14 +377,20 @@ abstract class SyncActivity : ProcessUserDataActivity(), CheckVersionCallback,
         editor.apply()
     }
 
-    fun authenticateUser(settings: SharedPreferences?, username: String?, password: String?, isManagerMode: Boolean): Boolean {
+    suspend fun authenticateUser(settings: SharedPreferences?, username: String?, password: String?, isManagerMode: Boolean): Boolean {
         return try {
             if (settings != null) {
                 this.settings = settings
             }
-            val isEmpty = databaseService.withRealm { realm -> realm.isEmpty }
+            val isEmpty = withContext(Dispatchers.IO) {
+                databaseService.withRealm { realm -> realm.isEmpty }
+            }
             if (isEmpty) {
-                alertDialogOkay(getString(R.string.server_not_configured_properly_connect_this_device_with_planet_server))
+                withContext(Dispatchers.Main) {
+                    if (!isFinishing) {
+                        alertDialogOkay(getString(R.string.server_not_configured_properly_connect_this_device_with_planet_server))
+                    }
+                }
                 false
             } else {
                 checkName(username, password, isManagerMode)
@@ -395,30 +401,33 @@ abstract class SyncActivity : ProcessUserDataActivity(), CheckVersionCallback,
         }
     }
 
-    private fun checkName(username: String?, password: String?, isManagerMode: Boolean): Boolean {
-        try {
-            val user = databaseService.withRealm { realm ->
-                realm.where(RealmUserModel::class.java).equalTo("name", username).findFirst()?.let { realm.copyFromRealm(it) }
-            }
-            user?.let {
-                if (it._id?.isEmpty() == true) {
-                    if (username == it.name && password == it.password) {
-                        saveUserInfoPref(settings, password, it)
-                        return true
-                    }
-                } else {
-                    if (androidDecrypter(username, password, it.derived_key, it.salt)) {
-                        if (isManagerMode && !it.isManager()) return false
-                        saveUserInfoPref(settings, password, it)
-                        return true
+    private suspend fun checkName(username: String?, password: String?, isManagerMode: Boolean): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                val user = databaseService.withRealm { realm ->
+                    realm.where(RealmUserModel::class.java).equalTo("name", username).findFirst()
+                        ?.let { realm.copyFromRealm(it) }
+                }
+                user?.let {
+                    if (it._id?.isEmpty() == true) {
+                        if (username == it.name && password == it.password) {
+                            saveUserInfoPref(settings, password, it)
+                            return@withContext true
+                        }
+                    } else {
+                        if (androidDecrypter(username, password, it.derived_key, it.salt)) {
+                            if (isManagerMode && !it.isManager()) return@withContext false
+                            saveUserInfoPref(settings, password, it)
+                            return@withContext true
+                        }
                     }
                 }
+            } catch (err: Exception) {
+                err.printStackTrace()
+                return@withContext false
             }
-        } catch (err: Exception) {
-            err.printStackTrace()
-            return false
+            return@withContext false
         }
-        return false
     }
 
     fun startSync(type: String) {
