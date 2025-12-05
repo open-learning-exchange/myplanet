@@ -150,7 +150,7 @@ class AdapterNews(
             _isTeamLeader = false
             return
         }
-        scope.launch {
+        coroutineScope.launch {
             val isLeader = withTimeoutOrNull(2000) {
                 withContext(Dispatchers.IO) {
                     try {
