@@ -28,6 +28,7 @@ interface ApiInterface {
     @GET
     fun getJsonObject(@Header("Authorization") header: String?, @Url url: String?): Call<JsonObject>
 
+
     @GET
     suspend fun getJsonObjectSuspended(@Header("Authorization") header: String?, @Url url: String?): Response<JsonObject>
 
