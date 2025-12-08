@@ -190,22 +190,27 @@ class UploadManager @Inject constructor(
 
                     for ((id, serialized, _id) in submissionsToUpload) {
                         try {
-                            val response: JsonObject? = if (TextUtils.isEmpty(_id)) {
-                                apiInterface.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/submissions", serialized).execute().body()
+                            val response = if (TextUtils.isEmpty(_id)) {
+                                apiInterface.postDocSuspend(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/submissions", serialized)
                             } else {
-                                apiInterface.putDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/submissions/$_id", serialized).execute().body()
+                                apiInterface.putDocSuspend(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/submissions/$_id", serialized)
                             }
 
-                            if (response != null && id != null) {
-                                databaseService.withRealm { realm ->
-                                    realm.executeTransaction { transactionRealm ->
-                                        transactionRealm.where(RealmSubmission::class.java).equalTo("id", id).findFirst()?.let { sub ->
-                                            sub._id = getString("id", response)
-                                            sub._rev = getString("rev", response)
+                            if (response.isSuccessful && id != null) {
+                                val responseBody = response.body()
+                                if (responseBody != null) {
+                                    databaseService.withRealm { realm ->
+                                        realm.executeTransaction { transactionRealm ->
+                                            transactionRealm.where(RealmSubmission::class.java).equalTo("id", id).findFirst()?.let { sub ->
+                                                sub._id = getString("id", responseBody)
+                                                sub._rev = getString("rev", responseBody)
+                                            }
                                         }
                                     }
+                                    processedCount++
+                                } else {
+                                    errorCount++
                                 }
-                                processedCount++
                             } else {
                                 errorCount++
                             }
@@ -220,10 +225,14 @@ class UploadManager @Inject constructor(
                 }
 
                 uploadCourseProgress()
-                listener.onSuccess("Result sync completed successfully ($processedCount processed, $errorCount errors)")
+                withContext(Dispatchers.Main) {
+                    listener.onSuccess("Result sync completed successfully ($processedCount processed, $errorCount errors)")
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
-                listener.onSuccess("Error during result sync: ${e.message}")
+                withContext(Dispatchers.Main) {
+                    listener.onSuccess("Error during result sync: ${e.message}")
+                }
             }
         }
     }
