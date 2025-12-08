@@ -30,8 +30,8 @@ import org.ole.planet.myplanet.di.AutoSyncEntryPoint
 import org.ole.planet.myplanet.di.DatabaseServiceEntryPoint
 import org.ole.planet.myplanet.di.RepositoryEntryPoint
 import org.ole.planet.myplanet.model.MyPlanet
-import org.ole.planet.myplanet.model.RealmCommunity
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.PlanetRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.UploadToShelfService
 import org.ole.planet.myplanet.ui.sync.ProcessUserDataActivity
@@ -58,6 +58,7 @@ class Service @Inject constructor(
     @ApplicationScope private val serviceScope: CoroutineScope,
     private val userRepository: UserRepository,
     private val uploadToShelfService: UploadToShelfService,
+    private val planetRepository: PlanetRepository
 ) {
     constructor(context: Context) : this(
         context,
@@ -81,6 +82,10 @@ class Service @Inject constructor(
             context.applicationContext,
             AutoSyncEntryPoint::class.java
         ).uploadToShelfService(),
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            RepositoryEntryPoint::class.java
+        ).planetRepository()
     )
 
     private val preferences: SharedPreferences = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
@@ -403,62 +408,8 @@ class Service @Inject constructor(
         }
     }
 
-    suspend fun syncPlanetServers(callback: SuccessListener) {
-        try {
-            val response = withContext(Dispatchers.IO) {
-                retrofitInterface.getJsonObject("", "https://planet.earth.ole.org/db/communityregistrationrequests/_all_docs?include_docs=true").execute()
-            }
-
-            if (response.isSuccessful && response.body() != null) {
-                val arr = JsonUtils.getJsonArray("rows", response.body())
-                val startTime = System.currentTimeMillis()
-                println("Realm transaction started")
-
-                val transactionResult = runCatching {
-                    withContext(Dispatchers.IO) {
-                        databaseService.withRealm { backgroundRealm ->
-                            backgroundRealm.executeTransaction { realm1 ->
-                                realm1.delete(RealmCommunity::class.java)
-                                for (j in arr) {
-                                    var jsonDoc = j.asJsonObject
-                                    jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-                                    val id = JsonUtils.getString("_id", jsonDoc)
-                                    val community = realm1.createObject(RealmCommunity::class.java, id)
-                                    if (JsonUtils.getString("name", jsonDoc) == "learning") {
-                                        community.weight = 0
-                                    }
-                                    community.localDomain = JsonUtils.getString("localDomain", jsonDoc)
-                                    community.name = JsonUtils.getString("name", jsonDoc)
-                                    community.parentDomain = JsonUtils.getString("parentDomain", jsonDoc)
-                                    community.registrationRequest = JsonUtils.getString("registrationRequest", jsonDoc)
-                                }
-                            }
-                        }
-                    }
-                }
-
-                val endTime = System.currentTimeMillis()
-                println("Realm transaction finished in ${endTime - startTime}ms")
-
-                withContext(Dispatchers.Main) {
-                    transactionResult.onSuccess {
-                        callback.onSuccess(context.getString(R.string.server_sync_successfully))
-                    }.onFailure { e ->
-                        e.printStackTrace()
-                        callback.onSuccess(context.getString(R.string.server_sync_has_failed))
-                    }
-                }
-            } else {
-                withContext(Dispatchers.Main) {
-                    callback.onSuccess(context.getString(R.string.server_sync_has_failed))
-                }
-            }
-        } catch (t: Throwable) {
-            t.printStackTrace()
-            withContext(Dispatchers.Main) {
-                callback.onSuccess(context.getString(R.string.server_sync_has_failed))
-            }
-        }
+    suspend fun syncPlanetServers(): String {
+        return planetRepository.syncPlanetServers()
     }
 
     fun getMinApk(listener: ConfigurationIdListener?, url: String, pin: String, activity: SyncActivity, callerActivity: String) {

@@ -297,9 +297,8 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         setUpLanguageButton()
         if (NetworkUtils.isNetworkConnected) {
             lifecycleScope.launch {
-                service.syncPlanetServers { success: String? ->
-                    toast(this@LoginActivity, success)
-                }
+                val message = service.syncPlanetServers()
+                toast(this@LoginActivity, message)
             }
         }
         nameWatcher2 = object : TextWatcher {
