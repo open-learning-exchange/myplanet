@@ -17,6 +17,7 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentSubmissionListBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.SubmissionPdfGenerator
 
 @AndroidEntryPoint
@@ -75,13 +76,21 @@ class SubmissionListFragment : Fragment() {
                 .equalTo("userId", userId)
                 .sort("lastUpdateTime", Sort.DESCENDING)
                 .findAll()
+            val user = realm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
 
             val submissionItems = submissions.map {
                 SubmissionItem(
                     id = it.id,
+                    parentId = it.parentId,
+                    type = it.type,
+                    userId = it.userId,
+                    status = it.status,
                     lastUpdateTime = it.lastUpdateTime,
-                    status = it.status ?: "",
-                    uploaded = it.uploaded
+                    startTime = it.startTime,
+                    uploaded = it.uploaded,
+                    examName = examTitle,
+                    submissionCount = 1,
+                    userName = user?.name
                 )
             }
             adapter.submitList(submissionItems)

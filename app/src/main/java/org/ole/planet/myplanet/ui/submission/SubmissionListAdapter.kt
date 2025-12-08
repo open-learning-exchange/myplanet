@@ -31,7 +31,9 @@ class SubmissionListAdapter(
     inner class ViewHolder(private val binding: ItemSubmissionBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(submission: SubmissionItem, number: Int) {
             binding.tvSubmissionNumber.text = "#$number"
-            binding.tvSubmissionDate.text = TimeUtils.getFormattedDateWithTime(submission.lastUpdateTime)
+            submission.lastUpdateTime?.let {
+                binding.tvSubmissionDate.text = TimeUtils.getFormattedDateWithTime(it)
+            }
             binding.tvSubmissionStatus.text = submission.status
 
             binding.tvSyncStatus.text = if (submission.uploaded) "✅" else "❌"

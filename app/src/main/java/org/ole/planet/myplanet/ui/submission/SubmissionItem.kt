@@ -5,7 +5,7 @@ data class SubmissionItem(
     val parentId: String?,
     val type: String?,
     val userId: String?,
-    val status: String,
+    val status: String?,
     val lastUpdateTime: Long?,
     val startTime: Long?,
     val uploaded: Boolean,
