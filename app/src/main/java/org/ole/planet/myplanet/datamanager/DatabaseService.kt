@@ -51,6 +51,17 @@ class DatabaseService(context: Context) {
         }
     }
 
+    suspend fun <T> withRealmSuspend(operation: suspend (Realm) -> T): T {
+        val realm = Realm.getDefaultInstance()
+        return try {
+            operation(realm)
+        } finally {
+            if (!realm.isClosed) {
+                realm.close()
+            }
+        }
+    }
+
     suspend fun executeTransactionAsync(transaction: (Realm) -> Unit) {
         withContext(Dispatchers.IO) {
             Realm.getDefaultInstance().use { realm ->
