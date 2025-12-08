@@ -81,14 +81,23 @@ class AdapterCourses(
         return courseList
     }
 
-    private fun dispatchDiff(newList: List<RealmMyCourse?>) {
+    private fun dispatchDiff(
+        newList: List<RealmMyCourse?>,
+        newMap: HashMap<String?, JsonObject>? = null,
+        newProgressMap: HashMap<String?, JsonObject>? = null
+    ) {
+        val oldMap = HashMap(map)
+        val oldProgressMap = progressMap?.let { HashMap(it) }
+        val currentMap = newMap ?: map
+        val currentProgressMap = newProgressMap ?: progressMap
+
         val diffResult = DiffUtils.calculateDiff(
             courseList,
             newList,
             areItemsTheSame = { old, new -> old?.id == new?.id },
             areContentsTheSame = { old, new ->
-                val ratingSame = map[old?.courseId] == map[new?.courseId]
-                val progressSame = progressMap?.get(old?.courseId) == progressMap?.get(new?.courseId)
+                val ratingSame = oldMap[old?.courseId] == currentMap[new?.courseId]
+                val progressSame = oldProgressMap?.get(old?.courseId) == currentProgressMap?.get(new?.courseId)
 
                 old?.courseTitle == new?.courseTitle &&
                         old?.description == new?.description &&
@@ -102,22 +111,28 @@ class AdapterCourses(
             },
             getChangePayload = { old, new ->
                 val bundle = Bundle()
-                if (map[old?.courseId] != map[new?.courseId]) {
+                if (oldMap[old?.courseId] != currentMap[new?.courseId]) {
                     bundle.putBoolean(RATING_PAYLOAD, true)
                 }
-                if (progressMap?.get(old?.courseId) != progressMap?.get(new?.courseId)) {
+                if (oldProgressMap?.get(old?.courseId) != currentProgressMap?.get(new?.courseId)) {
                     bundle.putBoolean(PROGRESS_PAYLOAD, true)
                 }
                 if (bundle.isEmpty) null else bundle
             }
         )
+
         courseList = newList
+        newMap?.let {
+            map.clear()
+            map.putAll(it)
+        }
+        this.progressMap = newProgressMap ?: this.progressMap
         diffResult.dispatchUpdatesTo(this)
     }
 
     fun setCourseList(courseList: List<RealmMyCourse?>) {
         if (this.courseList === courseList) return
-        dispatchDiff(courseList)
+        dispatchDiff(courseList, null, null)
     }
 
     fun updateData(
@@ -125,44 +140,7 @@ class AdapterCourses(
         newMap: HashMap<String?, JsonObject>,
         newProgressMap: HashMap<String?, JsonObject>?
     ) {
-        val oldMap = HashMap(map)
-        val oldProgressMap = progressMap?.let { HashMap(it) }
-
-        val diffResult = DiffUtils.calculateDiff(
-            courseList,
-            newCourseList,
-            areItemsTheSame = { old, new -> old?.id == new?.id },
-            areContentsTheSame = { old, new ->
-                val ratingSame = oldMap[old?.courseId] == newMap[new?.courseId]
-                val progressSame = oldProgressMap?.get(old?.courseId) == newProgressMap?.get(new?.courseId)
-
-                old?.courseTitle == new?.courseTitle &&
-                        old?.description == new?.description &&
-                        old?.gradeLevel == new?.gradeLevel &&
-                        old?.subjectLevel == new?.subjectLevel &&
-                        old?.createdDate == new?.createdDate &&
-                        old?.isMyCourse == new?.isMyCourse &&
-                        old?.getNumberOfSteps() == new?.getNumberOfSteps() &&
-                        ratingSame &&
-                        progressSame
-            },
-            getChangePayload = { old, new ->
-                val bundle = Bundle()
-                if (oldMap[old?.courseId] != newMap[new?.courseId]) {
-                    bundle.putBoolean(RATING_PAYLOAD, true)
-                }
-                if (oldProgressMap?.get(old?.courseId) != newProgressMap?.get(new?.courseId)) {
-                    bundle.putBoolean(PROGRESS_PAYLOAD, true)
-                }
-                if (bundle.isEmpty) null else bundle
-            }
-        )
-
-        courseList = newCourseList
-        map.clear()
-        map.putAll(newMap)
-        this.progressMap = newProgressMap
-        diffResult.dispatchUpdatesTo(this)
+        dispatchDiff(newCourseList, newMap, newProgressMap)
     }
 
     private fun sortCourseListByTitle(list: List<RealmMyCourse?>): List<RealmMyCourse?> {
@@ -188,13 +166,13 @@ class AdapterCourses(
     fun toggleTitleSortOrder() {
         isTitleAscending = !isTitleAscending
         val sortedList = sortCourseListByTitle(courseList)
-        dispatchDiff(sortedList)
+        setCourseList(sortedList)
     }
 
     fun toggleSortOrder() {
         isAscending = !isAscending
         val sortedList = sortCourseList(courseList)
-        dispatchDiff(sortedList)
+        setCourseList(sortedList)
     }
 
     fun setProgressMap(progressMap: HashMap<String?, JsonObject>?) {

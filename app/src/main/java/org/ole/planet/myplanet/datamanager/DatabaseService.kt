@@ -7,11 +7,14 @@ import io.realm.RealmModel
 import io.realm.RealmQuery
 import io.realm.log.LogLevel
 import io.realm.log.RealmLog
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.BuildConfig
 
 class DatabaseService(context: Context) {
+    val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+
     init {
         Realm.init(context)
         val targetLogLevel = if (BuildConfig.DEBUG) LogLevel.DEBUG else LogLevel.ERROR
@@ -46,13 +49,13 @@ class DatabaseService(context: Context) {
     }
 
     suspend fun <T> withRealmAsync(operation: (Realm) -> T): T {
-        return withContext(Dispatchers.IO) {
+        return withContext(ioDispatcher) {
             withRealmInstance(operation)
         }
     }
 
     suspend fun executeTransactionAsync(transaction: (Realm) -> Unit) {
-        withContext(Dispatchers.IO) {
+        withContext(ioDispatcher) {
             Realm.getDefaultInstance().use { realm ->
                 realm.executeTransaction { transactionRealm ->
                     transaction(transactionRealm)
