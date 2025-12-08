@@ -67,6 +67,7 @@ class ChatDetailFragment : Fragment() {
     private val binding get() = _binding!!
     private lateinit var mAdapter: ChatAdapter
     private lateinit var sharedViewModel: ChatViewModel
+    private lateinit var messageTextWatcher: TextWatcher
     private var _id: String = ""
     private var _rev: String = ""
     private var currentID: String = ""
@@ -187,13 +188,14 @@ class ChatDetailFragment : Fragment() {
             }
             false
         }
-        binding.editGchatMessage.addTextChangedListener(object : TextWatcher {
+        messageTextWatcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 binding.textGchatIndicator.visibility = View.GONE
             }
             override fun afterTextChanged(s: Editable?) {}
-        })
+        }
+        binding.editGchatMessage.addTextChangedListener(messageTextWatcher)
     }
 
     private fun loadNewsConversations(newsId: String?, newsRev: String?, newsConversations: String?) {
@@ -656,6 +658,9 @@ class ChatDetailFragment : Fragment() {
     }
 
     override fun onDestroyView() {
+        if (this::messageTextWatcher.isInitialized) {
+            binding.editGchatMessage.removeTextChangedListener(messageTextWatcher)
+        }
         val editor = settings.edit()
         if (settings.getBoolean("isAlternativeUrl", false)) {
             editor.putString("alternativeUrl", "")
