@@ -138,33 +138,24 @@ class Service @Inject constructor(
         }
     }
 
-    fun checkCheckSum(callback: ChecksumCallback, path: String?) {
-        retrofitInterface.getChecksum(UrlUtils.getChecksumUrl(preferences)).enqueue(object : Callback<ResponseBody> {
-            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
-                if (response.code() == 200) {
-                    try {
-                        val checksum = response.body()?.string()
-                        if (TextUtils.isEmpty(checksum)) {
-                            val f = FileUtils.getSDPathFromUrl(context, path)
-                            if (f.exists()) {
-                                val sha256 = Sha256Utils().getCheckSumFromFile(f)
-                                if (checksum?.contains(sha256) == true) {
-                                    callback.onMatch()
-                                    return
-                                }
-                            }
-                        }
-                    } catch (e: IOException) {
-                        e.printStackTrace()
+    suspend fun checkCheckSum(path: String?): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val response = retrofitInterface.getChecksum(UrlUtils.getChecksumUrl(preferences)).execute()
+            if (response.isSuccessful) {
+                val checksum = response.body()?.string()
+                if (!checksum.isNullOrEmpty()) {
+                    val f = FileUtils.getSDPathFromUrl(context, path)
+                    if (f.exists()) {
+                        val sha256 = Sha256Utils().getCheckSumFromFile(f)
+                        return@withContext checksum.contains(sha256)
                     }
                 }
-                callback.onFail()
             }
-
-            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-                callback.onFail()
-            }
-        })
+            false
+        } catch (e: IOException) {
+            e.printStackTrace()
+            false
+        }
     }
 
     fun checkVersion(callback: CheckVersionCallback, settings: SharedPreferences) {
@@ -546,11 +537,6 @@ class Service @Inject constructor(
 
     interface CreateUserCallback {
         fun onSuccess(message: String)
-    }
-
-    interface ChecksumCallback {
-        fun onMatch()
-        fun onFail()
     }
 
     interface PlanetAvailableListener {
