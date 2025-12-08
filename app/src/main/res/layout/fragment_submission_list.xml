@@ -13,11 +13,25 @@
         android:textStyle="bold"
         android:textColor="@color/hint_color"
         android:paddingBottom="16dp" />
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rv_submissions"
+
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1" />
+        android:layout_weight="1">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_submissions"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:visibility="gone" />
+    </FrameLayout>
+
     <Button
         android:id="@+id/btn_download_report"
         android:layout_width="match_parent"
