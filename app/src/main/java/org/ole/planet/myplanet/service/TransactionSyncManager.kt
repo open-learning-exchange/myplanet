@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.text.TextUtils
 import android.util.Base64
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -51,7 +52,7 @@ class TransactionSyncManager @Inject constructor(
             }
             response.code() == 200
         } catch (e: IOException) {
-            createLog("TransactionSyncManager authenticate", "${e.message}")
+            Log.e("TransactionSyncManager", "authenticate: ${e.message}", e)
             false
         }
     }
@@ -62,11 +63,13 @@ class TransactionSyncManager @Inject constructor(
         val password = SecurePrefs.getPassword(context, settings) ?: ""
         val header = "Basic ${Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)}"
         try {
-            databaseService.executeTransactionAsync { realm ->
-                val users = realm.where(RealmUserModel::class.java).isNotEmpty("_id").findAll()
-                for (userModel in users) {
-                    syncHealthData(userModel, header)
+            val users = databaseService.withRealmAsync { realm ->
+                realm.where(RealmUserModel::class.java).isNotEmpty("_id").findAll().let {
+                    realm.copyFromRealm(it)
                 }
+            }
+            users.forEach { userModel ->
+                syncHealthData(userModel, header)
             }
             withContext(Dispatchers.Main) {
                 listener.onSyncComplete()
@@ -91,12 +94,17 @@ class TransactionSyncManager @Inject constructor(
                     val jsonDoc = withContext(Dispatchers.IO) {
                         apiInterface.getJsonObject(header, "${UrlUtils.getUrl()}/$table/$id").execute().body()
                     }
-                    userModel?.key = getString("key", jsonDoc)
-                    userModel?.iv = getString("iv", jsonDoc)
+                    databaseService.executeTransactionAsync { realm ->
+                        userModel?.let {
+                            val model = realm.where(RealmUserModel::class.java).equalTo("id", it.id).findFirst()
+                            model?.key = getString("key", jsonDoc)
+                            model?.iv = getString("iv", jsonDoc)
+                        }
+                    }
                 }
             }
         } catch (e: IOException) {
-            createLog("TransactionSyncManager syncHealthData", "${e.message}")
+            Log.e("TransactionSyncManager", "syncHealthData: ${e.message}", e)
         }
     }
 
@@ -112,10 +120,12 @@ class TransactionSyncManager @Inject constructor(
         val header = "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)
         val id = model?.id
         try {
-            databaseService.executeTransactionAsync { realm ->
-                val userModel = realm.where(RealmUserModel::class.java).equalTo("id", id).findFirst()
-                syncHealthData(userModel, header)
+            val user = databaseService.withRealmAsync { realm ->
+                realm.where(RealmUserModel::class.java).equalTo("id", id).findFirst()?.let {
+                    realm.copyFromRealm(it)
+                }
             }
+            syncHealthData(user, header)
             withContext(Dispatchers.Main) {
                 listener.onSyncComplete()
             }
@@ -168,7 +178,7 @@ class TransactionSyncManager @Inject constructor(
                 }
             }
         } catch (e: IOException) {
-            createLog("TransactionSyncManager syncDb", "table $table: ${e.message}")
+            Log.e("TransactionSyncManager", "syncDb for table $table: ${e.message}", e)
         }
     }
 
@@ -231,7 +241,7 @@ class TransactionSyncManager @Inject constructor(
                 }
             }
         } catch (e: Exception) {
-            createLog("TransactionSyncManager callMethod", "type $type: ${e.message}")
+            Log.e("TransactionSyncManager", "callMethod for type $type: ${e.message}", e)
         }
     }
 }

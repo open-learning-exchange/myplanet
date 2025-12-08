@@ -160,7 +160,7 @@ class SyncManager constructor(
                 td?.interrupt()
             }
         } catch (e: Exception) {
-            createLog("SyncManager destroy", "${e.message}")
+            Log.e("SyncManager", "destroy: ${e.message}", e)
         }
     }
 
@@ -327,7 +327,7 @@ class SyncManager constructor(
             val syncEndTime = System.currentTimeMillis()
             val totalSyncTime = syncEndTime - syncStartTime
             Log.d("PerformanceTest", "=== SYNC FAILED after ${totalSyncTime}ms ===")
-            createLog("SyncManager startFullSync", "${err.message}")
+            Log.e("SyncManager", "startFullSync: ${err.message}", err)
             handleException(err.message)
         } finally {
             realm.close()
@@ -526,7 +526,7 @@ class SyncManager constructor(
 
             logger.stopLogging()
         } catch (err: Exception) {
-            createLog("SyncManager startFastSync", "${err.message}")
+            Log.e("SyncManager", "startFastSync: ${err.message}", err)
             handleException(err.message)
         } finally {
             realm.close()
@@ -540,7 +540,7 @@ class SyncManager constructor(
         if (!betaSync) {
             try {
             } catch (e: Exception) {
-                createLog("SyncManager cleanupMainSync", "${e.message}")
+                Log.e("SyncManager", "cleanupMainSync: ${e.message}", e)
             }
             td?.interrupt()
         } else {
@@ -660,7 +660,7 @@ class SyncManager constructor(
                                 processedItems += idsWeAreProcessing.size
                             }
                         } catch (e: Exception) {
-                            createLog("SyncManager resourceTransactionSync", "chunk processing: ${e.message}")
+                            Log.e("SyncManager", "resourceTransactionSync chunk processing: ${e.message}", e)
                             for ((doc, _) in validDocuments) {
                                 try {
                                     databaseService.executeTransactionAsync { realmTx ->
@@ -673,7 +673,7 @@ class SyncManager constructor(
                                         }
                                     }
                                 } catch (e2: Exception) {
-                                    createLog("SyncManager resourceTransactionSync", "single doc processing: ${e2.message}")
+                                    Log.e("SyncManager", "resourceTransactionSync single doc processing: ${e2.message}", e2)
                                 }
                             }
                         }
@@ -690,7 +690,7 @@ class SyncManager constructor(
                         }
                     }
                 } catch (e: Exception) {
-                    createLog("SyncManager resourceTransactionSync", "batch processing: ${e.message}")
+                    Log.e("SyncManager", "resourceTransactionSync batch processing: ${e.message}", e)
                     skip += batchSize
                 }
             }
@@ -703,7 +703,7 @@ class SyncManager constructor(
                     }
                 }
             } catch (e: Exception) {
-                createLog("SyncManager resourceTransactionSync", "delete resources: ${e.message}")
+                Log.e("SyncManager", "resourceTransactionSync delete resources: ${e.message}", e)
             }
             logger.endProcess("resource_sync", processedItems)
             val resourceSyncEndTime = System.currentTimeMillis()
@@ -712,7 +712,7 @@ class SyncManager constructor(
             val seconds = (resourceSyncTime % 60000) / 1000
             Log.d("PerformanceTest", "resourceTransactionSync: Completed in ${minutes}m ${seconds}s (${resourceSyncTime}ms) - Processed $processedItems items")
         } catch (e: Exception) {
-            createLog("SyncManager resourceTransactionSync", "overall: ${e.message}")
+            Log.e("SyncManager", "resourceTransactionSync overall: ${e.message}", e)
             logger.endProcess("resource_sync", processedItems)
             val resourceSyncEndTime = System.currentTimeMillis()
             Log.d("PerformanceTest", "resourceTransactionSync: Failed after ${resourceSyncEndTime - resourceSyncStartTime}ms")
@@ -859,7 +859,7 @@ class SyncManager constructor(
                 processedItems = dataJobs.awaitAll().sum()
             }
         } catch (e: Exception) {
-            createLog("SyncManager processShelfParallel", "${e.message}")
+            Log.e("SyncManager", "processShelfParallel: ${e.message}", e)
         }
 
         return processedItems
@@ -927,7 +927,7 @@ class SyncManager constructor(
                                 }
                                 processedCount++
                             } catch (e: Exception) {
-                                createLog("SyncManager processShelfDataOptimizedSync", "insert: ${e.message}")
+                                    Log.e("SyncManager", "processShelfDataOptimizedSync insert: ${e.message}", e)
                             }
                         }
                     }
@@ -935,7 +935,7 @@ class SyncManager constructor(
             }
 
         } catch (e: Exception) {
-            createLog("SyncManager processShelfDataOptimizedSync", "overall: ${e.message}")
+            Log.e("SyncManager", "processShelfDataOptimizedSync overall: ${e.message}", e)
         }
         return processedCount
     }
@@ -963,7 +963,7 @@ class SyncManager constructor(
             saveConcatenatedLinksToPrefs()
             logger.endProcess("library_sync", processedItems)
         } catch (e: Exception) {
-            createLog("SyncManager myLibraryTransactionSync", "${e.message}")
+            Log.e("SyncManager", "myLibraryTransactionSync: ${e.message}", e)
             logger.endProcess("library_sync", processedItems)
         }
     }
