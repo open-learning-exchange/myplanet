@@ -12,10 +12,8 @@ import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
-import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -34,13 +32,15 @@ class SubmissionViewModel @Inject constructor(
 
     private val allSubmissionsFlow = flow {
         emitAll(submissionRepository.getSubmissionsFlow(userId))
-    }.shareIn(viewModelScope, SharingStarted.Lazily, 1)
+    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     val exams: StateFlow<HashMap<String?, RealmStepExam>> = allSubmissionsFlow.mapLatest { subs ->
         HashMap(submissionRepository.getExamMapForSubmissions(subs))
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), hashMapOf())
 
-    private val filteredSubmissionsRaw = combine(allSubmissionsFlow, _type, _query, exams) { subs, type, query, examMap ->
+    val submissionItems: StateFlow<List<SubmissionItem>> = combine(
+        allSubmissionsFlow, _type, _query, exams
+    ) { subs, type, query, examMap ->
         var filtered = when (type) {
             "survey" -> subs.filter { it.userId == userId && it.type == "survey" }
             "survey_submission" -> subs.filter {
@@ -69,18 +69,8 @@ class SubmissionViewModel @Inject constructor(
                 groupedSubmissions[entry.key]?.maxByOrNull { it.lastUpdateTime ?: 0 }?.id
             }
 
-        Triple(uniqueSubmissions, submissionCountMap, filtered)
-    }.shareIn(viewModelScope, SharingStarted.Lazily, 1)
-
-    val submissions: StateFlow<List<RealmSubmission>> = filteredSubmissionsRaw.map { it.first }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    val submissionCounts: StateFlow<Map<String?, Int>> = filteredSubmissionsRaw.map { it.second }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
-
-    val userNames: StateFlow<Map<String, String>> = submissions.mapLatest { uniqueSubmissions ->
         val submitterIds = uniqueSubmissions.mapNotNull { it.userId }.toSet()
-        submitterIds.mapNotNull { id ->
+        val userNames = submitterIds.mapNotNull { id ->
             val userModel = userRepository.getUserById(id)
             val displayName = userModel?.name
             if (displayName.isNullOrBlank()) {
@@ -89,7 +79,16 @@ class SubmissionViewModel @Inject constructor(
                 id to displayName
             }
         }.toMap()
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+
+        uniqueSubmissions.map { submission ->
+            SubmissionItem(
+                submission = submission,
+                examName = examMap[submission.parentId]?.name,
+                submissionCount = submissionCountMap[submission.id] ?: 1,
+                userName = userNames[submission.userId]
+            )
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun setFilter(type: String, query: String) {
         _type.value = type
