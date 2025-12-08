@@ -53,6 +53,9 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     private val answerCache = mutableMapOf<String, AnswerData>()
 
     @Inject
+    lateinit var examSubmissionUtils: ExamSubmissionUtils
+
+    @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
 
     data class AnswerData(
@@ -615,8 +618,8 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                 .findAll().lastOrNull()
         }
 
-        val result = ExamSubmissionUtils.saveAnswer(
-            mRealm,
+        val result = examSubmissionUtils.saveAnswer(
+            viewLifecycleOwner.lifecycleScope,
             sub,
             currentQuestion,
             ans,
