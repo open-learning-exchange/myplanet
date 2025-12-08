@@ -16,12 +16,55 @@ object ApiClient {
     }
 
     suspend fun <T> executeWithRetryAndWrap(operation: suspend () -> Response<T>?): Response<T>? {
-        return RetryUtils.retry(
+        val startTime = System.currentTimeMillis()
+        val result = RetryUtils.retry(
             maxAttempts = 3,
             delayMs = 2000L,
             shouldRetry = { resp -> resp == null || !resp.isSuccessful },
             block = { operation() },
         )
+        val duration = System.currentTimeMillis() - startTime
+
+        // Log the API call with timing
+        try {
+            val endpoint = extractEndpointFromStackTrace()
+            val itemCount = if (result?.isSuccessful == true) {
+                // Try to estimate item count from response body if it's a list/array
+                when (val body = result.body()) {
+                    is List<*> -> body.size
+                    is com.google.gson.JsonObject -> {
+                        if (body.has("rows")) {
+                            body.getAsJsonArray("rows")?.size() ?: 0
+                        } else 0
+                    }
+                    else -> 0
+                }
+            } else 0
+
+            org.ole.planet.myplanet.utilities.SyncTimeLogger.logApiCall(
+                endpoint,
+                duration,
+                result?.isSuccessful == true,
+                itemCount
+            )
+        } catch (e: Exception) {
+            // Don't let logging errors affect the API call
+            e.printStackTrace()
+        }
+
+        return result
+    }
+
+    private fun extractEndpointFromStackTrace(): String {
+        // Try to extract endpoint from stack trace for logging
+        return try {
+            val stackTrace = Thread.currentThread().stackTrace
+            stackTrace.find { it.className.contains("SyncManager") || it.className.contains("TransactionSyncManager") }
+                ?.let { "${it.className.substringAfterLast(".")}.${it.methodName}" }
+                ?: "unknown_endpoint"
+        } catch (e: Exception) {
+            "unknown_endpoint"
+        }
     }
 
     suspend fun <T> executeWithResult(operation: suspend () -> Response<T>?): NetworkResult<T> {

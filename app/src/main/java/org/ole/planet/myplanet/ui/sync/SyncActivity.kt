@@ -695,12 +695,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), CheckVersionCallback,
                             withContext(Dispatchers.Main) {
                                 startUpload("login")
                             }
-                            val backgroundRealm = databaseService.realmInstance
-                            try {
-                                transactionSyncManager.syncDb(backgroundRealm, "login_activities")
-                            } finally {
-                                backgroundRealm.close()
-                            }
+                            transactionSyncManager.syncDb("login_activities")
                         }
                     }
                 }
