@@ -230,7 +230,7 @@ class SubmissionRepositoryImpl @Inject constructor(
     }
     override suspend fun saveAnswer(
         submissionId: String?,
-        questionId: String,
+        questionId: String?,
         ans: String,
         listAns: Map<String, String>?,
         otherText: String?,

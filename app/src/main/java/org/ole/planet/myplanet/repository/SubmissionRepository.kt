@@ -27,7 +27,7 @@ interface SubmissionRepository {
     suspend fun markSubmissionComplete(id: String, payload: com.google.gson.JsonObject)
     suspend fun saveAnswer(
         submissionId: String?,
-        questionId: String,
+        questionId: String?,
         ans: String,
         listAns: Map<String, String>?,
         otherText: String?,

@@ -27,12 +27,10 @@ class ExamSubmissionUtils @Inject constructor(
         } catch (e: IllegalStateException) {
             null
         }
-        val questionId = question.id
-
         coroutineScope.launch {
             submissionRepository.saveAnswer(
                 submissionId,
-                questionId,
+                question.id,
                 ans,
                 listAns,
                 otherText,
