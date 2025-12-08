@@ -199,4 +199,8 @@ class UserRepositoryImpl @Inject constructor(
                 ?.let { realm.copyFromRealm(it) }
         }
     }
+
+    override fun getActiveUserId(): String {
+        return getUserModel()?.id ?: ""
+    }
 }
