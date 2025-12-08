@@ -367,7 +367,7 @@ class AdapterResource(
         }
     }
 
-    class BookDiffCallback : DiffUtils.ItemCallback<RealmMyLibrary>() {
+    class BookDiffCallback : androidx.recyclerview.widget.DiffUtil.ItemCallback<RealmMyLibrary>() {
         override fun areItemsTheSame(oldItem: RealmMyLibrary, newItem: RealmMyLibrary): Boolean {
             return oldItem._id == newItem._id
         }
