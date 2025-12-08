@@ -324,7 +324,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), CheckVersionCallback,
             e.printStackTrace()
         }
 
-        // Common failure path for both exceptions and unsuccessful responses
         syncFailed = true
         val protocol = extractProtocol("$processedUrl")
         val errorMessage = when (protocol) {
