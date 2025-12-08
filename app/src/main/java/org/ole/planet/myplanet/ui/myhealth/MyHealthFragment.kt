@@ -476,7 +476,11 @@ class MyHealthFragment : Fragment() {
                         }
                     }
 
-                    healthAdapter = AdapterHealthExamination(requireActivity(), mh, currentUser, userMap)
+                    if (!::healthAdapter.isInitialized) {
+                        healthAdapter = AdapterHealthExamination(requireActivity(), mh, currentUser, userMap)
+                    } else {
+                        healthAdapter.updateData(mh, currentUser, userMap)
+                    }
                     binding.rvRecords.apply {
                         layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
                         isNestedScrollingEnabled = false
