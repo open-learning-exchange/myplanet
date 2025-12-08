@@ -223,4 +223,69 @@ class SubmissionRepositoryImpl @Inject constructor(
             sub.status = "complete"
         }
     }
+
+    override suspend fun getSubmissionDetail(submissionId: String): org.ole.planet.myplanet.ui.submission.SubmissionDetail? {
+        return databaseService.withRealmAsync { realm ->
+            val submission = realm.where(RealmSubmission::class.java)
+                .equalTo("id", submissionId)
+                .findFirst()
+
+            if (submission == null) {
+                return@withRealmAsync null
+            }
+
+            val examId = submission.parentId?.substringBefore('@')
+            val exam = realm.where(RealmStepExam::class.java)
+                .equalTo("id", examId)
+                .findFirst()
+
+            val user = realm.where(org.ole.planet.myplanet.model.RealmUserModel::class.java)
+                .equalTo("id", submission.userId)
+                .findFirst()
+
+            val questions = realm.where(RealmExamQuestion::class.java)
+                .equalTo("examId", examId)
+                .findAll()
+
+            val questionAnswers = questions.map { question ->
+                val answer = submission.answers?.find { it.questionId == question.id }
+                val isCorrect = answer != null && question.getCorrectChoice()?.contains(answer.value) == true
+
+                val formattedAnswer = if (question.type?.startsWith("select") == true) {
+                    answer?.valueChoices?.mapNotNull { choiceId ->
+                        question.choices?.let { choicesJson ->
+                            try {
+                                val choicesArray = com.google.gson.JsonParser.parseString(choicesJson).asJsonArray
+                                choicesArray.find {
+                                    it.isJsonObject && it.asJsonObject.has("id") && it.asJsonObject.get("id").asString == choiceId
+                                }?.asJsonObject?.get("text")?.asString
+                            } catch (e: Exception) {
+                                null
+                            }
+                        }
+                    }?.joinToString(", ")
+                } else {
+                    answer?.value
+                }
+
+                org.ole.planet.myplanet.ui.submission.QuestionAnswer(
+                    questionId = question.id,
+                    questionHeader = question.header,
+                    questionBody = question.body,
+                    questionType = question.type,
+                    answer = formattedAnswer,
+                    answerChoices = answer?.valueChoices?.toList(),
+                    isCorrect = isCorrect
+                )
+            }
+
+            org.ole.planet.myplanet.ui.submission.SubmissionDetail(
+                title = exam?.name ?: "Submission Details",
+                status = "Status: ${submission.status ?: "Unknown"}",
+                date = submission.startTime,
+                submittedBy = "Submitted by: ${user?.name ?: "Unknown"}",
+                questionAnswers = questionAnswers
+            )
+        }
+    }
 }

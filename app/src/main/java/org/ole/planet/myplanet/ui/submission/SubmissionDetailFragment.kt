@@ -6,21 +6,19 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
-import io.realm.Realm
-import org.json.JSONObject
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.databinding.FragmentSubmissionDetailBinding
-import org.ole.planet.myplanet.model.RealmExamQuestion
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.TimeUtils
 
+@AndroidEntryPoint
 class SubmissionDetailFragment : Fragment() {
     private var _binding: FragmentSubmissionDetailBinding? = null
     private val binding get() = _binding!!
-    private lateinit var mRealm: Realm
-    private var submissionId: String? = null
+    private val viewModel: SubmissionDetailViewModel by viewModels()
     private lateinit var adapter: QuestionAnswerAdapter
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -30,12 +28,8 @@ class SubmissionDetailFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        mRealm = Realm.getDefaultInstance()
-        submissionId = arguments?.getString("id")
-
         setupRecyclerView()
-        loadSubmissionDetails()
+        observeViewModel()
     }
 
     private fun setupRecyclerView() {
@@ -84,86 +78,35 @@ class SubmissionDetailFragment : Fragment() {
         binding.rvQuestionsAnswers.isNestedScrollingEnabled = false
     }
 
-    private fun loadSubmissionDetails() {
-        submissionId?.let { id ->
-            var submission = mRealm.where(RealmSubmission::class.java)
-                .equalTo("id", id)
-                .or()
-                .equalTo("_id", id)
-                .findFirst()
-
-            if (submission == null) {
-                submission = mRealm.where(RealmSubmission::class.java)
-                    .contains("parentId", id)
-                    .findFirst()
-            }
-
-            submission?.let {
-                displaySubmissionInfo(it)
-                loadQuestionsAndAnswers(it)
+    private fun observeViewModel() {
+        lifecycleScope.launch {
+            viewModel.questionAnswers.collect { questionAnswers ->
+                adapter.submitList(questionAnswers)
             }
         }
-    }
-
-    private fun displaySubmissionInfo(submission: RealmSubmission) {
-        var examId = submission.parentId
-        if (submission.parentId?.contains("@") == true) {
-            examId = submission.parentId!!.split("@")[0]
-        }
-
-        val exam = mRealm.where(RealmStepExam::class.java)
-            .equalTo("id", examId)
-            .findFirst()
-
-        binding.tvSubmissionTitle.text = exam?.name ?: "Submission Details"
-        binding.tvSubmissionStatus.text = "Status: ${submission.status ?: "Unknown"}"
-        binding.tvSubmissionDate.text = "Date: ${TimeUtils.getFormattedDate(submission.startTime)}"
-
-        showSubmittedBy(submission)
-    }
-
-    private fun showSubmittedBy(submission: RealmSubmission) {
-        try {
-            val userJson = submission.user?.let { JSONObject(it) }
-            if (userJson != null) {
-                binding.tvSubmittedBy.text = "Submitted by: ${userJson.optString("name")}"
+        lifecycleScope.launch {
+            viewModel.title.collect { title ->
+                binding.tvSubmissionTitle.text = title
             }
-        } catch (e: Exception) {
-            val user = mRealm.where(RealmUserModel::class.java)
-                .equalTo("id", submission.userId)
-                .findFirst()
-            if (user != null) {
-                binding.tvSubmittedBy.text = "Submitted by: ${user.name}"
+        }
+        lifecycleScope.launch {
+            viewModel.status.collect { status ->
+                binding.tvSubmissionStatus.text = status
+            }
+        }
+        lifecycleScope.launch {
+            viewModel.date.collect { date ->
+                binding.tvSubmissionDate.text = date
+            }
+        }
+        lifecycleScope.launch {
+            viewModel.submittedBy.collect { submittedBy ->
+                binding.tvSubmittedBy.text = submittedBy
             }
         }
     }
-
-    private fun loadQuestionsAndAnswers(submission: RealmSubmission) {
-        val examId = getExamId(submission.parentId)
-
-        val questions = mRealm.where(RealmExamQuestion::class.java)
-            .equalTo("examId", examId)
-            .findAll()
-
-        val questionAnswerPairs = questions.map { question ->
-            val answer = submission.answers?.find { it.questionId == question.id }
-            QuestionAnswerPair(question, answer)
-        }
-
-        adapter.submitList(questionAnswerPairs)
-    }
-
-    private fun getExamId(parentId: String?): String? {
-        return if (parentId?.contains("@") == true) {
-            parentId.split("@")[0]
-        } else {
-            parentId
-        }
-    }
-
 
     override fun onDestroyView() {
-        mRealm.close()
         _binding = null
         super.onDestroyView()
     }
