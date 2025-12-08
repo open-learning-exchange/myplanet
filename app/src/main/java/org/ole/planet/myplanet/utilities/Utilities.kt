@@ -34,12 +34,14 @@ object Utilities {
     fun toast(context: Context?, message: CharSequence?, duration: Int = Toast.LENGTH_LONG) {
         context ?: return
         MainApplication.applicationScope.launch(Dispatchers.Main) {
-            val visualContext = getActivityFromContext(context) ?: context
+            val visualContext = getActivityFromContext(context)
 
-            try {
-                Toast.makeText(visualContext, message, duration).show()
-            } catch (e: IllegalAccessException) {
-                e.printStackTrace()
+            if (visualContext != null) {
+                try {
+                    Toast.makeText(visualContext, message, duration).show()
+                } catch (e: IllegalAccessException) {
+                    e.printStackTrace()
+                }
             }
         }
     }
