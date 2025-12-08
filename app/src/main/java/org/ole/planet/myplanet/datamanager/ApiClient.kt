@@ -1,9 +1,9 @@
 package org.ole.planet.myplanet.datamanager
 
-import org.ole.planet.myplanet.MainApplication
 import java.io.IOException
 import java.net.SocketTimeoutException
 import kotlinx.coroutines.delay
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utilities.RetryUtils
 import retrofit2.Response
 import retrofit2.Retrofit
