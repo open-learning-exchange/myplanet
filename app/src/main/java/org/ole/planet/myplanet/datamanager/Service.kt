@@ -8,7 +8,6 @@ import androidx.core.net.toUri
 import com.google.gson.JsonObject
 import dagger.hilt.android.EntryPointAccessors
 import java.io.IOException
-import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -19,7 +18,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SecurityDataCallback
 import org.ole.planet.myplanet.callback.SuccessListener
@@ -32,6 +30,7 @@ import org.ole.planet.myplanet.di.RepositoryEntryPoint
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmCommunity
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.PlanetRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.UploadToShelfService
 import org.ole.planet.myplanet.ui.sync.ProcessUserDataActivity
@@ -42,7 +41,6 @@ import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
-import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.Sha256Utils
 import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.Utilities
@@ -58,6 +56,7 @@ class Service @Inject constructor(
     @ApplicationScope private val serviceScope: CoroutineScope,
     private val userRepository: UserRepository,
     private val uploadToShelfService: UploadToShelfService,
+    private val planetRepository: PlanetRepository,
 ) {
     constructor(context: Context) : this(
         context,
@@ -81,10 +80,13 @@ class Service @Inject constructor(
             context.applicationContext,
             AutoSyncEntryPoint::class.java
         ).uploadToShelfService(),
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            RepositoryEntryPoint::class.java
+        ).planetRepository(),
     )
 
     private val preferences: SharedPreferences = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
-    private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
     private val configurationManager =
         ConfigurationManager(context, preferences, retrofitInterface)
 
@@ -211,66 +213,15 @@ class Service @Inject constructor(
     }
 
     fun isPlanetAvailable(callback: PlanetAvailableListener?) {
-        val updateUrl = "${preferences.getString("serverURL", "")}"
-        serverAvailabilityCache[updateUrl]?.let { (available, timestamp) ->
-            if (System.currentTimeMillis() - timestamp < 30000) {
-                if (available) {
+        serviceScope.launch {
+            val isAvailable = planetRepository.isPlanetAvailable()
+            withContext(Dispatchers.Main) {
+                if (isAvailable) {
                     callback?.isAvailable()
                 } else {
                     callback?.notAvailable()
                 }
-                return
             }
-        }
-
-        val serverUrlMapper = ServerUrlMapper()
-        val mapping = serverUrlMapper.processUrl(updateUrl)
-
-        serviceScope.launch {
-            withContext(Dispatchers.IO) {
-                val primaryReachable = isServerReachable(mapping.primaryUrl)
-                val alternativeReachable = mapping.alternativeUrl?.let { isServerReachable(it) } == true
-
-                if (!primaryReachable && alternativeReachable) {
-                    mapping.alternativeUrl?.let { alternativeUrl ->
-                        val uri = updateUrl.toUri()
-                        val editor = preferences.edit()
-
-                        serverUrlMapper.updateUrlPreferences(
-                            editor,
-                            uri,
-                            alternativeUrl,
-                            mapping.primaryUrl,
-                            preferences
-                        )
-                    }
-                }
-            }
-
-            retrofitInterface.isPlanetAvailable(UrlUtils.getUpdateUrl(preferences)).enqueue(object : Callback<ResponseBody?> {
-                override fun onResponse(call: Call<ResponseBody?>, response: Response<ResponseBody?>) {
-                    val isAvailable = callback != null && response.code() == 200
-                    serverAvailabilityCache[updateUrl] = Pair(isAvailable, System.currentTimeMillis())
-                    serviceScope.launch {
-                        withContext(Dispatchers.Main) {
-                            if (isAvailable) {
-                                callback.isAvailable()
-                            } else {
-                                callback?.notAvailable()
-                            }
-                        }
-                    }
-                }
-
-                override fun onFailure(call: Call<ResponseBody?>, t: Throwable) {
-                    serverAvailabilityCache[updateUrl] = Pair(false, System.currentTimeMillis())
-                    serviceScope.launch {
-                        withContext(Dispatchers.Main) {
-                            callback?.notAvailable()
-                        }
-                    }
-                }
-            })
         }
     }
 
