@@ -76,15 +76,8 @@ class SubmissionListFragment : Fragment() {
                 .sort("lastUpdateTime", Sort.DESCENDING)
                 .findAll()
 
-            val submissionItems = submissions.map {
-                SubmissionItem(
-                    id = it.id,
-                    lastUpdateTime = it.lastUpdateTime,
-                    status = it.status ?: "",
-                    uploaded = it.uploaded
-                )
-            }
-            adapter.submitList(submissionItems)
+            // Pass unmanaged copies to the adapter to allow background diffing
+            adapter.submitList(realm.copyFromRealm(submissions))
 
             binding.btnDownloadReport.setOnClickListener {
                 generateReport(submissions.toList())
