@@ -199,4 +199,25 @@ class UserRepositoryImpl @Inject constructor(
                 ?.let { realm.copyFromRealm(it) }
         }
     }
+
+    override suspend fun getSubmitterNames(ids: Set<String>): Map<String, String> {
+        if (ids.isEmpty()) {
+            return emptyMap()
+        }
+
+        return withRealm { realm ->
+            realm.where(RealmUserModel::class.java)
+                .`in`("id", ids.toTypedArray())
+                .findAll()
+                .mapNotNull { user ->
+                    val displayName = user.name
+                    if (displayName.isNullOrBlank()) {
+                        null
+                    } else {
+                        user.id to displayName
+                    }
+                }
+                .toMap()
+        }
+    }
 }

@@ -80,15 +80,7 @@ class SubmissionViewModel @Inject constructor(
 
     val userNames: StateFlow<Map<String, String>> = submissions.mapLatest { uniqueSubmissions ->
         val submitterIds = uniqueSubmissions.mapNotNull { it.userId }.toSet()
-        submitterIds.mapNotNull { id ->
-            val userModel = userRepository.getUserById(id)
-            val displayName = userModel?.name
-            if (displayName.isNullOrBlank()) {
-                null
-            } else {
-                id to displayName
-            }
-        }.toMap()
+        userRepository.getSubmitterNames(submitterIds)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
     fun setFilter(type: String, query: String) {
