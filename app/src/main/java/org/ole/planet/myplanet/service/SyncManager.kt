@@ -916,20 +916,18 @@ class SyncManager constructor(
                 }
 
                 if (documentsToProcess.isNotEmpty()) {
-                    safeRealmOperation { realm ->
-                        realm.executeTransaction { realmTx ->
-                            documentsToProcess.forEach { doc ->
-                                try {
-                                    when (shelfData.type) {
-                                        "resources" -> insertMyLibrary(shelfId, doc, realmTx)
-                                        "meetups" -> insert(realmTx, doc)
-                                        "courses" -> insertMyCourses(shelfId, doc, realmTx)
-                                        "teams" -> insertMyTeams(doc, realmTx)
-                                    }
-                                    processedCount++
-                                } catch (e: Exception) {
-                                    createLog("SyncManager processShelfDataOptimizedSync", "insert: ${e.message}")
+                    databaseService.executeTransactionAsync { realmTx ->
+                        documentsToProcess.forEach { doc ->
+                            try {
+                                when (shelfData.type) {
+                                    "resources" -> insertMyLibrary(shelfId, doc, realmTx)
+                                    "meetups" -> insert(realmTx, doc)
+                                    "courses" -> insertMyCourses(shelfId, doc, realmTx)
+                                    "teams" -> insertMyTeams(doc, realmTx)
                                 }
+                                processedCount++
+                            } catch (e: Exception) {
+                                createLog("SyncManager processShelfDataOptimizedSync", "insert: ${e.message}")
                             }
                         }
                     }
