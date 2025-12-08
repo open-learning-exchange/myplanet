@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.team
 
-import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.text.Editable
@@ -183,10 +182,6 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
         dialog.show()
     }
 
-    override fun onResume() {
-        super.onResume()
-    }
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.rvTeamList.layoutManager = LinearLayoutManager(activity)
@@ -199,6 +194,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
                     updatedTeamList()
                     return
                 }
+
                 val list: List<RealmMyTeam>
                 if (fromDashboard) {
                     list = teamList.filter {
@@ -212,29 +208,41 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
 
                 if (list.isEmpty()) {
                     showNoResultsMessage(true, charSequence.toString())
-                    binding.rvTeamList.adapter = null
+                    if (::adapterTeamList.isInitialized) {
+                        adapterTeamList.submitList(emptyList())
+                    }
                 } else {
                     showNoResultsMessage(false)
+
                     val sortedList = list.sortedWith(compareByDescending<RealmMyTeam> {
                         it.name?.startsWith(charSequence.toString(), ignoreCase = true)
                     }.thenBy { it.name })
 
-                    val adapterTeamList = AdapterTeamList(
-                        activity as Context,
-                        sortedList,
-                        childFragmentManager,
-                        teamRepository,
-                        user,
-                        viewLifecycleOwner.lifecycleScope,
-                        sharedPrefManager
-                    )
-                    adapterTeamList.setTeamListener(this@TeamFragment)
-                    adapterTeamList.setUpdateCompleteListener(this@TeamFragment)
-                    binding.rvTeamList.adapter = adapterTeamList
+                    val teamDataList = sortedList.map { team ->
+                        TeamData(
+                            _id = team._id,
+                            name = team.name,
+                            teamType = team.teamType,
+                            createdDate = team.createdDate,
+                            type = team.type,
+                            status = team.status,
+                            visitCount = 0L,
+                            teamStatus = null,
+                            description = team.description,
+                            services = team.services,
+                            rules = team.rules,
+                            teamId = team.teamId
+                        )
+                    }
+                    
+                    if (!::adapterTeamList.isInitialized) {
+                        setTeamList()
+                    } else {
+                        adapterTeamList.submitList(teamDataList)
+                    }
                     listContentDescription(conditionApplied)
                 }
             }
-
             override fun afterTextChanged(editable: Editable) {}
         }
         binding.etSearch.addTextChangedListener(textWatcher)
