@@ -4,6 +4,7 @@ import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.LayoutInflater
+import android.app.AlertDialog
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
@@ -31,6 +32,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.utilities.Utilities.toast
+import org.ole.planet.myplanet.utilities.logRealmRemoved
 
 abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), OnRatingChangeListener {
     var subjects: MutableSet<String> = mutableSetOf()
@@ -112,7 +114,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             AlertDialog.Builder(requireContext())
                 .setTitle(R.string.delete_confirmation)
                 .setMessage(R.string.are_you_sure_you_want_to_delete_selected_items)
-                .setPositiveButton(R.string.delete) { _, _ ->
+                .setPositiveButton(R.string.yes) { _, _ ->
                     prgDialog.show()
                     viewLifecycleOwner.lifecycleScope.launch {
                         try {
@@ -233,7 +235,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                     myObject?.removeUserId(model?.id)
                     model?.id?.let { userId ->
                         obj.resourceId?.let { resourceId ->
-                            RealmRemovedLog.onRemove(realm, "resources", userId, resourceId)
+                            logRealmRemoved(realm, "resources", userId, resourceId)
                         }
                     }
                 } else if (obj is RealmMyCourse) {
@@ -241,7 +243,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                     myObject?.removeUserId(model?.id)
                     model?.id?.let { userId ->
                         obj.courseId?.let { courseId ->
-                            RealmRemovedLog.onRemove(realm, "courses", userId, courseId)
+                            logRealmRemoved(realm, "courses", userId, courseId)
                         }
                     }
                 }
