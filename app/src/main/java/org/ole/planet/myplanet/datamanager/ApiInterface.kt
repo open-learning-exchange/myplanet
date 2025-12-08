@@ -64,6 +64,9 @@ interface ApiInterface {
     @GET
     fun isPlanetAvailable(@Url serverUrl: String?): Call<ResponseBody>
 
+    @GET
+    suspend fun isPlanetAvailableSuspend(@Url serverUrl: String?): Response<ResponseBody>
+
     @POST
     fun chatGpt(@Url url: String?, @Body requestBody: RequestBody?): Call<ChatModel>
 
