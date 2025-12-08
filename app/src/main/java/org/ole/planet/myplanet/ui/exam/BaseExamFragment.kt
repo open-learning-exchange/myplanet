@@ -65,6 +65,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     var isTeam: Boolean = false
     var teamId: String? = null
     internal var answerTextWatcher: TextWatcher? = null
+    private var currentAnswerEditText: EditText? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -203,6 +204,8 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     }
 
     fun setMarkdownViewAndShowInput(etAnswer: EditText, type: String, oldAnswer: String?) {
+        currentAnswerEditText?.removeTextChangedListener(answerTextWatcher)
+        currentAnswerEditText = etAnswer
         etAnswer.visibility = View.VISIBLE
         val markwon = Markwon.create(requireActivity())
         val editor = MarkwonEditor.create(markwon)
@@ -218,6 +221,11 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
             etAnswer.addTextChangedListener(answerTextWatcher)
         }
         etAnswer.setText(oldAnswer)
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        currentAnswerEditText?.removeTextChangedListener(answerTextWatcher)
     }
 
     override fun onDestroy() {

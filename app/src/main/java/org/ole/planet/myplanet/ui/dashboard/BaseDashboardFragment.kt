@@ -38,6 +38,7 @@ import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmOfflineActivity
+import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTeamNotification
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -69,49 +70,54 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     lateinit var transactionSyncManager: TransactionSyncManager
 
     fun onLoaded(v: View) {
-        model = profileDbHandler.userModel
-        fullName = profileDbHandler.userModel?.getFullName()
-        if (fullName?.trim().isNullOrBlank()) {
-            fullName = profileDbHandler.userModel?.name
-            v.findViewById<LinearLayout>(R.id.ll_prompt).visibility = View.VISIBLE
-            v.findViewById<LinearLayout>(R.id.ll_prompt).setOnClickListener {
-                if (!childFragmentManager.isStateSaved) {
-                    UserInformationFragment.getInstance("", "", false).show(childFragmentManager, "")
+        viewLifecycleOwner.lifecycleScope.launch {
+            model = userRepository.getUserModelSuspending()
+            fullName = model?.getFullName()
+            if (fullName?.trim().isNullOrBlank()) {
+                fullName = model?.name
+                v.findViewById<LinearLayout>(R.id.ll_prompt).visibility = View.VISIBLE
+                v.findViewById<LinearLayout>(R.id.ll_prompt).setOnClickListener {
+                    if (!childFragmentManager.isStateSaved) {
+                        UserInformationFragment.getInstance("", "", false)
+                            .show(childFragmentManager, "")
+                    }
                 }
+            } else {
+                v.findViewById<LinearLayout>(R.id.ll_prompt).visibility = View.GONE
             }
-        } else {
-            v.findViewById<LinearLayout>(R.id.ll_prompt).visibility = View.GONE
-        }
-        v.findViewById<ImageView>(R.id.ic_close).setOnClickListener {
-            v.findViewById<LinearLayout>(R.id.ll_prompt).visibility = View.GONE
-        }
-        val imageView = v.findViewById<ImageView>(R.id.imageView)
-        if (!TextUtils.isEmpty(model?.userImage)) {
-            Glide.with(requireActivity())
-                .load(model?.userImage)
-                .diskCacheStrategy(DiskCacheStrategy.ALL)
-                .override(200, 200)
-                .circleCrop()
-                .placeholder(R.drawable.profile)
-                .error(R.drawable.profile)
-                .into(imageView)
-        } else {
-            imageView.setImageResource(R.drawable.profile)
-        }
+            v.findViewById<ImageView>(R.id.ic_close).setOnClickListener {
+                v.findViewById<LinearLayout>(R.id.ll_prompt).visibility = View.GONE
+            }
+            val imageView = v.findViewById<ImageView>(R.id.imageView)
+            if (!TextUtils.isEmpty(model?.userImage)) {
+                Glide.with(requireActivity())
+                    .load(model?.userImage)
+                    .diskCacheStrategy(DiskCacheStrategy.ALL)
+                    .override(200, 200)
+                    .circleCrop()
+                    .placeholder(R.drawable.profile)
+                    .error(R.drawable.profile)
+                    .into(imageView)
+            } else {
+                imageView.setImageResource(R.drawable.profile)
+            }
 
-        if (isRealmInitialized() && mRealm.isInTransaction) {
-            mRealm.commitTransaction()
-        }
+            if (isRealmInitialized() && mRealm.isInTransaction) {
+                mRealm.commitTransaction()
+            }
 
-        if (isRealmInitialized()) {
-            offlineActivitiesResults = mRealm.where(RealmOfflineActivity::class.java)
-                .equalTo("userName", profileDbHandler.userModel?.name)
-                .equalTo("type", KEY_LOGIN)
-                .findAllAsync()
+            if (isRealmInitialized()) {
+                offlineActivitiesResults = mRealm.where(RealmOfflineActivity::class.java)
+                    .equalTo("userName", model?.name)
+                    .equalTo("type", KEY_LOGIN)
+                    .findAllAsync()
+            }
+            v.findViewById<TextView>(R.id.txtRole).text =
+                getString(R.string.user_role, model?.getRoleAsString())
+            val offlineVisits = profileDbHandler.offlineVisits
+            v.findViewById<TextView>(R.id.txtFullName).text =
+                getString(R.string.user_name, fullName, offlineVisits)
         }
-        v.findViewById<TextView>(R.id.txtRole).text = getString(R.string.user_role, model?.getRoleAsString())
-        val offlineVisits = profileDbHandler.offlineVisits
-        v.findViewById<TextView>(R.id.txtFullName).text = getString(R.string.user_name, fullName, offlineVisits)
     }
 
     override fun forceDownloadNewsImages() {
@@ -232,11 +238,18 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     private fun myLifeListInit(flexboxLayout: FlexboxLayout) {
-        val dbMylife: MutableList<RealmMyLife> = ArrayList()
         val rawMylife: List<RealmMyLife> = RealmMyLife.getMyLifeByUserId(realm, settings)
-        for (item in rawMylife) if (item.isVisible) dbMylife.add(item)
+        val dbMylife = rawMylife.filter { it.isVisible }
+
+        val user = profileDbHandler.userModel
+        val surveyCount = if (isRealmInitialized()) {
+            RealmSubmission.getNoOfSurveySubmissionByUser(user?.id, mRealm)
+        } else {
+            0
+        }
+
         for ((itemCnt, items) in dbMylife.withIndex()) {
-            flexboxLayout.addView(getLayout(itemCnt, items), params)
+            flexboxLayout.addView(getLayout(itemCnt, items, surveyCount), params)
         }
     }
 
@@ -317,8 +330,8 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         val userId = settings?.getString("userId", "--")
         viewLifecycleOwner.lifecycleScope.launch {
             setUpMyLife(userId)
-            myLifeListInit(myLifeFlex)
         }
+        myLifeListInit(myLifeFlex)
 
 
         if (isRealmInitialized() && mRealm.isInTransaction) {

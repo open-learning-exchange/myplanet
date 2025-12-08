@@ -3,14 +3,13 @@ package org.ole.planet.myplanet.ui.team.teamMember
 import android.content.Context
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowMemberRequestBinding
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.Utilities
-
-import androidx.recyclerview.widget.ListAdapter
 
 class AdapterMemberRequest(
     private val context: Context,
