@@ -48,7 +48,6 @@
     <string name="download_selected">Télécharger la sélection</string>
     <string name="txt_cancel">Annuler</string>
     <string name="download_all">Tout télécharger</string>
-    <string name="hello_blank_fragment">Bonjour fragment vide</string>
     <string name="join_selected">Rejoindre la\nsélection</string>
     <string name="join">Rejoindre</string>
     <string name="add_to_mylib">Ajouter à ma bibliothèque</string>
@@ -691,7 +690,6 @@
     <string name="no_data_available_please_click_button_to_add_new_resource_in_mypersonal">Aucune donnée disponible, veuillez cliquer sur le bouton + pour ajouter une nouvelle ressource dans myPersonal.</string>
     <string name="label_added">Étiquette ajoutée.</string>
     <string name="please_enter_message">Veuillez saisir un message</string>
-    <string name="no_items">Aucun élément</string>
     <string name="record_survey">Enregistrer l\'enquête</string>
     <string name="survey_sent_to_users">Enquête envoyée aux utilisateurs</string>
     <string name="wifi_is_turned_off_saving_battery_power">Le wifi est désactivé. Économie de la batterie</string>
