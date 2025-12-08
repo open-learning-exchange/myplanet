@@ -55,6 +55,8 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     @Inject
+    lateinit var userRepository: org.ole.planet.myplanet.repository.UserRepository
+    @Inject
     lateinit var sharedPrefManager: SharedPrefManager
     private lateinit var imageList: RealmList<String>
     private var llImage: ViewGroup? = null
@@ -89,7 +91,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         lifecycleScope.launch {
             val (news, list) = viewModel.getNewsWithReplies(id)
             databaseService.withRealm { realm ->
-                newsAdapter = AdapterNews(this@ReplyActivity, user, news, "", null, userProfileDbHandler, databaseService, lifecycleScope)
+                newsAdapter = AdapterNews(this@ReplyActivity, user, news, "", null, userProfileDbHandler, databaseService, userRepository, lifecycleScope)
                 newsAdapter.sharedPrefManager = sharedPrefManager
                 newsAdapter.setListener(this@ReplyActivity)
                 newsAdapter.setmRealm(realm)
