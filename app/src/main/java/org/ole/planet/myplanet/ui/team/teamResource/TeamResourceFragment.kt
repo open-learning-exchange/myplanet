@@ -80,12 +80,7 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdat
                 binding.rvResource.adapter = adapterLibrary
             }
 
-            val unmanagedLibraries = if (!mRealm.isClosed) {
-                mRealm.copyFromRealm(libraries)
-            } else {
-                emptyList()
-            }
-            adapterLibrary.submitList(unmanagedLibraries) {
+            adapterLibrary.submitList(libraries) {
                 checkAndShowNoData()
             }
         }
