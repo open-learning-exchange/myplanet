@@ -18,8 +18,7 @@ import org.ole.planet.myplanet.ui.team.teamCourse.AdapterTeamCourse.ViewHolderTe
 class AdapterTeamCourse(
     private val context: Context,
     private var list: MutableList<RealmMyCourse>,
-    mRealm: Realm?,
-    teamId: String?,
+    private val teamCreatorId: String,
     settings: SharedPreferences
 ) : RecyclerView.Adapter<ViewHolderTeamCourse>() {
     private var listener: OnHomeItemClickListener? = null
@@ -31,7 +30,7 @@ class AdapterTeamCourse(
             listener = context
         }
         this.settings = settings
-        teamCreator = getTeamCreator(teamId, mRealm)
+        teamCreator = teamCreatorId
     }
     
     fun getList(): List<RealmMyCourse> = list
