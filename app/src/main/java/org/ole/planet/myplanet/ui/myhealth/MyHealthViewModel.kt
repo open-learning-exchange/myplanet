@@ -4,9 +4,6 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import io.realm.Case
-import io.realm.Realm
-import io.realm.Sort
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,7 +24,7 @@ sealed class SearchState {
 class MyHealthViewModel @Inject constructor(private val userRepository: UserRepository) : ViewModel() {
 
     private val _searchState = MutableStateFlow<SearchState>(SearchState.Idle)
-    val searchState = _search-state.asStateFlow()
+    val searchState = _searchState.asStateFlow()
 
     private var searchJob: Job? = null
 
