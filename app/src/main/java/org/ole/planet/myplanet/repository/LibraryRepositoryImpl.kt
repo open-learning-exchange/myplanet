@@ -24,34 +24,36 @@ class LibraryRepositoryImpl @Inject constructor(
             val linkTags = realm.where(RealmTag::class.java).equalTo("db", "resources").isNotNull("linkId").findAll()
             val allTags = realm.where(RealmTag::class.java).isNotNull("name").findAll()
 
-            val tagMap = allTags.associate { it.id to TagItem(it.id, it._id, it.name) }
+            val tagMap = allTags.map { tag ->
+                tag.id to TagItem(tag.id, tag._id, tag.name)
+            }.toMap()
 
             val resourceTagMap = linkTags.groupBy { it.linkId }
                 .mapValues { entry ->
                     entry.value.mapNotNull { linkTag -> tagMap[linkTag.tagId] }
                 }
 
-            libs.map { it ->
+            libs.map { item ->
                 LibraryItem(
-                    id = it.id,
-                    _id = it._id,
-                    _rev = it._rev,
-                    title = it.title,
-                    description = it.description,
-                    timesRated = it.timesRated,
-                    averageRating = it.averageRating,
-                    createdDate = it.createdDate,
-                    uploadDate = it.uploadDate,
-                    resourceOffline = it.isResourceOffline(),
-                    resourceId = it.resourceId,
-                    resourceLocalAddress = it.resourceLocalAddress,
-                    filename = it.filename,
-                    mediaType = it.mediaType,
-                    language = it.language,
-                    subject = it.subject?.toList(),
-                    level = it.level?.toList(),
-                    userId = it.userId?.toList(),
-                    tags = resourceTagMap[it.resourceId] ?: emptyList()
+                    id = item.id,
+                    _id = item._id,
+                    _rev = item._rev,
+                    title = item.title,
+                    description = item.description,
+                    timesRated = item.timesRated,
+                    averageRating = item.averageRating,
+                    createdDate = item.createdDate,
+                    uploadDate = item.uploadDate,
+                    resourceOffline = item.isResourceOffline(),
+                    resourceId = item.resourceId,
+                    resourceLocalAddress = item.resourceLocalAddress,
+                    filename = item.filename,
+                    mediaType = item.mediaType,
+                    language = item.language,
+                    subject = item.subject?.toList(),
+                    level = item.level?.toList(),
+                    userId = item.userId?.toList(),
+                    tags = resourceTagMap[item.resourceId] ?: emptyList()
                 )
             }
         }

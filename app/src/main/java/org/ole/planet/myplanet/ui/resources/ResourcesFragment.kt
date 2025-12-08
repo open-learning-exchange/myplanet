@@ -89,6 +89,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     @Inject
     lateinit var tagRepository: TagRepository
 
+    // libraryRepository is injected in BaseResourceFragment (superclass)
+
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
     private val serverUrl: String
@@ -290,8 +292,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         return adapterLibrary
     }
 
-    // Override base class method to use DTOs
-    override fun addToMyList() {
+    // Use renamed methods to avoid overriding final methods in base class
+    fun addSelectedItemsToMyList() {
         if (selectedLibraryItems.isEmpty()) return
 
         val userId = profileDbHandler.userModel?.id ?: return
@@ -311,8 +313,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
     }
 
-    // Override base class method to use DTOs
-    override fun deleteSelected(deleteProgress: Boolean) {
+    // Use renamed methods to avoid overriding final methods in base class
+    fun deleteSelectedItems() {
          if (selectedLibraryItems.isEmpty()) return
          val userId = profileDbHandler.userModel?.id ?: return
          val itemsToDelete = selectedLibraryItems.toList()
@@ -565,11 +567,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     override fun onSelectedListChange(list: MutableList<RealmMyLibrary?>) {
         // This interface method is technically still required if we implement OnLibraryItemSelected
-        // But AdapterResource no longer calls it. It calls the functional callback.
-        // We can leave it empty or remove the interface implementation if not used elsewhere.
-        // However, ResourcesFragment implements OnLibraryItemSelected.
-        // We should probably keep it empty or try to remove the interface from class signature if possible.
-        // But since OnLibraryItemSelected also has onTagClicked which is overridden, we keep it.
     }
 
     override fun onTagClicked(realmTag: RealmTag) {
