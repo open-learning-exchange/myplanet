@@ -32,6 +32,7 @@ import org.ole.planet.myplanet.di.RepositoryEntryPoint
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmCommunity
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.PlanetRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.UploadToShelfService
 import org.ole.planet.myplanet.ui.sync.ProcessUserDataActivity
@@ -58,6 +59,7 @@ class Service @Inject constructor(
     @ApplicationScope private val serviceScope: CoroutineScope,
     private val userRepository: UserRepository,
     private val uploadToShelfService: UploadToShelfService,
+    private val planetRepository: PlanetRepository,
 ) {
     constructor(context: Context) : this(
         context,
@@ -81,6 +83,10 @@ class Service @Inject constructor(
             context.applicationContext,
             AutoSyncEntryPoint::class.java
         ).uploadToShelfService(),
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            RepositoryEntryPoint::class.java
+        ).planetRepository(),
     )
 
     private val preferences: SharedPreferences = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
@@ -89,52 +95,34 @@ class Service @Inject constructor(
         ConfigurationManager(context, preferences, retrofitInterface)
 
     fun healthAccess(listener: SuccessListener) {
-        try {
-            val healthUrl = UrlUtils.getHealthAccessUrl(preferences)
-            if (healthUrl.isBlank()) {
-                listener.onSuccess("")
-                return
-            }
-
-            retrofitInterface.healthAccess(healthUrl).enqueue(object : Callback<ResponseBody> {
-                override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
-                    try {
-                        when (response.code()) {
-                            200 -> listener.onSuccess(context.getString(R.string.server_sync_successfully))
-                            401 -> listener.onSuccess("Unauthorized - Invalid credentials")
-                            404 -> listener.onSuccess("Server endpoint not found")
-                            500 -> listener.onSuccess("Server internal error")
-                            502 -> listener.onSuccess("Bad gateway - Server unavailable")
-                            503 -> listener.onSuccess("Service temporarily unavailable")
-                            504 -> listener.onSuccess("Gateway timeout")
-                            else -> listener.onSuccess("Server error: ${response.code()}")
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
+        serviceScope.launch {
+            try {
+                val healthUrl = UrlUtils.getHealthAccessUrl(preferences)
+                if (healthUrl.isBlank()) {
+                    withContext(Dispatchers.Main) {
                         listener.onSuccess("")
                     }
+                    return@launch
                 }
 
-                override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-                    try {
-                        t.printStackTrace()
-                        val errorMsg = when (t) {
-                            is java.net.UnknownHostException -> "Server not reachable"
-                            is java.net.SocketTimeoutException -> "Connection timeout"
-                            is java.net.ConnectException -> "Unable to connect to server"
-                            is java.io.IOException -> "Network connection error"
-                            else -> "Network error: ${t.localizedMessage ?: "Unknown error"}"
-                        }
-                        listener.onSuccess(errorMsg)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        listener.onSuccess("Health check failed")
+                val result = withContext(Dispatchers.IO) {
+                    planetRepository.healthAccess(healthUrl)
+                }
+
+                withContext(Dispatchers.Main) {
+                    when (result) {
+                        is NetworkResult.Success -> listener.onSuccess(context.getString(R.string.server_sync_successfully))
+                        is NetworkResult.Error -> listener.onSuccess(result.message)
+                        is NetworkResult.Exception -> listener.onSuccess(result.exception.message)
                     }
                 }
-            })
-        } catch (e: Exception) {
-            e.printStackTrace()
-            listener.onSuccess("Health access initialization failed")
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    listener.onSuccess("Health access initialization failed")
+                }
+            }
         }
     }
 

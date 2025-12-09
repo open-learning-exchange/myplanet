@@ -59,6 +59,9 @@ interface ApiInterface {
     fun healthAccess(@Url url: String?): Call<ResponseBody>
 
     @GET
+    suspend fun healthAccessSuspend(@Url url: String?): Response<ResponseBody>
+
+    @GET
     fun getChecksum(@Url url: String?): Call<ResponseBody>
 
     @GET
