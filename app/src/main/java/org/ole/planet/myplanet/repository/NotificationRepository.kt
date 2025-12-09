@@ -3,8 +3,10 @@ package org.ole.planet.myplanet.repository
 interface NotificationRepository {
     suspend fun getNotifications(userId: String, filter: String): List<org.ole.planet.myplanet.model.RealmNotification>
     suspend fun getUnreadCount(userId: String?): Int
+    suspend fun getUnreadNotifications(userId: String?): List<org.ole.planet.myplanet.model.RealmNotification>
     suspend fun updateResourceNotification(userId: String?, resourceCount: Int)
     suspend fun markNotificationsAsRead(notificationIds: Set<String>): Set<String>
+    suspend fun markNotificationsByTypeAsRead(userId: String, type: String)
     suspend fun markAllUnreadAsRead(userId: String?): Set<String>
     suspend fun createNotificationIfMissing(
         type: String,

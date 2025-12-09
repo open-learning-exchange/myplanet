@@ -5,12 +5,17 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.Calendar
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -34,6 +39,14 @@ data class DashboardUiState(
     val teams: List<RealmMyTeam> = emptyList(),
 )
 
+sealed class NotificationEvent {
+    data class Survey(val id: String, val title: String, val relatedId: String?) : NotificationEvent()
+    data class Task(val id: String, val title: String, val deadline: String, val relatedId: String?) : NotificationEvent()
+    data class Resource(val id: String, val count: Int, val relatedId: String?) : NotificationEvent()
+    data class JoinRequest(val id: String, val requesterName: String, val teamName: String, val relatedId: String?) : NotificationEvent()
+    data class Storage(val id: String, val percentage: Int) : NotificationEvent()
+}
+
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     private val userRepository: UserRepository,
@@ -47,11 +60,18 @@ class DashboardViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
+    private val _notificationEvents = Channel<List<NotificationEvent>>()
+    val notificationEvents: Flow<List<NotificationEvent>> = _notificationEvents.receiveAsFlow()
+
     private var userContentJob: Job? = null
+    private var notificationObservationJob: Job? = null
+    private var lastNotificationCheckTime = 0L
+    private val notificationCheckThrottleMs = 5000L
 
     fun setUnreadNotifications(count: Int) {
         _uiState.update { it.copy(unreadNotifications = count) }
     }
+
     fun calculateIndividualProgress(voiceCount: Int, hasUnfinishedSurvey: Boolean): Int {
         val earnedDollarsVoice = minOf(voiceCount, 5) * 2
         val earnedDollarsSurvey = if (!hasUnfinishedSurvey) 1 else 0
@@ -140,6 +160,130 @@ class DashboardViewModel @Inject constructor(
                 teamRepository.getMyTeamsFlow(userId).collect { teams ->
                     _uiState.update { it.copy(teams = teams) }
                 }
+            }
+        }
+    }
+
+    fun startObservingData(userId: String, storageRatio: Int) {
+        notificationObservationJob?.cancel()
+        notificationObservationJob = viewModelScope.launch {
+            launch {
+                libraryRepository.getLibraryListFlow().collect {
+                    checkAndCreateNewNotifications(userId, storageRatio)
+                }
+            }
+            launch {
+                submissionRepository.getPendingSurveysFlow(userId).collect {
+                    checkAndCreateNewNotifications(userId, storageRatio)
+                }
+            }
+            launch {
+                teamRepository.getPendingTasksFlow(userId).collect {
+                    checkAndCreateNewNotifications(userId, storageRatio)
+                }
+            }
+        }
+    }
+
+    private suspend fun checkAndCreateNewNotifications(userId: String, storageRatio: Int) {
+        val currentTime = System.currentTimeMillis()
+        if (currentTime - lastNotificationCheckTime < notificationCheckThrottleMs) {
+            return
+        }
+        lastNotificationCheckTime = currentTime
+
+        withContext(Dispatchers.IO) {
+            try {
+                updateResourceNotification(userId)
+
+                val taskData = teamRepository.getTaskNotifications(userId)
+                val joinRequestData = teamRepository.getJoinRequestNotifications(userId)
+                val surveyTitles = submissionRepository.getSurveyTitlesFromSubmissions(
+                    submissionRepository.getPendingSurveys(userId)
+                )
+
+                // Create notifications in DB
+                surveyTitles.forEach { title ->
+                    createNotificationIfMissing("survey", title, title, userId)
+                }
+
+                taskData.forEach { (title, deadline, id) ->
+                    createNotificationIfMissing("task", "$title $deadline", id, userId)
+                }
+
+                if (storageRatio > 85) {
+                    createNotificationIfMissing("storage", "${storageRatio}%", "storage", userId)
+                }
+                createNotificationIfMissing("storage", "90%", "storage_test", userId)
+
+                joinRequestData.forEach { (requesterName, teamName, requestId) ->
+                    val message = "$requesterName|$teamName" // Store raw data separated by pipe for localization in UI
+                    createNotificationIfMissing("join_request", message, requestId, userId)
+                }
+
+                val events = notificationRepository.getUnreadNotifications(userId)
+                    .mapNotNull { dbNotification ->
+                        when (dbNotification.type.lowercase()) {
+                            "survey" -> NotificationEvent.Survey(
+                                id = dbNotification.id,
+                                title = dbNotification.message,
+                                relatedId = dbNotification.relatedId ?: dbNotification.id
+                            )
+                            "task" -> {
+                                val parts = dbNotification.message.split(" ")
+                                val taskTitle = parts.dropLast(3).joinToString(" ")
+                                val deadline = parts.takeLast(3).joinToString(" ")
+                                NotificationEvent.Task(
+                                    id = dbNotification.id,
+                                    title = taskTitle,
+                                    deadline = deadline,
+                                    relatedId = dbNotification.relatedId ?: dbNotification.id
+                                )
+                            }
+                            "resource" -> NotificationEvent.Resource(
+                                id = dbNotification.id,
+                                count = dbNotification.message.toIntOrNull() ?: 0,
+                                relatedId = dbNotification.relatedId ?: dbNotification.id
+                            )
+                            "storage" -> {
+                                val percentage = dbNotification.message.replace("%", "").toIntOrNull() ?: 0
+                                NotificationEvent.Storage(
+                                    id = dbNotification.id,
+                                    percentage = percentage
+                                )
+                            }
+                            "join_request" -> {
+                                val parts = dbNotification.message.split("|")
+                                if (parts.size >= 2) {
+                                    NotificationEvent.JoinRequest(
+                                        id = dbNotification.id,
+                                        requesterName = parts[0],
+                                        teamName = parts[1],
+                                        relatedId = dbNotification.relatedId ?: dbNotification.id
+                                    )
+                                } else {
+                                    // Fallback if message format is old or different
+                                    NotificationEvent.JoinRequest(
+                                        id = dbNotification.id,
+                                        requesterName = "Unknown",
+                                        teamName = dbNotification.message,
+                                        relatedId = dbNotification.relatedId ?: dbNotification.id
+                                    )
+                                }
+                            }
+                            else -> null
+                        }
+                    }
+
+                if (events.isNotEmpty()) {
+                    _notificationEvents.send(events)
+                }
+
+                val unreadCount = getUnreadNotificationsSize(userId)
+                setUnreadNotifications(unreadCount)
+
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }

@@ -53,6 +53,15 @@ class NotificationRepositoryImpl @Inject constructor(
         }.toInt()
     }
 
+    override suspend fun getUnreadNotifications(userId: String?): List<RealmNotification> {
+        if (userId == null) return emptyList()
+
+        return queryList(RealmNotification::class.java) {
+            equalTo("userId", userId)
+            equalTo("isRead", false)
+        }
+    }
+
     override suspend fun updateResourceNotification(userId: String?, resourceCount: Int) {
         userId ?: return
 
