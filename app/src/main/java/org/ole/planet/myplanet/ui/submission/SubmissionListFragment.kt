@@ -78,7 +78,7 @@ class SubmissionListFragment : Fragment() {
 
             val submissionItems = submissions.map {
                 SubmissionItem(
-                    submission = it,
+                    submission = realm.copyFromRealm(it),
                     examName = examTitle,
                     submissionCount = 1,
                     userName = null
@@ -87,7 +87,7 @@ class SubmissionListFragment : Fragment() {
             adapter.submitList(submissionItems)
 
             binding.btnDownloadReport.setOnClickListener {
-                generateReport(submissions.toList())
+                generateReport(submissionItems.map { it.submission })
             }
         }
     }
