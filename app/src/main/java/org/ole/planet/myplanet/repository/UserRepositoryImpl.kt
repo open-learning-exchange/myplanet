@@ -210,11 +210,12 @@ class UserRepositoryImpl @Inject constructor(
                 .`in`("id", ids.toTypedArray())
                 .findAll()
                 .mapNotNull { user ->
+                    val userId = user.id
                     val displayName = user.name
-                    if (displayName.isNullOrBlank()) {
-                        null
+                    if (userId != null && !displayName.isNullOrBlank()) {
+                        userId to displayName
                     } else {
-                        user.id to displayName
+                        null
                     }
                 }
                 .toMap()
