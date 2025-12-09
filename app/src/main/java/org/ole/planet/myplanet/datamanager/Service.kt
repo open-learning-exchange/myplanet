@@ -275,122 +275,28 @@ class Service @Inject constructor(
     }
 
     fun becomeMember(obj: JsonObject, callback: CreateUserCallback, securityCallback: SecurityDataCallback? = null) {
-        isPlanetAvailable(object : PlanetAvailableListener {
-            override fun isAvailable() {
-                retrofitInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}").enqueue(object : Callback<JsonObject> {
-                     override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
-                         if (response.body() != null && response.body()?.has("_id") == true) {
-                             callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
-                         } else {
-                             retrofitInterface.putDoc(null, "application/json", "${UrlUtils.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}", obj).enqueue(object : Callback<JsonObject> {
-                                 override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
-                                     if (response.body() != null && response.body()?.has("id") == true) {
-                                         uploadToShelf(obj)
-                                         serviceScope.launch {
-                                             val result = saveUserToDb(
-                                                 "${response.body()?.get("id")?.asString}",
-                                                 obj,
-                                                 securityCallback
-                                             )
-                                             withContext(Dispatchers.Main) {
-                                                 if (result.isSuccess) {
-                                                     callback.onSuccess(context.getString(R.string.user_created_successfully))
-                                                 } else {
-                                                     callback.onSuccess(context.getString(R.string.unable_to_save_user_please_sync))
-                                                 }
-                                             }
-                                         }
-                                     } else {
-                                         callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
-                                     }
-                                 }
-
-                                 override fun onFailure(call: Call<JsonObject>, t: Throwable) {
-                                     callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
-                                 }
-                             })
-                         }
-                     }
-
-                    override fun onFailure(call: Call<JsonObject>, t: Throwable) {
-                        callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
-                    }
-                })
-            }
-
-            override fun notAvailable() {
-                val settings = MainApplication.context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
-                serviceScope.launch {
-                    val existingUser = userRepository.getUserByName(obj["name"].asString)
-                    if (existingUser != null && existingUser._id?.startsWith("guest") != true) {
-                        withContext(Dispatchers.Main) {
-                            callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
-                        }
-                        return@launch
-                    }
-
-                    val keyString = AndroidDecrypter.generateKey()
-                    val iv = AndroidDecrypter.generateIv()
-                    userRepository.saveUser(obj, settings, keyString, iv)
-                    withContext(Dispatchers.Main) {
-                        Utilities.toast(MainApplication.context, context.getString(R.string.not_connect_to_planet_created_user_offline))
-                        callback.onSuccess(context.getString(R.string.not_connect_to_planet_created_user_offline))
-                        securityCallback?.onSecurityDataUpdated()
-                    }
-                }
-            }
-        })
-    }
-
-    private fun uploadToShelf(obj: JsonObject) {
-        retrofitInterface.putDoc(null, "application/json", UrlUtils.getUrl() + "/shelf/org.couchdb.user:" + obj["name"].asString, JsonObject()).enqueue(object : Callback<JsonObject?> {
-            override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {}
-            override fun onFailure(call: Call<JsonObject?>, t: Throwable) {}
-        })
-    }
-
-    private suspend fun saveUserToDb(id: String, obj: JsonObject, securityCallback: SecurityDataCallback? = null): Result<RealmUserModel?> {
-        val settings = MainApplication.context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
-        return try {
-            val userModel = withTimeout(20000) {
-                val response = retrofitInterface.getJsonObjectSuspended(
-                    UrlUtils.header,
-                    "${UrlUtils.getUrl()}/_users/$id"
-                )
-
-                ensureActive()
-
-                if (response.isSuccessful) {
-                    response.body()?.let { userRepository.saveUser(it, settings) }
-                } else {
-                    null
-                }
-            }
-
-            if (userModel != null) {
-                uploadToShelfService.saveKeyIv(retrofitInterface, userModel, obj)
-                withContext(Dispatchers.Main) {
+        serviceScope.launch {
+            val result = userRepository.becomeMember(obj)
+            withContext(Dispatchers.Main) {
+                if (result.first) { // success
                     if (context is ProcessUserDataActivity) {
                         val userName = obj["name"].asString
                         context.startUpload("becomeMember", userName, securityCallback)
                     }
+
+                    // Handle offline logic regardless of context
+                    if (result.second == context.getString(R.string.not_connect_to_planet_created_user_offline)) {
+                        Utilities.toast(MainApplication.context, result.second)
+                        securityCallback?.onSecurityDataUpdated()
+                    }
+
+                    callback.onSuccess(result.second)
+                } else {
+                    // failure
+                    callback.onSuccess(result.second)
+                    securityCallback?.onSecurityDataUpdated()
                 }
-                Result.success(userModel)
-            } else {
-                Result.failure(Exception("Failed to save user or user model was null"))
             }
-        } catch (e: TimeoutCancellationException) {
-            e.printStackTrace()
-            withContext(Dispatchers.Main) {
-                securityCallback?.onSecurityDataUpdated()
-            }
-            Result.failure(e)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            withContext(Dispatchers.Main) {
-                securityCallback?.onSecurityDataUpdated()
-            }
-            Result.failure(e)
         }
     }
 
