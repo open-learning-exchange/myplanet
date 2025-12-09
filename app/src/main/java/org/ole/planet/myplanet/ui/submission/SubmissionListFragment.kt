@@ -1,20 +1,27 @@
 package org.ole.planet.myplanet.ui.submission
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.DividerItemDecoration
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
+import io.realm.Sort
+import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentSubmissionListBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmSubmission
-import javax.inject.Inject
-import io.realm.Sort
+import org.ole.planet.myplanet.utilities.SubmissionPdfGenerator
 
 @AndroidEntryPoint
 class SubmissionListFragment : Fragment() {
@@ -25,6 +32,7 @@ class SubmissionListFragment : Fragment() {
     private var parentId: String? = null
     private var examTitle: String? = null
     private var userId: String? = null
+    private lateinit var adapter: SubmissionListAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,32 +65,64 @@ class SubmissionListFragment : Fragment() {
         binding.rvSubmissions.addItemDecoration(
             DividerItemDecoration(context, DividerItemDecoration.VERTICAL)
         )
+        val listener = activity as? OnHomeItemClickListener
+        adapter = SubmissionListAdapter(requireContext(), listener) { submissionId ->
+            generateSubmissionPdf(submissionId)
+        }
+        binding.rvSubmissions.adapter = adapter
     }
 
     private fun loadSubmissions() {
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+            var submissionItems: List<SubmissionItem> = emptyList()
+            var submissionsCopy: List<RealmSubmission> = emptyList()
+            databaseService.withRealm { realm ->
+                val submissions = realm.where(RealmSubmission::class.java)
+                    .equalTo("parentId", parentId)
+                    .equalTo("userId", userId)
+                    .sort("lastUpdateTime", Sort.DESCENDING)
+                    .findAll()
+
+                submissionItems = submissions.map {
+                    SubmissionItem(
+                        id = it.id,
+                        lastUpdateTime = it.lastUpdateTime,
+                        status = it.status ?: "",
+                        uploaded = it.uploaded
+                    )
+                }
+                submissionsCopy = realm.copyFromRealm(submissions)
+            }
+
+            withContext(Dispatchers.Main) {
+                if (_binding == null) return@withContext
+                adapter.submitList(submissionItems)
+
+                binding.btnDownloadReport.setOnClickListener {
+                    generateReport(submissionsCopy)
+                }
+            }
+        }
+    }
+
+    private fun generateSubmissionPdf(submissionId: String?) {
         databaseService.withRealm { realm ->
-            val submissions = realm.where(RealmSubmission::class.java)
-                .equalTo("parentId", parentId)
-                .equalTo("userId", userId)
-                .sort("lastUpdateTime", Sort.DESCENDING)
-                .findAll()
-            val listener = activity as? OnHomeItemClickListener
-            val adapter = SubmissionListAdapter(
-                requireContext(),
-                submissions.toList(),
-                databaseService,
-                listener
-            )
-            binding.rvSubmissions.adapter = adapter
-            binding.btnDownloadReport.setOnClickListener {
-                generateReport(submissions.toList())
+            val submission = realm.where(RealmSubmission::class.java).equalTo("id", submissionId).findFirst()
+            if (submission != null) {
+                val file = SubmissionPdfGenerator.generateSubmissionPdf(requireContext(), submission, realm)
+                if (file != null) {
+                    Toast.makeText(requireContext(), "PDF saved to ${file.absolutePath}", Toast.LENGTH_LONG).show()
+                    openPdf(file)
+                } else {
+                    Toast.makeText(requireContext(), "Failed to generate PDF", Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }
 
     private fun generateReport(submissions: List<RealmSubmission>) {
         databaseService.withRealm { realm ->
-            val file = org.ole.planet.myplanet.utilities.SubmissionPdfGenerator.generateMultipleSubmissionsPdf(
+            val file = SubmissionPdfGenerator.generateMultipleSubmissionsPdf(
                 requireContext(),
                 submissions,
                 examTitle ?: "Submissions",
@@ -99,14 +139,14 @@ class SubmissionListFragment : Fragment() {
 
     private fun openPdf(file: java.io.File) {
         try {
-            val uri = androidx.core.content.FileProvider.getUriForFile(
+            val uri = FileProvider.getUriForFile(
                 requireContext(),
                 "${requireContext().packageName}.provider",
                 file
             )
-            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+            val intent = Intent(Intent.ACTION_VIEW).apply {
                 setDataAndType(uri, "application/pdf")
-                flags = android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
             }
             startActivity(intent)
         } catch (e: Exception) {

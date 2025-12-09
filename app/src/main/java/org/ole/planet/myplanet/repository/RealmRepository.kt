@@ -6,6 +6,7 @@ import io.realm.RealmObject
 import io.realm.RealmQuery
 import io.realm.RealmResults
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -52,15 +53,32 @@ open class RealmRepository(protected val databaseService: DatabaseService) {
         val realm = databaseService.realmInstance
         val results = realm.where(clazz).apply(builder).findAllAsync()
 
+        // This pattern is required to safely work with Realm's thread-confinement.
+        // 1. `freeze()` creates a thread-safe, immutable snapshot of the live data.
+        // 2. The frozen snapshot is passed to a background dispatcher.
+        // 3. `withRealmAsync` opens a temporary Realm on the background thread.
+        // 4. `copyFromRealm` creates plain, mutable objects from the frozen snapshot.
+        // This moves the expensive copy operation off the main thread while respecting thread rules.
+        fun processResults(data: RealmResults<T>) {
+            val frozenResults = data.freeze()
+            launch(databaseService.ioDispatcher) {
+                val copiedList = databaseService.withRealmAsync { bgRealm ->
+                    bgRealm.copyFromRealm(frozenResults)
+                }
+                send(copiedList)
+            }
+        }
+
         val listener = RealmChangeListener<RealmResults<T>> { updatedResults ->
             if (updatedResults.isLoaded && updatedResults.isValid) {
-                trySend(realm.copyFromRealm(updatedResults))
+                processResults(updatedResults)
             }
         }
         results.addChangeListener(listener)
 
+        // Handle initial data load
         if (results.isLoaded && results.isValid) {
-            trySend(realm.copyFromRealm(results))
+            processResults(results)
         }
 
         awaitClose {
