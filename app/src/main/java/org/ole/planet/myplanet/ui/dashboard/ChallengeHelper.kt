@@ -4,26 +4,17 @@ import android.content.SharedPreferences
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
 import com.google.gson.JsonObject
-import io.realm.Realm
-import java.text.SimpleDateFormat
-import java.time.LocalDate
-import java.util.Date
-import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.json.JSONArray
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmUserChallengeActions
+import org.ole.planet.myplanet.model.ChallengeCounts
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.ui.courses.MyProgressFragment
-import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.utilities.MarkdownDialog
+import java.time.LocalDate
 
 class ChallengeHelper(
     private val activity: DashboardActivity,
@@ -43,81 +34,31 @@ class ChallengeHelper(
         val courseId = "4e6b78800b6ad18b4e8b0e1e38a98cac"
         activity.lifecycleScope.launch(Dispatchers.IO) {
             try {
-                Realm.getDefaultInstance().use { realm ->
-                    val uniqueDates = fetchVoiceDates(realm, startTime, endTime, user?.id)
-                    val allUniqueDates = fetchVoiceDates(realm, startTime, endTime, null)
+                val challengeCounts = progressRepository.getChallengeCounts(user?.id, startTime, endTime, courseId)
+                val courseData = progressRepository.fetchCourseData(user?.id)
+                val progress = MyProgressFragment.getCourseProgress(courseData, courseId)
 
-                    val courseData = progressRepository.fetchCourseData(user?.id)
-                    val progress = MyProgressFragment.getCourseProgress(courseData, courseId)
-                    val courseName = realm.where(RealmMyCourse::class.java)
-                        .equalTo("courseId", courseId)
-                        .findFirst()?.courseTitle
+                val validUrls = listOf(
+                    "https://${BuildConfig.PLANET_GUATEMALA_URL}",
+                    "http://${BuildConfig.PLANET_XELA_URL}",
+                    "http://${BuildConfig.PLANET_URIUR_URL}",
+                    "http://${BuildConfig.PLANET_SANPABLO_URL}",
+                    "http://${BuildConfig.PLANET_EMBAKASI_URL}",
+                    "https://${BuildConfig.PLANET_VI_URL}"
+                )
 
-                    val hasUnfinishedSurvey = hasPendingSurvey(realm, courseId)
+                val today = LocalDate.now()
+                if (user?.id?.startsWith("guest") == false && shouldPromptChallenge(today, validUrls)) {
+                    val courseStatus = getCourseStatus(progress, challengeCounts.courseName)
 
-                    val validUrls = listOf(
-                        "https://${BuildConfig.PLANET_GUATEMALA_URL}",
-                        "http://${BuildConfig.PLANET_XELA_URL}",
-                        "http://${BuildConfig.PLANET_URIUR_URL}",
-                        "http://${BuildConfig.PLANET_SANPABLO_URL}",
-                        "http://${BuildConfig.PLANET_EMBAKASI_URL}",
-                        "https://${BuildConfig.PLANET_VI_URL}"
-                    )
-
-                    val today = LocalDate.now()
-                    if (user?.id?.startsWith("guest") == false && shouldPromptChallenge(today, validUrls)) {
-                        val courseStatus = getCourseStatus(progress, courseName)
-
-                        withContext(Dispatchers.Main) {
-                            challengeDialog(uniqueDates.size, courseStatus, allUniqueDates.size, hasUnfinishedSurvey)
-                        }
+                    withContext(Dispatchers.Main) {
+                        challengeDialog(challengeCounts, courseStatus)
                     }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
-    }
-
-    private fun fetchVoiceDates(realm: Realm, start: Long, end: Long, userId: String?): List<String> {
-        val query = realm.where(RealmNews::class.java)
-            .greaterThanOrEqualTo("time", start)
-            .lessThanOrEqualTo("time", end)
-        if (userId != null) query.equalTo("userId", userId)
-        val results = query.findAll()
-        return results.filter { isCommunitySection(it) }
-            .map { getDateFromTimestamp(it.time) }
-            .distinct()
-    }
-
-    private fun isCommunitySection(news: RealmNews): Boolean {
-        news.viewIn?.let { viewInStr ->
-            try {
-                val viewInArray = JSONArray(viewInStr)
-                for (i in 0 until viewInArray.length()) {
-                    val viewInObj = viewInArray.getJSONObject(i)
-                    if (viewInObj.optString("section") == "community") {
-                        return true
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-        return false
-    }
-
-    private fun getDateFromTimestamp(timestamp: Long): String {
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-        return dateFormat.format(Date(timestamp))
-    }
-
-    private fun hasPendingSurvey(realm: Realm, courseId: String): Boolean {
-        return realm.where(RealmStepExam::class.java)
-            .equalTo("courseId", courseId)
-            .equalTo("type", "survey")
-            .findAll()
-            .any { survey -> !TakeCourseFragment.existsSubmission(realm, survey.id, "survey") }
     }
 
     private fun getCourseStatus(progress: JsonObject?, courseName: String?): String {
@@ -141,53 +82,47 @@ class ChallengeHelper(
                 settings.getString("serverURL", "") in validUrls
     }
 
-    private fun challengeDialog(voiceCount: Int, courseStatus: String, allVoiceCount: Int, hasUnfinishedSurvey: Boolean) {
-        Realm.getDefaultInstance().use { realm ->
-            val voiceTaskDone = if (voiceCount >= 5) "✅" else "[ ]"
-            val prereqsMet = courseStatus.contains("terminado", ignoreCase = true) && voiceCount >= 5
-            var hasValidSync = false
-            val syncTaskDone = if (prereqsMet) {
-                hasValidSync = realm.where(RealmUserChallengeActions::class.java)
-                    .equalTo("userId", user?.id)
-                    .equalTo("actionType", "sync")
-                    .count() > 0
+    private fun challengeDialog(counts: ChallengeCounts, courseStatus: String) {
+        val voiceTaskDone = if (counts.voiceCount >= 5) "✅" else "[ ]"
+        val prereqsMet = courseStatus.contains("terminado", ignoreCase = true) && counts.voiceCount >= 5
 
-                if (hasValidSync) "✅" else "[ ]"
-            } else "[ ]"
-            val courseTaskDone = if (courseStatus.contains("terminado", ignoreCase = true)) "✅ $courseStatus" else "[ ] $courseStatus"
+        val syncTaskDone = if (prereqsMet) {
+            if (counts.hasSyncAction) "✅" else "[ ]"
+        } else "[ ]"
 
-            val isCompleted = syncTaskDone.startsWith("✅") && voiceTaskDone.startsWith("✅") && courseTaskDone.startsWith("✅")
+        val courseTaskDone = if (courseStatus.contains("terminado", ignoreCase = true)) "✅ $courseStatus" else "[ ] $courseStatus"
 
-            val hasShownCongrats = settings.getBoolean("has_shown_congrats", false)
+        val isCompleted = syncTaskDone.startsWith("✅") && voiceTaskDone.startsWith("✅") && courseTaskDone.startsWith("✅")
 
-            if (isCompleted && hasShownCongrats) return
+        val hasShownCongrats = settings.getBoolean("has_shown_congrats", false)
 
-            if (isCompleted && !hasShownCongrats) {
-                editor.putBoolean("has_shown_congrats", true).apply()
-                val markdownContent = """
-            ${activity.getString(R.string.community_earnings, viewModel.calculateCommunityProgress(allVoiceCount, hasUnfinishedSurvey))}
-            ${activity.getString(R.string.your_earnings, viewModel.calculateIndividualProgress(voiceCount, hasUnfinishedSurvey))}
+        if (isCompleted && hasShownCongrats) return
+
+        if (isCompleted && !hasShownCongrats) {
+            editor.putBoolean("has_shown_congrats", true).apply()
+            val markdownContent = """
+            ${activity.getString(R.string.community_earnings, viewModel.calculateCommunityProgress(counts.allVoiceCount, counts.hasUnfinishedSurvey))}
+            ${activity.getString(R.string.your_earnings, viewModel.calculateIndividualProgress(counts.voiceCount, counts.hasUnfinishedSurvey))}
             ### ${activity.getString(R.string.congratulations)} <br/>
         """.trimIndent()
-                MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount, allVoiceCount, hasUnfinishedSurvey)
-                    .show(fragmentManager, "markdown_dialog")
+            MarkdownDialog.newInstance(markdownContent, courseStatus, counts.voiceCount, counts.allVoiceCount, counts.hasUnfinishedSurvey)
+                .show(fragmentManager, "markdown_dialog")
+        } else {
+            val cappedVoiceCount = minOf(counts.voiceCount, 5)
+            val voicesText = if (cappedVoiceCount > 0) {
+                "$cappedVoiceCount ${activity.getString(R.string.daily_voices)}"
             } else {
-                val cappedVoiceCount = minOf(voiceCount, 5)
-                val voicesText = if (cappedVoiceCount > 0) {
-                    "$cappedVoiceCount ${activity.getString(R.string.daily_voices)}"
-                } else {
-                    ""
-                }
-                val markdownContent = """
-            ${activity.getString(R.string.community_earnings, viewModel.calculateCommunityProgress(allVoiceCount, hasUnfinishedSurvey))}
-            ${activity.getString(R.string.your_earnings, viewModel.calculateIndividualProgress(voiceCount, hasUnfinishedSurvey))}
+                ""
+            }
+            val markdownContent = """
+            ${activity.getString(R.string.community_earnings, viewModel.calculateCommunityProgress(counts.allVoiceCount, counts.hasUnfinishedSurvey))}
+            ${activity.getString(R.string.your_earnings, viewModel.calculateIndividualProgress(counts.voiceCount, counts.hasUnfinishedSurvey))}
             ### ${activity.getString(R.string.per_survey, courseTaskDone)} <br/>
             ### ${activity.getString(R.string.share_opinion)} $voicesText <br/>
             ### ${activity.getString(R.string.remember_sync)} <br/>
         """.trimIndent()
-                MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount, allVoiceCount, hasUnfinishedSurvey)
-                    .show(fragmentManager, "markdown_dialog")
-            }
+            MarkdownDialog.newInstance(markdownContent, courseStatus, counts.voiceCount, counts.allVoiceCount, counts.hasUnfinishedSurvey)
+                .show(fragmentManager, "markdown_dialog")
         }
     }
 }
