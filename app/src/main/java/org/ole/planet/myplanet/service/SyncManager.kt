@@ -194,7 +194,8 @@ class SyncManager constructor(
             initializeSync()
 
             // Phase 1: Sync non-library tables in parallel
-            // Note: courses, resources, teams, and meetups are synced via library sync to avoid duplication
+            // Note: courses and resources base tables are synced via library/resource sync
+            // teams and meetups base tables are synced here, then augmented by library sync (for shelf items)
             coroutineScope {
                 val syncJobs = listOf(
                     async {
@@ -271,13 +272,22 @@ class SyncManager constructor(
                         logger.startProcess("chat_history_sync")
                         transactionSyncManager.syncDb("chat_history")
                         logger.endProcess("chat_history_sync")
+                    },
+                    async {
+                        logger.startProcess("teams_sync")
+                        transactionSyncManager.syncDb("teams")
+                        logger.endProcess("teams_sync")
+                    },
+                    async {
+                        logger.startProcess("meetups_sync")
+                        transactionSyncManager.syncDb("meetups")
+                        logger.endProcess("meetups_sync")
                     }
                 )
                 syncJobs.awaitAll()
             }
 
-            // Phase 2: Sync library tables (courses, resources, teams, meetups) sequentially
-            // This avoids transaction conflicts since library sync handles these tables
+            // Phase 2: Sync library tables (augments courses, resources, teams, meetups with shelf data)
             logger.startProcess("library_sync")
             myLibraryTransactionSync()
             logger.endProcess("library_sync")
