@@ -13,9 +13,11 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 
-class ProgressRepositoryImpl @Inject constructor(private val databaseService: DatabaseService) : ProgressRepository {
+class ProgressRepositoryImpl @Inject constructor(
+    databaseService: DatabaseService
+) : RealmRepository(databaseService), ProgressRepository {
     override suspend fun fetchCourseData(userId: String?): JsonArray {
-        return databaseService.withRealmAsync { realm ->
+        return withRealmAsync { realm ->
             val mycourses = RealmMyCourse.getMyCourseByUserId(
                 userId,
                 realm.where(RealmMyCourse::class.java).findAll()
@@ -44,6 +46,12 @@ class ProgressRepositoryImpl @Inject constructor(private val databaseService: Da
                 arr.add(obj)
             }
             arr
+        }
+    }
+
+    override suspend fun getCourseProgress(userId: String): HashMap<String?, JsonObject> {
+        return withRealmAsync { realm ->
+            RealmCourseProgress.getCourseProgress(realm, userId)
         }
     }
 

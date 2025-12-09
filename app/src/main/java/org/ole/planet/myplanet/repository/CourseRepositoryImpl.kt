@@ -89,4 +89,68 @@ class CourseRepositoryImpl @Inject constructor(
             isNotNull("resourceLocalAddress")
         }
     }
+
+    override suspend fun getAllCourses(userId: String): List<RealmMyCourse> {
+        return withRealmAsync { realm ->
+            val myLibItems = RealmMyCourse.getMyCourseByUserId(
+                userId,
+                realm.where(RealmMyCourse::class.java).findAll()
+            )
+            val results = realm.where(RealmMyCourse::class.java)
+                .isNotEmpty("courseTitle")
+                .findAll()
+
+            // Note: results is RealmResults, we need to pass a List to getOurCourse
+            val ourCourseItems = RealmMyCourse.getOurCourse(userId, results)
+
+            val combinedList = mutableListOf<RealmMyCourse>()
+            myLibItems.forEach { course ->
+                combinedList.add(course)
+            }
+            ourCourseItems.forEach { course ->
+                if (!combinedList.any { it.id == course.id }) {
+                    combinedList.add(course)
+                }
+            }
+
+            val unmanagedList = realm.copyFromRealm(combinedList)
+
+            // Now safely set isMyCourse on unmanaged objects
+            unmanagedList.forEach { course ->
+                 if (course.userId?.contains(userId) == true) {
+                     course.isMyCourse = true
+                 } else {
+                     course.isMyCourse = false
+                 }
+            }
+
+            unmanagedList
+        }
+    }
+
+    override suspend fun getMyLibCourses(userId: String): List<RealmMyCourse> {
+        return withRealmAsync { realm ->
+            val results = realm.where(RealmMyCourse::class.java).findAll()
+            val myCourses = RealmMyCourse.getMyCourseByUserId(userId, results)
+
+            val unmanagedList = realm.copyFromRealm(myCourses)
+
+            // Set isMyCourse flag for consistency
+            unmanagedList.forEach { it.isMyCourse = true }
+
+            unmanagedList
+        }
+    }
+
+    override suspend fun getLibraryResourcesForCourses(courseIds: List<String>): List<RealmMyLibrary> {
+        if (courseIds.isEmpty()) return emptyList()
+        return withRealmAsync { realm ->
+            val res = realm.where(RealmMyLibrary::class.java)
+                .`in`("courseId", courseIds.toTypedArray())
+                .equalTo("resourceOffline", false)
+                .isNotNull("resourceLocalAddress")
+                .findAll()
+            realm.copyFromRealm(res)
+        }
+    }
 }

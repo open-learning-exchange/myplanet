@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import com.google.gson.Gson
+import com.google.gson.JsonObject
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
@@ -79,6 +80,12 @@ class RatingRepositoryImpl @Inject constructor(
         }
 
         return getRatingSummary(type, itemId, resolvedUserId)
+    }
+
+    override suspend fun getAllRatings(userId: String, type: String): HashMap<String?, JsonObject> {
+        return withRealmAsync { realm ->
+            RealmRating.getRatings(realm, type, userId)
+        }
     }
 
     private fun RealmRating.toRatingEntry(): RatingEntry =

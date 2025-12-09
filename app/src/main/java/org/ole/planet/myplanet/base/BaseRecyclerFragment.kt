@@ -291,7 +291,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
     }
 
-    fun filterCourseByTag(s: String, tags: List<RealmTag>): List<RealmMyCourse> {
+    open fun filterCourseByTag(s: String, tags: List<RealmTag>): List<RealmMyCourse> {
         if (tags.isEmpty() && s.isEmpty()) {
             return applyCourseFilter(filterRealmMyCourseList(getList(RealmMyCourse::class.java)))
         }
@@ -333,7 +333,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         return newList
     }
 
-    private fun applyCourseFilter(courses: List<RealmMyCourse>): List<RealmMyCourse> {
+    protected fun applyCourseFilter(courses: List<RealmMyCourse>): List<RealmMyCourse> {
         if (TextUtils.isEmpty(subjectLevel) && TextUtils.isEmpty(gradeLevel)) return courses
         val newList: MutableList<RealmMyCourse> = ArrayList()
         for (l in courses) {

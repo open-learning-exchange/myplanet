@@ -39,6 +39,52 @@ class TagRepositoryImpl @Inject constructor(
         return getLinkedTags("courses", courseId)
     }
 
+    override suspend fun getAllCourseTags(): Map<String, List<RealmTag>> {
+        return withRealmAsync { realm ->
+            // 1. Get all link tags for courses
+            val links = realm.where(RealmTag::class.java)
+                .equalTo("db", "courses")
+                .isNotNull("linkId")
+                .isNotNull("tagId")
+                .findAll()
+
+            // 2. Group tagIds by linkId (courseId)
+            val tagIdsByCourseId = HashMap<String, MutableSet<String>>()
+            links.forEach { link ->
+                val courseId = link.linkId!!
+                val tagId = link.tagId!!
+                if (!tagIdsByCourseId.containsKey(courseId)) {
+                    tagIdsByCourseId[courseId] = HashSet()
+                }
+                tagIdsByCourseId[courseId]?.add(tagId)
+            }
+
+            // 3. Collect all unique tag IDs
+            val allTagIds = tagIdsByCourseId.values.flatten().toSet()
+
+            if (allTagIds.isEmpty()) {
+                return@withRealmAsync emptyMap()
+            }
+
+            // 4. Fetch actual Tag objects for these IDs
+            val tags = realm.where(RealmTag::class.java)
+                .`in`("id", allTagIds.toTypedArray())
+                .findAll()
+            val unmanagedTags = realm.copyFromRealm(tags)
+            val tagsById = unmanagedTags.associateBy { it.id }
+
+            // 5. Build result map
+            val result = HashMap<String, List<RealmTag>>()
+            tagIdsByCourseId.forEach { (courseId, tagIds) ->
+                val courseTags = tagIds.mapNotNull { tagsById[it] }
+                if (courseTags.isNotEmpty()) {
+                    result[courseId] = courseTags
+                }
+            }
+            result
+        }
+    }
+
     private suspend fun getLinkedTags(db: String, linkId: String): List<RealmTag> {
         val links = queryList(RealmTag::class.java) {
             equalTo("db", db)
