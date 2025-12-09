@@ -238,8 +238,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private fun observeViewModel() {
         viewLifecycleOwner.lifecycleScope.launch {
             coursesViewModel.courses.collect { courses ->
-                val ratings = coursesViewModel.ratings.value as HashMap<String?, JsonObject>
-                val progress = coursesViewModel.progress.value as HashMap<String?, JsonObject>
+                val ratings = HashMap(coursesViewModel.ratings.value)
+                val progress = HashMap(coursesViewModel.progress.value)
 
                 adapterCourses.updateData(courses, ratings, progress)
                 checkList()
@@ -250,16 +250,16 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         viewLifecycleOwner.lifecycleScope.launch {
             coursesViewModel.ratings.collect { ratings ->
                 val courses = coursesViewModel.courses.value
-                val progress = coursesViewModel.progress.value as HashMap<String?, JsonObject>
-                adapterCourses.updateData(courses, ratings as HashMap<String?, JsonObject>, progress)
+                val progress = HashMap(coursesViewModel.progress.value)
+                adapterCourses.updateData(courses, HashMap(ratings), progress)
             }
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
             coursesViewModel.progress.collect { progress ->
                 val courses = coursesViewModel.courses.value
-                val ratings = coursesViewModel.ratings.value as HashMap<String?, JsonObject>
-                adapterCourses.updateData(courses, ratings, progress as HashMap<String?, JsonObject>)
+                val ratings = HashMap(coursesViewModel.ratings.value)
+                adapterCourses.updateData(courses, ratings, HashMap(progress))
             }
         }
 
