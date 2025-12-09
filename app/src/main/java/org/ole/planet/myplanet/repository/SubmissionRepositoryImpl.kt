@@ -6,10 +6,14 @@ import java.util.Date
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.json.JSONObject
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
+import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.dto.QuestionAnswerPair
+import org.ole.planet.myplanet.model.dto.SubmissionDetail
 
 class SubmissionRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
@@ -17,6 +21,78 @@ class SubmissionRepositoryImpl @Inject constructor(
 
     private fun RealmSubmission.examIdFromParentId(): String? {
         return parentId?.substringBefore("@")
+    }
+
+    override suspend fun getSubmissionDetail(submissionId: String): SubmissionDetail? {
+        return databaseService.withRealmAsync { realm ->
+            var submission = realm.where(RealmSubmission::class.java)
+                .equalTo("id", submissionId)
+                .or()
+                .equalTo("_id", submissionId)
+                .findFirst()
+
+            if (submission == null) {
+                submission = realm.where(RealmSubmission::class.java)
+                    .contains("parentId", submissionId)
+                    .findFirst()
+            }
+
+            if (submission == null) {
+                return@withRealmAsync null
+            }
+
+            val unmanagedSubmission = realm.copyFromRealm(submission)
+            val parentId = unmanagedSubmission.parentId
+
+            // Get Exam
+            val examId = if (parentId?.contains("@") == true) {
+                parentId.split("@")[0]
+            } else {
+                parentId
+            }
+
+            val exam = realm.where(RealmStepExam::class.java)
+                .equalTo("id", examId)
+                .findFirst()
+            val unmanagedExam = exam?.let { realm.copyFromRealm(it) }
+
+            // Get User
+            val userId = unmanagedSubmission.userId
+            val userJsonString = unmanagedSubmission.user
+            var unmanagedUser: RealmUserModel? = null
+
+            try {
+                val userJson = userJsonString?.let { JSONObject(it) }
+                if (userJson != null) {
+                    val name = userJson.optString("name")
+                    val user = RealmUserModel()
+                    user.name = name
+                    unmanagedUser = user
+                }
+            } catch (e: Exception) {
+                // Fallback to searching by userId
+            }
+
+            if (unmanagedUser == null) {
+                val user = realm.where(RealmUserModel::class.java)
+                    .equalTo("id", userId)
+                    .findFirst()
+                unmanagedUser = user?.let { realm.copyFromRealm(it) }
+            }
+
+            // Get QuestionAnswerPairs
+            val questions = realm.where(RealmExamQuestion::class.java)
+                .equalTo("examId", examId)
+                .findAll()
+            val unmanagedQuestions = realm.copyFromRealm(questions)
+
+            val questionAnswerPairs = unmanagedQuestions.map { question ->
+                val answer = unmanagedSubmission.answers?.find { it.questionId == question.id }
+                QuestionAnswerPair(question, answer)
+            }
+
+            SubmissionDetail(unmanagedSubmission, unmanagedExam, unmanagedUser, questionAnswerPairs)
+        }
     }
 
     override suspend fun getSubmissionsFlow(userId: String): Flow<List<RealmSubmission>> {

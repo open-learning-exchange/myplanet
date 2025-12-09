@@ -3,9 +3,11 @@ package org.ole.planet.myplanet.repository
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.dto.SubmissionDetail
 
 interface SubmissionRepository {
     suspend fun getSubmissionsFlow(userId: String): Flow<List<RealmSubmission>>
+    suspend fun getSubmissionDetail(submissionId: String): SubmissionDetail?
     suspend fun getPendingSurveys(userId: String?): List<RealmSubmission>
     suspend fun getUniquePendingSurveys(userId: String?): List<RealmSubmission>
     suspend fun getSurveyTitlesFromSubmissions(submissions: List<RealmSubmission>): List<String>

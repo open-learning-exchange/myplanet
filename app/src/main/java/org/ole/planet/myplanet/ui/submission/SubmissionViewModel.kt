@@ -14,8 +14,10 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.dto.SubmissionDetail
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -26,6 +28,9 @@ class SubmissionViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val userProfileDbHandler: UserProfileDbHandler
 ) : ViewModel() {
+
+    private val _submissionDetail = MutableStateFlow<SubmissionDetail?>(null)
+    val submissionDetail: StateFlow<SubmissionDetail?> = _submissionDetail
 
     private val _type = MutableStateFlow("")
     private val _query = MutableStateFlow("")
@@ -94,5 +99,11 @@ class SubmissionViewModel @Inject constructor(
     fun setFilter(type: String, query: String) {
         _type.value = type
         _query.value = query
+    }
+
+    fun loadSubmissionDetail(id: String) {
+        viewModelScope.launch {
+            _submissionDetail.value = submissionRepository.getSubmissionDetail(id)
+        }
     }
 }

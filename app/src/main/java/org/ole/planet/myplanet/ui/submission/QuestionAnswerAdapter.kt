@@ -13,11 +13,7 @@ import com.google.gson.JsonObject
 import org.ole.planet.myplanet.databinding.ItemQuestionAnswerBinding
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmExamQuestion
-
-data class QuestionAnswerPair(
-    val question: RealmExamQuestion,
-    val answer: RealmAnswer?
-)
+import org.ole.planet.myplanet.model.dto.QuestionAnswerPair
 
 class QuestionAnswerAdapter : ListAdapter<QuestionAnswerPair, QuestionAnswerAdapter.ViewHolder>(QuestionAnswerDiffCallback()) {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
