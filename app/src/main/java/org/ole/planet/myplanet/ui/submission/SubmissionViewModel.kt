@@ -64,8 +64,8 @@ class SubmissionViewModel @Inject constructor(
             .filterNotNull()
             .onEach { sub ->
                 val name = submissionRepository.getNormalizedSubmitterName(sub)
-                val fallback = userRepository.getUserById(sub.userId)?.name
-                sub.submitterName = if (!name.isNullOrBlank()) name else fallback ?: ""
+                val fallback = sub.userId?.let { userRepository.getUserById(it)?.name }
+                sub.submitterName = name ?: fallback ?: ""
             }
             .sortedByDescending { it.lastUpdateTime ?: 0 }
 
