@@ -21,9 +21,6 @@ class TeamCourseFragment : BaseTeamFragment() {
     private val binding get() = _binding!!
     private var adapterTeamCourse: AdapterTeamCourse? = null
 
-    @Inject
-    lateinit var courseRepository: CourseRepository
-
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTeamCourseBinding.inflate(inflater, container, false)
         return binding.root
