@@ -46,6 +46,7 @@ interface TeamRepository {
     suspend fun assignTask(taskId: String, assigneeId: String?)
     suspend fun setTaskCompletion(taskId: String, completed: Boolean)
     suspend fun getPendingTasksForUser(userId: String, start: Long, end: Long): List<RealmTeamTask>
+    suspend fun getPendingTasksFlow(userId: String): Flow<List<RealmTeamTask>>
     suspend fun markTasksNotified(taskIds: Collection<String>)
     suspend fun getTasksByTeamId(teamId: String): Flow<List<RealmTeamTask>>
     suspend fun addReport(report: JsonObject)

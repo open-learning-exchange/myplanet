@@ -484,6 +484,15 @@ class TeamRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getPendingTasksFlow(userId: String): Flow<List<RealmTeamTask>> {
+        if (userId.isBlank()) return flowOf(emptyList())
+        return queryListFlow(RealmTeamTask::class.java) {
+            notEqualTo("status", "archived")
+            equalTo("completed", false)
+            equalTo("assignee", userId)
+        }
+    }
+
     override suspend fun markTasksNotified(taskIds: Collection<String>) {
         if (taskIds.isEmpty()) return
         val validIds = taskIds.mapNotNull { it.takeIf(String::isNotBlank) }.distinct()

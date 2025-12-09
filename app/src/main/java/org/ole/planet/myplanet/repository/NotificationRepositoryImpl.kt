@@ -110,6 +110,20 @@ class NotificationRepositoryImpl @Inject constructor(
         return updatedIds
     }
 
+    override suspend fun markNotificationsByTypeAsRead(userId: String, type: String) {
+        executeTransaction { realm ->
+            realm.where(RealmNotification::class.java)
+                .equalTo("userId", userId)
+                .equalTo("type", type)
+                .equalTo("isRead", false)
+                .findAll()
+                ?.forEach { notification ->
+                    notification.isRead = true
+                    notification.createdAt = Date()
+                }
+        }
+    }
+
     override suspend fun markAllUnreadAsRead(userId: String?): Set<String> {
         val actualUserId = userId ?: return emptySet()
         val updatedIds = mutableSetOf<String>()
