@@ -163,4 +163,28 @@ class SurveyRepositoryImpl @Inject constructor(
             surveyId to SurveyBindingData(teamSubmission, questionCount)
         }
     }
+
+    override suspend fun hasPendingSurvey(courseId: String, userId: String?): Boolean {
+        if (userId.isNullOrEmpty()) return false
+
+        return withRealmAsync { realm ->
+            val surveys = realm.where(RealmStepExam::class.java)
+                .equalTo("courseId", courseId)
+                .equalTo("type", "survey")
+                .findAll()
+
+            if (surveys.isEmpty()) return@withRealmAsync false
+
+            surveys.any { survey ->
+                val surveyId = survey.id
+                val parentId = "${surveyId}@${courseId}"
+                val count = realm.where(RealmSubmission::class.java)
+                    .equalTo("userId", userId)
+                    .equalTo("parentId", parentId)
+                    .equalTo("type", "survey")
+                    .count()
+                count == 0L
+            }
+        }
+    }
 }

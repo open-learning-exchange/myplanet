@@ -7,6 +7,7 @@ import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmOfflineActivity
+import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
 
@@ -198,5 +199,12 @@ class UserRepositoryImpl @Inject constructor(
                 .findFirst()
                 ?.let { realm.copyFromRealm(it) }
         }
+    }
+
+    override suspend fun hasUserSyncAction(userId: String): Boolean {
+        return count(RealmUserChallengeActions::class.java) {
+            equalTo("userId", userId)
+            equalTo("actionType", "sync")
+        } > 0
     }
 }

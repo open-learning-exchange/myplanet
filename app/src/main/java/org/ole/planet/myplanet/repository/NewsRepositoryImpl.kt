@@ -4,7 +4,10 @@ import com.google.gson.Gson
 import com.google.gson.JsonArray
 import io.realm.Case
 import io.realm.Sort
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.HashMap
+import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -53,6 +56,39 @@ class NewsRepositoryImpl @Inject constructor(
             val managedNews = createNews(map, realm, user, null)
             realm.copyFromRealm(managedNews)
         }
+    }
+
+    override suspend fun fetchVoiceDates(start: Long, end: Long, userId: String?): List<String> {
+        val results = queryList(RealmNews::class.java) {
+            greaterThanOrEqualTo("time", start)
+            lessThanOrEqualTo("time", end)
+            if (userId != null) equalTo("userId", userId)
+        }
+        return results.filter { isCommunitySection(it) }
+            .map { getDateFromTimestamp(it.time) }
+            .distinct()
+    }
+
+    private fun isCommunitySection(news: RealmNews): Boolean {
+        news.viewIn?.let { viewInStr ->
+            try {
+                val viewInArray = gson.fromJson(viewInStr, JsonArray::class.java)
+                for (i in 0 until viewInArray.size()) {
+                    val viewInObj = viewInArray.get(i).asJsonObject
+                    if (viewInObj.has("section") && viewInObj.get("section").asString == "community") {
+                        return true
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+        return false
+    }
+
+    private fun getDateFromTimestamp(timestamp: Long): String {
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        return dateFormat.format(Date(timestamp))
     }
 
     private fun isVisibleToUser(news: RealmNews, userIdentifier: String): Boolean {

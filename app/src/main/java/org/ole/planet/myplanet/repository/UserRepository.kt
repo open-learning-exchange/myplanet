@@ -51,4 +51,5 @@ interface UserRepository {
 
     fun getUserModel(): RealmUserModel?
     suspend fun getUserModelSuspending(): RealmUserModel?
+    suspend fun hasUserSyncAction(userId: String): Boolean
 }
