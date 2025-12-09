@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmTeamNotification
+import org.ole.planet.myplanet.repository.NewsRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
@@ -39,8 +40,9 @@ import org.ole.planet.myplanet.utilities.SharedPrefManager
 class DiscussionListFragment : BaseTeamFragment() {
     private var _binding: FragmentDiscussionListBinding? = null
     private val binding get() = _binding!!
-    private var updatedNewsList: RealmResults<RealmNews>? = null
     
+    @Inject
+    lateinit var newsRepository: NewsRepository
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     @Inject
@@ -125,30 +127,27 @@ class DiscussionListFragment : BaseTeamFragment() {
             }
         }
         binding.addMessage.isVisible = false
-        updatedNewsList = mRealm.where(RealmNews::class.java).isEmpty("replyTo").sort("time", Sort.DESCENDING).findAllAsync()
-
-        updatedNewsList?.addChangeListener { results ->
-            filteredNewsList = filterNewsList(results)
-            setData(filteredNewsList)
-        }
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val realmNewsList = news
-        val count = realmNewsList.size
-        mRealm.executeTransactionAsync { realm: Realm ->
-            var notification = realm.where(RealmTeamNotification::class.java).equalTo("type", "chat").equalTo("parentId", getEffectiveTeamId()).findFirst()
-            if (notification == null) {
-                notification = realm.createObject(RealmTeamNotification::class.java, UUID.randomUUID().toString())
-                notification.parentId = getEffectiveTeamId()
-                notification.type = "chat"
-            }
-            notification?.lastCount = count
-        }
         changeLayoutManager(resources.configuration.orientation, binding.rvDiscussion)
-        showRecyclerView(realmNewsList)
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            val realmNewsList = newsRepository.getNewsByTeamId(getEffectiveTeamId())
+            val count = realmNewsList.size
+            mRealm.executeTransactionAsync { realm: Realm ->
+                var notification = realm.where(RealmTeamNotification::class.java).equalTo("type", "chat").equalTo("parentId", getEffectiveTeamId()).findFirst()
+                if (notification == null) {
+                    notification = realm.createObject(RealmTeamNotification::class.java, UUID.randomUUID().toString())
+                    notification.parentId = getEffectiveTeamId()
+                    notification.type = "chat"
+                }
+                notification?.lastCount = count
+            }
+            showRecyclerView(realmNewsList)
+        }
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -187,48 +186,6 @@ class DiscussionListFragment : BaseTeamFragment() {
         llImage?.removeAllViews()
     }
 
-    private fun filterNewsList(results: RealmResults<RealmNews>): List<RealmNews?> {
-        val filteredList: MutableList<RealmNews?> = ArrayList()
-        val effectiveTeamId = getEffectiveTeamId()
-
-        for (news in results) {
-            if (!TextUtils.isEmpty(news.viewableBy) && news.viewableBy.equals("teams", ignoreCase = true) && news.viewableId.equals(effectiveTeamId, ignoreCase = true)) {
-                filteredList.add(news)
-            } else if (!TextUtils.isEmpty(news.viewIn)) {
-                val ar = GsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
-                for (e in ar) {
-                    val ob = e.asJsonObject
-                    if (ob["_id"].asString.equals(effectiveTeamId, ignoreCase = true)) {
-                        filteredList.add(news)
-                    }
-                }
-            }
-        }
-        return filteredList
-    }
-
-    private val news: List<RealmNews>
-        get() {
-            val realmNewsList: List<RealmNews> = mRealm.where(RealmNews::class.java).isEmpty("replyTo").sort("time", Sort.DESCENDING).findAll()
-            val list: MutableList<RealmNews> = ArrayList()
-            val effectiveTeamId = getEffectiveTeamId()
-
-            for (news in realmNewsList) {
-                if (!TextUtils.isEmpty(news.viewableBy) && news.viewableBy.equals("teams", ignoreCase = true) && news.viewableId.equals(effectiveTeamId, ignoreCase = true)) {
-                    list.add(news)
-                } else if (!TextUtils.isEmpty(news.viewIn)) {
-                    val ar = GsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
-                    for (e in ar) {
-                        val ob = e.asJsonObject
-                        if (ob["_id"].asString.equals(effectiveTeamId, ignoreCase = true)) {
-                            list.add(news)
-                        }
-                    }
-                }
-            }
-            return list
-        }
-
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         changeLayoutManager(newConfig.orientation, binding.rvDiscussion)
@@ -264,8 +221,6 @@ class DiscussionListFragment : BaseTeamFragment() {
     }
 
     override fun onDestroyView() {
-        updatedNewsList?.removeAllChangeListeners()
-        updatedNewsList = null
         if (isRealmInitialized()) {
             mRealm.close()
         }
