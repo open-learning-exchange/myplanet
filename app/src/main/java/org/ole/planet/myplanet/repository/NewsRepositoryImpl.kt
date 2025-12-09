@@ -96,4 +96,33 @@ class NewsRepositoryImpl @Inject constructor(
             }
         }.flowOn(Dispatchers.Default)
     }
+
+    override suspend fun getDiscussionsByTeamIdFlow(teamId: String): Flow<List<RealmNews>> {
+        return queryListFlow(RealmNews::class.java) {
+            isEmpty("replyTo")
+            sort("time", Sort.DESCENDING)
+        }.map { discussions ->
+            discussions.filter { news ->
+                val viewableByTeams = !news.viewableBy.isNullOrEmpty() &&
+                        news.viewableBy.equals("teams", ignoreCase = true) &&
+                        news.viewableId.equals(teamId, ignoreCase = true)
+
+                val viewInTeam = if (!news.viewIn.isNullOrEmpty()) {
+                    try {
+                        val ar = gson.fromJson(news.viewIn, JsonArray::class.java)
+                        ar.any { e ->
+                            val ob = e.asJsonObject
+                            ob["_id"].asString.equals(teamId, ignoreCase = true)
+                        }
+                    } catch (e: Exception) {
+                        false
+                    }
+                } else {
+                    false
+                }
+
+                viewableByTeams || viewInTeam
+            }
+        }.flowOn(Dispatchers.Default)
+    }
 }
