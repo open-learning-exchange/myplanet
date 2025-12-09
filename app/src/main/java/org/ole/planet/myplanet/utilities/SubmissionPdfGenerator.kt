@@ -118,9 +118,6 @@ object SubmissionPdfGenerator {
     ): File? = withContext(Dispatchers.IO) {
         Realm.getDefaultInstance().use { realm ->
             try {
-                // Fetch submissions in order to keep logic similar, but re-querying by ID
-                // Note: preserving order might be nice but standard find by IDs usually returns in some order.
-                // We'll iterate the IDs and find each.
                 val submissions = submissionIds.mapNotNull { id ->
                     realm.where(RealmSubmission::class.java).equalTo("id", id).findFirst()
                 }
