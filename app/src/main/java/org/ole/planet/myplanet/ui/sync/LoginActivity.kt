@@ -55,6 +55,9 @@ import org.ole.planet.myplanet.utilities.Utilities.toast
 
 class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     private lateinit var binding: ActivityLoginBinding
+    private lateinit var nameWatcher1: TextWatcher
+    private lateinit var nameWatcher2: TextWatcher
+    private lateinit var passwordWatcher: TextWatcher
     private var guest = false
     var users: List<RealmUserModel>? = null
     private var mAdapter: TeamListAdapter? = null
@@ -277,8 +280,10 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         }
         declareHideKeyboardElements()
         binding.lblVersion.text = getString(R.string.version, resources.getText(R.string.app_version))
-        binding.inputName.addTextChangedListener(MyTextWatcher(binding.inputName))
-        binding.inputPassword.addTextChangedListener(MyTextWatcher(binding.inputPassword))
+        nameWatcher1 = MyTextWatcher(binding.inputName)
+        passwordWatcher = MyTextWatcher(binding.inputPassword)
+        binding.inputName.addTextChangedListener(nameWatcher1)
+        binding.inputPassword.addTextChangedListener(passwordWatcher)
         binding.inputPassword.setOnEditorActionListener { _: TextView?, actionId: Int, event: KeyEvent? ->
             if (isFinishing || isDestroyed) {
                 return@setOnEditorActionListener false
@@ -297,7 +302,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 }
             }
         }
-        binding.inputName.addTextChangedListener(object : TextWatcher {
+        nameWatcher2 = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
 
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
@@ -309,7 +314,8 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             }
 
             override fun afterTextChanged(s: Editable) {}
-        })
+        }
+        binding.inputName.addTextChangedListener(nameWatcher2)
         if (getUrl().isNotEmpty()) {
             loadTeamsAsync()
         }
@@ -646,5 +652,14 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
 
     override fun onDestroy() {
         super.onDestroy()
+        if (this::nameWatcher1.isInitialized) {
+            binding.inputName.removeTextChangedListener(nameWatcher1)
+        }
+        if (this::nameWatcher2.isInitialized) {
+            binding.inputName.removeTextChangedListener(nameWatcher2)
+        }
+        if (this::passwordWatcher.isInitialized) {
+            binding.inputPassword.removeTextChangedListener(passwordWatcher)
+        }
     }
 }

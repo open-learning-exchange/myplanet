@@ -48,7 +48,6 @@
     <string name="download_selected">Soo dejin ayaa la doortay</string>
     <string name="txt_cancel">burin</string>
     <string name="download_all">Soo deji Dhammaan</string>
-    <string name="hello_blank_fragment">Hello jajab maran</string>
     <string name="join_selected">Ku biir la\ndoortay</string>
     <string name="join">Ku biir</string>
     <string name="add_to_mylib">Kudar Maktabadayda</string>
@@ -162,6 +161,7 @@
     <string name="showing_reply_of">muujinaya jawaabta:</string>
     <string name="open_date">Taariikhda Furan</string>
     <string name="my_survey">mySurveys</string>
+    <string name="failed_to_load_course">Ku guuldareystay in la raro koorsada</string>
     <string name="cannot_remove_user">Isticmaalaha lama saari karin</string>
     <string name="no_members_task">Wax xubno koox ah looma hayo in shaqo loo xil saaro</string>
     <string name="no_member_selected">Ma jiro xubin la doortay. Fadlan isku day mar kale</string>
@@ -690,7 +690,6 @@
     <string name="no_data_available_please_click_button_to_add_new_resource_in_mypersonal">Macluumaad waxba ma haysano, fadlan guji xidiga + si aad u dhejiso khadka cusub ee ku jira maktabaddayda.</string>
     <string name="label_added">Dabool halkan loo dejinayey</string>
     <string name="please_enter_message">Fadlan geli farriimaha</string>
-    <string name="no_items">Qeybtaan ma jiro</string>
     <string name="record_survey">Gali suuragal</string>
     <string name="survey_sent_to_users">Suuragal loo diray isticmaale</string>
     <string name="wifi_is_turned_off_saving_battery_power">Wifi waxaa la soo casishay. Khaariidka betareegee ku sug</string>
