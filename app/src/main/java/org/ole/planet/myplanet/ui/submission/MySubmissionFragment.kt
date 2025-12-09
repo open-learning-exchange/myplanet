@@ -50,7 +50,7 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
             DividerItemDecoration(activity, DividerItemDecoration.VERTICAL)
         )
 
-        adapter = AdapterMySubmission(requireActivity(), viewLifecycleOwner.lifecycleScope)
+        adapter = AdapterMySubmission(requireActivity())
         adapter.setType(type)
         binding.rvMysurvey.adapter = adapter
 
@@ -66,11 +66,6 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
             launch {
                 viewModel.exams.collectLatest { exams ->
                     adapter.setExams(exams)
-                }
-            }
-            launch {
-                viewModel.userNames.collectLatest { names ->
-                    adapter.setUserNames(names)
                 }
             }
             launch {
