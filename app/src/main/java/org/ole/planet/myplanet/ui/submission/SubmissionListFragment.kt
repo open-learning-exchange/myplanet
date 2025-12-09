@@ -78,10 +78,10 @@ class SubmissionListFragment : Fragment() {
 
             val submissionItems = submissions.map {
                 SubmissionItem(
-                    id = it.id,
-                    lastUpdateTime = it.lastUpdateTime,
-                    status = it.status ?: "",
-                    uploaded = it.uploaded
+                    submission = it,
+                    examName = examTitle,
+                    submissionCount = 1,
+                    userName = null
                 )
             }
             adapter.submitList(submissionItems)

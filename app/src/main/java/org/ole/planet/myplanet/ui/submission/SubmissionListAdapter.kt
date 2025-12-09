@@ -31,17 +31,17 @@ class SubmissionListAdapter(
     inner class ViewHolder(private val binding: ItemSubmissionBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(submission: SubmissionItem, number: Int) {
             binding.tvSubmissionNumber.text = "#$number"
-            binding.tvSubmissionDate.text = TimeUtils.getFormattedDateWithTime(submission.lastUpdateTime)
-            binding.tvSubmissionStatus.text = submission.status
+            binding.tvSubmissionDate.text = TimeUtils.getFormattedDateWithTime(submission.submission.lastUpdateTime)
+            binding.tvSubmissionStatus.text = submission.submission.status
 
-            binding.tvSyncStatus.text = if (submission.uploaded) "✅" else "❌"
+            binding.tvSyncStatus.text = if (submission.submission.uploaded) "✅" else "❌"
 
             binding.btnViewDetails.setOnClickListener {
-                openSubmissionDetail(submission.id)
+                openSubmissionDetail(submission.submission.id)
             }
 
             binding.btnDownloadPdf.setOnClickListener {
-                onGeneratePdf(submission.id)
+                onGeneratePdf(submission.submission.id)
             }
         }
 
@@ -57,7 +57,7 @@ class SubmissionListAdapter(
     companion object {
         private val USER_COMPARATOR = object : DiffUtil.ItemCallback<SubmissionItem>() {
             override fun areItemsTheSame(oldItem: SubmissionItem, newItem: SubmissionItem): Boolean {
-                return oldItem.id == newItem.id
+                return oldItem.submission.id == newItem.submission.id
             }
 
             override fun areContentsTheSame(oldItem: SubmissionItem, newItem: SubmissionItem): Boolean {

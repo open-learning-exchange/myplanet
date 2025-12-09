@@ -63,7 +63,7 @@ class AdapterMySubmission(
         val submission = submissionItem.submission
         val binding = holder.binding
         binding.status.text = submission.status
-        binding.date.text = getFormattedDate(submission.startTime)
+        binding.date.text = getFormattedDate(submission.lastUpdateTime)
         showSubmittedBy(holder, binding, submission, submissionItem.userName)
         binding.title.text = submissionItem.examName
 
