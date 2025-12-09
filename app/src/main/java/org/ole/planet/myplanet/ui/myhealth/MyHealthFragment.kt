@@ -513,7 +513,7 @@ class MyHealthFragment : Fragment() {
 
     private fun getExaminations(mm: RealmMyHealth): List<RealmMyHealthPojo>? {
         val healths = mRealm.where(RealmMyHealthPojo::class.java)?.equalTo("profileId", mm.userKey)?.findAll()
-        return healths
+        return mRealm.copyFromRealm(healths)
     }
 
     private fun getHealthProfile(mh: RealmMyHealthPojo): RealmMyHealth? {
