@@ -2,8 +2,10 @@ package org.ole.planet.myplanet.repository
 
 import com.google.gson.Gson
 import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import io.realm.Case
 import io.realm.Sort
+import java.util.Calendar
 import java.util.HashMap
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
@@ -95,5 +97,37 @@ class NewsRepositoryImpl @Inject constructor(
                 news
             }
         }.flowOn(Dispatchers.Default)
+    }
+
+    override suspend fun shareNewsToCommunity(newsId: String, userId: String, planetCode: String, parentCode: String, teamName: String): Result<Unit> {
+        return try {
+            databaseService.executeTransactionAsync { realm ->
+                val news = realm.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
+                if (news != null) {
+                    val array = gson.fromJson(news.viewIn, JsonArray::class.java)
+                    if (array != null && array.size() > 0) {
+                        val firstElement = array.get(0)
+                        if (firstElement.isJsonObject) {
+                            val obj = firstElement.asJsonObject
+                            if (!obj.has("name")) {
+                                obj.addProperty("name", teamName)
+                            }
+                        }
+                    }
+
+                    val ob = JsonObject()
+                    ob.addProperty("section", "community")
+                    ob.addProperty("_id", "$planetCode@$parentCode")
+                    ob.addProperty("sharedDate", Calendar.getInstance().timeInMillis)
+                    array?.add(ob)
+
+                    news.sharedBy = userId
+                    news.viewIn = gson.toJson(array)
+                }
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 }
