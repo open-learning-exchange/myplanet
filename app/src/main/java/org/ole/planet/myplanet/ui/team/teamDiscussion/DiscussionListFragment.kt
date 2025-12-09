@@ -45,8 +45,6 @@ class DiscussionListFragment : BaseTeamFragment() {
     lateinit var userProfileDbHandler: UserProfileDbHandler
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
-    @Inject
-    lateinit var userRepository: org.ole.planet.myplanet.repository.UserRepository
     private var filteredNewsList: List<RealmNews?> = listOf()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {

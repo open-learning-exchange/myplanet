@@ -51,8 +51,6 @@ class NewsFragment : BaseNewsFragment() {
     @Inject
     lateinit var newsRepository: NewsRepository
     @Inject
-    lateinit var userRepository: org.ole.planet.myplanet.repository.UserRepository
-    @Inject
     lateinit var sharedPrefManager: SharedPrefManager
     private var filteredNewsList: List<RealmNews?> = listOf()
     private var searchFilteredList: List<RealmNews?> = listOf()
