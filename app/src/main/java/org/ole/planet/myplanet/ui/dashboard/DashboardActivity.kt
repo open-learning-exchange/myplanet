@@ -146,22 +146,18 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         notificationManager = NotificationUtils.getInstance(this)
         if (handleGuestAccess()) return
 
-        // Core UI setup that needs to happen synchronously
         handleInitialFragment()
         addBackPressCallback()
         collectUiState()
 
-        // Defer heavy initialization until after the first frame
         lifecycleScope.launch {
             initializeDashboard()
         }
 
-        // Start the transition after the first frame is drawn
         val content: View = findViewById(android.R.id.content)
         content.viewTreeObserver.addOnPreDrawListener(
             object : android.view.ViewTreeObserver.OnPreDrawListener {
                 override fun onPreDraw(): Boolean {
-                    // Check if the initial data is ready
                     content.viewTreeObserver.removeOnPreDrawListener(this)
                     startPostponedEnterTransition()
                     return true
