@@ -194,8 +194,7 @@ class SyncManager constructor(
             initializeSync()
 
             // Phase 1: Sync non-library tables in parallel
-            // Note: courses and resources base tables are synced via library/resource sync
-            // teams and meetups base tables are synced here, then augmented by library sync (for shelf items)
+            // Note: teams and meetups base tables are synced here, then augmented by library sync
             coroutineScope {
                 val syncJobs = listOf(
                     async {
@@ -287,18 +286,26 @@ class SyncManager constructor(
                 syncJobs.awaitAll()
             }
 
-            // Phase 2: Sync library tables (augments courses, resources, teams, meetups with shelf data)
+            // Phase 2: Sync courses base table
+            Log.d("SyncPerf", "  ▶ Starting courses base table sync")
+            logger.startProcess("courses_sync")
+            transactionSyncManager.syncDb("courses")
+            logger.endProcess("courses_sync")
+
+            // Phase 3: Sync library (augments courses, resources, teams, meetups with shelf data)
             logger.startProcess("library_sync")
             myLibraryTransactionSync()
             logger.endProcess("library_sync")
 
-            logger.startProcess("admin_sync")
-            ManagerSync.instance.syncAdmin()
-            logger.endProcess("admin_sync")
-
+            // Phase 4: Sync resources base table
             logger.startProcess("resource_sync")
             resourceTransactionSync()
             logger.endProcess("resource_sync")
+
+            // Phase 5: Admin and finalization
+            logger.startProcess("admin_sync")
+            ManagerSync.instance.syncAdmin()
+            logger.endProcess("admin_sync")
 
             databaseService.withRealm { realm ->
                 logger.startProcess("on_synced")
