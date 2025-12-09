@@ -25,4 +25,5 @@ interface SubmissionRepository {
     suspend fun createSurveySubmission(examId: String, userId: String?)
     suspend fun saveSubmission(submission: RealmSubmission)
     suspend fun markSubmissionComplete(id: String, payload: com.google.gson.JsonObject)
+    fun getNormalizedSubmitterName(submission: RealmSubmission): String?
 }

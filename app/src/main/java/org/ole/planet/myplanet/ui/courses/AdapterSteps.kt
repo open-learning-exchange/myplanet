@@ -4,7 +4,6 @@ import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.CoroutineScope
@@ -17,6 +16,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowStepsBinding
 import org.ole.planet.myplanet.repository.SubmissionRepository
+import org.ole.planet.myplanet.utilities.DiffUtils
 
 class AdapterSteps(
     private val context: Context,
@@ -162,12 +162,9 @@ class AdapterSteps(
     }
 
     companion object {
-        private val STEP_ITEM_COMPARATOR = object : DiffUtil.ItemCallback<StepItem>() {
-            override fun areItemsTheSame(oldItem: StepItem, newItem: StepItem): Boolean =
-                oldItem.id == newItem.id
-
-            override fun areContentsTheSame(oldItem: StepItem, newItem: StepItem): Boolean =
-                oldItem == newItem
-        }
+        private val STEP_ITEM_COMPARATOR = DiffUtils.itemCallback<StepItem>(
+            areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id },
+            areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
+        )
     }
 }
