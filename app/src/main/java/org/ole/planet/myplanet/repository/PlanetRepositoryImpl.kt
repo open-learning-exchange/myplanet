@@ -4,10 +4,12 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
 import androidx.core.net.toUri
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.datamanager.ApiInterface
+import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.UrlUtils
@@ -16,8 +18,8 @@ import javax.inject.Inject
 
 class PlanetRepositoryImpl @Inject constructor(
     private val apiInterface: ApiInterface,
-    private val preferences: SharedPreferences,
-    private val context: Context,
+    @DefaultPreferences private val preferences: SharedPreferences,
+    @ApplicationContext private val context: Context,
 ) : PlanetRepository {
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
 
