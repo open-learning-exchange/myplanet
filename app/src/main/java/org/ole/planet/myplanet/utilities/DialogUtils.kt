@@ -9,7 +9,10 @@ import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.view.View
 import androidx.appcompat.app.AlertDialog
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.DialogProgressBinding
@@ -148,27 +151,38 @@ object DialogUtils {
     }
 
     @JvmStatic
-    fun getUpdateDialog(context: Context, info: MyPlanet?, progressDialog: CustomProgressDialog?): AlertDialog.Builder {
+    fun getUpdateDialog(
+        context: Context,
+        info: MyPlanet?,
+        progressDialog: CustomProgressDialog?,
+        scope: CoroutineScope
+    ): AlertDialog.Builder {
         return AlertDialog.Builder(context, R.style.CustomAlertDialog)
             .setTitle(R.string.new_version_of_my_planet_available)
             .setMessage(R.string.download_first_to_continue)
             .setNeutralButton(R.string.upgrade_local) { _, _ ->
-                startDownloadUpdate(context, UrlUtils.getApkUpdateUrl(info?.localapkpath), progressDialog)
+                startDownloadUpdate(context, UrlUtils.getApkUpdateUrl(info?.localapkpath), progressDialog, scope)
             }
             .setPositiveButton(R.string.upgrade) { _, _ ->
-                info?.apkpath?.let { startDownloadUpdate(context, it, progressDialog) }
+                info?.apkpath?.let { path ->
+                    startDownloadUpdate(context, path, progressDialog, scope)
+                }
             }
     }
 
     @JvmStatic
-    fun startDownloadUpdate(context: Context, path: String, progressDialog: CustomProgressDialog?) {
-        Service(context.applicationContext).checkCheckSum(object : Service.ChecksumCallback {
-            override fun onMatch() {
+    fun startDownloadUpdate(
+        context: Context,
+        path: String,
+        progressDialog: CustomProgressDialog?,
+        scope: CoroutineScope
+    ) {
+        scope.launch {
+            val checksumMatch = Service(context.applicationContext).checkCheckSum(path)
+            if (checksumMatch) {
                 Utilities.toast(context, context.getString(R.string.apk_already_exists))
                 FileUtils.installApk(context, path)
-            }
-
-            override fun onFail() {
+            } else {
                 val urls = arrayListOf(path)
                 if (progressDialog != null) {
                     progressDialog.setText(context.getString(R.string.downloading_file))
@@ -177,7 +191,7 @@ object DialogUtils {
                 }
                 MyDownloadService.startService(context, "$urls", false)
             }
-        }, path)
+        }
     }
 
     @JvmStatic

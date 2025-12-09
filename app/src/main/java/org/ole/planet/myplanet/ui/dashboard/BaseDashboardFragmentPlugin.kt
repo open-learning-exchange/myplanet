@@ -30,6 +30,19 @@ import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utilities.Utilities
 
 open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
+
+    private val imageResourceMap by lazy {
+        mapOf(
+            "ic_myhealth" to R.drawable.ic_myhealth,
+            "my_achievement" to R.drawable.my_achievement,
+            "ic_submissions" to R.drawable.ic_submissions,
+            "ic_my_survey" to R.drawable.ic_my_survey,
+            "ic_references" to R.drawable.ic_references,
+            "ic_calendar" to R.drawable.ic_calendar,
+            "ic_mypersonals" to R.drawable.ic_mypersonals
+        )
+    }
+
     fun handleClick(id: String?, title: String?, f: Fragment, v: TextView) {
         v.text = title
         v.setOnClickListener {
@@ -110,24 +123,19 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         setBackgroundColor(textView, itemCnt)
     }
 
-    fun getLayout(itemCnt: Int, obj: RealmObject): View {
+    fun getLayout(itemCnt: Int, obj: RealmObject, surveyCount: Int? = null): View {
         val itemMyLifeBinding = ItemMyLifeBinding.inflate(LayoutInflater.from(activity))
         val v = itemMyLifeBinding.root
         setBackgroundColor(v, itemCnt)
 
         val title = (obj as RealmMyLife).title
-        val user = profileDbHandler.userModel
-        itemMyLifeBinding.img.setImageResource(resources.getIdentifier(obj.imageId, "drawable", requireActivity().packageName))
+        val imageResId = imageResourceMap[obj.imageId] ?: R.drawable.ic_myhealth
+        itemMyLifeBinding.img.setImageResource(imageResId)
         itemMyLifeBinding.tvName.text = title
 
         if (title == getString(R.string.my_survey)) {
             itemMyLifeBinding.tvCount.visibility = View.VISIBLE
-            if (isRealmInitialized()) {
-                val noOfSurvey = RealmSubmission.getNoOfSurveySubmissionByUser(user?.id, mRealm)
-                itemMyLifeBinding.tvCount.text = noOfSurvey.toString()
-            } else {
-                itemMyLifeBinding.tvCount.text = "0"
-            }
+            itemMyLifeBinding.tvCount.text = surveyCount?.toString() ?: "0"
         } else {
             itemMyLifeBinding.tvCount.visibility = View.GONE
         }
