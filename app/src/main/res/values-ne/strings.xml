@@ -48,7 +48,6 @@
     <string name="download_selected">चयनित डाउनलोड गर्नुहोस्</string>
     <string name="txt_cancel">रद्द गर्नुहोस्</string>
     <string name="download_all">सबै डाउनलोड गर्नुहोस्</string>
-    <string name="hello_blank_fragment">नमस्ते रिक्त फ्रेमेन्ट</string>
     <string name="join_selected">चयनितमा\nसामेल हुनुहोस्</string>
     <string name="join">सामेल हुनुहोस्</string>
     <string name="add_to_mylib">मेरो पुस्तकालयमा थप्नुहोस्</string>
@@ -691,7 +690,6 @@
     <string name="no_data_available_please_click_button_to_add_new_resource_in_mypersonal">कुनै डाटा उपलब्ध छैन, कृपया मेरो व्यक्तिगतमा नयाँ स्रोत थप्नका लागि + बटनमा क्लिक गर्नुहोस्।</string>
     <string name="label_added">लेबल थपियो।</string>
     <string name="please_enter_message">कृपया सन्देश लेख्नुहोस्</string>
-    <string name="no_items">कुनै वस्तुहरू छैनन्</string>
     <string name="record_survey">सर्वेक्षण रेकर्ड गर्नुहोस्</string>
     <string name="survey_sent_to_users">सर्वेक्षण सदस्यहरूलाई पठाइयो</string>
     <string name="wifi_is_turned_off_saving_battery_power">वाईफाई बन्द गरिएको छ। बैट्री शक्ति बचाउँदै</string>
