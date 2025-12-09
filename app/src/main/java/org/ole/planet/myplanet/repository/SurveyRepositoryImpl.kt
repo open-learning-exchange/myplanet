@@ -108,17 +108,30 @@ class SurveyRepositoryImpl @Inject constructor(
     ): Map<String, SurveyInfo> {
         val surveyIds = surveys.map { it.id }
         val submissionsQuery = queryList(RealmSubmission::class.java, ensureLatest = true) {
-            `in`("parentId", surveyIds.toTypedArray())
             if (isTeam) {
                 equalTo("membershipDoc.teamId", teamId)
             } else {
                 equalTo("userId", userId)
+                isNull("membershipDoc")
             }
         }
 
         val submissionsByParentId = submissionsQuery
-            .filter { !it.status.isNullOrEmpty() }
-            .groupBy { it.parentId }
+            .filter { submission ->
+                val hasStatus = !submission.status.isNullOrEmpty()
+                val matchesParentId = surveyIds.any { surveyId ->
+                    submission.parentId == surveyId || submission.parentId?.startsWith("$surveyId@") == true
+                }
+                hasStatus && matchesParentId
+            }
+            .groupBy { submission ->
+                val parentId = submission.parentId ?: return@groupBy null
+                surveyIds.find { surveyId ->
+                    parentId == surveyId || parentId.startsWith("$surveyId@")
+                }
+            }
+            .filterKeys { it != null }
+            .mapKeys { it.key!! }
 
         return surveys.filter { it.id != null }.associate { survey ->
             val surveyId = survey.id!!
