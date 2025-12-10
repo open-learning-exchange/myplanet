@@ -40,9 +40,7 @@ import org.ole.planet.myplanet.utilities.SharedPrefManager
 class DiscussionListFragment : BaseTeamFragment() {
     private var _binding: FragmentDiscussionListBinding? = null
     private val binding get() = _binding!!
-    
-    @Inject
-    lateinit var newsRepository: NewsRepository
+
     @Inject
     lateinit var newsRepository: NewsRepository
     @Inject
