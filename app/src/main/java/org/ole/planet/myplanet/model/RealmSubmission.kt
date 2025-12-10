@@ -8,6 +8,7 @@ import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
+import io.realm.annotations.Ignore
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 import java.util.Date
@@ -42,6 +43,8 @@ open class RealmSubmission : RealmObject() {
     var membershipDoc: RealmMembershipDoc? = null
     @Index
     var isUpdated = false
+    @Ignore
+    var submitterName: String = ""
 
     companion object {
         @JvmStatic

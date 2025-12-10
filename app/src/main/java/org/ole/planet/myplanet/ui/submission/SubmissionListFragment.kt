@@ -8,8 +8,8 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
-import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Sort
@@ -67,7 +67,9 @@ class SubmissionListFragment : Fragment() {
         )
         val listener = activity as? OnHomeItemClickListener
         adapter = SubmissionListAdapter(requireContext(), listener) { submissionId ->
-            generateSubmissionPdf(submissionId)
+            if (submissionId != null) {
+                generateSubmissionPdf(submissionId)
+            }
         }
         binding.rvSubmissions.adapter = adapter
     }
@@ -98,36 +100,41 @@ class SubmissionListFragment : Fragment() {
                 if (_binding == null) return@withContext
                 adapter.submitList(submissionItems)
 
+                // Cache IDs for report generation
+                val submissionIds = submissionsCopy.mapNotNull { it.id }
+
                 binding.btnDownloadReport.setOnClickListener {
-                    generateReport(submissionsCopy)
+                    generateReport(submissionIds)
                 }
             }
         }
     }
 
-    private fun generateSubmissionPdf(submissionId: String?) {
-        databaseService.withRealm { realm ->
-            val submission = realm.where(RealmSubmission::class.java).equalTo("id", submissionId).findFirst()
-            if (submission != null) {
-                val file = SubmissionPdfGenerator.generateSubmissionPdf(requireContext(), submission, realm)
-                if (file != null) {
-                    Toast.makeText(requireContext(), "PDF saved to ${file.absolutePath}", Toast.LENGTH_LONG).show()
-                    openPdf(file)
-                } else {
-                    Toast.makeText(requireContext(), "Failed to generate PDF", Toast.LENGTH_SHORT).show()
-                }
+    private fun generateSubmissionPdf(submissionId: String) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            binding.progressBar.visibility = View.VISIBLE
+            val file = SubmissionPdfGenerator.generateSubmissionPdf(requireContext(), submissionId)
+            binding.progressBar.visibility = View.GONE
+
+            if (file != null) {
+                Toast.makeText(requireContext(), "PDF saved to ${file.absolutePath}", Toast.LENGTH_LONG).show()
+                openPdf(file)
+            } else {
+                Toast.makeText(requireContext(), "Failed to generate PDF", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
-    private fun generateReport(submissions: List<RealmSubmission>) {
-        databaseService.withRealm { realm ->
+    private fun generateReport(submissionIds: List<String>) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            binding.progressBar.visibility = View.VISIBLE
             val file = SubmissionPdfGenerator.generateMultipleSubmissionsPdf(
                 requireContext(),
-                submissions,
-                examTitle ?: "Submissions",
-                realm
+                submissionIds,
+                examTitle ?: "Submissions"
             )
+            binding.progressBar.visibility = View.GONE
+
             if (file != null) {
                 Toast.makeText(context, "Report saved to ${file.absolutePath}", Toast.LENGTH_LONG).show()
                 openPdf(file)
