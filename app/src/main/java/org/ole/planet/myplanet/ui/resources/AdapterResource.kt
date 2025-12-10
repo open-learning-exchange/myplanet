@@ -403,14 +403,7 @@ class AdapterResource(
     }
 
     override fun refreshWithDiff() {
-        (context as? LifecycleOwner)?.lifecycleScope?.launch {
-            val newLibraryList = withContext(Dispatchers.IO) {
-                Realm.getDefaultInstance().use { realm ->
-                    realm.copyFromRealm(realm.where(RealmMyLibrary::class.java).findAll())
-                }
-            }
-            triggerDiff(newLibraryList)
-        }
+        (context as? ResourcesFragment)?.refreshResourcesData()
     }
 
     private fun triggerDiff(newList: List<RealmMyLibrary?>) {
