@@ -20,10 +20,13 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
+import io.realm.Realm
 import io.realm.RealmList
 import java.io.File
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityReplyBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -47,6 +50,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     private lateinit var activityReplyBinding: ActivityReplyBinding
     @Inject
     lateinit var databaseService: DatabaseService
+    private lateinit var mRealm: Realm
     var id: String? = null
     private lateinit var newsAdapter: AdapterNews
     var user: RealmUserModel? = null
@@ -69,6 +73,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         activityReplyBinding = ActivityReplyBinding.inflate(layoutInflater)
         setContentView(activityReplyBinding.root)
         EdgeToEdgeUtils.setupEdgeToEdgeWithKeyboard(this, activityReplyBinding.root)
+        mRealm = Realm.getDefaultInstance()
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
         title = "Reply"
@@ -91,16 +96,24 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     private fun showData(id: String?) {
         id ?: return
         lifecycleScope.launch {
-            val (news, list) = viewModel.getNewsWithReplies(id)
-            databaseService.withRealm { realm ->
-                newsAdapter = AdapterNews(this@ReplyActivity, user, news, "", null, userProfileDbHandler, databaseService, lifecycleScope, newsRepository)
+            val (copiedNews, copiedList) = withContext(Dispatchers.IO) {
+                val (news, list) = viewModel.getNewsWithReplies(id)
+                databaseService.withRealm { realm ->
+                    val newsCopy = news?.let { realm.copyFromRealm(it) }
+                    val listCopy = realm.copyFromRealm(list)
+                    Pair(newsCopy, listCopy)
+                }
+            }
+
+            withContext(Dispatchers.Main) {
+                newsAdapter = AdapterNews(this@ReplyActivity, user, copiedNews, "", null, userProfileDbHandler, databaseService, lifecycleScope, newsRepository)
                 newsAdapter.sharedPrefManager = sharedPrefManager
                 newsAdapter.setListener(this@ReplyActivity)
-                newsAdapter.setmRealm(realm)
+                newsAdapter.setmRealm(mRealm)
                 newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
                 newsAdapter.setNonTeamMember(intent.getBooleanExtra("nonTeamMember", false))
                 newsAdapter.setImageList(imageList)
-                newsAdapter.updateList(list)
+                newsAdapter.updateList(copiedList)
                 activityReplyBinding.rvReply.adapter = newsAdapter
             }
         }
@@ -202,5 +215,8 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
 
     override fun onDestroy() {
         super.onDestroy()
+        if (::mRealm.isInitialized && !mRealm.isClosed) {
+            mRealm.close()
+        }
     }
 }
