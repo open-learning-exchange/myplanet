@@ -143,14 +143,6 @@ android {
         it.buildConfigField 'String', 'PLANET_CAMBRIDGE_URL', "\"${planetCambridgeUrl}\""
         it.buildConfigField 'String', 'PLANET_CAMBRIDGE_PIN', "\"${planetCambridgePin}\""
     }
-    sourceSets {
-        main {
-            java.srcDirs = ['src/main/java']
-        }
-        lite {
-            java.srcDirs = ['src/lite/java']
-        }
-    }
 }
 
 tasks.register('generateVersionsXml') {
