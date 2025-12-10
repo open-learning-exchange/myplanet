@@ -8,6 +8,7 @@ import android.content.SharedPreferences
 import android.graphics.Color
 import android.os.Build
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -273,25 +274,33 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         val userModel = when {
             userId.isNullOrEmpty() -> null
             userCache.containsKey(userId) -> userCache[userId]
-            ::mRealm.isInitialized -> {
-                val managedUser = mRealm.where(RealmUserModel::class.java)
-                    .equalTo("id", userId)
-                    .findFirst()
-                val detachedUser = managedUser?.let {
-                    try {
-                        mRealm.copyFromRealm(it)
-                    } catch (e: Exception) {
-                        null
+            else -> {
+                holder.binding.tvName.text = news.userName
+                ImageUtils.loadImage(null, holder.binding.imgUser)
+                holder.itemView.findViewTreeLifecycleOwner()?.lifecycleScope?.launch {
+                    val user = withContext(Dispatchers.IO) {
+                        if (::mRealm.isInitialized) {
+                            try {
+                                databaseService.withRealm { realm ->
+                                    val managedUser = realm.where(RealmUserModel::class.java)
+                                        .equalTo("id", userId)
+                                        .findFirst()
+                                    managedUser?.let { realm.copyFromRealm(it) }
+                                }
+                            } catch (e: Exception) {
+                                null
+                            }
+                        } else {
+                            null
+                        }
+                    }
+                    userCache[userId] = user
+                    if (holder.bindingAdapterPosition != RecyclerView.NO_POSITION) {
+                        notifyItemChanged(holder.bindingAdapterPosition)
                     }
                 }
-                if (detachedUser != null) {
-                    userCache[userId] = detachedUser
-                } else if (managedUser == null) {
-                    userCache[userId] = null
-                }
-                detachedUser ?: managedUser
+                return null
             }
-            else -> null
         }
         val userFullName = userModel?.getFullNameWithMiddleName()?.trim()
         if (userModel != null && currentUser != null) {
@@ -428,19 +437,46 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     }
 
     private fun submitListSafely(list: List<RealmNews?>, commitCallback: Runnable? = null) {
-        userCache.clear()
-        val detachedList = list.map { news ->
-            if (news?.isValid == true && ::mRealm.isInitialized) {
-                try {
-                    mRealm.copyFromRealm(news)
-                } catch (e: Exception) {
-                    news
+        scope.launch {
+            val userIds = list.mapNotNull { it?.userId }.distinct()
+            if (userIds.isNotEmpty() && ::mRealm.isInitialized) {
+                withContext(Dispatchers.IO) {
+                    try {
+                        databaseService.withRealm { realm ->
+                            val users = realm.where(RealmUserModel::class.java)
+                                .`in`("id", userIds.toTypedArray())
+                                .findAll()
+                            val detachedUsers = realm.copyFromRealm(users)
+                            userCache.clear()
+                            detachedUsers.forEach { user ->
+                                user.id?.let {
+                                    userCache[it] = user
+                                }
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Log.e("AdapterNews", "Error pre-caching user models: ", e)
+                    }
                 }
             } else {
-                news
+                userCache.clear()
+            }
+
+            val detachedList = list.map { news ->
+                if (news?.isValid == true && ::mRealm.isInitialized) {
+                    try {
+                        mRealm.copyFromRealm(news)
+                    } catch (e: Exception) {
+                        news
+                    }
+                } else {
+                    news
+                }
+            }
+            withContext(Dispatchers.Main) {
+                submitList(detachedList, commitCallback)
             }
         }
-        submitList(detachedList, commitCallback)
     }
 
     private fun setMemberClickListeners(holder: ViewHolderNews, userModel: RealmUserModel?, currentLeader: RealmUserModel?) {
