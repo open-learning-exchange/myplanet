@@ -88,8 +88,7 @@ class CollectionsFragment : DialogFragment(), TagAdapter.OnTagClickListener, Com
             list = tagRepository.getTags(dbType)
             selectedItemsList = ArrayList(recentList)
             childMap = tagRepository.buildChildMap()
-            adapter = TagAdapter(selectedItemsList, this@CollectionsFragment)
-            adapter.setSelectMultiple(true)
+            adapter = TagAdapter(this@CollectionsFragment)
             binding.listTags.adapter = adapter
             currentTagDataList = buildTagDataList(list).toMutableList()
             adapter.submitList(currentTagDataList)
@@ -99,14 +98,18 @@ class CollectionsFragment : DialogFragment(), TagAdapter.OnTagClickListener, Com
 
     private fun buildTagDataList(parents: List<RealmTag>): List<TagData> {
         val tagDataList = mutableListOf<TagData>()
+        val isSelectMultiple = MainApplication.isCollectionSwitchOn
         for (parentTag in parents) {
+            val isSelected = selectedItemsList.any { it.id == parentTag.id }
             val parent = (currentTagDataList.find { it is TagData.Parent && it.tag.id == parentTag.id } as? TagData.Parent)
-                ?: TagData.Parent(parentTag, false)
+                ?: TagData.Parent(parentTag, false, isSelected, isSelectMultiple)
 
-            tagDataList.add(parent)
+            tagDataList.add(parent.copy(isSelected = isSelected, isSelectMultiple = isSelectMultiple))
+
             if (parent.isExpanded) {
                 childMap[parent.tag.id]?.forEach { childTag ->
-                    tagDataList.add(TagData.Child(childTag))
+                    val isChildSelected = selectedItemsList.any { it.id == childTag.id }
+                    tagDataList.add(TagData.Child(childTag, isChildSelected, isSelectMultiple))
                 }
             }
         }
@@ -130,6 +133,8 @@ class CollectionsFragment : DialogFragment(), TagAdapter.OnTagClickListener, Com
         } else {
             selectedItemsList.add(tags)
         }
+        currentTagDataList = buildTagDataList(list).toMutableList()
+        adapter.submitList(currentTagDataList)
     }
 
     override fun hasChildren(tagId: String?): Boolean {
@@ -138,8 +143,8 @@ class CollectionsFragment : DialogFragment(), TagAdapter.OnTagClickListener, Com
 
     override fun onCheckedChanged(compoundButton: CompoundButton, b: Boolean) {
         MainApplication.isCollectionSwitchOn = b
-        adapter.setSelectMultiple(b)
-        adapter.notifyDataSetChanged()
+        currentTagDataList = buildTagDataList(list).toMutableList()
+        adapter.submitList(currentTagDataList)
         binding.btnOk.visibility = if (b) View.VISIBLE else View.GONE
     }
 

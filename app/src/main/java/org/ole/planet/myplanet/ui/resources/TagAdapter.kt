@@ -6,25 +6,34 @@ import android.view.ViewGroup
 import android.widget.CheckBox
 import androidx.appcompat.widget.AppCompatImageView
 import androidx.core.content.ContextCompat
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowAdapterNavigationChildBinding
 import org.ole.planet.myplanet.databinding.RowAdapterNavigationParentBinding
 import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.utilities.DiffUtils
 
 class TagAdapter(
-    private val selectedItemsList: ArrayList<RealmTag>,
     private val listener: OnTagClickListener
-) : ListAdapter<TagData, RecyclerView.ViewHolder>(TagDiffCallback()) {
-
-    private var isSelectMultiple = false
-
-    fun setSelectMultiple(selectMultiple: Boolean) {
-        isSelectMultiple = selectMultiple
-    }
-
+) : ListAdapter<TagData, RecyclerView.ViewHolder>(
+    DiffUtils.itemCallback(
+        areItemsTheSame = { old, new ->
+            when {
+                old is TagData.Parent && new is TagData.Parent -> old.tag.id == new.tag.id
+                old is TagData.Child && new is TagData.Child -> old.tag.id == new.tag.id
+                else -> false
+            }
+        },
+        areContentsTheSame = { old, new ->
+            when {
+                old is TagData.Parent && new is TagData.Parent -> old.tag.name == new.tag.name && old.isExpanded == new.isExpanded && old.isSelected == new.isSelected && old.isSelectMultiple == new.isSelectMultiple
+                old is TagData.Child && new is TagData.Child -> old.tag.name == new.tag.name && old.isSelected == new.isSelected && old.isSelectMultiple == new.isSelectMultiple
+                else -> false
+            }
+        }
+    )
+) {
     override fun getItemViewType(position: Int): Int {
         return when (getItem(position)) {
             is TagData.Parent -> R.layout.row_adapter_navigation_parent
@@ -73,7 +82,7 @@ class TagAdapter(
                 setExpandedIcon(parent.isExpanded, binding.ivIndicators)
                 binding.root.setOnClickListener { listener.onParentTagClicked(parent) }
             }
-            createCheckbox(binding.root, parent.tag)
+            createCheckbox(binding.root, parent.tag, parent.isSelectMultiple, parent.isSelected)
         }
     }
 
@@ -83,7 +92,7 @@ class TagAdapter(
             binding.root.setBackgroundColor(ContextCompat.getColor(itemView.context, R.color.multi_select_grey))
             binding.tvDrawerTitle.setTextColor(ContextCompat.getColor(itemView.context, R.color.daynight_textColor))
             binding.tvDrawerTitle.setOnClickListener { listener.onTagClicked(child.tag) }
-            createCheckbox(binding.root, child.tag)
+            createCheckbox(binding.root, child.tag, child.isSelectMultiple, child.isSelected)
         }
     }
 
@@ -91,35 +100,24 @@ class TagAdapter(
         ivIndicator.setImageResource(if (isExpanded) R.drawable.ic_keyboard_arrow_up_black_24dp else R.drawable.ic_keyboard_arrow_down_black_24dp)
     }
 
-    private fun createCheckbox(convertView: View, tag: RealmTag) {
+    private fun createCheckbox(
+        convertView: View,
+        tag: RealmTag,
+        isSelectMultiple: Boolean,
+        isSelected: Boolean
+    ) {
         val checkBox = convertView.findViewById<CheckBox>(R.id.checkbox)
         checkBox.visibility = if (isSelectMultiple) View.VISIBLE else View.GONE
-        checkBox.isChecked = selectedItemsList.contains(tag)
+
+        checkBox.setOnCheckedChangeListener(null)
+        checkBox.isChecked = isSelected
         checkBox.setOnCheckedChangeListener { _, _ -> listener.onCheckboxTagSelected(tag) }
     }
 
     interface OnTagClickListener {
         fun onTagClicked(tag: RealmTag)
         fun onParentTagClicked(parent: TagData.Parent)
-        fun onCheckboxTagSelected(tags: RealmTag)
+        fun onCheckboxTagSelected(tag: RealmTag)
         fun hasChildren(tagId: String?): Boolean
-    }
-}
-
-class TagDiffCallback : DiffUtil.ItemCallback<TagData>() {
-    override fun areItemsTheSame(oldItem: TagData, newItem: TagData): Boolean {
-        return when {
-            oldItem is TagData.Parent && newItem is TagData.Parent -> oldItem.tag.id == newItem.tag.id
-            oldItem is TagData.Child && newItem is TagData.Child -> oldItem.tag.id == newItem.tag.id
-            else -> false
-        }
-    }
-
-    override fun areContentsTheSame(oldItem: TagData, newItem: TagData): Boolean {
-        return when {
-            oldItem is TagData.Parent && newItem is TagData.Parent -> oldItem.tag.name == newItem.tag.name && oldItem.isExpanded == newItem.isExpanded
-            oldItem is TagData.Child && newItem is TagData.Child -> oldItem.tag.name == newItem.tag.name
-            else -> false
-        }
     }
 }
