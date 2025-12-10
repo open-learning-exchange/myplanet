@@ -51,6 +51,8 @@ interface UserRepository {
 
     suspend fun becomeMember(obj: JsonObject): Pair<Boolean, String>
 
+    suspend fun getSortedUsers(sortBy: String, sortOrder: io.realm.Sort): List<RealmUserModel>
+
     fun getUserModel(): RealmUserModel?
     suspend fun getUserModelSuspending(): RealmUserModel?
     fun getActiveUserId(): String

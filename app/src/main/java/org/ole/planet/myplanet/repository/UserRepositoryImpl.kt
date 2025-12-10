@@ -322,4 +322,10 @@ class UserRepositoryImpl @Inject constructor(
     override fun getActiveUserId(): String {
         return getUserModel()?.id ?: ""
     }
+
+    override suspend fun getSortedUsers(sortBy: String, sortOrder: io.realm.Sort): List<RealmUserModel> {
+        return queryList(RealmUserModel::class.java) {
+            sort(sortBy, sortOrder)
+        }
+    }
 }
