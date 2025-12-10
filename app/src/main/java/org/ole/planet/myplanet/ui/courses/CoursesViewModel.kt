@@ -89,7 +89,10 @@ class CoursesViewModel @Inject constructor(
                     var query = realm.where(RealmMyCourse::class.java)
 
                     if (filter.query.isNotEmpty()) {
-                        query = query.contains("courseTitle", filter.query, io.realm.Case.INSENSITIVE)
+                        val queryParts = filter.query.split(" ").filter { it.isNotEmpty() }
+                        queryParts.forEach { part ->
+                            query = query.contains("courseTitle", part, io.realm.Case.INSENSITIVE)
+                        }
                     }
 
                     if (filter.gradeLevel.isNotEmpty()) {
