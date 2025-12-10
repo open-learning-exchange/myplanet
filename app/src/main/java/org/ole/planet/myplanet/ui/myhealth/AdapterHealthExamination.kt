@@ -10,11 +10,9 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toDrawable
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.JsonObject
-import io.realm.Realm
 import java.util.Date
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertExaminationBinding
@@ -22,6 +20,7 @@ import org.ole.planet.myplanet.databinding.RowExaminationBinding
 import org.ole.planet.myplanet.model.RealmMyHealthPojo
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.myhealth.AdapterHealthExamination.ViewHolderMyHealthExamination
+import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
@@ -29,11 +28,17 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 class AdapterHealthExamination(
     private val context: Context,
-    private val mh: RealmMyHealthPojo,
-    private val userModel: RealmUserModel?,
-    private val userMap: Map<String, RealmUserModel>
-) : ListAdapter<RealmMyHealthPojo, ViewHolderMyHealthExamination>(HealthExaminationDiffCallback()) {
+    private var mh: RealmMyHealthPojo,
+    private var userModel: RealmUserModel?,
+    private var userMap: Map<String, RealmUserModel>
+) : ListAdapter<RealmMyHealthPojo, ViewHolderMyHealthExamination>(diffCallback) {
     private val displayNameCache = mutableMapOf<String, String>()
+
+    fun updateData(mh: RealmMyHealthPojo, userModel: RealmUserModel?, userMap: Map<String, RealmUserModel>) {
+        this.mh = mh
+        this.userModel = userModel
+        this.userMap = userMap
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderMyHealthExamination {
         val rowExaminationBinding = RowExaminationBinding.inflate(
@@ -137,15 +142,9 @@ class AdapterHealthExamination(
 
     companion object {
         private val colonRegex by lazy { ":".toRegex() }
-    }
-}
-
-class HealthExaminationDiffCallback : DiffUtil.ItemCallback<RealmMyHealthPojo>() {
-    override fun areItemsTheSame(oldItem: RealmMyHealthPojo, newItem: RealmMyHealthPojo): Boolean {
-        return oldItem._id == newItem._id
-    }
-
-    override fun areContentsTheSame(oldItem: RealmMyHealthPojo, newItem: RealmMyHealthPojo): Boolean {
-        return oldItem == newItem
+        private val diffCallback = DiffUtils.itemCallback<RealmMyHealthPojo>(
+            { oldItem, newItem -> oldItem._id == newItem._id },
+            { oldItem, newItem -> oldItem == newItem }
+        )
     }
 }

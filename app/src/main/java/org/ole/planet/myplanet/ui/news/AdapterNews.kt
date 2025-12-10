@@ -49,6 +49,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.NewsRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
@@ -65,7 +66,7 @@ import org.ole.planet.myplanet.utilities.makeExpandable
 
 import org.ole.planet.myplanet.repository.UserRepository
 
-class AdapterNews(var context: Context, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userProfileDbHandler: UserProfileDbHandler, private val databaseService: DatabaseService, private val userRepository: UserRepository, private val scope: CoroutineScope) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
+class AdapterNews(var context: Context, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userProfileDbHandler: UserProfileDbHandler, private val databaseService: DatabaseService, private val scope: CoroutineScope, private val userRepository: UserRepository, private val newsRepository: NewsRepository) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem ->
             if (oldItem === newItem) return@itemCallback true
@@ -611,35 +612,24 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
                 .setTitle(R.string.share_with_community)
                 .setMessage(R.string.confirm_share_community)
                 .setPositiveButton(R.string.yes) { _, _ ->
-                    val array = GsonUtils.gson.fromJson(news?.viewIn, JsonArray::class.java)
-                    val firstElement = array.get(0)
-                    val obj = firstElement.asJsonObject
-                    if(!obj.has("name")){
-                        obj.addProperty("name", teamName)
-                    }
-                    val ob = JsonObject()
-                    ob.addProperty("section", "community")
-                    ob.addProperty("_id", currentUser?.planetCode + "@" + currentUser?.parentCode)
-                    ob.addProperty("sharedDate", Calendar.getInstance().timeInMillis)
-                    array.add(ob)
-                    if (!mRealm.isInTransaction) {
-                        mRealm.beginTransaction()
-                    }
+                     val newsId = news?.id
+                     val userId = currentUser?.id
+                     val planetCode = currentUser?.planetCode ?: ""
+                     val parentCode = currentUser?.parentCode ?: ""
 
-                    val managedNews = news?.let { newsItem ->
-                        if (newsItem.isManaged) {
-                            newsItem
-                        } else {
-                            mRealm.where(RealmNews::class.java)
-                                .equalTo("id", newsItem.id)
-                                .findFirst()
-                        }
-                    }
-                    managedNews?.sharedBy = currentUser?.id
-                    managedNews?.viewIn = GsonUtils.gson.toJson(array)
-                    mRealm.commitTransaction()
-                    Utilities.toast(context, context.getString(R.string.shared_to_community))
-                    viewHolder.binding.btnShare.visibility = View.GONE
+                     if (newsId != null && userId != null) {
+                         scope.launch {
+                             val result = newsRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
+                             withContext(Dispatchers.Main) {
+                                 if (result.isSuccess) {
+                                     Utilities.toast(context, context.getString(R.string.shared_to_community))
+                                     viewHolder.binding.btnShare.visibility = View.GONE
+                                 } else {
+                                     Utilities.toast(context, "Failed to share news")
+                                 }
+                             }
+                         }
+                     }
                 }
                 .setNegativeButton(R.string.cancel, null)
                 .show()
