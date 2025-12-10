@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.team.teamMember
 import android.content.res.Configuration
 import android.os.Bundle
 import android.view.View
+import android.widget.AdapterView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
@@ -77,6 +78,19 @@ class JoinedMemberFragment : BaseMemberFragment() {
         showNoData(binding.tvNodata, joinedMembersData.size, "members")
     }
 
+    private fun sortJoinedMembers(comparator: Comparator<JoinedMemberData>) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val sortedList = withContext(Dispatchers.Default) {
+                cachedJoinedMembers?.sortedWith(comparator)
+            }
+            if (sortedList != null) {
+                val currentUserId = user?.id
+                val isLoggedInUserLeader = sortedList.any { it.user.id == currentUserId && it.isLeader }
+                adapterJoined?.updateData(sortedList, isLoggedInUserLeader)
+            }
+        }
+    }
+
     private val joinedMembers: List<JoinedMemberData>
         get() = cachedJoinedMembers ?: emptyList()
 
@@ -87,6 +101,18 @@ class JoinedMemberFragment : BaseMemberFragment() {
         super.onViewCreated(view, savedInstanceState)
         viewLifecycleOwner.lifecycleScope.launch {
             loadAndDisplayJoinedMembers()
+        }
+        binding.spnSort.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                val comparator = when (position) {
+                    0 -> compareBy<JoinedMemberData> { it.user.name }
+                    1 -> compareByDescending<JoinedMemberData> { it.lastVisitDate }
+                    else -> compareBy { it.user.name }
+                }
+                sortJoinedMembers(comparator)
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
     }
 

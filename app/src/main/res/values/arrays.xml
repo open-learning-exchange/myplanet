@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="member_sort_options">
+        <item>Sort by Name</item>
+        <item>Sort by Last Visit</item>
+    </string-array>
+</resources>
