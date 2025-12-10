@@ -1175,5 +1175,7 @@
     <string name="click_to_assign_member">टोली सदस्य सौंप्न क्लिक गर्नुहोस्</string>
     <string name="saving">सुरक्षित गरिदै…</string>
     <string name="achievement_saved">उपलब्धि अद्यावधिक गरियो</string>
+    <string name="team_name_already_exists">यो नामको टोली पहिले नै अवस्थित छ</string>
+    <string name="enterprise_name_already_exists">यो नामको उद्यम पहिले नै अवस्थित छ</string>
 
 </resources>

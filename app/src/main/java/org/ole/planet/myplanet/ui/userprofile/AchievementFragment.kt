@@ -329,9 +329,11 @@ class AchievementFragment : BaseContainerFragment() {
 
     private fun setupReferences(data: AchievementData) {
         binding.rvOtherInfo.layoutManager = LinearLayoutManager(requireContext())
-        val realmListReferences = RealmList<String>()
-        realmListReferences.addAll(data.references)
-        binding.rvOtherInfo.adapter = AdapterOtherInfo(requireContext(), realmListReferences)
+        if (binding.rvOtherInfo.adapter == null) {
+            binding.rvOtherInfo.adapter = AdapterOtherInfo(requireContext(), data.references)
+        } else {
+            (binding.rvOtherInfo.adapter as AdapterOtherInfo).submitList(data.references)
+        }
     }
 
 
