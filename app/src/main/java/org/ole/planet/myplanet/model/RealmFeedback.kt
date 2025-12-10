@@ -46,7 +46,7 @@ open class RealmFeedback : RealmObject() {
             val e = JsonParser.parseReader(jsonReader)
             val ar = e.asJsonArray
             if (ar.size() > 0) {
-                for (i in 1 until ar.size()) {
+                for (i in 0 until ar.size()) {
                     val ob = ar[i].asJsonObject
                     feedbackReplies.add(
                         FeedbackReply(
