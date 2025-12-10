@@ -35,6 +35,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmitPhotos
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.ExamRepository
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
@@ -44,6 +45,8 @@ import org.ole.planet.myplanet.utilities.Utilities
 @AndroidEntryPoint
 abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     var exam: RealmStepExam? = null
+    @Inject
+    lateinit var examRepository: ExamRepository
     @Inject
     lateinit var databaseService: DatabaseService
     lateinit var mRealm: Realm
@@ -101,11 +104,11 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
         }
     }
 
-    fun initExam() {
+    suspend fun initExam() {
         exam = if (!TextUtils.isEmpty(stepId)) {
-            mRealm.where(RealmStepExam::class.java).equalTo("stepId", stepId).findFirst()
+            stepId?.let { examRepository.findStepExamByStepId(it) }
         } else {
-            mRealm.where(RealmStepExam::class.java).equalTo("id", id).findFirst()
+            id?.let { examRepository.findStepExamById(it) }
         }
     }
 

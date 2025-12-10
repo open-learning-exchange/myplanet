@@ -40,6 +40,9 @@ import org.ole.planet.myplanet.repository.TeamRepositoryImpl
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserRepositoryImpl
 
+import org.ole.planet.myplanet.repository.ExamRepository
+import org.ole.planet.myplanet.repository.ExamRepositoryImpl
+
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class RepositoryModule {
@@ -111,4 +114,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindUserRepository(impl: UserRepositoryImpl): UserRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindExamRepository(impl: ExamRepositoryImpl): ExamRepository
 }
