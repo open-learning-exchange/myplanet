@@ -128,6 +128,21 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
                             return@setOnClickListener
                         }
                         viewLifecycleOwner.lifecycleScope.launch {
+                            val teamTypeForValidation = if (type == "enterprise") "enterprise" else "team"
+                            val excludeTeamId = if (team != null) (team._id ?: team.teamId) else null
+                            val nameExists = teamRepository.isTeamNameExists(name, teamTypeForValidation, excludeTeamId)
+
+                            if (nameExists) {
+                                val duplicateMessage = if (type == "enterprise") {
+                                    getString(R.string.enterprise_name_already_exists)
+                                } else {
+                                    getString(R.string.team_name_already_exists)
+                                }
+                                Utilities.toast(activity, duplicateMessage)
+                                alertCreateTeamBinding.etName.error = duplicateMessage
+                                return@launch
+                            }
+
                             if (team == null) {
                                 teamRepository.createTeam(
                                     category = type,

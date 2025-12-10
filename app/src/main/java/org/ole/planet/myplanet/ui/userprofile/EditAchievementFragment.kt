@@ -27,7 +27,9 @@ import kotlin.Array
 import kotlin.Int
 import kotlin.String
 import kotlin.arrayOf
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.databinding.AlertAddAttachmentBinding
@@ -273,20 +275,31 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     }
 
     private fun showResourceListDialog(prevList: List<String?>) {
-        val builder = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
-        builder.setTitle(R.string.select_resources)
-        val list: List<RealmMyLibrary> = aRealm.where(RealmMyLibrary::class.java).findAll()
-        myLibraryAlertdialogBinding = MyLibraryAlertdialogBinding.inflate(LayoutInflater.from(activity))
-        val myLibraryAlertdialogView: View = myLibraryAlertdialogBinding.root
-        val lv = createResourceList(myLibraryAlertdialogBinding, list, prevList)
-        builder.setView(myLibraryAlertdialogView)
-        builder.setPositiveButton("Ok") { _: DialogInterface?, _: Int ->
-            val items = lv.selectedItemsList
-            resourceArray = JsonArray()
-            for (ii in items) {
-                resourceArray?.add(list[ii].serializeResource())
+        viewLifecycleOwner.lifecycleScope.launch {
+            val list = withContext(Dispatchers.IO) {
+                val realm = Realm.getDefaultInstance()
+                val result = realm.where(RealmMyLibrary::class.java).findAll()
+                val unmanagedList = realm.copyFromRealm(result)
+                realm.close()
+                unmanagedList
             }
-        }.setNegativeButton("Cancel", null).show()
+
+            withContext(Dispatchers.Main) {
+                val builder = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
+                builder.setTitle(R.string.select_resources)
+                myLibraryAlertdialogBinding = MyLibraryAlertdialogBinding.inflate(LayoutInflater.from(activity))
+                val myLibraryAlertdialogView: View = myLibraryAlertdialogBinding.root
+                val lv = createResourceList(myLibraryAlertdialogBinding, list, prevList)
+                builder.setView(myLibraryAlertdialogView)
+                builder.setPositiveButton("Ok") { _: DialogInterface?, _: Int ->
+                    val items = lv.selectedItemsList
+                    resourceArray = JsonArray()
+                    for (ii in items) {
+                        resourceArray?.add(list[ii].serializeResource())
+                    }
+                }.setNegativeButton("Cancel", null).show()
+            }
+        }
     }
 
     override fun onDateSet(datePicker: DatePicker, i: Int, i1: Int, i2: Int) {
@@ -296,12 +309,18 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
 
     private fun initializeData() {
         val achievementId = user?.id + "@" + user?.planetCode
-        achievement = aRealm.where(RealmAchievement::class.java)
-            .equalTo("_id", achievementId)
-            .findFirst()
+        lifecycleScope.launch {
+            achievement = withContext(Dispatchers.IO) {
+                val realm = Realm.getDefaultInstance()
+                val achievement = realm.where(RealmAchievement::class.java)
+                    .equalTo("_id", achievementId)
+                    .findFirst()
+                val unmanagedAchievement = if (achievement != null) realm.copyFromRealm(achievement) else null
+                realm.close()
+                unmanagedAchievement
+            }
 
-        if (achievement == null) {
-            lifecycleScope.launch {
+            if (achievement == null) {
                 databaseService.withRealmAsync { realm ->
                     realm.executeTransaction { transactionRealm ->
                         val existing = transactionRealm.where(RealmAchievement::class.java)
@@ -318,13 +337,16 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
                 if (!isAdded) {
                     return@launch
                 }
-                aRealm.refresh()
-                achievement = aRealm.where(RealmAchievement::class.java)
-                    .equalTo("_id", achievementId)
-                    .findFirst()
-                populateAchievementData()
+                achievement = withContext(Dispatchers.IO) {
+                    val realm = Realm.getDefaultInstance()
+                    val achievement = realm.where(RealmAchievement::class.java)
+                        .equalTo("_id", achievementId)
+                        .findFirst()
+                    val unmanagedAchievement = if (achievement != null) realm.copyFromRealm(achievement) else null
+                    realm.close()
+                    unmanagedAchievement
+                }
             }
-        } else {
             populateAchievementData()
         }
     }
