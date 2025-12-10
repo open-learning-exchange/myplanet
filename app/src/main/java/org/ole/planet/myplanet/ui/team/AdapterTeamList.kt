@@ -12,7 +12,6 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.graphics.toColorInt
 import androidx.fragment.app.FragmentManager
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.CoroutineScope
@@ -30,6 +29,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
+import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils
 
@@ -373,14 +373,9 @@ class AdapterTeamList(
     class ViewHolderTeam(val binding: ItemTeamListBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {
-        val TeamDiffCallback = object : DiffUtil.ItemCallback<TeamData>() {
-            override fun areItemsTheSame(oldItem: TeamData, newItem: TeamData): Boolean {
-                return oldItem._id == newItem._id
-            }
-
-            override fun areContentsTheSame(oldItem: TeamData, newItem: TeamData): Boolean {
-                return oldItem == newItem
-            }
-        }
+        val TeamDiffCallback = DiffUtils.itemCallback<TeamData>(
+            areItemsTheSame = { oldItem, newItem -> oldItem._id == newItem._id },
+            areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
+        )
     }
 }

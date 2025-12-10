@@ -6,10 +6,10 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.utilities.DiffUtils
 
 class SurveyAdapter(
     private val onItemClick: (Int) -> Unit,
@@ -44,14 +44,9 @@ class SurveyAdapter(
     }
 
     companion object {
-        private val DIFF_CALLBACK = object : DiffUtil.ItemCallback<String>() {
-            override fun areItemsTheSame(oldItem: String, newItem: String): Boolean {
-                return oldItem == newItem
-            }
-
-            override fun areContentsTheSame(oldItem: String, newItem: String): Boolean {
-                return oldItem == newItem
-            }
-        }
+        private val DIFF_CALLBACK = DiffUtils.itemCallback<String>(
+            areItemsTheSame = { oldItem, newItem -> oldItem == newItem },
+            areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
+        )
     }
 }

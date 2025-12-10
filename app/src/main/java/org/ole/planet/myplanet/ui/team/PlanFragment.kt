@@ -164,6 +164,20 @@ class PlanFragment : BaseTeamFragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
+                val teamTypeForValidation = team.type ?: "team"
+                val nameExists = teamRepository.isTeamNameExists(name, teamTypeForValidation, teamIdentifier)
+
+                if (nameExists) {
+                    val duplicateMessage = if (isEnterprise) {
+                        context.getString(R.string.enterprise_name_already_exists)
+                    } else {
+                        context.getString(R.string.team_name_already_exists)
+                    }
+                    Utilities.toast(activity, duplicateMessage)
+                    binding.etName.error = duplicateMessage
+                    return@launch
+                }
+
                 val wasUpdated = teamRepository.updateTeamDetails(
                     teamId = teamIdentifier,
                     name = name,
