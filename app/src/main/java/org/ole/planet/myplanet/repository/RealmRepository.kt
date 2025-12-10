@@ -49,20 +49,11 @@ open class RealmRepository(protected val databaseService: DatabaseService) {
         clazz: Class<T>,
         builder: RealmQuery<T>.() -> Unit = {},
     ): Flow<List<T>> = callbackFlow<List<T>> {
-        // Asynchronous Realm queries must be initiated on a Looper thread.
-        // Therefore, we use Dispatchers.Main to ensure that `findAllAsync`
-        // is called from the main thread, which has a Looper.
         val realm = Realm.getDefaultInstance()
         val results = realm.where(clazz).apply(builder).findAllAsync()
 
         val listener = RealmChangeListener<RealmResults<T>> {
             if (it.isLoaded && it.isValid) {
-                // This pattern is required to safely work with Realm's thread-confinement.
-                // 1. `freeze()` creates a thread-safe, immutable snapshot of the live data.
-                // 2. The frozen snapshot is passed to a background dispatcher.
-                // 3. `withRealmAsync` opens a temporary Realm on the background thread.
-                // 4. `copyFromRealm` creates plain, mutable objects from the frozen snapshot.
-                // This moves the expensive copy operation off the main thread while respecting thread rules.
                 val frozenResults = it.freeze()
                 launch(databaseService.ioDispatcher) {
                     val copiedList = databaseService.withRealmAsync { bgRealm ->
@@ -74,8 +65,6 @@ open class RealmRepository(protected val databaseService: DatabaseService) {
         }
         results.addChangeListener(listener)
 
-        // The listener will be called immediately with the initial results,
-        // so we don't need to explicitly send the first results.
         awaitClose {
             if (!realm.isClosed) {
                 results.removeChangeListener(listener)
