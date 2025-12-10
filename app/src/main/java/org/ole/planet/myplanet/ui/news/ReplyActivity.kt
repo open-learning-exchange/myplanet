@@ -56,6 +56,8 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     @Inject
+    lateinit var userRepository: org.ole.planet.myplanet.repository.UserRepository
+    @Inject
     lateinit var sharedPrefManager: SharedPrefManager
     @Inject
     lateinit var newsRepository: NewsRepository
@@ -93,7 +95,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         lifecycleScope.launch {
             val (news, list) = viewModel.getNewsWithReplies(id)
             databaseService.withRealm { realm ->
-                newsAdapter = AdapterNews(this@ReplyActivity, user, news, "", null, userProfileDbHandler, databaseService, lifecycleScope, newsRepository)
+                newsAdapter = AdapterNews(this@ReplyActivity, user, news, "", null, userProfileDbHandler, databaseService, lifecycleScope, userRepository, newsRepository)
                 newsAdapter.sharedPrefManager = sharedPrefManager
                 newsAdapter.setListener(this@ReplyActivity)
                 newsAdapter.setmRealm(realm)
