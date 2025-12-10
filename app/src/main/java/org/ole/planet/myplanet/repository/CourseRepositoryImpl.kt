@@ -97,6 +97,21 @@ class CourseRepositoryImpl @Inject constructor(
         tagNames: List<String>
     ): List<RealmMyCourse> {
         return withRealm { realm ->
+            val courseIdsWithTags = if (tagNames.isNotEmpty()) {
+                val tagIds = realm.where(org.ole.planet.myplanet.model.RealmTag::class.java)
+                    .`in`("name", tagNames.toTypedArray())
+                    .findAll()
+                    .map { it.id }
+
+                realm.where(org.ole.planet.myplanet.model.RealmTag::class.java)
+                    .equalTo("db", "courses")
+                    .`in`("tagId", tagIds.toTypedArray())
+                    .findAll()
+                    .map { it.linkId }
+            } else {
+                null
+            }
+
             var query = realm.where(RealmMyCourse::class.java)
             if (searchText.isNotEmpty()) {
                 query = query.contains("courseTitle", searchText, io.realm.Case.INSENSITIVE)
@@ -107,9 +122,10 @@ class CourseRepositoryImpl @Inject constructor(
             if (subjectLevel.isNotEmpty()) {
                 query = query.equalTo("subjectLevel", subjectLevel)
             }
-            if (tagNames.isNotEmpty()) {
-                query = query.`in`("tags.name", tagNames.toTypedArray())
+            courseIdsWithTags?.let {
+                query = query.`in`("courseId", it.toTypedArray())
             }
+
             val results = query.findAll()
             val sortedList = results
                 .filter { !it.courseTitle.isNullOrBlank() }
