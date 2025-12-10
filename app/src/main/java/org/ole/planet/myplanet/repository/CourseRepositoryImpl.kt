@@ -3,32 +3,24 @@ package org.ole.planet.myplanet.repository
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.datamanager.DatabaseService
-import javax.inject.Inject
-import kotlinx.coroutines.flow.Flow
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmTeam
 
 class CourseRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
 ) : RealmRepository(databaseService), CourseRepository {
-    override suspend fun getCoursesByTeam(teamId: String?): List<RealmMyCourse> {
-        if (teamId.isNullOrEmpty()) {
+    override suspend fun getCoursesByTeam(courseIds: List<String>): List<RealmMyCourse> {
+        if (courseIds.isEmpty()) {
             return emptyList()
         }
         return withRealm { realm ->
-            val team = realm.where(RealmTeam::class.java).equalTo("id", teamId).findFirst()
-            if (team != null && team.courses.isNotEmpty()) {
-                val courseIds = team.courses.toTypedArray()
-                val results = realm.where(RealmMyCourse::class.java).`in`("id", courseIds).findAll()
-                realm.copyFromRealm(results)
-            } else {
-                emptyList()
-            }
+            val results = realm.where(RealmMyCourse::class.java)
+                .`in`("id", courseIds.toTypedArray())
+                .findAll()
+            realm.copyFromRealm(results)
         }
     }
 

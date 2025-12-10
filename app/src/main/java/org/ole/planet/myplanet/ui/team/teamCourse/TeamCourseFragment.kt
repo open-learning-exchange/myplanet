@@ -20,7 +20,7 @@ class TeamCourseFragment : BaseTeamFragment() {
     private val binding get() = _binding!!
     private var adapterTeamCourse: AdapterTeamCourse? = null
     @Inject
-    lateinit var courseRepository: CourseRepository
+    lateinit var teamCourseRepository: CourseRepository
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTeamCourseBinding.inflate(inflater, container, false)
@@ -34,7 +34,8 @@ class TeamCourseFragment : BaseTeamFragment() {
     
     private fun setupCoursesList() {
         viewLifecycleOwner.lifecycleScope.launch {
-            val courses = courseRepository.getCoursesByTeam(teamId)
+            val courseIds = team?.courses?.toList() ?: emptyList()
+            val courses = teamCourseRepository.getCoursesByTeam(courseIds)
             val teamCreatorId = team?.createdBy.orEmpty()
             adapterTeamCourse = settings?.let {
                 AdapterTeamCourse(requireActivity(), courses.toMutableList(), teamCreatorId, it)

@@ -7,7 +7,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 
 interface CourseRepository {
     suspend fun getMyCoursesFlow(userId: String): Flow<List<RealmMyCourse>>
-    suspend fun getCoursesByTeam(teamId: String?): List<RealmMyCourse>
+    suspend fun getCoursesByTeam(courseIds: List<String>): List<RealmMyCourse>
     suspend fun getCourseByCourseId(courseId: String?): RealmMyCourse?
     suspend fun getCourseOnlineResources(courseId: String?): List<RealmMyLibrary>
     suspend fun getCourseOfflineResources(courseId: String?): List<RealmMyLibrary>
