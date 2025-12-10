@@ -97,12 +97,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         id ?: return
         lifecycleScope.launch {
             val (copiedNews, copiedList) = withContext(Dispatchers.IO) {
-                val (news, list) = viewModel.getNewsWithReplies(id)
-                databaseService.withRealm { realm ->
-                    val newsCopy = news?.let { realm.copyFromRealm(it) }
-                    val listCopy = realm.copyFromRealm(list)
-                    Pair(newsCopy, listCopy)
-                }
+                viewModel.getNewsWithReplies(id)
             }
 
             withContext(Dispatchers.Main) {
