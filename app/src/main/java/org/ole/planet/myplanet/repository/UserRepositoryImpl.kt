@@ -322,4 +322,47 @@ class UserRepositoryImpl @Inject constructor(
     override fun getActiveUserId(): String {
         return getUserModel()?.id ?: ""
     }
+    override suspend fun getHealthRecordsAndAssociatedUsers(
+        userId: String,
+        currentUser: RealmUserModel
+    ): HealthRecord? = withRealm { realm ->
+        var mh = realm.where(org.ole.planet.myplanet.model.RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
+        if (mh == null) {
+            mh = realm.where(org.ole.planet.myplanet.model.RealmMyHealthPojo::class.java).equalTo("userId", userId).findFirst()
+        }
+        if (mh == null) return@withRealm null
+
+        val json = org.ole.planet.myplanet.utilities.AndroidDecrypter.decrypt(mh.data, currentUser.key, currentUser.iv)
+        val mm = if (android.text.TextUtils.isEmpty(json)) {
+            null
+        } else {
+            try {
+                org.ole.planet.myplanet.utilities.GsonUtils.gson.fromJson(json, org.ole.planet.myplanet.model.RealmMyHealth::class.java)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            }
+        }
+        if (mm == null) return@withRealm null
+
+        val healths = realm.where(org.ole.planet.myplanet.model.RealmMyHealthPojo::class.java).equalTo("profileId", mm.userKey).findAll()
+        val list = realm.copyFromRealm(healths)
+        if (list.isEmpty()) {
+            return@withRealm HealthRecord(mh, mm, emptyList(), emptyMap())
+        }
+
+        val userIds = list.mapNotNull {
+            it.getEncryptedDataAsJson(currentUser).let { jsonData ->
+                jsonData.get("createdBy")?.asString
+            }
+        }.distinct()
+
+        val userMap = if (userIds.isEmpty()) {
+            emptyMap()
+        } else {
+            val users = realm.where(RealmUserModel::class.java).`in`("id", userIds.toTypedArray()).findAll()
+            realm.copyFromRealm(users).filter { it.id != null }.associateBy { it.id!! }
+        }
+        HealthRecord(mh, mm, list, userMap)
+    }
 }
