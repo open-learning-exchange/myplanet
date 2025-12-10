@@ -89,4 +89,32 @@ class CourseRepositoryImpl @Inject constructor(
             isNotNull("resourceLocalAddress")
         }
     }
+
+    override suspend fun filterCourses(
+        searchText: String,
+        gradeLevel: String,
+        subjectLevel: String,
+        tagNames: List<String>
+    ): List<RealmMyCourse> {
+        return withRealm { realm ->
+            var query = realm.where(RealmMyCourse::class.java)
+            if (searchText.isNotEmpty()) {
+                query = query.contains("courseTitle", searchText, io.realm.Case.INSENSITIVE)
+            }
+            if (gradeLevel.isNotEmpty()) {
+                query = query.equalTo("gradeLevel", gradeLevel)
+            }
+            if (subjectLevel.isNotEmpty()) {
+                query = query.equalTo("subjectLevel", subjectLevel)
+            }
+            if (tagNames.isNotEmpty()) {
+                query = query.`in`("tags.name", tagNames.toTypedArray())
+            }
+            val results = query.findAll()
+            val sortedList = results
+                .filter { !it.courseTitle.isNullOrBlank() }
+                .sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
+            realm.copyFromRealm(sortedList)
+        }
+    }
 }
