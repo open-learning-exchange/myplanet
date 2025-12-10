@@ -49,8 +49,6 @@ class DiscussionListFragment : BaseTeamFragment() {
     lateinit var userProfileDbHandler: UserProfileDbHandler
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
-    @Inject
-    lateinit var newsRepository: NewsRepository
 
     private var filteredNewsList: List<RealmNews?> = listOf()
 
