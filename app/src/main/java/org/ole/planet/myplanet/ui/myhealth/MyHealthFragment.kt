@@ -374,14 +374,10 @@ class MyHealthFragment : Fragment() {
                     if (isAdded) {
                         alertHealthListBinding?.searchProgress?.visibility = View.GONE
                         lv.visibility = View.VISIBLE
-                        val adapter = UserListArrayAdapter(
-                            requireActivity(),
-                            android.R.layout.simple_list_item_1,
-                            userModelList
-                        )
-                        lv.adapter = adapter
-                        btnAddMember.visibility =
-                            if (adapter.count == 0) View.VISIBLE else View.GONE
+                        adapter.clear()
+                        adapter.addAll(userModelList)
+                        adapter.notifyDataSetChanged()
+                        btnAddMember.visibility = if (adapter.isEmpty) View.VISIBLE else View.GONE
                     }
                 }
             }
