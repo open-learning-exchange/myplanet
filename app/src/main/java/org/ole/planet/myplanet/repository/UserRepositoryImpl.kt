@@ -318,4 +318,8 @@ class UserRepositoryImpl @Inject constructor(
             Result.failure(e)
         }
     }
+
+    override fun getActiveUserId(): String {
+        return getUserModel()?.id ?: ""
+    }
 }

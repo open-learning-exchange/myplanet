@@ -53,4 +53,5 @@ interface UserRepository {
 
     fun getUserModel(): RealmUserModel?
     suspend fun getUserModelSuspending(): RealmUserModel?
+    fun getActiveUserId(): String
 }

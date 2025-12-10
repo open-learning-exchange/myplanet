@@ -24,13 +24,12 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 class SubmissionViewModel @Inject constructor(
     private val submissionRepository: SubmissionRepository,
     private val userRepository: UserRepository,
-    private val userProfileDbHandler: UserProfileDbHandler
 ) : ViewModel() {
 
     private val _type = MutableStateFlow("")
     private val _query = MutableStateFlow("")
 
-    private val userId by lazy { userProfileDbHandler.userModel?.id ?: "" }
+    private val userId by lazy { userRepository.getActiveUserId() }
 
     private val allSubmissionsFlow = flow {
         emitAll(submissionRepository.getSubmissionsFlow(userId))
