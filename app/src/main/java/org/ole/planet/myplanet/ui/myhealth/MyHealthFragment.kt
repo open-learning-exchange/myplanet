@@ -484,7 +484,11 @@ class MyHealthFragment : Fragment() {
                         }
                     }
 
-                    healthAdapter = AdapterHealthExamination(requireActivity(), mh, currentUser, userMap)
+                    if (!::healthAdapter.isInitialized) {
+                        healthAdapter = AdapterHealthExamination(requireActivity(), mh, currentUser, userMap)
+                    } else {
+                        healthAdapter.updateData(mh, currentUser, userMap)
+                    }
                     binding.rvRecords.apply {
                         layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
                         isNestedScrollingEnabled = false
@@ -517,7 +521,7 @@ class MyHealthFragment : Fragment() {
 
     private fun getExaminations(mm: RealmMyHealth): List<RealmMyHealthPojo>? {
         val healths = mRealm.where(RealmMyHealthPojo::class.java)?.equalTo("profileId", mm.userKey)?.findAll()
-        return healths
+        return mRealm.copyFromRealm(healths)
     }
 
     private fun getHealthProfile(mh: RealmMyHealthPojo): RealmMyHealth? {
