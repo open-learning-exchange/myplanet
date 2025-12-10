@@ -12,8 +12,8 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.ui.submission.QuestionAnswerPair
-import org.ole.planet.myplanet.ui.submission.SubmissionDetail
+import org.ole.planet.myplanet.model.SubmissionDetail
+import org.ole.planet.myplanet.model.QuestionAnswerPair
 
 class SubmissionRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
