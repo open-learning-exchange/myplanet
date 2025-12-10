@@ -49,38 +49,33 @@ open class RealmRepository(protected val databaseService: DatabaseService) {
         clazz: Class<T>,
         builder: RealmQuery<T>.() -> Unit = {},
     ): Flow<List<T>> = callbackFlow<List<T>> {
-        @Suppress("DEPRECATION")
-        val realm = databaseService.realmInstance
+        // Asynchronous Realm queries must be initiated on a Looper thread.
+        // Therefore, we use Dispatchers.Main to ensure that `findAllAsync`
+        // is called from the main thread, which has a Looper.
+        val realm = Realm.getDefaultInstance()
         val results = realm.where(clazz).apply(builder).findAllAsync()
 
-        // This pattern is required to safely work with Realm's thread-confinement.
-        // 1. `freeze()` creates a thread-safe, immutable snapshot of the live data.
-        // 2. The frozen snapshot is passed to a background dispatcher.
-        // 3. `withRealmAsync` opens a temporary Realm on the background thread.
-        // 4. `copyFromRealm` creates plain, mutable objects from the frozen snapshot.
-        // This moves the expensive copy operation off the main thread while respecting thread rules.
-        fun processResults(data: RealmResults<T>) {
-            val frozenResults = data.freeze()
-            launch(databaseService.ioDispatcher) {
-                val copiedList = databaseService.withRealmAsync { bgRealm ->
-                    bgRealm.copyFromRealm(frozenResults)
+        val listener = RealmChangeListener<RealmResults<T>> {
+            if (it.isLoaded && it.isValid) {
+                // This pattern is required to safely work with Realm's thread-confinement.
+                // 1. `freeze()` creates a thread-safe, immutable snapshot of the live data.
+                // 2. The frozen snapshot is passed to a background dispatcher.
+                // 3. `withRealmAsync` opens a temporary Realm on the background thread.
+                // 4. `copyFromRealm` creates plain, mutable objects from the frozen snapshot.
+                // This moves the expensive copy operation off the main thread while respecting thread rules.
+                val frozenResults = it.freeze()
+                launch(databaseService.ioDispatcher) {
+                    val copiedList = databaseService.withRealmAsync { bgRealm ->
+                        bgRealm.copyFromRealm(frozenResults)
+                    }
+                    send(copiedList)
                 }
-                send(copiedList)
-            }
-        }
-
-        val listener = RealmChangeListener<RealmResults<T>> { updatedResults ->
-            if (updatedResults.isLoaded && updatedResults.isValid) {
-                processResults(updatedResults)
             }
         }
         results.addChangeListener(listener)
 
-        // Handle initial data load
-        if (results.isLoaded && results.isValid) {
-            processResults(results)
-        }
-
+        // The listener will be called immediately with the initial results,
+        // so we don't need to explicitly send the first results.
         awaitClose {
             if (!realm.isClosed) {
                 results.removeChangeListener(listener)
