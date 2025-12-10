@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.SharedPreferences
+import android.util.Log
 import androidx.core.net.toUri
 import com.google.gson.Gson
 import com.google.gson.JsonObject
@@ -14,6 +15,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.datamanager.ApiClient.client
@@ -47,6 +49,7 @@ class TeamRepositoryImpl @Inject constructor(
             equalTo("docType", "membership")
         }.flatMapLatest { memberships ->
             val teamIds = memberships.mapNotNull { it.teamId }.toTypedArray()
+            Log.d("TeamRepo", "[${Thread.currentThread().name}] Membership changed, teams: ${teamIds.joinToString()}")
             if (teamIds.isEmpty()) {
                 flowOf(emptyList())
             } else {
@@ -55,7 +58,7 @@ class TeamRepositoryImpl @Inject constructor(
                     notEqualTo("status", "archived")
                 }
             }
-        }
+        }.flowOn(databaseService.ioDispatcher)
     }
 
     override suspend fun getShareableTeams(): List<RealmMyTeam> {
