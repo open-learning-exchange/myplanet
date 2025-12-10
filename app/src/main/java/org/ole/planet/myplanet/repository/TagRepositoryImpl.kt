@@ -35,6 +35,40 @@ class TagRepositoryImpl @Inject constructor(
         return getLinkedTags("resources", resourceId)
     }
 
+    override suspend fun getTagsForResources(resourceIds: List<String>): Map<String, List<RealmTag>> {
+        if (resourceIds.isEmpty()) {
+            return emptyMap()
+        }
+
+        val links = queryList(RealmTag::class.java) {
+            equalTo("db", "resources")
+            `in`("linkId", resourceIds.toTypedArray())
+        }
+        if (links.isEmpty()) {
+            return emptyMap()
+        }
+
+        val tagIds = links.mapNotNull { it.tagId }.distinct()
+        if (tagIds.isEmpty()) {
+            return emptyMap()
+        }
+
+        val parents = queryList(RealmTag::class.java) {
+            `in`("id", tagIds.toTypedArray())
+        }
+        if (parents.isEmpty()) {
+            return emptyMap()
+        }
+        val parentsById = parents.associateBy { it.id }
+
+        return links.groupBy { it.linkId!! }
+            .mapValues { entry ->
+                entry.value.mapNotNull { link ->
+                    parentsById[link.tagId]
+                }
+            }
+    }
+
     override suspend fun getTagsForCourse(courseId: String): List<RealmTag> {
         return getLinkedTags("courses", courseId)
     }
