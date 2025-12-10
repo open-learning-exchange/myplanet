@@ -175,7 +175,7 @@ class CoursesViewModel @Inject constructor(
         if (selectedItems.isEmpty()) return
 
         viewModelScope.launch(Dispatchers.IO) {
-             databaseService.withRealm { realm ->
+             databaseService.executeTransactionAsync { realm ->
                 selectedItems.forEach { item ->
                      val dbItem = realm.where(RealmMyCourse::class.java).equalTo("id", item.id).findFirst()
                      dbItem?.let {
