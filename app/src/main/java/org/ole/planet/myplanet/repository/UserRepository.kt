@@ -49,6 +49,9 @@ interface UserRepository {
         payload: JsonObject
     )
 
+    suspend fun becomeMember(obj: JsonObject): Pair<Boolean, String>
+
     fun getUserModel(): RealmUserModel?
     suspend fun getUserModelSuspending(): RealmUserModel?
+    fun getActiveUserId(): String
 }

@@ -24,13 +24,12 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 class SubmissionViewModel @Inject constructor(
     private val submissionRepository: SubmissionRepository,
     private val userRepository: UserRepository,
-    private val userProfileDbHandler: UserProfileDbHandler
 ) : ViewModel() {
 
     private val _type = MutableStateFlow("")
     private val _query = MutableStateFlow("")
 
-    private val userId by lazy { userProfileDbHandler.userModel?.id ?: "" }
+    private val userId by lazy { userRepository.getActiveUserId() }
 
     private val allSubmissionsFlow = flow {
         emitAll(submissionRepository.getSubmissionsFlow(userId))
@@ -62,6 +61,11 @@ class SubmissionViewModel @Inject constructor(
             .mapValues { entry -> entry.value.maxByOrNull { it.lastUpdateTime ?: 0 } }
             .values
             .filterNotNull()
+            .onEach { sub ->
+                val name = submissionRepository.getNormalizedSubmitterName(sub)
+                val fallback = sub.userId?.let { userRepository.getUserById(it)?.name }
+                sub.submitterName = name ?: fallback ?: ""
+            }
             .sortedByDescending { it.lastUpdateTime ?: 0 }
 
         val submissionCountMap = groupedSubmissions.mapValues { it.value.size }
@@ -77,19 +81,6 @@ class SubmissionViewModel @Inject constructor(
 
     val submissionCounts: StateFlow<Map<String?, Int>> = filteredSubmissionsRaw.map { it.second }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
-
-    val userNames: StateFlow<Map<String, String>> = submissions.mapLatest { uniqueSubmissions ->
-        val submitterIds = uniqueSubmissions.mapNotNull { it.userId }.toSet()
-        submitterIds.mapNotNull { id ->
-            val userModel = userRepository.getUserById(id)
-            val displayName = userModel?.name
-            if (displayName.isNullOrBlank()) {
-                null
-            } else {
-                id to displayName
-            }
-        }.toMap()
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
     fun setFilter(type: String, query: String) {
         _type.value = type

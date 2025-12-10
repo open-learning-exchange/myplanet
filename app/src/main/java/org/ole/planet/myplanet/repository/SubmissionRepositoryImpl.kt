@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.JsonParser
 import io.realm.Case
 import io.realm.Sort
 import java.util.Date
@@ -306,5 +307,18 @@ class SubmissionRepositoryImpl @Inject constructor(
                 questionAnswers = questionAnswers
             )
         }
+    }
+
+    override fun getNormalizedSubmitterName(submission: RealmSubmission): String? {
+        return runCatching {
+            submission.user?.takeIf { it.isNotBlank() }?.let { userJson ->
+                val jsonObject = JsonParser.parseString(userJson).asJsonObject
+                if (jsonObject.has("name")) {
+                    jsonObject.get("name").asString.takeIf { it.isNotBlank() }
+                } else {
+                    null
+                }
+            }
+        }.getOrNull()
     }
 }

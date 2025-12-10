@@ -779,7 +779,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), CheckVersionCallback,
     }
 
     override fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean) {
-        val builder = getUpdateDialog(this, info, customProgressDialog)
+        val builder = getUpdateDialog(this, info, customProgressDialog, lifecycleScope)
         if (cancelable || getCustomDeviceName(this).endsWith("###")) {
             builder.setNegativeButton(R.string.update_later) { _: DialogInterface?, _: Int ->
                 continueSyncProcess()
