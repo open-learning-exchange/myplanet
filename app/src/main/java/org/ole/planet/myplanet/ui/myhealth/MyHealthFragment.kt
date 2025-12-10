@@ -65,6 +65,12 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 class MyHealthFragment : Fragment() {
+    private data class HealthData(
+        val mh: RealmMyHealthPojo?,
+        val healthProfile: RealmMyHealth?,
+        val examinations: List<RealmMyHealthPojo>?,
+        val userMap: Map<String, RealmUserModel>
+    )
 
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
@@ -82,7 +88,6 @@ class MyHealthFragment : Fragment() {
     private lateinit var alertMyPersonalBinding: AlertMyPersonalBinding
     private var alertHealthListBinding: AlertHealthListBinding? = null
     var userId: String? = null
-    lateinit var mRealm: Realm
     var userModel: RealmUserModel? = null
     lateinit var userModelList: List<RealmUserModel>
     lateinit var adapter: UserListArrayAdapter
@@ -106,7 +111,6 @@ class MyHealthFragment : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentVitalSignBinding.inflate(inflater, container, false)
-        mRealm = databaseService.realmInstance
         return binding.root
     }
 
@@ -284,11 +288,9 @@ class MyHealthFragment : Fragment() {
 
     private fun selectPatient() {
         viewLifecycleOwner.lifecycleScope.launch {
-            val users = withContext(Dispatchers.IO) {
-                Realm.getDefaultInstance().use { realm ->
-                    val results = realm.where(RealmUserModel::class.java).sort("joinDate", Sort.DESCENDING).findAll()
-                    realm.copyFromRealm(results)
-                }
+            val users = databaseService.withRealm { realm ->
+                val results = realm.where(RealmUserModel::class.java).sort("joinDate", Sort.DESCENDING).findAll()
+                realm.copyFromRealm(results)
             }
             withContext(Dispatchers.Main) {
                 userModelList = users
@@ -331,12 +333,10 @@ class MyHealthFragment : Fragment() {
                         2 -> "name" to Sort.ASCENDING
                         else -> "name" to Sort.DESCENDING
                     }
-
-                    val sortedList = Realm.getDefaultInstance().use { realm ->
+                    val sortedList = databaseService.withRealm { realm ->
                         val results = realm.where(RealmUserModel::class.java).sort(sortBy, sort).findAll()
                         realm.copyFromRealm(results)
                     }
-
                     withContext(Dispatchers.Main) {
                         if (isAdded) {
                             userModelList = sortedList
@@ -408,37 +408,21 @@ class MyHealthFragment : Fragment() {
                 binding.layoutUserDetail.visibility = View.GONE
                 binding.tvMessage.visibility = View.VISIBLE
                 binding.tvMessage.text = getString(R.string.health_record_not_available)
-                binding.txtOtherNeed.text = getString(R.string.empty_text)
-                binding.txtSpecialNeeds.text = getString(R.string.empty_text)
-                binding.txtBirthPlace.text = getString(R.string.empty_text)
-                binding.txtEmergencyContact.text = getString(R.string.empty_text)
-                binding.rvRecords.adapter = null
-                binding.rvRecords.visibility = View.GONE
-                binding.tvNoRecords.visibility = View.VISIBLE
-                binding.tvDataPlaceholder.visibility = View.GONE
+                resetHealthDetails()
                 return@launch
             }
-
             binding.layoutUserDetail.visibility = View.VISIBLE
             binding.tvMessage.visibility = View.GONE
             binding.txtFullName.text = getString(R.string.three_strings, currentUser.firstName, currentUser.middleName, currentUser.lastName)
             binding.txtEmail.text = Utilities.checkNA(currentUser.email)
             binding.txtLanguage.text = Utilities.checkNA(currentUser.language)
             binding.txtDob.text = Utilities.checkNA(currentUser.dob)
-            var mh = mRealm.where(RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
-            if (mh == null) {
-                mh = mRealm.where(RealmMyHealthPojo::class.java).equalTo("userId", userId).findFirst()
+            val healthData = withContext(Dispatchers.IO) {
+                loadHealthData(userId)
             }
-            if (mh != null) {
-                val mm = getHealthProfile(mh)
-                if (mm == null) {
-                    binding.rvRecords.adapter = null
-                    binding.tvNoRecords.visibility = View.VISIBLE
-                    binding.tvDataPlaceholder.visibility = View.GONE
-                    Utilities.toast(activity, getString(R.string.health_record_not_available))
-                    return@launch
-                }
-                val myHealths = mm.profile
+
+            if (healthData?.healthProfile != null) {
+                val myHealths = healthData.healthProfile.profile
                 binding.txtOtherNeed.text = Utilities.checkNA(myHealths?.notes)
                 binding.txtSpecialNeeds.text = Utilities.checkNA(myHealths?.specialNeeds)
                 binding.txtBirthPlace.text = Utilities.checkNA(currentUser.birthPlace)
@@ -450,55 +434,33 @@ class MyHealthFragment : Fragment() {
                     Utilities.checkNA(contact)
                 ).trimIndent()
 
-                val list = getExaminations(mm)
-
-                if (list != null && list.isNotEmpty()) {
+                val list = healthData.examinations
+                if (!list.isNullOrEmpty()) {
                     binding.rvRecords.visibility = View.VISIBLE
                     binding.tvNoRecords.visibility = View.GONE
                     binding.tvDataPlaceholder.visibility = View.VISIBLE
-
-                    val userIds = list.mapNotNull {
-                        it.getEncryptedDataAsJson(currentUser).let { json ->
-                            json.get("createdBy")?.asString
-                        }
-                    }.distinct()
-                    val userMap = withContext(Dispatchers.IO) {
-                        if (userIds.isEmpty()) {
-                            emptyMap<String, RealmUserModel>()
+                    if (healthData.mh != null) {
+                        if (!::healthAdapter.isInitialized) {
+                            healthAdapter = AdapterHealthExamination(
+                                requireActivity(),
+                                healthData.mh,
+                                currentUser,
+                                healthData.userMap
+                            )
                         } else {
-                            Realm.getDefaultInstance().use { realm ->
-                                val query = realm.where(RealmUserModel::class.java)
-                                query.beginGroup()
-                                userIds.forEachIndexed { index, userId ->
-                                    if (index > 0) {
-                                        query.or()
-                                    }
-                                    query.equalTo("id", userId)
-                                }
-                                query.endGroup()
-                                val users = query.findAll()
-                                realm.copyFromRealm(users)
-                                    .filter { it.id != null }
-                                    .associateBy { it.id!! }
-                            }
+                            healthAdapter.updateData(healthData.mh, currentUser, healthData.userMap)
                         }
-                    }
-
-                    if (!::healthAdapter.isInitialized) {
-                        healthAdapter = AdapterHealthExamination(requireActivity(), mh, currentUser, userMap)
-                    } else {
-                        healthAdapter.updateData(mh, currentUser, userMap)
-                    }
-                    binding.rvRecords.apply {
-                        layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
-                        isNestedScrollingEnabled = false
-                        adapter = healthAdapter
-                    }
-                    healthAdapter.submitList(list)
-                    binding.rvRecords.post {
-                        val lastPosition = list.size - 1
-                        if (lastPosition >= 0) {
-                            binding.rvRecords.scrollToPosition(lastPosition)
+                        binding.rvRecords.apply {
+                            layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
+                            isNestedScrollingEnabled = false
+                            adapter = healthAdapter
+                        }
+                        healthAdapter.submitList(list)
+                        binding.rvRecords.post {
+                            val lastPosition = list.size - 1
+                            if (lastPosition >= 0) {
+                                binding.rvRecords.scrollToPosition(lastPosition)
+                            }
                         }
                     }
                 } else {
@@ -507,33 +469,67 @@ class MyHealthFragment : Fragment() {
                     binding.tvDataPlaceholder.visibility = View.VISIBLE
                 }
             } else {
-                binding.txtOtherNeed.text = getString(R.string.empty_text)
-                binding.txtSpecialNeeds.text = getString(R.string.empty_text)
-                binding.txtBirthPlace.text = getString(R.string.empty_text)
-                binding.txtEmergencyContact.text = getString(R.string.empty_text)
-                binding.rvRecords.adapter = null
-                binding.rvRecords.visibility = View.GONE
-                binding.tvNoRecords.visibility = View.VISIBLE
-                binding.tvDataPlaceholder.visibility = View.GONE
+                resetHealthDetails()
+                if (healthData?.healthProfile == null) {
+                    Utilities.toast(activity, getString(R.string.health_record_not_available))
+                }
             }
         }
     }
 
-    private fun getExaminations(mm: RealmMyHealth): List<RealmMyHealthPojo>? {
-        val healths = mRealm.where(RealmMyHealthPojo::class.java)?.equalTo("profileId", mm.userKey)?.findAll()
-        return mRealm.copyFromRealm(healths)
+    private fun resetHealthDetails() {
+        binding.txtOtherNeed.text = getString(R.string.empty_text)
+        binding.txtSpecialNeeds.text = getString(R.string.empty_text)
+        binding.txtBirthPlace.text = getString(R.string.empty_text)
+        binding.txtEmergencyContact.text = getString(R.string.empty_text)
+        binding.rvRecords.adapter = null
+        binding.rvRecords.visibility = View.GONE
+        binding.tvNoRecords.visibility = View.VISIBLE
+        binding.tvDataPlaceholder.visibility = View.GONE
     }
 
-    private fun getHealthProfile(mh: RealmMyHealthPojo): RealmMyHealth? {
-        val json = AndroidDecrypter.decrypt(mh.data, userModel?.key, userModel?.iv)
-        return if (TextUtils.isEmpty(json)) {
-            null
-        } else {
-            try {
-                GsonUtils.gson.fromJson(json, RealmMyHealth::class.java)
-            } catch (e: Exception) {
-                e.printStackTrace()
-                null
+    private suspend fun loadHealthData(userId: String?): HealthData? {
+        val currentUser = userModel ?: return null
+        if (userId.isNullOrEmpty()) return null
+        return databaseService.withRealm { realm ->
+            var mh = realm.where(RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
+            if (mh == null) {
+                mh = realm.where(RealmMyHealthPojo::class.java).equalTo("userId", userId).findFirst()
+            }
+            mh?.let {
+                val unmanagedMh = realm.copyFromRealm(it)
+                val json = AndroidDecrypter.decrypt(unmanagedMh.data, currentUser.key, currentUser.iv)
+                val healthProfile = if (json.isNullOrEmpty()) {
+                    null
+                } else {
+                    try {
+                        GsonUtils.gson.fromJson(json, RealmMyHealth::class.java)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        null
+                    }
+                }
+                if (healthProfile == null) {
+                    return@withRealm HealthData(unmanagedMh, null, emptyList(), emptyMap())
+                }
+                val healths = realm.where(RealmMyHealthPojo::class.java)
+                    .equalTo("profileId", healthProfile.userKey)
+                    .findAll()
+                val examinations = realm.copyFromRealm(healths)
+                val userIds = examinations.mapNotNull { exam ->
+                    exam.getEncryptedDataAsJson(currentUser).let { eJson ->
+                        eJson.get("createdBy")?.asString
+                    }
+                }.distinct()
+                val userMap = if (userIds.isNotEmpty()) {
+                    val users = realm.where(RealmUserModel::class.java).`in`("id", userIds.toTypedArray()).findAll()
+                    realm.copyFromRealm(users)
+                        .filter { u -> u.id != null }
+                        .associateBy { u -> u.id!! }
+                } else {
+                    emptyMap()
+                }
+                HealthData(unmanagedMh, healthProfile, examinations, userMap)
             }
         }
     }
@@ -558,9 +554,6 @@ class MyHealthFragment : Fragment() {
     override fun onDestroy() {
         customProgressDialog?.dismiss()
         customProgressDialog = null
-        if (this::mRealm.isInitialized && !mRealm.isClosed) {
-            mRealm.close()
-        }
         super.onDestroy()
     }
 }
