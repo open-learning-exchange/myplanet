@@ -26,18 +26,49 @@ import java.util.concurrent.Executor
 import org.ole.planet.myplanet.MainApplication.Companion.context
 
 object CameraUtils {
+    private const val IMAGE_WIDTH = 640
+    private const val IMAGE_HEIGHT = 480
+
     private var cameraDevice: CameraDevice? = null
     private var captureSession: CameraCaptureSession? = null
     private var imageReader: ImageReader? = null
-    private var backgroundHandler: Handler
-    private var backgroundThread: HandlerThread = HandlerThread("CameraBackground")
+    private var backgroundHandler: Handler? = null
+    private var backgroundThread: HandlerThread? = null
     private val sessionExecutor: Executor by lazy { ContextCompat.getMainExecutor(context) }
+
+    private fun startBackgroundThread() {
+        if (backgroundThread == null || backgroundThread?.isAlive == false) {
+            backgroundThread = HandlerThread("CameraBackground").apply {
+                start()
+                backgroundHandler = Handler(looper)
+            }
+        }
+    }
+
+    @JvmStatic
+    fun stopBackgroundThread() {
+        try {
+            backgroundThread?.quitSafely()
+            backgroundThread?.join()
+            backgroundThread = null
+            backgroundHandler = null
+        } catch (e: InterruptedException) {
+            e.printStackTrace()
+        }
+    }
+
+    @JvmStatic
+    fun release() {
+        closeCamera()
+        stopBackgroundThread()
+    }
 
     @JvmStatic
     fun capturePhoto(callback: ImageCaptureCallback) {
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             return
         }
+        startBackgroundThread()
         openCamera(context)
         imageReader = ImageReader.newInstance(IMAGE_WIDTH, IMAGE_HEIGHT, ImageFormat.JPEG, 1)
         imageReader?.setOnImageAvailableListener({ reader ->
@@ -180,11 +211,4 @@ object CameraUtils {
     interface ImageCaptureCallback {
         fun onImageCapture(fileUri: String?)
     }
-
-    init {
-        backgroundThread.start()
-        backgroundHandler = Handler(backgroundThread.looper)
-    }
-    private const val IMAGE_WIDTH = 640
-    private const val IMAGE_HEIGHT = 480
 }
