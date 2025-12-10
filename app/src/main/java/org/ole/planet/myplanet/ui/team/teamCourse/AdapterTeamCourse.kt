@@ -14,10 +14,11 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getTeamCreator
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.ui.team.teamCourse.AdapterTeamCourse.ViewHolderTeamCourse
+import org.ole.planet.myplanet.utilities.DiffUtils
 
 class AdapterTeamCourse(
     private val context: Context,
-    private var list: MutableList<RealmMyCourse>,
+    private var list: List<RealmMyCourse>,
     mRealm: Realm?,
     teamId: String?,
     settings: SharedPreferences
@@ -33,8 +34,17 @@ class AdapterTeamCourse(
         this.settings = settings
         teamCreator = getTeamCreator(teamId, mRealm)
     }
-    
-    fun getList(): List<RealmMyCourse> = list
+
+    fun updateList(newList: List<RealmMyCourse>) {
+        val diffResult = DiffUtils.calculateDiff(
+            list,
+            newList,
+            areItemsTheSame = TEAM_COURSE_DIFF_CALLBACK::areItemsTheSame,
+            areContentsTheSame = TEAM_COURSE_DIFF_CALLBACK::areContentsTheSame
+        )
+        list = newList
+        diffResult.dispatchUpdatesTo(this)
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderTeamCourse {
         val binding = RowTeamResourceBinding.inflate(LayoutInflater.from(context), parent, false)
@@ -63,4 +73,13 @@ class AdapterTeamCourse(
 
     class ViewHolderTeamCourse(val binding: RowTeamResourceBinding) :
         RecyclerView.ViewHolder(binding.root)
+
+    companion object {
+        val TEAM_COURSE_DIFF_CALLBACK = DiffUtils.itemCallback<RealmMyCourse>(
+            areItemsTheSame = { oldItem, newItem -> oldItem.courseId == newItem.courseId },
+            areContentsTheSame = { oldItem, newItem ->
+                oldItem.courseTitle == newItem.courseTitle && oldItem.description == newItem.description
+            }
+        )
+    }
 }
