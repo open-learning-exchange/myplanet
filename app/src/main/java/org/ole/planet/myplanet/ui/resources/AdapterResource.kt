@@ -186,24 +186,16 @@ class AdapterResource(
     ) {
         if (holder is ViewHolderLibrary && payloads.isNotEmpty()) {
             val library = libraryList.getOrNull(position) ?: return
-            val handled = payloads.any {
+            var unhandledPayloads = false
+            payloads.forEach {
                 when (it) {
-                    TAGS_PAYLOAD -> {
-                        displayTagCloud(holder, position)
-                        true
-                    }
-                    RATING_PAYLOAD -> {
-                        bindRating(holder, library)
-                        true
-                    }
-                    SELECTION_PAYLOAD -> {
-                        holder.rowLibraryBinding.checkbox.isChecked = selectedItems.contains(library)
-                        true
-                    }
-                    else -> false
+                    TAGS_PAYLOAD -> displayTagCloud(holder, position)
+                    RATING_PAYLOAD -> bindRating(holder, library)
+                    SELECTION_PAYLOAD -> holder.rowLibraryBinding.checkbox.isChecked = selectedItems.contains(library)
+                    else -> unhandledPayloads = true
                 }
             }
-            if (!handled) {
+            if (unhandledPayloads) {
                 super.onBindViewHolder(holder, position, payloads)
             }
         } else {
