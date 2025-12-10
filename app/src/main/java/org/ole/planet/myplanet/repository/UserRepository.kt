@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.repository
 import android.content.SharedPreferences
 import com.google.gson.JsonObject
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.ui.myhealth.HealthRecord
 
 interface UserRepository {
     suspend fun getUserById(userId: String): RealmUserModel?
