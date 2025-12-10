@@ -122,7 +122,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     @Inject
     lateinit var progressRepository: ProgressRepository
     private val challengeHelper: ChallengeHelper by lazy {
-        ChallengeHelper(this, mRealm, user, settings, editor, dashboardViewModel, progressRepository)
+        ChallengeHelper(this, user, settings, editor, dashboardViewModel, progressRepository)
     }
     private lateinit var notificationManager: NotificationUtils.NotificationManager
     private var notificationsShownThisSession = false
@@ -138,23 +138,42 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        postponeEnterTransition()
         mRealm = databaseService.realmInstance
         checkUser()
         initViews()
         updateAppTitle()
         notificationManager = NotificationUtils.getInstance(this)
         if (handleGuestAccess()) return
-        setupNavigation()
+
         handleInitialFragment()
+        addBackPressCallback()
+        collectUiState()
+
+        lifecycleScope.launch {
+            initializeDashboard()
+        }
+
+        val content: View = findViewById(android.R.id.content)
+        content.viewTreeObserver.addOnPreDrawListener(
+            object : android.view.ViewTreeObserver.OnPreDrawListener {
+                override fun onPreDraw(): Boolean {
+                    content.viewTreeObserver.removeOnPreDrawListener(this)
+                    startPostponedEnterTransition()
+                    return true
+                }
+            }
+        )
+    }
+
+    private fun initializeDashboard() {
+        setupNavigation()
         setupToolbarActions()
         hideWifi()
         libraryListener = RealmChangeListener { onRealmDataChanged() }
         submissionListener = RealmChangeListener { onRealmDataChanged() }
         taskListener = RealmChangeListener { onRealmDataChanged() }
-
-        addBackPressCallback()
         handleNotificationIntent(intent)
-        collectUiState()
         setupRealmListeners()
 
         binding.root.post {

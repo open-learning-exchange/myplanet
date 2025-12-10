@@ -48,7 +48,6 @@
     <string name="download_selected">Download Selected</string>
     <string name="txt_cancel">Cancel</string>
     <string name="download_all">Download All</string>
-    <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="join_selected">Join Selected</string>
     <string name="join">Join</string>
     <string name="add_to_mylib">Add To myLibrary</string>
@@ -162,6 +161,7 @@
     <string name="showing_reply_of">Showing reply of:</string>
     <string name="open_date">Open Date</string>
     <string name="my_survey">mySurveys</string>
+    <string name="failed_to_load_course">Failed to load course</string>
     <string name="cannot_remove_user">User could not be removed</string>
     <string name="no_members_task">No Team members present to assign tasks</string>
     <string name="no_member_selected">No member selected. Please try again</string>
@@ -690,7 +690,6 @@
     <string name="no_data_available_please_click_button_to_add_new_resource_in_mypersonal">No data available, please click + button to add new resource in myPersonal.</string>
     <string name="label_added">Label added.</string>
     <string name="please_enter_message">Please enter message</string>
-    <string name="no_items">No items</string>
     <string name="record_survey">Record Survey</string>
     <string name="survey_sent_to_users">Survey sent to users</string>
     <string name="wifi_is_turned_off_saving_battery_power">Wifi is turned Off. Saving battery power</string>
@@ -1176,5 +1175,7 @@
     <string name="click_to_assign_member">Click to assign a team member</string>
     <string name="saving">Saving…</string>
     <string name="achievement_saved">Achievement Updated</string>
+    <string name="team_name_already_exists">A team with this name already exists</string>
+    <string name="enterprise_name_already_exists">An enterprise with this name already exists</string>
 
 </resources>

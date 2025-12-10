@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmTeamNotification
+import org.ole.planet.myplanet.repository.NewsRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
@@ -39,12 +40,13 @@ import org.ole.planet.myplanet.utilities.SharedPrefManager
 class DiscussionListFragment : BaseTeamFragment() {
     private var _binding: FragmentDiscussionListBinding? = null
     private val binding get() = _binding!!
-    private var updatedNewsList: RealmResults<RealmNews>? = null
-    
+    @Inject
+    lateinit var newsRepository: NewsRepository
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
+
     private var filteredNewsList: List<RealmNews?> = listOf()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -125,12 +127,6 @@ class DiscussionListFragment : BaseTeamFragment() {
             }
         }
         binding.addMessage.isVisible = false
-        updatedNewsList = mRealm.where(RealmNews::class.java).isEmpty("replyTo").sort("time", Sort.DESCENDING).findAllAsync()
-
-        updatedNewsList?.addChangeListener { results ->
-            filteredNewsList = filterNewsList(results)
-            setData(filteredNewsList)
-        }
         return binding.root
     }
 
@@ -152,6 +148,11 @@ class DiscussionListFragment : BaseTeamFragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    newsRepository.getDiscussionsByTeamIdFlow(getEffectiveTeamId()).collect {
+                        setData(it)
+                    }
+                }
                 combine(isMemberFlow, teamFlow) { isMember, teamData ->
                     Pair(isMember, teamData?.isPublic == true)
                 }.collectLatest { (isMember, isPublicTeamFromFlow) ->
@@ -187,26 +188,6 @@ class DiscussionListFragment : BaseTeamFragment() {
         llImage?.removeAllViews()
     }
 
-    private fun filterNewsList(results: RealmResults<RealmNews>): List<RealmNews?> {
-        val filteredList: MutableList<RealmNews?> = ArrayList()
-        val effectiveTeamId = getEffectiveTeamId()
-
-        for (news in results) {
-            if (!TextUtils.isEmpty(news.viewableBy) && news.viewableBy.equals("teams", ignoreCase = true) && news.viewableId.equals(effectiveTeamId, ignoreCase = true)) {
-                filteredList.add(news)
-            } else if (!TextUtils.isEmpty(news.viewIn)) {
-                val ar = GsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
-                for (e in ar) {
-                    val ob = e.asJsonObject
-                    if (ob["_id"].asString.equals(effectiveTeamId, ignoreCase = true)) {
-                        filteredList.add(news)
-                    }
-                }
-            }
-        }
-        return filteredList
-    }
-
     private val news: List<RealmNews>
         get() {
             val realmNewsList: List<RealmNews> = mRealm.where(RealmNews::class.java).isEmpty("replyTo").sort("time", Sort.DESCENDING).findAll()
@@ -238,7 +219,7 @@ class DiscussionListFragment : BaseTeamFragment() {
         val existingAdapter = binding.rvDiscussion.adapter
         if (existingAdapter == null) {
             val adapterNews = activity?.let {
-                AdapterNews(it, user, null, getEffectiveTeamName(), teamId, userProfileDbHandler, databaseService, viewLifecycleOwner.lifecycleScope)
+                AdapterNews(it, user, null, getEffectiveTeamName(), teamId, userProfileDbHandler, databaseService, viewLifecycleOwner.lifecycleScope, newsRepository)
             }
             adapterNews?.sharedPrefManager = sharedPrefManager
             adapterNews?.setmRealm(mRealm)
@@ -264,8 +245,6 @@ class DiscussionListFragment : BaseTeamFragment() {
     }
 
     override fun onDestroyView() {
-        updatedNewsList?.removeAllChangeListeners()
-        updatedNewsList = null
         if (isRealmInitialized()) {
             mRealm.close()
         }
