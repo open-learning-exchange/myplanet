@@ -8,7 +8,6 @@ import androidx.core.net.toUri
 import com.google.gson.JsonObject
 import dagger.hilt.android.EntryPointAccessors
 import java.io.IOException
-import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -19,7 +18,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SecurityDataCallback
 import org.ole.planet.myplanet.callback.SuccessListener
@@ -32,6 +30,7 @@ import org.ole.planet.myplanet.di.RepositoryEntryPoint
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmCommunity
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.PlanetRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.UploadToShelfService
 import org.ole.planet.myplanet.ui.sync.ProcessUserDataActivity
@@ -42,7 +41,6 @@ import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
-import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.Sha256Utils
 import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.Utilities
@@ -58,6 +56,7 @@ class Service @Inject constructor(
     @ApplicationScope private val serviceScope: CoroutineScope,
     private val userRepository: UserRepository,
     private val uploadToShelfService: UploadToShelfService,
+    private val planetRepository: PlanetRepository,
 ) {
     constructor(context: Context) : this(
         context,
@@ -81,10 +80,13 @@ class Service @Inject constructor(
             context.applicationContext,
             AutoSyncEntryPoint::class.java
         ).uploadToShelfService(),
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            RepositoryEntryPoint::class.java
+        ).planetRepository(),
     )
 
     private val preferences: SharedPreferences = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
-    private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
     private val configurationManager =
         ConfigurationManager(context, preferences, retrofitInterface)
 
@@ -138,33 +140,24 @@ class Service @Inject constructor(
         }
     }
 
-    fun checkCheckSum(callback: ChecksumCallback, path: String?) {
-        retrofitInterface.getChecksum(UrlUtils.getChecksumUrl(preferences)).enqueue(object : Callback<ResponseBody> {
-            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
-                if (response.code() == 200) {
-                    try {
-                        val checksum = response.body()?.string()
-                        if (TextUtils.isEmpty(checksum)) {
-                            val f = FileUtils.getSDPathFromUrl(context, path)
-                            if (f.exists()) {
-                                val sha256 = Sha256Utils().getCheckSumFromFile(f)
-                                if (checksum?.contains(sha256) == true) {
-                                    callback.onMatch()
-                                    return
-                                }
-                            }
-                        }
-                    } catch (e: IOException) {
-                        e.printStackTrace()
+    suspend fun checkCheckSum(path: String?): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val response = retrofitInterface.getChecksum(UrlUtils.getChecksumUrl(preferences)).execute()
+            if (response.isSuccessful) {
+                val checksum = response.body()?.string()
+                if (!checksum.isNullOrEmpty()) {
+                    val f = FileUtils.getSDPathFromUrl(context, path)
+                    if (f.exists()) {
+                        val sha256 = Sha256Utils().getCheckSumFromFile(f)
+                        return@withContext checksum.contains(sha256)
                     }
                 }
-                callback.onFail()
             }
-
-            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-                callback.onFail()
-            }
-        })
+            false
+        } catch (e: IOException) {
+            e.printStackTrace()
+            false
+        }
     }
 
     fun checkVersion(callback: CheckVersionCallback, settings: SharedPreferences) {
@@ -220,186 +213,41 @@ class Service @Inject constructor(
     }
 
     fun isPlanetAvailable(callback: PlanetAvailableListener?) {
-        val updateUrl = "${preferences.getString("serverURL", "")}"
-        serverAvailabilityCache[updateUrl]?.let { (available, timestamp) ->
-            if (System.currentTimeMillis() - timestamp < 30000) {
-                if (available) {
+        serviceScope.launch {
+            val isAvailable = planetRepository.isPlanetAvailable()
+            withContext(Dispatchers.Main) {
+                if (isAvailable) {
                     callback?.isAvailable()
                 } else {
                     callback?.notAvailable()
                 }
-                return
             }
-        }
-
-        val serverUrlMapper = ServerUrlMapper()
-        val mapping = serverUrlMapper.processUrl(updateUrl)
-
-        serviceScope.launch {
-            withContext(Dispatchers.IO) {
-                val primaryReachable = isServerReachable(mapping.primaryUrl)
-                val alternativeReachable = mapping.alternativeUrl?.let { isServerReachable(it) } == true
-
-                if (!primaryReachable && alternativeReachable) {
-                    mapping.alternativeUrl?.let { alternativeUrl ->
-                        val uri = updateUrl.toUri()
-                        val editor = preferences.edit()
-
-                        serverUrlMapper.updateUrlPreferences(
-                            editor,
-                            uri,
-                            alternativeUrl,
-                            mapping.primaryUrl,
-                            preferences
-                        )
-                    }
-                }
-            }
-
-            retrofitInterface.isPlanetAvailable(UrlUtils.getUpdateUrl(preferences)).enqueue(object : Callback<ResponseBody?> {
-                override fun onResponse(call: Call<ResponseBody?>, response: Response<ResponseBody?>) {
-                    val isAvailable = callback != null && response.code() == 200
-                    serverAvailabilityCache[updateUrl] = Pair(isAvailable, System.currentTimeMillis())
-                    serviceScope.launch {
-                        withContext(Dispatchers.Main) {
-                            if (isAvailable) {
-                                callback.isAvailable()
-                            } else {
-                                callback?.notAvailable()
-                            }
-                        }
-                    }
-                }
-
-                override fun onFailure(call: Call<ResponseBody?>, t: Throwable) {
-                    serverAvailabilityCache[updateUrl] = Pair(false, System.currentTimeMillis())
-                    serviceScope.launch {
-                        withContext(Dispatchers.Main) {
-                            callback?.notAvailable()
-                        }
-                    }
-                }
-            })
         }
     }
 
     fun becomeMember(obj: JsonObject, callback: CreateUserCallback, securityCallback: SecurityDataCallback? = null) {
-        isPlanetAvailable(object : PlanetAvailableListener {
-            override fun isAvailable() {
-                retrofitInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}").enqueue(object : Callback<JsonObject> {
-                     override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
-                         if (response.body() != null && response.body()?.has("_id") == true) {
-                             callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
-                         } else {
-                             retrofitInterface.putDoc(null, "application/json", "${UrlUtils.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}", obj).enqueue(object : Callback<JsonObject> {
-                                 override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
-                                     if (response.body() != null && response.body()?.has("id") == true) {
-                                         uploadToShelf(obj)
-                                         serviceScope.launch {
-                                             val result = saveUserToDb(
-                                                 "${response.body()?.get("id")?.asString}",
-                                                 obj,
-                                                 securityCallback
-                                             )
-                                             withContext(Dispatchers.Main) {
-                                                 if (result.isSuccess) {
-                                                     callback.onSuccess(context.getString(R.string.user_created_successfully))
-                                                 } else {
-                                                     callback.onSuccess(context.getString(R.string.unable_to_save_user_please_sync))
-                                                 }
-                                             }
-                                         }
-                                     } else {
-                                         callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
-                                     }
-                                 }
-
-                                 override fun onFailure(call: Call<JsonObject>, t: Throwable) {
-                                     callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
-                                 }
-                             })
-                         }
-                     }
-
-                    override fun onFailure(call: Call<JsonObject>, t: Throwable) {
-                        callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
-                    }
-                })
-            }
-
-            override fun notAvailable() {
-                val settings = MainApplication.context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
-                serviceScope.launch {
-                    val existingUser = userRepository.getUserByName(obj["name"].asString)
-                    if (existingUser != null && existingUser._id?.startsWith("guest") != true) {
-                        withContext(Dispatchers.Main) {
-                            callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
-                        }
-                        return@launch
-                    }
-
-                    val keyString = AndroidDecrypter.generateKey()
-                    val iv = AndroidDecrypter.generateIv()
-                    userRepository.saveUser(obj, settings, keyString, iv)
-                    withContext(Dispatchers.Main) {
-                        Utilities.toast(MainApplication.context, context.getString(R.string.not_connect_to_planet_created_user_offline))
-                        callback.onSuccess(context.getString(R.string.not_connect_to_planet_created_user_offline))
-                        securityCallback?.onSecurityDataUpdated()
-                    }
-                }
-            }
-        })
-    }
-
-    private fun uploadToShelf(obj: JsonObject) {
-        retrofitInterface.putDoc(null, "application/json", UrlUtils.getUrl() + "/shelf/org.couchdb.user:" + obj["name"].asString, JsonObject()).enqueue(object : Callback<JsonObject?> {
-            override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {}
-            override fun onFailure(call: Call<JsonObject?>, t: Throwable) {}
-        })
-    }
-
-    private suspend fun saveUserToDb(id: String, obj: JsonObject, securityCallback: SecurityDataCallback? = null): Result<RealmUserModel?> {
-        val settings = MainApplication.context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
-        return try {
-            val userModel = withTimeout(20000) {
-                val response = retrofitInterface.getJsonObjectSuspended(
-                    UrlUtils.header,
-                    "${UrlUtils.getUrl()}/_users/$id"
-                )
-
-                ensureActive()
-
-                if (response.isSuccessful) {
-                    response.body()?.let { userRepository.saveUser(it, settings) }
-                } else {
-                    null
-                }
-            }
-
-            if (userModel != null) {
-                uploadToShelfService.saveKeyIv(retrofitInterface, userModel, obj)
-                withContext(Dispatchers.Main) {
+        serviceScope.launch {
+            val result = userRepository.becomeMember(obj)
+            withContext(Dispatchers.Main) {
+                if (result.first) { // success
                     if (context is ProcessUserDataActivity) {
                         val userName = obj["name"].asString
                         context.startUpload("becomeMember", userName, securityCallback)
                     }
+
+                    // Handle offline logic regardless of context
+                    if (result.second == context.getString(R.string.not_connect_to_planet_created_user_offline)) {
+                        Utilities.toast(MainApplication.context, result.second)
+                        securityCallback?.onSecurityDataUpdated()
+                    }
+
+                    callback.onSuccess(result.second)
+                } else {
+                    // failure
+                    callback.onSuccess(result.second)
+                    securityCallback?.onSecurityDataUpdated()
                 }
-                Result.success(userModel)
-            } else {
-                Result.failure(Exception("Failed to save user or user model was null"))
             }
-        } catch (e: TimeoutCancellationException) {
-            e.printStackTrace()
-            withContext(Dispatchers.Main) {
-                securityCallback?.onSecurityDataUpdated()
-            }
-            Result.failure(e)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            withContext(Dispatchers.Main) {
-                securityCallback?.onSecurityDataUpdated()
-            }
-            Result.failure(e)
         }
     }
 
@@ -546,11 +394,6 @@ class Service @Inject constructor(
 
     interface CreateUserCallback {
         fun onSuccess(message: String)
-    }
-
-    interface ChecksumCallback {
-        fun onMatch()
-        fun onFail()
     }
 
     interface PlanetAvailableListener {
