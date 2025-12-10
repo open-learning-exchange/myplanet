@@ -107,39 +107,51 @@ class SurveyRepositoryImpl @Inject constructor(
         surveys: List<RealmStepExam>
     ): Map<String, SurveyInfo> {
         val surveyIds = surveys.map { it.id }
-        val submissions = queryList(RealmSubmission::class.java, ensureLatest = true) {
-            `in`("parentId", surveyIds.toTypedArray())
+        val submissionsQuery = queryList(RealmSubmission::class.java, ensureLatest = true) {
+            if (isTeam) {
+                equalTo("membershipDoc.teamId", teamId)
+            } else {
+                equalTo("userId", userId)
+                isNull("membershipDoc")
+            }
         }
-        val actualSubmissions = submissions.filter { !it.status.isNullOrEmpty() }
 
-        val surveyInfos = mutableMapOf<String, SurveyInfo>()
-        for (survey in surveys) {
-            val surveyId = survey.id ?: continue
-            val submissionCount = if (isTeam) {
-                actualSubmissions.count { it.parentId == surveyId && it.membershipDoc?.teamId == teamId }.toString()
-            } else {
-                actualSubmissions.count { it.parentId == surveyId && it.userId == userId }.toString()
+        val submissionsByParentId = submissionsQuery
+            .filter { submission ->
+                val hasStatus = !submission.status.isNullOrEmpty()
+                val matchesParentId = surveyIds.any { surveyId ->
+                    submission.parentId == surveyId || submission.parentId?.startsWith("$surveyId@") == true
+                }
+                hasStatus && matchesParentId
             }
-            val lastSubmissionDate = if (isTeam) {
-                actualSubmissions.filter { it.parentId == surveyId && it.membershipDoc?.teamId == teamId }
-                    .maxByOrNull { it.startTime }?.startTime?.let { getFormattedDateWithTime(it) } ?: ""
-            } else {
-                actualSubmissions.filter { it.parentId == surveyId && it.userId == userId }
-                    .maxByOrNull { it.startTime }?.startTime?.let { getFormattedDateWithTime(it) } ?: ""
+            .groupBy { submission ->
+                val parentId = submission.parentId ?: return@groupBy null
+                surveyIds.find { surveyId ->
+                    parentId == surveyId || parentId.startsWith("$surveyId@")
+                }
             }
+            .filterKeys { it != null }
+            .mapKeys { it.key!! }
+
+        return surveys.filter { it.id != null }.associate { survey ->
+            val surveyId = survey.id!!
+            val surveySubmissions = submissionsByParentId[surveyId] ?: emptyList()
+            val submissionCount = surveySubmissions.size
+            val lastSubmissionDate = surveySubmissions
+                .maxByOrNull { it.startTime }?.startTime?.let { getFormattedDateWithTime(it) } ?: ""
             val creationDate = formatDate(survey.createdDate, "MMM dd, yyyy")
-            surveyInfos[surveyId] = SurveyInfo(
+
+            surveyId to SurveyInfo(
                 surveyId = surveyId,
                 submissionCount = context.resources.getQuantityString(
                     R.plurals.survey_taken_count,
-                    submissionCount.toInt(),
-                    submissionCount.toInt()
+                    submissionCount,
+                    submissionCount
                 ),
                 lastSubmissionDate = lastSubmissionDate,
                 creationDate = creationDate
             )
         }
-        return surveyInfos
     }
 
     override suspend fun getSurveyBindingData(
@@ -153,18 +165,15 @@ class SurveyRepositoryImpl @Inject constructor(
             equalTo("membershipDoc.teamId", teamId)
         }.associateBy { it.parentId }
 
-        val questions = queryList(RealmExamQuestion::class.java) {
+        val questionCounts = queryList(RealmExamQuestion::class.java) {
             `in`("examId", surveyIds.toTypedArray())
-        }
-        val questionCounts = questions.groupingBy { it.examId }.eachCount()
+        }.groupingBy { it.examId }.eachCount()
 
-        val bindingData = mutableMapOf<String, SurveyBindingData>()
-        for (survey in surveys) {
-            val surveyId = survey.id ?: continue
+        return surveys.filter { it.id != null }.associate { survey ->
+            val surveyId = survey.id!!
             val teamSubmission = teamSubmissions[surveyId]
             val questionCount = questionCounts[surveyId] ?: 0
-            bindingData[surveyId] = SurveyBindingData(teamSubmission, questionCount)
+            surveyId to SurveyBindingData(teamSubmission, questionCount)
         }
-        return bindingData
     }
 }
