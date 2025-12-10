@@ -7,31 +7,24 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import io.realm.Realm
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.RowTeamResourceBinding
 import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getTeamCreator
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.ui.team.teamCourse.AdapterTeamCourse.ViewHolderTeamCourse
 
 class AdapterTeamCourse(
     private val context: Context,
     private var list: MutableList<RealmMyCourse>,
-    mRealm: Realm?,
-    teamId: String?,
-    settings: SharedPreferences
+    private val teamCreator: String,
+    private val settings: SharedPreferences
 ) : RecyclerView.Adapter<ViewHolderTeamCourse>() {
     private var listener: OnHomeItemClickListener? = null
-    private val settings: SharedPreferences
-    private val teamCreator: String
 
     init {
         if (context is OnHomeItemClickListener) {
             listener = context
         }
-        this.settings = settings
-        teamCreator = getTeamCreator(teamId, mRealm)
     }
     
     fun getList(): List<RealmMyCourse> = list
