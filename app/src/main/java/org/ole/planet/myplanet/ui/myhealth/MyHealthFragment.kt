@@ -209,7 +209,12 @@ class MyHealthFragment : Fragment() {
 
         binding.rvRecords.addItemDecoration(DividerItemDecoration(activity, DividerItemDecoration.VERTICAL))
 
-        adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, mutableListOf())
+        adapter = UserListArrayAdapter { user ->
+            userId = if (user._id.isNullOrEmpty()) user.id else user._id
+            getHealthRecords(userId)
+            dialog?.dismiss()
+        }
+
         setupInitialData()
         setupButtons()
     }
@@ -292,23 +297,16 @@ class MyHealthFragment : Fragment() {
             }
             withContext(Dispatchers.Main) {
                 userModelList = users
-                adapter.clear()
-                adapter.addAll(userModelList)
-                adapter.notifyDataSetChanged()
+                adapter.submitList(userModelList)
                 alertHealthListBinding = AlertHealthListBinding.inflate(LayoutInflater.from(context))
                 alertHealthListBinding?.btnAddMember?.setOnClickListener {
                     startActivity(Intent(requireContext(), BecomeMemberActivity::class.java))
                 }
 
                 alertHealthListBinding?.let { binding ->
+                    binding.list.layoutManager = LinearLayoutManager(requireContext())
                     binding.list.adapter = adapter
                     setTextWatcher(binding.etSearch, binding.btnAddMember, binding.list)
-                    binding.list.onItemClickListener = OnItemClickListener { _: AdapterView<*>?, _: View, i: Int, _: Long ->
-                        val selected = binding.list.adapter.getItem(i) as RealmUserModel
-                        userId = if (selected._id.isNullOrEmpty()) selected.id else selected._id
-                        getHealthRecords(userId)
-                        dialog?.dismiss()
-                    }
                     sortList(binding.spnSort, binding.list)
                     dialog = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
                         .setTitle(getString(R.string.select_health_member)).setView(binding.root)
@@ -319,7 +317,7 @@ class MyHealthFragment : Fragment() {
         }
     }
 
-    private fun sortList(spnSort: AppCompatSpinner, lv: ListView) {
+    private fun sortList(spnSort: AppCompatSpinner, rv: androidx.recyclerview.widget.RecyclerView) {
         spnSort.onItemSelectedListener = object : OnItemSelectedListener {
             override fun onNothingSelected(p0: AdapterView<*>?) {}
 
@@ -340,9 +338,7 @@ class MyHealthFragment : Fragment() {
                     withContext(Dispatchers.Main) {
                         if (isAdded) {
                             userModelList = sortedList
-                            adapter.clear()
-                            adapter.addAll(userModelList)
-                            adapter.notifyDataSetChanged()
+                            adapter.submitList(userModelList)
                         }
                     }
                 }
@@ -350,7 +346,7 @@ class MyHealthFragment : Fragment() {
         }
     }
 
-    private fun setTextWatcher(etSearch: EditText, btnAddMember: Button, lv: ListView) {
+    private fun setTextWatcher(etSearch: EditText, btnAddMember: Button, rv: androidx.recyclerview.widget.RecyclerView) {
         textWatcher = object : TextWatcher {
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
             override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
@@ -361,7 +357,7 @@ class MyHealthFragment : Fragment() {
                     val loadingJob = launch(Dispatchers.Main) {
                         delay(100)
                         alertHealthListBinding?.searchProgress?.visibility = View.VISIBLE
-                        lv.visibility = View.GONE
+                        rv.visibility = View.GONE
                     }
 
                     val userModelList = withContext(Dispatchers.IO) {
@@ -378,15 +374,10 @@ class MyHealthFragment : Fragment() {
                     loadingJob.cancel()
                     if (isAdded) {
                         alertHealthListBinding?.searchProgress?.visibility = View.GONE
-                        lv.visibility = View.VISIBLE
-                        val adapter = UserListArrayAdapter(
-                            requireActivity(),
-                            android.R.layout.simple_list_item_1,
-                            userModelList
-                        )
-                        lv.adapter = adapter
+                        rv.visibility = View.VISIBLE
+                        adapter.submitList(userModelList)
                         btnAddMember.visibility =
-                            if (adapter.count == 0) View.VISIBLE else View.GONE
+                            if (adapter.itemCount == 0) View.VISIBLE else View.GONE
                     }
                 }
             }

@@ -28,7 +28,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertTaskBinding
-import org.ole.planet.myplanet.databinding.AlertUsersSpinnerBinding
+import org.ole.planet.myplanet.databinding.AlertUsersListBinding
 import org.ole.planet.myplanet.databinding.FragmentTeamTaskBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamTask
@@ -131,29 +131,29 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
                     return@launch
                 }
 
-                val alertUsersSpinnerBinding = AlertUsersSpinnerBinding.inflate(LayoutInflater.from(requireActivity()))
-                val adapter: ArrayAdapter<RealmUserModel> = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, filteredUserList)
-                alertUsersSpinnerBinding.spnUser.adapter = adapter
-
-                AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
-                    .setTitle(R.string.select_member)
-                    .setView(alertUsersSpinnerBinding.root)
-                    .setCancelable(false)
-                    .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
-                        val selectedItem = alertUsersSpinnerBinding.spnUser.selectedItem
-                        if (selectedItem != null) {
-                            selectedAssignee = selectedItem as RealmUserModel
-                            val displayName = selectedAssignee.getFullName().ifBlank {
-                                selectedAssignee.name ?: getString(R.string.no_assignee)
-                            }
-                            alertTaskBinding.tvAssignMember.text = displayName
-                            alertTaskBinding.tvAssignMember.setTextColor(requireContext().getColor(R.color.daynight_textColor))
-                        }
+                val alertUsersListBinding = AlertUsersListBinding.inflate(LayoutInflater.from(requireActivity()))
+                lateinit var userSelectionDialog: AlertDialog
+                val adapter = UserListArrayAdapter { user ->
+                    selectedAssignee = user
+                    val displayName = selectedAssignee?.getFullName()?.ifBlank {
+                        selectedAssignee?.name ?: getString(R.string.no_assignee)
                     }
+                    alertTaskBinding.tvAssignMember.text = displayName
+                    alertTaskBinding.tvAssignMember.setTextColor(requireContext().getColor(R.color.daynight_textColor))
+                    userSelectionDialog.dismiss()
+                }
+                alertUsersListBinding.rvUsers.adapter = adapter
+                alertUsersListBinding.rvUsers.layoutManager = LinearLayoutManager(activity)
+                adapter.submitList(filteredUserList)
+                userSelectionDialog = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
+                    .setTitle(R.string.select_member)
+                    .setView(alertUsersListBinding.root)
+                    .setCancelable(false)
                     .setNegativeButton(R.string.cancel) { dialog: DialogInterface, _: Int ->
                         dialog.dismiss()
                     }
-                    .show()
+                    .create()
+                userSelectionDialog.show()
             }
         }
 
@@ -335,27 +335,31 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
                 return@launch
             }
 
-            val alertUsersSpinnerBinding = AlertUsersSpinnerBinding.inflate(LayoutInflater.from(requireActivity()))
-            val adapter: ArrayAdapter<RealmUserModel> = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, filteredUserList)
-            alertUsersSpinnerBinding.spnUser.adapter = adapter
+            var selectedUser: RealmUserModel? = null
+            val alertUsersListBinding = AlertUsersListBinding.inflate(LayoutInflater.from(requireActivity()))
+            val adapter = UserListArrayAdapter { user ->
+                selectedUser = user
+            }
+            alertUsersListBinding.rvUsers.adapter = adapter
+            alertUsersListBinding.rvUsers.layoutManager = LinearLayoutManager(activity)
+            adapter.submitList(filteredUserList)
+
             AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
                 .setTitle(R.string.select_member)
-                .setView(alertUsersSpinnerBinding.root).setCancelable(false)
-                .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
-                    val selectedItem = alertUsersSpinnerBinding.spnUser.selectedItem
-                    if (selectedItem == null) {
+                .setView(alertUsersListBinding.root).setCancelable(false)
+                .setPositiveButton(R.string.ok) { _, _ ->
+                    if (selectedUser == null) {
                         Toast.makeText(context, R.string.no_member_selected, Toast.LENGTH_SHORT).show()
                         return@setPositiveButton
                     }
-                    val user = selectedItem as RealmUserModel
                     val taskId = realmTeamTask?.id
                     if (taskId.isNullOrBlank()) {
                         Toast.makeText(context, R.string.no_tasks, Toast.LENGTH_SHORT).show()
                         return@setPositiveButton
                     }
                     viewLifecycleOwner.lifecycleScope.launch {
-                        teamRepository.assignTask(taskId, user.id)
-                        Utilities.toast(activity, getString(R.string.assign_task_to) + " " + user.name)
+                        teamRepository.assignTask(taskId, selectedUser!!.id)
+                        Utilities.toast(activity, getString(R.string.assign_task_to) + " " + selectedUser!!.name)
                         updateTasks()
                     }
                 }

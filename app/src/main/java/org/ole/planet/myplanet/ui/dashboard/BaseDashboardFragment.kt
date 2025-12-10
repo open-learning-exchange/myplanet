@@ -366,13 +366,13 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         val job = viewLifecycleOwner.lifecycleScope.launch {
             val userModelList = viewModel.getUsersSortedByDate()
             if (dialog.isShowing) {
-                val adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, userModelList)
-                alertHealthListBinding.list.adapter = adapter
-                alertHealthListBinding.list.onItemClickListener = AdapterView.OnItemClickListener { _, _, i, _ ->
-                    val selected = alertHealthListBinding.list.adapter.getItem(i) as RealmUserModel
-                    showDownloadDialog(getLibraryList(realm, selected._id))
+                val adapter = UserListArrayAdapter { user ->
+                    showDownloadDialog(getLibraryList(realm, user._id))
                     dialog.dismiss()
                 }
+                alertHealthListBinding.list.adapter = adapter
+                alertHealthListBinding.list.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(activity)
+                adapter.submitList(userModelList)
                 alertHealthListBinding.loading.visibility = View.GONE
                 alertHealthListBinding.list.visibility = View.VISIBLE
             }

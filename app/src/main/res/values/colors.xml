@@ -38,5 +38,6 @@
 
     <color name="dropdown_bg">@android:color/white</color>
     <color name="dropdown_text">@android:color/black</color>
+    <color name="highlight_row">#E0E0E0</color>
 
 </resources>
