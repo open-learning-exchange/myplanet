@@ -23,8 +23,6 @@ import org.ole.planet.myplanet.repository.NewsRepository
 import org.ole.planet.myplanet.repository.NewsRepositoryImpl
 import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.repository.NotificationRepositoryImpl
-import org.ole.planet.myplanet.repository.PlanetRepository
-import org.ole.planet.myplanet.repository.PlanetRepositoryImpl
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.ProgressRepositoryImpl
 import org.ole.planet.myplanet.repository.RatingRepository
@@ -79,10 +77,6 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindNotificationRepository(impl: NotificationRepositoryImpl): NotificationRepository
-
-    @Binds
-    @Singleton
-    abstract fun bindPlanetRepository(impl: PlanetRepositoryImpl): PlanetRepository
 
     @Binds
     @Singleton

@@ -43,6 +43,7 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
     private var playWhenReady = true
     private var currentPosition = 0L
     private var isActivityVisible = false
+    private var isAudioReceiverRegistered = false
     @Inject
     lateinit var authSessionUpdaterFactory: AuthSessionUpdater.Factory
     private var authSessionUpdater: AuthSessionUpdater? = null
@@ -240,16 +241,18 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
     }
 
     private fun registerAudioNoisyReceiver() {
-        val filter = IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
-        registerReceiver(audioBecomingNoisyReceiver, filter)
+        if (!isAudioReceiverRegistered) {
+            val filter = IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
+            registerReceiver(audioBecomingNoisyReceiver, filter)
+            isAudioReceiverRegistered = true
+        }
     }
 
     override fun onDestroy() {
         authSessionUpdater?.stop()
-        try {
+        if (isAudioReceiverRegistered) {
             unregisterReceiver(audioBecomingNoisyReceiver)
-        } catch (e: IllegalArgumentException) {
-            e.printStackTrace()
+            isAudioReceiverRegistered = false
         }
         super.onDestroy()
     }
