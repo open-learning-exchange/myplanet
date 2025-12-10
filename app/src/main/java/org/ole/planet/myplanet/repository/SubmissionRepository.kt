@@ -11,6 +11,7 @@ interface SubmissionRepository {
     suspend fun getUniquePendingSurveys(userId: String?): List<RealmSubmission>
     suspend fun getSurveyTitlesFromSubmissions(submissions: List<RealmSubmission>): List<String>
     suspend fun getSubmissionById(id: String): RealmSubmission?
+    suspend fun getSubmissionDetail(submissionId: String): SubmissionDetail?
     suspend fun getSubmissionsByIds(ids: List<String>): List<RealmSubmission>
     suspend fun getSubmissionsByUserId(userId: String): List<RealmSubmission>
     suspend fun getExamMapForSubmissions(submissions: List<RealmSubmission>): Map<String?, RealmStepExam>

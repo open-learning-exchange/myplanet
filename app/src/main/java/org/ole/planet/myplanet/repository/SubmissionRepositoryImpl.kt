@@ -11,6 +11,9 @@ import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
+import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.ui.submission.QuestionAnswerPair
+import org.ole.planet.myplanet.ui.submission.SubmissionDetail
 
 class SubmissionRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
@@ -129,6 +132,45 @@ class SubmissionRepositoryImpl @Inject constructor(
 
     override suspend fun getSubmissionById(id: String): RealmSubmission? {
         return findByField(RealmSubmission::class.java, "id", id)
+    }
+
+    override suspend fun getSubmissionDetail(submissionId: String): SubmissionDetail? {
+        return databaseService.withRealmAsync { realm ->
+            val submission = realm.where(RealmSubmission::class.java)
+                .equalTo("id", submissionId)
+                .findFirst()
+                ?: return@withRealmAsync null
+
+            val examId = submission.parentId?.split("@")?.get(0)
+            val exam = examId?.let {
+                realm.where(RealmStepExam::class.java)
+                    .equalTo("id", it)
+                    .findFirst()
+            }
+
+            val user = realm.where(RealmUserModel::class.java)
+                .equalTo("id", submission.userId)
+                .findFirst()
+
+            val questions = realm.where(RealmExamQuestion::class.java)
+                .equalTo("examId", examId)
+                .findAll()
+
+            val unmanagedQuestions = realm.copyFromRealm(questions)
+            val unmanagedSubmission = realm.copyFromRealm(submission)
+
+            val questionAnswerPairs = unmanagedQuestions.map { question ->
+                val answer = unmanagedSubmission.answers?.find { it.questionId == question.id }
+                QuestionAnswerPair(question, answer)
+            }
+
+            SubmissionDetail(
+                submission = unmanagedSubmission,
+                exam = exam?.let { realm.copyFromRealm(it) },
+                user = user?.let { realm.copyFromRealm(it) },
+                questionAnswerPairs = questionAnswerPairs
+            )
+        }
     }
 
     override suspend fun getSubmissionsByIds(ids: List<String>): List<RealmSubmission> {

@@ -8,21 +8,22 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import io.realm.Realm
-import kotlinx.coroutines.Dispatchers
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import org.json.JSONObject
 import org.ole.planet.myplanet.databinding.FragmentSubmissionDetailBinding
-import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.utilities.TimeUtils
 
+@AndroidEntryPoint
 class SubmissionDetailFragment : Fragment() {
     private var _binding: FragmentSubmissionDetailBinding? = null
     private val binding get() = _binding!!
+    @Inject
+    lateinit var submissionRepository: SubmissionRepository
     private var submissionId: String? = null
     private lateinit var adapter: QuestionAnswerAdapter
 
@@ -88,76 +89,14 @@ class SubmissionDetailFragment : Fragment() {
     }
 
     private suspend fun loadSubmissionDetails() {
-        withContext(Dispatchers.IO) {
-            Realm.getDefaultInstance().use { mRealm ->
-                submissionId?.let { id ->
-                    var submission = mRealm.where(RealmSubmission::class.java)
-                        .equalTo("id", id)
-                        .or()
-                        .equalTo("_id", id)
-                        .findFirst()
-
-                    if (submission == null) {
-                        submission = mRealm.where(RealmSubmission::class.java)
-                            .contains("parentId", id)
-                            .findFirst()
-                    }
-
-                    submission?.let {
-                        val unmanagedSubmission = mRealm.copyFromRealm(it)
-                        val exam = getExam(mRealm, unmanagedSubmission.parentId)
-                        val user = getUser(mRealm, unmanagedSubmission.userId, unmanagedSubmission.user)
-                        val questionAnswerPairs = getQuestionAnswerPairs(mRealm, unmanagedSubmission)
-
-                        withContext(Dispatchers.Main) {
-                            displaySubmissionInfo(unmanagedSubmission, exam, user)
-                            adapter.submitList(questionAnswerPairs)
-                        }
-                    }
-                }
+        submissionId?.let {
+            val detail = submissionRepository.getSubmissionDetail(it)
+            if (detail != null && isAdded) {
+                displaySubmissionInfo(detail.submission, detail.exam, detail.user)
+                adapter.submitList(detail.questionAnswerPairs)
             }
         }
     }
-
-    private fun getExam(mRealm: Realm, parentId: String?): RealmStepExam? {
-        val examId = getExamId(parentId)
-        val exam = mRealm.where(RealmStepExam::class.java)
-            .equalTo("id", examId)
-            .findFirst()
-        return exam?.let { mRealm.copyFromRealm(it) }
-    }
-
-    private fun getUser(mRealm: Realm, userId: String?, userJsonString: String?): RealmUserModel? {
-        try {
-            val userJson = userJsonString?.let { JSONObject(it) }
-            if (userJson != null) {
-                val name = userJson.optString("name")
-                val user = RealmUserModel()
-                user.name = name
-                return user
-            }
-        } catch (e: Exception) {
-            // Fallback to searching by userId
-        }
-        val user = mRealm.where(RealmUserModel::class.java)
-            .equalTo("id", userId)
-            .findFirst()
-        return user?.let { mRealm.copyFromRealm(it) }
-    }
-
-    private fun getQuestionAnswerPairs(mRealm: Realm, submission: RealmSubmission): List<QuestionAnswerPair> {
-        val examId = getExamId(submission.parentId)
-        val questions = mRealm.where(RealmExamQuestion::class.java)
-            .equalTo("examId", examId)
-            .findAll()
-        val unmanagedQuestions = mRealm.copyFromRealm(questions)
-
-        return unmanagedQuestions.map { question ->
-            val answer = submission.answers?.find { it.questionId == question.id }
-            QuestionAnswerPair(question, answer)
-        }
-    }
-
 
     private fun displaySubmissionInfo(submission: RealmSubmission, exam: RealmStepExam?, user: RealmUserModel?) {
         binding.tvSubmissionTitle.text = exam?.name ?: "Submission Details"
