@@ -57,6 +57,36 @@ class NewsRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getNewsByTeamId(teamId: String): List<RealmNews> {
+        return withRealm { realm ->
+            val allNews = realm.where(RealmNews::class.java)
+                .isEmpty("replyTo")
+                .sort("time", Sort.DESCENDING)
+                .findAll()
+
+            val filteredList = mutableListOf<RealmNews>()
+            for (news in allNews) {
+                if (!news.viewableBy.isNullOrEmpty() && news.viewableBy.equals("teams", ignoreCase = true) && news.viewableId.equals(teamId, ignoreCase = true)) {
+                    filteredList.add(realm.copyFromRealm(news))
+                } else if (!news.viewIn.isNullOrEmpty()) {
+                    try {
+                        val ar = gson.fromJson(news.viewIn, JsonArray::class.java)
+                        for (e in ar) {
+                            val ob = e.asJsonObject
+                            if (ob["_id"].asString.equals(teamId, ignoreCase = true)) {
+                                filteredList.add(realm.copyFromRealm(news))
+                                break
+                            }
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+            filteredList
+        }
+    }
+
     private fun isVisibleToUser(news: RealmNews, userIdentifier: String): Boolean {
         if (news.viewableBy.equals("community", ignoreCase = true)) {
             return true

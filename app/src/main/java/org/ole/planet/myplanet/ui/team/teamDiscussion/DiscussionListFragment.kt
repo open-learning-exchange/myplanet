@@ -40,6 +40,7 @@ import org.ole.planet.myplanet.utilities.SharedPrefManager
 class DiscussionListFragment : BaseTeamFragment() {
     private var _binding: FragmentDiscussionListBinding? = null
     private val binding get() = _binding!!
+
     @Inject
     lateinit var newsRepository: NewsRepository
     @Inject
@@ -132,19 +133,22 @@ class DiscussionListFragment : BaseTeamFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val realmNewsList = news
-        val count = realmNewsList.size
-        mRealm.executeTransactionAsync { realm: Realm ->
-            var notification = realm.where(RealmTeamNotification::class.java).equalTo("type", "chat").equalTo("parentId", getEffectiveTeamId()).findFirst()
-            if (notification == null) {
-                notification = realm.createObject(RealmTeamNotification::class.java, UUID.randomUUID().toString())
-                notification.parentId = getEffectiveTeamId()
-                notification.type = "chat"
-            }
-            notification?.lastCount = count
-        }
         changeLayoutManager(resources.configuration.orientation, binding.rvDiscussion)
-        showRecyclerView(realmNewsList)
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            val realmNewsList = newsRepository.getNewsByTeamId(getEffectiveTeamId())
+            val count = realmNewsList.size
+            mRealm.executeTransactionAsync { realm: Realm ->
+                var notification = realm.where(RealmTeamNotification::class.java).equalTo("type", "chat").equalTo("parentId", getEffectiveTeamId()).findFirst()
+                if (notification == null) {
+                    notification = realm.createObject(RealmTeamNotification::class.java, UUID.randomUUID().toString())
+                    notification.parentId = getEffectiveTeamId()
+                    notification.type = "chat"
+                }
+                notification?.lastCount = count
+            }
+            showRecyclerView(realmNewsList)
+        }
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
