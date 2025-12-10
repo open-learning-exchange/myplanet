@@ -406,6 +406,7 @@ class NewsFragment : BaseNewsFragment() {
     }
 
     override fun onDestroyView() {
+        binding.filterByLabel.onItemSelectedListener = null
         adapterNews?.unregisterAdapterDataObserver(observer)
         if (isRealmInitialized()) {
             mRealm.close()
