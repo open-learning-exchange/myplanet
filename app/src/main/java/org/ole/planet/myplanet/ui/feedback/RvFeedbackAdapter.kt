@@ -17,7 +17,7 @@ class RvFeedbackAdapter :
                 oldItem.date == newItem.date
             },
             { oldItem, newItem ->
-                oldItem.message == newItem.message
+                oldItem.message == newItem.message && oldItem.user == newItem.user
             }
         )
     ) {
@@ -35,5 +35,5 @@ class RvFeedbackAdapter :
         holder.rowFeedbackReplyBinding.tvMessage.text = reply.message
     }
 
-    class ReplyViewHolder(var rowFeedbackReplyBinding: RowFeedbackReplyBinding) : RecyclerView.ViewHolder(rowFeedbackReplyBinding.root)
+    class ReplyViewHolder(val rowFeedbackReplyBinding: RowFeedbackReplyBinding) : RecyclerView.ViewHolder(rowFeedbackReplyBinding.root)
 }

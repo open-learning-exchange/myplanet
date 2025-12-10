@@ -25,7 +25,6 @@ import org.ole.planet.myplanet.databinding.RowFeedbackReplyBinding
 import org.ole.planet.myplanet.model.FeedbackReply
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import org.ole.planet.myplanet.ui.feedback.FeedbackDetailActivity.RvFeedbackAdapter.ReplyViewHolder
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDateWithTime
@@ -33,10 +32,9 @@ import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDateWithTime
 @AndroidEntryPoint
 class FeedbackDetailActivity : AppCompatActivity() {
     private lateinit var activityFeedbackDetailBinding: ActivityFeedbackDetailBinding
-    private var mAdapter: RvFeedbackAdapter? = null
+    private lateinit var mAdapter: RvFeedbackAdapter
     private var layoutManager: RecyclerView.LayoutManager? = null
     private var feedback: RealmFeedback? = null
-    private lateinit var rowFeedbackReplyBinding: RowFeedbackReplyBinding
     private lateinit var feedbackId: String
     private val viewModel: FeedbackDetailViewModel by viewModels()
 
@@ -70,7 +68,7 @@ class FeedbackDetailActivity : AppCompatActivity() {
                         activityFeedbackDetailBinding.tvDate.text = getFormattedDateWithTime(it.openTime)
                         activityFeedbackDetailBinding.tvMessage.text =
                             if (TextUtils.isEmpty(it.message)) "N/A" else it.message
-                        mAdapter?.submitList(it.messageList)
+                        mAdapter.submitList(it.messageList)
                         updateForClosed()
                     }
                 }
