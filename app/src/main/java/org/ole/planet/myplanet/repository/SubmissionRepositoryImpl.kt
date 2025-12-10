@@ -26,6 +26,14 @@ class SubmissionRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getSubmissions(parentId: String, userId: String): Flow<List<RealmSubmission>> {
+        return queryListFlow(RealmSubmission::class.java) {
+            equalTo("parentId", parentId)
+            equalTo("userId", userId)
+            sort("lastUpdateTime", Sort.DESCENDING)
+        }
+    }
+
     override suspend fun getPendingSurveys(userId: String?): List<RealmSubmission> {
         if (userId == null) return emptyList()
 
