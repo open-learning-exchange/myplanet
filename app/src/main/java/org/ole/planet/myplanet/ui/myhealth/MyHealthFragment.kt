@@ -42,8 +42,8 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.BaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.callback.TableDataUpdate
-import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
+import org.ole.planet.myplanet.databinding.AlertPatientListBinding
 import org.ole.planet.myplanet.databinding.FragmentVitalSignBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyHealth
@@ -80,7 +80,7 @@ class MyHealthFragment : Fragment() {
     private var _binding: FragmentVitalSignBinding? = null
     private val binding get() = _binding!!
     private lateinit var alertMyPersonalBinding: AlertMyPersonalBinding
-    private var alertHealthListBinding: AlertHealthListBinding? = null
+    private var alertPatientListBinding: AlertPatientListBinding? = null
     var userId: String? = null
     lateinit var mRealm: Realm
     var userModel: RealmUserModel? = null
@@ -296,12 +296,12 @@ class MyHealthFragment : Fragment() {
                     getHealthRecords(userId)
                     dialog?.dismiss()
                 }
-                alertHealthListBinding = AlertHealthListBinding.inflate(LayoutInflater.from(context))
-                alertHealthListBinding?.btnAddMember?.setOnClickListener {
+                alertPatientListBinding = AlertPatientListBinding.inflate(LayoutInflater.from(context))
+                alertPatientListBinding?.btnAddMember?.setOnClickListener {
                     startActivity(Intent(requireContext(), BecomeMemberActivity::class.java))
                 }
 
-                alertHealthListBinding?.let { binding ->
+                alertPatientListBinding?.let { binding ->
                     binding.list.adapter = userListAdapter
                     binding.list.layoutManager = LinearLayoutManager(context)
                     userListAdapter.submitList(userModelList)
@@ -355,7 +355,7 @@ class MyHealthFragment : Fragment() {
                     delay(300)
                     val loadingJob = launch(Dispatchers.Main) {
                         delay(100)
-                        alertHealthListBinding?.searchProgress?.visibility = View.VISIBLE
+                        alertPatientListBinding?.searchProgress?.visibility = View.VISIBLE
                         rv.visibility = View.GONE
                     }
 
@@ -372,7 +372,7 @@ class MyHealthFragment : Fragment() {
 
                     loadingJob.cancel()
                     if (isAdded) {
-                        alertHealthListBinding?.searchProgress?.visibility = View.GONE
+                        alertPatientListBinding?.searchProgress?.visibility = View.GONE
                         rv.visibility = View.VISIBLE
                         userListAdapter.submitList(filteredList)
                         btnAddMember.visibility =
@@ -538,7 +538,7 @@ class MyHealthFragment : Fragment() {
         if (::realtimeSyncListener.isInitialized) {
             syncCoordinator.removeListener(realtimeSyncListener)
         }
-        alertHealthListBinding?.etSearch?.removeTextChangedListener(textWatcher)
+        alertPatientListBinding?.etSearch?.removeTextChangedListener(textWatcher)
         textWatcher = null
         searchJob?.cancel()
         _binding = null
