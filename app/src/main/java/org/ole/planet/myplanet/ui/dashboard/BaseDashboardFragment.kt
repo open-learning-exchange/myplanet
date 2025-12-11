@@ -253,26 +253,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         }
     }
 
-    private suspend fun setUpMyLife(userId: String?) {
-        databaseService.executeTransactionAsync { realm ->
-            val realmObjects = RealmMyLife.getMyLifeByUserId(realm, settings)
-            if (realmObjects.isEmpty()) {
-                val myLifeListBase = getMyLifeListBase(userId)
-                var ml: RealmMyLife
-                var weight = 1
-                for (item in myLifeListBase) {
-                    ml = realm.createObject(RealmMyLife::class.java, UUID.randomUUID().toString())
-                    ml.title = item.title
-                    ml.imageId = item.imageId
-                    ml.weight = weight
-                    ml.userId = item.userId
-                    ml.isVisible = true
-                    weight++
-                }
-            }
-        }
-    }
-
     private fun myLibraryItemClickAction(textView: TextView, items: RealmMyLibrary?) {
         textView.setOnClickListener {
             items?.let {
@@ -329,7 +309,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
         val userId = settings?.getString("userId", "--")
         viewLifecycleOwner.lifecycleScope.launch {
-            setUpMyLife(userId)
+            viewModel.setupMyLife(userId)
             myLifeListInit(myLifeFlex)
         }
 
