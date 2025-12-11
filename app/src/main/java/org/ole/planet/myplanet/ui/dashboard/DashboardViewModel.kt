@@ -27,6 +27,15 @@ import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.model.RealmUserModel
+
+sealed class UserResourceDialogState {
+    object Idle : UserResourceDialogState()
+    object Loading : UserResourceDialogState()
+    data class UsersLoaded(val users: List<RealmUserModel>) : UserResourceDialogState()
+    data class LibraryLoaded(val library: List<RealmMyLibrary>) : UserResourceDialogState()
+    data class Error(val message: String) : UserResourceDialogState()
+}
 
 data class DashboardUiState(
     val unreadNotifications: Int = 0,
@@ -47,6 +56,9 @@ class DashboardViewModel @Inject constructor(
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
+
+    private val _userResourceDialogState = MutableStateFlow<UserResourceDialogState>(UserResourceDialogState.Idle)
+    val userResourceDialogState: StateFlow<UserResourceDialogState> = _userResourceDialogState.asStateFlow()
 
     private var userContentJob: Job? = null
 
@@ -145,5 +157,27 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
-    suspend fun getUsersSortedByDate() = userRepository.getUsersSortedBy("joinDate", Sort.DESCENDING)
+    fun loadUsersForResourceDialog() {
+        _userResourceDialogState.value = UserResourceDialogState.Loading
+        viewModelScope.launch {
+            try {
+                val users = userRepository.getUsersSortedBy("joinDate", Sort.DESCENDING)
+                _userResourceDialogState.value = UserResourceDialogState.UsersLoaded(users)
+            } catch (e: Exception) {
+                _userResourceDialogState.value = UserResourceDialogState.Error("Failed to load users")
+            }
+        }
+    }
+
+    fun loadLibraryForSelectedUser(userId: String) {
+        _userResourceDialogState.value = UserResourceDialogState.Loading
+        viewModelScope.launch {
+            try {
+                val library = libraryRepository.getLibraryListForUser(userId)
+                _userResourceDialogState.value = UserResourceDialogState.LibraryLoaded(library)
+            } catch (e: Exception) {
+                _userResourceDialogState.value = UserResourceDialogState.Error("Failed to load library for user")
+            }
+        }
+    }
 }

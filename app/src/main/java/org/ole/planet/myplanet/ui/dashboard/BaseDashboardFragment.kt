@@ -15,6 +15,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.google.android.flexbox.FlexDirection
@@ -349,15 +350,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
     override fun showUserResourceDialog() {
         val alertHealthListBinding = AlertHealthListBinding.inflate(LayoutInflater.from(activity))
-        alertHealthListBinding.etSearch.visibility = View.GONE
-        alertHealthListBinding.spnSort.visibility = View.GONE
-        alertHealthListBinding.loading.visibility = View.VISIBLE
-        alertHealthListBinding.list.visibility = View.GONE
-
-        alertHealthListBinding.btnAddMember.setOnClickListener {
-            startActivity(Intent(requireContext(), BecomeMemberActivity::class.java))
-        }
-
         val dialog = AlertDialog.Builder(requireActivity())
             .setTitle(getString(R.string.select_member))
             .setView(alertHealthListBinding.root)
@@ -365,24 +357,47 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             .setNegativeButton(R.string.dismiss, null)
             .create()
 
-        val job = viewLifecycleOwner.lifecycleScope.launch {
-            val userModelList = viewModel.getUsersSortedByDate()
-            if (dialog.isShowing) {
-                val adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, userModelList)
-                alertHealthListBinding.list.adapter = adapter
-                alertHealthListBinding.list.onItemClickListener = AdapterView.OnItemClickListener { _, _, i, _ ->
-                    val selected = alertHealthListBinding.list.adapter.getItem(i) as RealmUserModel
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        val libraryList = libraryRepository.getLibraryListForUser(selected._id)
-                        showDownloadDialog(libraryList)
-                    }
-                    dialog.dismiss()
-                }
-                alertHealthListBinding.loading.visibility = View.GONE
-                alertHealthListBinding.list.visibility = View.VISIBLE
-            }
+        alertHealthListBinding.etSearch.visibility = View.GONE
+        alertHealthListBinding.spnSort.visibility = View.GONE
+
+        alertHealthListBinding.btnAddMember.setOnClickListener {
+            startActivity(Intent(requireContext(), BecomeMemberActivity::class.java))
+            dialog.dismiss()
         }
 
+        val job = viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
+                viewModel.userResourceDialogState.collect { state ->
+                    if (!dialog.isShowing) return@collect
+                    when (state) {
+                        is UserResourceDialogState.Loading -> {
+                            alertHealthListBinding.loading.visibility = View.VISIBLE
+                            alertHealthListBinding.list.visibility = View.GONE
+                        }
+                        is UserResourceDialogState.UsersLoaded -> {
+                            alertHealthListBinding.loading.visibility = View.GONE
+                            alertHealthListBinding.list.visibility = View.VISIBLE
+                            val adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, state.users)
+                            alertHealthListBinding.list.adapter = adapter
+                            alertHealthListBinding.list.onItemClickListener = AdapterView.OnItemClickListener { _, _, i, _ ->
+                                val selected = adapter.getItem(i)
+                                selected?._id?.let { viewModel.loadLibraryForSelectedUser(it) }
+                            }
+                        }
+                        is UserResourceDialogState.LibraryLoaded -> {
+                            showDownloadDialog(state.library)
+                            dialog.dismiss()
+                        }
+                        is UserResourceDialogState.Error -> {
+                            Utilities.toast(activity, state.message)
+                            dialog.dismiss()
+                        }
+                        else -> {}
+                    }
+                }
+            }
+        }
+        viewModel.loadUsersForResourceDialog()
         dialog.setOnDismissListener { job.cancel() }
         dialog.show()
     }
