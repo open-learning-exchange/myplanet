@@ -89,4 +89,48 @@ class CourseRepositoryImpl @Inject constructor(
             isNotNull("resourceLocalAddress")
         }
     }
+
+    override suspend fun filterCourses(
+        searchText: String,
+        gradeLevel: String,
+        subjectLevel: String,
+        tagNames: List<String>
+    ): List<RealmMyCourse> {
+        return withRealm { realm ->
+            val courseIdsWithTags = if (tagNames.isNotEmpty()) {
+                val tagIds = realm.where(org.ole.planet.myplanet.model.RealmTag::class.java)
+                    .`in`("name", tagNames.toTypedArray())
+                    .findAll()
+                    .map { it.id }
+
+                realm.where(org.ole.planet.myplanet.model.RealmTag::class.java)
+                    .equalTo("db", "courses")
+                    .`in`("tagId", tagIds.toTypedArray())
+                    .findAll()
+                    .map { it.linkId }
+            } else {
+                null
+            }
+
+            var query = realm.where(RealmMyCourse::class.java)
+            if (searchText.isNotEmpty()) {
+                query = query.contains("courseTitle", searchText, io.realm.Case.INSENSITIVE)
+            }
+            if (gradeLevel.isNotEmpty()) {
+                query = query.equalTo("gradeLevel", gradeLevel)
+            }
+            if (subjectLevel.isNotEmpty()) {
+                query = query.equalTo("subjectLevel", subjectLevel)
+            }
+            courseIdsWithTags?.let {
+                query = query.`in`("courseId", it.toTypedArray())
+            }
+
+            val results = query.findAll()
+            val sortedList = results
+                .filter { !it.courseTitle.isNullOrBlank() }
+                .sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
+            realm.copyFromRealm(sortedList)
+        }
+    }
 }

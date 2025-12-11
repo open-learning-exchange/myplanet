@@ -15,6 +15,7 @@ import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.datamanager.ApiInterface
+import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.DocumentResponse
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.insert
@@ -35,6 +36,7 @@ import retrofit2.Response
 @Singleton
 class TransactionSyncManager @Inject constructor(
     private val apiInterface: ApiInterface,
+    private val databaseService: DatabaseService,
     @ApplicationContext private val context: Context,
     @ApplicationScope private val scope: CoroutineScope
 ) {
@@ -110,46 +112,97 @@ class TransactionSyncManager @Inject constructor(
         }
     }
 
-    fun syncDb(realm: Realm, table: String) {
-        realm.executeTransactionAsync { mRealm: Realm ->
-            val allDocs = apiInterface.getJsonObject(
-                UrlUtils.header,
-                UrlUtils.getUrl() + "/" + table + "/_all_docs?include_doc=false"
-            )
-            try {
-                val all = allDocs.execute()
-                val rows = getJsonArray("rows", all?.body())
-                val keys: MutableList<String> = ArrayList()
-                for (i in 0 until rows.size()) {
-                    val `object` = rows[i].asJsonObject
-                    if (!TextUtils.isEmpty(getString("id", `object`))) keys.add(
-                        getString(
-                            "key",
-                            `object`
-                        )
-                    )
-                    if (i == rows.size() - 1 || keys.size == 1000) {
-                        val obj = JsonObject()
-                        obj.add("keys", Gson().fromJson(Gson().toJson(keys), JsonArray::class.java))
-                        val response = apiInterface.findDocs(
-                            UrlUtils.header,
-                            "application/json",
-                            UrlUtils.getUrl() + "/" + table + "/_all_docs?include_docs=true",
-                            obj
-                        ).execute()
-                        if (response.body() != null) {
-                            val arr = getJsonArray("rows", response.body())
-                            if (table == "chat_history") {
-                                insertToChat(arr, mRealm)
-                            }
-                            insertDocs(arr, mRealm, table)
+    suspend fun syncDb(table: String) = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        val syncStartTime = System.currentTimeMillis()
+        android.util.Log.d("SyncPerf", "  ▶ Starting $table sync")
+
+        try {
+            // Determine pagination size based on table (smaller for slow endpoints)
+            val pageSize = when (table) {
+                "ratings" -> 20      // Small batches for slow endpoint
+                "submissions" -> 100  // Medium batches for slow endpoint
+                else -> 1000          // Large batches for fast endpoints
+            }
+
+            var skip = 0
+            var totalDocs = 0
+            var batchNumber = 0
+
+            // Paginated fetching to avoid long-blocking API calls
+            while (true) {
+                batchNumber++
+                val batchStartTime = System.currentTimeMillis()
+
+                // Time the batch API call (much faster with pagination)
+                val batchApiStartTime = System.currentTimeMillis()
+                val response = apiInterface.findDocs(
+                    UrlUtils.header,
+                    "application/json",
+                    UrlUtils.getUrl() + "/" + table + "/_all_docs?include_docs=true&limit=$pageSize&skip=$skip",
+                    JsonObject() // Empty body for GET-style query
+                ).execute()
+                val batchApiDuration = System.currentTimeMillis() - batchApiStartTime
+
+                if (response.body() == null || !response.isSuccessful) {
+                    android.util.Log.d("SyncPerf", "  ✗ Failed $table batch $batchNumber: HTTP ${response.code()}")
+                    break
+                }
+
+                val arr = getJsonArray("rows", response.body())
+                if (arr.size() == 0) {
+                    break // No more documents
+                }
+
+                org.ole.planet.myplanet.utilities.SyncTimeLogger.logApiCall(
+                    "${UrlUtils.getUrl()}/$table/_all_docs (batch $batchNumber)",
+                    batchApiDuration,
+                    response.isSuccessful,
+                    arr.size()
+                )
+
+                // Use async transaction to avoid blocking (ANR-safe)
+                databaseService.withRealm { realm ->
+                    realm.executeTransactionAsync { mRealm: Realm ->
+                        val insertStartTime = System.currentTimeMillis()
+
+                        if (table == "chat_history") {
+                            insertToChat(arr, mRealm)
                         }
-                        keys.clear()
+                        insertDocs(arr, mRealm, table)
+
+                        val insertDuration = System.currentTimeMillis() - insertStartTime
+                        org.ole.planet.myplanet.utilities.SyncTimeLogger.logRealmOperation(
+                            "insert_batch",
+                            table,
+                            insertDuration,
+                            arr.size()
+                        )
                     }
                 }
-            } catch (e: IOException) {
-                e.printStackTrace()
+
+                totalDocs += arr.size()
+                skip += arr.size()
+
+                val batchDuration = System.currentTimeMillis() - batchStartTime
+                android.util.Log.d("SyncPerf", "    $table batch $batchNumber: ${arr.size()} docs in ${batchDuration}ms (total: $totalDocs)")
+
+                // Show progress for slow syncs
+                if (table in listOf("ratings", "submissions")) {
+                    org.ole.planet.myplanet.utilities.SyncTimeLogger.logDetail(table, "Progress: $totalDocs documents synced so far...")
+                }
+
+                // If we got less than pageSize, we're done
+                if (arr.size() < pageSize) {
+                    break
+                }
             }
+
+            val totalDuration = System.currentTimeMillis() - syncStartTime
+            android.util.Log.d("SyncPerf", "  ✓ Completed $table sync: $totalDocs docs in ${totalDuration}ms")
+        } catch (e: Exception) {
+            e.printStackTrace()
+            val failDuration = System.currentTimeMillis() - syncStartTime
+            android.util.Log.d("SyncPerf", "  ✗ Failed $table sync after ${failDuration}ms: ${e.message}")
         }
     }
 
