@@ -31,10 +31,14 @@ class DatabaseService(context: Context) {
 
     @Deprecated("Use withRealm/withRealmAsync instead")
     val realmInstance: Realm
-        get() = Realm.getDefaultInstance()
+        get() = getNewRealmInstance()
+
+    fun getNewRealmInstance(): Realm {
+        return Realm.getDefaultInstance()
+    }
 
     private inline fun <T> withRealmInstance(block: (Realm) -> T): T {
-        val realm = Realm.getDefaultInstance()
+        val realm = getNewRealmInstance()
         return try {
             block(realm)
         } finally {
