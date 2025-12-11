@@ -9,86 +9,81 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.google.gson.JsonObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowMyProgressBinding
-import org.ole.planet.myplanet.utilities.DiffUtils
+import org.ole.planet.myplanet.model.ProgressData
 
-class AdapterMyProgress(private val context: Context) : ListAdapter<JsonObject, RecyclerView.ViewHolder>(DiffUtils.itemCallback({ old, new -> old.toString() == new.toString() }, { old, new -> old.toString() == new.toString() })) {
+class AdapterMyProgress(private val context: Context) : ListAdapter<ProgressData, AdapterMyProgress.ViewHolderMyProgress>(PROGRESS_DATA_COMPARATOR) {
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderMyProgress {
         val binding = RowMyProgressBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ViewHolderMyProgress(binding)
     }
 
-    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        if (holder is ViewHolderMyProgress) {
-            val item = getItem(position)
-            holder.binding.tvTitle.text = item.asJsonObject["courseName"].asString
-            if (item.asJsonObject.has("progress")) {
-                holder.binding.tvDescription.text = context.getString(R.string.step_progress, item.asJsonObject["progress"].asJsonObject["current"].asInt, item.asJsonObject["progress"].asJsonObject["max"].asInt)
-                holder.itemView.setOnClickListener {
-                    context.startActivity(Intent(context, CourseProgressActivity::class.java).putExtra("courseId", item.asJsonObject["courseId"].asString))
-                }
-            }
-            if (item.asJsonObject.has("mistakes")) holder.binding.tvTotal.text =
-                item.asJsonObject["mistakes"].asString
-            else holder.binding.tvTotal.text = context.getString(R.string.message_placeholder, "0")
-            showStepMistakes(position, holder.binding)
+    override fun onBindViewHolder(holder: ViewHolderMyProgress, position: Int) {
+        val item = getItem(position)
+        holder.binding.tvTitle.text = item.courseName
+        holder.binding.tvDescription.text = context.getString(R.string.progress_percentage, item.progress)
+        holder.itemView.setOnClickListener {
+            context.startActivity(Intent(context, CourseProgressActivity::class.java).putExtra("courseId", item.courseId))
         }
+        holder.binding.tvTotal.text = context.getString(R.string.mistakes_with_colon, item.mistakes)
+        showStepMistakes(item.stepMistakes, holder.binding)
     }
 
-    private fun showStepMistakes(position: Int, binding: RowMyProgressBinding) {
-        val item = getItem(position)
-        if (item.asJsonObject.has("stepMistake")) {
-            val stepMistake = item.asJsonObject["stepMistake"].asJsonObject
-            binding.llProgress.removeAllViews()
-
-            if (stepMistake.keySet().isNotEmpty()) {
-                binding.llHeader.visibility = View.VISIBLE
-                val textColor = ContextCompat.getColor(context, R.color.daynight_textColor)
-                stepMistake.keySet().forEach { stepKey ->
-                    val row = LinearLayout(context).apply {
-                        layoutParams = LinearLayout.LayoutParams(
-                            LinearLayout.LayoutParams.MATCH_PARENT,
-                            LinearLayout.LayoutParams.WRAP_CONTENT
-                        )
-                        orientation = LinearLayout.HORIZONTAL
-                        gravity = Gravity.CENTER
-                    }
-
-                    val stepView = TextView(context).apply {
-                        layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-                        text = "${stepKey.toInt().plus(1)}"
-                        gravity = Gravity.CENTER
-                        setTextColor(textColor)
-                    }
-
-                    val mistakeView = TextView(context).apply {
-                        layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-                        text = "${stepMistake[stepKey].asInt}"
-                        gravity = Gravity.CENTER
-                        setTextColor(textColor)
-                    }
-
-                    row.addView(stepView)
-                    row.addView(mistakeView)
-
-                    binding.llProgress.addView(row)
+    private fun showStepMistakes(stepMistakes: Map<String, Int>, binding: RowMyProgressBinding) {
+        binding.llProgress.removeAllViews()
+        if (stepMistakes.isNotEmpty()) {
+            binding.llHeader.visibility = View.VISIBLE
+            val textColor = ContextCompat.getColor(context, R.color.daynight_textColor)
+            stepMistakes.keys.forEach { stepKey ->
+                val row = LinearLayout(context).apply {
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    )
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.CENTER
                 }
-            } else {
-                binding.llHeader.visibility = View.GONE
+
+                val stepView = TextView(context).apply {
+                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                    text = "${stepKey.toInt().plus(1)}"
+                    gravity = Gravity.CENTER
+                    setTextColor(textColor)
+                }
+
+                val mistakeView = TextView(context).apply {
+                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                    text = "${stepMistakes[stepKey]}"
+                    gravity = Gravity.CENTER
+                    setTextColor(textColor)
+                }
+
+                row.addView(stepView)
+                row.addView(mistakeView)
+
+                binding.llProgress.addView(row)
             }
         } else {
             binding.llHeader.visibility = View.GONE
         }
     }
 
-    internal inner class ViewHolderMyProgress(val binding: RowMyProgressBinding) : RecyclerView.ViewHolder(binding.root) {
-        val tvTitle = binding.tvTitle
-        val tvTotal = binding.tvTotal
-        val tvDescription = binding.tvDescription
+    inner class ViewHolderMyProgress(val binding: RowMyProgressBinding) : RecyclerView.ViewHolder(binding.root)
+
+    companion object {
+        private val PROGRESS_DATA_COMPARATOR = object : DiffUtil.ItemCallback<ProgressData>() {
+            override fun areItemsTheSame(oldItem: ProgressData, newItem: ProgressData): Boolean {
+                return oldItem.courseId == newItem.courseId
+            }
+
+            override fun areContentsTheSame(oldItem: ProgressData, newItem: ProgressData): Boolean {
+                return oldItem == newItem
+            }
+        }
     }
 }
