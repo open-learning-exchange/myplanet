@@ -19,4 +19,6 @@ interface CourseRepository {
         subjectLevel: String,
         tagNames: List<String>
     ): List<RealmMyCourse>
+
+    suspend fun getCourseProgress(courseId: String, userId: String?): org.ole.planet.myplanet.model.CourseProgressData?
 }

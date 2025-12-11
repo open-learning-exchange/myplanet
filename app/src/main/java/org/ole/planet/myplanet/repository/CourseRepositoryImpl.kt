@@ -5,9 +5,15 @@ import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse
+import org.ole.planet.myplanet.model.CourseProgressData
+import org.ole.planet.myplanet.model.RealmAnswer
+import org.ole.planet.myplanet.model.RealmCourseProgress
+import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.StepProgress
 
 class CourseRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
@@ -131,6 +137,56 @@ class CourseRepositoryImpl @Inject constructor(
                 .filter { !it.courseTitle.isNullOrBlank() }
                 .sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
             realm.copyFromRealm(sortedList)
+        }
+    }
+
+    override suspend fun getCourseProgress(courseId: String, userId: String?): CourseProgressData? {
+        return withRealm { realm ->
+            val stepsList = RealmMyCourse.getCourseSteps(realm, courseId)
+            val max = stepsList.size
+            val current = RealmCourseProgress.getCurrentProgress(stepsList, realm, userId, courseId)
+
+            val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
+            val title = course?.courseTitle
+
+            val steps = stepsList.map { step ->
+                val stepProgress = StepProgress(step.id)
+                val exams = realm.where(RealmStepExam::class.java).equalTo("stepId", step.id).findAll()
+                getExamObject(realm, exams, stepProgress, userId)
+                stepProgress
+            }
+            CourseProgressData(title, current, max, steps)
+        }
+    }
+
+    private fun getExamObject(
+        realm: io.realm.Realm,
+        exams: io.realm.RealmResults<RealmStepExam>,
+        stepProgress: StepProgress,
+        userId: String?
+    ) {
+        exams.forEach { it ->
+            it.id?.let { it1 ->
+                realm.where(RealmSubmission::class.java).equalTo("userId", userId)
+                    .contains("parentId", it1).equalTo("type", "exam").findAll()
+            }?.forEach {
+                val answers = realm.where(RealmAnswer::class.java).equalTo("submissionId", it.id).findAll()
+                var examId = it.parentId
+                if (it.parentId?.contains("@") == true) {
+                    examId = it.parentId!!.split("@")[0]
+                }
+                val questions = realm.where(RealmExamQuestion::class.java).equalTo("examId", examId).findAll()
+                val questionCount = questions.size
+                if (questionCount == 0) {
+                    stepProgress.completed = false
+                    stepProgress.percentage = 0.0
+                } else {
+                    stepProgress.completed = answers.size == questionCount
+                    val percentage = (answers.size.toDouble() / questionCount) * 100
+                    stepProgress.percentage = percentage
+                }
+                stepProgress.status = it.status
+            }
         }
     }
 }
