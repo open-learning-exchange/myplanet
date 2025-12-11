@@ -5,15 +5,17 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DividerItemDecoration
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.databinding.FragmentLifeBinding
 import org.ole.planet.myplanet.model.RealmMyLife
-import org.ole.planet.myplanet.model.RealmMyLife.Companion.getMyLifeByUserId
 import org.ole.planet.myplanet.repository.LifeRepository
 import org.ole.planet.myplanet.ui.mylife.helper.OnStartDragListener
 import org.ole.planet.myplanet.ui.mylife.helper.SimpleItemTouchHelperCallback
@@ -25,6 +27,7 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
     private var mItemTouchHelper: ItemTouchHelper? = null
     @Inject
     lateinit var lifeRepository: LifeRepository
+    private val viewModel: MyLifeViewModel by viewModels()
     private var _binding: FragmentLifeBinding? = null
     private val binding get() = checkNotNull(_binding)
     override fun getLayout(): Int = R.layout.fragment_life
@@ -48,9 +51,12 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val myLifeList = getMyLifeByUserId(mRealm, model?.id)
-        adapterMyLife.submitList(mRealm.copyFromRealm(myLifeList))
         recyclerView.setHasFixedSize(true)
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.getMyLifeList(model?.id).collect { myLifeList ->
+                adapterMyLife.submitList(myLifeList)
+            }
+        }
         setupUI(binding.myLifeParentLayout, requireActivity())
         val callback: ItemTouchHelper.Callback = SimpleItemTouchHelperCallback(adapterMyLife)
         mItemTouchHelper = ItemTouchHelper(callback)

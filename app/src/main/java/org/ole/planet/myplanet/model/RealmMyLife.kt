@@ -26,18 +26,6 @@ open class RealmMyLife : RealmObject {
     constructor()
 
     companion object {
-        fun getMyLifeByUserId(mRealm: Realm, settings: SharedPreferences?): List<RealmMyLife> {
-            val userId = settings?.getString("userId", "--")
-            return getMyLifeByUserId(mRealm, userId)
-        }
-
-        @JvmStatic
-        fun getMyLifeByUserId(mRealm: Realm, userId: String?): List<RealmMyLife> {
-            return mRealm.where(RealmMyLife::class.java).equalTo("userId", userId).findAll()
-                .sort("weight")
-        }
-
-
         @JvmStatic
         fun updateVisibility(isVisible: Boolean, id: String?) {
             MainApplication.applicationScope.launch {

@@ -54,6 +54,7 @@ import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.FileUtils
+import org.ole.planet.myplanet.repository.LifeRepository
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
@@ -61,6 +62,8 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     SyncListener {
     private val viewModel: DashboardViewModel by viewModels()
     private val realm get() = requireRealmInstance()
+    @Inject
+    lateinit var lifeRepository: LifeRepository
     private var fullName: String? = null
     private var params = LinearLayout.LayoutParams(250, 100)
     private var di: DialogUtils.CustomProgressDialog? = null
@@ -155,6 +158,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
                 renderMyLibrary(it.library)
                 renderMyCourses(it.courses)
                 renderMyTeams(it.teams)
+                renderMyLife(it.myLife)
             }
         }
     }
@@ -237,9 +241,10 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         imgTask.visibility = if (info.hasTask) View.VISIBLE else View.GONE
     }
 
-    private fun myLifeListInit(flexboxLayout: FlexboxLayout) {
-        val rawMylife: List<RealmMyLife> = RealmMyLife.getMyLifeByUserId(realm, settings)
-        val dbMylife = rawMylife.filter { it.isVisible }
+    private fun renderMyLife(myLife: List<RealmMyLife>) {
+        val flexboxLayout = view?.findViewById<FlexboxLayout>(R.id.flexboxLayoutMyLife) ?: return
+        flexboxLayout.removeAllViews()
+        val dbMylife = myLife.filter { it.isVisible }
 
         val user = profileDbHandler.userModel
         val surveyCount = if (isRealmInitialized()) {
@@ -250,26 +255,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
         for ((itemCnt, items) in dbMylife.withIndex()) {
             flexboxLayout.addView(getLayout(itemCnt, items, surveyCount), params)
-        }
-    }
-
-    private suspend fun setUpMyLife(userId: String?) {
-        databaseService.executeTransactionAsync { realm ->
-            val realmObjects = RealmMyLife.getMyLifeByUserId(realm, settings)
-            if (realmObjects.isEmpty()) {
-                val myLifeListBase = getMyLifeListBase(userId)
-                var ml: RealmMyLife
-                var weight = 1
-                for (item in myLifeListBase) {
-                    ml = realm.createObject(RealmMyLife::class.java, UUID.randomUUID().toString())
-                    ml.title = item.title
-                    ml.imageId = item.imageId
-                    ml.weight = weight
-                    ml.userId = item.userId
-                    ml.isVisible = true
-                    weight++
-                }
-            }
         }
     }
 
@@ -329,8 +314,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
         val userId = settings?.getString("userId", "--")
         viewLifecycleOwner.lifecycleScope.launch {
-            setUpMyLife(userId)
-            myLifeListInit(myLifeFlex)
+            viewModel.setUpMyLife(userId)
         }
 
 

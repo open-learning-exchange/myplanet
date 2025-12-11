@@ -15,6 +15,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmSubmission
@@ -23,6 +24,7 @@ import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.TeamNotificationInfo
 import org.ole.planet.myplanet.repository.CourseRepository
 import org.ole.planet.myplanet.repository.LibraryRepository
+import org.ole.planet.myplanet.repository.LifeRepository
 import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.TeamRepository
@@ -33,6 +35,7 @@ data class DashboardUiState(
     val library: List<RealmMyLibrary> = emptyList(),
     val courses: List<RealmMyCourse> = emptyList(),
     val teams: List<RealmMyTeam> = emptyList(),
+    val myLife: List<RealmMyLife> = emptyList(),
 )
 
 @HiltViewModel
@@ -43,6 +46,7 @@ class DashboardViewModel @Inject constructor(
     private val teamRepository: TeamRepository,
     private val submissionRepository: SubmissionRepository,
     private val notificationRepository: NotificationRepository,
+    private val lifeRepository: LifeRepository,
     private val databaseService: DatabaseService
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -132,6 +136,12 @@ class DashboardViewModel @Inject constructor(
             }
 
             launch {
+                lifeRepository.getMyLifeList(userId).collect { myLife ->
+                    _uiState.update { it.copy(myLife = myLife) }
+                }
+            }
+
+            launch {
                 courseRepository.getMyCoursesFlow(userId).collect { courses ->
                     _uiState.update { it.copy(courses = courses) }
                 }
@@ -143,6 +153,10 @@ class DashboardViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    suspend fun setUpMyLife(userId: String?) {
+        lifeRepository.setupMyLife(userId)
     }
 
     suspend fun getUsersSortedByDate() = userRepository.getUsersSortedBy("joinDate", Sort.DESCENDING)
