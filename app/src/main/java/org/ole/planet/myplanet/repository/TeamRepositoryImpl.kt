@@ -40,6 +40,21 @@ class TeamRepositoryImpl @Inject constructor(
     @AppPreferences private val preferences: SharedPreferences,
     private val serverUrlMapper: ServerUrlMapper,
 ) : RealmRepository(databaseService), TeamRepository {
+    override suspend fun getTasksFlow(userId: String?): Flow<List<RealmTeamTask>> {
+        return queryListFlow(RealmTeamTask::class.java) {
+            notEqualTo("status", "archived")
+                .equalTo("completed", false)
+                .equalTo("assignee", userId)
+        }
+    }
+
+    override suspend fun getTasks(userId: String?): List<RealmTeamTask> {
+        return queryList(RealmTeamTask::class.java) {
+            notEqualTo("status", "archived")
+                .equalTo("completed", false)
+                .equalTo("assignee", userId)
+        }
+    }
 
     override suspend fun getMyTeamsFlow(userId: String): Flow<List<RealmMyTeam>> {
         return queryListFlow(RealmMyTeam::class.java) {
