@@ -9,20 +9,15 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseMemberFragment
 import org.ole.planet.myplanet.callback.MemberChangeListener
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMember
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.JoinedMemberData
 
 class JoinedMemberFragment : BaseMemberFragment() {
     private var memberChangeListener: MemberChangeListener = object : MemberChangeListener {
@@ -40,35 +35,7 @@ class JoinedMemberFragment : BaseMemberFragment() {
     }
 
     private suspend fun loadAndDisplayJoinedMembers() {
-        val joinedMembersData = withContext(Dispatchers.IO) {
-            databaseService.withRealm { realm ->
-                val members = getJoinedMember(teamId, realm).map { realm.copyFromRealm(it) }.toMutableList()
-                val leaderId = realm.where(RealmMyTeam::class.java)
-                    .equalTo("teamId", teamId)
-                    .equalTo("isLeader", true)
-                    .findFirst()?.userId
-                val leader = members.find { it.id == leaderId }
-                if (leader != null) {
-                    members.remove(leader)
-                    members.add(0, leader)
-                }
-                members.map { member ->
-                    val lastVisitTimestamp = RealmTeamLog.getLastVisit(realm, member.name, teamId)
-                    val lastVisitDate = if (lastVisitTimestamp != null) {
-                        val sdf = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
-                        sdf.format(Date(lastVisitTimestamp))
-                    } else {
-                        getString(R.string.no_visit)
-                    }
-                    val visitCount = RealmTeamLog.getVisitCount(realm, member.name, teamId)
-                    val offlineVisits = "${profileDbHandler.getOfflineVisits(member)}"
-                    val profileLastVisit = profileDbHandler.getLastVisit(member)
-                    JoinedMemberData(member, visitCount, lastVisitDate, offlineVisits,
-                        profileLastVisit, member.id == leaderId
-                    )
-                }
-            }
-        }
+        val joinedMembersData = teamRepository.getJoinedMembersWithVisitInfo(teamId)
         cachedJoinedMembers = joinedMembersData
         val currentUserId = user?.id
         val isLoggedInUserLeader = joinedMembersData.any { it.user.id == currentUserId && it.isLeader }
