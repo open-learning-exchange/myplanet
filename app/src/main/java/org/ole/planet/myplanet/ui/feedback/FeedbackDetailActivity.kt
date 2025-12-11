@@ -69,7 +69,7 @@ class FeedbackDetailActivity : AppCompatActivity() {
                         activityFeedbackDetailBinding.tvDate.text = getFormattedDateWithTime(it.openTime)
                         activityFeedbackDetailBinding.tvMessage.text =
                             if (TextUtils.isEmpty(it.message)) "N/A" else it.message
-                        mAdapter?.submitList(it.messageList)
+                        mAdapter?.submitList(it.messageList?.toList() ?: emptyList())
                         updateForClosed()
                     }
                 }
