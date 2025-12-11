@@ -10,6 +10,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
@@ -28,7 +29,8 @@ import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
-class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamList.OnUpdateCompleteListener {
+class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamList.OnUpdateCompleteListener,
+    AdapterTeamList.OnTeamActionsListener {
     private var _binding: FragmentTeamBinding? = null
     private val binding get() = _binding!!
     private lateinit var alertCreateTeamBinding: AlertCreateTeamBinding
@@ -41,6 +43,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
     @Inject
     @AppPreferences
     lateinit var settings: SharedPreferences
+    private val viewModel: TeamViewModel by viewModels()
     var type: String? = null
     private var fromDashboard: Boolean = false
     var user: RealmUserModel? = null
@@ -199,69 +202,58 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        binding.rvTeamList.layoutManager = LinearLayoutManager(activity)
+        setupRecyclerView()
+        observeTeamData()
         refreshTeamList()
+        setupTextWatcher()
+    }
+
+    private fun setupRecyclerView() {
+        binding.rvTeamList.layoutManager = LinearLayoutManager(activity)
+        adapterTeamList = AdapterTeamList(
+            requireActivity(),
+            childFragmentManager,
+            teamRepository,
+            user,
+            viewLifecycleOwner.lifecycleScope,
+            sharedPrefManager
+        ).apply {
+            setType(type)
+            setTeamListener(this@TeamFragment)
+            setUpdateCompleteListener(this@TeamFragment)
+            setTeamActionsListener(this@TeamFragment)
+        }
+        binding.rvTeamList.adapter = adapterTeamList
+    }
+
+    private fun observeTeamData() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.teamData.collectLatest { teamDataList ->
+                adapterTeamList.submitList(teamDataList)
+                onUpdateComplete(teamDataList.size)
+                listContentDescription(conditionApplied)
+            }
+        }
+    }
+
+    private fun setupTextWatcher() {
         textWatcher = object : TextWatcher {
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
             override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {
-                if (TextUtils.isEmpty(charSequence)) {
-                    showNoResultsMessage(false)
-                    updatedTeamList()
-                    return
-                }
-
-                val list: List<RealmMyTeam>
-                if (fromDashboard) {
-                    list = teamList.filter {
+                val filteredList = if (TextUtils.isEmpty(charSequence)) {
+                    teamList
+                } else {
+                    teamList.filter {
                         it.name?.contains(charSequence.toString(), ignoreCase = true) == true
                     }
-                } else {
-                    val (filteredList, newConditionApplied) = getList(charSequence.toString())
-                    list = filteredList
-                    conditionApplied = newConditionApplied
                 }
-
-                if (list.isEmpty()) {
-                    showNoResultsMessage(true, charSequence.toString())
-                    if (::adapterTeamList.isInitialized) {
-                        adapterTeamList.submitList(emptyList())
-                    }
-                } else {
-                    showNoResultsMessage(false)
-
-                    val sortedList = list.sortedWith(compareByDescending<RealmMyTeam> {
-                        it.name?.startsWith(charSequence.toString(), ignoreCase = true)
-                    }.thenBy { it.name })
-
-                    val teamDataList = sortedList.map { team ->
-                        TeamData(
-                            _id = team._id,
-                            name = team.name,
-                            teamType = team.teamType,
-                            createdDate = team.createdDate,
-                            type = team.type,
-                            status = team.status,
-                            visitCount = 0L,
-                            teamStatus = null,
-                            description = team.description,
-                            services = team.services,
-                            rules = team.rules,
-                            teamId = team.teamId
-                        )
-                    }
-                    
-                    if (!::adapterTeamList.isInitialized) {
-                        setTeamList()
-                    } else {
-                        adapterTeamList.submitList(teamDataList)
-                    }
-                    listContentDescription(conditionApplied)
-                }
+                viewModel.prepareTeamData(filteredList, user?.id)
             }
             override fun afterTextChanged(editable: Editable) {}
         }
         binding.etSearch.addTextChangedListener(textWatcher)
     }
+
 
     private fun getList(searchText: String): Pair<List<RealmMyTeam>, Boolean> {
         val nameFilteredList = teamList.filter {
@@ -283,23 +275,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
     }
 
     private fun setTeamList() {
-        val list = teamList
-        adapterTeamList = activity?.let {
-            AdapterTeamList(it, list, childFragmentManager, teamRepository, user, viewLifecycleOwner.lifecycleScope, sharedPrefManager)
-        } ?: return
-
-        adapterTeamList.setType(type)
-        adapterTeamList.setTeamListener(this@TeamFragment)
-        adapterTeamList.setUpdateCompleteListener(this@TeamFragment)
-        requireView().findViewById<View>(R.id.type).visibility =
-            if (type == null) {
-                View.GONE
-            } else {
-                View.VISIBLE
-            }
-
-        binding.rvTeamList.adapter = adapterTeamList
-        adapterTeamList.updateList()
+        viewModel.prepareTeamData(teamList, user?.id)
         listContentDescription(conditionApplied)
     }
 
@@ -332,22 +308,19 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
         team?.let { createTeamAlert(it) }
     }
 
+    override fun onLeaveTeam(team: TeamData, user: RealmUserModel?) {
+        viewModel.leaveTeam(team._id!!, user?.id)
+    }
+
+    override fun onRequestToJoin(team: TeamData, user: RealmUserModel?) {
+        viewModel.requestToJoin(team._id!!, user?.id, user?.planetCode, team.teamType)
+    }
+
     override fun onUpdateComplete(itemCount: Int) {
         if (itemCount == 0) {
             showNoResultsMessage(true)
         } else {
             showNoResultsMessage(false)
-        }
-    }
-
-    private fun updatedTeamList() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            if (!::adapterTeamList.isInitialized || binding.rvTeamList.adapter == null) {
-                setTeamList()
-            } else {
-                adapterTeamList.updateList()
-            }
-            listContentDescription(conditionApplied)
         }
     }
 
