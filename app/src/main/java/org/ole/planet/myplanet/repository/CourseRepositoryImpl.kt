@@ -133,4 +133,13 @@ class CourseRepositoryImpl @Inject constructor(
             realm.copyFromRealm(sortedList)
         }
     }
+
+    override suspend fun getCoursesByTeamCourseIds(courseIds: List<String>): List<RealmMyCourse> {
+        return withRealm { realm ->
+            val results = realm.where(RealmMyCourse::class.java)
+                .`in`("id", courseIds.toTypedArray())
+                .findAll()
+            realm.copyFromRealm(results)
+        }
+    }
 }

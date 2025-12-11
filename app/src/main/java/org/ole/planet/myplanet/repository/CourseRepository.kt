@@ -19,4 +19,5 @@ interface CourseRepository {
         subjectLevel: String,
         tagNames: List<String>
     ): List<RealmMyCourse>
+    suspend fun getCoursesByTeamCourseIds(courseIds: List<String>): List<RealmMyCourse>
 }
