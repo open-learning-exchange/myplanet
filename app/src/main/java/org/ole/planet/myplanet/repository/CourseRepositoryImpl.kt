@@ -55,30 +55,28 @@ class CourseRepositoryImpl @Inject constructor(
     }
 
     override suspend fun markCourseAdded(courseId: String, userId: String?): Boolean {
-        if (courseId.isBlank()) {
+        if (courseId.isBlank() || userId.isNullOrBlank()) {
             return false
         }
 
-        var courseFound = false
+        var isCourseAdded = false
         executeTransaction { realm ->
             realm.where(RealmMyCourse::class.java)
                 .equalTo("courseId", courseId)
                 .findFirst()
                 ?.let { course ->
-                    course.setUserId(userId)
-                    if (!userId.isNullOrBlank()) {
-                        realm.where(RealmRemovedLog::class.java)
-                            .equalTo("type", "courses")
-                            .equalTo("userId", userId)
-                            .equalTo("docId", course.courseId)
-                            .findAll()
-                            .deleteAllFromRealm()
+                    if (course.userId?.contains(userId) == true) {
+                        course.removeUserId(userId)
+                        RealmRemovedLog.onRemove(realm, "courses", userId, course.courseId)
+                        isCourseAdded = false
+                    } else {
+                        course.setUserId(userId)
+                        RealmRemovedLog.onAdd(realm, "courses", userId, course.courseId)
+                        isCourseAdded = true
                     }
-                    courseFound = true
                 }
         }
-
-        return courseFound
+        return isCourseAdded
     }
 
     private suspend fun getCourseResources(courseId: String?, isOffline: Boolean): List<RealmMyLibrary> {
