@@ -20,20 +20,12 @@ import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
 
 class AdapterMySubmission(
     private val context: Context,
-) : ListAdapter<RealmSubmission, AdapterMySubmission.ViewHolderMySurvey>(
+) : ListAdapter<SubmissionItem, AdapterMySubmission.ViewHolderMySurvey>(
     DiffUtils.itemCallback(
-        areItemsTheSame = { oldItem, newItem ->
-            oldItem.id == newItem.id
-        },
-        areContentsTheSame = { oldItem, newItem ->
-            oldItem.id == newItem.id &&
-                oldItem.status == newItem.status &&
-                oldItem.lastUpdateTime == newItem.lastUpdateTime
-        }
+        areItemsTheSame = { oldItem, newItem -> oldItem.submission.id == newItem.submission.id },
+        areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
     )
 ) {
-    private var examHashMap: HashMap<String?, RealmStepExam> = hashMapOf()
-    private var submissionCountMap: Map<String?, Int> = emptyMap()
     private var listener: OnHomeItemClickListener? = null
     private var type = ""
 
@@ -41,16 +33,6 @@ class AdapterMySubmission(
         if (context is OnHomeItemClickListener) {
             listener = context
         }
-    }
-
-    fun setExams(exams: HashMap<String?, RealmStepExam>) {
-        this.examHashMap = exams
-        notifyDataSetChanged()
-    }
-
-    fun setSubmissionCounts(counts: Map<String?, Int>) {
-        this.submissionCountMap = counts
-        notifyDataSetChanged()
     }
 
     fun setType(type: String?) {
@@ -65,16 +47,15 @@ class AdapterMySubmission(
     }
 
     override fun onBindViewHolder(holder: ViewHolderMySurvey, position: Int) {
-        val submission = getItem(position)
+        val item = getItem(position)
+        val submission = item.submission
         val binding = holder.binding
         binding.status.text = submission.status
         binding.date.text = getFormattedDate(submission.startTime)
+        binding.title.text = item.exam?.name
         showSubmittedBy(binding, submission)
-        if (examHashMap.containsKey(submission.parentId)) {
-            binding.title.text = examHashMap[submission.parentId]?.name
-        }
 
-        val count = submissionCountMap[submission.id] ?: 1
+        val count = item.count
         if (count > 1) {
             binding.submissionCount.visibility = View.VISIBLE
             binding.submissionCount.text = "($count)"
@@ -84,7 +65,7 @@ class AdapterMySubmission(
 
         holder.itemView.setOnClickListener {
             if (count > 1) {
-                showAllSubmissions(submission)
+                showAllSubmissions(submission, item.exam?.name)
             } else {
                 if (type == "survey") {
                     openSurvey(listener, submission.id, true, false, "")
@@ -116,12 +97,10 @@ class AdapterMySubmission(
         }
     }
 
-    private fun showAllSubmissions(submission: RealmSubmission) {
-        val examTitle = examHashMap[submission.parentId]?.name ?: "Submissions"
-
+    private fun showAllSubmissions(submission: RealmSubmission, examTitle: String?) {
         val b = Bundle()
         b.putString("parentId", submission.parentId)
-        b.putString("examTitle", examTitle)
+        b.putString("examTitle", examTitle ?: "Submissions")
         b.putString("userId", submission.userId)
 
         val fragment = SubmissionListFragment()
