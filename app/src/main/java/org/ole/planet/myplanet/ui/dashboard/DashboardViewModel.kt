@@ -122,6 +122,47 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
+    suspend fun getTeamNotifications(teamIds: List<String>, userId: String): Map<String, TeamNotificationInfo> {
+        return databaseService.withRealmAsync { realm ->
+            val notificationMap = mutableMapOf<String, TeamNotificationInfo>()
+
+            // Fetch all relevant notifications at once
+            val notifications = realm.where(RealmTeamNotification::class.java)
+                .in("parentId", teamIds.toTypedArray())
+                .equalTo("type", "chat")
+                .findAll()
+                .associateBy { it.parentId }
+
+            // Fetch all relevant chat counts at once
+            val chatCounts = realm.where(RealmNews::class.java)
+                .equalTo("viewableBy", "teams")
+                .in("viewableId", teamIds.toTypedArray())
+                .findAll()
+                .groupBy { it.viewableId }
+                .mapValues { it.value.size.toLong() }
+
+            // Fetch all relevant tasks at once
+            val current = System.currentTimeMillis()
+            val tomorrow = Calendar.getInstance()
+            tomorrow.add(Calendar.DAY_OF_YEAR, 1)
+
+            val tasks = realm.where(RealmTeamTask::class.java)
+                .equalTo("assignee", userId)
+                .between("deadline", current, tomorrow.timeInMillis)
+                .findAll()
+            val hasTask = tasks.isNotEmpty()
+
+            // Combine the results
+            for (teamId in teamIds) {
+                val notification = notifications[teamId]
+                val chatCount = chatCounts[teamId] ?: 0L
+                val hasChat = notification != null && notification.lastCount < chatCount
+                notificationMap[teamId] = TeamNotificationInfo(hasTask, hasChat)
+            }
+            notificationMap
+        }
+    }
+
     fun loadUserContent(userId: String?) {
         if (userId == null) return
         userContentJob?.cancel()
