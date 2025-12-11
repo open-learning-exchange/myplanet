@@ -6,13 +6,14 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.Calendar
 import javax.inject.Inject
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import io.realm.Sort
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.di.IoDispatcher
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
@@ -43,7 +44,8 @@ class DashboardViewModel @Inject constructor(
     private val teamRepository: TeamRepository,
     private val submissionRepository: SubmissionRepository,
     private val notificationRepository: NotificationRepository,
-    private val databaseService: DatabaseService
+    private val databaseService: DatabaseService,
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
@@ -125,24 +127,35 @@ class DashboardViewModel @Inject constructor(
     fun loadUserContent(userId: String?) {
         if (userId == null) return
         userContentJob?.cancel()
-        userContentJob = viewModelScope.launch {
+        userContentJob = viewModelScope.launch(ioDispatcher) {
             launch {
                 val myLibrary = libraryRepository.getMyLibrary(userId)
-                _uiState.update { it.copy(library = myLibrary) }
+                withContext(Dispatchers.Main) {
+                    _uiState.update { it.copy(library = myLibrary) }
+                }
             }
 
             launch {
                 courseRepository.getMyCoursesFlow(userId).collect { courses ->
-                    _uiState.update { it.copy(courses = courses) }
+                    withContext(Dispatchers.Main) {
+                        _uiState.update { it.copy(courses = courses) }
+                    }
                 }
             }
 
             launch {
                 teamRepository.getMyTeamsFlow(userId).collect { teams ->
-                    _uiState.update { it.copy(teams = teams) }
+                    withContext(Dispatchers.Main) {
+                        _uiState.update { it.copy(teams = teams) }
+                    }
                 }
             }
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        userContentJob?.cancel()
     }
 
     suspend fun getUsersSortedByDate() = userRepository.getUsersSortedBy("joinDate", Sort.DESCENDING)
