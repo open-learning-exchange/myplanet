@@ -37,11 +37,6 @@ osmdroidAndroid = "6.1.20"
 kotlinxSerializationJson = "1.9.0"
 kotlinxCoroutinesAndroid = "1.10.2"
 androidGifDrawable = "1.2.29"
-junit = "4.13.2"
-mockitoCore = "5.12.0"
-kotlinxCoroutinesTest = "1.10.2"
-mockWebServer = "5.3.2"
-androidxArchCoreTesting = "2.2.0"
 
 [libraries]
 android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "androidGradlePlugin" }
@@ -95,11 +90,6 @@ kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinxCoroutinesAndroid" }
 android-gif-drawable = { module = "pl.droidsonroids.gif:android-gif-drawable", version.ref = "androidGifDrawable" }
-junit = { module = "junit:junit", version.ref = "junit" }
-mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockitoCore" }
-kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinxCoroutinesTest" }
-mock-web-server = { module = "com.squareup.okhttp3:mockwebserver", version.ref = "mockWebServer" }
-androidx-arch-core-testing = { module = "androidx.arch.core:core-testing", version.ref = "androidxArchCoreTesting" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }

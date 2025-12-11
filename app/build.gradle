@@ -216,13 +216,6 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.android.gif.drawable)
-
-    // Test dependencies
-    testImplementation(libs.junit)
-    testImplementation(libs.mockito.core)
-    testImplementation(libs.kotlinx.coroutines.test)
-    testImplementation(libs.mock.web.server)
-    testImplementation(libs.androidx.arch.core.testing)
 }
 realm {
     syncEnabled = true
