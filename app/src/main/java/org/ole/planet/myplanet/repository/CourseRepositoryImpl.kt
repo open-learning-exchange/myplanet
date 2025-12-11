@@ -4,10 +4,12 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmCourseStep
+import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.model.RealmSubmission
 
 class CourseRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
@@ -53,30 +55,28 @@ class CourseRepositoryImpl @Inject constructor(
     }
 
     override suspend fun markCourseAdded(courseId: String, userId: String?): Boolean {
-        if (courseId.isBlank()) {
+        if (courseId.isBlank() || userId.isNullOrBlank()) {
             return false
         }
 
-        var courseFound = false
+        var isCourseAdded = false
         executeTransaction { realm ->
             realm.where(RealmMyCourse::class.java)
                 .equalTo("courseId", courseId)
                 .findFirst()
                 ?.let { course ->
-                    course.setUserId(userId)
-                    if (!userId.isNullOrBlank()) {
-                        realm.where(RealmRemovedLog::class.java)
-                            .equalTo("type", "courses")
-                            .equalTo("userId", userId)
-                            .equalTo("docId", course.courseId)
-                            .findAll()
-                            .deleteAllFromRealm()
+                    if (course.userId?.contains(userId) == true) {
+                        course.removeUserId(userId)
+                        RealmRemovedLog.onRemove(realm, "courses", userId, course.courseId)
+                        isCourseAdded = false
+                    } else {
+                        course.setUserId(userId)
+                        RealmRemovedLog.onAdd(realm, "courses", userId, course.courseId)
+                        isCourseAdded = true
                     }
-                    courseFound = true
                 }
         }
-
-        return courseFound
+        return isCourseAdded
     }
 
     private suspend fun getCourseResources(courseId: String?, isOffline: Boolean): List<RealmMyLibrary> {
@@ -131,6 +131,32 @@ class CourseRepositoryImpl @Inject constructor(
                 .filter { !it.courseTitle.isNullOrBlank() }
                 .sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
             realm.copyFromRealm(sortedList)
+        }
+    }
+
+    override suspend fun getCourseProgress(courseId: String?, userId: String?, steps: List<RealmCourseStep?>): Int {
+        return withRealm { realm ->
+            RealmCourseProgress.getCurrentProgress(steps, realm, userId, courseId)
+        }
+    }
+
+    override suspend fun isStepCompleted(stepId: String?, userId: String?): Boolean {
+        return withRealm { realm ->
+            RealmSubmission.isStepCompleted(realm, stepId, userId)
+        }
+    }
+
+    override suspend fun hasUnfinishedSurvey(steps: List<RealmCourseStep?>, userId: String?): Boolean {
+        return withRealm { realm ->
+            steps.any { step ->
+                val stepSurvey = realm.where(RealmStepExam::class.java)
+                    .equalTo("stepId", step?.id)
+                    .equalTo("type", "surveys")
+                    .findAll()
+                stepSurvey.any { survey ->
+                    !RealmSubmission.isStepCompleted(realm, survey.id, userId)
+                }
+            }
         }
     }
 }
