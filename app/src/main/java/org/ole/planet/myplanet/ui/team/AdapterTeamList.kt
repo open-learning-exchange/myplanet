@@ -209,98 +209,108 @@ class AdapterTeamList(
 
         updateListJob?.cancel()
         updateListJob = scope.launch {
-            val validTeams = list.filter {
-                !it._id.isNullOrBlank() && (it.status == null || it.status != "archived")
+            val result = withContext(Dispatchers.Default) {
+                val validTeams = list.filter {
+                    !it._id.isNullOrBlank() && (it.status == null || it.status != "archived")
+                }
+
+                if (validTeams.isEmpty()) {
+                    return@withContext null
+                }
+
+                val teamIds = validTeams.mapNotNull { it._id?.takeIf { id -> id.isNotBlank() } }
+                val (cachedVisitIds, nonCachedVisitIds) = teamIds.partition { it in visitCountsCache }
+
+                val visitCountsDeferred = if (nonCachedVisitIds.isNotEmpty()) {
+                    async(Dispatchers.IO) {
+                        teamRepository.getRecentVisitCounts(nonCachedVisitIds)
+                    }
+                } else {
+                    async { emptyMap<String, Long>() }
+                }
+
+                val statusResults = mutableMapOf<String, TeamStatus>()
+                val idsToFetch = linkedSetOf<String>()
+                validTeams.forEach { team ->
+                    val teamId = team._id.orEmpty()
+                    if (teamId.isBlank()) return@forEach
+                    val cacheKey = "${teamId}_${userId}"
+                    val cachedStatus = teamStatusCache[cacheKey]
+                    if (cachedStatus != null) {
+                        statusResults[teamId] = cachedStatus
+                    } else {
+                        idsToFetch += teamId
+                    }
+                }
+
+                if (idsToFetch.isNotEmpty()) {
+                    val batchStatuses = withContext(Dispatchers.IO) {
+                        teamRepository.getTeamMemberStatuses(userId, idsToFetch)
+                    }
+
+                    batchStatuses.forEach { (teamId, memberStatus) ->
+                        val status = TeamStatus(
+                            isMember = memberStatus.isMember,
+                            isLeader = memberStatus.isLeader,
+                            hasPendingRequest = memberStatus.hasPendingRequest
+                        )
+                        val cacheKey = "${teamId}_${userId}"
+                        teamStatusCache[cacheKey] = status
+                        statusResults[teamId] = status
+                    }
+                }
+
+                val newVisitCounts = visitCountsDeferred.await()
+                newVisitCounts.forEach { (id, count) -> visitCountsCache[id] = count }
+                val calculatedVisitCounts =
+                    cachedVisitIds.associateWith { visitCountsCache[it]!! } + newVisitCounts
+
+                val sortedTeams = validTeams.sortedWith(
+                    compareByDescending<RealmMyTeam> { team ->
+                        val teamId = team._id.orEmpty()
+                        val status = statusResults[teamId] ?: TeamStatus(false, false, false)
+                        when {
+                            status.isLeader -> 3
+                            status.isMember -> 2
+                            else -> 1
+                        }
+                    }.thenByDescending { team ->
+                        calculatedVisitCounts[team._id.orEmpty()] ?: 0L
+                    }
+                )
+
+                val newList = sortedTeams.map { team ->
+                    val teamId = team._id.orEmpty()
+                    val cacheKey = "${teamId}_${userId}"
+                    TeamData(
+                        _id = team._id,
+                        name = team.name,
+                        teamType = team.teamType,
+                        createdDate = team.createdDate,
+                        type = team.type,
+                        status = team.status,
+                        visitCount = calculatedVisitCounts[teamId] ?: 0L,
+                        teamStatus = teamStatusCache[cacheKey],
+                        description = team.description,
+                        services = team.services,
+                        rules = team.rules,
+                        teamId = team.teamId
+                    )
+                }
+                Pair(newList, calculatedVisitCounts)
             }
 
-            if (validTeams.isEmpty()) {
+            if (result == null) {
                 visitCounts = emptyMap()
                 submitList(emptyList()) {
                     updateCompleteListener?.onUpdateComplete(0)
                 }
-                return@launch
-            }
-
-            val teamIds = validTeams.mapNotNull { it._id?.takeIf { id -> id.isNotBlank() } }
-            val (cachedVisitIds, nonCachedVisitIds) = teamIds.partition { it in visitCountsCache }
-            val visitCountsDeferred = if (nonCachedVisitIds.isNotEmpty()) {
-                async(Dispatchers.IO) {
-                    teamRepository.getRecentVisitCounts(nonCachedVisitIds)
-                }
             } else {
-                async { emptyMap<String, Long>() }
-            }
-
-            val statusResults = mutableMapOf<String, TeamStatus>()
-            val idsToFetch = linkedSetOf<String>()
-            validTeams.forEach { team ->
-                val teamId = team._id.orEmpty()
-                if (teamId.isBlank()) return@forEach
-                val cacheKey = "${teamId}_${userId}"
-                val cachedStatus = teamStatusCache[cacheKey]
-                if (cachedStatus != null) {
-                    statusResults[teamId] = cachedStatus
-                } else {
-                    idsToFetch += teamId
+                val (newList, allVisitCounts) = result
+                visitCounts = allVisitCounts
+                submitList(newList) {
+                    updateCompleteListener?.onUpdateComplete(newList.size)
                 }
-            }
-
-            if (idsToFetch.isNotEmpty()) {
-                val batchStatuses = withContext(Dispatchers.IO) {
-                    teamRepository.getTeamMemberStatuses(userId, idsToFetch)
-                }
-
-                batchStatuses.forEach { (teamId, memberStatus) ->
-                    val status = TeamStatus(
-                        isMember = memberStatus.isMember,
-                        isLeader = memberStatus.isLeader,
-                        hasPendingRequest = memberStatus.hasPendingRequest
-                    )
-                    val cacheKey = "${teamId}_${userId}"
-                    teamStatusCache[cacheKey] = status
-                    statusResults[teamId] = status
-                }
-            }
-
-            val newVisitCounts = visitCountsDeferred.await()
-            newVisitCounts.forEach { (id, count) -> visitCountsCache[id] = count }
-            val allVisitCounts = cachedVisitIds.associateWith { visitCountsCache[it]!! } + newVisitCounts
-            val sortedTeams = validTeams.sortedWith(
-                compareByDescending<RealmMyTeam> { team ->
-                    val teamId = team._id.orEmpty()
-                    val status = statusResults[teamId] ?: TeamStatus(false, false, false)
-                    when {
-                        status.isLeader -> 3
-                        status.isMember -> 2
-                        else -> 1
-                    }
-                }.thenByDescending { team ->
-                    allVisitCounts[team._id.orEmpty()] ?: 0L
-                }
-            )
-
-            val newList = sortedTeams.map { team ->
-                val teamId = team._id.orEmpty()
-                val cacheKey = "${teamId}_${userId}"
-                TeamData(
-                    _id = team._id,
-                    name = team.name,
-                    teamType = team.teamType,
-                    createdDate = team.createdDate,
-                    type = team.type,
-                    status = team.status,
-                    visitCount = allVisitCounts[teamId] ?: 0L,
-                    teamStatus = teamStatusCache[cacheKey],
-                    description = team.description,
-                    services = team.services,
-                    rules = team.rules,
-                    teamId = team.teamId
-                )
-            }
-
-            visitCounts = allVisitCounts
-            submitList(newList) {
-                updateCompleteListener?.onUpdateComplete(newList.size)
             }
         }
     }
