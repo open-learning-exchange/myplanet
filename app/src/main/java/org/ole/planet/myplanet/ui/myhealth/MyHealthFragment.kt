@@ -41,7 +41,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.BaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.callback.TableDataUpdate
-import org.ole.planet.myplanet.databinding.AlertHealthListBinding
+import org.ole.planet.myplanet.databinding.AlertHealthListRecyclerBinding
 import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
 import org.ole.planet.myplanet.databinding.FragmentVitalSignBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -80,7 +80,7 @@ class MyHealthFragment : Fragment() {
     private var _binding: FragmentVitalSignBinding? = null
     private val binding get() = _binding!!
     private lateinit var alertMyPersonalBinding: AlertMyPersonalBinding
-    private var alertHealthListBinding: AlertHealthListBinding? = null
+    private var alertHealthListBinding: AlertHealthListRecyclerBinding? = null
     var userId: String? = null
     lateinit var mRealm: Realm
     var userModel: RealmUserModel? = null
@@ -292,7 +292,7 @@ class MyHealthFragment : Fragment() {
             withContext(Dispatchers.Main) {
                 userModelList = users
                 adapter.submitList(userModelList)
-                alertHealthListBinding = AlertHealthListBinding.inflate(LayoutInflater.from(context))
+                alertHealthListBinding = AlertHealthListRecyclerBinding.inflate(LayoutInflater.from(context))
                 alertHealthListBinding?.btnAddMember?.setOnClickListener {
                     startActivity(Intent(requireContext(), BecomeMemberActivity::class.java))
                 }
