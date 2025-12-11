@@ -193,10 +193,11 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 val tagMap = tagRepository.getTagsForResources(resourceIds)
 
                 withContext(Dispatchers.Main) {
-                    adapterLibrary.updateData(filteredLibraryList, tagMap)
+                    adapterLibrary.updateData(filteredLibraryList, tagMap) {
+                        checkList()
+                        showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+                    }
                     adapterLibrary.setRatingMap(map!!)
-                    checkList()
-                    showNoData(tvMessage, adapterLibrary.itemCount, "resources")
                 }
             } catch (e: Exception) {
                 e.printStackTrace()

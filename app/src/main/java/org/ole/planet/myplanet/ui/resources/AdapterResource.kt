@@ -209,9 +209,15 @@ class AdapterResource(
         renderTagCloud(holder.rowLibraryBinding.flexboxDrawable, tags)
     }
 
-    fun updateData(libraryList: List<RealmMyLibrary?>, tagMap: Map<String, List<RealmTag>>) {
+    fun updateData(
+        libraryList: List<RealmMyLibrary?>,
+        tagMap: Map<String, List<RealmTag>>,
+        callback: () -> Unit
+    ) {
         this.tagMap = tagMap
-        updateList(libraryList)
+        updateList(libraryList) {
+            callback()
+        }
     }
 
     private fun renderTagCloud(flexboxDrawable: FlexboxLayout, tags: List<RealmTag>) {
@@ -266,7 +272,7 @@ class AdapterResource(
         return libraryList.size
     }
 
-    private fun updateList(newList: List<RealmMyLibrary?>) {
+    private fun updateList(newList: List<RealmMyLibrary?>, onUpdateComplete: (() -> Unit)? = null) {
         diffJob?.cancel()
         val oldList = libraryList.mapNotNull { it?.toDiffData() }
         val newListMapped = newList.mapNotNull { it?.toDiffData() }
@@ -286,6 +292,7 @@ class AdapterResource(
             if (isActive) {
                 libraryList = newList
                 diffResult.dispatchUpdatesTo(this@AdapterResource)
+                onUpdateComplete?.invoke()
             }
         }
     }
