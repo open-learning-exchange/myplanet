@@ -7,11 +7,9 @@ import android.view.ViewGroup
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.databinding.FragmentTeamCourseBinding
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.repository.CourseRepository
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 
 @AndroidEntryPoint
@@ -19,8 +17,6 @@ class TeamCourseFragment : BaseTeamFragment() {
     private var _binding: FragmentTeamCourseBinding? = null
     private val binding get() = _binding!!
     private var adapterTeamCourse: AdapterTeamCourse? = null
-    @Inject
-    lateinit var courseRepository: CourseRepository
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTeamCourseBinding.inflate(inflater, container, false)
@@ -35,7 +31,7 @@ class TeamCourseFragment : BaseTeamFragment() {
     private fun setupCoursesList() {
         binding.rvCourse.layoutManager = LinearLayoutManager(activity)
         team?.let { currentTeam ->
-            val courseIds = currentTeam.courses.toList()
+            val courseIds = currentTeam.courses?.toList() ?: emptyList()
             if (courseIds.isEmpty()) {
                 showNoData(binding.tvNodata, 0, "teamCourses")
                 return@let
@@ -43,7 +39,7 @@ class TeamCourseFragment : BaseTeamFragment() {
 
             viewLifecycleOwner.lifecycleScope.launch {
                 val courses = courseRepository.getCoursesByTeamCourseIds(courseIds)
-                val teamCreator = currentTeam.teamLeader ?: ""
+                val teamCreator = currentTeam.createdBy ?: ""
                 adapterTeamCourse = settings?.let {
                     AdapterTeamCourse(requireActivity(), courses, teamCreator, it)
                 }
