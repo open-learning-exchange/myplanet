@@ -16,10 +16,7 @@ import org.ole.planet.myplanet.datamanager.applyEqualTo
 import org.ole.planet.myplanet.datamanager.findCopyByField
 import org.ole.planet.myplanet.datamanager.queryList
 
-open class RealmRepository(protected val databaseService: DatabaseService) : IRealmRepository {
-    override suspend fun refresh() {
-        databaseService.realmInstance.refresh()
-    }
+open class RealmRepository(protected val databaseService: DatabaseService) {
 
     protected suspend fun <T : RealmObject> queryList(
         clazz: Class<T>,

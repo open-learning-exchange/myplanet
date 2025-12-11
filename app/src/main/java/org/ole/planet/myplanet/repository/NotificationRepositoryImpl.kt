@@ -12,6 +12,10 @@ import org.ole.planet.myplanet.model.RealmUserModel
 class NotificationRepositoryImpl @Inject constructor(
         databaseService: DatabaseService,
     ) : RealmRepository(databaseService), NotificationRepository {
+    override suspend fun refresh() {
+        databaseService.realmInstance.refresh()
+    }
+
     override suspend fun markNotificationAsRead(notificationId: String, userId: String?) {
         if (notificationId.startsWith("summary_")) {
             val type = notificationId.removePrefix("summary_")

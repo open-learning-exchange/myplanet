@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 interface NotificationRepository {
+    suspend fun refresh()
     suspend fun markNotificationAsRead(notificationId: String, userId: String?)
     suspend fun getNotifications(userId: String, filter: String): List<org.ole.planet.myplanet.model.RealmNotification>
     suspend fun getUnreadCount(userId: String?): Int
