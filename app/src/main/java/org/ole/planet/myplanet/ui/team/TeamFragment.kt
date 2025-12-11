@@ -10,6 +10,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
@@ -23,19 +24,17 @@ import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TeamRepository
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
-class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamList.OnUpdateCompleteListener {
+class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamList.OnUpdateCompleteListener, AdapterTeamList.OnJoinRequestListener, AdapterTeamList.OnLeaveRequestListener {
     private var _binding: FragmentTeamBinding? = null
     private val binding get() = _binding!!
     private lateinit var alertCreateTeamBinding: AlertCreateTeamBinding
+    private val viewModel: TeamViewModel by viewModels()
     @Inject
     lateinit var teamRepository: TeamRepository
-    @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
     @Inject
@@ -62,7 +61,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTeamBinding.inflate(inflater, container, false)
-        user = userProfileDbHandler.getUserModelCopy()
+        user = viewModel.currentUser
 
         if (user?.isGuest() == true) {
             binding.addTeam.visibility = View.GONE
@@ -130,7 +129,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
                         viewLifecycleOwner.lifecycleScope.launch {
                             val teamTypeForValidation = if (type == "enterprise") "enterprise" else "team"
                             val excludeTeamId = if (team != null) (team._id ?: team.teamId) else null
-                            val nameExists = teamRepository.isTeamNameExists(name, teamTypeForValidation, excludeTeamId)
+                            val nameExists = viewModel.isTeamNameExists(name, teamTypeForValidation, excludeTeamId)
 
                             if (nameExists) {
                                 val duplicateMessage = if (type == "enterprise") {
@@ -144,7 +143,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
                             }
 
                             if (team == null) {
-                                teamRepository.createTeam(
+                                viewModel.createTeam(
                                     category = type,
                                     name = name,
                                     description = description,
@@ -168,7 +167,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
                                     Utilities.toast(activity, failureMessage)
                                     return@launch
                                 }
-                                teamRepository.updateTeam(
+                                viewModel.updateTeam(
                                     teamId = targetTeamId,
                                     name = name,
                                     description = description,
@@ -285,11 +284,14 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
     private fun setTeamList() {
         val list = teamList
         adapterTeamList = activity?.let {
-            AdapterTeamList(it, list, childFragmentManager, teamRepository, user, viewLifecycleOwner.lifecycleScope, sharedPrefManager)
+            AdapterTeamList(it, list, childFragmentManager, viewLifecycleOwner.lifecycleScope, sharedPrefManager)
         } ?: return
 
+        adapterTeamList.isGuestUser = user?.isGuest() == true
         adapterTeamList.setType(type)
         adapterTeamList.setTeamListener(this@TeamFragment)
+        adapterTeamList.setJoinRequestListener(this@TeamFragment)
+        adapterTeamList.setLeaveRequestListener(this@TeamFragment)
         adapterTeamList.setUpdateCompleteListener(this@TeamFragment)
         requireView().findViewById<View>(R.id.type).visibility =
             if (type == null) {
@@ -299,7 +301,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
             }
 
         binding.rvTeamList.adapter = adapterTeamList
-        adapterTeamList.updateList()
+        updatedTeamList()
         listContentDescription(conditionApplied)
     }
 
@@ -308,7 +310,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
             when {
                 fromDashboard -> {
                     user?._id?.let { userId ->
-                        teamRepository.getMyTeamsFlow(userId).collectLatest {
+                        viewModel.getMyTeamsFlow(userId).collectLatest {
                             teamList = it
                             setTeamList()
                         }
@@ -316,12 +318,12 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
                 }
                 type == "enterprise" -> {
                     conditionApplied = true
-                    teamList = teamRepository.getShareableEnterprises()
+                    teamList = viewModel.getShareableEnterprises()
                     setTeamList()
                 }
                 else -> {
                     conditionApplied = false
-                    teamList = teamRepository.getShareableTeams()
+                    teamList = viewModel.getShareableTeams()
                     setTeamList()
                 }
             }
@@ -330,6 +332,20 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
 
     override fun onEditTeam(team: TeamData?) {
         team?.let { createTeamAlert(it) }
+    }
+
+    override fun onJoinRequest(team: TeamData) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            team._id?.let { viewModel.requestToJoinTeam(it, team.teamType) }
+            updatedTeamList()
+        }
+    }
+
+    override fun onLeaveRequest(team: TeamData) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            team._id?.let { viewModel.leaveTeam(it) }
+            updatedTeamList()
+        }
     }
 
     override fun onUpdateComplete(itemCount: Int) {
@@ -345,9 +361,11 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
             if (!::adapterTeamList.isInitialized || binding.rvTeamList.adapter == null) {
                 setTeamList()
             } else {
-                adapterTeamList.updateList()
+                val result = viewModel.updateList(teamList)
+                adapterTeamList.updateList(result)
             }
             listContentDescription(conditionApplied)
+            viewModel.syncTeamActivities()
         }
     }
 
