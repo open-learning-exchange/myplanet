@@ -59,6 +59,8 @@ open class RealmNews : RealmObject() {
     var sharedBy: String? = null
     @Ignore
     var sortDate: Long = 0
+    @Ignore
+    var replyCount: Int = 0
 
     val imagesArray: JsonArray
         get() = if (images == null) JsonArray() else GsonUtils.gson.fromJson(images, JsonArray::class.java)
