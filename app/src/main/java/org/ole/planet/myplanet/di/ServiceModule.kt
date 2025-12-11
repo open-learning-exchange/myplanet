@@ -76,9 +76,10 @@ object ServiceModule {
     @Singleton
     fun provideTransactionSyncManager(
         apiInterface: ApiInterface,
+        databaseService: DatabaseService,
         @ApplicationContext context: Context,
         @ApplicationScope scope: CoroutineScope
     ): TransactionSyncManager {
-        return TransactionSyncManager(apiInterface, context, scope)
+        return TransactionSyncManager(apiInterface, databaseService, context, scope)
     }
 }

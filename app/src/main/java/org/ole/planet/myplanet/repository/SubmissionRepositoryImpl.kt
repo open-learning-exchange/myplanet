@@ -11,6 +11,9 @@ import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
+import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.ui.submission.QuestionAnswer
+import org.ole.planet.myplanet.ui.submission.SubmissionDetail
 
 class SubmissionRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
@@ -222,6 +225,87 @@ class SubmissionRepositoryImpl @Inject constructor(
         update(RealmSubmission::class.java, "id", id) { sub ->
             sub.user = payload.toString()
             sub.status = "complete"
+        }
+    }
+
+    override suspend fun getSubmissionDetail(submissionId: String): SubmissionDetail? {
+        return databaseService.withRealmAsync { realm ->
+            var submission = realm.where(RealmSubmission::class.java)
+                .equalTo("id", submissionId)
+                .or()
+                .equalTo("_id", submissionId)
+                .findFirst()
+
+            if (submission == null) {
+                submission = realm.where(RealmSubmission::class.java)
+                    .contains("parentId", submissionId)
+                    .findFirst()
+            }
+
+            if (submission == null) {
+                return@withRealmAsync null
+            }
+
+            val examId = submission.parentId?.substringBefore('@')
+            val exam = realm.where(RealmStepExam::class.java)
+                .equalTo("id", examId)
+                .findFirst()
+
+            val user = realm.where(RealmUserModel::class.java)
+                .equalTo("id", submission.userId)
+                .findFirst()
+
+            val questions = realm.where(RealmExamQuestion::class.java)
+                .equalTo("examId", examId)
+                .findAll()
+
+            val questionAnswers = questions.map { question ->
+                val answer = submission.answers?.find { it.questionId == question.id }
+                val isCorrect = answer != null && question.getCorrectChoice()?.contains(answer.value) == true
+                var formattedAnswer: String? = null
+                if (answer != null) {
+                    if (!answer.value.isNullOrEmpty()) {
+                        formattedAnswer = answer.value
+                    } else {
+                        val choices = answer.valueChoices
+                        if (!choices.isNullOrEmpty()) {
+                            if (question.type?.startsWith("select") == true && !question.choices.isNullOrEmpty()) {
+                                formattedAnswer = choices.map { choiceId ->
+                                    try {
+                                        val choicesArray = com.google.gson.JsonParser.parseString(question.choices).asJsonArray
+                                        val choiceObject = choicesArray.find {
+                                            it.isJsonObject && it.asJsonObject.has("id") && it.asJsonObject.get("id").asString == choiceId
+                                        }?.asJsonObject
+                                        choiceObject?.get("text")?.asString ?: choiceId
+                                    } catch (e: Exception) {
+                                        choiceId
+                                    }
+                                }.joinToString(", ")
+                            } else {
+                                formattedAnswer = choices.joinToString(", ")
+                            }
+                        }
+                    }
+                }
+
+                org.ole.planet.myplanet.ui.submission.QuestionAnswer(
+                    questionId = question.id,
+                    questionHeader = question.header,
+                    questionBody = question.body,
+                    questionType = question.type,
+                    answer = formattedAnswer,
+                    answerChoices = answer?.valueChoices?.toList(),
+                    isCorrect = isCorrect
+                )
+            }
+
+            org.ole.planet.myplanet.ui.submission.SubmissionDetail(
+                title = exam?.name ?: "Submission Details",
+                status = "Status: ${submission.status ?: "Unknown"}",
+                date = submission.startTime,
+                submittedBy = "Submitted by: ${user?.name ?: "Unknown"}",
+                questionAnswers = questionAnswers
+            )
         }
     }
 

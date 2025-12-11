@@ -198,7 +198,7 @@ class NewsFragment : BaseNewsFragment() {
             } finally {
                 Trace.endSection()
             }
-            adapterNews = AdapterNews(requireActivity(), user, null, "", null, userProfileDbHandler, databaseService, viewLifecycleOwner.lifecycleScope, newsRepository)
+            adapterNews = AdapterNews(requireActivity(), user, null, "", null, userProfileDbHandler, databaseService, viewLifecycleOwner.lifecycleScope, userRepository, newsRepository)
             adapterNews?.sharedPrefManager = sharedPrefManager
             adapterNews?.setmRealm(mRealm)
             adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
@@ -406,6 +406,7 @@ class NewsFragment : BaseNewsFragment() {
     }
 
     override fun onDestroyView() {
+        binding.filterByLabel.onItemSelectedListener = null
         adapterNews?.unregisterAdapterDataObserver(observer)
         if (isRealmInitialized()) {
             mRealm.close()
