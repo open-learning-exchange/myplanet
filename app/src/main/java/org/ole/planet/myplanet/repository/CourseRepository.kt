@@ -19,4 +19,7 @@ interface CourseRepository {
         subjectLevel: String,
         tagNames: List<String>
     ): List<RealmMyCourse>
+    suspend fun getCourseProgress(courseId: String?, userId: String?, steps: List<RealmCourseStep?>): Int
+    suspend fun isStepCompleted(stepId: String?, userId: String?): Boolean
+    suspend fun hasUnfinishedSurvey(steps: List<RealmCourseStep?>, userId: String?): Boolean
 }

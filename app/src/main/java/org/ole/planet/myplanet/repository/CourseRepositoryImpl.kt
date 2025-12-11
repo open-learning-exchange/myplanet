@@ -4,10 +4,12 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmCourseStep
+import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.model.RealmSubmission
 
 class CourseRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
@@ -131,6 +133,32 @@ class CourseRepositoryImpl @Inject constructor(
                 .filter { !it.courseTitle.isNullOrBlank() }
                 .sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
             realm.copyFromRealm(sortedList)
+        }
+    }
+
+    override suspend fun getCourseProgress(courseId: String?, userId: String?, steps: List<RealmCourseStep?>): Int {
+        return withRealm { realm ->
+            RealmCourseProgress.getCurrentProgress(steps, realm, userId, courseId)
+        }
+    }
+
+    override suspend fun isStepCompleted(stepId: String?, userId: String?): Boolean {
+        return withRealm { realm ->
+            RealmSubmission.isStepCompleted(realm, stepId, userId)
+        }
+    }
+
+    override suspend fun hasUnfinishedSurvey(steps: List<RealmCourseStep?>, userId: String?): Boolean {
+        return withRealm { realm ->
+            steps.any { step ->
+                val stepSurvey = realm.where(RealmStepExam::class.java)
+                    .equalTo("stepId", step?.id)
+                    .equalTo("type", "surveys")
+                    .findAll()
+                stepSurvey.any { survey ->
+                    !RealmSubmission.isStepCompleted(realm, survey.id, userId)
+                }
+            }
         }
     }
 }

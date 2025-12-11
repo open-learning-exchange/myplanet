@@ -20,10 +20,10 @@ import java.util.Locale
 import javax.inject.Inject
 import kotlin.collections.isNotEmpty
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentTakeCourseBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -55,7 +55,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     lateinit var userProfileDbHandler: UserProfileDbHandler
     @Inject
     lateinit var courseRepository: CourseRepository
-    lateinit var mRealm: Realm
     private var currentCourse: RealmMyCourse? = null
     lateinit var steps: List<RealmCourseStep?>
     var position = 0
@@ -76,7 +75,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTakeCourseBinding.inflate(inflater, container, false)
-        mRealm = databaseService.realmInstance
         userModel = userProfileDbHandler.userModel
         return binding.root
     }
@@ -87,18 +85,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         binding.contentLayout.visibility = View.GONE
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val course: RealmMyCourse? = withTimeoutOrNull(3000) {
-                withContext(Dispatchers.IO) {
-                    databaseService.realmInstance.use { realm ->
-                        val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
-                        if (course != null) {
-                            realm.copyFromRealm(course)
-                        } else {
-                            null
-                        }
-                    }
-                }
-            }
+            val course = courseRepository.getCourseByCourseId(courseId)
             binding.loadingIndicator.visibility = View.GONE
             if (course == null) {
                 Toast.makeText(requireContext(), getString(R.string.failed_to_load_course), Toast.LENGTH_LONG).show()
@@ -182,30 +169,35 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         binding.finishStep.setOnClickListener(this)
         binding.courseProgress.setOnSeekBarChangeListener(object : OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar, i: Int, b: Boolean) {
-                val currentProgress = getCurrentProgress(steps, mRealm, userModel?.id, courseId)
-                if (b && i <= currentProgress + 1) {
-                    binding.viewPager2.currentItem = i
+                lifecycleScope.launch {
+                    val currentProgress = courseRepository.getCourseProgress(courseId, userModel?.id, steps)
+                    if (b && i <= currentProgress + 1) {
+                        binding.viewPager2.currentItem = i
+                    }
                 }
             }
-
             override fun onStartTrackingTouch(seekBar: SeekBar) {}
             override fun onStopTrackingTouch(seekBar: SeekBar) {}
         })
     }
 
     private fun updateStepDisplay(position: Int) {
-        if (position == 0) {
-            binding.tvStep.text = "Course Details"
-        } else {
-            val stepNumber = position
-            binding.tvStep.text = String.format(getString(R.string.step) + " %d/%d", stepNumber, steps.size)
-        }
+        lifecycleScope.launch {
+            val currentProgress = courseRepository.getCourseProgress(courseId, userModel?.id, steps)
+            withContext(Dispatchers.Main) {
+                if (position == 0) {
+                    binding.tvStep.text = "Course Details"
+                } else {
+                    val stepNumber = position
+                    binding.tvStep.text = String.format(getString(R.string.step) + " %d/%d", stepNumber, steps.size)
+                }
 
-        val currentProgress = getCurrentProgress(steps, mRealm, userModel?.id, courseId)
-        if (currentProgress < steps.size) {
-            binding.courseProgress.secondaryProgress = currentProgress + 1
+                if (currentProgress < steps.size) {
+                    binding.courseProgress.secondaryProgress = currentProgress + 1
+                }
+                binding.courseProgress.progress = currentProgress
+            }
         }
-        binding.courseProgress.progress = currentProgress
     }
 
     private fun setCourseData() {
@@ -276,18 +268,24 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         updateStepDisplay(position)
     }
 
+    private var currentJob: Job? = null
     private fun changeNextButtonState(position: Int) {
-        if (courseId == "4e6b78800b6ad18b4e8b0e1e38a98cac") {
-            if (isStepCompleted(mRealm, steps[position - 1]?.id, userModel?.id)) {
+        currentJob?.cancel()
+        currentJob = lifecycleScope.launch {
+            val isCompleted = courseRepository.isStepCompleted(steps[position - 1]?.id, userModel?.id)
+
+            if (courseId == "4e6b78800b6ad18b4e8b0e1e38a98cac") {
+                if (isCompleted) {
+                    binding.nextStep.isClickable = true
+                    binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
+                } else {
+                    binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_grey_500))
+                    binding.nextStep.isClickable = false
+                }
+            } else {
                 binding.nextStep.isClickable = true
                 binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
-            } else {
-                binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_grey_500))
-                binding.nextStep.isClickable = false
             }
-        } else {
-            binding.nextStep.isClickable = true
-            binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
         }
     }
 
@@ -342,49 +340,39 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private fun addRemoveCourse() {
-        if (!mRealm.isInTransaction) mRealm.beginTransaction()
-        if (currentCourse?.userId?.contains(userModel?.id) == true) {
-            currentCourse?.removeUserId(userModel?.id)
-            onRemove(mRealm, "courses", userModel?.id, courseId)
-        } else {
-            currentCourse?.setUserId(userModel?.id)
-            onAdd(mRealm, "courses", userModel?.id, courseId)
+        lifecycleScope.launch {
+            courseId?.let {
+                val isCourseAdded = withContext(Dispatchers.IO) {
+                    courseRepository.markCourseAdded(it, userModel?.id)
+                }
+                val message = if (isCourseAdded) {
+                    getString(R.string.added_to)
+                } else {
+                    getString(R.string.removed_from)
+                }
+                Utilities.toast(activity, "course $message ${getString(R.string.my_courses)}")
+            }
+            setCourseData()
         }
-        Utilities.toast(activity, "course ${(if (currentCourse?.userId?.contains(userModel?.id) == true) {
-            getString(R.string.added_to)
-        } else {
-            getString(R.string.removed_from)
-        })} ${getString(R.string.my_courses)}")
-        setCourseData()
     }
 
     private suspend fun getCourseProgress(): Int {
-        return withContext(Dispatchers.IO) {
-            databaseService.withRealm { realm ->
-                val user = userProfileDbHandler.userModel
-                val courseProgressMap = RealmCourseProgress.getCourseProgress(realm, user?.id)
-                courseProgressMap[courseId]?.asJsonObject?.get("current")?.asInt ?: 0
-            }
-        }
+        return courseRepository.getCourseProgress(courseId, userModel?.id, steps)
     }
 
     private fun checkSurveyCompletion() {
-        val hasUnfinishedSurvey = steps.any { step ->
-            val stepSurvey = mRealm.where(RealmStepExam::class.java)
-                .equalTo("stepId", step?.id)
-                .equalTo("type", "surveys")
-                .findAll()
-            stepSurvey.any { survey -> !existsSubmission(mRealm, survey.id, "survey") }
-        }
-
-        if (hasUnfinishedSurvey && courseId == "4e6b78800b6ad18b4e8b0e1e38a98cac") {
-            binding.finishStep.setOnClickListener {
-                Toast.makeText(context, getString(R.string.please_complete_survey), Toast.LENGTH_SHORT).show() }
-        } else {
-            binding.finishStep.isEnabled = true
-            binding.finishStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
-            binding.finishStep.setOnClickListener {
-                NavigationHelper.popBackStack(requireActivity().supportFragmentManager)
+        lifecycleScope.launch {
+            val hasUnfinishedSurvey = courseRepository.hasUnfinishedSurvey(steps, userModel?.id)
+            if (hasUnfinishedSurvey && courseId == "4e6b78800b6ad18b4e8b0e1e38a98cac") {
+                binding.finishStep.setOnClickListener {
+                    Toast.makeText(context, getString(R.string.please_complete_survey), Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                binding.finishStep.isEnabled = true
+                binding.finishStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
+                binding.finishStep.setOnClickListener {
+                    NavigationHelper.popBackStack(requireActivity().supportFragmentManager)
+                }
             }
         }
     }
@@ -403,9 +391,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     override fun onDestroyView() {
         binding.courseProgress.setOnSeekBarChangeListener(null)
         lifecycleScope.coroutineContext.cancelChildren()
-        if (this::mRealm.isInitialized && !mRealm.isClosed) {
-            mRealm.close()
-        }
         joinDialog?.dismiss()
         joinDialog = null
         _binding = null
