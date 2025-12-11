@@ -9,6 +9,8 @@ import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.ChatRepositoryImpl
 import org.ole.planet.myplanet.repository.CourseRepository
 import org.ole.planet.myplanet.repository.CourseRepositoryImpl
+import org.ole.planet.myplanet.repository.ExamRepository
+import org.ole.planet.myplanet.repository.ExamRepositoryImpl
 import org.ole.planet.myplanet.repository.FeedbackRepository
 import org.ole.planet.myplanet.repository.FeedbackRepositoryImpl
 import org.ole.planet.myplanet.repository.LibraryRepository
@@ -49,6 +51,10 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindCourseRepository(impl: CourseRepositoryImpl): CourseRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindExamRepository(impl: ExamRepositoryImpl): ExamRepository
 
     @Binds
     @Singleton
