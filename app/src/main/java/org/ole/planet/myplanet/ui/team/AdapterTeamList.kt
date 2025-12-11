@@ -49,6 +49,7 @@ class AdapterTeamList(
     private val visitCountsCache = mutableMapOf<String, Long>()
     private var visitCounts: Map<String, Long> = emptyMap()
     private var updateListJob: Job? = null
+    private var syncJob: Job? = null
 
     interface OnClickTeamItem {
         fun onEditTeam(team: TeamData?)
@@ -347,7 +348,8 @@ class AdapterTeamList(
     }
 
     private fun syncTeamActivities() {
-        MainApplication.applicationScope.launch {
+        syncJob?.cancel()
+        syncJob = scope.launch {
             teamRepository.syncTeamActivities()
         }
     }
