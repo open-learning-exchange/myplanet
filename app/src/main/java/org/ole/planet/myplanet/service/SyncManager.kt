@@ -82,6 +82,7 @@ class SyncManager constructor(
     private val _syncStatus = MutableStateFlow<SyncStatus>(SyncStatus.Idle)
     val syncStatus: StateFlow<SyncStatus> = _syncStatus
     private val syncDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
+    private val fullSyncDispatcher = Dispatchers.IO.limitedParallelism(4)
     private val initializationJob: Job by lazy {
         syncScope.launch {
             improvedSyncManager.get().initialize()
@@ -195,7 +196,7 @@ class SyncManager constructor(
 
             // Phase 1: Sync non-library tables in parallel
             // Note: teams and meetups base tables are synced here, then augmented by library sync
-            coroutineScope {
+            withContext(fullSyncDispatcher) {
                 val syncJobs = listOf(
                     async {
                         logger.startProcess("tablet_users_sync")
