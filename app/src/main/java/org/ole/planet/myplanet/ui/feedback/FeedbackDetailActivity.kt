@@ -25,7 +25,6 @@ import org.ole.planet.myplanet.databinding.RowFeedbackReplyBinding
 import org.ole.planet.myplanet.model.FeedbackReply
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import org.ole.planet.myplanet.ui.feedback.FeedbackDetailActivity.RvFeedbackAdapter.ReplyViewHolder
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDateWithTime
@@ -33,10 +32,9 @@ import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDateWithTime
 @AndroidEntryPoint
 class FeedbackDetailActivity : AppCompatActivity() {
     private lateinit var activityFeedbackDetailBinding: ActivityFeedbackDetailBinding
-    private var mAdapter: RecyclerView.Adapter<*>? = null
+    private var mAdapter: RvFeedbackAdapter? = null
     private var layoutManager: RecyclerView.LayoutManager? = null
     private var feedback: RealmFeedback? = null
-    private lateinit var rowFeedbackReplyBinding: RowFeedbackReplyBinding
     private lateinit var feedbackId: String
     private val viewModel: FeedbackDetailViewModel by viewModels()
 
@@ -60,6 +58,9 @@ class FeedbackDetailActivity : AppCompatActivity() {
         feedbackId = id
         setUpReplies()
 
+        mAdapter = RvFeedbackAdapter()
+        activityFeedbackDetailBinding.rvFeedbackReply.adapter = mAdapter
+
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.feedback.collectLatest { fb ->
@@ -68,8 +69,7 @@ class FeedbackDetailActivity : AppCompatActivity() {
                         activityFeedbackDetailBinding.tvDate.text = getFormattedDateWithTime(it.openTime)
                         activityFeedbackDetailBinding.tvMessage.text =
                             if (TextUtils.isEmpty(it.message)) "N/A" else it.message
-                        mAdapter = RvFeedbackAdapter(it.messageList, applicationContext)
-                        activityFeedbackDetailBinding.rvFeedbackReply.adapter = mAdapter
+                        mAdapter?.submitList(it.messageList)
                         updateForClosed()
                     }
                 }
@@ -134,26 +134,5 @@ class FeedbackDetailActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == android.R.id.home) finish()
         return super.onOptionsItemSelected(item)
-    }
-
-    inner class RvFeedbackAdapter(private val replyList: List<FeedbackReply>?, var context: Context) : RecyclerView.Adapter<ReplyViewHolder>() {
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ReplyViewHolder {
-            rowFeedbackReplyBinding = RowFeedbackReplyBinding.inflate(layoutInflater, parent, false)
-            return ReplyViewHolder(rowFeedbackReplyBinding)
-        }
-
-        override fun onBindViewHolder(holder: ReplyViewHolder, position: Int) {
-            rowFeedbackReplyBinding.tvDate.text = replyList?.get(position)?.date?.let {
-                getFormattedDateWithTime(it.toLong())
-            }
-            rowFeedbackReplyBinding.tvUser.text = replyList?.get(position)?.user
-            rowFeedbackReplyBinding.tvMessage.text = replyList?.get(position)?.message
-        }
-
-        override fun getItemCount(): Int {
-            return replyList?.size ?: 0
-        }
-
-        inner class ReplyViewHolder(rowFeedbackReplyBinding: RowFeedbackReplyBinding) : RecyclerView.ViewHolder(rowFeedbackReplyBinding.root)
     }
 }
