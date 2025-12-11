@@ -16,17 +16,9 @@ import androidx.recyclerview.widget.RecyclerView
 import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowFinanceBinding
+import org.ole.planet.myplanet.model.TransactionData
 import org.ole.planet.myplanet.ui.enterprises.AdapterFinance.ViewHolderFinance
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
-
-data class TransactionData(
-    val id: String,
-    val date: Long,
-    val description: String?,
-    val type: String?,
-    val amount: Int,
-    val balance: Int
-)
 
 class AdapterFinance(
     private val context: Context,
@@ -40,7 +32,7 @@ class AdapterFinance(
     override fun onBindViewHolder(holder: ViewHolderFinance, position: Int) {
         val item = getItem(position)
         val binding = holder.binding
-        binding.date.text = formatDate(item.date, "MMM dd, yyyy")
+        binding.date.text = item.date?.let { formatDate(it, "MMM dd, yyyy") } ?: ""
         binding.note.text = item.description
         binding.debit.setTextColor(Color.BLACK)
         binding.credit.setTextColor(Color.BLACK)

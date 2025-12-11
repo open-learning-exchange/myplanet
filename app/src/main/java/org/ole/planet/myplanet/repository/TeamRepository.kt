@@ -6,6 +6,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.TransactionData
 
 data class TeamMemberStatus(
     val isMember: Boolean,
@@ -87,12 +88,19 @@ interface TeamRepository {
         createdBy: String,
     ): Boolean
     suspend fun syncTeamActivities()
+    @Deprecated("Use getTeamTransactionsWithBalance instead", ReplaceWith("getTeamTransactionsWithBalance(teamId, startDate, endDate, sortAscending)"))
     suspend fun getTeamTransactions(
         teamId: String,
         startDate: Long? = null,
         endDate: Long? = null,
         sortAscending: Boolean = false,
     ): Flow<List<RealmMyTeam>>
+    suspend fun getTeamTransactionsWithBalance(
+        teamId: String,
+        startDate: Long? = null,
+        endDate: Long? = null,
+        sortAscending: Boolean = false,
+    ): Flow<List<TransactionData>>
     suspend fun createTransaction(
         teamId: String,
         type: String,
