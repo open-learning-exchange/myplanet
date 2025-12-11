@@ -54,9 +54,9 @@ class UserRepositoryImpl @Inject constructor(
         return queryList(RealmUserModel::class.java)
     }
 
-    override suspend fun getAllUsersSortedByDate(): List<RealmUserModel> {
+    override suspend fun getUsersSortedBy(fieldName: String, sortOrder: io.realm.Sort): List<RealmUserModel> {
         return queryList(RealmUserModel::class.java) {
-            sort("joinDate", io.realm.Sort.DESCENDING)
+            sort(fieldName, sortOrder)
         }
     }
 
