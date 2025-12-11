@@ -12,6 +12,30 @@ import org.ole.planet.myplanet.model.RealmUserModel
 class NotificationRepositoryImpl @Inject constructor(
         databaseService: DatabaseService,
     ) : RealmRepository(databaseService), NotificationRepository {
+    override suspend fun refresh() {
+        databaseService.realmInstance.refresh()
+    }
+
+    override suspend fun markNotificationAsRead(notificationId: String, userId: String?) {
+        if (notificationId.startsWith("summary_")) {
+            val type = notificationId.removePrefix("summary_")
+            executeTransaction { realm ->
+                realm.where(RealmNotification::class.java)
+                    .equalTo("userId", userId)
+                    .equalTo("type", type)
+                    .equalTo("isRead", false)
+                    .findAll()
+                    .forEach { it.isRead = true }
+            }
+        } else {
+            executeTransaction { realm ->
+                val notification = realm.where(RealmNotification::class.java)
+                    .equalTo("id", notificationId)
+                    .findFirst()
+                notification?.isRead = true
+            }
+        }
+    }
 
     override suspend fun createNotificationIfMissing(
         type: String,

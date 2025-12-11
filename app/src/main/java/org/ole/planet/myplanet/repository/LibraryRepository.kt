@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmMyLibrary
 
 interface LibraryRepository {
@@ -11,6 +12,8 @@ interface LibraryRepository {
     suspend fun getLibraryListForUser(userId: String?): List<RealmMyLibrary>
     suspend fun getMyLibrary(userId: String?): List<RealmMyLibrary>
     suspend fun getStepResources(stepId: String?, resourceOffline: Boolean): List<RealmMyLibrary>
+    suspend fun getRecentResources(userId: String): Flow<List<RealmMyLibrary>>
+    suspend fun getPendingDownloads(userId: String): Flow<List<RealmMyLibrary>>
     suspend fun countLibrariesNeedingUpdate(userId: String?): Int
     suspend fun saveLibraryItem(item: RealmMyLibrary)
     suspend fun markResourceAdded(userId: String?, resourceId: String)
