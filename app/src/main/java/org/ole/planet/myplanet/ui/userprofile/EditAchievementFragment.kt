@@ -57,7 +57,6 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     private lateinit var alertReferenceBinding: AlertReferenceBinding
     private lateinit var alertAddAttachmentBinding: AlertAddAttachmentBinding
     private lateinit var myLibraryAlertdialogBinding: MyLibraryAlertdialogBinding
-    private lateinit var aRealm: Realm
     var user: RealmUserModel? = null
     private var achievement: RealmAchievement? = null
     private var referenceArray: JsonArray? = null
@@ -67,7 +66,6 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentEditAchievementBinding = FragmentEditAchievementBinding.inflate(inflater, container, false)
-        aRealm = databaseService.realmInstance
         user = profileDbHandler.userModel
         achievementArray = JsonArray()
         initializeData()
@@ -276,18 +274,15 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
 
     private fun showResourceListDialog(prevList: List<String?>) {
         viewLifecycleOwner.lifecycleScope.launch {
-            val list = withContext(Dispatchers.IO) {
-                val realm = Realm.getDefaultInstance()
-                val result = realm.where(RealmMyLibrary::class.java).findAll()
-                val unmanagedList = realm.copyFromRealm(result)
-                realm.close()
-                unmanagedList
+            val list = databaseService.withRealmAsync { realm ->
+                realm.copyFromRealm(realm.where(RealmMyLibrary::class.java).findAll())
             }
 
-            withContext(Dispatchers.Main) {
+            if (isAdded) {
                 val builder = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
                 builder.setTitle(R.string.select_resources)
-                myLibraryAlertdialogBinding = MyLibraryAlertdialogBinding.inflate(LayoutInflater.from(activity))
+                myLibraryAlertdialogBinding =
+                    MyLibraryAlertdialogBinding.inflate(LayoutInflater.from(activity))
                 val myLibraryAlertdialogView: View = myLibraryAlertdialogBinding.root
                 val lv = createResourceList(myLibraryAlertdialogBinding, list, prevList)
                 builder.setView(myLibraryAlertdialogView)
@@ -310,44 +305,20 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     private fun initializeData() {
         val achievementId = user?.id + "@" + user?.planetCode
         lifecycleScope.launch {
-            achievement = withContext(Dispatchers.IO) {
-                val realm = Realm.getDefaultInstance()
-                val achievement = realm.where(RealmAchievement::class.java)
+            achievement = databaseService.withRealmAsync { realm ->
+                var achievement = realm.where(RealmAchievement::class.java)
                     .equalTo("_id", achievementId)
                     .findFirst()
-                val unmanagedAchievement = if (achievement != null) realm.copyFromRealm(achievement) else null
-                realm.close()
-                unmanagedAchievement
-            }
-
-            if (achievement == null) {
-                databaseService.withRealmAsync { realm ->
+                if (achievement == null) {
                     realm.executeTransaction { transactionRealm ->
-                        val existing = transactionRealm.where(RealmAchievement::class.java)
-                            .equalTo("_id", achievementId)
-                            .findFirst()
-                        if (existing == null) {
-                            transactionRealm.createObject(
-                                RealmAchievement::class.java,
-                                achievementId
-                            )
-                        }
+                        achievement = transactionRealm.createObject(RealmAchievement::class.java, achievementId)
                     }
                 }
-                if (!isAdded) {
-                    return@launch
-                }
-                achievement = withContext(Dispatchers.IO) {
-                    val realm = Realm.getDefaultInstance()
-                    val achievement = realm.where(RealmAchievement::class.java)
-                        .equalTo("_id", achievementId)
-                        .findFirst()
-                    val unmanagedAchievement = if (achievement != null) realm.copyFromRealm(achievement) else null
-                    realm.close()
-                    unmanagedAchievement
-                }
+                realm.copyFromRealm(achievement!!)
             }
-            populateAchievementData()
+            if (isAdded) {
+                populateAchievementData()
+            }
         }
     }
 
@@ -401,16 +372,4 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         super.onDestroyView()
     }
 
-    override fun onDestroy() {
-        if (this::aRealm.isInitialized && !aRealm.isClosed) {
-            aRealm.close()
-        }
-        try {
-            if (!mRealm.isClosed) {
-                mRealm.close()
-            }
-        } catch (_: UninitializedPropertyAccessException) {
-        }
-        super.onDestroy()
-    }
 }
