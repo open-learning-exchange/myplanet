@@ -95,7 +95,19 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         lifecycleScope.launch {
             val (news, list) = viewModel.getNewsWithReplies(id)
             databaseService.withRealm { realm ->
-                newsAdapter = AdapterNews(this@ReplyActivity, user, news, "", null, userProfileDbHandler, databaseService, lifecycleScope, userRepository, newsRepository, false)
+                newsAdapter = AdapterNews(
+                    context = this@ReplyActivity,
+                    currentUser = user,
+                    parentNews = news,
+                    teamName = "",
+                    teamId = null,
+                    userProfileDbHandler = userProfileDbHandler,
+                    databaseService = databaseService,
+                    scope = lifecycleScope,
+                    userRepository = userRepository,
+                    newsRepository = newsRepository,
+                    isTeamLeader = false
+                )
                 newsAdapter.sharedPrefManager = sharedPrefManager
                 newsAdapter.setListener(this@ReplyActivity)
                 newsAdapter.setmRealm(realm)

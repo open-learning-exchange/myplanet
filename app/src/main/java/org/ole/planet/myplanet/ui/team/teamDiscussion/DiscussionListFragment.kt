@@ -239,22 +239,22 @@ class DiscussionListFragment : BaseTeamFragment() {
 
                 val adapterNews = activity?.let {
                     AdapterNews(
-                        it,
-                        user,
-                        null,
-                        getEffectiveTeamName(),
-                        teamId,
-                        userProfileDbHandler,
-                        databaseService,
-                        viewLifecycleOwner.lifecycleScope,
-                        userRepository,
-                        newsRepository,
-                        isTeamLeader
+                        context = it,
+                        currentUser = user,
+                        parentNews = null,
+                        teamName = getEffectiveTeamName(),
+                        teamId = teamId,
+                        userProfileDbHandler = userProfileDbHandler,
+                        databaseService = databaseService,
+                        scope = viewLifecycleOwner.lifecycleScope,
+                        userRepository = userRepository,
+                        newsRepository = newsRepository,
+                        isTeamLeader = isTeamLeader
                     )
                 }
                 adapterNews?.sharedPrefManager = sharedPrefManager
                 adapterNews?.setmRealm(mRealm)
-                adapterNews?.setListener(this)
+                adapterNews?.setListener(this@DiscussionListFragment)
                 if (!isMemberFlow.value) adapterNews?.setNonTeamMember(true)
                 realmNewsList?.let { adapterNews?.updateList(it) }
                 binding.rvDiscussion.adapter = adapterNews

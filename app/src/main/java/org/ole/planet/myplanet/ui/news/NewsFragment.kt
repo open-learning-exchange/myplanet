@@ -198,7 +198,19 @@ class NewsFragment : BaseNewsFragment() {
             } finally {
                 Trace.endSection()
             }
-            adapterNews = AdapterNews(requireActivity(), user, null, "", null, userProfileDbHandler, databaseService, viewLifecycleOwner.lifecycleScope, userRepository, newsRepository, false)
+            adapterNews = AdapterNews(
+                context = requireActivity(),
+                currentUser = user,
+                parentNews = null,
+                teamName = "",
+                teamId = null,
+                userProfileDbHandler = userProfileDbHandler,
+                databaseService = databaseService,
+                scope = viewLifecycleOwner.lifecycleScope,
+                userRepository = userRepository,
+                newsRepository = newsRepository,
+                isTeamLeader = false
+            )
             adapterNews?.sharedPrefManager = sharedPrefManager
             adapterNews?.setmRealm(mRealm)
             adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
