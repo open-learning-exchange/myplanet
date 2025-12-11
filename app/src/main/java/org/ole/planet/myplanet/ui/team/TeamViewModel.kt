@@ -57,7 +57,7 @@ class TeamViewModel @Inject constructor(
         return teamRepository.updateTeam(teamId, name, description, services, rules, updatedBy)
     }
 
-    fun getMyTeamsFlow(userId: String) = teamRepository.getMyTeamsFlow(userId)
+    suspend fun getMyTeamsFlow(userId: String) = teamRepository.getMyTeamsFlow(userId)
 
     suspend fun getShareableEnterprises(): List<RealmMyTeam> {
         return teamRepository.getShareableEnterprises()
