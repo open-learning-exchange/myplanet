@@ -65,6 +65,7 @@ import org.ole.planet.myplanet.datamanager.Service.ConfigurationIdListener
 import org.ole.planet.myplanet.datamanager.Service.PlanetAvailableListener
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.ConfigurationRepository
 import org.ole.planet.myplanet.model.ServerAddressesModel
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.TransactionSyncManager
@@ -93,7 +94,7 @@ import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
-abstract class SyncActivity : ProcessUserDataActivity(), CheckVersionCallback,
+abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository.CheckVersionCallback,
     ConfigurationIdListener {
     private lateinit var syncDate: TextView
     lateinit var lblLastSyncDate: TextView
@@ -139,6 +140,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), CheckVersionCallback,
     var serverAddressAdapter: ServerAddressAdapter? = null
     var serverListAddresses: List<ServerAddressesModel> = emptyList()
     private var isProgressDialogShowing = false
+    @Inject
+    lateinit var configurationRepository: ConfigurationRepository
 
     @Inject
     lateinit var syncManager: SyncManager
@@ -193,7 +196,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), CheckVersionCallback,
                 }
                 isSync = false
                 forceSync = true
-                service.checkVersion(this, settings)
+                configurationRepository.checkVersion(this, settings)
             }
             else -> {
                 if (serverConfigAction == "sync") {
@@ -746,9 +749,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), CheckVersionCallback,
         if (checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) && settings.getBoolean("firstRun", true)) {
             clearInternalStorage()
         }
-        Service(this).isPlanetAvailable(object : PlanetAvailableListener {
+        configurationRepository.checkServerAvailability(object : ConfigurationRepository.PlanetAvailableListener {
             override fun isAvailable() {
-                Service(context).checkVersion(this@SyncActivity, settings)
+                configurationRepository.checkVersion(this@SyncActivity, settings)
             }
             override fun notAvailable() {
                 if (!isFinishing) {

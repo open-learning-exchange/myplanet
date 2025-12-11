@@ -27,7 +27,9 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
+import dagger.hilt.android.AndroidEntryPoint
 import java.util.Locale
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -40,6 +42,7 @@ import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.User
+import org.ole.planet.myplanet.repository.ConfigurationRepository
 import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
@@ -53,6 +56,7 @@ import org.ole.planet.myplanet.utilities.ThemeManager
 import org.ole.planet.myplanet.utilities.UrlUtils.getUrl
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
+@AndroidEntryPoint
 class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     private lateinit var binding: ActivityLoginBinding
     private lateinit var nameWatcher1: TextWatcher
@@ -111,7 +115,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         if (versionInfo != null) {
             onUpdateAvailable(versionInfo, intent.getBooleanExtra("cancelable", false))
         } else {
-            service.checkVersion(this, settings)
+            configurationRepository.checkVersion(this, settings)
         }
         checkUsagesPermission()
         forceSyncTrigger()
