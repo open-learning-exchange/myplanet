@@ -321,4 +321,11 @@ class SubmissionRepositoryImpl @Inject constructor(
             }
         }.getOrNull()
     }
+
+    override suspend fun updateSubmissionStatus(id: String?, status: String) {
+        if (id == null) return
+        update(RealmSubmission::class.java, "id", id) { submission ->
+            submission.status = status
+        }
+    }
 }
