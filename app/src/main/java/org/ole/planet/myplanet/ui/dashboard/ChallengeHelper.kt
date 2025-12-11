@@ -86,7 +86,7 @@ class ChallengeHelper(
         if (userId != null) query.equalTo("userId", userId)
         val results = query.findAll()
         return results.filter { isCommunitySection(it) }
-            .map { getDateFromTimestamp(it.time) }
+            .map { ChallengeHelper.getDateFromTimestamp(it.time) }
             .distinct()
     }
 
@@ -107,9 +107,13 @@ class ChallengeHelper(
         return false
     }
 
-    private fun getDateFromTimestamp(timestamp: Long): String {
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-        return dateFormat.format(Date(timestamp))
+    companion object {
+        private val dateFormat = object : ThreadLocal<SimpleDateFormat>() {
+            override fun initialValue() = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        }
+        internal fun getDateFromTimestamp(timestamp: Long): String {
+            return dateFormat.get()!!.format(Date(timestamp))
+        }
     }
 
     private fun hasPendingSurvey(realm: Realm, courseId: String): Boolean {
