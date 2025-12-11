@@ -10,6 +10,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
@@ -22,18 +23,16 @@ import org.ole.planet.myplanet.databinding.FragmentTeamBinding
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
-class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamList.OnUpdateCompleteListener {
+class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamList.OnUpdateCompleteListener, AdapterTeamList.OnActionClickListener {
     private var _binding: FragmentTeamBinding? = null
     private val binding get() = _binding!!
     private lateinit var alertCreateTeamBinding: AlertCreateTeamBinding
-    @Inject
-    lateinit var teamRepository: TeamRepository
+    private val viewModel: TeamViewModel by viewModels()
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     @Inject
@@ -130,7 +129,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
                         viewLifecycleOwner.lifecycleScope.launch {
                             val teamTypeForValidation = if (type == "enterprise") "enterprise" else "team"
                             val excludeTeamId = if (team != null) (team._id ?: team.teamId) else null
-                            val nameExists = teamRepository.isTeamNameExists(name, teamTypeForValidation, excludeTeamId)
+                            val nameExists = viewModel.isTeamNameExists(name, teamTypeForValidation, excludeTeamId)
 
                             if (nameExists) {
                                 val duplicateMessage = if (type == "enterprise") {
@@ -144,7 +143,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
                             }
 
                             if (team == null) {
-                                teamRepository.createTeam(
+                                viewModel.createTeam(
                                     category = type,
                                     name = name,
                                     description = description,
@@ -168,7 +167,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
                                     Utilities.toast(activity, failureMessage)
                                     return@launch
                                 }
-                                teamRepository.updateTeam(
+                                viewModel.updateTeam(
                                     teamId = targetTeamId,
                                     name = name,
                                     description = description,
@@ -251,7 +250,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
                     }
                     
                     if (!::adapterTeamList.isInitialized) {
-                        setTeamList()
+                        setTeamList(teamDataList)
                     } else {
                         adapterTeamList.submitList(teamDataList)
                     }
@@ -282,14 +281,14 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
         return Pair(typeFilteredList, newConditionApplied)
     }
 
-    private fun setTeamList() {
-        val list = teamList
+    private fun setTeamList(list: List<TeamData>) {
         adapterTeamList = activity?.let {
-            AdapterTeamList(it, list, childFragmentManager, teamRepository, user, viewLifecycleOwner.lifecycleScope, sharedPrefManager)
+            AdapterTeamList(it, list, childFragmentManager, user, viewLifecycleOwner.lifecycleScope, sharedPrefManager)
         } ?: return
 
         adapterTeamList.setType(type)
         adapterTeamList.setTeamListener(this@TeamFragment)
+        adapterTeamList.setActionClickListener(this@TeamFragment)
         adapterTeamList.setUpdateCompleteListener(this@TeamFragment)
         requireView().findViewById<View>(R.id.type).visibility =
             if (type == null) {
@@ -299,37 +298,76 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
             }
 
         binding.rvTeamList.adapter = adapterTeamList
-        adapterTeamList.updateList()
+        adapterTeamList.submitList(list)
         listContentDescription(conditionApplied)
     }
 
     private fun refreshTeamList() {
         viewLifecycleOwner.lifecycleScope.launch {
-            when {
+            val teams = when {
                 fromDashboard -> {
                     user?._id?.let { userId ->
-                        teamRepository.getMyTeamsFlow(userId).collectLatest {
-                            teamList = it
-                            setTeamList()
-                        }
+                        viewModel.getMyTeamsFlow(userId).collectLatest { teamList = it }
                     }
+                    teamList
                 }
                 type == "enterprise" -> {
                     conditionApplied = true
-                    teamList = teamRepository.getShareableEnterprises()
-                    setTeamList()
+                    viewModel.getShareableEnterprises()
                 }
                 else -> {
                     conditionApplied = false
-                    teamList = teamRepository.getShareableTeams()
-                    setTeamList()
+                    viewModel.getShareableTeams()
                 }
             }
+
+            val teamIds = teams.mapNotNull { it._id }
+            val teamStatusMap = viewModel.getTeamMemberStatuses(user?._id, teamIds)
+            val visitCountMap = viewModel.getRecentVisitCounts(teamIds)
+
+            val teamDataList = teams.map { team ->
+                val status = teamStatusMap[team._id]
+                TeamData(
+                    _id = team._id,
+                    name = team.name,
+                    teamType = team.teamType,
+                    createdDate = team.createdDate,
+                    type = team.type,
+                    status = team.status,
+                    visitCount = visitCountMap[team._id] ?: 0L,
+                    teamStatus = status?.let { TeamStatus(it.isMember, it.isLeader, it.hasPendingRequest) },
+                    description = team.description,
+                    services = team.services,
+                    rules = team.rules,
+                    teamId = team.teamId
+                )
+            }
+
+            val sortedList = teamDataList.sortedWith(
+                compareByDescending<TeamData> { it.teamStatus?.isLeader == true }
+                    .thenByDescending { it.teamStatus?.isMember == true }
+                    .thenByDescending { it.visitCount }
+            )
+            setTeamList(sortedList)
         }
     }
 
     override fun onEditTeam(team: TeamData?) {
         team?.let { createTeamAlert(it) }
+    }
+
+    override fun onJoinClick(team: TeamData) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.requestToJoin(team._id!!, user?._id, user?.planetCode, team.teamType)
+            refreshTeamList()
+        }
+    }
+
+    override fun onLeaveClick(team: TeamData) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.leaveTeam(team._id!!, user?._id)
+            refreshTeamList()
+        }
     }
 
     override fun onUpdateComplete(itemCount: Int) {
@@ -343,9 +381,9 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
     private fun updatedTeamList() {
         viewLifecycleOwner.lifecycleScope.launch {
             if (!::adapterTeamList.isInitialized || binding.rvTeamList.adapter == null) {
-                setTeamList()
+                refreshTeamList()
             } else {
-                adapterTeamList.updateList()
+                refreshTeamList()
             }
             listContentDescription(conditionApplied)
         }
