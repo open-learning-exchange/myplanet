@@ -44,13 +44,35 @@ class AdapterMySubmission(
     }
 
     fun setExams(exams: HashMap<String?, RealmStepExam>) {
+        val oldExams = this.examHashMap
         this.examHashMap = exams
-        notifyDataSetChanged()
+        if (currentList.isEmpty()) {
+            return
+        }
+        val payload = Bundle().apply { putBoolean(KEY_EXAM_TITLE, true) }
+        currentList.forEachIndexed { index, submission ->
+            val parentId = submission.parentId
+            if (oldExams[parentId]?.name != exams[parentId]?.name) {
+                notifyItemChanged(index, payload)
+            }
+        }
     }
 
     fun setSubmissionCounts(counts: Map<String?, Int>) {
+        val oldCounts = this.submissionCountMap
         this.submissionCountMap = counts
-        notifyDataSetChanged()
+        if (currentList.isEmpty()) {
+            return
+        }
+        val payload = Bundle().apply { putBoolean(KEY_SUBMISSION_COUNT, true) }
+        currentList.forEachIndexed { index, submission ->
+            val submissionId = submission.id
+            val oldCount = oldCounts[submissionId] ?: 1
+            val newCount = counts[submissionId] ?: 1
+            if (oldCount != newCount) {
+                notifyItemChanged(index, payload)
+            }
+        }
     }
 
     fun setType(type: String?) {
@@ -70,19 +92,11 @@ class AdapterMySubmission(
         binding.status.text = submission.status
         binding.date.text = getFormattedDate(submission.startTime)
         showSubmittedBy(binding, submission)
-        if (examHashMap.containsKey(submission.parentId)) {
-            binding.title.text = examHashMap[submission.parentId]?.name
-        }
-
-        val count = submissionCountMap[submission.id] ?: 1
-        if (count > 1) {
-            binding.submissionCount.visibility = View.VISIBLE
-            binding.submissionCount.text = "($count)"
-        } else {
-            binding.submissionCount.visibility = View.GONE
-        }
+        updateExamTitle(holder, submission)
+        updateSubmissionCount(holder, submission)
 
         holder.itemView.setOnClickListener {
+            val count = submissionCountMap[submission.id] ?: 1
             if (count > 1) {
                 showAllSubmissions(submission)
             } else {
@@ -92,6 +106,41 @@ class AdapterMySubmission(
                     openSubmissionDetail(listener, submission.id)
                 }
             }
+        }
+    }
+
+    override fun onBindViewHolder(holder: ViewHolderMySurvey, position: Int, payloads: MutableList<Any>) {
+        if (payloads.isEmpty()) {
+            onBindViewHolder(holder, position)
+            return
+        }
+
+        val bundle = payloads.first() as Bundle
+        val submission = getItem(position)
+
+        if (bundle.containsKey(KEY_EXAM_TITLE)) {
+            updateExamTitle(holder, submission)
+        }
+
+        if (bundle.containsKey(KEY_SUBMISSION_COUNT)) {
+            updateSubmissionCount(holder, submission)
+        }
+    }
+
+    private fun updateExamTitle(holder: ViewHolderMySurvey, submission: RealmSubmission) {
+        if (examHashMap.containsKey(submission.parentId)) {
+            holder.binding.title.text = examHashMap[submission.parentId]?.name
+        }
+    }
+
+    private fun updateSubmissionCount(holder: ViewHolderMySurvey, submission: RealmSubmission) {
+        val binding = holder.binding
+        val count = submissionCountMap[submission.id] ?: 1
+        if (count > 1) {
+            binding.submissionCount.visibility = View.VISIBLE
+            binding.submissionCount.text = "($count)"
+        } else {
+            binding.submissionCount.visibility = View.GONE
         }
     }
 
@@ -133,6 +182,9 @@ class AdapterMySubmission(
     class ViewHolderMySurvey(val binding: RowMysurveyBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {
+        private const val KEY_EXAM_TITLE = "KEY_EXAM_TITLE"
+        private const val KEY_SUBMISSION_COUNT = "KEY_SUBMISSION_COUNT"
+
         @JvmStatic
         fun openSurvey(listener: OnHomeItemClickListener?, id: String?, isMySurvey: Boolean, isTeam: Boolean, teamId: String?) {
             if (listener != null) {
