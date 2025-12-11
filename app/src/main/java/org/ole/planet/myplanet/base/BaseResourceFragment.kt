@@ -382,11 +382,6 @@ abstract class BaseResourceFragment : Fragment() {
         }
     }
 
-    suspend fun getLibraryList(mRealm: Realm): List<RealmMyLibrary> {
-        return libraryRepository.getLibraryListForUser(
-            settings.getString("userId", "--")
-        )
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -551,18 +546,6 @@ abstract class BaseResourceFragment : Fragment() {
 
                 override fun notAvailable() {}
             })
-        }
-
-        fun getLibraryList(mRealm: Realm, userId: String?): List<RealmMyLibrary> {
-            val l = mRealm.where(RealmMyLibrary::class.java).equalTo("isPrivate", false).findAll()
-            val libList: MutableList<RealmMyLibrary> = ArrayList()
-            val libraries = getLibraries(l)
-            for (item in libraries) {
-                if (item.userId?.contains(userId) == true) {
-                    libList.add(item)
-                }
-            }
-            return libList
         }
 
         private fun getLibraries(l: RealmResults<RealmMyLibrary>): List<RealmMyLibrary> {
