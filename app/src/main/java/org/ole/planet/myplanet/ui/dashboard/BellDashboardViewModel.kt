@@ -102,7 +102,7 @@ class BellDashboardViewModel @Inject constructor(
 
                     val rawMylife = RealmMyLife.getMyLifeByUserId(realm, settings)
                     val dbMylife = rawMylife.filter { it.isVisible }.map {
-                        MyLifeItem(it.title, getImageResource(it.imageId), it.isVisible)
+                        MyLifeItem(it.title, getImageResource(it.imageId ?: ""), it.isVisible)
                     }
 
                     val surveyCount = RealmSubmission.getNoOfSurveySubmissionByUser(userId, realm)
