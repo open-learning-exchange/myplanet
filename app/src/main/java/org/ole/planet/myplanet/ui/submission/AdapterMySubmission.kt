@@ -20,7 +20,7 @@ import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
 
 class AdapterMySubmission(
     private val context: Context,
-) : ListAdapter<SubmissionItem, AdapterMySubmission.ViewHolderMySurvey>(
+) : ListAdapter<MySubmissionItem, AdapterMySubmission.ViewHolderMySurvey>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem -> oldItem.submission.id == newItem.submission.id },
         areContentsTheSame = { oldItem, newItem -> oldItem == newItem }

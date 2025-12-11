@@ -32,7 +32,7 @@ class SubmissionViewModel @Inject constructor(
     private val examsFlow = allSubmissionsFlow.mapLatest { subs ->
         HashMap(submissionRepository.getExamMapForSubmissions(subs))
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), hashMapOf())
-    val submissionItems: StateFlow<List<SubmissionItem>> = combine(allSubmissionsFlow, _type, _query, examsFlow) { subs, type, query, examMap ->
+    val submissionItems: StateFlow<List<MySubmissionItem>> = combine(allSubmissionsFlow, _type, _query, examsFlow) { subs, type, query, examMap ->
         val filtered = when (type) {
             "survey" -> subs.filter { it.userId == userId && it.type == "survey" }
             "survey_submission" -> subs.filter {
@@ -63,7 +63,7 @@ class SubmissionViewModel @Inject constructor(
         val submissionCountMap = groupedSubmissions.mapValues { it.value.size }
 
         uniqueSubmissions.map { sub ->
-            SubmissionItem(
+            MySubmissionItem(
                 submission = sub,
                 exam = examMap[sub.parentId],
                 count = submissionCountMap[sub.parentId] ?: 0

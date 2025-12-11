@@ -57,9 +57,9 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
         viewModel.setFilter(type ?: "", "")
 
         viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.submissionItems.collectLatest { submissionItems ->
-                adapter.submitList(submissionItems)
-                updateEmptyState(submissionItems.size)
+            viewModel.submissionItems.collectLatest { mySubmissionItems ->
+                adapter.submitList(mySubmissionItems)
+                updateEmptyState(mySubmissionItems.size)
             }
         }
 
