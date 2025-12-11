@@ -59,6 +59,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 @AndroidEntryPoint
 open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCallback,
     SyncListener {
+    open val isBellDashboard: Boolean = false
     private val viewModel: DashboardViewModel by viewModels()
     private val realm get() = requireRealmInstance()
     private var fullName: String? = null
@@ -328,9 +329,11 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         myLifeFlex.flexDirection = FlexDirection.ROW
 
         val userId = settings?.getString("userId", "--")
-        viewLifecycleOwner.lifecycleScope.launch {
-            setUpMyLife(userId)
-            myLifeListInit(myLifeFlex)
+        if (!isBellDashboard) {
+            viewLifecycleOwner.lifecycleScope.launch {
+                setUpMyLife(userId)
+                myLifeListInit(myLifeFlex)
+            }
         }
 
 

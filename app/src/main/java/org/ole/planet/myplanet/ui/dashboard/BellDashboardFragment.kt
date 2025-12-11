@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.NumberPicker
 import android.widget.RadioGroup
 import android.widget.TextView
@@ -24,8 +25,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import com.google.android.flexbox.FlexDirection
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentHomeBellBinding
+import org.ole.planet.myplanet.databinding.ItemMyLifeBinding
 import org.ole.planet.myplanet.model.RealmCertification
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -40,6 +43,7 @@ import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 
 class BellDashboardFragment : BaseDashboardFragment() {
+    override val isBellDashboard = true
     private var _binding: FragmentHomeBellBinding? = null
     private val binding get() = _binding!!
     private var networkStatusJob: Job? = null
@@ -74,8 +78,41 @@ class BellDashboardFragment : BaseDashboardFragment() {
         if (model?.id?.startsWith("guest") == false && TextUtils.isEmpty(model?.key)) {
             syncKeyId()
         }
+        viewModel.loadBellData(user?.id, settings)
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.bellData.collect { bellData ->
+                    bellData?.let {
+                        renderBellData(it)
+                    }
+                }
+            }
+        }
     }
-
+    private fun renderBellData(bellData: BellData) {
+        val flexboxLayout = binding.flexboxLayoutMyLife
+        flexboxLayout.removeAllViews()
+        flexboxLayout.flexDirection = FlexDirection.ROW
+        var params = LinearLayout.LayoutParams(250, 100)
+        bellData.myLifeItems.forEachIndexed { index, myLifeItem ->
+            val itemMyLifeBinding = ItemMyLifeBinding.inflate(LayoutInflater.from(activity))
+            val v = itemMyLifeBinding.root
+            if (index % 2 == 0) {
+                v.setBackgroundResource(R.drawable.light_rect)
+            } else {
+                v.setBackgroundResource(R.color.dashboard_item_alternative)
+            }
+            itemMyLifeBinding.img.setImageResource(myLifeItem.imageId)
+            itemMyLifeBinding.tvName.text = myLifeItem.title
+            if (myLifeItem.title == getString(R.string.my_survey)) {
+                itemMyLifeBinding.tvCount.visibility = View.VISIBLE
+                itemMyLifeBinding.tvCount.text = bellData.surveyCount.toString()
+            } else {
+                itemMyLifeBinding.tvCount.visibility = View.GONE
+            }
+            flexboxLayout.addView(v, params)
+        }
+    }
     private fun setupNetworkStatusMonitoring() {
         networkStatusJob?.cancel()
         networkStatusJob = viewLifecycleOwner.lifecycleScope.launch {
