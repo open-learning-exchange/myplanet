@@ -13,12 +13,13 @@ import io.realm.Realm
 import java.util.Calendar
 import java.util.Locale
 import org.ole.planet.myplanet.MainApplication
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
-import org.ole.planet.myplanet.callback.SecurityDataCallback
 import org.ole.planet.myplanet.databinding.ActivityBecomeMemberBinding
-import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utilities.AuthHelper
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
@@ -32,6 +33,8 @@ import org.ole.planet.myplanet.utilities.VersionUtils
 class BecomeMemberActivity : BaseActivity() {
     private lateinit var activityBecomeMemberBinding: ActivityBecomeMemberBinding
     private lateinit var mRealm: Realm
+    @Inject
+    lateinit var userRepository: UserRepository
     var dob: String = ""
     var guest: Boolean = false
     private var usernameWatcher: TextWatcher? = null
@@ -149,18 +152,14 @@ class BecomeMemberActivity : BaseActivity() {
             show()
         }
 
-        Service(this).becomeMember(obj, object : Service.CreateUserCallback {
-            override fun onSuccess(success: String) {
-                runOnUiThread { Utilities.toast(this@BecomeMemberActivity, success) }
+        lifecycleScope.launch {
+            val (isSuccess, message) = userRepository.createUser(obj)
+            Utilities.toast(this@BecomeMemberActivity, message)
+            customProgressDialog.dismiss()
+            if (isSuccess) {
+                autoLoginNewMember(info.username, info.password)
             }
-        }, object : SecurityDataCallback {
-            override fun onSecurityDataUpdated() {
-                runOnUiThread {
-                    customProgressDialog.dismiss()
-                    autoLoginNewMember(info.username, info.password)
-                }
-            }
-        })
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

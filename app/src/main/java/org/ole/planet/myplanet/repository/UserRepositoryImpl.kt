@@ -224,7 +224,7 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun becomeMember(obj: JsonObject): Pair<Boolean, String> {
+    override suspend fun createUser(obj: JsonObject): Pair<Boolean, String> {
         val isAvailable = withContext(Dispatchers.IO) {
             try {
                 val response = apiInterface.isPlanetAvailableSuspend(UrlUtils.getUpdateUrl(settings))
@@ -285,6 +285,11 @@ class UserRepositoryImpl @Inject constructor(
             saveUser(obj, settings, keyString, iv)
             return Pair(true, context.getString(R.string.not_connect_to_planet_created_user_offline))
         }
+    }
+
+    @Deprecated("Use createUser instead")
+    override suspend fun becomeMember(obj: JsonObject): Pair<Boolean, String> {
+        return createUser(obj)
     }
 
     private suspend fun uploadToShelf(obj: JsonObject) {

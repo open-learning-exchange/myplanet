@@ -51,6 +51,8 @@ interface UserRepository {
         payload: JsonObject
     )
 
+    suspend fun createUser(obj: JsonObject): Pair<Boolean, String>
+    @Deprecated("Use createUser instead", ReplaceWith("createUser(obj)"))
     suspend fun becomeMember(obj: JsonObject): Pair<Boolean, String>
     suspend fun getHealthRecordsAndAssociatedUsers(
         userId: String,

@@ -274,6 +274,7 @@ class Service @Inject constructor(
         }
     }
 
+    @Deprecated("Use UserRepository.createUser instead")
     fun becomeMember(obj: JsonObject, callback: CreateUserCallback, securityCallback: SecurityDataCallback? = null) {
         serviceScope.launch {
             val result = userRepository.becomeMember(obj)
