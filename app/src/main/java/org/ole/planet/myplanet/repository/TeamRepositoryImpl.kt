@@ -744,4 +744,22 @@ class TeamRepositoryImpl @Inject constructor(
             `in`("id", teamMembers.toTypedArray())
         }
     }
+
+    override suspend fun isTeamNameExists(name: String, type: String, excludeTeamId: String?): Boolean {
+        if (name.isBlank()) return false
+
+        return withRealm { realm ->
+            val query = realm.where(RealmMyTeam::class.java)
+                .equalTo("name", name, io.realm.Case.INSENSITIVE)
+                .equalTo("type", type)
+                .isEmpty("teamId")
+                .notEqualTo("status", "archived")
+
+            excludeTeamId?.let {
+                query.notEqualTo("_id", it)
+            }
+
+            query.count() > 0
+        }
+    }
 }

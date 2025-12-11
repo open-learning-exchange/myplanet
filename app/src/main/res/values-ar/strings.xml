@@ -48,7 +48,6 @@
     <string name="download_selected">تحميل المحدد</string>
     <string name="txt_cancel">إلغاء</string>
     <string name="download_all">تحميل الكل</string>
-    <string name="hello_blank_fragment">مرحبًا بك في قطعة فارغة</string>
     <string name="join_selected">الانضمام إلى المحدد</string>
     <string name="join">انضمام</string>
     <string name="add_to_mylib">أضف إلى مكتبتي</string>
@@ -691,7 +690,6 @@
     <string name="no_data_available_please_click_button_to_add_new_resource_in_mypersonal">لا توجد بيانات متاحة، يرجى النقر على الزر + لإضافة مصدر جديد في "شخصي".</string>
     <string name="label_added">تمت إضافة التسمية.</string>
     <string name="please_enter_message">يرجى إدخال الرسالة</string>
-    <string name="no_items">لا توجد عناصر</string>
     <string name="record_survey">تسجيل الاستبيان</string>
     <string name="survey_sent_to_users">تم إرسال الاستبيان للمستخدمين</string>
     <string name="wifi_is_turned_off_saving_battery_power">تم تعطيل الواي فاي. يتم حفظ طاقة البطارية</string>
@@ -1177,5 +1175,7 @@
     <string name="click_to_assign_member">انقر لتعيين عضو الفريق</string>
     <string name="saving">جار الحفظ…</string>
     <string name="achievement_saved">تم تحديث الإنجاز</string>
+    <string name="team_name_already_exists">فريق بهذا الاسم موجود بالفعل</string>
+    <string name="enterprise_name_already_exists">مؤسسة بهذا الاسم موجودة بالفعل</string>
 
 </resources>

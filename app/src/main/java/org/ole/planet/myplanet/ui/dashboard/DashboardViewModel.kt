@@ -3,11 +3,13 @@ package org.ole.planet.myplanet.ui.dashboard
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.util.Calendar
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import io.realm.Sort
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -25,7 +27,6 @@ import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.repository.UserRepository
-import java.util.Calendar
 
 data class DashboardUiState(
     val unreadNotifications: Int = 0,
@@ -144,5 +145,5 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
-    suspend fun getUsersSortedByDate() = userRepository.getAllUsersSortedByDate()
+    suspend fun getUsersSortedByDate() = userRepository.getUsersSortedBy("joinDate", Sort.DESCENDING)
 }

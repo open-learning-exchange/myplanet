@@ -38,6 +38,7 @@ import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmOfflineActivity
+import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTeamNotification
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -237,11 +238,18 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     private fun myLifeListInit(flexboxLayout: FlexboxLayout) {
-        val dbMylife: MutableList<RealmMyLife> = ArrayList()
         val rawMylife: List<RealmMyLife> = RealmMyLife.getMyLifeByUserId(realm, settings)
-        for (item in rawMylife) if (item.isVisible) dbMylife.add(item)
+        val dbMylife = rawMylife.filter { it.isVisible }
+
+        val user = profileDbHandler.userModel
+        val surveyCount = if (isRealmInitialized()) {
+            RealmSubmission.getNoOfSurveySubmissionByUser(user?.id, mRealm)
+        } else {
+            0
+        }
+
         for ((itemCnt, items) in dbMylife.withIndex()) {
-            flexboxLayout.addView(getLayout(itemCnt, items), params)
+            flexboxLayout.addView(getLayout(itemCnt, items, surveyCount), params)
         }
     }
 

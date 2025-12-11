@@ -735,6 +735,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             realtimeSyncHelper.cleanup()
         }
         searchTextWatcher?.let { etSearch.removeTextChangedListener(it) }
+        searchTextWatcher = null
         super.onDestroyView()
     }
 

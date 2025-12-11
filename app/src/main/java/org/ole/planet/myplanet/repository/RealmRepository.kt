@@ -6,6 +6,7 @@ import io.realm.RealmObject
 import io.realm.RealmQuery
 import io.realm.RealmResults
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -48,20 +49,21 @@ open class RealmRepository(protected val databaseService: DatabaseService) {
         clazz: Class<T>,
         builder: RealmQuery<T>.() -> Unit = {},
     ): Flow<List<T>> = callbackFlow<List<T>> {
-        @Suppress("DEPRECATION")
-        val realm = databaseService.realmInstance
+        val realm = Realm.getDefaultInstance()
         val results = realm.where(clazz).apply(builder).findAllAsync()
 
-        val listener = RealmChangeListener<RealmResults<T>> { updatedResults ->
-            if (updatedResults.isLoaded && updatedResults.isValid) {
-                trySend(realm.copyFromRealm(updatedResults))
+        val listener = RealmChangeListener<RealmResults<T>> {
+            if (it.isLoaded && it.isValid) {
+                val frozenResults = it.freeze()
+                launch(databaseService.ioDispatcher) {
+                    val copiedList = databaseService.withRealmAsync { bgRealm ->
+                        bgRealm.copyFromRealm(frozenResults)
+                    }
+                    send(copiedList)
+                }
             }
         }
         results.addChangeListener(listener)
-
-        if (results.isLoaded && results.isValid) {
-            trySend(realm.copyFromRealm(results))
-        }
 
         awaitClose {
             if (!realm.isClosed) {

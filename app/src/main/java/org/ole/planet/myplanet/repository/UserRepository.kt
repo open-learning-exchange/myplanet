@@ -2,14 +2,16 @@ package org.ole.planet.myplanet.repository
 
 import android.content.SharedPreferences
 import com.google.gson.JsonObject
+import io.realm.Sort
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.ui.myhealth.HealthRecord
 
 interface UserRepository {
     suspend fun getUserById(userId: String): RealmUserModel?
     suspend fun getUserByAnyId(id: String): RealmUserModel?
     suspend fun getUserByName(name: String): RealmUserModel?
     suspend fun getAllUsers(): List<RealmUserModel>
-    suspend fun getAllUsersSortedByDate(): List<RealmUserModel>
+    suspend fun getUsersSortedBy(fieldName: String, sortOrder: Sort): List<RealmUserModel>
     suspend fun getMonthlyLoginCounts(
         userId: String,
         startMillis: Long,
@@ -49,6 +51,13 @@ interface UserRepository {
         payload: JsonObject
     )
 
+    suspend fun becomeMember(obj: JsonObject): Pair<Boolean, String>
+    suspend fun getHealthRecordsAndAssociatedUsers(
+        userId: String,
+        currentUser: RealmUserModel
+    ): HealthRecord?
+
     fun getUserModel(): RealmUserModel?
     suspend fun getUserModelSuspending(): RealmUserModel?
+    fun getActiveUserId(): String
 }

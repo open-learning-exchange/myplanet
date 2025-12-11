@@ -668,12 +668,8 @@ class ChatDetailFragment : Fragment() {
             editor.putBoolean("isAlternativeUrl", false)
             editor.apply()
         }
+        loadingJob?.cancel()
         _binding = null
         super.onDestroyView()
-    }
-
-    override fun onStop() {
-        super.onStop()
-        loadingJob?.cancel()
     }
 }

@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.databinding.ActivityReplyBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.NewsRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.news.AdapterNews.OnNewsItemClickListener
@@ -55,7 +56,12 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     @Inject
+    lateinit var userRepository: org.ole.planet.myplanet.repository.UserRepository
+    @Inject
     lateinit var sharedPrefManager: SharedPrefManager
+    @Inject
+    lateinit var newsRepository: NewsRepository
+
     private lateinit var imageList: RealmList<String>
     private var llImage: ViewGroup? = null
     private lateinit var openFolderLauncher: ActivityResultLauncher<Intent>
@@ -89,7 +95,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         lifecycleScope.launch {
             val (news, list) = viewModel.getNewsWithReplies(id)
             databaseService.withRealm { realm ->
-                newsAdapter = AdapterNews(this@ReplyActivity, user, news, "", null, userProfileDbHandler, databaseService, lifecycleScope)
+                newsAdapter = AdapterNews(this@ReplyActivity, user, news, "", null, userProfileDbHandler, databaseService, lifecycleScope, userRepository, newsRepository)
                 newsAdapter.sharedPrefManager = sharedPrefManager
                 newsAdapter.setListener(this@ReplyActivity)
                 newsAdapter.setmRealm(realm)

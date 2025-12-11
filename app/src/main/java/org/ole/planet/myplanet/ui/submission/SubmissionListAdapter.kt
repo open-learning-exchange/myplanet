@@ -5,11 +5,11 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ItemSubmissionBinding
+import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.TimeUtils
 
 class SubmissionListAdapter(
@@ -55,14 +55,9 @@ class SubmissionListAdapter(
     }
 
     companion object {
-        private val USER_COMPARATOR = object : DiffUtil.ItemCallback<SubmissionItem>() {
-            override fun areItemsTheSame(oldItem: SubmissionItem, newItem: SubmissionItem): Boolean {
-                return oldItem.id == newItem.id
-            }
-
-            override fun areContentsTheSame(oldItem: SubmissionItem, newItem: SubmissionItem): Boolean {
-                return oldItem == newItem
-            }
-        }
+        private val USER_COMPARATOR = DiffUtils.itemCallback<SubmissionItem>(
+            areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id },
+            areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
+        )
     }
 }
