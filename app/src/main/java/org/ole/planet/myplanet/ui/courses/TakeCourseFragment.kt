@@ -87,18 +87,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         binding.contentLayout.visibility = View.GONE
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val course: RealmMyCourse? = withTimeoutOrNull(3000) {
-                withContext(Dispatchers.IO) {
-                    databaseService.realmInstance.use { realm ->
-                        val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
-                        if (course != null) {
-                            realm.copyFromRealm(course)
-                        } else {
-                            null
-                        }
-                    }
-                }
-            }
+            val course: RealmMyCourse? = courseRepository.getDetachedCourseById(courseId)
             binding.loadingIndicator.visibility = View.GONE
             if (course == null) {
                 Toast.makeText(requireContext(), getString(R.string.failed_to_load_course), Toast.LENGTH_LONG).show()
