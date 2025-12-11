@@ -114,8 +114,9 @@ class AudioRecorderService {
                     toggleRecording()
                 }
                 else {
-                    if (!shouldShowRequestPermissionRationale(context as Activity, Manifest.permission.RECORD_AUDIO)) {
-                        AlertDialog.Builder(context, R.style.AlertDialogTheme)
+                    val activity = context as? Activity
+                    if (activity != null && !shouldShowRequestPermissionRationale(activity, Manifest.permission.RECORD_AUDIO)) {
+                        AlertDialog.Builder(activity, R.style.AlertDialogTheme)
                             .setTitle(R.string.permission_required)
                             .setMessage(R.string.microphone_permission_required)
                             .setPositiveButton(R.string.settings) { dialog, _ ->

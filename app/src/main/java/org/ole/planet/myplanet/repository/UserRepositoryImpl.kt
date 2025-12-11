@@ -34,7 +34,12 @@ class UserRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context
 ) : RealmRepository(databaseService), UserRepository {
     override suspend fun getUserById(userId: String): RealmUserModel? {
-        return findByField(RealmUserModel::class.java, "id", userId)
+        return withRealm { realm ->
+            realm.where(RealmUserModel::class.java)
+                .equalTo("id", userId)
+                .findFirst()
+                ?.let { realm.copyFromRealm(it) }
+        }
     }
 
     override suspend fun getUserByAnyId(id: String): RealmUserModel? {
@@ -50,9 +55,9 @@ class UserRepositoryImpl @Inject constructor(
         return queryList(RealmUserModel::class.java)
     }
 
-    override suspend fun getAllUsersSortedByDate(): List<RealmUserModel> {
+    override suspend fun getUsersSortedBy(fieldName: String, sortOrder: io.realm.Sort): List<RealmUserModel> {
         return queryList(RealmUserModel::class.java) {
-            sort("joinDate", io.realm.Sort.DESCENDING)
+            sort(fieldName, sortOrder)
         }
     }
 

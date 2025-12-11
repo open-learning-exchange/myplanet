@@ -285,12 +285,7 @@ class MyHealthFragment : Fragment() {
 
     private fun selectPatient() {
         viewLifecycleOwner.lifecycleScope.launch {
-            val users = withContext(Dispatchers.IO) {
-                Realm.getDefaultInstance().use { realm ->
-                    val results = realm.where(RealmUserModel::class.java).sort("joinDate", Sort.DESCENDING).findAll()
-                    realm.copyFromRealm(results)
-                }
-            }
+            val users = userRepository.getUsersSortedBy("joinDate", Sort.DESCENDING)
             withContext(Dispatchers.Main) {
                 userModelList = users
                 adapter.clear()
@@ -325,19 +320,14 @@ class MyHealthFragment : Fragment() {
             override fun onNothingSelected(p0: AdapterView<*>?) {}
 
             override fun onItemSelected(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) {
-                viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                viewLifecycleOwner.lifecycleScope.launch {
                     val (sortBy, sort) = when (p2) {
                         0 -> "joinDate" to Sort.DESCENDING
                         1 -> "joinDate" to Sort.ASCENDING
                         2 -> "name" to Sort.ASCENDING
                         else -> "name" to Sort.DESCENDING
                     }
-
-                    val sortedList = Realm.getDefaultInstance().use { realm ->
-                        val results = realm.where(RealmUserModel::class.java).sort(sortBy, sort).findAll()
-                        realm.copyFromRealm(results)
-                    }
-
+                    val sortedList = userRepository.getUsersSortedBy(sortBy, sort)
                     withContext(Dispatchers.Main) {
                         if (isAdded) {
                             userModelList = sortedList
