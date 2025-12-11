@@ -76,6 +76,8 @@ class MyHealthFragment : Fragment() {
     lateinit var databaseService: DatabaseService
     @Inject
     lateinit var userRepository: UserRepository
+    @Inject
+    lateinit var healthRepository: HealthRepository
     private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
     private lateinit var realtimeSyncListener: BaseRealtimeSyncListener
     private var _binding: FragmentVitalSignBinding? = null
@@ -83,7 +85,6 @@ class MyHealthFragment : Fragment() {
     private lateinit var alertMyPersonalBinding: AlertMyPersonalBinding
     private var alertHealthListBinding: AlertHealthListBinding? = null
     var userId: String? = null
-    lateinit var mRealm: Realm
     var userModel: RealmUserModel? = null
     lateinit var userModelList: List<RealmUserModel>
     lateinit var adapter: UserListArrayAdapter
@@ -107,7 +108,6 @@ class MyHealthFragment : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentVitalSignBinding.inflate(inflater, container, false)
-        mRealm = databaseService.realmInstance
         return binding.root
     }
 
@@ -356,14 +356,7 @@ class MyHealthFragment : Fragment() {
                     }
 
                     val userModelList = withContext(Dispatchers.IO) {
-                        databaseService.withRealm { realm ->
-                            val results = realm.where(RealmUserModel::class.java)
-                                .contains("firstName", editable.toString(), Case.INSENSITIVE).or()
-                                .contains("lastName", editable.toString(), Case.INSENSITIVE).or()
-                                .contains("name", editable.toString(), Case.INSENSITIVE)
-                                .sort("joinDate", Sort.DESCENDING).findAll()
-                            realm.copyFromRealm(results)
-                        }
+                        userRepository.getUsersByFullName(editable.toString())
                     }
 
                     loadingJob.cancel()
@@ -417,11 +410,14 @@ class MyHealthFragment : Fragment() {
             binding.txtLanguage.text = Utilities.checkNA(currentUser.language)
             binding.txtDob.text = Utilities.checkNA(currentUser.dob)
 
-            val healthRecord = userRepository.getHealthRecordsAndAssociatedUsers(userId!!, currentUser)
+            val healthRecord = healthRepository.getHealthRecord(userId!!)
+            val healthData = healthRepository.getHealthData(healthRecord, currentUser)
+            val examinations = healthRepository.getAllExaminations(userId!!)
+            val userMap = userRepository.getUsersAsMap(examinations.mapNotNull { it.creatorId })
 
-            if (healthRecord != null) {
-                val (mh, mm, list, userMap) = healthRecord
-                val myHealths = mm.profile
+
+            if (healthData != null) {
+                val myHealths = healthData.profile
                 binding.txtOtherNeed.text = Utilities.checkNA(myHealths?.notes)
                 binding.txtSpecialNeeds.text = Utilities.checkNA(myHealths?.specialNeeds)
                 binding.txtBirthPlace.text = Utilities.checkNA(currentUser.birthPlace)
@@ -433,24 +429,24 @@ class MyHealthFragment : Fragment() {
                     Utilities.checkNA(contact)
                 ).trimIndent()
 
-                if (list.isNotEmpty()) {
+                if (examinations.isNotEmpty()) {
                     binding.rvRecords.visibility = View.VISIBLE
                     binding.tvNoRecords.visibility = View.GONE
                     binding.tvDataPlaceholder.visibility = View.VISIBLE
 
                     if (!::healthAdapter.isInitialized) {
-                        healthAdapter = AdapterHealthExamination(requireActivity(), mh, currentUser, userMap)
+                        healthAdapter = AdapterHealthExamination(requireActivity(), healthData, currentUser, userMap)
                     } else {
-                        healthAdapter.updateData(mh, currentUser, userMap)
+                        healthAdapter.updateData(healthData, currentUser, userMap)
                     }
                     binding.rvRecords.apply {
                         layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
                         isNestedScrollingEnabled = false
                         adapter = healthAdapter
                     }
-                    healthAdapter.submitList(list)
+                    healthAdapter.submitList(examinations)
                     binding.rvRecords.post {
-                        val lastPosition = list.size - 1
+                        val lastPosition = examinations.size - 1
                         if (lastPosition >= 0) {
                             binding.rvRecords.scrollToPosition(lastPosition)
                         }
@@ -493,9 +489,6 @@ class MyHealthFragment : Fragment() {
     override fun onDestroy() {
         customProgressDialog?.dismiss()
         customProgressDialog = null
-        if (this::mRealm.isInitialized && !mRealm.isClosed) {
-            mRealm.close()
-        }
         super.onDestroy()
     }
 }
