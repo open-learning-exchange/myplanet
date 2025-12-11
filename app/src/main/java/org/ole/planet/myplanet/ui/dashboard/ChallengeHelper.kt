@@ -111,7 +111,7 @@ class ChallengeHelper(
         private val dateFormat = object : ThreadLocal<SimpleDateFormat>() {
             override fun initialValue() = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
         }
-        internal fun getDateFromTimestamp(timestamp: Long): String {
+        private fun getDateFromTimestamp(timestamp: Long): String {
             return dateFormat.get()!!.format(Date(timestamp))
         }
     }
