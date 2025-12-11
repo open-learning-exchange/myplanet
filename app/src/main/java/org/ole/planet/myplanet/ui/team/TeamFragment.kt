@@ -10,6 +10,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
@@ -28,9 +29,10 @@ import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
-class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamList.OnUpdateCompleteListener {
+class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamList.OnUpdateCompleteListener, AdapterTeamList.OnLeaveTeamListener {
     private var _binding: FragmentTeamBinding? = null
     private val binding get() = _binding!!
+    private val teamViewModel: TeamViewModel by viewModels()
     private lateinit var alertCreateTeamBinding: AlertCreateTeamBinding
     @Inject
     lateinit var teamRepository: TeamRepository
@@ -201,6 +203,17 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
         super.onViewCreated(view, savedInstanceState)
         binding.rvTeamList.layoutManager = LinearLayoutManager(activity)
         refreshTeamList()
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            teamViewModel.events.collectLatest {
+                when(it) {
+                    is TeamAction.LeaveTeam -> {
+                        refreshTeamList()
+                    }
+                }
+            }
+        }
+
         textWatcher = object : TextWatcher {
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
             override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {
@@ -290,6 +303,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
 
         adapterTeamList.setType(type)
         adapterTeamList.setTeamListener(this@TeamFragment)
+        adapterTeamList.setOnLeaveTeamListener(this@TeamFragment)
         adapterTeamList.setUpdateCompleteListener(this@TeamFragment)
         requireView().findViewById<View>(R.id.type).visibility =
             if (type == null) {
@@ -330,6 +344,10 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
 
     override fun onEditTeam(team: TeamData?) {
         team?.let { createTeamAlert(it) }
+    }
+
+    override fun onLeaveTeam(team: TeamData, user: RealmUserModel?) {
+        team._id?.let { teamViewModel.leaveTeam(it, user?.id) }
     }
 
     override fun onUpdateComplete(itemCount: Int) {

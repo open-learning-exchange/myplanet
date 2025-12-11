@@ -45,6 +45,7 @@ class AdapterTeamList(
     private var type: String? = ""
     private var teamListener: OnClickTeamItem? = null
     private var updateCompleteListener: OnUpdateCompleteListener? = null
+    private var onLeaveTeamListener: OnLeaveTeamListener? = null
     private val teamStatusCache = mutableMapOf<String, TeamStatus>()
     private val visitCountsCache = mutableMapOf<String, Long>()
     private var visitCounts: Map<String, Long> = emptyMap()
@@ -57,6 +58,14 @@ class AdapterTeamList(
 
     interface OnUpdateCompleteListener {
         fun onUpdateComplete(itemCount: Int)
+    }
+
+    interface OnLeaveTeamListener {
+        fun onLeaveTeam(team: TeamData, user: RealmUserModel?)
+    }
+
+    fun setOnLeaveTeamListener(onLeaveTeamListener: OnLeaveTeamListener?) {
+        this.onLeaveTeamListener = onLeaveTeamListener
     }
 
     fun setTeamListener(teamListener: OnClickTeamItem?) {
@@ -194,7 +203,10 @@ class AdapterTeamList(
             } else {
                 AlertDialog.Builder(context, R.style.CustomAlertDialog).setMessage(R.string.confirm_exit)
                     .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                        leaveTeam(team, user?.id)
+                        val teamId = team._id ?: return@setPositiveButton
+                        val cacheKey = "${teamId}_${user?.id}"
+                        teamStatusCache.remove(cacheKey)
+                        onLeaveTeamListener?.onLeaveTeam(team, user)
                     }.setNegativeButton(R.string.no, null).show()
             }
         } else {
@@ -344,18 +356,6 @@ class AdapterTeamList(
         }
     }
 
-    private fun leaveTeam(team: TeamData, userId: String?) {
-        val teamId = team._id ?: return
-        val cacheKey = "${teamId}_${userId}"
-        teamStatusCache.remove(cacheKey)
-
-        scope.launch(Dispatchers.IO) {
-            teamRepository.leaveTeam(teamId, userId)
-            withContext(Dispatchers.Main) {
-                updateList()
-            }
-        }
-    }
 
     private fun syncTeamActivities() {
         syncJob?.cancel()
