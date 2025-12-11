@@ -16,7 +16,7 @@ import org.ole.planet.myplanet.MainApplication
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.BaseActivity
+import org.ole.planet.myplanet.ui.sync.ProcessUserDataActivity
 import org.ole.planet.myplanet.databinding.ActivityBecomeMemberBinding
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.UserRepository
@@ -28,13 +28,12 @@ import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils
+import javax.inject.Inject
 
 @AndroidEntryPoint
-class BecomeMemberActivity : BaseActivity() {
+class BecomeMemberActivity : ProcessUserDataActivity() {
     private lateinit var activityBecomeMemberBinding: ActivityBecomeMemberBinding
     private lateinit var mRealm: Realm
-    @Inject
-    lateinit var userRepository: UserRepository
     var dob: String = ""
     var guest: Boolean = false
     private var usernameWatcher: TextWatcher? = null
@@ -143,6 +142,10 @@ class BecomeMemberActivity : BaseActivity() {
         addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
         val roles = JsonArray().apply { add("learner") }
         add("roles", roles)
+    }
+
+    override fun onSuccess(success: String?) {
+        // Not needed in this context, as user creation is handled via coroutines
     }
 
     private fun addMember(info: MemberInfo, realm: Realm) {
