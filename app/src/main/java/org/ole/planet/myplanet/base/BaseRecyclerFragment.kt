@@ -127,7 +127,11 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         val courseIds = mutableSetOf<String>()
 
         itemsToAdd.forEach { item ->
-            val realmObject = item as? RealmObject ?: return@forEach
+            val realmObject = if (item is CourseItem) {
+                item.course
+            } else {
+                item as? RealmObject
+            } ?: return@forEach
             when (realmObject) {
                 is RealmMyLibrary -> realmObject.resourceId?.let(resourceIds::add)
                 is RealmMyCourse -> realmObject.courseId?.let(courseIds::add)
@@ -191,7 +195,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
-    fun deleteSelected(deleteProgress: Boolean) {
+    open fun deleteSelected(deleteProgress: Boolean) {
         selectedItems?.forEach { item ->
             try {
                 if (!mRealm.isInTransaction) {
