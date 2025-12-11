@@ -601,6 +601,9 @@ class SyncManager constructor(
             Log.d("SyncPerf", "    Resources: Found $totalRows documents to sync")
             logger.logDetail("resource_sync", "Total resources: $totalRows, batch size: $batchSize")
 
+            val documentsToInsert = mutableListOf<Pair<JsonObject, String>>()
+            val transactionChunkSize = 500
+
             while (skip < totalRows || (totalRows == 0 && skip == 0)) {
                 batchCount++
                 val batchStartTime = System.currentTimeMillis()
@@ -631,7 +634,6 @@ class SyncManager constructor(
 
                     // Parse documents
                     val parseStartTime = System.currentTimeMillis()
-                    val batchDocuments = JsonArray()
                     val validDocuments = mutableListOf<Pair<JsonObject, String>>()
 
                     for (i in 0 until rows.size()) {
@@ -641,7 +643,6 @@ class SyncManager constructor(
                             val id = getString("_id", doc)
 
                             if (!id.startsWith("_design") && id.isNotBlank()) {
-                                batchDocuments.add(doc)
                                 validDocuments.add(Pair(doc, id))
                             }
                         }
@@ -652,68 +653,16 @@ class SyncManager constructor(
                     }
 
                     if (validDocuments.isNotEmpty()) {
-                        try {
-                            val chunkSize = 50  // Increased from 10 to reduce transaction count
-                            val chunks = validDocuments.chunked(chunkSize)
-                            val idsWeAreProcessing = validDocuments.map { it.second }
+                        documentsToInsert.addAll(validDocuments)
+                    }
 
-                            val savedIds = mutableListOf<String>()
-                            val realmInsertStartTime = System.currentTimeMillis()
-
-                            for ((chunkIndex, chunk) in chunks.withIndex()) {
-                                val chunkStartTime = System.currentTimeMillis()
-                                databaseService.withRealm { realm ->
-                                    realm.executeTransaction { realmTx ->
-                                        val chunkDocuments = JsonArray()
-                                        chunk.forEach { (doc, _) -> chunkDocuments.add(doc) }
-
-                                        val chunkIds = save(chunkDocuments, realmTx)
-                                        savedIds.addAll(chunkIds)
-                                    }
-                                }
-                                val chunkDuration = System.currentTimeMillis() - chunkStartTime
-                                if (chunkDuration > 500) {
-                                    logger.logDetail("resource_sync", "Batch $batchCount chunk $chunkIndex: Realm insert took ${chunkDuration}ms for ${chunk.size} docs")
-                                }
-                            }
-
-                            val realmInsertDuration = System.currentTimeMillis() - realmInsertStartTime
-                            logger.logRealmOperation("insert_chunks", "resources", realmInsertDuration, validDocuments.size)
-
-                            if (savedIds.isNotEmpty()) {
-                                val validIds = savedIds.filter { it.isNotBlank() }
-                                if (validIds.isNotEmpty()) {
-                                    newIds.addAll(validIds)
-                                    processedItems += validIds.size
-                                } else {
-                                    newIds.addAll(idsWeAreProcessing)
-                                    processedItems += idsWeAreProcessing.size
-                                }
-                            } else {
-                                newIds.addAll(idsWeAreProcessing)
-                                processedItems += idsWeAreProcessing.size
-                            }
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-
-                            for ((doc, _) in validDocuments) {
-                                try {
-                                    databaseService.withRealm { realm ->
-                                        realm.executeTransaction { realmTx ->
-                                            val singleDocArray = JsonArray()
-                                            singleDocArray.add(doc)
-                                            val singleIds = save(singleDocArray, realmTx)
-                                            if (singleIds.isNotEmpty()) {
-                                                newIds.addAll(singleIds)
-                                                processedItems++
-                                            }
-                                        }
-                                    }
-                                } catch (e2: Exception) {
-                                    e2.printStackTrace()
-                                }
-                            }
+                    if (documentsToInsert.size >= transactionChunkSize) {
+                        val savedIds = performResourceTransaction(documentsToInsert, logger)
+                        if (savedIds.isNotEmpty()) {
+                            newIds.addAll(savedIds)
+                            processedItems += savedIds.size
                         }
+                        documentsToInsert.clear()
                     }
 
                     skip += rows.size()
@@ -736,13 +685,20 @@ class SyncManager constructor(
                 }
             }
 
+            if (documentsToInsert.isNotEmpty()) {
+                val savedIds = performResourceTransaction(documentsToInsert, logger)
+                if (savedIds.isNotEmpty()) {
+                    newIds.addAll(savedIds)
+                    processedItems += savedIds.size
+                }
+                documentsToInsert.clear()
+            }
+
             try {
                 logger.startProcess("resource_cleanup")
                 val cleanupStartTime = System.currentTimeMillis()
                 val validNewIds = newIds.filter { !it.isNullOrBlank() }
-                if (validNewIds.isNotEmpty() && validNewIds.size == newIds.size) {
-                    val deletedCount = newIds.size - validNewIds.size
-                    Log.d("SyncPerf", "    Resources: Removing $deletedCount deleted resources")
+                if (validNewIds.isNotEmpty()) {
                     databaseService.withRealm { realm -> removeDeletedResource(validNewIds, realm) }
                 }
                 val cleanupDuration = System.currentTimeMillis() - cleanupStartTime
@@ -766,6 +722,46 @@ class SyncManager constructor(
             logger.endProcess("resource_sync_main", processedItems)
             val resourceSyncEndTime = System.currentTimeMillis()
             Log.d("SyncPerf", "  ✗ Resources sync failed after ${resourceSyncEndTime - resourceSyncStartTime}ms: ${e.message}")
+        }
+    }
+
+    private suspend fun performResourceTransaction(
+        documents: List<Pair<JsonObject, String>>,
+        logger: SyncTimeLogger
+    ): List<String> {
+        try {
+            var savedIds: List<String> = emptyList()
+            val realmInsertStartTime = System.currentTimeMillis()
+            databaseService.withRealm { realm ->
+                realm.executeTransaction { realmTx ->
+                    val docsAsJsonArray = JsonArray()
+                    documents.forEach { (doc, _) -> docsAsJsonArray.add(doc) }
+                    savedIds = save(docsAsJsonArray, realmTx)
+                }
+            }
+            val realmInsertDuration = System.currentTimeMillis() - realmInsertStartTime
+            logger.logRealmOperation("insert_chunks", "resources", realmInsertDuration, documents.size)
+            return savedIds
+        } catch (e: Exception) {
+            e.printStackTrace()
+            val successfulFallbackIds = mutableListOf<String>()
+            for ((doc, _) in documents) {
+                try {
+                    databaseService.withRealm { realm ->
+                        realm.executeTransaction { realmTx ->
+                            val singleDocArray = JsonArray()
+                            singleDocArray.add(doc)
+                            val singleIds = save(singleDocArray, realmTx)
+                            if (singleIds.isNotEmpty()) {
+                                successfulFallbackIds.addAll(singleIds)
+                            }
+                        }
+                    }
+                } catch (e2: Exception) {
+                    e2.printStackTrace()
+                }
+            }
+            return successfulFallbackIds
         }
     }
 
