@@ -242,14 +242,11 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         val dbMylife = rawMylife.filter { it.isVisible }
 
         val user = profileDbHandler.userModel
-        val surveyCount = if (isRealmInitialized()) {
-            RealmSubmission.getNoOfSurveySubmissionByUser(user?.id, mRealm)
-        } else {
-            0
-        }
-
-        for ((itemCnt, items) in dbMylife.withIndex()) {
-            flexboxLayout.addView(getLayout(itemCnt, items, surveyCount), params)
+        viewLifecycleOwner.lifecycleScope.launch {
+            val surveyCount = viewModel.getSurveySubmissionCount(user?.id)
+            for ((itemCnt, items) in dbMylife.withIndex()) {
+                flexboxLayout.addView(getLayout(itemCnt, items, surveyCount), params)
+            }
         }
     }
 
