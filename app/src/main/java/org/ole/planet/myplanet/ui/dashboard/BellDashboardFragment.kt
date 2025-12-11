@@ -90,7 +90,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         }
     }
     private fun renderBellData(bellData: BellData) {
-        val flexboxLayout = binding.flexboxLayoutMyLife
+        val flexboxLayout = binding.homeCardMyLife.flexboxLayoutMyLife
         flexboxLayout.removeAllViews()
         flexboxLayout.flexDirection = FlexDirection.ROW
         var params = LinearLayout.LayoutParams(250, 100)

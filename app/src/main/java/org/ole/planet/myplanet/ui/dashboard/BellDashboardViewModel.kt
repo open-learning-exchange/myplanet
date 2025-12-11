@@ -115,13 +115,13 @@ class BellDashboardViewModel @Inject constructor(
 
     private fun getMyLifeListBase(userId: String?): List<RealmMyLife> {
         val myLifeList: MutableList<RealmMyLife> = ArrayList()
-        myLifeList.add(RealmMyLife("ic_myhealth", userId, context.getString(R.string.myhealth)))
-        myLifeList.add(RealmMyLife("my_achievement", userId, context.getString(R.string.achievements)))
-        myLifeList.add(RealmMyLife("ic_submissions", userId, context.getString(R.string.submission)))
-        myLifeList.add(RealmMyLife("ic_my_survey", userId, context.getString(R.string.my_survey)))
-        myLifeList.add(RealmMyLife("ic_references", userId, context.getString(R.string.references)))
-        myLifeList.add(RealmMyLife("ic_calendar", userId, context.getString(R.string.calendar)))
-        myLifeList.add(RealmMyLife("ic_mypersonals", userId, context.getString(R.string.mypersonals)))
+        myLifeList.add(RealmMyLife("ic_myhealth", userId ?: "", context.getString(R.string.myhealth)))
+        myLifeList.add(RealmMyLife("my_achievement", userId ?: "", context.getString(R.string.achievements)))
+        myLifeList.add(RealmMyLife("ic_submissions", userId ?: "", context.getString(R.string.submission)))
+        myLifeList.add(RealmMyLife("ic_my_survey", userId ?: "", context.getString(R.string.my_survey)))
+        myLifeList.add(RealmMyLife("ic_references", userId ?: "", context.getString(R.string.references)))
+        myLifeList.add(RealmMyLife("ic_calendar", userId ?: "", context.getString(R.string.calendar)))
+        myLifeList.add(RealmMyLife("ic_mypersonals", userId ?: "", context.getString(R.string.mypersonals)))
         return myLifeList
     }
 
