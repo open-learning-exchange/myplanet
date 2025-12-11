@@ -144,7 +144,7 @@ class LibraryRepositoryImpl @Inject constructor(
     override suspend fun getPendingDownloads(userId: String): Flow<List<RealmMyLibrary>> {
         return queryListFlow(RealmMyLibrary::class.java) {
             equalTo("userId", userId)
-                .equalTo("isResourceOffline", false)
+                .equalTo("resourceOffline", false)
                 .isNotNull("resourceLocalAddress")
         }
     }
