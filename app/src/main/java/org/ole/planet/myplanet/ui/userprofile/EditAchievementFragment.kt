@@ -20,7 +20,6 @@ import androidx.lifecycle.lifecycleScope
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import fisk.chipcloud.ChipCloud
-import io.realm.Realm
 import java.util.Calendar
 import java.util.Locale
 import kotlin.Array
@@ -57,7 +56,6 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     private lateinit var alertReferenceBinding: AlertReferenceBinding
     private lateinit var alertAddAttachmentBinding: AlertAddAttachmentBinding
     private lateinit var myLibraryAlertdialogBinding: MyLibraryAlertdialogBinding
-    private lateinit var aRealm: Realm
     var user: RealmUserModel? = null
     private var achievement: RealmAchievement? = null
     private var referenceArray: JsonArray? = null
@@ -67,7 +65,6 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentEditAchievementBinding = FragmentEditAchievementBinding.inflate(inflater, container, false)
-        aRealm = databaseService.realmInstance
         user = profileDbHandler.userModel
         achievementArray = JsonArray()
         initializeData()
@@ -276,12 +273,9 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
 
     private fun showResourceListDialog(prevList: List<String?>) {
         viewLifecycleOwner.lifecycleScope.launch {
-            val list = withContext(Dispatchers.IO) {
-                val realm = Realm.getDefaultInstance()
+            val list = databaseService.withRealm { realm ->
                 val result = realm.where(RealmMyLibrary::class.java).findAll()
-                val unmanagedList = realm.copyFromRealm(result)
-                realm.close()
-                unmanagedList
+                realm.copyFromRealm(result)
             }
 
             withContext(Dispatchers.Main) {
@@ -310,14 +304,11 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     private fun initializeData() {
         val achievementId = user?.id + "@" + user?.planetCode
         lifecycleScope.launch {
-            achievement = withContext(Dispatchers.IO) {
-                val realm = Realm.getDefaultInstance()
+            achievement = databaseService.withRealm { realm ->
                 val achievement = realm.where(RealmAchievement::class.java)
                     .equalTo("_id", achievementId)
                     .findFirst()
-                val unmanagedAchievement = if (achievement != null) realm.copyFromRealm(achievement) else null
-                realm.close()
-                unmanagedAchievement
+                if (achievement != null) realm.copyFromRealm(achievement) else null
             }
 
             if (achievement == null) {
@@ -337,14 +328,11 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
                 if (!isAdded) {
                     return@launch
                 }
-                achievement = withContext(Dispatchers.IO) {
-                    val realm = Realm.getDefaultInstance()
+                achievement = databaseService.withRealm { realm ->
                     val achievement = realm.where(RealmAchievement::class.java)
                         .equalTo("_id", achievementId)
                         .findFirst()
-                    val unmanagedAchievement = if (achievement != null) realm.copyFromRealm(achievement) else null
-                    realm.close()
-                    unmanagedAchievement
+                    if (achievement != null) realm.copyFromRealm(achievement) else null
                 }
             }
             populateAchievementData()
@@ -401,16 +389,4 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         super.onDestroyView()
     }
 
-    override fun onDestroy() {
-        if (this::aRealm.isInitialized && !aRealm.isClosed) {
-            aRealm.close()
-        }
-        try {
-            if (!mRealm.isClosed) {
-                mRealm.close()
-            }
-        } catch (_: UninitializedPropertyAccessException) {
-        }
-        super.onDestroy()
-    }
 }
