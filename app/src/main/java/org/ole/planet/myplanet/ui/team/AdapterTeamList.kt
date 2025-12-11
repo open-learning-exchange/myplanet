@@ -250,12 +250,6 @@ class AdapterTeamList(
         this.type = type
     }
 
-    fun cleanup() {
-        scope.cancel()
-        teamStatusCache.clear()
-        visitCountsCache.clear()
-    }
-
     class ViewHolderTeam(val binding: ItemTeamListBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {

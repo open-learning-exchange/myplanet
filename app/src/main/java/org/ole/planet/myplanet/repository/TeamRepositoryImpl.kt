@@ -28,8 +28,6 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
-import org.ole.planet.myplanet.ui.team.TeamData
-import org.ole.planet.myplanet.ui.team.TeamStatus
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
@@ -765,13 +763,17 @@ class TeamRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getSortedTeamsForUser(userId: String, teams: List<RealmMyTeam>, searchQuery: String?): List<TeamData> {
+    override suspend fun getSortedTeamsForUser(
+        userId: String,
+        teams: List<RealmMyTeam>,
+        searchQuery: String?
+    ): Triple<List<RealmMyTeam>, Map<String, TeamMemberStatus>, Map<String, Long>> {
         val validTeams = teams.filter {
             !it._id.isNullOrBlank() && (it.status == null || it.status != "archived")
         }
 
         if (validTeams.isEmpty()) {
-            return emptyList()
+            return Triple(emptyList(), emptyMap(), emptyMap())
         }
 
         val teamIds = validTeams.mapNotNull { it._id }
@@ -798,27 +800,6 @@ class TeamRepositoryImpl @Inject constructor(
                 }
             )
         }
-        return sortedTeams.map { team ->
-            val teamId = team._id.orEmpty()
-            val status = memberStatuses[teamId]
-            TeamData(
-                _id = team._id,
-                name = team.name,
-                teamType = team.teamType,
-                createdDate = team.createdDate,
-                type = team.type,
-                status = team.status,
-                visitCount = visitCounts[teamId] ?: 0L,
-                teamStatus = TeamStatus(
-                    isMember = status?.isMember ?: false,
-                    isLeader = status?.isLeader ?: false,
-                    hasPendingRequest = status?.hasPendingRequest ?: false
-                ),
-                description = team.description,
-                services = team.services,
-                rules = team.rules,
-                teamId = team.teamId
-            )
-        }
+        return Triple(sortedTeams, memberStatuses, visitCounts)
     }
 }

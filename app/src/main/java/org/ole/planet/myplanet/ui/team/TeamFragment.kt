@@ -303,8 +303,31 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
     private fun updateAdapterWithList(list: List<RealmMyTeam>, searchQuery: String? = null) {
         viewLifecycleOwner.lifecycleScope.launch {
             val userId = user?._id ?: ""
-            val sortedList = teamRepository.getSortedTeamsForUser(userId, list, searchQuery)
-            adapterTeamList.submitList(sortedList)
+            val (sortedTeams, memberStatuses, visitCounts) = teamRepository.getSortedTeamsForUser(userId, list, searchQuery)
+            val teamDataList = sortedTeams.map { team ->
+                val teamId = team._id.orEmpty()
+                val status = memberStatuses[teamId]
+                TeamData(
+                    _id = team._id,
+                    name = team.name,
+                    teamType = team.teamType,
+                    createdDate = team.createdDate,
+                    type = team.type,
+                    status = team.status,
+                    visitCount = visitCounts[teamId] ?: 0L,
+                    teamStatus = TeamStatus(
+                        isMember = status?.isMember ?: false,
+                        isLeader = status?.isLeader ?: false,
+                        hasPendingRequest = status?.hasPendingRequest ?: false
+                    ),
+                    description = team.description,
+                    services = team.services,
+                    rules = team.rules,
+                    teamId = team.teamId
+                )
+            }
+            adapterTeamList.submitList(teamDataList)
+            onUpdateComplete(teamDataList.size)
             listContentDescription(conditionApplied)
         }
     }
