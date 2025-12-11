@@ -66,7 +66,7 @@ import org.ole.planet.myplanet.utilities.makeExpandable
 
 import org.ole.planet.myplanet.repository.UserRepository
 
-class AdapterNews(var context: Context, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userProfileDbHandler: UserProfileDbHandler, private val databaseService: DatabaseService, private val scope: CoroutineScope, private val userRepository: UserRepository, private val newsRepository: NewsRepository) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
+class AdapterNews(var context: Context, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userProfileDbHandler: UserProfileDbHandler, private val databaseService: DatabaseService, private val scope: CoroutineScope, private val userRepository: UserRepository, private val newsRepository: NewsRepository, private val isTeamLeader: Boolean = false) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem ->
             if (oldItem === newItem) return@itemCallback true
@@ -114,36 +114,6 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     private val leadersList: List<RealmUserModel> by lazy {
         val raw = settings.getString("communityLeaders", "") ?: ""
         RealmUserModel.parseLeadersJson(raw)
-    }
-    private var _isTeamLeader: Boolean? = null
-
-    init {
-        fetchTeamLeaderStatus()
-    }
-
-    private fun fetchTeamLeaderStatus() {
-        if (teamId == null) {
-            _isTeamLeader = false
-            return
-        }
-        scope.launch {
-            val isLeader = withTimeoutOrNull(2000) {
-                withContext(Dispatchers.IO) {
-                    try {
-                        databaseService.withRealm { realm ->
-                            val team = realm.where(RealmMyTeam::class.java)
-                                .equalTo("teamId", teamId)
-                                .equalTo("isLeader", true)
-                                .findFirst()
-                            team?.userId == currentUser?._id
-                        }
-                    } catch (e: Exception) {
-                        false
-                    }
-                }
-            }
-            _isTeamLeader = isLeader
-        }
     }
 
     fun setImageList(imageList: RealmList<String>?) {
@@ -494,12 +464,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     }
 
     fun isTeamLeader(): Boolean {
-        return _isTeamLeader ?: false
-    }
-
-    fun invalidateTeamLeaderCache() {
-        _isTeamLeader = null
-        fetchTeamLeaderStatus()
+        return isTeamLeader
     }
 
     private fun getReplies(finalNews: RealmNews?): List<RealmNews> {

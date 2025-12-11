@@ -222,17 +222,45 @@ class DiscussionListFragment : BaseTeamFragment() {
     private fun showRecyclerView(realmNewsList: List<RealmNews?>?) {
         val existingAdapter = binding.rvDiscussion.adapter
         if (existingAdapter == null) {
-            val adapterNews = activity?.let {
-                AdapterNews(it, user, null, getEffectiveTeamName(), teamId, userProfileDbHandler, databaseService, viewLifecycleOwner.lifecycleScope, userRepository, newsRepository)
-            }
-            adapterNews?.sharedPrefManager = sharedPrefManager
-            adapterNews?.setmRealm(mRealm)
-            adapterNews?.setListener(this)
-            if (!isMemberFlow.value) adapterNews?.setNonTeamMember(true)
-            realmNewsList?.let { adapterNews?.updateList(it) }
-            binding.rvDiscussion.adapter = adapterNews
-            adapterNews?.let {
-                showNoData(binding.tvNodata, it.itemCount, "discussions")
+            viewLifecycleOwner.lifecycleScope.launch {
+                val isTeamLeader = teamId?.let {
+                    try {
+                        databaseService.withRealm { realm ->
+                            val team = realm.where(RealmMyTeam::class.java)
+                                .equalTo("teamId", it)
+                                .equalTo("isLeader", true)
+                                .findFirst()
+                            team?.userId == user?._id
+                        }
+                    } catch (e: Exception) {
+                        false
+                    }
+                } ?: false
+
+                val adapterNews = activity?.let {
+                    AdapterNews(
+                        it,
+                        user,
+                        null,
+                        getEffectiveTeamName(),
+                        teamId,
+                        userProfileDbHandler,
+                        databaseService,
+                        viewLifecycleOwner.lifecycleScope,
+                        userRepository,
+                        newsRepository,
+                        isTeamLeader
+                    )
+                }
+                adapterNews?.sharedPrefManager = sharedPrefManager
+                adapterNews?.setmRealm(mRealm)
+                adapterNews?.setListener(this)
+                if (!isMemberFlow.value) adapterNews?.setNonTeamMember(true)
+                realmNewsList?.let { adapterNews?.updateList(it) }
+                binding.rvDiscussion.adapter = adapterNews
+                adapterNews?.let {
+                    showNoData(binding.tvNodata, it.itemCount, "discussions")
+                }
             }
         } else {
             (existingAdapter as? AdapterNews)?.let { adapter ->
