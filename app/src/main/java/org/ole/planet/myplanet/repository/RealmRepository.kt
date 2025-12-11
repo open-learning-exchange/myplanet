@@ -18,7 +18,7 @@ import org.ole.planet.myplanet.datamanager.applyEqualTo
 import org.ole.planet.myplanet.datamanager.findCopyByField
 import org.ole.planet.myplanet.datamanager.queryList
 
-open class RealmRepository(internal val databaseService: DatabaseService) {
+open class RealmRepository(protected val databaseService: DatabaseService) {
     protected suspend fun <T : RealmObject> queryList(
         clazz: Class<T>,
         builder: RealmQuery<T>.() -> Unit = {},
@@ -47,7 +47,7 @@ open class RealmRepository(internal val databaseService: DatabaseService) {
             realm.where(clazz).apply(builder).count()
         }
 
-    internal suspend fun <T : RealmObject> queryListFlow(
+    protected suspend fun <T : RealmObject> queryListFlow(
         clazz: Class<T>,
         builder: RealmQuery<T>.() -> Unit = {},
     ): Flow<List<T>> = channelFlow {
@@ -139,7 +139,7 @@ open class RealmRepository(internal val databaseService: DatabaseService) {
         }
     }
 
-    protected open suspend fun <T> withRealmAsync(operation: (Realm) -> T): T {
+    protected suspend fun <T> withRealmAsync(operation: (Realm) -> T): T {
         return withRealm(false, operation)
     }
 
