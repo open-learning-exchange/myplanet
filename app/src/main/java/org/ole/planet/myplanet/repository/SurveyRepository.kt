@@ -5,6 +5,7 @@ import org.ole.planet.myplanet.model.SurveyBindingData
 import org.ole.planet.myplanet.ui.survey.SurveyInfo
 
 interface SurveyRepository {
+    suspend fun getSurveySubmissionCount(userId: String?): Int
     suspend fun getTeamOwnedSurveys(teamId: String?): List<RealmStepExam>
     suspend fun getAdoptableTeamSurveys(teamId: String?): List<RealmStepExam>
     suspend fun getIndividualSurveys(): List<RealmStepExam>

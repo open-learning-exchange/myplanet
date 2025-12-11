@@ -176,4 +176,15 @@ class SurveyRepositoryImpl @Inject constructor(
             surveyId to SurveyBindingData(teamSubmission, questionCount)
         }
     }
+
+    override suspend fun getSurveySubmissionCount(userId: String?): Int {
+        return withRealm { realm ->
+            if (userId == null) return@withRealm 0
+            realm.where(RealmSubmission::class.java)
+                .equalTo("userId", userId)
+                .equalTo("type", "survey")
+                .equalTo("status", "pending", io.realm.Case.INSENSITIVE)
+                .count().toInt()
+        }
+    }
 }
