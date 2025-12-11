@@ -95,7 +95,11 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {
                 resources?.let { showDownloadDialog(it) }
             } else if (isMyCourseLib && courseLib == null && !isSurvey) {
-                showDownloadDialog(getLibraryList(mRealm))
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val userId = settings.getString("userId", "--")
+                    val libraryList = libraryRepository.getLibraryListForUser(userId)
+                    showDownloadDialog(libraryList)
+                }
             }
             startPostponedEnterTransition()
             requireActivity().reportFullyDrawn()

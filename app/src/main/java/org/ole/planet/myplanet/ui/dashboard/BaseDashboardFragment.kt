@@ -330,8 +330,8 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         val userId = settings?.getString("userId", "--")
         viewLifecycleOwner.lifecycleScope.launch {
             setUpMyLife(userId)
+            myLifeListInit(myLifeFlex)
         }
-        myLifeListInit(myLifeFlex)
 
 
         if (isRealmInitialized() && mRealm.isInTransaction) {
@@ -341,7 +341,9 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
     override fun showResourceDownloadDialog() {
         viewLifecycleOwner.lifecycleScope.launch {
-            showDownloadDialog(getLibraryList(realm))
+            val userId = settings?.getString("userId", "--")
+            val libraryList = libraryRepository.getLibraryListForUser(userId)
+            showDownloadDialog(libraryList)
         }
     }
 
@@ -370,7 +372,10 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
                 alertHealthListBinding.list.adapter = adapter
                 alertHealthListBinding.list.onItemClickListener = AdapterView.OnItemClickListener { _, _, i, _ ->
                     val selected = alertHealthListBinding.list.adapter.getItem(i) as RealmUserModel
-                    showDownloadDialog(getLibraryList(realm, selected._id))
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        val libraryList = libraryRepository.getLibraryListForUser(selected._id)
+                        showDownloadDialog(libraryList)
+                    }
                     dialog.dismiss()
                 }
                 alertHealthListBinding.loading.visibility = View.GONE

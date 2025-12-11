@@ -13,4 +13,10 @@ interface CourseRepository {
     suspend fun getCourseExamCount(courseId: String?): Int
     suspend fun getCourseSteps(courseId: String?): List<RealmCourseStep>
     suspend fun markCourseAdded(courseId: String, userId: String?): Boolean
+    suspend fun filterCourses(
+        searchText: String,
+        gradeLevel: String,
+        subjectLevel: String,
+        tagNames: List<String>
+    ): List<RealmMyCourse>
 }

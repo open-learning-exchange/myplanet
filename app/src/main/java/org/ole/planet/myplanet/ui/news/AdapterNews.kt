@@ -64,7 +64,9 @@ import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.makeExpandable
 
-class AdapterNews(var context: Context, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userProfileDbHandler: UserProfileDbHandler, private val databaseService: DatabaseService, private val scope: CoroutineScope, private val newsRepository: NewsRepository) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
+import org.ole.planet.myplanet.repository.UserRepository
+
+class AdapterNews(var context: Context, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userProfileDbHandler: UserProfileDbHandler, private val databaseService: DatabaseService, private val scope: CoroutineScope, private val userRepository: UserRepository, private val newsRepository: NewsRepository) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem ->
             if (oldItem === newItem) return@itemCallback true
@@ -108,6 +110,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     private val profileDbHandler = userProfileDbHandler
     lateinit var settings: SharedPreferences
     private val userCache = mutableMapOf<String, RealmUserModel?>()
+    private val fetchingUserIds = mutableSetOf<String>()
     private val leadersList: List<RealmUserModel> by lazy {
         val raw = settings.getString("communityLeaders", "") ?: ""
         RealmUserModel.parseLeadersJson(raw)
@@ -270,40 +273,41 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
 
     private fun configureUser(holder: ViewHolderNews, news: RealmNews): RealmUserModel? {
         val userId = news.userId
-        val userModel = when {
-            userId.isNullOrEmpty() -> null
-            userCache.containsKey(userId) -> userCache[userId]
-            ::mRealm.isInitialized -> {
-                val managedUser = mRealm.where(RealmUserModel::class.java)
-                    .equalTo("id", userId)
-                    .findFirst()
-                val detachedUser = managedUser?.let {
-                    try {
-                        mRealm.copyFromRealm(it)
-                    } catch (e: Exception) {
-                        null
-                    }
-                }
-                if (detachedUser != null) {
-                    userCache[userId] = detachedUser
-                } else if (managedUser == null) {
-                    userCache[userId] = null
-                }
-                detachedUser ?: managedUser
+        if (userId.isNullOrEmpty()) return null
+
+        if (userCache.containsKey(userId)) {
+            val userModel = userCache[userId]
+            val userFullName = userModel?.getFullNameWithMiddleName()?.trim()
+            if (userModel != null && currentUser != null) {
+                holder.binding.tvName.text =
+                    if (userFullName.isNullOrEmpty()) news.userName else userFullName
+                ImageUtils.loadImage(userModel.userImage, holder.binding.imgUser)
+                showHideButtons(news, holder)
+            } else {
+                holder.binding.tvName.text = news.userName
+                ImageUtils.loadImage(null, holder.binding.imgUser)
             }
-            else -> null
-        }
-        val userFullName = userModel?.getFullNameWithMiddleName()?.trim()
-        if (userModel != null && currentUser != null) {
-            holder.binding.tvName.text =
-                if (userFullName.isNullOrEmpty()) news.userName else userFullName
-            ImageUtils.loadImage(userModel.userImage, holder.binding.imgUser)
-            showHideButtons(news, holder)
+            return userModel
         } else {
             holder.binding.tvName.text = news.userName
             ImageUtils.loadImage(null, holder.binding.imgUser)
+            if (!fetchingUserIds.contains(userId)) {
+                fetchingUserIds.add(userId)
+                scope.launch {
+                    val userModel = userRepository.getUserById(userId)
+                    userCache[userId] = userModel
+                    fetchingUserIds.remove(userId)
+                    withContext(Dispatchers.Main) {
+                        currentList.forEachIndexed { index, item ->
+                            if (item?.userId == userId) {
+                                notifyItemChanged(index)
+                            }
+                        }
+                    }
+                }
+            }
+            return null
         }
-        return userModel
     }
 
     private fun setMessageAndDate(holder: ViewHolderNews, news: RealmNews, sharedTeamName: String) {
