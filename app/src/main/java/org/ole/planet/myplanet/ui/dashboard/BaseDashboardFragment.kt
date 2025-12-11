@@ -17,6 +17,8 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayout
 import dagger.hilt.android.AndroidEntryPoint
@@ -58,12 +60,13 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCallback,
-    SyncListener {
+    SyncListener, AdapterMyLibrary.OnItemClickListener {
     private val viewModel: DashboardViewModel by viewModels()
     private val realm get() = requireRealmInstance()
     private var fullName: String? = null
     private var params = LinearLayout.LayoutParams(250, 100)
     private var di: DialogUtils.CustomProgressDialog? = null
+    private lateinit var libraryAdapter: AdapterMyLibrary
     private lateinit var offlineActivitiesResults: RealmResults<RealmOfflineActivity>
 
     @Inject
@@ -160,36 +163,13 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     private fun renderMyLibrary(dbMylibrary: List<RealmMyLibrary>) {
-        val flexboxLayout = view?.findViewById<FlexboxLayout>(R.id.flexboxLayout)
-        flexboxLayout?.removeAllViews()
-        flexboxLayout?.flexDirection = FlexDirection.ROW
+        val recyclerView = view?.findViewById<RecyclerView>(R.id.libraryRecyclerView)
+        libraryAdapter.submitList(dbMylibrary)
         if (dbMylibrary.isEmpty()) {
             view?.findViewById<TextView>(R.id.count_library)?.visibility = View.GONE
         } else {
             view?.findViewById<TextView>(R.id.count_library)?.text =
                 getString(R.string.number_placeholder, dbMylibrary.size)
-        }
-        for ((itemCnt, items) in dbMylibrary.withIndex()) {
-            val itemLibraryHomeBinding =
-                ItemLibraryHomeBinding.inflate(LayoutInflater.from(activity))
-            val v = itemLibraryHomeBinding.root
-            setTextColor(itemLibraryHomeBinding.title, itemCnt)
-            val colorResId =
-                if (itemCnt % 2 == 0) R.color.card_bg else R.color.dashboard_item_alternative
-            val color = context?.let { ContextCompat.getColor(it, colorResId) }
-            if (color != null) {
-                v.setBackgroundColor(color)
-            }
-
-            itemLibraryHomeBinding.title.text = items.title
-            itemLibraryHomeBinding.detail.setOnClickListener {
-                if (homeItemClickListener != null) {
-                    homeItemClickListener?.openLibraryDetailFragment(items)
-                }
-            }
-
-            myLibraryItemClickAction(itemLibraryHomeBinding.title, items)
-            flexboxLayout?.addView(v, params)
         }
     }
 
@@ -322,6 +302,11 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         viewModel.loadUserContent(settings?.getString("userId", "--"))
         observeUiState()
 
+        libraryAdapter = AdapterMyLibrary(this)
+        val recyclerView = view.findViewById<RecyclerView>(R.id.libraryRecyclerView)
+        recyclerView.layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
+        recyclerView.adapter = libraryAdapter
+
         view.findViewById<FlexboxLayout>(R.id.flexboxLayoutCourse).flexDirection = FlexDirection.ROW
         view.findViewById<FlexboxLayout>(R.id.flexboxLayoutTeams).flexDirection = FlexDirection.ROW
         val myLifeFlex = view.findViewById<FlexboxLayout>(R.id.flexboxLayoutMyLife)
@@ -407,4 +392,13 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         di?.dismiss()
     }
 
+    override fun onItemClick(item: RealmMyLibrary) {
+        openResource(item)
+    }
+
+    override fun onDetailClick(item: RealmMyLibrary) {
+        if (homeItemClickListener != null) {
+            homeItemClickListener?.openLibraryDetailFragment(item)
+        }
+    }
 }
