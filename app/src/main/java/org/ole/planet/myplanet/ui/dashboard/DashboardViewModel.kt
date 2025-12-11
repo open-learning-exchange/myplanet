@@ -9,6 +9,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import io.realm.Sort
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -144,5 +145,5 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
-    suspend fun getUsersSortedByDate() = userRepository.getAllUsersSortedByDate()
+    suspend fun getUsersSortedByDate() = userRepository.getUsersSortedBy("joinDate", Sort.DESCENDING)
 }

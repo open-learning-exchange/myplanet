@@ -150,9 +150,7 @@ class ImprovedSyncManager @Inject constructor(
                 }
             } else {
                 // Fallback to standard sync
-                poolManager.useRealm { realm ->
-                    transactionSyncManager.syncDb(realm, table)
-                }
+                transactionSyncManager.syncDb(table)
             }
 
             logger.endProcess("${table}_sync")

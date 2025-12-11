@@ -27,6 +27,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.exam.TakeExamFragment
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
+import org.ole.planet.myplanet.utilities.CameraUtils
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
 import org.ole.planet.myplanet.utilities.CustomClickableSpan
@@ -266,5 +267,6 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     override fun onDestroyView() {
         super.onDestroyView()
         loadDataJob?.cancel()
+        CameraUtils.release()
     }
 }

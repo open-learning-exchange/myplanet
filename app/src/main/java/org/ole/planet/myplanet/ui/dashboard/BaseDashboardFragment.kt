@@ -330,8 +330,8 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         val userId = settings?.getString("userId", "--")
         viewLifecycleOwner.lifecycleScope.launch {
             setUpMyLife(userId)
+            myLifeListInit(myLifeFlex)
         }
-        myLifeListInit(myLifeFlex)
 
 
         if (isRealmInitialized() && mRealm.isInTransaction) {
