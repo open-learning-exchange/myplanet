@@ -8,6 +8,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withTimeoutOrNull
 import org.ole.planet.myplanet.datamanager.DatabaseService
 
 data class RealmPoolConfig(
@@ -39,22 +40,41 @@ class RealmConnectionPool(
     private val poolMutex = Mutex()
     
     private var lastValidationTime = 0L
+
+    /**
+     * Acquires a Realm connection from the pool and executes the given operation with it.
+     * This function will wait for a connection to become available if the pool is exhausted.
+     *
+     * @param operation The suspend function to execute with the Realm instance.
+     * @return The result of the operation.
+     * @throws IllegalStateException if a connection cannot be acquired within the configured `connectionTimeoutMs`.
+     */
     suspend fun <T> useRealm(operation: suspend (Realm) -> T): T {
         // Check if current thread already has a realm instance
         val existingRealm = threadLocalConnections.get()
         if (existingRealm != null && !existingRealm.isClosed) {
             return operation(existingRealm)
         }
-        
-        return connectionSemaphore.withPermit {
+
+        val acquired = withTimeoutOrNull(config.connectionTimeoutMs) {
+            connectionSemaphore.acquire()
+        }
+
+        if (acquired == null) { // timeout occurred
+            throw IllegalStateException("Could not acquire a Realm connection permit within ${config.connectionTimeoutMs}ms.")
+        }
+
+        try {
             val pooledRealm = acquireConnection()
             threadLocalConnections.set(pooledRealm.realm)
             try {
-                operation(pooledRealm.realm)
+                return operation(pooledRealm.realm)
             } finally {
                 threadLocalConnections.remove()
                 releaseConnection(pooledRealm)
             }
+        } finally {
+            connectionSemaphore.release()
         }
     }
     
