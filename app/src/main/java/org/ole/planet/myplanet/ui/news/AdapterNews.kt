@@ -109,7 +109,11 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     private var labelManager: NewsLabelManager? = null
     private val profileDbHandler = userProfileDbHandler
     lateinit var settings: SharedPreferences
-    private val userCache = mutableMapOf<String, RealmUserModel?>()
+    private val userCache: LinkedHashMap<String, RealmUserModel?> = object : LinkedHashMap<String, RealmUserModel?>(100, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, RealmUserModel?>): Boolean {
+            return size > 100
+        }
+    }
     private val fetchingUserIds = mutableSetOf<String>()
     private val leadersList: List<RealmUserModel> by lazy {
         val raw = settings.getString("communityLeaders", "") ?: ""
@@ -432,7 +436,6 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     }
 
     private fun submitListSafely(list: List<RealmNews?>, commitCallback: Runnable? = null) {
-        userCache.clear()
         val detachedList = list.map { news ->
             if (news?.isValid == true && ::mRealm.isInitialized) {
                 try {
