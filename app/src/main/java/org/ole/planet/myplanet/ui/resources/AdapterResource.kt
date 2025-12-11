@@ -158,19 +158,30 @@ class AdapterResource(
         }
     }
 
-    fun areAllSelected(): Boolean {
-        return selectedItems.size == libraryList.size
+    fun selectItems(items: List<RealmMyLibrary?>) {
+        val newItems = items.filter { !selectedItems.contains(it) }
+        if (newItems.isNotEmpty()) {
+            selectedItems.addAll(newItems)
+            newItems.forEach { item ->
+                val index = libraryList.indexOf(item)
+                if (index != -1) {
+                    notifyItemChanged(index, SELECTION_PAYLOAD)
+                }
+            }
+            listener?.onSelectedListChange(selectedItems)
+        }
     }
 
-    fun selectAllItems(selectAll: Boolean) {
-        if (selectAll) {
-            selectedItems.clear()
-            selectedItems.addAll(libraryList)
-        } else {
-            selectedItems.clear()
-        }
-        notifyItemRangeChanged(0, libraryList.size, SELECTION_PAYLOAD)
-        if (listener != null) {
+    fun deselectItems(items: List<RealmMyLibrary?>) {
+        val removedItems = items.filter { selectedItems.contains(it) }
+        if (removedItems.isNotEmpty()) {
+            selectedItems.removeAll(removedItems.toSet())
+            removedItems.forEach { item ->
+                val index = libraryList.indexOf(item)
+                if (index != -1) {
+                    notifyItemChanged(index, SELECTION_PAYLOAD)
+                }
+            }
             listener?.onSelectedListChange(selectedItems)
         }
     }

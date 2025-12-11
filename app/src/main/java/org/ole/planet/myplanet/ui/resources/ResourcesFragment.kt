@@ -318,17 +318,16 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private fun setupSelectAllListener() {
-        selectAll.setOnClickListener {
-            hideButton()
-            val allSelected = selectedItems?.size == adapterLibrary.getLibraryList().size
-            adapterLibrary.selectAllItems(!allSelected)
-            if (allSelected) {
-                selectAll.isChecked = false
-                selectAll.text = getString(R.string.select_all)
-            } else {
-                selectAll.isChecked = true
+        selectAll.setOnCheckedChangeListener { _, isChecked ->
+            val visibleItems = adapterLibrary.getLibraryList()
+            if (isChecked) {
+                adapterLibrary.selectItems(visibleItems)
                 selectAll.text = getString(R.string.unselect_all)
+            } else {
+                adapterLibrary.deselectItems(visibleItems)
+                selectAll.text = getString(R.string.select_all)
             }
+            hideButton()
         }
     }
 
@@ -489,7 +488,10 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     private fun changeButtonStatus() {
         tvAddToLib.isEnabled = (selectedItems?.size ?: 0) > 0
-        if (adapterLibrary.areAllSelected()) {
+        val visibleItems = adapterLibrary.getLibraryList()
+        val allVisibleSelected = visibleItems.isNotEmpty() && selectedItems?.containsAll(visibleItems) == true
+
+        if (allVisibleSelected) {
             selectAll.isChecked = true
             selectAll.text = getString(R.string.unselect_all)
         } else {
