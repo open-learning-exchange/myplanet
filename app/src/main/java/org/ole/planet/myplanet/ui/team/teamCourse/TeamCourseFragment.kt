@@ -7,7 +7,9 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.LinearLayoutManager
 import org.ole.planet.myplanet.databinding.FragmentTeamCourseBinding
 import org.ole.planet.myplanet.model.RealmMyCourse
+import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getTeamCreator
 import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.dto.toCourseItem
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 
 class TeamCourseFragment : BaseTeamFragment() {
@@ -24,16 +26,20 @@ class TeamCourseFragment : BaseTeamFragment() {
         super.onViewCreated(view, savedInstanceState)
         setupCoursesList()
     }
-    
+
     private fun setupCoursesList() {
-        val courses = mRealm.where(RealmMyCourse::class.java).`in`("id", team?.courses?.toTypedArray<String>()).findAll()
-        adapterTeamCourse = settings?.let { AdapterTeamCourse(requireActivity(), courses.toMutableList(), mRealm, teamId, it) }
+        val teamCreator = getTeamCreator(teamId, mRealm)
+        adapterTeamCourse = settings?.let { AdapterTeamCourse(requireActivity(), it, teamCreator) }
         binding.rvCourse.layoutManager = LinearLayoutManager(activity)
         binding.rvCourse.adapter = adapterTeamCourse
-        adapterTeamCourse?.let {
-            showNoData(binding.tvNodata, it.itemCount, "teamCourses")
-        }
+
+        val courses = mRealm.where(RealmMyCourse::class.java).`in`("id", team?.courses?.toTypedArray<String>()).findAll()
+        val courseItems = courses.map { it.toCourseItem() }
+        adapterTeamCourse?.submitList(courseItems)
+
+        showNoData(binding.tvNodata, courseItems.size, "teamCourses")
     }
+
     override fun onNewsItemClick(news: RealmNews?) {}
     override fun clearImages() {
         imageList.clear()
