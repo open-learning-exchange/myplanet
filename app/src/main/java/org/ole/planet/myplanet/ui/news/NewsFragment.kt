@@ -107,19 +107,31 @@ class NewsFragment : BaseNewsFragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 newsRepository.getCommunityNews(getUserIdentifier()).collect { news ->
-                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                        val filtered = news.map { it as RealmNews? }
+                    val unmanagedNews = mRealm.copyFromRealm(news)
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                        databaseService.withRealm { realm ->
+                            unmanagedNews.forEach { newsItem ->
+                                newsItem?.let {
+                                    val count = realm.where(RealmNews::class.java)
+                                        .equalTo("replyTo", it.id)
+                                        .count()
+                                    it.replyCount = count.toInt()
+                                }
+                            }
+                        }
+                    }
+
+                    if (_binding != null) {
+                        val filtered = unmanagedNews.map { it as RealmNews? }
                         val labels = collectAllLabels(filtered)
                         val labelFiltered = applyLabelFilter(filtered)
                         val searchFiltered =
                             applySearchFilter(labelFiltered, etSearch.text.toString().trim())
-                        if (_binding != null) {
-                            filteredNewsList = filtered
-                            labelFilteredList = labelFiltered
-                            searchFilteredList = searchFiltered
-                            setupLabelFilter(labels)
-                            setData(searchFilteredList)
-                        }
+                        filteredNewsList = filtered
+                        labelFilteredList = labelFiltered
+                        searchFilteredList = searchFiltered
+                        setupLabelFilter(labels)
+                        setData(searchFilteredList)
                     }
                 }
             }
