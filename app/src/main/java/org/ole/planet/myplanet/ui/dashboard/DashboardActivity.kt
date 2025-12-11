@@ -69,6 +69,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.JoinRequestNotification
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.TeamRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.chat.ChatHistoryListFragment
@@ -140,30 +141,60 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         super.onCreate(savedInstanceState)
         postponeEnterTransition()
         mRealm = databaseService.realmInstance
-        checkUser()
-        initViews()
-        updateAppTitle()
-        notificationManager = NotificationUtils.getInstance(this)
-        if (handleGuestAccess()) return
-
-        handleInitialFragment()
-        addBackPressCallback()
-        collectUiState()
-
         lifecycleScope.launch {
-            initializeDashboard()
-        }
-
-        val content: View = findViewById(android.R.id.content)
-        content.viewTreeObserver.addOnPreDrawListener(
-            object : android.view.ViewTreeObserver.OnPreDrawListener {
-                override fun onPreDraw(): Boolean {
-                    content.viewTreeObserver.removeOnPreDrawListener(this)
-                    startPostponedEnterTransition()
-                    return true
+            user = userRepository.getUserModelSuspending()
+            withContext(Dispatchers.Main) {
+                if (user == null) {
+                    toast(this@DashboardActivity, getString(R.string.session_expired))
+                    logout()
+                    return@withContext
+                }
+                initViews()
+                updateAppTitle()
+                notificationManager = NotificationUtils.getInstance(this@DashboardActivity)
+                if (handleGuestAccess()) return@withContext
+                handleInitialFragment()
+                addBackPressCallback()
+                collectUiState()
+                initializeDashboard()
+                val content: View = findViewById(android.R.id.content)
+                content.viewTreeObserver.addOnPreDrawListener(object :
+                    android.view.ViewTreeObserver.OnPreDrawListener {
+                    override fun onPreDraw(): Boolean {
+                        content.viewTreeObserver.removeOnPreDrawListener(this)
+                        startPostponedEnterTransition()
+                        return true
+                    }
+                })
+                if (user?.id?.startsWith("guest") == true && profileDbHandler.offlineVisits >= 3) {
+                    val builder = AlertDialog.Builder(this@DashboardActivity, R.style.AlertDialogTheme)
+                    builder.setTitle(getString(R.string.become_a_member))
+                    builder.setMessage(getString(R.string.trial_period_ended))
+                    builder.setCancelable(false)
+                    builder.setPositiveButton(getString(R.string.become_a_member), null)
+                    builder.setNegativeButton(getString(R.string.menu_logout), null)
+                    val dialog = builder.create()
+                    dialog.show()
+                    val becomeMember = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                    val logout = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
+                    becomeMember.contentDescription = getString(R.string.confirm_membership)
+                    logout.contentDescription = getString(R.string.menu_logout)
+                    becomeMember.setOnClickListener {
+                        val guest = true
+                        val intent =
+                            Intent(this@DashboardActivity, BecomeMemberActivity::class.java)
+                        intent.putExtra("username", profileDbHandler.userModel?.name)
+                        intent.putExtra("guest", guest)
+                        setResult(RESULT_OK, intent)
+                        startActivity(intent)
+                    }
+                    logout.setOnClickListener {
+                        dialog.dismiss()
+                        logout()
+                    }
                 }
             }
-        )
+        }
     }
 
     private fun initializeDashboard() {
@@ -877,41 +908,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val navMenu = binding.appBarBell.bellToolbar.menu
         navMenu.findItem(R.id.menu_goOnline)
             .setVisible(isBetaWifiFeatureEnabled(this))
-    }
-
-    private fun checkUser() {
-        user = userProfileDbHandler.userModel
-        if (user == null) {
-            toast(this, getString(R.string.session_expired))
-            logout()
-            return
-        }
-        if (user?.id?.startsWith("guest") == true && profileDbHandler.offlineVisits >= 3) {
-            val builder = AlertDialog.Builder(this, R.style.AlertDialogTheme)
-            builder.setTitle(getString(R.string.become_a_member))
-            builder.setMessage(getString(R.string.trial_period_ended))
-            builder.setCancelable(false)
-            builder.setPositiveButton(getString(R.string.become_a_member), null)
-            builder.setNegativeButton(getString(R.string.menu_logout), null)
-            val dialog = builder.create()
-            dialog.show()
-            val becomeMember = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-            val logout = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
-            becomeMember.contentDescription = getString(R.string.confirm_membership)
-            logout.contentDescription = getString(R.string.menu_logout)
-            becomeMember.setOnClickListener {
-                val guest = true
-                val intent = Intent(this, BecomeMemberActivity::class.java)
-                intent.putExtra("username", profileDbHandler.userModel?.name)
-                intent.putExtra("guest", guest)
-                setResult(RESULT_OK, intent)
-                startActivity(intent)
-            }
-            logout.setOnClickListener {
-                dialog.dismiss()
-                logout()
-            }
-        }
     }
 
     private fun topBarVisible(){
