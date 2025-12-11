@@ -327,14 +327,14 @@ class MyHealthFragment : Fragment() {
                         2 -> "name" to Sort.ASCENDING
                         else -> "name" to Sort.DESCENDING
                     }
-                    val sortedList = userRepository.getUsersSortedBy(sortBy, sort)
-                    withContext(Dispatchers.Main) {
-                        if (isAdded) {
-                            userModelList = sortedList
-                            adapter.clear()
-                            adapter.addAll(userModelList)
-                            adapter.notifyDataSetChanged()
-                        }
+                    val sortedList = withContext(Dispatchers.IO) {
+                        userRepository.getUsersSortedBy(sortBy, sort)
+                    }
+                    if (isAdded) {
+                        userModelList = sortedList
+                        adapter.clear()
+                        adapter.addAll(userModelList)
+                        adapter.notifyDataSetChanged()
                     }
                 }
             }
