@@ -28,6 +28,8 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
+import org.ole.planet.myplanet.ui.team.TeamData
+import org.ole.planet.myplanet.ui.team.TeamStatus
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
@@ -760,6 +762,63 @@ class TeamRepositoryImpl @Inject constructor(
             }
 
             query.count() > 0
+        }
+    }
+
+    override suspend fun getSortedTeamsForUser(userId: String, teams: List<RealmMyTeam>, searchQuery: String?): List<TeamData> {
+        val validTeams = teams.filter {
+            !it._id.isNullOrBlank() && (it.status == null || it.status != "archived")
+        }
+
+        if (validTeams.isEmpty()) {
+            return emptyList()
+        }
+
+        val teamIds = validTeams.mapNotNull { it._id }
+        val visitCounts = getRecentVisitCounts(teamIds)
+        val memberStatuses = getTeamMemberStatuses(userId, teamIds)
+
+        val sortedTeams = if (!searchQuery.isNullOrBlank()) {
+            validTeams.sortedWith(
+                compareByDescending<RealmMyTeam> {
+                    it.name?.startsWith(searchQuery, ignoreCase = true)
+                }.thenBy { it.name }
+            )
+        } else {
+            validTeams.sortedWith(
+                compareByDescending<RealmMyTeam> { team ->
+                    val status = memberStatuses[team._id] ?: TeamMemberStatus(false, false, false)
+                    when {
+                        status.isLeader -> 3
+                        status.isMember -> 2
+                        else -> 1
+                    }
+                }.thenByDescending { team ->
+                    visitCounts[team._id] ?: 0L
+                }
+            )
+        }
+        return sortedTeams.map { team ->
+            val teamId = team._id.orEmpty()
+            val status = memberStatuses[teamId]
+            TeamData(
+                _id = team._id,
+                name = team.name,
+                teamType = team.teamType,
+                createdDate = team.createdDate,
+                type = team.type,
+                status = team.status,
+                visitCount = visitCounts[teamId] ?: 0L,
+                teamStatus = TeamStatus(
+                    isMember = status?.isMember ?: false,
+                    isLeader = status?.isLeader ?: false,
+                    hasPendingRequest = status?.hasPendingRequest ?: false
+                ),
+                description = team.description,
+                services = team.services,
+                rules = team.rules,
+                teamId = team.teamId
+            )
         }
     }
 }

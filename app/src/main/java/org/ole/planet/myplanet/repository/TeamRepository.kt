@@ -107,4 +107,5 @@ interface TeamRepository {
     suspend fun getAssignee(userId: String): RealmUserModel?
     suspend fun getRequestedMembers(teamId: String): List<RealmUserModel>
     suspend fun isTeamNameExists(name: String, type: String, excludeTeamId: String? = null): Boolean
+    suspend fun getSortedTeamsForUser(userId: String, teams: List<RealmMyTeam>, searchQuery: String? = null): List<TeamData>
 }
