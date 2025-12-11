@@ -521,6 +521,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         if (mRealm.isInTransaction) {
             mRealm.commitTransaction()
         }
+
+        libraryResults?.removeChangeListener(libraryListener)
+        submissionResults?.removeChangeListener(submissionListener)
+        taskResults?.removeChangeListener(taskListener)
+
         libraryResults = mRealm.where(RealmMyLibrary::class.java).findAllAsync()
         submissionResults = mRealm.where(RealmSubmission::class.java)
             .equalTo("userId", user?.id)
