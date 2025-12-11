@@ -212,7 +212,7 @@ class TeamRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun queryTransactions(
+    private suspend fun queryTransactions(
         teamId: String,
         startDate: Long?,
         endDate: Long?,
