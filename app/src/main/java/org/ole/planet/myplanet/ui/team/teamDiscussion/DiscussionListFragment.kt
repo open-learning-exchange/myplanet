@@ -12,7 +12,10 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.gson.JsonArray
 import dagger.hilt.android.AndroidEntryPoint
+import io.realm.Realm
+import io.realm.RealmResults
 import io.realm.Sort
+import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
@@ -22,6 +25,7 @@ import org.ole.planet.myplanet.databinding.FragmentDiscussionListBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
+import org.ole.planet.myplanet.model.RealmTeamNotification
 import org.ole.planet.myplanet.repository.NewsRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
@@ -106,6 +110,23 @@ class DiscussionListFragment : BaseTeamFragment() {
                 }
             }
         }
+
+        if (shouldQueryTeamFromRealm()) {
+            team = try {
+                mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            }
+
+            if (team == null) {
+                try {
+                    team = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId).findFirst()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
         binding.addMessage.isVisible = false
         return binding.root
     }
@@ -175,6 +196,7 @@ class DiscussionListFragment : BaseTeamFragment() {
                 AdapterNews(it, user, null, getEffectiveTeamName(), teamId, userProfileDbHandler, databaseService, viewLifecycleOwner.lifecycleScope, userRepository, newsRepository)
             }
             adapterNews?.sharedPrefManager = sharedPrefManager
+            adapterNews?.setmRealm(mRealm)
             adapterNews?.setListener(this)
             if (!isMemberFlow.value) adapterNews?.setNonTeamMember(true)
             realmNewsList?.let { adapterNews?.updateList(it) }
@@ -197,7 +219,17 @@ class DiscussionListFragment : BaseTeamFragment() {
     }
 
     override fun onDestroyView() {
+        if (isRealmInitialized()) {
+            mRealm.close()
+        }
         _binding = null
         super.onDestroyView()
+    }
+
+    private fun shouldQueryTeamFromRealm(): Boolean {
+        val hasDirectData = requireArguments().containsKey("teamName") &&
+                requireArguments().containsKey("teamType") &&
+                requireArguments().containsKey("teamId")
+        return !hasDirectData
     }
 }

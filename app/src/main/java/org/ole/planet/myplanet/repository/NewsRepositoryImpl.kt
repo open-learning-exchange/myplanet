@@ -17,7 +17,6 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.findCopyByField
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
-import org.ole.planet.myplanet.model.RealmTeamNotification
 import org.ole.planet.myplanet.model.RealmUserModel
 
 class NewsRepositoryImpl @Inject constructor(
@@ -194,14 +193,14 @@ class NewsRepositoryImpl @Inject constructor(
 
     override suspend fun updateTeamNotification(teamId: String, count: Int) {
         withRealm { realm ->
-            realm.executeTransactionAsync {
-                var notification = it.where(RealmTeamNotification::class.java)
+            realm.executeTransaction {
+                var notification = it.where(org.ole.planet.myplanet.model.RealmTeamNotification::class.java)
                     .equalTo("type", "chat")
                     .equalTo("parentId", teamId)
                     .findFirst()
 
                 if (notification == null) {
-                    notification = it.createObject(RealmTeamNotification::class.java, UUID.randomUUID().toString())
+                    notification = it.createObject(org.ole.planet.myplanet.model.RealmTeamNotification::class.java, UUID.randomUUID().toString())
                     notification.parentId = teamId
                     notification.type = "chat"
                 }
@@ -212,31 +211,17 @@ class NewsRepositoryImpl @Inject constructor(
 
     override suspend fun getFilteredNews(teamId: String): List<RealmNews> {
         return withRealm { realm ->
-            val realmNewsList: List<RealmNews> = realm.where(RealmNews::class.java)
+            val query = realm.where(RealmNews::class.java)
                 .isEmpty("replyTo")
+                .beginGroup()
+                .equalTo("viewableBy", "teams", Case.INSENSITIVE)
+                .equalTo("viewableId", teamId, Case.INSENSITIVE)
+                .endGroup()
+                .or()
+                .contains("viewIn", "\"_id\":\"$teamId\"", Case.INSENSITIVE)
                 .sort("time", Sort.DESCENDING)
-                .findAll()
 
-            realmNewsList.filter { news ->
-                val viewableByTeams = !news.viewableBy.isNullOrEmpty() &&
-                        news.viewableBy.equals("teams", ignoreCase = true) &&
-                        news.viewableId.equals(teamId, ignoreCase = true)
-
-                val viewInTeam = if (!news.viewIn.isNullOrEmpty()) {
-                    try {
-                        val ar = gson.fromJson(news.viewIn, JsonArray::class.java)
-                        ar.any { e ->
-                            val ob = e.asJsonObject
-                            ob["_id"].asString.equals(teamId, ignoreCase = true)
-                        }
-                    } catch (e: Exception) {
-                        false
-                    }
-                } else {
-                    false
-                }
-                viewableByTeams || viewInTeam
-            }.map { realm.copyFromRealm(it) }
+            realm.copyFromRealm(query.findAll())
         }
     }
 }
