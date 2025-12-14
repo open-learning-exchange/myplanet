@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.team
 
 import android.content.Context
-import android.content.DialogInterface
 import android.graphics.PorterDuff
 import android.graphics.Typeface
 import android.os.Bundle
@@ -15,12 +14,9 @@ import androidx.fragment.app.FragmentManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemTeamListBinding
 import org.ole.planet.myplanet.model.RealmUserModel

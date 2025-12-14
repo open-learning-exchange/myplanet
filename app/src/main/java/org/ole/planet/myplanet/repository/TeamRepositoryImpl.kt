@@ -4,8 +4,10 @@ import android.content.SharedPreferences
 import androidx.core.net.toUri
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
+import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
@@ -32,8 +34,6 @@ import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
-import java.text.SimpleDateFormat
-import java.util.Locale
 
 class TeamRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
