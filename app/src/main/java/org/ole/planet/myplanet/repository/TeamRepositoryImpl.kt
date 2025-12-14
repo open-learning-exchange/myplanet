@@ -25,6 +25,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.TransactionData
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
@@ -194,6 +195,31 @@ class TeamRepositoryImpl @Inject constructor(
         endDate: Long?,
         sortAscending: Boolean,
     ): Flow<List<RealmMyTeam>> {
+        return queryTransactions(teamId, startDate, endDate, sortAscending)
+    }
+
+    override suspend fun getTeamTransactionsWithBalance(
+        teamId: String,
+        startDate: Long?,
+        endDate: Long?,
+        sortAscending: Boolean,
+    ): Flow<List<TransactionData>> {
+        return queryTransactions(teamId, startDate, endDate, true).map { transactions ->
+            val transactionDataList = mapTransactionsToPresentationModel(transactions)
+            if (!sortAscending) {
+                transactionDataList.reversed()
+            } else {
+                transactionDataList
+            }
+        }
+    }
+
+    private suspend fun queryTransactions(
+        teamId: String,
+        startDate: Long?,
+        endDate: Long?,
+        sortAscending: Boolean
+    ): Flow<List<RealmMyTeam>> {
         return queryListFlow(RealmMyTeam::class.java) {
             equalTo("teamId", teamId)
             equalTo("docType", "transaction")
@@ -207,6 +233,29 @@ class TeamRepositoryImpl @Inject constructor(
                 transactions.sortedByDescending { it.date }
             }
         }
+    }
+
+    private fun mapTransactionsToPresentationModel(transactions: List<RealmMyTeam>): List<TransactionData> {
+        val transactionDataList = mutableListOf<TransactionData>()
+        var balance = 0
+        for (team in transactions.filter { it._id != null }) {
+            balance += if ("debit".equals(team.type, ignoreCase = true)) {
+                -team.amount
+            } else {
+                team.amount
+            }
+            transactionDataList.add(
+                TransactionData(
+                    id = team._id!!,
+                    date = team.date,
+                    description = team.description,
+                    type = team.type,
+                    amount = team.amount,
+                    balance = balance
+                )
+            )
+        }
+        return transactionDataList
     }
 
     override suspend fun createTransaction(
