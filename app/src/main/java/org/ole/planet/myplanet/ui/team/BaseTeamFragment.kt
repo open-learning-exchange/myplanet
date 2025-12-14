@@ -43,7 +43,6 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
         super.onCreate(savedInstanceState)
         val sParentCode = settings.getString("parentCode", "")
         val communityName = settings.getString("communityName", "")
-        mRealm = databaseService.realmInstance
         user = profileDbHandler?.userModel
         teamId = requireArguments().getString("id", "") ?: "$communityName@$sParentCode"
 
@@ -104,9 +103,6 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
 
     override fun onDestroy() {
         _isMemberFlow.value = false
-        if (isRealmInitialized() && mRealm.isOpen) {
-            mRealm.close()
-        }
         super.onDestroy()
     }
     
