@@ -550,6 +550,41 @@ class TeamRepositoryImpl @Inject constructor(
         save(task)
     }
 
+    override suspend fun createTask(
+        title: String,
+        description: String,
+        deadline: Long,
+        teamId: String,
+        assigneeId: String?
+    ) {
+        val realmTeamTask = RealmTeamTask().apply {
+            this.id = UUID.randomUUID().toString()
+            this.title = title
+            this.description = description
+            this.deadline = deadline
+            this.teamId = teamId
+            this.assignee = assigneeId
+            this.isUpdated = true
+        }
+        upsertTask(realmTeamTask)
+    }
+
+    override suspend fun updateTask(
+        taskId: String,
+        title: String,
+        description: String,
+        deadline: Long,
+        assigneeId: String?
+    ) {
+        update(RealmTeamTask::class.java, "id", taskId) { task ->
+            task.title = title
+            task.description = description
+            task.deadline = deadline
+            task.assignee = assigneeId
+            task.isUpdated = true
+        }
+    }
+
     override suspend fun assignTask(taskId: String, assigneeId: String?) {
         update(RealmTeamTask::class.java, "id", taskId) { task ->
             task.assignee = assigneeId
