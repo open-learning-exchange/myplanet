@@ -45,12 +45,12 @@ class AdapterMySubmission(
 
     fun setExams(exams: HashMap<String?, RealmStepExam>) {
         this.examHashMap = exams
-        notifyDataSetChanged()
+        notifyItemRangeChanged(0, itemCount, PAYLOAD_EXAM_UPDATE)
     }
 
     fun setSubmissionCounts(counts: Map<String?, Int>) {
         this.submissionCountMap = counts
-        notifyDataSetChanged()
+        notifyItemRangeChanged(0, itemCount, PAYLOAD_SUBMISSION_COUNT_UPDATE)
     }
 
     fun setType(type: String?) {
@@ -62,6 +62,47 @@ class AdapterMySubmission(
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderMySurvey {
         val binding = RowMysurveyBinding.inflate(LayoutInflater.from(context), parent, false)
         return ViewHolderMySurvey(binding)
+    }
+
+    override fun onBindViewHolder(
+        holder: ViewHolderMySurvey,
+        position: Int,
+        payloads: MutableList<Any>
+    ) {
+        if (payloads.isEmpty()) {
+            super.onBindViewHolder(holder, position, payloads)
+        } else {
+            val submission = getItem(position)
+            payloads.forEach { payload ->
+                when (payload) {
+                    PAYLOAD_EXAM_UPDATE -> {
+                        if (examHashMap.containsKey(submission.parentId)) {
+                            holder.binding.title.text = examHashMap[submission.parentId]?.name
+                        }
+                    }
+                    PAYLOAD_SUBMISSION_COUNT_UPDATE -> {
+                        val count = submissionCountMap[submission.id] ?: 1
+                        if (count > 1) {
+                            holder.binding.submissionCount.visibility = View.VISIBLE
+                            holder.binding.submissionCount.text = "($count)"
+                        } else {
+                            holder.binding.submissionCount.visibility = View.GONE
+                        }
+                        holder.itemView.setOnClickListener {
+                            if (count > 1) {
+                                showAllSubmissions(submission)
+                            } else {
+                                if (type == "survey") {
+                                    openSurvey(listener, submission.id, true, false, "")
+                                } else {
+                                    openSubmissionDetail(listener, submission.id)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     override fun onBindViewHolder(holder: ViewHolderMySurvey, position: Int) {
@@ -133,6 +174,8 @@ class AdapterMySubmission(
     class ViewHolderMySurvey(val binding: RowMysurveyBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {
+        private const val PAYLOAD_EXAM_UPDATE = "payload_exam_update"
+        private const val PAYLOAD_SUBMISSION_COUNT_UPDATE = "payload_submission_count_update"
         @JvmStatic
         fun openSurvey(listener: OnHomeItemClickListener?, id: String?, isMySurvey: Boolean, isTeam: Boolean, teamId: String?) {
             if (listener != null) {
