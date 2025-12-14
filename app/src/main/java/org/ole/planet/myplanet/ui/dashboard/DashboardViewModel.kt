@@ -25,6 +25,7 @@ import org.ole.planet.myplanet.repository.CourseRepository
 import org.ole.planet.myplanet.repository.LibraryRepository
 import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.repository.SubmissionRepository
+import org.ole.planet.myplanet.repository.SurveyRepository
 import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.repository.UserRepository
 
@@ -43,6 +44,7 @@ class DashboardViewModel @Inject constructor(
     private val teamRepository: TeamRepository,
     private val submissionRepository: SubmissionRepository,
     private val notificationRepository: NotificationRepository,
+    private val surveyRepository: SurveyRepository,
     private val databaseService: DatabaseService
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -87,6 +89,10 @@ class DashboardViewModel @Inject constructor(
 
     suspend fun getSurveyTitlesFromSubmissions(submissions: List<RealmSubmission>): List<String> {
         return submissionRepository.getSurveyTitlesFromSubmissions(submissions)
+    }
+
+    suspend fun getSurveySubmissionCount(userId: String?): Int {
+        return surveyRepository.getSurveySubmissionCount(userId)
     }
 
     suspend fun getUnreadNotificationsSize(userId: String?): Int {
