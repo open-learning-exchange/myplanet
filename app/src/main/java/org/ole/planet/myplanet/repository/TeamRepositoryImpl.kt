@@ -31,6 +31,8 @@ import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class TeamRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
@@ -503,6 +505,30 @@ class TeamRepositoryImpl @Inject constructor(
             equalTo("teamId", teamId)
             notEqualTo("status", "archived")
         }
+    }
+
+    override suspend fun getReportsFlow(teamId: String): Flow<List<RealmMyTeam>> {
+        return queryListFlow(RealmMyTeam::class.java) {
+            equalTo("teamId", teamId)
+            equalTo("docType", "report")
+            notEqualTo("status", "archived")
+            sort("createdDate", io.realm.Sort.DESCENDING)
+        }
+    }
+
+    override suspend fun exportReportsAsCsv(reports: List<RealmMyTeam>, teamName: String): String {
+        val csvBuilder = StringBuilder()
+        csvBuilder.append("$teamName Financial Report Summary\n\n")
+        csvBuilder.append("Start Date, End Date, Created Date, Updated Date, Beginning Balance, Sales, Other Income, Wages, Other Expenses, Profit/Loss, Ending Balance\n")
+        for (report in reports) {
+            val dateFormat = SimpleDateFormat("EEE MMM dd yyyy HH:mm:ss 'GMT'Z (z)", Locale.US)
+            val totalIncome = report.sales + report.otherIncome
+            val totalExpenses = report.wages + report.otherExpenses
+            val profitLoss = totalIncome - totalExpenses
+            val endingBalance = profitLoss + report.beginningBalance
+            csvBuilder.append("${dateFormat.format(report.startDate)}, ${dateFormat.format(report.endDate)}, ${dateFormat.format(report.createdDate)}, ${dateFormat.format(report.updatedDate)}, ${report.beginningBalance}, ${report.sales}, ${report.otherIncome}, ${report.wages}, ${report.otherExpenses}, $profitLoss, $endingBalance\n")
+        }
+        return csvBuilder.toString()
     }
 
     override suspend fun deleteTask(taskId: String) {
