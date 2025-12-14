@@ -188,42 +188,24 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
     }
 
     private fun createOrUpdateTask(task: String, desc: String, teamTask: RealmTeamTask?, assigneeId: String? = null) {
-        val isCreate = teamTask == null
-        val realmTeamTask = RealmTeamTask()
-
-        if (isCreate) {
-            realmTeamTask.id = UUID.randomUUID().toString()
-        } else {
-            teamTask?.let {
-                realmTeamTask.id = it.id
-                realmTeamTask._id = it._id
-                realmTeamTask._rev = it._rev
-                realmTeamTask.link = it.link
-                realmTeamTask.sync = it.sync
-                realmTeamTask.status = it.status
-                realmTeamTask.completed = it.completed
-                realmTeamTask.completedTime = it.completedTime
-                realmTeamTask.isNotified = it.isNotified
-            }
-        }
-        realmTeamTask.title = task
-        realmTeamTask.description = desc
-        realmTeamTask.deadline = deadline?.timeInMillis!!
-        realmTeamTask.teamId = teamId
-        realmTeamTask.assignee = assigneeId
-        realmTeamTask.isUpdated = true
         lifecycleScope.launch {
-            teamRepository.upsertTask(realmTeamTask)
+            val deadlineMillis = deadline?.timeInMillis
+            if (deadlineMillis == null) {
+                Utilities.toast(activity, getString(R.string.deadline_is_required))
+                return@launch
+            }
 
-            if (!mRealm.isClosed) {
-                mRealm.refresh()
+            if (teamTask == null) {
+                teamRepository.createTask(task, desc, deadlineMillis, teamId, assigneeId)
+            } else {
+                teamRepository.updateTask(teamTask.id!!, task, desc, deadlineMillis, assigneeId)
             }
 
             Utilities.toast(
                 activity,
                 String.format(
                     getString(R.string.task_s_successfully),
-                    if (isCreate) getString(R.string.added) else getString(R.string.updated)
+                    if (teamTask == null) getString(R.string.added) else getString(R.string.updated)
                 )
             )
         }
@@ -296,10 +278,6 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
         val taskId = realmTeamTask?.id ?: return
         viewLifecycleOwner.lifecycleScope.launch {
             teamRepository.setTaskCompletion(taskId, completed)
-
-            if (!mRealm.isClosed) {
-                mRealm.refresh()
-            }
         }
     }
 
@@ -311,11 +289,6 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
         val taskId = task?.id ?: return
         viewLifecycleOwner.lifecycleScope.launch {
             teamRepository.deleteTask(taskId)
-
-            if (!mRealm.isClosed) {
-                mRealm.refresh()
-            }
-
             Utilities.toast(activity, getString(R.string.task_deleted_successfully))
         }
     }
