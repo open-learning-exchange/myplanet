@@ -31,6 +31,8 @@ import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class TeamRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
@@ -505,6 +507,30 @@ class TeamRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getReportsFlow(teamId: String): Flow<List<RealmMyTeam>> {
+        return queryListFlow(RealmMyTeam::class.java) {
+            equalTo("teamId", teamId)
+            equalTo("docType", "report")
+            notEqualTo("status", "archived")
+            sort("createdDate", io.realm.Sort.DESCENDING)
+        }
+    }
+
+    override suspend fun exportReportsAsCsv(reports: List<RealmMyTeam>, teamName: String): String {
+        val csvBuilder = StringBuilder()
+        csvBuilder.append("$teamName Financial Report Summary\n\n")
+        csvBuilder.append("Start Date, End Date, Created Date, Updated Date, Beginning Balance, Sales, Other Income, Wages, Other Expenses, Profit/Loss, Ending Balance\n")
+        for (report in reports) {
+            val dateFormat = SimpleDateFormat("EEE MMM dd yyyy HH:mm:ss 'GMT'Z (z)", Locale.US)
+            val totalIncome = report.sales + report.otherIncome
+            val totalExpenses = report.wages + report.otherExpenses
+            val profitLoss = totalIncome - totalExpenses
+            val endingBalance = profitLoss + report.beginningBalance
+            csvBuilder.append("${dateFormat.format(report.startDate)}, ${dateFormat.format(report.endDate)}, ${dateFormat.format(report.createdDate)}, ${dateFormat.format(report.updatedDate)}, ${report.beginningBalance}, ${report.sales}, ${report.otherIncome}, ${report.wages}, ${report.otherExpenses}, $profitLoss, $endingBalance\n")
+        }
+        return csvBuilder.toString()
+    }
+
     override suspend fun deleteTask(taskId: String) {
         delete(RealmTeamTask::class.java, "id", taskId)
     }
@@ -762,6 +788,31 @@ class TeamRepositoryImpl @Inject constructor(
 
         return queryList(RealmUserModel::class.java) {
             `in`("id", teamMembers.toTypedArray())
+        }
+    }
+
+    override suspend fun getJoinedMembersWithVisitInfo(teamId: String): List<JoinedMemberData> {
+        return withRealm { realm ->
+            val members = RealmMyTeam.getJoinedMember(teamId, realm).map { realm.copyFromRealm(it) }.toMutableList()
+            val leaderId = realm.where(RealmMyTeam::class.java)
+                .equalTo("teamId", teamId)
+                .equalTo("isLeader", true)
+                .findFirst()?.userId
+            val leader = members.find { it.id == leaderId }
+            if (leader != null) {
+                members.remove(leader)
+                members.add(0, leader)
+            }
+            members.map { member ->
+                val lastVisitTimestamp = RealmTeamLog.getLastVisit(realm, member.name, teamId)
+                val visitCount = RealmTeamLog.getVisitCount(realm, member.name, teamId)
+                val offlineVisits = "${userProfileDbHandler.getOfflineVisits(member)}"
+                val profileLastVisit = userProfileDbHandler.getLastVisit(member)
+                JoinedMemberData(
+                    member, visitCount, lastVisitTimestamp, offlineVisits,
+                    profileLastVisit, member.id == leaderId
+                )
+            }
         }
     }
 
