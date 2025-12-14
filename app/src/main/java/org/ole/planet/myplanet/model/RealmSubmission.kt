@@ -4,7 +4,6 @@ import android.content.Context
 import android.text.TextUtils
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject

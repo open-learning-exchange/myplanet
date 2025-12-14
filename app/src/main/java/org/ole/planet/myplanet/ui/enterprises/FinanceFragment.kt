@@ -19,7 +19,6 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AddTransactionBinding
 import org.ole.planet.myplanet.databinding.FragmentFinanceBinding
-import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.TransactionData
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment

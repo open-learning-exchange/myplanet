@@ -3,13 +3,13 @@ package org.ole.planet.myplanet.ui.dashboard
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import io.realm.Sort
 import java.util.Calendar
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import io.realm.Sort
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.datamanager.DatabaseService
