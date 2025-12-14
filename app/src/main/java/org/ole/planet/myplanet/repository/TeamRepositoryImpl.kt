@@ -756,6 +756,31 @@ class TeamRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getJoinedMembersWithVisitInfo(teamId: String): List<JoinedMemberData> {
+        return withRealm { realm ->
+            val members = RealmMyTeam.getJoinedMember(teamId, realm).map { realm.copyFromRealm(it) }.toMutableList()
+            val leaderId = realm.where(RealmMyTeam::class.java)
+                .equalTo("teamId", teamId)
+                .equalTo("isLeader", true)
+                .findFirst()?.userId
+            val leader = members.find { it.id == leaderId }
+            if (leader != null) {
+                members.remove(leader)
+                members.add(0, leader)
+            }
+            members.map { member ->
+                val lastVisitTimestamp = RealmTeamLog.getLastVisit(realm, member.name, teamId)
+                val visitCount = RealmTeamLog.getVisitCount(realm, member.name, teamId)
+                val offlineVisits = "${userProfileDbHandler.getOfflineVisits(member)}"
+                val profileLastVisit = userProfileDbHandler.getLastVisit(member)
+                JoinedMemberData(
+                    member, visitCount, lastVisitTimestamp, offlineVisits,
+                    profileLastVisit, member.id == leaderId
+                )
+            }
+        }
+    }
+
     override suspend fun getAssignee(userId: String): RealmUserModel? {
         return findByField(RealmUserModel::class.java, "id", userId)
     }

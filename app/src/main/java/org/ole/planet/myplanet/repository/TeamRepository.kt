@@ -7,6 +7,15 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
 
+data class JoinedMemberData(
+    val user: RealmUserModel,
+    val visitCount: Long,
+    val lastVisitDate: Long?,
+    val offlineVisits: String,
+    val profileLastVisit: String,
+    var isLeader: Boolean
+)
+
 data class TeamMemberStatus(
     val isMember: Boolean,
     val isLeader: Boolean,
@@ -106,6 +115,7 @@ interface TeamRepository {
     ): Result<Unit>
     suspend fun respondToMemberRequest(teamId: String, userId: String, accept: Boolean): Result<Unit>
     suspend fun getJoinedMembers(teamId: String): List<RealmUserModel>
+    suspend fun getJoinedMembersWithVisitInfo(teamId: String): List<JoinedMemberData>
     suspend fun getAssignee(userId: String): RealmUserModel?
     suspend fun getRequestedMembers(teamId: String): List<RealmUserModel>
     suspend fun isTeamNameExists(name: String, type: String, excludeTeamId: String? = null): Boolean
