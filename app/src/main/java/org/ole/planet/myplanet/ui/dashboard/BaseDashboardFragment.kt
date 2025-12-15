@@ -299,13 +299,14 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         view.findViewById<View>(R.id.txtFullName).setOnClickListener {
             homeItemClickListener?.openCallFragment(UserProfileFragment())
         }
-        viewModel.loadUserContent(settings?.getString("userId", "--"))
-        observeUiState()
 
         libraryAdapter = AdapterMyLibrary(this)
         val recyclerView = view.findViewById<RecyclerView>(R.id.libraryRecyclerView)
         recyclerView.layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
         recyclerView.adapter = libraryAdapter
+
+        viewModel.loadUserContent(settings?.getString("userId", "--"))
+        observeUiState()
 
         view.findViewById<FlexboxLayout>(R.id.flexboxLayoutCourse).flexDirection = FlexDirection.ROW
         view.findViewById<FlexboxLayout>(R.id.flexboxLayoutTeams).flexDirection = FlexDirection.ROW
