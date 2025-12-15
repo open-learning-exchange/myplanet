@@ -17,8 +17,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.gson.JsonObject
-import io.realm.RealmResults
-import io.realm.Sort
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -40,7 +38,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 class ReportsFragment : BaseTeamFragment() {
     private var _binding: FragmentReportsBinding? = null
     private val binding get() = _binding!!
-    var list: RealmResults<RealmMyTeam>? = null
+    private var reports: List<RealmMyTeam> = emptyList()
     private lateinit var adapterReports: AdapterReports
     private var startTimeStamp: String? = null
     private var endTimeStamp: String? = null
@@ -170,51 +168,22 @@ class ReportsFragment : BaseTeamFragment() {
             createFileLauncher.launch(intent)
         }
 
-        list = mRealm.where(RealmMyTeam::class.java)
-            .equalTo("teamId", teamId)
-            .equalTo("docType", "report")
-            .notEqualTo("status", "archived")
-            .sort("createdDate", Sort.DESCENDING)
-            .findAllAsync()
-
-        list?.addChangeListener { results ->
-            updatedReportsList(results)
-        }
-
         createFileLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
-                val uri = result.data?.data
-                if (uri != null) {
-                    try {
-                        val reports = mRealm.where(RealmMyTeam::class.java)
-                            .equalTo("teamId", teamId)
-                            .equalTo("docType", "report")
-                            .notEqualTo("status", "archived")
-                            .sort("createdDate", Sort.DESCENDING)
-                            .findAll()
-                        val csvBuilder = StringBuilder()
-                        csvBuilder.append("${prefData.getTeamName()} Financial Report Summary\n\n")
-                        csvBuilder.append("Start Date, End Date, Created Date, Updated Date, Beginning Balance, Sales, Other Income, Wages, Other Expenses, Profit/Loss, Ending Balance\n")
-                        for (report in reports) {
-                            val dateFormat = SimpleDateFormat("EEE MMM dd yyyy HH:mm:ss 'GMT'Z (z)", Locale.US)
-                            val totalIncome = report.sales + report.otherIncome
-                            val totalExpenses = report.wages + report.otherExpenses
-                            val profitLoss = totalIncome - totalExpenses
-                            val endingBalance = profitLoss + report.beginningBalance
-                            csvBuilder.append("${dateFormat.format(report.startDate)}, ${dateFormat.format(report.endDate)}, ${dateFormat.format(report.createdDate)}, ${dateFormat.format(report.updatedDate)}, ${report.beginningBalance}, ${report.sales}, ${report.otherIncome}, ${report.wages}, ${report.otherExpenses}, $profitLoss, $endingBalance\n")
+                result.data?.data?.let { uri ->
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        try {
+                            val csvContent = teamRepository.exportReportsAsCsv(reports, prefData.getTeamName() ?: "")
+                            requireContext().contentResolver.openOutputStream(uri)?.use { outputStream ->
+                                outputStream.write(csvContent.toByteArray())
+                            }
+                            Utilities.toast(requireContext(), getString(R.string.csv_file_saved_successfully))
+                        } catch (e: IOException) {
+                            e.printStackTrace()
+                            Utilities.toast(requireContext(), getString(R.string.failed_to_save_csv_file))
                         }
-
-                        requireContext().contentResolver.openOutputStream(uri)?.use { outputStream ->
-                            outputStream.write("$csvBuilder".toByteArray())
-                        }
-                        Utilities.toast(requireContext(), getString(R.string.csv_file_saved_successfully))
-                    } catch (e: IOException) {
-                        e.printStackTrace()
-                        Utilities.toast(requireContext(), getString(R.string.failed_to_save_csv_file))
                     }
-                } else {
-                    Utilities.toast(requireContext(), getString(R.string.export_cancelled))
-                }
+                } ?: Utilities.toast(requireContext(), getString(R.string.export_cancelled))
             }
         }
         return binding.root
@@ -226,19 +195,18 @@ class ReportsFragment : BaseTeamFragment() {
         binding.rvReports.adapter = adapterReports
         binding.rvReports.layoutManager = LinearLayoutManager(activity)
 
-        list = mRealm.where(RealmMyTeam::class.java)
-            .equalTo("teamId", teamId)
-            .equalTo("docType", "report")
-            .notEqualTo("status", "archived")
-            .sort("createdDate", Sort.DESCENDING)
-            .findAll()
-        updatedReportsList(list as RealmResults<RealmMyTeam>)
-
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                isMemberFlow.collectLatest { isMember ->
-                    binding.addReports.isVisible = isMember
-                    adapterReports.setNonTeamMember(!isMember)
+                launch {
+                    isMemberFlow.collectLatest { isMember ->
+                        binding.addReports.isVisible = isMember
+                        adapterReports.setNonTeamMember(!isMember)
+                    }
+                }
+                launch {
+                    teamRepository.getReportsFlow(teamId).collectLatest { reportList ->
+                        updatedReportsList(reportList)
+                    }
                 }
             }
         }
@@ -251,26 +219,19 @@ class ReportsFragment : BaseTeamFragment() {
         llImage?.removeAllViews()
     }
 
-    fun updatedReportsList(results: RealmResults<RealmMyTeam>) {
+    private fun updatedReportsList(results: List<RealmMyTeam>) {
         if (_binding == null) return
-
-        val immutableResults = results.let { mRealm.copyFromRealm(it) }
-        adapterReports.submitList(immutableResults)
-
-        if (results.isEmpty()) {
+        reports = results
+        adapterReports.submitList(reports)
+        if (reports.isEmpty()) {
             binding.exportCSV.visibility = View.GONE
-            BaseRecyclerFragment.showNoData(binding.tvMessage, results.count(), "reports")
+            BaseRecyclerFragment.showNoData(binding.tvMessage, reports.size, "reports")
         } else {
             binding.exportCSV.visibility = View.VISIBLE
         }
     }
 
     override fun onDestroyView() {
-        list?.removeAllChangeListeners()
-        list = null
-        if (isRealmInitialized()) {
-            mRealm.close()
-        }
         _binding = null
         super.onDestroyView()
     }
