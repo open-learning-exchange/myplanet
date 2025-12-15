@@ -342,9 +342,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     private fun addRemoveCourse() {
         lifecycleScope.launch {
             courseId?.let {
-                val isCourseAdded = withContext(Dispatchers.IO) {
-                    courseRepository.markCourseAdded(it, userModel?.id)
-                }
+                val isCourseAdded = courseRepository.markCourseAdded(it, userModel?.id)
                 val message = if (isCourseAdded) {
                     getString(R.string.added_to)
                 } else {
