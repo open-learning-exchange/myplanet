@@ -107,10 +107,9 @@ class NewsFragment : BaseNewsFragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 newsRepository.getCommunityNews(getUserIdentifier()).collect { news ->
-                    val unmanagedNews = mRealm.copyFromRealm(news)
                     kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                         databaseService.withRealm { realm ->
-                            unmanagedNews.forEach { newsItem ->
+                            news.forEach { newsItem ->
                                 newsItem?.let {
                                     val count = realm.where(RealmNews::class.java)
                                         .equalTo("replyTo", it.id)
@@ -120,18 +119,19 @@ class NewsFragment : BaseNewsFragment() {
                             }
                         }
                     }
-
-                    if (_binding != null) {
-                        val filtered = unmanagedNews.map { it as RealmNews? }
-                        val labels = collectAllLabels(filtered)
-                        val labelFiltered = applyLabelFilter(filtered)
-                        val searchFiltered =
-                            applySearchFilter(labelFiltered, etSearch.text.toString().trim())
-                        filteredNewsList = filtered
-                        labelFilteredList = labelFiltered
-                        searchFilteredList = searchFiltered
-                        setupLabelFilter(labels)
-                        setData(searchFilteredList)
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                        if (_binding != null) {
+                            val filtered = news.map { it as RealmNews? }
+                            val labels = collectAllLabels(filtered)
+                            val labelFiltered = applyLabelFilter(filtered)
+                            val searchFiltered =
+                                applySearchFilter(labelFiltered, etSearch.text.toString().trim())
+                            filteredNewsList = filtered
+                            labelFilteredList = labelFiltered
+                            searchFilteredList = searchFiltered
+                            setupLabelFilter(labels)
+                            setData(searchFilteredList)
+                        }
                     }
                 }
             }
