@@ -4,12 +4,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.shareIn
@@ -24,6 +26,11 @@ class SubmissionViewModel @Inject constructor(
     private val submissionRepository: SubmissionRepository,
     private val userRepository: UserRepository,
 ) : ViewModel() {
+
+    private data class SubmissionViewData(
+        val submission: RealmSubmission,
+        val submitterName: String,
+    )
 
     private val _type = MutableStateFlow("")
     private val _query = MutableStateFlow("")
@@ -60,12 +67,12 @@ class SubmissionViewModel @Inject constructor(
             .mapValues { entry -> entry.value.maxByOrNull { it.lastUpdateTime ?: 0 } }
             .values
             .filterNotNull()
-            .onEach { sub ->
+            .map { sub ->
                 val name = submissionRepository.getNormalizedSubmitterName(sub)
                 val fallback = sub.userId?.let { userRepository.getUserById(it)?.name }
-                sub.submitterName = name ?: fallback ?: ""
+                SubmissionViewData(sub, name ?: fallback ?: "")
             }
-            .sortedByDescending { it.lastUpdateTime ?: 0 }
+            .sortedByDescending { it.submission.lastUpdateTime ?: 0 }
 
         val submissionCountMap = groupedSubmissions.mapValues { it.value.size }
             .mapKeys { entry ->
@@ -73,10 +80,15 @@ class SubmissionViewModel @Inject constructor(
             }
 
         Triple(uniqueSubmissions, submissionCountMap, filtered)
-    }.shareIn(viewModelScope, SharingStarted.Lazily, 1)
+    }.flowOn(Dispatchers.Default).shareIn(viewModelScope, SharingStarted.Lazily, 1)
 
-    val submissions: StateFlow<List<RealmSubmission>> = filteredSubmissionsRaw.map { it.first }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val submissions: StateFlow<List<RealmSubmission>> = filteredSubmissionsRaw.map { (uniqueSubmissions) ->
+        uniqueSubmissions.map { viewData ->
+            viewData.submission.apply {
+                submitterName = viewData.submitterName
+            }
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val submissionCounts: StateFlow<Map<String?, Int>> = filteredSubmissionsRaw.map { it.second }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
