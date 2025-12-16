@@ -29,12 +29,17 @@ import org.ole.planet.myplanet.repository.SurveyRepository
 import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.repository.UserRepository
 
+import org.ole.planet.myplanet.model.RealmMyLife
+
 data class DashboardUiState(
     val unreadNotifications: Int = 0,
     val library: List<RealmMyLibrary> = emptyList(),
     val courses: List<RealmMyCourse> = emptyList(),
     val teams: List<RealmMyTeam> = emptyList(),
+    val myLife: List<RealmMyLife> = emptyList(),
 )
+
+import org.ole.planet.myplanet.repository.MyLifeRepository
 
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
@@ -42,6 +47,7 @@ class DashboardViewModel @Inject constructor(
     private val libraryRepository: LibraryRepository,
     private val courseRepository: CourseRepository,
     private val teamRepository: TeamRepository,
+    private val myLifeRepository: MyLifeRepository,
     private val submissionRepository: SubmissionRepository,
     private val notificationRepository: NotificationRepository,
     private val surveyRepository: SurveyRepository,
@@ -197,6 +203,11 @@ class DashboardViewModel @Inject constructor(
             launch {
                 val myLibrary = libraryRepository.getMyLibrary(userId)
                 _uiState.update { it.copy(library = myLibrary) }
+            }
+
+            launch {
+                val myLife = myLifeRepository.getMyLifeByUserId(userId)
+                _uiState.update { it.copy(myLife = myLife) }
             }
 
             launch {

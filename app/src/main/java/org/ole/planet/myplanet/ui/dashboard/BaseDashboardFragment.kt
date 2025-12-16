@@ -149,6 +149,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
                 renderMyLibrary(it.library)
                 renderMyCourses(it.courses)
                 renderMyTeams(it.teams)
+                renderMyLife(it.myLife)
             }
         }
     }
@@ -242,17 +243,10 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         setCountText(teams.size, RealmMyTeam::class.java, requireView())
     }
 
-    private fun showNotificationIcons(v: View, info: TeamNotificationInfo) {
-        val imgTask = v.findViewById<ImageView>(R.id.img_task)
-        val imgChat = v.findViewById<ImageView>(R.id.img_chat)
-        imgChat.visibility = if (info.hasChat) View.VISIBLE else View.GONE
-        imgTask.visibility = if (info.hasTask) View.VISIBLE else View.GONE
-    }
-
-    private fun myLifeListInit(flexboxLayout: FlexboxLayout) {
-        val rawMylife: List<RealmMyLife> = RealmMyLife.getMyLifeByUserId(realm, settings)
-        val dbMylife = rawMylife.filter { it.isVisible }
-
+    private fun renderMyLife(myLife: List<RealmMyLife>) {
+        val flexboxLayout: FlexboxLayout = view?.findViewById(R.id.flexboxLayoutMyLife) ?: return
+        flexboxLayout.removeAllViews()
+        val dbMylife = myLife.filter { it.isVisible }
         val user = profileDbHandler.userModel
         viewLifecycleOwner.lifecycleScope.launch {
             val surveyCount = viewModel.getSurveySubmissionCount(user?.id)
@@ -260,6 +254,13 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
                 flexboxLayout.addView(getLayout(itemCnt, items, surveyCount), params)
             }
         }
+    }
+
+    private fun showNotificationIcons(v: View, info: TeamNotificationInfo) {
+        val imgTask = v.findViewById<ImageView>(R.id.img_task)
+        val imgChat = v.findViewById<ImageView>(R.id.img_chat)
+        imgChat.visibility = if (info.hasChat) View.VISIBLE else View.GONE
+        imgTask.visibility = if (info.hasTask) View.VISIBLE else View.GONE
     }
 
     private suspend fun setUpMyLife(userId: String?) {
@@ -339,7 +340,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         val userId = settings?.getString("userId", "--")
         viewLifecycleOwner.lifecycleScope.launch {
             setUpMyLife(userId)
-            myLifeListInit(myLifeFlex)
         }
 
 
