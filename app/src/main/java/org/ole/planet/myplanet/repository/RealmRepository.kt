@@ -9,8 +9,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.applyEqualTo
 import org.ole.planet.myplanet.datamanager.findCopyByField
@@ -48,14 +50,11 @@ open class RealmRepository(protected val databaseService: DatabaseService) {
     protected suspend fun <T : RealmObject> queryListFlow(
         clazz: Class<T>,
         builder: RealmQuery<T>.() -> Unit = {},
-    ): Flow<List<T>> = callbackFlow<List<T>> {
-        val realm = Realm.getDefaultInstance()
-        val results = realm.where(clazz).apply(builder).findAllAsync()
-
+    ): Flow<List<T>> = channelFlow {
         val listener = RealmChangeListener<RealmResults<T>> {
             if (it.isLoaded && it.isValid) {
                 val frozenResults = it.freeze()
-                launch(databaseService.ioDispatcher) {
+                launch {
                     val copiedList = databaseService.withRealmAsync { bgRealm ->
                         bgRealm.copyFromRealm(frozenResults)
                     }
@@ -63,15 +62,23 @@ open class RealmRepository(protected val databaseService: DatabaseService) {
                 }
             }
         }
-        results.addChangeListener(listener)
+
+        val (realm, results) = withContext(Dispatchers.Main.immediate) {
+            val realm = Realm.getDefaultInstance()
+            val results = realm.where(clazz).apply(builder).findAllAsync()
+            results.addChangeListener(listener)
+            realm to results
+        }
 
         awaitClose {
-            if (!realm.isClosed) {
-                results.removeChangeListener(listener)
-                realm.close()
+            launch(Dispatchers.Main.immediate) {
+                if (!realm.isClosed) {
+                    results.removeChangeListener(listener)
+                    realm.close()
+                }
             }
         }
-    }.flowOn(Dispatchers.Main)
+    }.flowOn(databaseService.ioDispatcher)
 
     protected suspend fun <T : RealmObject, V : Any> findByField(
         clazz: Class<T>,
