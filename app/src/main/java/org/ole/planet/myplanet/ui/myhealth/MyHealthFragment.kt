@@ -46,19 +46,14 @@ import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
 import org.ole.planet.myplanet.databinding.FragmentVitalSignBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.model.RealmMyHealth
-import org.ole.planet.myplanet.model.RealmMyHealthPojo
-import org.ole.planet.myplanet.ui.myhealth.HealthRecord
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
-import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
-import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
@@ -327,14 +322,14 @@ class MyHealthFragment : Fragment() {
                         2 -> "name" to Sort.ASCENDING
                         else -> "name" to Sort.DESCENDING
                     }
-                    val sortedList = userRepository.getUsersSortedBy(sortBy, sort)
-                    withContext(Dispatchers.Main) {
-                        if (isAdded) {
-                            userModelList = sortedList
-                            adapter.clear()
-                            adapter.addAll(userModelList)
-                            adapter.notifyDataSetChanged()
-                        }
+                    val sortedList = withContext(Dispatchers.IO) {
+                        userRepository.getUsersSortedBy(sortBy, sort)
+                    }
+                    if (isAdded) {
+                        userModelList = sortedList
+                        adapter.clear()
+                        adapter.addAll(userModelList)
+                        adapter.notifyDataSetChanged()
                     }
                 }
             }
