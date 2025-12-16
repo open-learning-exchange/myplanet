@@ -19,8 +19,8 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AddTransactionBinding
 import org.ole.planet.myplanet.databinding.FragmentFinanceBinding
-import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.TransactionData
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDateTZ
 import org.ole.planet.myplanet.utilities.Utilities
@@ -31,7 +31,7 @@ class FinanceFragment : BaseTeamFragment() {
     private lateinit var addTransactionBinding: AddTransactionBinding
     private lateinit var adapterFinance: AdapterFinance
     var date: Calendar? = null
-    private var transactions: List<RealmMyTeam> = emptyList()
+    private var transactions: List<TransactionData> = emptyList()
     private var isAsc = false
     private var transactionsJob: Job? = null
     private var currentStartDate: Long? = null
@@ -218,7 +218,7 @@ class FinanceFragment : BaseTeamFragment() {
         llImage?.removeAllViews()
     }
 
-    private fun calculateTotal(list: List<RealmMyTeam>) {
+    private fun calculateTotal(list: List<TransactionData>) {
         var debit = 0
         var credit = 0
         for (team in list) {
@@ -283,34 +283,10 @@ class FinanceFragment : BaseTeamFragment() {
         return addTransactionBinding.root
     }
 
-    private fun mapTransactionsToPresentationModel(transactions: List<RealmMyTeam>): List<TransactionData> {
-        val transactionDataList = mutableListOf<TransactionData>()
-        var balance = 0
-        for (team in transactions.filter { it._id != null }) {
-            balance += if ("debit".equals(team.type, ignoreCase = true)) {
-                -team.amount
-            } else {
-                team.amount
-            }
-            transactionDataList.add(
-                TransactionData(
-                    id = team._id!!,
-                    date = team.date,
-                    description = team.description,
-                    type = team.type,
-                    amount = team.amount,
-                    balance = balance
-                )
-            )
-        }
-        return transactionDataList
-    }
-
-    private fun updatedFinanceList(results: List<RealmMyTeam>) {
+    private fun updatedFinanceList(results: List<TransactionData>) {
         if (view == null) return
 
-        val transactionData = mapTransactionsToPresentationModel(results)
-        adapterFinance.submitList(transactionData)
+        adapterFinance.submitList(results)
         calculateTotal(results)
 
         if (results.isNotEmpty()) {
@@ -343,7 +319,7 @@ class FinanceFragment : BaseTeamFragment() {
     ) {
         transactionsJob?.cancel()
         transactionsJob = viewLifecycleOwner.lifecycleScope.launch {
-            teamRepository.getTeamTransactions(
+            teamRepository.getTeamTransactionsWithBalance(
                 teamId = teamId,
                 startDate = startDate,
                 endDate = endDate,
