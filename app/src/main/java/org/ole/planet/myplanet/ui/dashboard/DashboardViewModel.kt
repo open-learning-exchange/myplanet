@@ -26,8 +26,10 @@ import org.ole.planet.myplanet.repository.LibraryRepository
 import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.SurveyRepository
+import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.ActivityRepository
 
 data class DashboardUiState(
     val unreadNotifications: Int = 0,
@@ -45,6 +47,7 @@ class DashboardViewModel @Inject constructor(
     private val submissionRepository: SubmissionRepository,
     private val notificationRepository: NotificationRepository,
     private val surveyRepository: SurveyRepository,
+    private val activityRepository: ActivityRepository,
     private val databaseService: DatabaseService
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -214,4 +217,12 @@ class DashboardViewModel @Inject constructor(
     }
 
     suspend fun getUsersSortedByDate() = userRepository.getUsersSortedBy("joinDate", Sort.DESCENDING)
+
+    suspend fun getOfflineActivities(userName: String, type: String): List<RealmOfflineActivity> {
+        return activityRepository.getOfflineActivities(userName, type)
+    }
+
+    suspend fun getPrivateLibraryAfterDate(date: Long): List<RealmMyLibrary> {
+        return libraryRepository.getPrivateLibraryAfterDate(date)
+    }
 }

@@ -133,6 +133,14 @@ class LibraryRepositoryImpl @Inject constructor(
         return results.filter { it.needToUpdate() }
     }
 
+    override suspend fun getPrivateLibraryAfterDate(date: Long): List<RealmMyLibrary> {
+        return queryList(RealmMyLibrary::class.java) {
+            equalTo("isPrivate", true)
+                .greaterThan("createdDate", date)
+                .equalTo("mediaType", "image")
+        }
+    }
+
     override suspend fun getRecentResources(userId: String): Flow<List<RealmMyLibrary>> {
         return queryListFlow(RealmMyLibrary::class.java) {
             equalTo("userId", userId)

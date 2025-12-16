@@ -58,7 +58,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     private var fullName: String? = null
     private var params = LinearLayout.LayoutParams(250, 100)
     private var di: DialogUtils.CustomProgressDialog? = null
-    private lateinit var offlineActivitiesResults: RealmResults<RealmOfflineActivity>
 
     @Inject
     lateinit var transactionSyncManager: TransactionSyncManager
@@ -100,17 +99,15 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
                 mRealm.commitTransaction()
             }
 
-            if (isRealmInitialized()) {
-                offlineActivitiesResults = mRealm.where(RealmOfflineActivity::class.java)
-                    .equalTo("userName", model?.name)
-                    .equalTo("type", KEY_LOGIN)
-                    .findAllAsync()
+            viewLifecycleOwner.lifecycleScope.launch {
+                val offlineVisits = model?.name?.let {
+                    viewModel.getOfflineActivities(it, KEY_LOGIN).size
+                } ?: 0
+                v.findViewById<TextView>(R.id.txtFullName).text =
+                    getString(R.string.user_name, fullName, offlineVisits)
             }
             v.findViewById<TextView>(R.id.txtRole).text =
                 getString(R.string.user_role, model?.getRoleAsString())
-            val offlineVisits = profileDbHandler.offlineVisits
-            v.findViewById<TextView>(R.id.txtFullName).text =
-                getString(R.string.user_name, fullName, offlineVisits)
         }
     }
 
@@ -121,11 +118,12 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             now[Calendar.YEAR] = i
             now[Calendar.MONTH] = i1
             now[Calendar.DAY_OF_MONTH] = i2
-            val imageList = realm.where(RealmMyLibrary::class.java).equalTo("isPrivate", true)
-                .greaterThan("createdDate", now.timeInMillis).equalTo("mediaType", "image")
-                .findAll()
-            val urls = ArrayList<String>()
-            getUrlsAndStartDownload(imageList, urls) },
+            viewLifecycleOwner.lifecycleScope.launch {
+                val imageList = viewModel.getPrivateLibraryAfterDate(now.timeInMillis)
+                val urls = ArrayList<String>()
+                getUrlsAndStartDownload(imageList, urls)
+            }
+        },
             now[Calendar.YEAR], now[Calendar.MONTH], now[Calendar.DAY_OF_MONTH]
         )
         dpd.setTitle(getString(R.string.read_offline_news_from))
