@@ -76,12 +76,13 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
     private fun loadQuestions() {
         binding.loadingProgressBar.visibility = View.VISIBLE
+        val examId = exam?.id
         viewLifecycleOwner.lifecycleScope.launch {
             val questionList = withContext(Dispatchers.IO) {
                 val realm = Realm.getDefaultInstance()
                 try {
                     val results = realm.where(RealmExamQuestion::class.java)
-                        .equalTo("examId", exam?.id)
+                        .equalTo("examId", examId)
                         .findAll()
                     realm.copyFromRealm(results)
                 } finally {
