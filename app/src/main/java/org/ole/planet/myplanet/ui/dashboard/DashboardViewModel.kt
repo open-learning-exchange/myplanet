@@ -28,8 +28,8 @@ import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.SurveyRepository
 import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.repository.UserRepository
-
 import org.ole.planet.myplanet.model.RealmMyLife
+import org.ole.planet.myplanet.repository.MyLifeRepository
 
 data class DashboardUiState(
     val unreadNotifications: Int = 0,
@@ -38,8 +38,6 @@ data class DashboardUiState(
     val teams: List<RealmMyTeam> = emptyList(),
     val myLife: List<RealmMyLife> = emptyList(),
 )
-
-import org.ole.planet.myplanet.repository.MyLifeRepository
 
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
