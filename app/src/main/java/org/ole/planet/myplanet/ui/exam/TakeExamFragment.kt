@@ -71,7 +71,30 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         initExam()
-        questions = mRealm.where(RealmExamQuestion::class.java).equalTo("examId", exam?.id).findAll()
+        loadQuestions()
+    }
+
+    private fun loadQuestions() {
+        binding.loadingProgressBar.visibility = View.VISIBLE
+        viewLifecycleOwner.lifecycleScope.launch {
+            val questionList = withContext(Dispatchers.IO) {
+                val realm = Realm.getDefaultInstance()
+                try {
+                    val results = realm.where(RealmExamQuestion::class.java)
+                        .equalTo("examId", exam?.id)
+                        .findAll()
+                    realm.copyFromRealm(results)
+                } finally {
+                    realm.close()
+                }
+            }
+            questions = questionList
+            onQuestionsLoaded()
+        }
+    }
+
+    private fun onQuestionsLoaded() {
+        binding.loadingProgressBar.visibility = View.GONE
         binding.tvQuestionCount.text = getString(R.string.Q1, questions?.size)
         var q: RealmQuery<*> = mRealm.where(RealmSubmission::class.java)
             .equalTo("userId", user?.id)
@@ -114,7 +137,6 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             saveCurrentAnswer()
             goToNextQuestion()
         }
-
 
         binding.etAnswer.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
