@@ -6,11 +6,10 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import kotlinx.coroutines.CoroutineScope
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -18,24 +17,10 @@ import org.ole.planet.myplanet.databinding.RowStepsBinding
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.utilities.DiffUtils
 
-class AdapterSteps(
-    private val context: Context,
-    private val submissionRepository: SubmissionRepository,
-    private val providedScope: CoroutineScope? = null
-) : ListAdapter<StepItem, AdapterSteps.ViewHolder>(STEP_ITEM_COMPARATOR) {
+class AdapterSteps(private val context: Context, private val submissionRepository: SubmissionRepository, private val lifecycleOwner: LifecycleOwner) : ListAdapter<StepItem, AdapterSteps.ViewHolder>(STEP_ITEM_COMPARATOR) {
     private val descriptionVisibilityMap = mutableMapOf<String, Boolean>()
     private var currentlyVisibleStepId: String? = null
-    private var internalScope: CoroutineScope? = null
-    private val coroutineScope: CoroutineScope
-        get() = providedScope ?: internalScope!!
     private val examQuestionCountCache = mutableMapOf<String, Int>()
-
-    override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
-        super.onAttachedToRecyclerView(recyclerView)
-        if (providedScope == null) {
-            internalScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
-        }
-    }
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val rowStepsBinding = RowStepsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ViewHolder(rowStepsBinding)
@@ -87,7 +72,7 @@ class AdapterSteps(
                 if (cachedCount != null) {
                     rowStepsBinding.tvDescription.text = context.getString(R.string.test_size, cachedCount)
                 } else {
-                    loadJob = coroutineScope.launch {
+                    loadJob = lifecycleOwner.lifecycleScope.launch {
                         val size = withContext(Dispatchers.IO) {
                             submissionRepository.getExamQuestionCount(stepId)
                         }
@@ -153,12 +138,6 @@ class AdapterSteps(
     override fun onViewRecycled(holder: ViewHolder) {
         super.onViewRecycled(holder)
         holder.clear()
-    }
-
-    override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
-        super.onDetachedFromRecyclerView(recyclerView)
-        internalScope?.cancel()
-        internalScope = null
     }
 
     companion object {

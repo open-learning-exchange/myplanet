@@ -20,9 +20,7 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayout
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.RealmObject
 import io.realm.RealmResults
-import io.realm.Sort
 import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
@@ -36,11 +34,7 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmOfflineActivity
-import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmTeamNotification
-import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.TeamNotificationInfo
 import org.ole.planet.myplanet.service.TransactionSyncManager
@@ -260,14 +254,11 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         val dbMylife = rawMylife.filter { it.isVisible }
 
         val user = profileDbHandler.userModel
-        val surveyCount = if (isRealmInitialized()) {
-            RealmSubmission.getNoOfSurveySubmissionByUser(user?.id, mRealm)
-        } else {
-            0
-        }
-
-        for ((itemCnt, items) in dbMylife.withIndex()) {
-            flexboxLayout.addView(getLayout(itemCnt, items, surveyCount), params)
+        viewLifecycleOwner.lifecycleScope.launch {
+            val surveyCount = viewModel.getSurveySubmissionCount(user?.id)
+            for ((itemCnt, items) in dbMylife.withIndex()) {
+                flexboxLayout.addView(getLayout(itemCnt, items, surveyCount), params)
+            }
         }
     }
 
