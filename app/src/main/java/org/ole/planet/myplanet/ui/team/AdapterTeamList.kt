@@ -7,7 +7,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.graphics.toColorInt
 import androidx.fragment.app.FragmentManager
@@ -186,20 +185,11 @@ class AdapterTeamList(
         val teamStatus = team.teamStatus ?: return
         when {
             teamStatus.isLeader -> teamListener?.onEditTeam(team)
-            teamStatus.isMember -> showLeaveConfirmationDialog(team, user)
+            teamStatus.isMember -> {
+                teamActionsListener?.onLeaveTeam(team, user)
+            }
             else -> requestToJoin(team, user)
         }
-    }
-
-    private fun showLeaveConfirmationDialog(team: TeamData, user: RealmUserModel?) {
-        AlertDialog.Builder(context, R.style.CustomAlertDialog)
-            .setMessage(R.string.confirm_exit)
-            .setPositiveButton(R.string.yes) { _, _ ->
-                teamActionsListener?.onLeaveTeam(team, user)
-                syncTeamActivities()
-            }
-            .setNegativeButton(R.string.no, null)
-            .show()
     }
 
     private fun requestToJoin(team: TeamData, user: RealmUserModel?) {
@@ -223,7 +213,7 @@ class AdapterTeamList(
         submitList(updatedList)
     }
 
-    private fun syncTeamActivities() {
+    fun syncTeamActivities() {
         syncJob?.cancel()
         syncJob = scope.launch {
             teamRepository.syncTeamActivities()
