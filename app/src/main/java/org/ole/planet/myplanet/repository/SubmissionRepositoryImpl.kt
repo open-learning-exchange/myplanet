@@ -23,6 +23,14 @@ class SubmissionRepositoryImpl @Inject constructor(
         return parentId?.substringBefore("@")
     }
 
+    override suspend fun getPendingSurveysFlow(userId: String?): Flow<List<RealmSubmission>> {
+        return queryListFlow(RealmSubmission::class.java) {
+            equalTo("userId", userId)
+                .equalTo("type", "survey")
+                .equalTo("status", "pending", Case.INSENSITIVE)
+        }
+    }
+
     override suspend fun getSubmissionsFlow(userId: String): Flow<List<RealmSubmission>> {
         return queryListFlow(RealmSubmission::class.java) {
             equalTo("userId", userId)
