@@ -62,7 +62,6 @@ import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.datamanager.Service.CheckVersionCallback
 import org.ole.planet.myplanet.datamanager.Service.ConfigurationIdListener
-import org.ole.planet.myplanet.datamanager.Service.PlanetAvailableListener
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.ServerAddressesModel
@@ -301,8 +300,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), CheckVersionCallback,
             } else {
                 "$processedUrl/_all_dbs"
             }
-            val response = apiInterface?.isPlanetAvailableSuspend(url)
-
+            val response = apiInterface?.isPlanetAvailable(url)
             if (response?.isSuccessful == true) {
                 val ss = response.body()?.string()
                 val myList = ss?.split(",")?.dropLastWhile { it.isEmpty() }
@@ -746,17 +744,16 @@ abstract class SyncActivity : ProcessUserDataActivity(), CheckVersionCallback,
         if (checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) && settings.getBoolean("firstRun", true)) {
             clearInternalStorage()
         }
-        Service(this).isPlanetAvailable(object : PlanetAvailableListener {
-            override fun isAvailable() {
-                Service(context).checkVersion(this@SyncActivity, settings)
-            }
-            override fun notAvailable() {
+        lifecycleScope.launch {
+            if (service.isPlanetAvailable()) {
+                service.checkVersion(this@SyncActivity, settings)
+            } else {
                 if (!isFinishing) {
                     syncFailed = true
                     showAlert(context, "Error", getString(R.string.planet_server_not_reachable))
                 }
             }
-        })
+        }
     }
 
     override fun onSuccess(success: String?) {

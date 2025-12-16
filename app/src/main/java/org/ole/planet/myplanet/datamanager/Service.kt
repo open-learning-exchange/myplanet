@@ -204,67 +204,42 @@ class Service @Inject constructor(
         }
     }
 
-    fun isPlanetAvailable(callback: PlanetAvailableListener?) {
-        val updateUrl = "${preferences.getString("serverURL", "")}"
+    suspend fun isPlanetAvailable(): Boolean = withContext(Dispatchers.IO) {
+        val updateUrl = preferences.getString("serverURL", "") ?: ""
         serverAvailabilityCache[updateUrl]?.let { (available, timestamp) ->
             if (System.currentTimeMillis() - timestamp < 30000) {
-                if (available) {
-                    callback?.isAvailable()
-                } else {
-                    callback?.notAvailable()
-                }
-                return
+                return@withContext available
             }
         }
 
         val serverUrlMapper = ServerUrlMapper()
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
-        serviceScope.launch {
-            withContext(Dispatchers.IO) {
-                val primaryReachable = isServerReachable(mapping.primaryUrl)
-                val alternativeReachable = mapping.alternativeUrl?.let { isServerReachable(it) } == true
+        val primaryReachable = isServerReachable(mapping.primaryUrl)
+        val alternativeReachable = mapping.alternativeUrl?.let { isServerReachable(it) } == true
 
-                if (!primaryReachable && alternativeReachable) {
-                    mapping.alternativeUrl?.let { alternativeUrl ->
-                        val uri = updateUrl.toUri()
-                        val editor = preferences.edit()
-
-                        serverUrlMapper.updateUrlPreferences(
-                            editor,
-                            uri,
-                            alternativeUrl,
-                            mapping.primaryUrl,
-                            preferences
-                        )
-                    }
-                }
+        if (!primaryReachable && alternativeReachable) {
+            mapping.alternativeUrl?.let { alternativeUrl ->
+                val uri = updateUrl.toUri()
+                val editor = preferences.edit()
+                serverUrlMapper.updateUrlPreferences(
+                    editor,
+                    uri,
+                    alternativeUrl,
+                    mapping.primaryUrl,
+                    preferences
+                )
             }
+        }
 
-            retrofitInterface.isPlanetAvailable(UrlUtils.getUpdateUrl(preferences)).enqueue(object : Callback<ResponseBody?> {
-                override fun onResponse(call: Call<ResponseBody?>, response: Response<ResponseBody?>) {
-                    val isAvailable = callback != null && response.code() == 200
-                    serverAvailabilityCache[updateUrl] = Pair(isAvailable, System.currentTimeMillis())
-                    serviceScope.launch {
-                        withContext(Dispatchers.Main) {
-                            if (isAvailable) {
-                                callback.isAvailable()
-                            } else {
-                                callback?.notAvailable()
-                            }
-                        }
-                    }
-                }
-
-                override fun onFailure(call: Call<ResponseBody?>, t: Throwable) {
-                    serverAvailabilityCache[updateUrl] = Pair(false, System.currentTimeMillis())
-                    serviceScope.launch {
-                        withContext(Dispatchers.Main) {
-                            callback?.notAvailable()
-                        }
-                    }
-                }
-            })
+        try {
+            val response = retrofitInterface.isPlanetAvailable(UrlUtils.getUpdateUrl(preferences))
+            val isAvailable = response?.isSuccessful ?: false
+            serverAvailabilityCache[updateUrl] = Pair(isAvailable, System.currentTimeMillis())
+            isAvailable
+        } catch (e: IOException) {
+            serverAvailabilityCache[updateUrl] = Pair(false, System.currentTimeMillis())
+            false
         }
     }
 
@@ -439,10 +414,6 @@ class Service @Inject constructor(
         fun onSuccess(message: String)
     }
 
-    interface PlanetAvailableListener {
-        fun isAvailable()
-        fun notAvailable()
-    }
 
     interface ConfigurationIdListener {
         fun onConfigurationIdReceived(id: String, code: String, url: String, defaultUrl: String, isAlternativeUrl: Boolean, callerActivity: String)

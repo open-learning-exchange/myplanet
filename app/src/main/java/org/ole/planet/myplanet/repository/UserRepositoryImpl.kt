@@ -222,13 +222,11 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun becomeMember(obj: JsonObject): Pair<Boolean, String> {
-        val isAvailable = withContext(Dispatchers.IO) {
-            try {
-                val response = apiInterface.isPlanetAvailableSuspend(UrlUtils.getUpdateUrl(settings))
-                response.code() == 200
-            } catch (e: Exception) {
-                false
-            }
+        val isAvailable = try {
+            val response = apiInterface.isPlanetAvailable(UrlUtils.getUpdateUrl(settings))
+            response?.code() == 200
+        } catch (e: Exception) {
+            false
         }
 
         if (isAvailable) {

@@ -26,12 +26,12 @@ import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.MyDownloadService
 import org.ole.planet.myplanet.datamanager.Service
-import org.ole.planet.myplanet.datamanager.Service.PlanetAvailableListener
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmMyCourse
@@ -187,9 +187,9 @@ abstract class BaseResourceFragment : Fragment() {
 
     protected fun showDownloadDialog(dbMyLibrary: List<RealmMyLibrary?>) {
         if (!isAdded) return
-        Service(requireContext()).isPlanetAvailable(object : PlanetAvailableListener {
-            override fun isAvailable() {
-                if (!isAdded) return
+        lifecycleScope.launch {
+            if (Service(requireContext()).isPlanetAvailable()) {
+                if (!isAdded) return@launch
                 val userId = profileDbHandler.userModel?.id
                 val librariesForDialog = if (userId.isNullOrBlank()) {
                     dbMyLibrary
@@ -199,7 +199,7 @@ abstract class BaseResourceFragment : Fragment() {
                 }
 
                 if (librariesForDialog.isEmpty()) {
-                    return
+                    return@launch
                 }
 
                 activity?.let { fragmentActivity ->
@@ -233,15 +233,13 @@ abstract class BaseResourceFragment : Fragment() {
                             ?: 0) > 0
                     }
                 }
-            }
-
-            override fun notAvailable() {
-                if (!isAdded) return
+            } else {
+                if (!isAdded) return@launch
                 activity?.let {
                     Utilities.toast(it, getString(R.string.planet_not_available))
                 }
             }
-        })
+        }
     }
 
     fun showPendingSurveyDialog() {
@@ -311,9 +309,9 @@ abstract class BaseResourceFragment : Fragment() {
 
     fun startDownload(urls: ArrayList<String>) {
         if (!isFragmentActive()) return
-        Service(requireActivity()).isPlanetAvailable(object : PlanetAvailableListener {
-            override fun isAvailable() {
-                if (!isFragmentActive()) return
+        lifecycleScope.launch {
+            if (Service(requireActivity()).isPlanetAvailable()) {
+                if (!isFragmentActive()) return@launch
                 if (urls.isNotEmpty()) {
                     try {
                         showProgressDialog()
@@ -322,12 +320,10 @@ abstract class BaseResourceFragment : Fragment() {
                         e.printStackTrace()
                     }
                 }
-            }
-
-            override fun notAvailable() {
+            } else {
                 showNotConnectedToast()
             }
-        })
+        }
     }
 
     fun setProgress(download: Download) {
@@ -537,15 +533,13 @@ abstract class BaseResourceFragment : Fragment() {
         }
 
         fun backgroundDownload(urls: ArrayList<String>, context: Context) {
-            Service(context).isPlanetAvailable(object : PlanetAvailableListener {
-                override fun isAvailable() {
+            MainApplication.applicationScope.launch {
+                if (Service(context).isPlanetAvailable()) {
                     if (urls.isNotEmpty()) {
                         DownloadUtils.openDownloadService(context, urls, false)
                     }
                 }
-
-                override fun notAvailable() {}
-            })
+            }
         }
 
         private fun getLibraries(l: RealmResults<RealmMyLibrary>): List<RealmMyLibrary> {
