@@ -148,4 +148,12 @@ class LibraryRepositoryImpl @Inject constructor(
                 .isNotNull("resourceLocalAddress")
         }
     }
+
+    override suspend fun getPrivateImagesCreatedAfter(timestamp: Long): List<RealmMyLibrary> {
+        return queryList(RealmMyLibrary::class.java) {
+            equalTo("isPrivate", true)
+                .greaterThan("createdDate", timestamp)
+                .equalTo("mediaType", "image")
+        }
+    }
 }
