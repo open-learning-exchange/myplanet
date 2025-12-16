@@ -50,6 +50,10 @@ class LibraryRepositoryImpl @Inject constructor(
             .filter { it.userId?.contains(userId) == true }
     }
 
+    override suspend fun getLibraryForSelectedUser(userId: String): List<RealmMyLibrary> {
+        return getLibraryListForUser(userId)
+    }
+
     override suspend fun getMyLibrary(userId: String?): List<RealmMyLibrary> {
         return queryList(RealmMyLibrary::class.java) {
             equalTo("userId", userId)

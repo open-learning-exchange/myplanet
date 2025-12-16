@@ -29,11 +29,14 @@ import org.ole.planet.myplanet.repository.SurveyRepository
 import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.repository.UserRepository
 
+import org.ole.planet.myplanet.model.RealmUserModel
+
 data class DashboardUiState(
     val unreadNotifications: Int = 0,
     val library: List<RealmMyLibrary> = emptyList(),
     val courses: List<RealmMyCourse> = emptyList(),
     val teams: List<RealmMyTeam> = emptyList(),
+    val users: List<RealmUserModel> = emptyList(),
 )
 
 @HiltViewModel
@@ -213,5 +216,14 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
-    suspend fun getUsersSortedByDate() = userRepository.getUsersSortedBy("joinDate", Sort.DESCENDING)
+    suspend fun getLibraryForSelectedUser(userId: String): List<RealmMyLibrary> {
+        return libraryRepository.getLibraryForSelectedUser(userId)
+    }
+
+    fun loadUsers() {
+        viewModelScope.launch {
+            val users = userRepository.getUsersSortedBy("joinDate", Sort.DESCENDING)
+            _uiState.update { it.copy(users = users) }
+        }
+    }
 }
