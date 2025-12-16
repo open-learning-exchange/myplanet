@@ -90,11 +90,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
 
     private fun setStepsList(steps: List<RealmCourseStep>) {
         binding.stepsList.layoutManager = LinearLayoutManager(activity)
-        val adapter = AdapterSteps(
-            context = requireActivity(),
-            submissionRepository = submissionRepository,
-            providedScope = viewLifecycleOwner.lifecycleScope
-        )
+        val adapter = AdapterSteps(requireActivity(), submissionRepository, viewLifecycleOwner)
         binding.stepsList.adapter = adapter
         adapter.submitList(steps.map { step ->
             StepItem(
