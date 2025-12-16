@@ -13,7 +13,6 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.google.gson.JsonArray
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
-import io.realm.RealmResults
 import io.realm.Sort
 import java.util.UUID
 import javax.inject.Inject
