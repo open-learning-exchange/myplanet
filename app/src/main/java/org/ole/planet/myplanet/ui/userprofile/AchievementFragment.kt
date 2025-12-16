@@ -9,12 +9,10 @@ import androidx.core.view.isGone
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.snackbar.Snackbar
-import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
-import io.realm.RealmList
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

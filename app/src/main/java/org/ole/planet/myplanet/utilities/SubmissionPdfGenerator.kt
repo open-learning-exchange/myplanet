@@ -6,16 +6,16 @@ import android.graphics.Paint
 import android.graphics.pdf.PdfDocument
 import android.os.Environment
 import io.realm.Realm
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.model.RealmExamQuestion
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.model.RealmExamQuestion
+import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.model.RealmSubmission
 
 object SubmissionPdfGenerator {
 
