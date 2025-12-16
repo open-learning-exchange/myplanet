@@ -20,9 +20,7 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayout
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.RealmObject
 import io.realm.RealmResults
-import io.realm.Sort
 import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
@@ -36,11 +34,7 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmOfflineActivity
-import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmTeamNotification
-import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.TeamNotificationInfo
 import org.ole.planet.myplanet.service.TransactionSyncManager
@@ -215,22 +209,40 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         val flexboxLayout: FlexboxLayout = view?.findViewById(R.id.flexboxLayoutTeams) ?: return
         flexboxLayout.removeAllViews()
         val userId = profileDbHandler.userModel?.id
-        for ((count, ob) in teams.withIndex()) {
-            val v = LayoutInflater.from(activity).inflate(R.layout.item_home_my_team, flexboxLayout, false)
-            val name = v.findViewById<TextView>(R.id.tv_name)
-            setBackgroundColor(v, count)
-            if (ob.teamType == "sync") {
-                name.setTypeface(null, Typeface.BOLD)
-            }
-            handleClick(ob._id, ob.name, TeamDetailFragment(), name)
-            if (userId != null && ob._id != null) {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    val info = viewModel.getTeamNotificationInfo(ob._id!!, userId)
-                    showNotificationIcons(v, info)
+        val teamIds = teams.mapNotNull { it._id }
+
+        if (userId != null && teamIds.isNotEmpty()) {
+            viewLifecycleOwner.lifecycleScope.launch {
+                val notificationInfoMap = viewModel.getTeamNotifications(teamIds, userId)
+                for ((count, ob) in teams.withIndex()) {
+                    val v = LayoutInflater.from(activity).inflate(R.layout.item_home_my_team, flexboxLayout, false)
+                    val name = v.findViewById<TextView>(R.id.tv_name)
+                    setBackgroundColor(v, count)
+                    if (ob.teamType == "sync") {
+                        name.setTypeface(null, Typeface.BOLD)
+                    }
+                    handleClick(ob._id, ob.name, TeamDetailFragment(), name)
+                    ob._id?.let {
+                        notificationInfoMap[it]?.let { info ->
+                            showNotificationIcons(v, info)
+                        }
+                    }
+                    name.text = ob.name
+                    flexboxLayout.addView(v, params)
                 }
             }
-            name.text = ob.name
-            flexboxLayout.addView(v, params)
+        } else {
+            for ((count, ob) in teams.withIndex()) {
+                val v = LayoutInflater.from(activity).inflate(R.layout.item_home_my_team, flexboxLayout, false)
+                val name = v.findViewById<TextView>(R.id.tv_name)
+                setBackgroundColor(v, count)
+                if (ob.teamType == "sync") {
+                    name.setTypeface(null, Typeface.BOLD)
+                }
+                handleClick(ob._id, ob.name, TeamDetailFragment(), name)
+                name.text = ob.name
+                flexboxLayout.addView(v, params)
+            }
         }
         setCountText(teams.size, RealmMyTeam::class.java, requireView())
     }
@@ -247,14 +259,11 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         val dbMylife = rawMylife.filter { it.isVisible }
 
         val user = profileDbHandler.userModel
-        val surveyCount = if (isRealmInitialized()) {
-            RealmSubmission.getNoOfSurveySubmissionByUser(user?.id, mRealm)
-        } else {
-            0
-        }
-
-        for ((itemCnt, items) in dbMylife.withIndex()) {
-            flexboxLayout.addView(getLayout(itemCnt, items, surveyCount), params)
+        viewLifecycleOwner.lifecycleScope.launch {
+            val surveyCount = viewModel.getSurveySubmissionCount(user?.id)
+            for ((itemCnt, items) in dbMylife.withIndex()) {
+                flexboxLayout.addView(getLayout(itemCnt, items, surveyCount), params)
+            }
         }
     }
 

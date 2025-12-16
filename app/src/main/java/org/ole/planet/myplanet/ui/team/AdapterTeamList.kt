@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.team
 
 import android.content.Context
-import android.content.DialogInterface
 import android.graphics.PorterDuff
 import android.graphics.Typeface
 import android.os.Bundle
@@ -15,16 +14,11 @@ import androidx.fragment.app.FragmentManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemTeamListBinding
-import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
@@ -35,7 +29,6 @@ import org.ole.planet.myplanet.utilities.TimeUtils
 
 class AdapterTeamList(
     private val context: Context,
-    private val list: List<RealmMyTeam>,
     private val fragmentManager: FragmentManager,
     private val teamRepository: TeamRepository,
     private val currentUser: RealmUserModel?,
@@ -45,10 +38,8 @@ class AdapterTeamList(
     private var type: String? = ""
     private var teamListener: OnClickTeamItem? = null
     private var updateCompleteListener: OnUpdateCompleteListener? = null
+    private var teamActionsListener: OnTeamActionsListener? = null
     private val teamStatusCache = mutableMapOf<String, TeamStatus>()
-    private val visitCountsCache = mutableMapOf<String, Long>()
-    private var visitCounts: Map<String, Long> = emptyMap()
-    private var updateListJob: Job? = null
     private var syncJob: Job? = null
 
     interface OnClickTeamItem {
@@ -59,8 +50,18 @@ class AdapterTeamList(
         fun onUpdateComplete(itemCount: Int)
     }
 
+    interface OnTeamActionsListener {
+        fun onLeaveTeam(team: TeamData, user: RealmUserModel?)
+        fun onRequestToJoin(team: TeamData, user: RealmUserModel?)
+    }
+
+
     fun setTeamListener(teamListener: OnClickTeamItem?) {
         this.teamListener = teamListener
+    }
+
+    fun setTeamActionsListener(listener: OnTeamActionsListener) {
+        teamActionsListener = listener
     }
 
     fun setUpdateCompleteListener(listener: OnUpdateCompleteListener?) {
@@ -182,144 +183,31 @@ class AdapterTeamList(
     }
 
     private fun handleJoinLeaveClick(team: TeamData, user: RealmUserModel?) {
-        val teamStatus = team.teamStatus ?: TeamStatus(
-            isMember = false,
-            isLeader = false,
-            hasPendingRequest = false
-        )
-
-        if (teamStatus.isMember) {
-            if (teamStatus.isLeader) {
-                teamListener?.onEditTeam(team)
-            } else {
-                AlertDialog.Builder(context, R.style.CustomAlertDialog).setMessage(R.string.confirm_exit)
-                    .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                        leaveTeam(team, user?.id)
-                    }.setNegativeButton(R.string.no, null).show()
-            }
-        } else {
-            requestToJoin(team, user)
+        val teamStatus = team.teamStatus ?: return
+        when {
+            teamStatus.isLeader -> teamListener?.onEditTeam(team)
+            teamStatus.isMember -> showLeaveConfirmationDialog(team, user)
+            else -> requestToJoin(team, user)
         }
-        syncTeamActivities()
     }
 
-    fun updateList() {
-        val user: RealmUserModel? = currentUser
-        val userId = user?.id
-
-        updateListJob?.cancel()
-        updateListJob = scope.launch {
-            val result = withContext(Dispatchers.Default) {
-                val validTeams = list.filter {
-                    !it._id.isNullOrBlank() && (it.status == null || it.status != "archived")
-                }
-
-                if (validTeams.isEmpty()) {
-                    return@withContext null
-                }
-
-                val teamIds = validTeams.mapNotNull { it._id?.takeIf { id -> id.isNotBlank() } }
-                val (cachedVisitIds, nonCachedVisitIds) = teamIds.partition { it in visitCountsCache }
-
-                val visitCountsDeferred = if (nonCachedVisitIds.isNotEmpty()) {
-                    async(Dispatchers.IO) {
-                        teamRepository.getRecentVisitCounts(nonCachedVisitIds)
-                    }
-                } else {
-                    async { emptyMap<String, Long>() }
-                }
-
-                val statusResults = mutableMapOf<String, TeamStatus>()
-                val idsToFetch = linkedSetOf<String>()
-                validTeams.forEach { team ->
-                    val teamId = team._id.orEmpty()
-                    if (teamId.isBlank()) return@forEach
-                    val cacheKey = "${teamId}_${userId}"
-                    val cachedStatus = teamStatusCache[cacheKey]
-                    if (cachedStatus != null) {
-                        statusResults[teamId] = cachedStatus
-                    } else {
-                        idsToFetch += teamId
-                    }
-                }
-
-                if (idsToFetch.isNotEmpty()) {
-                    val batchStatuses = withContext(Dispatchers.IO) {
-                        teamRepository.getTeamMemberStatuses(userId, idsToFetch)
-                    }
-
-                    batchStatuses.forEach { (teamId, memberStatus) ->
-                        val status = TeamStatus(
-                            isMember = memberStatus.isMember,
-                            isLeader = memberStatus.isLeader,
-                            hasPendingRequest = memberStatus.hasPendingRequest
-                        )
-                        val cacheKey = "${teamId}_${userId}"
-                        teamStatusCache[cacheKey] = status
-                        statusResults[teamId] = status
-                    }
-                }
-
-                val newVisitCounts = visitCountsDeferred.await()
-                newVisitCounts.forEach { (id, count) -> visitCountsCache[id] = count }
-                val calculatedVisitCounts =
-                    cachedVisitIds.associateWith { visitCountsCache[it]!! } + newVisitCounts
-
-                val sortedTeams = validTeams.sortedWith(
-                    compareByDescending<RealmMyTeam> { team ->
-                        val teamId = team._id.orEmpty()
-                        val status = statusResults[teamId] ?: TeamStatus(false, false, false)
-                        when {
-                            status.isLeader -> 3
-                            status.isMember -> 2
-                            else -> 1
-                        }
-                    }.thenByDescending { team ->
-                        calculatedVisitCounts[team._id.orEmpty()] ?: 0L
-                    }
-                )
-
-                val newList = sortedTeams.map { team ->
-                    val teamId = team._id.orEmpty()
-                    val cacheKey = "${teamId}_${userId}"
-                    TeamData(
-                        _id = team._id,
-                        name = team.name,
-                        teamType = team.teamType,
-                        createdDate = team.createdDate,
-                        type = team.type,
-                        status = team.status,
-                        visitCount = calculatedVisitCounts[teamId] ?: 0L,
-                        teamStatus = teamStatusCache[cacheKey],
-                        description = team.description,
-                        services = team.services,
-                        rules = team.rules,
-                        teamId = team.teamId
-                    )
-                }
-                Pair(newList, calculatedVisitCounts)
+    private fun showLeaveConfirmationDialog(team: TeamData, user: RealmUserModel?) {
+        AlertDialog.Builder(context, R.style.CustomAlertDialog)
+            .setMessage(R.string.confirm_exit)
+            .setPositiveButton(R.string.yes) { _, _ ->
+                teamActionsListener?.onLeaveTeam(team, user)
+                syncTeamActivities()
             }
-
-            if (result == null) {
-                visitCounts = emptyMap()
-                submitList(emptyList()) {
-                    updateCompleteListener?.onUpdateComplete(0)
-                }
-            } else {
-                val (newList, allVisitCounts) = result
-                visitCounts = allVisitCounts
-                submitList(newList) {
-                    updateCompleteListener?.onUpdateComplete(newList.size)
-                }
-            }
-        }
+            .setNegativeButton(R.string.no, null)
+            .show()
     }
 
     private fun requestToJoin(team: TeamData, user: RealmUserModel?) {
+        teamActionsListener?.onRequestToJoin(team, user)
+        syncTeamActivities()
+
         val teamId = team._id ?: return
-        val teamType = team.teamType
         val userId = user?.id
-        val userPlanetCode = user?.planetCode
         val cacheKey = "${teamId}_${userId}"
 
         val newStatus = TeamStatus(
@@ -329,32 +217,10 @@ class AdapterTeamList(
         )
         teamStatusCache[cacheKey] = newStatus
 
-        // Optimistic update
         val updatedList = currentList.map {
             if (it._id == teamId) it.copy(teamStatus = newStatus) else it
         }
         submitList(updatedList)
-
-        scope.launch(Dispatchers.IO) {
-            teamRepository.requestToJoin(teamId, userId, userPlanetCode, teamType)
-            withContext(Dispatchers.Main) {
-                teamStatusCache.remove(cacheKey)
-                updateList()
-            }
-        }
-    }
-
-    private fun leaveTeam(team: TeamData, userId: String?) {
-        val teamId = team._id ?: return
-        val cacheKey = "${teamId}_${userId}"
-        teamStatusCache.remove(cacheKey)
-
-        scope.launch(Dispatchers.IO) {
-            teamRepository.leaveTeam(teamId, userId)
-            withContext(Dispatchers.Main) {
-                updateList()
-            }
-        }
     }
 
     private fun syncTeamActivities() {
@@ -379,7 +245,6 @@ class AdapterTeamList(
     fun cleanup() {
         scope.cancel()
         teamStatusCache.clear()
-        visitCountsCache.clear()
     }
 
     class ViewHolderTeam(val binding: ItemTeamListBinding) : RecyclerView.ViewHolder(binding.root)

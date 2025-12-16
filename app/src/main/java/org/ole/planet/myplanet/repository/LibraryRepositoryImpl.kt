@@ -4,6 +4,8 @@ import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRemovedLog
+import io.realm.Sort
+import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onAdd
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onRemove
 
@@ -138,5 +140,21 @@ class LibraryRepositoryImpl @Inject constructor(
                 .equalTo("mediaType", "image")
         }
         return imageList.mapNotNull { it.resourceRemoteAddress }
+    }
+
+    override suspend fun getRecentResources(userId: String): Flow<List<RealmMyLibrary>> {
+        return queryListFlow(RealmMyLibrary::class.java) {
+            equalTo("userId", userId)
+                .sort("createdDate", Sort.DESCENDING)
+                .limit(10)
+        }
+    }
+
+    override suspend fun getPendingDownloads(userId: String): Flow<List<RealmMyLibrary>> {
+        return queryListFlow(RealmMyLibrary::class.java) {
+            equalTo("userId", userId)
+                .equalTo("resourceOffline", false)
+                .isNotNull("resourceLocalAddress")
+        }
     }
 }
