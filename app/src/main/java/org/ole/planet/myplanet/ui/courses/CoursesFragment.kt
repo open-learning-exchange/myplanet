@@ -102,6 +102,11 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         return R.layout.fragment_my_course
     }
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        userModel = userProfileDbHandler.userModel
+    }
+
     private fun startCoursesSync() {
         val isFastSync = settings.getBoolean("fastSync", false)
         if (isFastSync && !prefManager.isCoursesSynced()) {
@@ -256,7 +261,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        userModel = userProfileDbHandler.userModel
         searchTags = ArrayList()
         initializeView()
         updateCheckBoxState(false)
