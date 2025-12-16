@@ -15,4 +15,7 @@ interface NewsRepository {
     suspend fun shareNewsToCommunity(newsId: String, userId: String, planetCode: String, parentCode: String, teamName: String): Result<Unit>
     suspend fun updateTeamNotification(teamId: String, count: Int)
     suspend fun getFilteredNews(teamId: String): List<RealmNews>
+    suspend fun deletePost(newsId: String, teamName: String)
+    suspend fun editPost(newsId: String, message: String, imagesToRemove: Set<String>, imagesToAdd: List<String>)
+    suspend fun postReply(message: String, replyToId: String, user: RealmUserModel?, imageList: List<String>?)
 }

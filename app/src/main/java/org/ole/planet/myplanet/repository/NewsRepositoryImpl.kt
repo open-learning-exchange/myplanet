@@ -18,6 +18,9 @@ import org.ole.planet.myplanet.datamanager.findCopyByField
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.utilities.JsonUtils
+import org.ole.planet.myplanet.utilities.GsonUtils
+import io.realm.Realm
 
 class NewsRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
@@ -222,6 +225,90 @@ class NewsRepositoryImpl @Inject constructor(
                 .sort("time", Sort.DESCENDING)
 
             realm.copyFromRealm(query.findAll())
+        }
+    }
+
+    override suspend fun deletePost(newsId: String, teamName: String) {
+        withRealm { realm ->
+            val news = realm.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
+            news?.let {
+                val ar = GsonUtils.gson.fromJson(it.viewIn, JsonArray::class.java)
+                if (teamName.isNotEmpty() || ar.size() < 2) {
+                    it.id?.let { id -> deleteChildPosts(id, realm) }
+                    it.deleteFromRealm()
+                } else {
+                    val filtered = JsonArray().apply {
+                        ar.forEach { elem ->
+                            if (!elem.asJsonObject.has("sharedDate")) {
+                                add(elem)
+                            }
+                        }
+                    }
+                    it.viewIn = GsonUtils.gson.toJson(filtered)
+                }
+            }
+        }
+    }
+
+    private fun deleteChildPosts(parentId: String, realm: Realm) {
+        val children = realm.where(RealmNews::class.java)
+            .equalTo("replyTo", parentId)
+            .findAll()
+        children.forEach { child ->
+            child.id?.let { id -> deleteChildPosts(id, realm) }
+            child.deleteFromRealm()
+        }
+    }
+
+    override suspend fun editPost(
+        newsId: String,
+        message: String,
+        imagesToRemove: Set<String>,
+        imagesToAdd: List<String>
+    ) {
+        withRealm { realm ->
+            val news = realm.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
+            news?.let {
+                if (imagesToRemove.isNotEmpty()) {
+                    it.imageUrls?.let { imageUrls ->
+                        val updatedUrls = imageUrls.filter { imageUrlJson ->
+                            try {
+                                val imgObject = GsonUtils.gson.fromJson(imageUrlJson, JsonObject::class.java)
+                                val path = JsonUtils.getString("imageUrl", imgObject)
+                                !imagesToRemove.contains(path)
+                            } catch (_: Exception) {
+                                true
+                            }
+                        }
+                        it.imageUrls?.clear()
+                        it.imageUrls?.addAll(updatedUrls)
+                    }
+                }
+                imagesToAdd.forEach { imageUrl -> it.imageUrls?.add(imageUrl) }
+                it.updateMessage(message)
+            }
+        }
+    }
+
+    override suspend fun postReply(
+        message: String,
+        replyToId: String,
+        user: RealmUserModel?,
+        imageList: List<String>?
+    ) {
+        withRealm { realm ->
+            val news = realm.where(RealmNews::class.java).equalTo("id", replyToId).findFirst()
+            news?.let {
+                val map = HashMap<String?, String>()
+                map["message"] = message
+                map["viewableBy"] = it.viewableBy ?: ""
+                map["viewableId"] = it.viewableId ?: ""
+                map["replyTo"] = it.id ?: ""
+                map["messageType"] = it.messageType ?: ""
+                map["messagePlanetCode"] = it.messagePlanetCode ?: ""
+                map["viewIn"] = it.viewIn ?: ""
+                createNews(map, realm, user, imageList?.let { it1 -> io.realm.RealmList<String>().apply { addAll(it1) } }, true)
+            }
         }
     }
 }

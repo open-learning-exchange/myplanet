@@ -340,14 +340,13 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
                 AlertDialog.Builder(context, R.style.AlertDialogTheme)
                     .setMessage(R.string.delete_record)
                     .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
-                        val currentList = currentList.toMutableList()
-                        val pos = holder.adapterPosition
-                        val adjustedPos = if (parentNews != null && pos > 0) pos - 1 else pos
-                        if (adjustedPos >= 0 && adjustedPos < currentList.size) {
-                            currentList.removeAt(adjustedPos)
+                        NewsActions.deletePost(newsRepository, news, teamName) {
+                            val currentList = currentList.toMutableList()
+                            val replies = getReplies(news)
+                            currentList.removeAll(replies)
+                            currentList.remove(news)
                             submitListSafely(currentList)
                         }
-                        NewsActions.deletePost(mRealm, news, currentList.toMutableList(), teamName, listener)
                     }
                     .setNegativeButton(R.string.cancel, null)
                     .show()
@@ -358,8 +357,8 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
             holder.binding.imgEdit.setOnClickListener {
                 NewsActions.showEditAlert(
                     context,
-                    mRealm,
-                    news.id,
+                    newsRepository,
+                    news,
                     true,
                     currentUser,
                     listener,
@@ -565,8 +564,8 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
             viewHolder.binding.btnReply.setOnClickListener {
                 NewsActions.showEditAlert(
                     context,
-                    mRealm,
-                    finalNews?.id,
+                    newsRepository,
+                    finalNews,
                     false,
                     currentUser,
                     listener,
