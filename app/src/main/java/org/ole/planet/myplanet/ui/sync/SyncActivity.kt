@@ -213,7 +213,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), CheckVersionCallback,
                     }
                 } else if (serverConfigAction == "save") {
                     if (savedId == null || id == savedId) {
-                        currentDialog?.let { saveConfigAndContinue(it, "", false, defaultUrl) }
+                        currentDialog?.let {
+                            val binding = serverDialogBinding ?: return@let
+                            saveConfigAndContinue(it, binding, "", false, defaultUrl)
+                        }
                     } else {
                         clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server), false)
                     }
