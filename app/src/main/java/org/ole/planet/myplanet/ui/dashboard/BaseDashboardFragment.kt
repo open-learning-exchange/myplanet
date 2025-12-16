@@ -20,7 +20,6 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayout
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.RealmResults
 import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
@@ -34,11 +33,9 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.TeamNotificationInfo
 import org.ole.planet.myplanet.service.TransactionSyncManager
-import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_LOGIN
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
 import org.ole.planet.myplanet.ui.myhealth.UserListArrayAdapter
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
@@ -58,7 +55,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     private var fullName: String? = null
     private var params = LinearLayout.LayoutParams(250, 100)
     private var di: DialogUtils.CustomProgressDialog? = null
-    private lateinit var offlineActivitiesResults: RealmResults<RealmOfflineActivity>
 
     @Inject
     lateinit var transactionSyncManager: TransactionSyncManager
@@ -99,18 +95,8 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             if (isRealmInitialized() && mRealm.isInTransaction) {
                 mRealm.commitTransaction()
             }
-
-            if (isRealmInitialized()) {
-                offlineActivitiesResults = mRealm.where(RealmOfflineActivity::class.java)
-                    .equalTo("userName", model?.name)
-                    .equalTo("type", KEY_LOGIN)
-                    .findAllAsync()
-            }
             v.findViewById<TextView>(R.id.txtRole).text =
                 getString(R.string.user_role, model?.getRoleAsString())
-            val offlineVisits = profileDbHandler.offlineVisits
-            v.findViewById<TextView>(R.id.txtFullName).text =
-                getString(R.string.user_name, fullName, offlineVisits)
         }
     }
 
@@ -149,6 +135,9 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
                 renderMyLibrary(it.library)
                 renderMyCourses(it.courses)
                 renderMyTeams(it.teams)
+                val v = view ?: return@collect
+                v.findViewById<TextView>(R.id.txtFullName).text =
+                    getString(R.string.user_name, fullName, it.offlineLoginCount)
             }
         }
     }

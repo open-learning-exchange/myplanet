@@ -24,6 +24,7 @@ import org.ole.planet.myplanet.model.TeamNotificationInfo
 import org.ole.planet.myplanet.repository.CourseRepository
 import org.ole.planet.myplanet.repository.LibraryRepository
 import org.ole.planet.myplanet.repository.NotificationRepository
+import org.ole.planet.myplanet.repository.OfflineActivityRepository
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.SurveyRepository
 import org.ole.planet.myplanet.repository.TeamRepository
@@ -34,6 +35,7 @@ data class DashboardUiState(
     val library: List<RealmMyLibrary> = emptyList(),
     val courses: List<RealmMyCourse> = emptyList(),
     val teams: List<RealmMyTeam> = emptyList(),
+    val offlineLoginCount: Int = 0,
 )
 
 @HiltViewModel
@@ -45,6 +47,7 @@ class DashboardViewModel @Inject constructor(
     private val submissionRepository: SubmissionRepository,
     private val notificationRepository: NotificationRepository,
     private val surveyRepository: SurveyRepository,
+    private val offlineActivityRepository: OfflineActivityRepository,
     private val databaseService: DatabaseService
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -208,6 +211,15 @@ class DashboardViewModel @Inject constructor(
             launch {
                 teamRepository.getMyTeamsFlow(userId).collect { teams ->
                     _uiState.update { it.copy(teams = teams) }
+                }
+            }
+
+            launch {
+                val user = userRepository.getUserModelSuspending()
+                user?.name?.let { name ->
+                    offlineActivityRepository.getOfflineLogins(name).collect { activities ->
+                        _uiState.update { it.copy(offlineLoginCount = activities.size) }
+                    }
                 }
             }
         }
