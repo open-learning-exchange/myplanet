@@ -88,11 +88,13 @@ class ProgressRepositoryImpl @Inject constructor(databaseService: DatabaseServic
             }
             val mistakesMap = HashMap<String, Int>()
             answers.forEach { r ->
-                val question = findByField(RealmExamQuestion::class.java, "id", r.questionId)
-                if (question != null && examIds.contains(question.examId)) {
-                    totalMistakes += r.mistakes
-                    val examIndexKey = examIds.indexOf(question.examId).toString()
-                    mistakesMap[examIndexKey] = (mistakesMap[examIndexKey] ?: 0) + r.mistakes
+                r.questionId?.let { questionId ->
+                    val question = findByField(RealmExamQuestion::class.java, "id", questionId)
+                    if (question != null && examIds.contains(question.examId)) {
+                        totalMistakes += r.mistakes
+                        val examIndexKey = examIds.indexOf(question.examId).toString()
+                        mistakesMap[examIndexKey] = (mistakesMap[examIndexKey] ?: 0) + r.mistakes
+                    }
                 }
             }
             obj.add(
