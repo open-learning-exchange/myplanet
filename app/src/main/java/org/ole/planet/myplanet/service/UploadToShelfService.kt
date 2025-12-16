@@ -37,7 +37,6 @@ import org.ole.planet.myplanet.utilities.RetryUtils
 import org.ole.planet.myplanet.utilities.SecurePrefs
 import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.Utilities
-import retrofit2.Response
 
 @Singleton
 class UploadToShelfService @Inject constructor(
