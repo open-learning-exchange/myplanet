@@ -378,19 +378,25 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
         val job = viewLifecycleOwner.lifecycleScope.launch {
             viewModel.uiState.collect {
-                if (dialog.isShowing && it.users.isNotEmpty()) {
-                    val adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, it.users)
-                    alertHealthListBinding.list.adapter = adapter
-                    alertHealthListBinding.list.onItemClickListener = AdapterView.OnItemClickListener { _, _, i, _ ->
-                        val selected = alertHealthListBinding.list.adapter.getItem(i) as RealmUserModel
-                        viewLifecycleOwner.lifecycleScope.launch {
-                            val libraryList = viewModel.getLibraryForSelectedUser(selected._id)
-                            showDownloadDialog(libraryList)
+                if (dialog.isShowing) {
+                    if (it.users.isNotEmpty()) {
+                        val adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, it.users)
+                        alertHealthListBinding.list.adapter = adapter
+                        alertHealthListBinding.list.onItemClickListener = AdapterView.OnItemClickListener { _, _, i, _ ->
+                            val selected = alertHealthListBinding.list.adapter.getItem(i) as RealmUserModel
+                            selected._id?.let { userId ->
+                                viewLifecycleOwner.lifecycleScope.launch {
+                                    val libraryList = viewModel.getLibraryForSelectedUser(userId)
+                                    showDownloadDialog(libraryList)
+                                }
+                            }
+                            dialog.dismiss()
                         }
-                        dialog.dismiss()
+                        alertHealthListBinding.list.visibility = View.VISIBLE
+                    } else {
+                        alertHealthListBinding.list.visibility = View.GONE
                     }
                     alertHealthListBinding.loading.visibility = View.GONE
-                    alertHealthListBinding.list.visibility = View.VISIBLE
                 }
             }
         }
