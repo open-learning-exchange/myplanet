@@ -12,7 +12,6 @@ import android.widget.DatePicker
 import android.widget.EditText
 import android.widget.ListView
 import android.widget.Toast
-import android.widget.Toolbar
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatTextView
 import androidx.core.content.ContextCompat
@@ -68,19 +67,18 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         user = profileDbHandler.userModel
         achievementArray = JsonArray()
         initializeData()
-        setListeners()
         return fragmentEditAchievementBinding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val toolbar = view.findViewById<androidx.appcompat.widget.Toolbar>(R.id.toolbar)
-        toolbar.setNavigationOnClickListener {
+        setListeners()
+    }
+
+    private fun setListeners() {
+        fragmentEditAchievementBinding.toolbar.setNavigationOnClickListener {
             NavigationHelper.popBackStack(requireActivity().supportFragmentManager)
         }
-    }
-    
-    private fun setListeners() {
         fragmentEditAchievementBinding.btnUpdate.setOnClickListener {
             val achievementId = user?.id + "@" + user?.planetCode
             val header = fragmentEditAchievementBinding.etAchievement.text.toString().trim { it <= ' ' }
