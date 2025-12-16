@@ -6,11 +6,11 @@ import io.realm.RealmObject
 import io.realm.RealmQuery
 import io.realm.RealmResults
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.applyEqualTo
 import org.ole.planet.myplanet.datamanager.findCopyByField
