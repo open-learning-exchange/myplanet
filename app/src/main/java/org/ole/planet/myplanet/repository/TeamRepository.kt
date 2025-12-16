@@ -41,6 +41,8 @@ interface TeamRepository {
     suspend fun getJoinRequestTeamId(requestId: String): String?
     suspend fun getTaskNotifications(userId: String?): List<Triple<String, String, String>>
     suspend fun getJoinRequestNotifications(userId: String?): List<JoinRequestNotification>
+    suspend fun getTasksFlow(userId: String?): Flow<List<RealmTeamTask>>
+    suspend fun getTasks(userId: String?): List<RealmTeamTask>
     suspend fun isMember(userId: String?, teamId: String): Boolean
     suspend fun isTeamLeader(teamId: String, userId: String?): Boolean
     suspend fun hasPendingRequest(teamId: String, userId: String?): Boolean
