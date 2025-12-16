@@ -267,25 +267,27 @@ class NewsRepositoryImpl @Inject constructor(
         imagesToAdd: List<String>
     ) {
         withRealm { realm ->
-            val news = realm.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
-            news?.let {
-                if (imagesToRemove.isNotEmpty()) {
-                    it.imageUrls?.let { imageUrls ->
-                        val updatedUrls = imageUrls.filter { imageUrlJson ->
-                            try {
-                                val imgObject = GsonUtils.gson.fromJson(imageUrlJson, JsonObject::class.java)
-                                val path = JsonUtils.getString("imageUrl", imgObject)
-                                !imagesToRemove.contains(path)
-                            } catch (_: Exception) {
-                                true
+            realm.executeTransaction {
+                val news = it.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
+                news?.let { newsItem ->
+                    if (imagesToRemove.isNotEmpty()) {
+                        newsItem.imageUrls?.let { imageUrls ->
+                            val updatedUrls = imageUrls.filter { imageUrlJson ->
+                                try {
+                                    val imgObject = GsonUtils.gson.fromJson(imageUrlJson, JsonObject::class.java)
+                                    val path = JsonUtils.getString("imageUrl", imgObject)
+                                    !imagesToRemove.contains(path)
+                                } catch (_: Exception) {
+                                    true
+                                }
                             }
+                            newsItem.imageUrls?.clear()
+                            newsItem.imageUrls?.addAll(updatedUrls)
                         }
-                        it.imageUrls?.clear()
-                        it.imageUrls?.addAll(updatedUrls)
                     }
+                    imagesToAdd.forEach { imageUrl -> newsItem.imageUrls?.add(imageUrl) }
+                    newsItem.updateMessage(message)
                 }
-                imagesToAdd.forEach { imageUrl -> it.imageUrls?.add(imageUrl) }
-                it.updateMessage(message)
             }
         }
     }
@@ -297,17 +299,19 @@ class NewsRepositoryImpl @Inject constructor(
         imageList: List<String>?
     ) {
         withRealm { realm ->
-            val news = realm.where(RealmNews::class.java).equalTo("id", replyToId).findFirst()
-            news?.let {
-                val map = HashMap<String?, String>()
-                map["message"] = message
-                map["viewableBy"] = it.viewableBy ?: ""
-                map["viewableId"] = it.viewableId ?: ""
-                map["replyTo"] = it.id ?: ""
-                map["messageType"] = it.messageType ?: ""
-                map["messagePlanetCode"] = it.messagePlanetCode ?: ""
-                map["viewIn"] = it.viewIn ?: ""
-                createNews(map, realm, user, imageList?.let { it1 -> io.realm.RealmList<String>().apply { addAll(it1) } }, true)
+            realm.executeTransaction {
+                val news = it.where(RealmNews::class.java).equalTo("id", replyToId).findFirst()
+                news?.let { newsItem ->
+                    val map = HashMap<String?, String>()
+                    map["message"] = message
+                    map["viewableBy"] = newsItem.viewableBy ?: ""
+                    map["viewableId"] = newsItem.viewableId ?: ""
+                    map["replyTo"] = newsItem.id ?: ""
+                    map["messageType"] = newsItem.messageType ?: ""
+                    map["messagePlanetCode"] = newsItem.messagePlanetCode ?: ""
+                    map["viewIn"] = newsItem.viewIn ?: ""
+                    createNews(map, it, user, imageList?.let { it1 -> io.realm.RealmList<String>().apply { addAll(it1) } }, true)
+                }
             }
         }
     }
