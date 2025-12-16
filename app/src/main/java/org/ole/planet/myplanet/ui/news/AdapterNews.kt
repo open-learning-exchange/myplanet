@@ -202,7 +202,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
                 val viewHolder = holder
                 val sharedTeamName = extractSharedTeamName(news)
                 resetViews(viewHolder)
-                updateReplyCount(viewHolder = viewHolder, getReplies(news), position)
+                updateReplyCount(viewHolder, news, position)
                 val userModel = configureUser(viewHolder, news)
                 showShareButton(viewHolder, news)
                 setMessageAndDate(viewHolder, news, sharedTeamName)
@@ -500,33 +500,22 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         fetchTeamLeaderStatus()
     }
 
-    private fun getReplies(finalNews: RealmNews?): List<RealmNews> {
-        return try {
-            if (::mRealm.isInitialized && !mRealm.isClosed) {
-                mRealm.where(RealmNews::class.java)
-                    .sort("time", Sort.DESCENDING)
-                    .equalTo("replyTo", finalNews?.id, Case.INSENSITIVE)
-                    .findAll()
-            } else {
-                databaseService.withRealm { realm ->
-                    realm.where(RealmNews::class.java)
-                        .sort("time", Sort.DESCENDING)
-                        .equalTo("replyTo", finalNews?.id, Case.INSENSITIVE)
-                        .findAll()
-                        .let { realm.copyFromRealm(it) }
+    private fun updateReplyCount(viewHolder: ViewHolderNews, news: RealmNews?, position: Int) {
+        viewHolder.job?.cancel()
+        viewHolder.job = scope.launch {
+            try {
+                val replies = newsRepository.getReplies(news?.id ?: "")
+                withContext(Dispatchers.Main) {
+                    with(viewHolder.binding) {
+                        btnShowReply.text = String.format(Locale.getDefault(), "(%d)", replies.size)
+                        btnShowReply.setTextColor(context.getColor(R.color.daynight_textColor))
+                        val visible = replies.isNotEmpty() && !(position == 0 && parentNews != null) && canReply()
+                        btnShowReply.visibility = if (visible) View.VISIBLE else View.GONE
+                    }
                 }
+            } catch (e: Exception) {
+                android.util.Log.e("AdapterNews", "Failed to get replies", e)
             }
-        } catch (e: Exception) {
-            emptyList()
-        }
-    }
-
-    private fun updateReplyCount(viewHolder: ViewHolderNews, replies: List<RealmNews>, position: Int) {
-        with(viewHolder.binding) {
-            btnShowReply.text = String.format(Locale.getDefault(),"(%d)", replies.size)
-            btnShowReply.setTextColor(context.getColor(R.color.daynight_textColor))
-            val visible = replies.isNotEmpty() && !(position == 0 && parentNews != null) && canReply()
-            btnShowReply.visibility = if (visible) View.VISIBLE else View.GONE
         }
     }
 
@@ -577,8 +566,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
             viewHolder.binding.btnReply.visibility = View.GONE
         }
 
-        val replies = getReplies(finalNews)
-        updateReplyCount(viewHolder, replies, position)
+        updateReplyCount(viewHolder, finalNews, position)
 
         viewHolder.binding.btnShowReply.setOnClickListener {
             sharedPrefManager.setRepliedNewsId(finalNews?.id)
@@ -642,6 +630,13 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
         super.onDetachedFromRecyclerView(recyclerView)
         this.recyclerView = null
+    }
+
+    override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
+        super.onViewRecycled(holder)
+        if (holder is ViewHolderNews) {
+            holder.job?.cancel()
+        }
     }
 
     private fun loadImage(binding: RowNewsBinding, news: RealmNews?) {
@@ -819,6 +814,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     }
 
     internal inner class ViewHolderNews(val binding: RowNewsBinding) : RecyclerView.ViewHolder(binding.root) {
+        var job: kotlinx.coroutines.Job? = null
         private var adapterPosition = 0
         fun bind(position: Int) {
             adapterPosition = position
