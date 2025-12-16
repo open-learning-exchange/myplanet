@@ -431,4 +431,10 @@ class AdapterResource(
             }
         }
     }
+
+    override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
+        super.onDetachedFromRecyclerView(recyclerView)
+        diffJob?.cancel()
+        diffJob = null
+    }
 }
