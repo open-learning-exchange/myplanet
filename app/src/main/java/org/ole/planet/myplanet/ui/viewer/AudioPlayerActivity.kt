@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.view.MenuItem
 import android.view.View
 import android.widget.FrameLayout
-import android.widget.ImageButton
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -21,6 +20,7 @@ import java.io.File
 import java.util.regex.Pattern
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityAudioPlayerBinding
+import org.ole.planet.myplanet.databinding.CustomExoPlayerBinding
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
@@ -28,17 +28,15 @@ import org.ole.planet.myplanet.utilities.Utilities
 class AudioPlayerActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityAudioPlayerBinding
+    private lateinit var playerControlsBinding: CustomExoPlayerBinding
     private var exoPlayer: ExoPlayer? = null
     private var filePath: String? = null
     private var isFullPath = false
-    private lateinit var playButton: ImageButton
-    private lateinit var pauseButton: ImageButton
-
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityAudioPlayerBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        playerControlsBinding = CustomExoPlayerBinding.bind(binding.playerView)
         EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
@@ -53,8 +51,6 @@ class AudioPlayerActivity : AppCompatActivity() {
 
         binding.trackTitle.text = extractedFileName
         binding.artistName.text = resourceTitle
-        playButton = binding.playerView.findViewById(R.id.exo_play)
-        pauseButton = binding.playerView.findViewById(R.id.exo_pause)
 
         val overlay = binding.playerView.findViewById<FrameLayout>(R.id.exo_overlay)
 
@@ -145,25 +141,25 @@ class AudioPlayerActivity : AppCompatActivity() {
     }
 
     private fun setupPlayPauseButtons() {
-        playButton.setOnClickListener {
+        playerControlsBinding.exoPlay.setOnClickListener {
             playAudio()
         }
 
-        pauseButton.setOnClickListener {
+        playerControlsBinding.exoPause.setOnClickListener {
             pauseAudio()
         }
     }
 
     private fun playAudio() {
         exoPlayer?.play()
-        playButton.visibility = View.GONE
-        pauseButton.visibility = View.VISIBLE
+        playerControlsBinding.exoPlay.visibility = View.GONE
+        playerControlsBinding.exoPause.visibility = View.VISIBLE
     }
 
     private fun pauseAudio() {
         exoPlayer?.pause()
-        pauseButton.visibility = View.GONE
-        playButton.visibility = View.VISIBLE
+        playerControlsBinding.exoPause.visibility = View.GONE
+        playerControlsBinding.exoPlay.visibility = View.VISIBLE
     }
 
 
