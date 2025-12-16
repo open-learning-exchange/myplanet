@@ -13,20 +13,14 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowJoinedUserBinding
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.JoinedMemberData
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.DiffUtils
-
-data class JoinedMemberData(
-    val user: RealmUserModel,
-    val visitCount: Long,
-    val lastVisitDate: String,
-    val offlineVisits: String,
-    val profileLastVisit: String,
-    var isLeader: Boolean
-)
 
 class AdapterJoinedMember(
     private val context: Context,
@@ -76,9 +70,15 @@ class AdapterJoinedMember(
             member.getRoleAsString(),
             memberData.visitCount
         )
+        val lastVisitDate = if (memberData.lastVisitDate != null) {
+            val sdf = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
+            sdf.format(Date(memberData.lastVisitDate))
+        } else {
+            context.getString(R.string.no_visit)
+        }
         binding.tvLastVisit.text = context.getString(
             R.string.last_visit,
-            memberData.lastVisitDate
+            lastVisitDate
         )
         Glide.with(binding.memberImage.context)
             .load(member.userImage)
