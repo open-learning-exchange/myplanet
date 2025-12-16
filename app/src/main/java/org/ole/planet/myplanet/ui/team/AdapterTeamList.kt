@@ -40,7 +40,6 @@ class AdapterTeamList(
     private var updateCompleteListener: OnUpdateCompleteListener? = null
     private var teamActionsListener: OnTeamActionsListener? = null
     private val teamStatusCache = mutableMapOf<String, TeamStatus>()
-    private var syncJob: Job? = null
 
     interface OnClickTeamItem {
         fun onEditTeam(team: TeamData?)
@@ -196,7 +195,6 @@ class AdapterTeamList(
             .setMessage(R.string.confirm_exit)
             .setPositiveButton(R.string.yes) { _, _ ->
                 teamActionsListener?.onLeaveTeam(team, user)
-                syncTeamActivities()
             }
             .setNegativeButton(R.string.no, null)
             .show()
@@ -204,7 +202,6 @@ class AdapterTeamList(
 
     private fun requestToJoin(team: TeamData, user: RealmUserModel?) {
         teamActionsListener?.onRequestToJoin(team, user)
-        syncTeamActivities()
 
         val teamId = team._id ?: return
         val userId = user?.id
@@ -223,12 +220,6 @@ class AdapterTeamList(
         submitList(updatedList)
     }
 
-    private fun syncTeamActivities() {
-        syncJob?.cancel()
-        syncJob = scope.launch {
-            teamRepository.syncTeamActivities()
-        }
-    }
 
     private fun getBundle(team: TeamData): Bundle {
         return Bundle().apply {
