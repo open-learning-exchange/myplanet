@@ -50,8 +50,10 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         viewLifecycleOwner.lifecycleScope.launch {
-            val myLifeList = lifeRepository.getMyLifeByUserId(model.id)
-            adapterMyLife.submitList(myLifeList)
+            model?.id?.let {
+                val myLifeList = lifeRepository.getMyLifeByUserId(it)
+                adapterMyLife.submitList(myLifeList)
+            }
         }
         recyclerView.setHasFixedSize(true)
         setupUI(binding.myLifeParentLayout, requireActivity())
