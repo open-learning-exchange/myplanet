@@ -197,7 +197,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 requireActivity(),
                 sortedCourseList,
                 map,
-                userProfileDbHandler,
+                userModel,
                 tagRepository,
                 this@CoursesFragment
             )
@@ -234,7 +234,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             requireActivity(),
             sortedCourseList,
             map,
-            userProfileDbHandler,
+            userModel,
             tagRepository,
             this@CoursesFragment
         )
