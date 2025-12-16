@@ -135,17 +135,9 @@ class DiscussionListFragment : BaseTeamFragment() {
         changeLayoutManager(resources.configuration.orientation, binding.rvDiscussion)
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val realmNewsList = newsRepository.getNewsByTeamId(getEffectiveTeamId())
+            val realmNewsList = newsRepository.getFilteredNews(getEffectiveTeamId())
             val count = realmNewsList.size
-            mRealm.executeTransactionAsync { realm: Realm ->
-                var notification = realm.where(RealmTeamNotification::class.java).equalTo("type", "chat").equalTo("parentId", getEffectiveTeamId()).findFirst()
-                if (notification == null) {
-                    notification = realm.createObject(RealmTeamNotification::class.java, UUID.randomUUID().toString())
-                    notification.parentId = getEffectiveTeamId()
-                    notification.type = "chat"
-                }
-                notification?.lastCount = count
-            }
+            newsRepository.updateTeamNotification(getEffectiveTeamId(), count)
             showRecyclerView(realmNewsList)
         }
 
@@ -190,28 +182,6 @@ class DiscussionListFragment : BaseTeamFragment() {
         imageList.clear()
         llImage?.removeAllViews()
     }
-
-    private val news: List<RealmNews>
-        get() {
-            val realmNewsList: List<RealmNews> = mRealm.where(RealmNews::class.java).isEmpty("replyTo").sort("time", Sort.DESCENDING).findAll()
-            val list: MutableList<RealmNews> = ArrayList()
-            val effectiveTeamId = getEffectiveTeamId()
-
-            for (news in realmNewsList) {
-                if (!TextUtils.isEmpty(news.viewableBy) && news.viewableBy.equals("teams", ignoreCase = true) && news.viewableId.equals(effectiveTeamId, ignoreCase = true)) {
-                    list.add(news)
-                } else if (!TextUtils.isEmpty(news.viewIn)) {
-                    val ar = GsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
-                    for (e in ar) {
-                        val ob = e.asJsonObject
-                        if (ob["_id"].asString.equals(effectiveTeamId, ignoreCase = true)) {
-                            list.add(news)
-                        }
-                    }
-                }
-            }
-            return list
-        }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)

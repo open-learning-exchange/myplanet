@@ -7,6 +7,7 @@ import io.realm.Case
 import io.realm.Sort
 import java.util.Calendar
 import java.util.HashMap
+import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -187,6 +188,40 @@ class NewsRepositoryImpl @Inject constructor(
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+
+    override suspend fun updateTeamNotification(teamId: String, count: Int) {
+        withRealm { realm ->
+            realm.executeTransaction {
+                var notification = it.where(org.ole.planet.myplanet.model.RealmTeamNotification::class.java)
+                    .equalTo("type", "chat")
+                    .equalTo("parentId", teamId)
+                    .findFirst()
+
+                if (notification == null) {
+                    notification = it.createObject(org.ole.planet.myplanet.model.RealmTeamNotification::class.java, UUID.randomUUID().toString())
+                    notification.parentId = teamId
+                    notification.type = "chat"
+                }
+                notification.lastCount = count
+            }
+        }
+    }
+
+    override suspend fun getFilteredNews(teamId: String): List<RealmNews> {
+        return withRealm { realm ->
+            val query = realm.where(RealmNews::class.java)
+                .isEmpty("replyTo")
+                .beginGroup()
+                .equalTo("viewableBy", "teams", Case.INSENSITIVE)
+                .equalTo("viewableId", teamId, Case.INSENSITIVE)
+                .endGroup()
+                .or()
+                .contains("viewIn", "\"_id\":\"$teamId\"", Case.INSENSITIVE)
+                .sort("time", Sort.DESCENDING)
+
+            realm.copyFromRealm(query.findAll())
         }
     }
 }
