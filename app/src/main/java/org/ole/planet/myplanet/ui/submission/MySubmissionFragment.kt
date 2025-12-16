@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
@@ -57,21 +58,17 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
         viewModel.setFilter(type ?: "", "")
 
         viewLifecycleOwner.lifecycleScope.launch {
-            launch {
-                viewModel.submissions.collectLatest { submissions ->
-                    adapter.submitList(submissions)
-                    updateEmptyState(submissions.size)
-                }
-            }
-            launch {
-                viewModel.exams.collectLatest { exams ->
-                    adapter.setExams(exams)
-                }
-            }
-            launch {
-                viewModel.submissionCounts.collectLatest { counts ->
-                    adapter.setSubmissionCounts(counts)
-                }
+            combine(
+                viewModel.submissions,
+                viewModel.exams,
+                viewModel.submissionCounts
+            ) { submissions, exams, counts ->
+                Triple(submissions, exams, counts)
+            }.collectLatest { (submissions, exams, counts) ->
+                adapter.setExams(exams)
+                adapter.setSubmissionCounts(counts)
+                adapter.submitList(submissions)
+                updateEmptyState(submissions.size)
             }
         }
 

@@ -43,12 +43,10 @@ class AdapterMySubmission(
 
     fun setExams(exams: HashMap<String?, RealmStepExam>) {
         this.examHashMap = exams
-        notifyItemRangeChanged(0, itemCount, PAYLOAD_EXAM_UPDATE)
     }
 
     fun setSubmissionCounts(counts: Map<String?, Int>) {
         this.submissionCountMap = counts
-        notifyItemRangeChanged(0, itemCount, PAYLOAD_SUBMISSION_COUNT_UPDATE)
     }
 
     fun setType(type: String?) {
