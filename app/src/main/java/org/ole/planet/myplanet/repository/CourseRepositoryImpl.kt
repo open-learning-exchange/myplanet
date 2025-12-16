@@ -26,6 +26,18 @@ class CourseRepositoryImpl @Inject constructor(
         return findByField(RealmMyCourse::class.java, "courseId", courseId)
     }
 
+    override suspend fun getDetachedCourseById(courseId: String?): RealmMyCourse? {
+        if (courseId.isNullOrBlank()) {
+            return null
+        }
+        return withRealm { realm ->
+            val course = realm.where(RealmMyCourse::class.java)
+                .equalTo("courseId", courseId)
+                .findFirst()
+            course?.let { realm.copyFromRealm(it) }
+        }
+    }
+
     override suspend fun getCourseOnlineResources(courseId: String?): List<RealmMyLibrary> {
         return getCourseResources(courseId, isOffline = false)
     }
