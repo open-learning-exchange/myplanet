@@ -1177,5 +1177,6 @@
     <string name="achievement_saved">تم تحديث الإنجاز</string>
     <string name="team_name_already_exists">فريق بهذا الاسم موجود بالفعل</string>
     <string name="enterprise_name_already_exists">مؤسسة بهذا الاسم موجودة بالفعل</string>
+    <string name="app_theme">سمة التطبيق</string>
 
 </resources>
