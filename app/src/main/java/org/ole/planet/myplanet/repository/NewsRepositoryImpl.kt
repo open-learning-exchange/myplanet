@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.findCopyByField
+import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -23,6 +24,11 @@ class NewsRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     private val gson: Gson,
 ) : RealmRepository(databaseService), NewsRepository {
+    override suspend fun getLibraryResource(resourceId: String): RealmMyLibrary? {
+        return withRealm { realm ->
+            realm.findCopyByField(RealmMyLibrary::class.java, "_id", resourceId)
+        }
+    }
 
     override suspend fun getNewsWithReplies(newsId: String): Pair<RealmNews?, List<RealmNews>> {
         return withRealm(ensureLatest = true) { realm ->
@@ -222,6 +228,16 @@ class NewsRepositoryImpl @Inject constructor(
                 .sort("time", Sort.DESCENDING)
 
             realm.copyFromRealm(query.findAll())
+        }
+    }
+
+    override suspend fun getReplies(newsId: String?): List<RealmNews> {
+        return withRealm { realm ->
+            realm.where(RealmNews::class.java)
+                .sort("time", Sort.DESCENDING)
+                .equalTo("replyTo", newsId, Case.INSENSITIVE)
+                .findAll()
+                .let { realm.copyFromRealm(it) }
         }
     }
 }

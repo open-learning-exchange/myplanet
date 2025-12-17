@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.NewsRepository
+import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
@@ -50,6 +51,8 @@ class NewsFragment : BaseNewsFragment() {
     lateinit var userProfileDbHandler: UserProfileDbHandler
     @Inject
     lateinit var newsRepository: NewsRepository
+    @Inject
+    lateinit var teamRepository: TeamRepository
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
     private var filteredNewsList: List<RealmNews?> = listOf()
@@ -198,7 +201,7 @@ class NewsFragment : BaseNewsFragment() {
             } finally {
                 Trace.endSection()
             }
-            adapterNews = AdapterNews(requireActivity(), user, null, "", null, userProfileDbHandler, databaseService, viewLifecycleOwner.lifecycleScope, userRepository, newsRepository)
+            adapterNews = AdapterNews(requireActivity(), user, null, "", null, userProfileDbHandler, viewLifecycleOwner.lifecycleScope, userRepository, newsRepository, teamRepository)
             adapterNews?.sharedPrefManager = sharedPrefManager
             adapterNews?.setmRealm(mRealm)
             adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
