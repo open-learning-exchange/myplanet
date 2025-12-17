@@ -375,8 +375,16 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         }
         orderByDate = requireView().findViewById(R.id.order_by_date_button)
         orderByTitle = requireView().findViewById(R.id.order_by_title_button)
-        orderByDate.setOnClickListener { adapterCourses.toggleSortOrder() }
-        orderByTitle.setOnClickListener { adapterCourses.toggleTitleSortOrder() }
+        orderByDate.setOnClickListener {
+            adapterCourses.toggleSortOrder {
+                scrollToTop()
+            }
+        }
+        orderByTitle.setOnClickListener {
+            adapterCourses.toggleTitleSortOrder {
+                scrollToTop()
+            }
+        }
     }
 
     private fun initializeView() {
@@ -486,6 +494,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             subjectLevel = if (spnSubject.selectedItem.toString() == "All") "" else spnSubject.selectedItem.toString()
             filterCoursesAndUpdateUi()
             showNoFilter(tvMessage, adapterCourses.itemCount)
+            scrollToTop()
         }
 
         override fun onNothingSelected(adapterView: AdapterView<*>?) {}
@@ -499,6 +508,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             spnGrade.setSelection(0)
             spnSubject.setSelection(0)
             filterCoursesAndUpdateUi()
+            scrollToTop()
         }
     }
 
@@ -574,6 +584,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         }
         filterCoursesAndUpdateUi()
         showTagText(searchTags, tvSelected)
+        scrollToTop()
     }
 
     private fun updateCheckBoxState(programmaticState: Boolean) {
@@ -618,6 +629,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             }
         }
         filterCoursesAndUpdateUi()
+        scrollToTop()
     }
 
     private fun filterApplied(): Boolean {
