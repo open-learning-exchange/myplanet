@@ -13,14 +13,9 @@ import androidx.core.graphics.toColorInt
 import androidx.fragment.app.FragmentManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemTeamListBinding
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.DiffUtils
@@ -30,9 +25,7 @@ import org.ole.planet.myplanet.utilities.TimeUtils
 class AdapterTeamList(
     private val context: Context,
     private val fragmentManager: FragmentManager,
-    private val teamRepository: TeamRepository,
     private val currentUser: RealmUserModel?,
-    private val scope: CoroutineScope,
     private val sharedPrefManager: SharedPrefManager
 ) : ListAdapter<TeamData, AdapterTeamList.ViewHolderTeam>(TeamDiffCallback) {
     private var type: String? = ""
@@ -220,7 +213,6 @@ class AdapterTeamList(
         submitList(updatedList)
     }
 
-
     private fun getBundle(team: TeamData): Bundle {
         return Bundle().apply {
             putString("state", if (team.type?.isEmpty() == true) "teams" else "${team.type}s")
@@ -234,7 +226,6 @@ class AdapterTeamList(
     }
 
     fun cleanup() {
-        scope.cancel()
         teamStatusCache.clear()
     }
 
