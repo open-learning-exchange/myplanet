@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.repository
 
+import org.ole.planet.myplanet.model.TeamNotificationInfo
+
 interface NotificationRepository {
     suspend fun refresh()
     suspend fun markNotificationAsRead(notificationId: String, userId: String?)
@@ -19,4 +21,6 @@ interface NotificationRepository {
     suspend fun getJoinRequestTeamId(relatedId: String?): String?
     fun getJoinRequestDetails(relatedId: String?): Pair<String, String>
     fun getTaskTeamName(taskTitle: String): String?
+    suspend fun getTeamNotificationInfo(teamId: String, userId: String): TeamNotificationInfo
+    suspend fun getTeamNotifications(teamIds: List<String>, userId: String): Map<String, TeamNotificationInfo>
 }
