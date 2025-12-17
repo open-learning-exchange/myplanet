@@ -29,7 +29,7 @@ import org.ole.planet.myplanet.repository.SurveyRepository
 import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.model.RealmMyLife
-import org.ole.planet.myplanet.repository.MyLifeRepository
+import org.ole.planet.myplanet.repository.LifeRepository
 
 data class DashboardUiState(
     val unreadNotifications: Int = 0,
@@ -45,7 +45,7 @@ class DashboardViewModel @Inject constructor(
     private val libraryRepository: LibraryRepository,
     private val courseRepository: CourseRepository,
     private val teamRepository: TeamRepository,
-    private val myLifeRepository: MyLifeRepository,
+    private val lifeRepository: LifeRepository,
     private val submissionRepository: SubmissionRepository,
     private val notificationRepository: NotificationRepository,
     private val surveyRepository: SurveyRepository,
@@ -204,7 +204,7 @@ class DashboardViewModel @Inject constructor(
             }
 
             launch {
-                val myLife = myLifeRepository.getMyLifeByUserId(userId)
+                val myLife = lifeRepository.getMyLifeByUserId(userId)
                 _uiState.update { it.copy(myLife = myLife) }
             }
 
