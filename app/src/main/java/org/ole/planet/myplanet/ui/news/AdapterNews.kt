@@ -721,63 +721,65 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
 
     private fun loadLibraryImage(binding: RowNewsBinding, resourceId: String?) {
         if (resourceId == null) return
-        val library = mRealm.where(RealmMyLibrary::class.java)
-            .equalTo("_id", resourceId)
-            .findFirst()
-
-        val basePath = context.getExternalFilesDir(null)
-        if (library != null && basePath != null) {
-            val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
-            val request = Glide.with(binding.imgNews.context)
-            val isGif = library.resourceLocalAddress?.lowercase(Locale.getDefault())?.endsWith(".gif") == true
-            val target = if (isGif) {
-                request.asGif().load(imageFile)
-            } else {
-                request.load(imageFile)
-            }
-            target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().placeholder(R.drawable.ic_loading)
-                .error(R.drawable.ic_loading)
-                .into(binding.imgNews)
-            binding.imgNews.visibility = View.VISIBLE
-            binding.imgNews.setOnClickListener {
-                showZoomableImage(it.context, imageFile.toString())
+        scope.launch {
+            val library = newsRepository.getLibraryResource(resourceId)
+            withContext(Dispatchers.Main) {
+                val basePath = context.getExternalFilesDir(null)
+                if (library != null && basePath != null) {
+                    val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
+                    val request = Glide.with(binding.imgNews.context)
+                    val isGif = library.resourceLocalAddress?.lowercase(Locale.getDefault())?.endsWith(".gif") == true
+                    val target = if (isGif) {
+                        request.asGif().load(imageFile)
+                    } else {
+                        request.load(imageFile)
+                    }
+                    target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().placeholder(R.drawable.ic_loading)
+                        .error(R.drawable.ic_loading)
+                        .into(binding.imgNews)
+                    binding.imgNews.visibility = View.VISIBLE
+                    binding.imgNews.setOnClickListener {
+                        showZoomableImage(it.context, imageFile.toString())
+                    }
+                }
             }
         }
     }
 
     private fun addLibraryImageToContainer(binding: RowNewsBinding, resourceId: String?) {
         if (resourceId == null) return
-        val library = mRealm.where(RealmMyLibrary::class.java)
-            .equalTo("_id", resourceId)
-            .findFirst()
+        scope.launch {
+            val library = newsRepository.getLibraryResource(resourceId)
+            withContext(Dispatchers.Main) {
+                val basePath = context.getExternalFilesDir(null)
+                if (library != null && basePath != null) {
+                    val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
+                    val imageView = ImageView(context)
+                    val size = (100 * context.resources.displayMetrics.density).toInt()
+                    val margin = (4 * context.resources.displayMetrics.density).toInt()
+                    val params = ViewGroup.MarginLayoutParams(size, size)
+                    params.setMargins(margin, margin, margin, margin)
+                    imageView.layoutParams = params
+                    imageView.scaleType = ImageView.ScaleType.CENTER_CROP
 
-        val basePath = context.getExternalFilesDir(null)
-        if (library != null && basePath != null) {
-            val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
-            val imageView = ImageView(context)
-            val size = (100 * context.resources.displayMetrics.density).toInt()
-            val margin = (4 * context.resources.displayMetrics.density).toInt()
-            val params = ViewGroup.MarginLayoutParams(size, size)
-            params.setMargins(margin, margin, margin, margin)
-            imageView.layoutParams = params
-            imageView.scaleType = ImageView.ScaleType.CENTER_CROP
+                    val request = Glide.with(context)
+                    val isGif = library.resourceLocalAddress?.lowercase(Locale.getDefault())?.endsWith(".gif") == true
+                    val target = if (isGif) {
+                        request.asGif().load(imageFile)
+                    } else {
+                        request.load(imageFile)
+                    }
+                    target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().placeholder(R.drawable.ic_loading)
+                        .error(R.drawable.ic_loading)
+                        .into(imageView)
 
-            val request = Glide.with(context)
-            val isGif = library.resourceLocalAddress?.lowercase(Locale.getDefault())?.endsWith(".gif") == true
-            val target = if (isGif) {
-                request.asGif().load(imageFile)
-            } else {
-                request.load(imageFile)
+                    imageView.setOnClickListener {
+                        showZoomableImage(context, imageFile.toString())
+                    }
+
+                    binding.llNewsImages.addView(imageView)
+                }
             }
-            target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().placeholder(R.drawable.ic_loading)
-                .error(R.drawable.ic_loading)
-                .into(imageView)
-
-            imageView.setOnClickListener {
-                showZoomableImage(context, imageFile.toString())
-            }
-
-            binding.llNewsImages.addView(imageView)
         }
     }
 
