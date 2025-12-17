@@ -311,7 +311,6 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
             .setMessage(R.string.confirm_exit)
             .setPositiveButton(R.string.yes) { _, _ ->
                 viewModel.leaveTeam(team._id!!, user?.id)
-                adapterTeamList.syncTeamActivities()
             }
             .setNegativeButton(R.string.no, null)
             .show()
