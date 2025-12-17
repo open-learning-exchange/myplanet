@@ -41,7 +41,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNewsBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.ChatMessage
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -49,6 +48,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.NewsRepository
+import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
@@ -64,7 +64,7 @@ import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.makeExpandable
 
-class AdapterNews(var context: Context, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userProfileDbHandler: UserProfileDbHandler, private val databaseService: DatabaseService, private val scope: CoroutineScope, private val userRepository: UserRepository, private val newsRepository: NewsRepository) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
+class AdapterNews(var context: Context, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userProfileDbHandler: UserProfileDbHandler, private val scope: CoroutineScope, private val userRepository: UserRepository, private val newsRepository: NewsRepository, private val teamRepository: TeamRepository) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem ->
             if (oldItem === newItem) return@itemCallback true
@@ -126,19 +126,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         }
         scope.launch {
             val isLeader = withTimeoutOrNull(2000) {
-                withContext(Dispatchers.IO) {
-                    try {
-                        databaseService.withRealm { realm ->
-                            val team = realm.where(RealmMyTeam::class.java)
-                                .equalTo("teamId", teamId)
-                                .equalTo("isLeader", true)
-                                .findFirst()
-                            team?.userId == currentUser?._id
-                        }
-                    } catch (e: Exception) {
-                        false
-                    }
-                }
+                teamRepository.isTeamLeader(teamId, currentUser?._id)
             }
             _isTeamLeader = isLeader
         }
@@ -508,13 +496,11 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
                     .equalTo("replyTo", finalNews?.id, Case.INSENSITIVE)
                     .findAll()
             } else {
-                databaseService.withRealm { realm ->
-                    realm.where(RealmNews::class.java)
-                        .sort("time", Sort.DESCENDING)
-                        .equalTo("replyTo", finalNews?.id, Case.INSENSITIVE)
-                        .findAll()
-                        .let { realm.copyFromRealm(it) }
+                var replies: List<RealmNews> = emptyList()
+                scope.launch {
+                    replies = newsRepository.getReplies(finalNews?.id)
                 }
+                return replies
             }
         } catch (e: Exception) {
             emptyList()

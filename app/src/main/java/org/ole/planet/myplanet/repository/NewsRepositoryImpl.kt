@@ -230,4 +230,14 @@ class NewsRepositoryImpl @Inject constructor(
             realm.copyFromRealm(query.findAll())
         }
     }
+
+    override suspend fun getReplies(newsId: String?): List<RealmNews> {
+        return withRealm { realm ->
+            realm.where(RealmNews::class.java)
+                .sort("time", Sort.DESCENDING)
+                .equalTo("replyTo", newsId, Case.INSENSITIVE)
+                .findAll()
+                .let { realm.copyFromRealm(it) }
+        }
+    }
 }
