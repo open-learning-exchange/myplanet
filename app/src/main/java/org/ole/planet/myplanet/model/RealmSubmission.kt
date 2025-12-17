@@ -4,7 +4,6 @@ import android.content.Context
 import android.text.TextUtils
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
@@ -224,17 +223,6 @@ open class RealmSubmission : RealmObject() {
                 submission = mRealm.createObject(RealmSubmission::class.java, UUID.randomUUID().toString())
             submission!!.lastUpdateTime = Date().time
             return submission
-        }
-
-        @JvmStatic
-        fun getNoOfSurveySubmissionByUser(userId: String?, mRealm: Realm): Int {
-            if (userId == null) return 0
-
-            return mRealm.where(RealmSubmission::class.java)
-                .equalTo("userId", userId)
-                .equalTo("type", "survey")
-                .equalTo("status", "pending", Case.INSENSITIVE)
-                .count().toInt()
         }
 
         @JvmStatic
