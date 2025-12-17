@@ -1177,6 +1177,6 @@
     <string name="achievement_saved">Achievement Updated</string>
     <string name="team_name_already_exists">A team with this name already exists</string>
     <string name="enterprise_name_already_exists">An enterprise with this name already exists</string>
-    <string name="app_theme">App theme</string>
+    <string name="app_theme">app theme</string>
 
 </resources>
