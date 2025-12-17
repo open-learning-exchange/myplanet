@@ -200,13 +200,13 @@ class NotificationsFragment : Fragment() {
     }
 
     private fun refreshUnreadCountCache() {
-        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-            val count = notificationRepository.getUnreadCount(userId)
-            withContext(Dispatchers.Main) {
-                unreadCountCache = count
-                updateMarkAllAsReadButtonVisibility()
-                updateUnreadCount()
+        viewLifecycleOwner.lifecycleScope.launch {
+            val count = withContext(Dispatchers.IO) {
+                notificationRepository.getUnreadCount(userId)
             }
+            unreadCountCache = count
+            updateMarkAllAsReadButtonVisibility()
+            updateUnreadCount()
         }
     }
 
