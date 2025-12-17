@@ -84,6 +84,7 @@ class TeamViewModel @Inject constructor(
     fun requestToJoin(teamId: String, userId: String?, userPlanetCode: String?, teamType: String?) {
         viewModelScope.launch {
             teamRepository.requestToJoin(teamId, userId, userPlanetCode, teamType)
+            teamRepository.syncTeamActivities()
             prepareTeamData(currentTeams, userId)
         }
     }
@@ -91,6 +92,7 @@ class TeamViewModel @Inject constructor(
     fun leaveTeam(teamId: String, userId: String?) {
         viewModelScope.launch {
             teamRepository.leaveTeam(teamId, userId)
+            teamRepository.syncTeamActivities()
             prepareTeamData(currentTeams, userId)
         }
     }
