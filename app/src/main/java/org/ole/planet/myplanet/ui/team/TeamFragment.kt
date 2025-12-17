@@ -213,9 +213,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
         adapterTeamList = AdapterTeamList(
             requireActivity(),
             childFragmentManager,
-            teamRepository,
             user,
-            viewLifecycleOwner.lifecycleScope,
             sharedPrefManager
         ).apply {
             setType(type)
