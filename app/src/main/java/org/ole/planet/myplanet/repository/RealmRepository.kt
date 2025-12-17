@@ -50,11 +50,13 @@ open class RealmRepository(protected val databaseService: DatabaseService) {
     protected suspend fun <T : RealmObject> queryListFlow(
         clazz: Class<T>,
         builder: RealmQuery<T>.() -> Unit = {},
-    ): Flow<List<T>> = channelFlow {
+    ): Flow<List<T>> = callbackFlow {
+        val realm = Realm.getDefaultInstance()
+        val results = realm.where(clazz).apply(builder).findAllAsync()
         val listener = RealmChangeListener<RealmResults<T>> {
             if (it.isLoaded && it.isValid) {
                 val frozenResults = it.freeze()
-                launch {
+                launch(databaseService.ioDispatcher) {
                     val copiedList = databaseService.withRealmAsync { bgRealm ->
                         bgRealm.copyFromRealm(frozenResults)
                     }
@@ -62,23 +64,15 @@ open class RealmRepository(protected val databaseService: DatabaseService) {
                 }
             }
         }
-
-        val (realm, results) = withContext(Dispatchers.Main.immediate) {
-            val realm = Realm.getDefaultInstance()
-            val results = realm.where(clazz).apply(builder).findAllAsync()
-            results.addChangeListener(listener)
-            realm to results
-        }
+        results.addChangeListener(listener)
 
         awaitClose {
-            launch(Dispatchers.Main.immediate) {
-                if (!realm.isClosed) {
-                    results.removeChangeListener(listener)
-                    realm.close()
-                }
+            if (!realm.isClosed) {
+                results.removeChangeListener(listener)
+                realm.close()
             }
         }
-    }.flowOn(databaseService.ioDispatcher)
+    }.flowOn(Dispatchers.Main.immediate)
 
     protected suspend fun <T : RealmObject, V : Any> findByField(
         clazz: Class<T>,

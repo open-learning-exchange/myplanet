@@ -357,6 +357,8 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     override fun showUserResourceDialog() {
+        viewModel.loadUsers()
+
         val alertHealthListBinding = AlertHealthListBinding.inflate(LayoutInflater.from(activity))
         alertHealthListBinding.etSearch.visibility = View.GONE
         alertHealthListBinding.spnSort.visibility = View.GONE
@@ -375,20 +377,27 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             .create()
 
         val job = viewLifecycleOwner.lifecycleScope.launch {
-            val userModelList = viewModel.getUsersSortedByDate()
-            if (dialog.isShowing) {
-                val adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, userModelList)
-                alertHealthListBinding.list.adapter = adapter
-                alertHealthListBinding.list.onItemClickListener = AdapterView.OnItemClickListener { _, _, i, _ ->
-                    val selected = alertHealthListBinding.list.adapter.getItem(i) as RealmUserModel
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        val libraryList = libraryRepository.getLibraryListForUser(selected._id)
-                        showDownloadDialog(libraryList)
+            viewModel.uiState.collect {
+                if (dialog.isShowing) {
+                    if (it.users.isNotEmpty()) {
+                        val adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, it.users)
+                        alertHealthListBinding.list.adapter = adapter
+                        alertHealthListBinding.list.onItemClickListener = AdapterView.OnItemClickListener { _, _, i, _ ->
+                            val selected = alertHealthListBinding.list.adapter.getItem(i) as RealmUserModel
+                            selected._id?.let { userId ->
+                                viewLifecycleOwner.lifecycleScope.launch {
+                                    val libraryList = viewModel.getLibraryForSelectedUser(userId)
+                                    showDownloadDialog(libraryList)
+                                }
+                            }
+                            dialog.dismiss()
+                        }
+                        alertHealthListBinding.list.visibility = View.VISIBLE
+                    } else {
+                        alertHealthListBinding.list.visibility = View.GONE
                     }
-                    dialog.dismiss()
+                    alertHealthListBinding.loading.visibility = View.GONE
                 }
-                alertHealthListBinding.loading.visibility = View.GONE
-                alertHealthListBinding.list.visibility = View.VISIBLE
             }
         }
 
