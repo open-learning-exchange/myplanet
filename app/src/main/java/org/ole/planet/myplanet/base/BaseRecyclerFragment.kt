@@ -37,7 +37,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     var languages: MutableSet<String> = mutableSetOf()
     var mediums: MutableSet<String> = mutableSetOf()
     var levels: MutableSet<String> = mutableSetOf()
-    var selectedItems: MutableList<LI>? = null
+    var selectedItems: MutableList<LI> = mutableListOf()
     var gradeLevel = ""
     var subjectLevel = ""
     lateinit var recyclerView: RecyclerView
