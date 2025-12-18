@@ -18,7 +18,7 @@ import org.ole.planet.myplanet.repository.CourseRepository
 import org.ole.planet.myplanet.repository.NewsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.SurveyRepository
-import org.ole.planet.myplanet.repository.UserChallengeRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.ui.courses.MyProgressFragment
 import org.ole.planet.myplanet.utilities.MarkdownDialog
 
@@ -32,7 +32,7 @@ class ChallengeHelper(
     private val courseRepository: CourseRepository,
     private val newsRepository: NewsRepository,
     private val surveyRepository: SurveyRepository,
-    private val userChallengeRepository: UserChallengeRepository
+    private val userRepository: UserRepository
 ) {
     private val fragmentManager: FragmentManager
         get() = activity.supportFragmentManager
@@ -99,7 +99,7 @@ class ChallengeHelper(
         activity.lifecycleScope.launch {
             val voiceTaskDone = if (voiceCount >= 5) "✅" else "[ ]"
             val prereqsMet = courseStatus.contains("terminado", ignoreCase = true) && voiceCount >= 5
-            val hasValidSync = if (prereqsMet) userChallengeRepository.hasValidSync(user?.id) else false
+            val hasValidSync = if (prereqsMet) userRepository.hasValidSync(user?.id) else false
             val syncTaskDone = if (prereqsMet) {
                 if (hasValidSync) "✅" else "[ ]"
             } else "[ ]"

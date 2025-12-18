@@ -368,4 +368,13 @@ class UserRepositoryImpl @Inject constructor(
         }
         HealthRecord(mh, mm, list, userMap)
     }
+
+    override suspend fun hasValidSync(userId: String?): Boolean {
+        return withRealm { realm ->
+            realm.where(org.ole.planet.myplanet.model.RealmUserChallengeActions::class.java)
+                .equalTo("userId", userId)
+                .equalTo("actionType", "sync")
+                .count() > 0
+        }
+    }
 }

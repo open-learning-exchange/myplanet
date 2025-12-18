@@ -111,8 +111,4 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindUserRepository(impl: UserRepositoryImpl): UserRepository
-
-    @Binds
-    @Singleton
-    abstract fun bindUserChallengeRepository(impl: UserChallengeRepositoryImpl): UserChallengeRepository
 }

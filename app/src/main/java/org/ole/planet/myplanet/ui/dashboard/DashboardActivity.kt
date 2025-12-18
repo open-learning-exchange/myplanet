@@ -76,7 +76,6 @@ import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.SurveyRepository
 import org.ole.planet.myplanet.repository.TeamRepository
-import org.ole.planet.myplanet.repository.UserChallengeRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.SettingActivity
@@ -136,10 +135,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     lateinit var newsRepository: NewsRepository
     @Inject
     lateinit var surveyRepository: SurveyRepository
-    @Inject
-    lateinit var userChallengeRepository: UserChallengeRepository
     private val challengeHelper: ChallengeHelper by lazy {
-        ChallengeHelper(this, user, settings, editor, dashboardViewModel, progressRepository, courseRepository, newsRepository, surveyRepository, userChallengeRepository)
+        ChallengeHelper(this, user, settings, editor, dashboardViewModel, progressRepository, courseRepository, newsRepository, surveyRepository, userRepository)
     }
     private lateinit var notificationManager: NotificationUtils.NotificationManager
     private var notificationsShownThisSession = false
