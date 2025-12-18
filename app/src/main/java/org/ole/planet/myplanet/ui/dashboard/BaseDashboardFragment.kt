@@ -438,10 +438,12 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     override fun syncKeyId() {
-        if (model?.getRoleAsString()?.contains("health") == true) {
-            settings?.let { transactionSyncManager.syncAllHealthData(realm, it, this) }
-        } else {
-            settings?.let { transactionSyncManager.syncKeyIv(realm, it, this, profileDbHandler) }
+        viewLifecycleOwner.lifecycleScope.launch {
+            if (model?.getRoleAsString()?.contains("health") == true) {
+                settings?.let { transactionSyncManager.syncAllHealthData(it, this@BaseDashboardFragment) }
+            } else {
+                settings?.let { transactionSyncManager.syncKeyIv(it, this@BaseDashboardFragment, profileDbHandler) }
+            }
         }
     }
 
