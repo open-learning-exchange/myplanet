@@ -133,26 +133,6 @@ class Service @Inject constructor(
         }
     }
 
-    suspend fun checkCheckSum(path: String?): Boolean = withContext(Dispatchers.IO) {
-        try {
-            val response = retrofitInterface.getChecksum(UrlUtils.getChecksumUrl(preferences)).execute()
-            if (response.isSuccessful) {
-                val checksum = response.body()?.string()
-                if (!checksum.isNullOrEmpty()) {
-                    val f = FileUtils.getSDPathFromUrl(context, path)
-                    if (f.exists()) {
-                        val sha256 = Sha256Utils().getCheckSumFromFile(f)
-                        return@withContext checksum.contains(sha256)
-                    }
-                }
-            }
-            false
-        } catch (e: IOException) {
-            e.printStackTrace()
-            false
-        }
-    }
-
     @Deprecated("Use ConfigurationRepository.checkVersion instead")
     fun checkVersion(callback: CheckVersionCallback, settings: SharedPreferences) {
         if (shouldPromptForSettings(settings)) return
