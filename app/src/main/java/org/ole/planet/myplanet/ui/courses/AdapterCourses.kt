@@ -56,7 +56,6 @@ class AdapterCourses(
     private var areAllSelected = false
 
     companion object {
-        private const val TAG_PAYLOAD = "payload_tags"
         private const val RATING_PAYLOAD = "payload_rating"
         private const val PROGRESS_PAYLOAD = "payload_progress"
     }
@@ -357,17 +356,11 @@ class AdapterCourses(
             return
         }
 
-        val hasTagPayload = payloads.any { it == TAG_PAYLOAD }
         val bundle = payloads.filterIsInstance<Bundle>().fold(Bundle()) { acc, b -> acc.apply { putAll(b) } }
         val hasRatingPayload = bundle.containsKey(RATING_PAYLOAD)
         val hasProgressPayload = bundle.containsKey(PROGRESS_PAYLOAD)
 
-        if (hasTagPayload || hasRatingPayload || hasProgressPayload) {
-            if (hasTagPayload) {
-                val courseId = courseList.getOrNull(position)?.id ?: return
-                val tags = tagCache[courseId].orEmpty()
-                renderTagCloud(holder.rowCourseBinding.flexboxDrawable, tags)
-            }
+        if (hasRatingPayload || hasProgressPayload) {
             if (hasRatingPayload) {
                 updateRatingViews(holder, position)
             }
