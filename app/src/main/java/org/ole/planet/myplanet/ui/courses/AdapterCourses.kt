@@ -18,6 +18,9 @@ import com.google.android.flexbox.FlexboxLayout
 import com.google.gson.JsonObject
 import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -43,10 +46,12 @@ class AdapterCourses(
     private var courseList: List<RealmMyCourse?>,
     private val map: HashMap<String?, JsonObject>,
     private var userModel: RealmUserModel?,
-    private val tagRepository: TagRepository
+    private val tagRepository: TagRepository,
+    private val scope: CoroutineScope
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private val selectedItems: MutableList<RealmMyCourse?> = ArrayList()
     private var listener: OnCourseItemSelected? = null
+    private var diffJob: Job? = null
     private var homeItemClickListener: OnHomeItemClickListener? = null
     private var progressMap: HashMap<String?, JsonObject>? = null
     private var ratingChangeListener: OnRatingChangeListener? = null
@@ -83,48 +88,56 @@ class AdapterCourses(
         newMap: HashMap<String?, JsonObject>? = null,
         newProgressMap: HashMap<String?, JsonObject>? = null
     ) {
-        val oldMap = HashMap(map)
-        val oldProgressMap = progressMap?.let { HashMap(it) }
-        val currentMap = newMap ?: map
-        val currentProgressMap = newProgressMap ?: progressMap
+        diffJob?.cancel()
+        diffJob = scope.launch {
+            val oldMap = HashMap(map)
+            val oldProgressMap = progressMap?.let { HashMap(it) }
+            val currentMap = newMap ?: map
+            val currentProgressMap = newProgressMap ?: progressMap
+            val oldList = ArrayList(courseList)
 
-        val diffResult = DiffUtils.calculateDiff(
-            courseList,
-            newList,
-            areItemsTheSame = { old, new -> old?.id == new?.id },
-            areContentsTheSame = { old, new ->
-                val ratingSame = oldMap[old?.courseId] == currentMap[new?.courseId]
-                val progressSame = oldProgressMap?.get(old?.courseId) == currentProgressMap?.get(new?.courseId)
+            val diffResult = withContext(Dispatchers.Default) {
+                DiffUtils.calculateDiff(
+                    oldList,
+                    newList,
+                    areItemsTheSame = { old, new -> old?.id == new?.id },
+                    areContentsTheSame = { old, new ->
+                        val ratingSame = oldMap[old?.courseId] == currentMap[new?.courseId]
+                        val progressSame = oldProgressMap?.get(old?.courseId) == currentProgressMap?.get(new?.courseId)
 
-                old?.courseTitle == new?.courseTitle &&
-                        old?.description == new?.description &&
-                        old?.gradeLevel == new?.gradeLevel &&
-                        old?.subjectLevel == new?.subjectLevel &&
-                        old?.createdDate == new?.createdDate &&
-                        old?.isMyCourse == new?.isMyCourse &&
-                        old?.getNumberOfSteps() == new?.getNumberOfSteps() &&
-                        ratingSame &&
-                        progressSame
-            },
-            getChangePayload = { old, new ->
-                val bundle = Bundle()
-                if (oldMap[old?.courseId] != currentMap[new?.courseId]) {
-                    bundle.putBoolean(RATING_PAYLOAD, true)
-                }
-                if (oldProgressMap?.get(old?.courseId) != currentProgressMap?.get(new?.courseId)) {
-                    bundle.putBoolean(PROGRESS_PAYLOAD, true)
-                }
-                if (bundle.isEmpty) null else bundle
+                        old?.courseTitle == new?.courseTitle &&
+                                old?.description == new?.description &&
+                                old?.gradeLevel == new?.gradeLevel &&
+                                old?.subjectLevel == new?.subjectLevel &&
+                                old?.createdDate == new?.createdDate &&
+                                old?.isMyCourse == new?.isMyCourse &&
+                                old?.getNumberOfSteps() == new?.getNumberOfSteps() &&
+                                ratingSame &&
+                                progressSame
+                    },
+                    getChangePayload = { old, new ->
+                        val bundle = Bundle()
+                        if (oldMap[old?.courseId] != currentMap[new?.courseId]) {
+                            bundle.putBoolean(RATING_PAYLOAD, true)
+                        }
+                        if (oldProgressMap?.get(old?.courseId) != currentProgressMap?.get(new?.courseId)) {
+                            bundle.putBoolean(PROGRESS_PAYLOAD, true)
+                        }
+                        if (bundle.isEmpty) null else bundle
+                    }
+                )
             }
-        )
 
-        courseList = newList
-        newMap?.let {
-            map.clear()
-            map.putAll(it)
+            withContext(Dispatchers.Main) {
+                courseList = newList
+                newMap?.let {
+                    map.clear()
+                    map.putAll(it)
+                }
+                this@AdapterCourses.progressMap = newProgressMap ?: this@AdapterCourses.progressMap
+                diffResult.dispatchUpdatesTo(this@AdapterCourses)
+            }
         }
-        this.progressMap = newProgressMap ?: this.progressMap
-        diffResult.dispatchUpdatesTo(this)
     }
 
     fun setCourseList(courseList: List<RealmMyCourse?>) {

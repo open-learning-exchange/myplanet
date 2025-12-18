@@ -206,7 +206,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     sortedCourseList,
                     map,
                     userModel,
-                    tagRepository
+                    tagRepository,
+                    viewLifecycleOwner.lifecycleScope
                 )
                 adapterCourses.setProgressMap(progressMap)
                 adapterCourses.setListener(this@CoursesFragment)
@@ -227,7 +228,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             emptyList(),
             HashMap<String?, JsonObject>(),
             userModel,
-            tagRepository
+            tagRepository,
+            viewLifecycleOwner.lifecycleScope
         )
         adapterCourses.setProgressMap(HashMap<String?, JsonObject>())
         adapterCourses.setListener(this@CoursesFragment)
