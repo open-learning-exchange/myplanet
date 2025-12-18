@@ -183,11 +183,16 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         val flexboxLayout = view?.findViewById<FlexboxLayout>(R.id.flexboxLayout)
         flexboxLayout?.removeAllViews()
         flexboxLayout?.flexDirection = FlexDirection.ROW
-        if (dbMylibrary.isEmpty()) {
-            view?.findViewById<TextView>(R.id.count_library)?.visibility = View.GONE
-        } else {
-            view?.findViewById<TextView>(R.id.count_library)?.text =
-                getString(R.string.number_placeholder, dbMylibrary.size)
+        viewLifecycleOwner.lifecycleScope.launch {
+            val libraryCount = withContext(Dispatchers.IO) { dbMylibrary.size }
+            withContext(Dispatchers.Main) {
+                if (libraryCount == 0) {
+                    view?.findViewById<TextView>(R.id.count_library)?.visibility = View.GONE
+                } else {
+                    view?.findViewById<TextView>(R.id.count_library)?.text =
+                        getString(R.string.number_placeholder, libraryCount)
+                }
+            }
         }
         for ((itemCnt, items) in dbMylibrary.withIndex()) {
             val itemLibraryHomeBinding =
@@ -217,7 +222,12 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         val flexboxLayout: FlexboxLayout = view?.findViewById(R.id.flexboxLayoutCourse) ?: return
         flexboxLayout.removeAllViews()
         val filteredCourses = courses.filter { !it.courseTitle.isNullOrBlank() }
-        setCountText(filteredCourses.size, RealmMyCourse::class.java, requireView())
+        viewLifecycleOwner.lifecycleScope.launch {
+            val courseCount = withContext(Dispatchers.IO) { filteredCourses.size }
+            withContext(Dispatchers.Main) {
+                setCountText(courseCount, RealmMyCourse::class.java, requireView())
+            }
+        }
         val myCoursesTextViewArray = arrayOfNulls<TextView>(filteredCourses.size)
         for ((itemCnt, items) in filteredCourses.withIndex()) {
             setTextViewProperties(myCoursesTextViewArray, itemCnt, items)
@@ -242,7 +252,12 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             v.tag = ob._id
             flexboxLayout.addView(v, params)
         }
-        setCountText(teams.size, RealmMyTeam::class.java, requireView())
+        viewLifecycleOwner.lifecycleScope.launch {
+            val teamCount = withContext(Dispatchers.IO) { teams.size }
+            withContext(Dispatchers.Main) {
+                setCountText(teamCount, RealmMyTeam::class.java, requireView())
+            }
+        }
 
         val userId = profileDbHandler.userModel?.id
         val teamIds = teams.mapNotNull { it._id }
