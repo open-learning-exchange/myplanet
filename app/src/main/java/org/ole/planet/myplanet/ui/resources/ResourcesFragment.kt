@@ -92,9 +92,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     lateinit var tagRepository: TagRepository
 
     @Inject
-    lateinit var libraryRepository: LibraryRepository
-
-    @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
