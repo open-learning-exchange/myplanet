@@ -28,7 +28,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.NotificationCallback
 import org.ole.planet.myplanet.callback.SyncListener
@@ -41,6 +40,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.TeamNotificationInfo
+import org.ole.planet.myplanet.repository.DashboardRepository
 import org.ole.planet.myplanet.service.TransactionSyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_LOGIN
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
@@ -63,10 +63,12 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     private var fullName: String? = null
     private var params = LinearLayout.LayoutParams(250, 100)
     private var di: DialogUtils.CustomProgressDialog? = null
-    private lateinit var offlineActivitiesResults: RealmResults<RealmOfflineActivity>
 
     @Inject
     lateinit var transactionSyncManager: TransactionSyncManager
+
+    @Inject
+    lateinit var dashboardRepository: DashboardRepository
 
     fun onLoaded(v: View) {
         viewLifecycleOwner.lifecycleScope.launch {
@@ -101,16 +103,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
                 imageView.setImageResource(R.drawable.profile)
             }
 
-            if (isRealmInitialized() && mRealm.isInTransaction) {
-                mRealm.commitTransaction()
-            }
-
-            if (isRealmInitialized()) {
-                offlineActivitiesResults = mRealm.where(RealmOfflineActivity::class.java)
-                    .equalTo("userName", model?.name)
-                    .equalTo("type", KEY_LOGIN)
-                    .findAllAsync()
-            }
             v.findViewById<TextView>(R.id.txtRole).text =
                 getString(R.string.user_role, model?.getRoleAsString())
             val offlineVisits = profileDbHandler.offlineVisits
@@ -275,14 +267,12 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
     private suspend fun myLifeListInit(flexboxLayout: FlexboxLayout) {
         val user = profileDbHandler.userModel
+        val dbMylife = settings?.let { dashboardRepository.getMyLife(user?.id.toString(), it) }
 
-        val dbMylife = databaseService.withRealmAsync { realmInstance ->
-            val rawMylife: List<RealmMyLife> = RealmMyLife.getMyLifeByUserId(realmInstance, settings)
-            rawMylife.filter { it.isVisible }.map { realmInstance.copyFromRealm(it) }
-        }
-
-        for ((itemCnt, items) in dbMylife.withIndex()) {
-            flexboxLayout.addView(getLayout(itemCnt, items, 0), params)
+        if (dbMylife != null) {
+            for ((itemCnt, items) in dbMylife.withIndex()) {
+                flexboxLayout.addView(getLayout(itemCnt, items, 0), params)
+            }
         }
 
         val surveyCount = viewModel.getSurveySubmissionCount(user?.id)
@@ -294,23 +284,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     private suspend fun setUpMyLife(userId: String?) {
-        databaseService.executeTransactionAsync { realm ->
-            val realmObjects = RealmMyLife.getMyLifeByUserId(realm, settings)
-            if (realmObjects.isEmpty()) {
-                val myLifeListBase = getMyLifeListBase(userId)
-                var ml: RealmMyLife
-                var weight = 1
-                for (item in myLifeListBase) {
-                    ml = realm.createObject(RealmMyLife::class.java, UUID.randomUUID().toString())
-                    ml.title = item.title
-                    ml.imageId = item.imageId
-                    ml.weight = weight
-                    ml.userId = item.userId
-                    ml.isVisible = true
-                    weight++
-                }
-            }
-        }
+        settings?.let { dashboardRepository.setUpMyLife(userId, it) }
     }
 
     private fun myLibraryItemClickAction(textView: TextView, items: RealmMyLibrary?) {
@@ -322,13 +296,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     override fun onDestroy() {
-        if (isRealmInitialized()) {
-            mRealm.removeAllChangeListeners()
-            if (mRealm.isInTransaction) {
-                mRealm.cancelTransaction()
-            }
-            mRealm.close()
-        }
         super.onDestroy()
     }
 
@@ -373,18 +340,15 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             launch { setUpMyLife(userId) }
             launch { myLifeListInit(myLifeFlex) }
         }
-
-
-        if (isRealmInitialized() && mRealm.isInTransaction) {
-            mRealm.commitTransaction()
-        }
     }
 
     override fun showResourceDownloadDialog() {
         viewLifecycleOwner.lifecycleScope.launch {
             val userId = settings?.getString("userId", "--")
-            val libraryList = libraryRepository.getLibraryListForUser(userId)
-            showDownloadDialog(libraryList)
+            val libraryList = userId?.let { dashboardRepository.getMyLibrary(it) }
+            if (libraryList != null) {
+                showDownloadDialog(libraryList)
+            }
         }
     }
 

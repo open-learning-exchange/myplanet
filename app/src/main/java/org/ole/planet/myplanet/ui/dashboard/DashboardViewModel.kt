@@ -22,12 +22,10 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTeamNotification
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.TeamNotificationInfo
-import org.ole.planet.myplanet.repository.CourseRepository
-import org.ole.planet.myplanet.repository.LibraryRepository
+import org.ole.planet.myplanet.repository.DashboardRepository
 import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.SurveyRepository
-import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.repository.UserRepository
 
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -43,9 +41,7 @@ data class DashboardUiState(
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     private val userRepository: UserRepository,
-    private val libraryRepository: LibraryRepository,
-    private val courseRepository: CourseRepository,
-    private val teamRepository: TeamRepository,
+    private val dashboardRepository: DashboardRepository,
     private val submissionRepository: SubmissionRepository,
     private val notificationRepository: NotificationRepository,
     private val surveyRepository: SurveyRepository,
@@ -73,7 +69,7 @@ class DashboardViewModel @Inject constructor(
     }
 
     suspend fun updateResourceNotification(userId: String?) {
-        val resourceCount = libraryRepository.countLibrariesNeedingUpdate(userId)
+        val resourceCount = dashboardRepository.countLibrariesNeedingUpdate(userId)
         notificationRepository.updateResourceNotification(userId, resourceCount)
     }
 
@@ -115,17 +111,17 @@ class DashboardViewModel @Inject constructor(
         userContentJob?.cancel()
         userContentJob = viewModelScope.launch {
             val libraryDeferred = async {
-                libraryRepository.getMyLibrary(userId)
+                dashboardRepository.getMyLibrary(userId)
             }
 
             val coursesFlowJob = launch {
-                courseRepository.getMyCoursesFlow(userId).collect { courses ->
+                dashboardRepository.getMyCoursesFlow(userId).collect { courses ->
                     _uiState.update { it.copy(courses = courses) }
                 }
             }
 
             val teamsFlowJob = launch {
-                teamRepository.getMyTeamsFlow(userId).collect { teams ->
+                dashboardRepository.getMyTeamsFlow(userId).collect { teams ->
                     _uiState.update { it.copy(teams = teams) }
                 }
             }
@@ -136,7 +132,7 @@ class DashboardViewModel @Inject constructor(
     }
 
     suspend fun getLibraryForSelectedUser(userId: String): List<RealmMyLibrary> {
-        return libraryRepository.getLibraryForSelectedUser(userId)
+        return dashboardRepository.getMyLibrary(userId)
     }
 
     fun loadUsers() {
