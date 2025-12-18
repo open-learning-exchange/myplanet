@@ -25,7 +25,7 @@ import org.ole.planet.myplanet.callback.OnCourseItemSelected
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.RowCourseBinding
-import org.ole.planet.myplanet.model.RealmMyCourse
+import org.ole.planet.myplanet.model.dto.CourseItem
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TagRepository
@@ -40,12 +40,12 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 class AdapterCourses(
     private val context: Context,
-    private var courseList: List<RealmMyCourse?>,
+    private var courseList: List<CourseItem?>,
     private val map: HashMap<String?, JsonObject>,
     private var userModel: RealmUserModel?,
     private val tagRepository: TagRepository
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-    private val selectedItems: MutableList<RealmMyCourse?> = ArrayList()
+    private val selectedItems: MutableList<CourseItem?> = ArrayList()
     private var listener: OnCourseItemSelected? = null
     private var homeItemClickListener: OnHomeItemClickListener? = null
     private var progressMap: HashMap<String?, JsonObject>? = null
@@ -74,12 +74,12 @@ class AdapterCourses(
         this.ratingChangeListener = ratingChangeListener
     }
 
-    fun getCourseList(): List<RealmMyCourse?> {
+    fun getCourseList(): List<CourseItem?> {
         return courseList
     }
 
     private fun dispatchDiff(
-        newList: List<RealmMyCourse?>,
+        newList: List<CourseItem?>,
         newMap: HashMap<String?, JsonObject>? = null,
         newProgressMap: HashMap<String?, JsonObject>? = null
     ) {
@@ -102,7 +102,7 @@ class AdapterCourses(
                         old?.subjectLevel == new?.subjectLevel &&
                         old?.createdDate == new?.createdDate &&
                         old?.isMyCourse == new?.isMyCourse &&
-                        old?.getNumberOfSteps() == new?.getNumberOfSteps() &&
+                        old?.numberOfSteps == new?.numberOfSteps &&
                         ratingSame &&
                         progressSame
             },
@@ -127,21 +127,21 @@ class AdapterCourses(
         diffResult.dispatchUpdatesTo(this)
     }
 
-    fun setCourseList(courseList: List<RealmMyCourse?>) {
+    fun setCourseList(courseList: List<CourseItem?>) {
         if (this.courseList === courseList) return
         dispatchDiff(courseList, null, null)
     }
 
     fun updateData(
-        newCourseList: List<RealmMyCourse?>,
+        newCourseList: List<CourseItem?>,
         newMap: HashMap<String?, JsonObject>,
         newProgressMap: HashMap<String?, JsonObject>?
     ) {
         dispatchDiff(newCourseList, newMap, newProgressMap)
     }
 
-    private fun sortCourseListByTitle(list: List<RealmMyCourse?>): List<RealmMyCourse?> {
-        return list.sortedWith { course1: RealmMyCourse?, course2: RealmMyCourse? ->
+    private fun sortCourseListByTitle(list: List<CourseItem?>): List<CourseItem?> {
+        return list.sortedWith { course1: CourseItem?, course2: CourseItem? ->
             if (isTitleAscending) {
                 course1?.courseTitle?.compareTo(course2?.courseTitle ?: "", ignoreCase = true) ?: 0
             } else {
@@ -150,7 +150,7 @@ class AdapterCourses(
         }
     }
 
-    private fun sortCourseList(list: List<RealmMyCourse?>): List<RealmMyCourse?> {
+    private fun sortCourseList(list: List<CourseItem?>): List<CourseItem?> {
         return list.sortedWith { course1, course2 ->
             if (isAscending) {
                 course1?.createdDate?.compareTo(course2?.createdDate ?: 0) ?: 0
@@ -209,7 +209,7 @@ class AdapterCourses(
             holder.rowCourseBinding.subjectLevel,
             context.getString(R.string.subject_level_colon)
         )
-        holder.rowCourseBinding.courseProgress.max = course.getNumberOfSteps()
+        holder.rowCourseBinding.courseProgress.max = course.numberOfSteps
         displayTagCloud(holder, position)
 
         val isGuest = userModel?.isGuest() ?: true
@@ -227,7 +227,7 @@ class AdapterCourses(
         }
     }
 
-    private fun updateVisibilityForMyCourse(holder: ViewHoldercourse, course: RealmMyCourse) {
+    private fun updateVisibilityForMyCourse(holder: ViewHoldercourse, course: CourseItem) {
         if (course.isMyCourse) {
             holder.rowCourseBinding.isMyCourse.visibility = View.VISIBLE
             holder.rowCourseBinding.checkbox.visibility = View.GONE
@@ -237,7 +237,7 @@ class AdapterCourses(
         }
     }
 
-    private fun configureDescription(holder: ViewHoldercourse, course: RealmMyCourse, position: Int) {
+    private fun configureDescription(holder: ViewHoldercourse, course: CourseItem, position: Int) {
         holder.rowCourseBinding.description.apply {
             text = course.description
             val markdownContentWithLocalPaths = prependBaseUrlToImages(
@@ -259,7 +259,7 @@ class AdapterCourses(
         }
     }
 
-    private fun configureDateViews(holder: ViewHoldercourse, course: RealmMyCourse) {
+    private fun configureDateViews(holder: ViewHoldercourse, course: CourseItem) {
         if (course.gradeLevel.isNullOrEmpty() && course.subjectLevel.isNullOrEmpty()) {
             holder.rowCourseBinding.holder.visibility = View.VISIBLE
             holder.rowCourseBinding.tvDate2.visibility = View.VISIBLE
@@ -281,7 +281,7 @@ class AdapterCourses(
         }
     }
 
-    private fun setupRatingBar(holder: ViewHoldercourse, course: RealmMyCourse) {
+    private fun setupRatingBar(holder: ViewHoldercourse, course: CourseItem) {
         holder.rowCourseBinding.ratingBar.setOnTouchListener { _: View?, event: MotionEvent ->
             if (event.action == MotionEvent.ACTION_UP) homeItemClickListener?.showRatingDialog(
                 "course",
@@ -293,7 +293,7 @@ class AdapterCourses(
         }
     }
 
-    private fun setupCheckbox(holder: ViewHoldercourse, course: RealmMyCourse, position: Int, isGuest: Boolean) {
+    private fun setupCheckbox(holder: ViewHoldercourse, course: CourseItem, position: Int, isGuest: Boolean) {
         if (!isGuest) {
             if (course.isMyCourse) {
                 holder.rowCourseBinding.checkbox.visibility = View.GONE
@@ -304,7 +304,7 @@ class AdapterCourses(
                     holder.rowCourseBinding.checkbox.contentDescription =
                         context.getString(R.string.select_res_course, course.courseTitle)
                     SelectionUtils.handleCheck((view as CheckBox).isChecked, position, selectedItems, courseList)
-                    listener?.onSelectedListChange(selectedItems)
+                    listener?.onSelectedListChange(selectedItems.mapNotNull { it?.id })
                 }
             }
         } else {
@@ -346,7 +346,7 @@ class AdapterCourses(
             notifyItemChanged(position)
         }
 
-        listener?.onSelectedListChange(selectedItems)
+        listener?.onSelectedListChange(selectedItems.mapNotNull { it?.id })
     }
 
     override fun onBindViewHolder(
@@ -469,11 +469,11 @@ class AdapterCourses(
         }
     }
 
-    private fun openCourse(realmMyCourses: RealmMyCourse?, step: Int) {
+    private fun openCourse(courseItem: CourseItem?, step: Int) {
         if (homeItemClickListener != null) {
             val f: Fragment = TakeCourseFragment()
             val b = Bundle()
-            b.putString("id", realmMyCourses?.courseId)
+            b.putString("id", courseItem?.courseId)
             b.putInt("position", step)
             f.arguments = b
             homeItemClickListener?.openCallFragment(f)

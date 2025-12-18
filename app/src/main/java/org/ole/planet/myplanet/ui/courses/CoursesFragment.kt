@@ -37,6 +37,8 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.callback.TableDataUpdate
 import org.ole.planet.myplanet.callback.TagClickListener
+import org.ole.planet.myplanet.model.dto.CourseItem
+import org.ole.planet.myplanet.model.mappers.toCourseItem
 import org.ole.planet.myplanet.model.RealmCourseProgress.Companion.getCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -200,10 +202,11 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     courseLib = "courses"
                 }
 
+                val courseItemList = sortedCourseList.mapNotNull { it?.toCourseItem() }
                 recyclerView.adapter = null
                 adapterCourses = AdapterCourses(
                     requireActivity(),
-                    sortedCourseList,
+                    courseItemList,
                     map,
                     userModel,
                     tagRepository
@@ -505,7 +508,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 val progress = databaseService.withRealm { realm -> getCourseProgress(realm, model?.id) }
                 Triple(courses, ratings, progress)
             }
-            adapterCourses.updateData(filteredCourses, map, progressMap)
+            val courseItemList = filteredCourses.mapNotNull { it?.toCourseItem() }
+            adapterCourses.updateData(courseItemList, map, progressMap)
             scrollToTop()
             showNoData(tvMessage, adapterCourses.itemCount, "courses")
         }
@@ -552,8 +556,10 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         return builder.create()
     }
 
-    override fun onSelectedListChange(list: MutableList<RealmMyCourse?>) {
-        selectedItems = list
+    override fun onSelectedListChange(list: List<String>) {
+        val selectedIds = list.toTypedArray()
+        val realmCourses = mRealm.where(RealmMyCourse::class.java).`in`("id", selectedIds).findAll()
+        this.selectedItems = mRealm.copyFromRealm(realmCourses)
         changeButtonStatus()
         hideButtons()
     }
@@ -697,7 +703,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     .filterIsInstance<RealmMyCourse?>()
                     .filter { !it?.courseTitle.isNullOrBlank() }
                 val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
-                adapterCourses.updateData(sortedCourseList, map, progressMap)
+                val courseItemList = sortedCourseList.mapNotNull { it?.toCourseItem() }
+                adapterCourses.updateData(courseItemList, map, progressMap)
             } else {
                 recyclerView.adapter = getAdapter()
             }
