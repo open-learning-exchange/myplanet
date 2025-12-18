@@ -5,7 +5,9 @@ import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse
+import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmStepExam
 
@@ -154,6 +156,18 @@ class CourseRepositoryImpl @Inject constructor(
                 .filter { !it.courseTitle.isNullOrBlank() }
                 .sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
             realm.copyFromRealm(sortedList)
+        }
+    }
+
+    override suspend fun getRatings(userId: String?): Map<String?, com.google.gson.JsonObject> {
+        return withRealm { realm ->
+            RealmRating.getRatings(realm, "course", userId)
+        }
+    }
+
+    override suspend fun getCourseProgress(userId: String?): Map<String?, com.google.gson.JsonObject> {
+        return withRealm { realm ->
+            RealmCourseProgress.getCourseProgress(realm, userId)
         }
     }
 }

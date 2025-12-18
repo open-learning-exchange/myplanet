@@ -17,6 +17,7 @@ import android.widget.TextView
 import androidx.appcompat.view.ContextThemeWrapper
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
@@ -27,6 +28,7 @@ import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
@@ -45,7 +47,6 @@ import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmTag.Companion.getTagsArray
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.CourseRepository
 import org.ole.planet.myplanet.repository.TagRepository
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -79,6 +80,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private var isUpdatingSelectAllState = false
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     private var searchTextWatcher: TextWatcher? = null
+    private val courseViewModel: CourseViewModel by viewModels()
 
     @Inject
     lateinit var prefManager: SharedPrefManager
@@ -143,7 +145,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                             withContext(Dispatchers.Main) {
                                 customProgressDialog?.dismiss()
                                 customProgressDialog = null
-                                loadDataAsync()
+                                courseViewModel.setMyCourseLib(isMyCourseLib)
                             }
                         }
                         prefManager.setCoursesSynced(true)
@@ -181,42 +183,31 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
 
-    private fun loadDataAsync() {
-        if (!isAdded || requireActivity().isFinishing) return
-
+    private fun observeCourses() {
         lifecycleScope.launch {
-            try {
-                if (!mRealm.isInTransaction) {
-                    mRealm.refresh()
-                }
-                val map = getRatings(mRealm, "course", model?.id)
-                val progressMap = getCourseProgress(mRealm, model?.id)
-                val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>().filter { !it?.courseTitle.isNullOrBlank() }
-                val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
-
-                if (isMyCourseLib) {
-                    val courseIds = courseList.mapNotNull { it?.id }
-                    resources = courseRepository.getCourseOfflineResources(courseIds)
-                    courseLib = "courses"
+            courseViewModel.uiState.collectLatest { state ->
+                if (state.isLoading) {
+                    if (customProgressDialog == null) {
+                        customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
+                    }
+                    customProgressDialog?.show()
+                } else {
+                    customProgressDialog?.dismiss()
                 }
 
-                recyclerView.adapter = null
-                adapterCourses = AdapterCourses(
-                    requireActivity(),
-                    sortedCourseList,
-                    map,
-                    userModel,
-                    tagRepository
+                state.error?.let {
+                    Snackbar.make(requireView(), it, Snackbar.LENGTH_LONG).show()
+                }
+
+                adapterCourses.updateData(
+                    state.courses,
+                    HashMap(state.ratings),
+                    HashMap(state.progress)
                 )
-                adapterCourses.setProgressMap(progressMap)
-                adapterCourses.setListener(this@CoursesFragment)
-                adapterCourses.setRatingChangeListener(this@CoursesFragment)
-                recyclerView.adapter = adapterCourses
-
+                resources = state.resources
+                courseLib = if (state.isMyCourseLib) "courses" else ""
                 checkList()
                 showNoData(tvMessage, adapterCourses.itemCount, "courses")
-            } catch (e: Exception) {
-                e.printStackTrace()
             }
         }
     }
@@ -225,11 +216,11 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         adapterCourses = AdapterCourses(
             requireActivity(),
             emptyList(),
-            HashMap<String?, JsonObject>(),
+            HashMap(),
             userModel,
             tagRepository
         )
-        adapterCourses.setProgressMap(HashMap<String?, JsonObject>())
+        adapterCourses.setProgressMap(HashMap())
         adapterCourses.setListener(this@CoursesFragment)
         adapterCourses.setRatingChangeListener(this@CoursesFragment)
         return adapterCourses
@@ -240,7 +231,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         userModel = userProfileDbHandler.userModel
         searchTags = ArrayList()
         initializeView()
-        loadDataAsync()
+        observeCourses()
+        courseViewModel.setMyCourseLib(isMyCourseLib)
         updateCheckBoxState(false)
         setupButtonVisibility()
         setupEventListeners()
@@ -291,7 +283,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
                     deleteSelected(true)
                     clearAllSelections()
-                    loadDataAsync()
+                    courseViewModel.setMyCourseLib(isMyCourseLib)
                 }
                 .setNegativeButton(R.string.no, null).show()
         }
@@ -307,7 +299,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
                     deleteSelected(true)
                     clearAllSelections()
-                    loadDataAsync()
+                    courseViewModel.setMyCourseLib(isMyCourseLib)
                 }
                 .setNegativeButton(R.string.no, null).show()
         }
@@ -497,18 +489,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         val selectedGrade = if (spnGrade.selectedItem.toString() == "All") "" else spnGrade.selectedItem.toString()
         val selectedSubject = if (spnSubject.selectedItem.toString() == "All") "" else spnSubject.selectedItem.toString()
         val tagNames = searchTags.mapNotNull { it.name }
-
-        lifecycleScope.launch {
-            val (filteredCourses, map, progressMap) = withContext(Dispatchers.IO) {
-                val courses = courseRepository.filterCourses(searchText, selectedGrade, selectedSubject, tagNames)
-                val ratings = databaseService.withRealm { realm -> getRatings(realm, "course", model?.id) }
-                val progress = databaseService.withRealm { realm -> getCourseProgress(realm, model?.id) }
-                Triple(courses, ratings, progress)
-            }
-            adapterCourses.updateData(filteredCourses, map, progressMap)
-            scrollToTop()
-            showNoData(tvMessage, adapterCourses.itemCount, "courses")
-        }
+        courseViewModel.filterCourses(searchText, selectedGrade, selectedSubject, tagNames)
     }
 
     private fun createAlertDialog(): AlertDialog {
@@ -542,11 +523,11 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             .setNegativeButton(R.string.ok) { dialog: DialogInterface, _: Int ->
                 dialog.cancel()
                 clearAllSelections()
-                loadDataAsync()
+                courseViewModel.setMyCourseLib(isMyCourseLib)
             }
             .setOnDismissListener {
                 clearAllSelections()
-                loadDataAsync()
+                courseViewModel.setMyCourseLib(isMyCourseLib)
             }
 
         return builder.create()

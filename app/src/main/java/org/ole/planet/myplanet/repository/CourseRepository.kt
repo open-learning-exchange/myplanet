@@ -21,4 +21,7 @@ interface CourseRepository {
         subjectLevel: String,
         tagNames: List<String>
     ): List<RealmMyCourse>
+
+    suspend fun getRatings(userId: String?): Map<String?, com.google.gson.JsonObject>
+    suspend fun getCourseProgress(userId: String?): Map<String?, com.google.gson.JsonObject>
 }
