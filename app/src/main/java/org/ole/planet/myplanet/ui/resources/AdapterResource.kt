@@ -41,7 +41,7 @@ class AdapterResource(
     private val context: Context,
     private var libraryList: List<RealmMyLibrary?>,
     private var ratingMap: HashMap<String?, JsonObject>,
-    private val tagRepository: TagRepository,
+    private val tagMap: Map<String?, List<RealmTag>>,
     private val userModel: RealmUserModel?
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>(), DiffRefreshableAdapter {
     private var diffJob: Job? = null
@@ -52,8 +52,6 @@ class AdapterResource(
     private var ratingChangeListener: OnRatingChangeListener? = null
     private var isAscending = true
     private var isTitleAscending = false
-    private val tagCache: MutableMap<String, List<RealmTag>> = mutableMapOf()
-    private val tagRequestsInProgress: MutableSet<String> = mutableSetOf()
 
     private data class DiffData(
         val _id: String?,
@@ -189,14 +187,6 @@ class AdapterResource(
         if (holder is ViewHolderLibrary && payloads.isNotEmpty()) {
             val library = libraryList.getOrNull(position) ?: return
             var handled = false
-            if (payloads.contains(TAGS_PAYLOAD)) {
-                val resourceId = library.id
-                if (resourceId != null) {
-                    val tags = tagCache[resourceId].orEmpty()
-                    renderTagCloud(holder.rowLibraryBinding.flexboxDrawable, tags)
-                    handled = true
-                }
-            }
             if (payloads.contains(RATING_PAYLOAD)) {
                 bindRating(holder, library)
                 handled = true
@@ -221,38 +211,8 @@ class AdapterResource(
             return
         }
 
-        val cachedTags = tagCache[resourceId]
-        if (cachedTags != null) {
-            renderTagCloud(flexboxDrawable, cachedTags)
-            return
-        }
-
-        flexboxDrawable.removeAllViews()
-
-        val lifecycleOwner = context as? LifecycleOwner ?: return
-        if (!tagRequestsInProgress.add(resourceId)) {
-            return
-        }
-        lifecycleOwner.lifecycleScope.launch {
-            try {
-                val tags = withContext(Dispatchers.IO) {
-                    tagRepository.getTagsForResource(resourceId)
-                }
-                tagCache[resourceId] = tags
-
-                if (isActive) {
-                    val adapterPosition = holder.bindingAdapterPosition
-                    if (adapterPosition != RecyclerView.NO_POSITION) {
-                        val currentResourceId = libraryList.getOrNull(adapterPosition)?.id
-                        if (currentResourceId == resourceId) {
-                            renderTagCloud(holder.rowLibraryBinding.flexboxDrawable, tags)
-                        }
-                    }
-                }
-            } finally {
-                tagRequestsInProgress.remove(resourceId)
-            }
-        }
+        val tags = tagMap[resourceId].orEmpty()
+        renderTagCloud(flexboxDrawable, tags)
     }
 
     private fun renderTagCloud(flexboxDrawable: FlexboxLayout, tags: List<RealmTag>) {
