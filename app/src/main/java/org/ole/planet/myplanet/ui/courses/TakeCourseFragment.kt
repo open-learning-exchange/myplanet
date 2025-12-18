@@ -63,11 +63,12 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     private var cachedCourseProgress: Int? = null
     private val isFetchingProgress = java.util.concurrent.atomic.AtomicBoolean(false)
     private var joinDialog: AlertDialog? = null
+    private var courseId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) {
-            courseId = requireArguments().getString("id")
+            this.courseId = requireArguments().getString("id")
             if (requireArguments().containsKey("position")) {
                 position = requireArguments().getInt("position")
             }
@@ -363,7 +364,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                 .equalTo("stepId", step?.id)
                 .equalTo("type", "surveys")
                 .findAll()
-            stepSurvey.any { survey -> !existsSubmission(mRealm, survey.id, "survey") }
+            stepSurvey.any { survey -> !existsSubmission(mRealm, survey.id, "survey", courseId) }
         }
 
         if (hasUnfinishedSurvey && courseId == "4e6b78800b6ad18b4e8b0e1e38a98cac") {
@@ -405,7 +406,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     private val isValidClickLeft: Boolean get() = binding.viewPager2.adapter != null && binding.viewPager2.currentItem > 0
 
     companion object {
-        var courseId: String? = null
         var userModel: RealmUserModel? = null
 
         @JvmStatic
@@ -415,7 +415,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             return takeCourseFragment
         }
 
-        fun existsSubmission(mRealm: Realm, firstStepId: String?, submissionType: String): Boolean {
+        fun existsSubmission(mRealm: Realm, firstStepId: String?, submissionType: String, courseId: String?): Boolean {
             val questions = mRealm.where(RealmExamQuestion::class.java)
                 .equalTo("examId", firstStepId)
                 .findAll()

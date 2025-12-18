@@ -121,7 +121,7 @@ class ChallengeHelper(
             .equalTo("courseId", courseId)
             .equalTo("type", "survey")
             .findAll()
-            .any { survey -> !TakeCourseFragment.existsSubmission(realm, survey.id, "survey") }
+            .any { survey -> !TakeCourseFragment.existsSubmission(realm, survey.id, "survey", courseId) }
     }
 
     private fun getCourseStatus(progress: JsonObject?, courseName: String?): String {
