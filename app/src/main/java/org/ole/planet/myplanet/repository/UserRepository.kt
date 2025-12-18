@@ -6,6 +6,12 @@ import io.realm.Sort
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.myhealth.HealthRecord
 
+sealed class UsernameValidationResult {
+    object Valid : UsernameValidationResult()
+    object Taken : UsernameValidationResult()
+    data class Invalid(val reason: String) : UsernameValidationResult()
+}
+
 interface UserRepository {
     suspend fun getUserById(userId: String): RealmUserModel?
     suspend fun getUserByAnyId(id: String): RealmUserModel?
@@ -60,4 +66,6 @@ interface UserRepository {
     fun getUserModel(): RealmUserModel?
     suspend fun getUserModelSuspending(): RealmUserModel?
     fun getActiveUserId(): String
+    suspend fun validateUsername(username: String): UsernameValidationResult
+    suspend fun cleanupDuplicateUsers()
 }
