@@ -368,4 +368,18 @@ class UserRepositoryImpl @Inject constructor(
         }
         HealthRecord(mh, mm, list, userMap)
     }
+
+    override suspend fun searchUsers(query: String): List<RealmUserModel> {
+        return withRealm { realm ->
+            val results = realm.where(RealmUserModel::class.java)
+                .contains("firstName", query, io.realm.Case.INSENSITIVE)
+                .or()
+                .contains("lastName", query, io.realm.Case.INSENSITIVE)
+                .or()
+                .contains("name", query, io.realm.Case.INSENSITIVE)
+                .sort("joinDate", io.realm.Sort.DESCENDING)
+                .findAll()
+            realm.copyFromRealm(results)
+        }
+    }
 }
