@@ -307,7 +307,13 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
     }
 
     override fun onLeaveTeam(team: TeamData, user: RealmUserModel?) {
-        viewModel.leaveTeam(team._id!!, user?.id)
+        AlertDialog.Builder(requireContext(), R.style.CustomAlertDialog)
+            .setMessage(R.string.confirm_exit)
+            .setPositiveButton(R.string.yes) { _, _ ->
+                viewModel.leaveTeam(team._id!!, user?.id)
+            }
+            .setNegativeButton(R.string.no, null)
+            .show()
     }
 
     override fun onRequestToJoin(team: TeamData, user: RealmUserModel?) {

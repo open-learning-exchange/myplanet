@@ -121,13 +121,12 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             now[Calendar.YEAR] = i
             now[Calendar.MONTH] = i1
             now[Calendar.DAY_OF_MONTH] = i2
-            val imageList = realm.where(RealmMyLibrary::class.java).equalTo("isPrivate", true)
-                .greaterThan("createdDate", now.timeInMillis).equalTo("mediaType", "image")
-                .findAll()
-            val urls = ArrayList<String>()
-            getUrlsAndStartDownload(imageList, urls) },
-            now[Calendar.YEAR], now[Calendar.MONTH], now[Calendar.DAY_OF_MONTH]
-        )
+            viewLifecycleOwner.lifecycleScope.launch {
+                val imageList = libraryRepository.getPrivateImagesCreatedAfter(now.timeInMillis)
+                val urls = ArrayList<String>()
+                getUrlsAndStartDownload(imageList, urls)
+            }
+        }, now[Calendar.YEAR], now[Calendar.MONTH], now[Calendar.DAY_OF_MONTH])
         dpd.setTitle(getString(R.string.read_offline_news_from))
         dpd.show()
     }
@@ -357,6 +356,8 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     override fun showUserResourceDialog() {
+        viewModel.loadUsers()
+
         val alertHealthListBinding = AlertHealthListBinding.inflate(LayoutInflater.from(activity))
         alertHealthListBinding.etSearch.visibility = View.GONE
         alertHealthListBinding.spnSort.visibility = View.GONE
@@ -375,20 +376,27 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             .create()
 
         val job = viewLifecycleOwner.lifecycleScope.launch {
-            val userModelList = viewModel.getUsersSortedByDate()
-            if (dialog.isShowing) {
-                val adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, userModelList)
-                alertHealthListBinding.list.adapter = adapter
-                alertHealthListBinding.list.onItemClickListener = AdapterView.OnItemClickListener { _, _, i, _ ->
-                    val selected = alertHealthListBinding.list.adapter.getItem(i) as RealmUserModel
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        val libraryList = libraryRepository.getLibraryListForUser(selected._id)
-                        showDownloadDialog(libraryList)
+            viewModel.uiState.collect {
+                if (dialog.isShowing) {
+                    if (it.users.isNotEmpty()) {
+                        val adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, it.users)
+                        alertHealthListBinding.list.adapter = adapter
+                        alertHealthListBinding.list.onItemClickListener = AdapterView.OnItemClickListener { _, _, i, _ ->
+                            val selected = alertHealthListBinding.list.adapter.getItem(i) as RealmUserModel
+                            selected._id?.let { userId ->
+                                viewLifecycleOwner.lifecycleScope.launch {
+                                    val libraryList = viewModel.getLibraryForSelectedUser(userId)
+                                    showDownloadDialog(libraryList)
+                                }
+                            }
+                            dialog.dismiss()
+                        }
+                        alertHealthListBinding.list.visibility = View.VISIBLE
+                    } else {
+                        alertHealthListBinding.list.visibility = View.GONE
                     }
-                    dialog.dismiss()
+                    alertHealthListBinding.loading.visibility = View.GONE
                 }
-                alertHealthListBinding.loading.visibility = View.GONE
-                alertHealthListBinding.list.visibility = View.VISIBLE
             }
         }
 

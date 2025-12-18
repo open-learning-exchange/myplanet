@@ -96,6 +96,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 @AndroidEntryPoint
 abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository.CheckVersionCallback,
     ConfigurationIdListener {
+    private var serverDialogBinding: DialogServerUrlBinding? = null
     private lateinit var syncDate: TextView
     lateinit var lblLastSyncDate: TextView
     lateinit var btnSignIn: Button
@@ -215,7 +216,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
                     }
                 } else if (serverConfigAction == "save") {
                     if (savedId == null || id == savedId) {
-                        currentDialog?.let { saveConfigAndContinue(it, "", false, defaultUrl) }
+                        currentDialog?.let {
+                            val binding = serverDialogBinding ?: return@let
+                            saveConfigAndContinue(it, binding, "", false, defaultUrl)
+                        }
                     } else {
                         clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server), false)
                     }
@@ -270,15 +274,15 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
         editor.putBoolean("firstRun", false).apply()
     }
 
-    fun sync(dialog: MaterialDialog) {
-        spinner = dialog.findViewById(R.id.intervalDropper) as Spinner
-        syncSwitch = dialog.findViewById(R.id.syncSwitch) as SwitchCompat
-        intervalLabel = dialog.findViewById(R.id.intervalLabel) as TextView
+    fun sync(binding: DialogServerUrlBinding) {
+        spinner = binding.intervalDropper
+        syncSwitch = binding.syncSwitch
+        intervalLabel = binding.intervalLabel
         syncSwitch.setOnCheckedChangeListener { _: CompoundButton?, isChecked: Boolean ->
             setSpinnerVisibility(isChecked)
         }
         syncSwitch.isChecked = settings.getBoolean("autoSync", true)
-        dateCheck(dialog)
+        dateCheck(binding)
     }
 
     private fun setSpinnerVisibility(isChecked: Boolean) {
@@ -341,9 +345,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
         return false
     }
 
-    private fun dateCheck(dialog: MaterialDialog) {
+    private fun dateCheck(binding: DialogServerUrlBinding) {
         // Check if the user never synced
-        syncDate = dialog.findViewById(R.id.lastDateSynced) as TextView
+        syncDate = binding.lastDateSynced
         syncDate.text = getString(R.string.last_sync_date, convertDate())
         syncDropdownAdd()
     }
@@ -424,6 +428,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
 
     private fun saveConfigAndContinue(
         dialog: MaterialDialog,
+        binding: DialogServerUrlBinding,
         url: String,
         isAlternativeUrl: Boolean,
         defaultUrl: String
@@ -431,21 +436,21 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
         dialog.dismiss()
         saveSyncInfoToPreference()
         return if (isAlternativeUrl) {
-            handleAlternativeUrlSave(dialog, url, defaultUrl)
+            handleAlternativeUrlSave(binding, url, defaultUrl)
         } else {
-            handleRegularUrlSave(dialog)
+            handleRegularUrlSave(binding)
         }
     }
 
     private fun handleAlternativeUrlSave(
-        dialog: MaterialDialog,
+        binding: DialogServerUrlBinding,
         url: String,
         defaultUrl: String
     ): String {
         val password = if (settings.getString("serverPin", "") != "") {
             settings.getString("serverPin", "")!!
         } else {
-            (dialog.customView?.findViewById<View>(R.id.input_server_Password) as EditText).text.toString()
+            binding.inputServerPassword.text.toString()
         }
 
         val couchdbURL = ServerConfigUtils.saveAlternativeUrl(url, password, settings, editor)
@@ -453,14 +458,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
         return couchdbURL
     }
 
-    private fun handleRegularUrlSave(dialog: MaterialDialog): String {
+    private fun handleRegularUrlSave(binding: DialogServerUrlBinding): String {
         val protocol = settings.getString("serverProtocol", "")
-        var url = (dialog.customView?.findViewById<View>(R.id.input_server_url) as EditText).text.toString()
-        val pin = (dialog.customView?.findViewById<View>(R.id.input_server_Password) as EditText).text.toString()
+        var url = binding.inputServerUrl.text.toString()
+        val pin = binding.inputServerPassword.text.toString()
 
         editor.putString(
             "customDeviceName",
-            (dialog.customView?.findViewById<View>(R.id.deviceName) as EditText).text.toString()
+            binding.deviceName.text.toString()
         ).apply()
 
         url = protocol + url
@@ -707,7 +712,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
     }
 
     fun settingDialog() {
-        val binding = DialogServerUrlBinding.inflate(LayoutInflater.from(this))
+        serverDialogBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this))
+        val binding = serverDialogBinding!!
         initServerDialog(binding)
 
         val contextWrapper = ContextThemeWrapper(this, R.style.AlertDialogTheme)
@@ -736,14 +742,16 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
 
         neutralAction.setOnClickListener { onNeutralButtonClick(dialog) }
 
+        dialog.setOnDismissListener { serverDialogBinding = null }
         dialog.show()
-        sync(dialog)
+        sync(binding)
         if (!prefData.getManualConfig()) {
             dialog.getActionButton(DialogAction.NEUTRAL).text = getString(R.string.show_more)
         }
     }
     fun continueSync(dialog: MaterialDialog, url: String, isAlternativeUrl: Boolean, defaultUrl: String) {
-        processedUrl = saveConfigAndContinue(dialog, url, isAlternativeUrl, defaultUrl)
+        val binding = serverDialogBinding ?: return
+        processedUrl = saveConfigAndContinue(dialog, binding, url, isAlternativeUrl, defaultUrl)
         if (TextUtils.isEmpty(processedUrl)) return
         isSync = true
         if (checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) && settings.getBoolean("firstRun", true)) {
