@@ -12,7 +12,6 @@ import android.widget.DatePicker
 import android.widget.EditText
 import android.widget.ListView
 import android.widget.Toast
-import android.widget.Toolbar
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatTextView
 import androidx.core.content.ContextCompat
@@ -68,19 +67,18 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         user = profileDbHandler.userModel
         achievementArray = JsonArray()
         initializeData()
-        setListeners()
         return fragmentEditAchievementBinding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val toolbar = view.findViewById<androidx.appcompat.widget.Toolbar>(R.id.toolbar)
-        toolbar.setNavigationOnClickListener {
+        setListeners()
+    }
+
+    private fun setListeners() {
+        fragmentEditAchievementBinding.toolbar.setNavigationOnClickListener {
             NavigationHelper.popBackStack(requireActivity().supportFragmentManager)
         }
-    }
-    
-    private fun setListeners() {
         fragmentEditAchievementBinding.btnUpdate.setOnClickListener {
             val achievementId = user?.id + "@" + user?.planetCode
             val header = fragmentEditAchievementBinding.etAchievement.text.toString().trim { it <= ' ' }
@@ -94,23 +92,29 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             Utilities.toast(activity, getString(R.string.saving))
 
             lifecycleScope.launch {
-                databaseService.withRealmAsync { realm ->
-                    realm.executeTransaction { transactionRealm ->
-                        val achievement = transactionRealm.where(RealmAchievement::class.java)
-                            .equalTo("_id", achievementId)
-                            .findFirst()
-                        if (achievement != null) {
-                            achievement.achievementsHeader = header
-                            achievement.goals = goals
-                            achievement.purpose = purpose
-                            achievement.sendToNation = sendToNation
-                            achievement.setAchievements(GsonUtils.gson.fromJson(achievementsJson, JsonArray::class.java))
-                            achievement.setReferences(GsonUtils.gson.fromJson(referencesJson, JsonArray::class.java))
+                withContext(Dispatchers.IO) {
+                    databaseService.withRealmAsync { realm ->
+                        realm.executeTransaction { transactionRealm ->
+                            val achievement = transactionRealm.where(RealmAchievement::class.java)
+                                .equalTo("_id", achievementId)
+                                .findFirst()
+                            if (achievement != null) {
+                                achievement.achievementsHeader = header
+                                achievement.goals = goals
+                                achievement.purpose = purpose
+                                achievement.sendToNation = sendToNation
+                                achievement.setAchievements(GsonUtils.gson.fromJson(achievementsJson, JsonArray::class.java))
+                                achievement.setReferences(GsonUtils.gson.fromJson(referencesJson, JsonArray::class.java))
+                            }
                         }
                     }
                 }
-                Utilities.toast(activity, getString(R.string.achievement_saved))
-                NavigationHelper.popBackStack(parentFragmentManager)
+
+                withContext(Dispatchers.Main) {
+                    Utilities.toast(activity, getString(R.string.achievement_saved))
+                    fragmentEditAchievementBinding.btnUpdate.isEnabled = true
+                    NavigationHelper.popBackStack(parentFragmentManager)
+                }
             }
         }
         fragmentEditAchievementBinding.btnCancel.setOnClickListener {
@@ -273,15 +277,15 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
 
     private fun showResourceListDialog(prevList: List<String?>) {
         viewLifecycleOwner.lifecycleScope.launch {
-            val list = databaseService.withRealm { realm ->
-                val result = realm.where(RealmMyLibrary::class.java).findAll()
-                realm.copyFromRealm(result)
+            val list = databaseService.withRealmAsync { realm ->
+                realm.copyFromRealm(realm.where(RealmMyLibrary::class.java).findAll())
             }
 
-            withContext(Dispatchers.Main) {
+            if (isAdded) {
                 val builder = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
                 builder.setTitle(R.string.select_resources)
-                myLibraryAlertdialogBinding = MyLibraryAlertdialogBinding.inflate(LayoutInflater.from(activity))
+                myLibraryAlertdialogBinding =
+                    MyLibraryAlertdialogBinding.inflate(LayoutInflater.from(activity))
                 val myLibraryAlertdialogView: View = myLibraryAlertdialogBinding.root
                 val lv = createResourceList(myLibraryAlertdialogBinding, list, prevList)
                 builder.setView(myLibraryAlertdialogView)
@@ -304,38 +308,20 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     private fun initializeData() {
         val achievementId = user?.id + "@" + user?.planetCode
         lifecycleScope.launch {
-            achievement = databaseService.withRealm { realm ->
-                val achievement = realm.where(RealmAchievement::class.java)
+            achievement = databaseService.withRealmAsync { realm ->
+                var achievement = realm.where(RealmAchievement::class.java)
                     .equalTo("_id", achievementId)
                     .findFirst()
-                if (achievement != null) realm.copyFromRealm(achievement) else null
-            }
-
-            if (achievement == null) {
-                databaseService.withRealmAsync { realm ->
+                if (achievement == null) {
                     realm.executeTransaction { transactionRealm ->
-                        val existing = transactionRealm.where(RealmAchievement::class.java)
-                            .equalTo("_id", achievementId)
-                            .findFirst()
-                        if (existing == null) {
-                            transactionRealm.createObject(
-                                RealmAchievement::class.java,
-                                achievementId
-                            )
-                        }
+                        achievement = transactionRealm.createObject(RealmAchievement::class.java, achievementId)
                     }
                 }
-                if (!isAdded) {
-                    return@launch
-                }
-                achievement = databaseService.withRealm { realm ->
-                    val achievement = realm.where(RealmAchievement::class.java)
-                        .equalTo("_id", achievementId)
-                        .findFirst()
-                    if (achievement != null) realm.copyFromRealm(achievement) else null
-                }
+                realm.copyFromRealm(achievement!!)
             }
-            populateAchievementData()
+            if (isAdded) {
+                populateAchievementData()
+            }
         }
     }
 

@@ -1177,5 +1177,7 @@
     <string name="achievement_saved">Logro actualizado</string>
     <string name="team_name_already_exists">Ya existe un equipo con este nombre</string>
     <string name="enterprise_name_already_exists">Ya existe una empresa con este nombre</string>
+    <string name="downloading_images_please_check_notification">Descargando imágenes, por favor revise las notificaciones…</string>
+    <string name="no_images_to_download">No hay imágenes para descargar</string>
 
 </resources>

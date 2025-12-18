@@ -1,17 +1,21 @@
 package org.ole.planet.myplanet.repository
 
+import java.util.Calendar
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNotification
+import org.ole.planet.myplanet.model.RealmTeamNotification
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.TeamNotificationInfo
 
 class NotificationRepositoryImpl @Inject constructor(
         databaseService: DatabaseService,
-    ) : RealmRepository(databaseService), NotificationRepository {
+) : RealmRepository(databaseService), NotificationRepository {
     override suspend fun refresh() {
         databaseService.realmInstance.refresh()
     }
@@ -231,6 +235,97 @@ class NotificationRepositoryImpl @Inject constructor(
                 .equalTo("_id", taskObj?.teamId)
                 .findFirst()
             team?.name
+        }
+    }
+
+    override suspend fun getTeamNotificationInfo(teamId: String, userId: String): TeamNotificationInfo {
+        return withRealm { realm ->
+            val current = System.currentTimeMillis()
+            val tomorrow = Calendar.getInstance()
+            tomorrow.add(Calendar.DAY_OF_YEAR, 1)
+
+            val notification = realm.where(RealmTeamNotification::class.java)
+                .equalTo("parentId", teamId)
+                .equalTo("type", "chat")
+                .findFirst()
+
+            val chatCount = realm.where(RealmNews::class.java)
+                .equalTo("viewableBy", "teams")
+                .equalTo("viewableId", teamId)
+                .count()
+
+            val hasChat = notification != null && notification.lastCount < chatCount
+
+            val tasks = realm.where(RealmTeamTask::class.java)
+                .equalTo("assignee", userId)
+                .between("deadline", current, tomorrow.timeInMillis)
+                .findAll()
+
+            val hasTask = tasks.isNotEmpty()
+
+            TeamNotificationInfo(hasTask, hasChat)
+        }
+    }
+
+    override suspend fun getTeamNotifications(teamIds: List<String>, userId: String): Map<String, TeamNotificationInfo> {
+        return withRealm { realm ->
+            if (teamIds.isEmpty()) {
+                return@withRealm emptyMap()
+            }
+            val notificationMap = mutableMapOf<String, TeamNotificationInfo>()
+
+            // 1. Fetch all relevant notifications in a single query
+            val notificationQuery = realm.where(RealmTeamNotification::class.java).equalTo("type", "chat")
+            notificationQuery.beginGroup()
+            teamIds.forEachIndexed { index, id ->
+                if (index > 0) notificationQuery.or()
+                notificationQuery.equalTo("parentId", id)
+            }
+            notificationQuery.endGroup()
+            val notificationsResult = notificationQuery.findAll()
+            val notificationsById = mutableMapOf<String, RealmTeamNotification>()
+            notificationsResult.forEach {
+                it.parentId?.let { parentId ->
+                    notificationsById[parentId] = it
+                }
+            }
+
+
+            // 2. Fetch all relevant chat counts in a single query
+            val chatQuery = realm.where(RealmNews::class.java).equalTo("viewableBy", "teams")
+            chatQuery.beginGroup()
+            teamIds.forEachIndexed { index, id ->
+                if (index > 0) chatQuery.or()
+                chatQuery.equalTo("viewableId", id)
+            }
+            chatQuery.endGroup()
+            val chatsResult = chatQuery.findAll()
+            val chatCountsById = mutableMapOf<String, Long>()
+            chatsResult.forEach {
+                it.viewableId?.let { viewableId ->
+                    val currentCount = chatCountsById[viewableId] ?: 0
+                    chatCountsById[viewableId] = currentCount + 1
+                }
+            }
+
+
+            // 3. Fetch all relevant tasks once
+            val current = System.currentTimeMillis()
+            val tomorrow = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }
+            val tasks = realm.where(RealmTeamTask::class.java)
+                .equalTo("assignee", userId)
+                .between("deadline", current, tomorrow.timeInMillis)
+                .findAll()
+            val hasTask = tasks.isNotEmpty()
+
+            // 4. Combine the results in memory
+            for (teamId in teamIds) {
+                val notification = notificationsById[teamId]
+                val chatCount = chatCountsById[teamId] ?: 0L
+                val hasChat = notification != null && notification.lastCount < chatCount
+                notificationMap[teamId] = TeamNotificationInfo(hasTask, hasChat)
+            }
+            notificationMap
         }
     }
 }
