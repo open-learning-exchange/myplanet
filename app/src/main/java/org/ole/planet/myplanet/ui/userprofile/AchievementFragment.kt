@@ -79,7 +79,6 @@ class AchievementFragment : BaseContainerFragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentAchievementBinding.inflate(inflater, container, false)
-        user = profileDbHandler.userModel
         binding.btnEdit.setOnClickListener {
             if (listener != null) listener?.openCallFragment(EditAchievementFragment())
         }
@@ -223,9 +222,12 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     private fun setupUserData() {
-        binding.tvFirstName.text = user?.firstName
-        binding.tvName.text =
-            String.format("%s %s %s", user?.firstName, user?.middleName, user?.lastName)
+        lifecycleScope.launch {
+            user = profileDbHandler.getUserModel()
+            binding.tvFirstName.text = user?.firstName
+            binding.tvName.text =
+                String.format("%s %s %s", user?.firstName, user?.middleName, user?.lastName)
+        }
     }
 
     private fun loadInitialAchievementData() {

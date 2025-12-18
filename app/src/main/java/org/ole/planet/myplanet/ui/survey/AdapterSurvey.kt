@@ -120,7 +120,9 @@ class AdapterSurvey(
                 startSurvey.setOnClickListener {
                     val shouldAdopt = exam.isTeamShareAllowed && teamSubmission?.isValid != true
                     if (shouldAdopt) {
-                        adoptSurvey(exam, teamId)
+                        (context as? androidx.lifecycle.LifecycleOwner)?.lifecycleScope?.launch {
+                            adoptSurvey(exam, teamId)
+                        }
                     } else {
                         AdapterMySubmission.openSurvey(listener, exam.id, false, isTeam, teamId)
                     }
@@ -150,8 +152,8 @@ class AdapterSurvey(
             }
         }
 
-        fun adoptSurvey(exam: RealmStepExam, teamId: String?) {
-            val userModel = userProfileDbHandler.userModel
+        suspend fun adoptSurvey(exam: RealmStepExam, teamId: String?) {
+            val userModel = userProfileDbHandler.getUserModel()
             val sParentCode = settings.getString("parentCode", "")
             val planetCode = settings.getString("planetCode", "")
 

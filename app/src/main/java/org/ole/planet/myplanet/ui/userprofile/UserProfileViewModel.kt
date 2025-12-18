@@ -110,8 +110,8 @@ class UserProfileViewModel @Inject constructor(
     val lastVisit: Long?
         get() = userProfileDbHandler.lastVisit
 
-    val offlineVisits: Int
-        get() = userProfileDbHandler.offlineVisits
+    private val _offlineVisits = MutableStateFlow(0)
+    val offlineVisits: StateFlow<Int> = _offlineVisits.asStateFlow()
 
     val numberOfResourceOpen: String
         get() = userProfileDbHandler.numberOfResourceOpen
@@ -122,6 +122,7 @@ class UserProfileViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             _maxOpenedResource.value = userProfileDbHandler.maxOpenedResource()
+            _offlineVisits.value = userProfileDbHandler.getOfflineVisits()
         }
     }
 }

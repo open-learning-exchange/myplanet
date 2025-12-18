@@ -90,14 +90,14 @@ class TransactionSyncManager @Inject constructor(
         }
     }
 
-    fun syncKeyIv(
+    suspend fun syncKeyIv(
         mRealm: Realm,
         settings: SharedPreferences,
         listener: SyncListener,
         userProfileDbHandler: UserProfileDbHandler
     ) {
         listener.onSyncStarted()
-        val model = userProfileDbHandler.userModel
+        val model = userProfileDbHandler.getUserModel()
         val userName = SecurePrefs.getUserName(context, settings) ?: ""
         val password = SecurePrefs.getPassword(context, settings) ?: ""
         val header = "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)

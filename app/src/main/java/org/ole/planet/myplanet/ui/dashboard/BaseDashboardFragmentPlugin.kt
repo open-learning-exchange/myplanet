@@ -87,11 +87,13 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         }
     }
 
-    private inline fun openIfLoggedIn(action: () -> Unit) {
+    private inline fun openIfLoggedIn(crossinline action: () -> Unit) {
         if (model?.id?.startsWith("guest") == false) {
             action()
         } else {
-            guestDialog(requireContext(), profileDbHandler)
+            lifecycleScope.launch {
+                guestDialog(requireContext(), profileDbHandler)
+            }
         }
     }
 

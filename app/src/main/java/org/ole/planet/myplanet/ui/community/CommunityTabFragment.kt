@@ -32,13 +32,15 @@ class CommunityTabFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         val parentCode = settings.getString("parentCode", "").orEmpty()
         val communityName = settings.getString("communityName", "").orEmpty()
-        val user = userProfileDbHandler.userModel
-        val planetCode = user?.planetCode.orEmpty()
-        binding.viewPager2.adapter = CommunityPagerAdapter(requireActivity(), "$planetCode@$parentCode", false, settings)
-        TabLayoutMediator(binding.tabLayout, binding.viewPager2) { tab, position ->
-            tab.text = (binding.viewPager2.adapter as CommunityPagerAdapter).getPageTitle(position)
-        }.attach()
-        binding.title.text = if (planetCode.isEmpty()) communityName else planetCode
+        lifecycleScope.launch {
+            val user = userProfileDbHandler.getUserModel()
+            val planetCode = user?.planetCode.orEmpty()
+            binding.viewPager2.adapter = CommunityPagerAdapter(requireActivity(), "$planetCode@$parentCode", false, settings)
+            TabLayoutMediator(binding.tabLayout, binding.viewPager2) { tab, position ->
+                tab.text = (binding.viewPager2.adapter as CommunityPagerAdapter).getPageTitle(position)
+            }.attach()
+            binding.title.text = if (planetCode.isEmpty()) communityName else planetCode
+        }
         binding.subtitle.text = settings.getString("planetType", "")
         binding.llActionButtons.visibility = View.GONE
     }

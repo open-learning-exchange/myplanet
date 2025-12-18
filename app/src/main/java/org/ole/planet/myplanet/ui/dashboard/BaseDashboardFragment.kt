@@ -113,9 +113,11 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             }
             v.findViewById<TextView>(R.id.txtRole).text =
                 getString(R.string.user_role, model?.getRoleAsString())
-            val offlineVisits = profileDbHandler.offlineVisits
-            v.findViewById<TextView>(R.id.txtFullName).text =
-                getString(R.string.user_name, fullName, offlineVisits)
+            viewLifecycleOwner.lifecycleScope.launch {
+                val offlineVisits = profileDbHandler.getOfflineVisits()
+                v.findViewById<TextView>(R.id.txtFullName).text =
+                    getString(R.string.user_name, fullName, offlineVisits)
+            }
         }
     }
 
@@ -244,10 +246,10 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         }
         setCountText(teams.size, RealmMyTeam::class.java, requireView())
 
-        val userId = profileDbHandler.userModel?.id
-        val teamIds = teams.mapNotNull { it._id }
-        if (userId != null && teamIds.isNotEmpty()) {
-            viewLifecycleOwner.lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val userId = profileDbHandler.getUserModel()?.id
+            val teamIds = teams.mapNotNull { it._id }
+            if (userId != null && teamIds.isNotEmpty()) {
                 val notificationInfoMap = viewModel.getTeamNotifications(teamIds, userId)
                 updateTeamNotifications(flexboxLayout, notificationInfoMap)
             }
@@ -274,7 +276,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     private suspend fun myLifeListInit(flexboxLayout: FlexboxLayout) {
-        val user = profileDbHandler.userModel
+        val user = profileDbHandler.getUserModel()
 
         val dbMylife = databaseService.withRealmAsync { realmInstance ->
             val rawMylife: List<RealmMyLife> = RealmMyLife.getMyLifeByUserId(realmInstance, settings)
@@ -441,7 +443,9 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         if (model?.getRoleAsString()?.contains("health") == true) {
             settings?.let { transactionSyncManager.syncAllHealthData(realm, it, this) }
         } else {
-            settings?.let { transactionSyncManager.syncKeyIv(realm, it, this, profileDbHandler) }
+            lifecycleScope.launch {
+                settings?.let { transactionSyncManager.syncKeyIv(realm, it, this, profileDbHandler) }
+            }
         }
     }
 

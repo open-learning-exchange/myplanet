@@ -65,12 +65,13 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTeamBinding.inflate(inflater, container, false)
-        user = userProfileDbHandler.getUserModelCopy()
-
-        if (user?.isGuest() == true) {
-            binding.addTeam.visibility = View.GONE
-        } else {
-            binding.addTeam.visibility = View.VISIBLE
+        viewLifecycleOwner.lifecycleScope.launch {
+            user = userProfileDbHandler.getUserModel()
+            if (user?.isGuest() == true) {
+                binding.addTeam.visibility = View.GONE
+            } else {
+                binding.addTeam.visibility = View.VISIBLE
+            }
         }
 
         binding.addTeam.setOnClickListener { createTeamAlert(null) }

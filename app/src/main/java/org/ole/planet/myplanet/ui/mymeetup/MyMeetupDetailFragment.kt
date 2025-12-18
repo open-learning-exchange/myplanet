@@ -53,7 +53,9 @@ class MyMeetupDetailFragment : Fragment(), View.OnClickListener {
         binding.btnInvite.visibility = if (showBetaFeature(Constants.KEY_MEETUPS, requireContext())) View.VISIBLE else View.GONE
         binding.btnLeave.visibility = if (showBetaFeature(Constants.KEY_MEETUPS, requireContext())) View.VISIBLE else View.GONE
         binding.btnLeave.setOnClickListener(this)
-        user = userProfileDbHandler.getUserModelCopy()
+        lifecycleScope.launch {
+            user = userProfileDbHandler.getUserModel()
+        }
         return binding.root
     }
 

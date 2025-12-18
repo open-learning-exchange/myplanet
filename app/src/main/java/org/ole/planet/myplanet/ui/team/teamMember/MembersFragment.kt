@@ -31,15 +31,11 @@ class MembersFragment : BaseMemberFragment() {
         this.memberChangeListener = listener
     }
 
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        currentUser = userProfileDbHandler.userModel ?: RealmUserModel()
-    }
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        teamId?.let { viewModel.fetchMembers(it) }
         viewLifecycleOwner.lifecycleScope.launch {
+            currentUser = userProfileDbHandler.getUserModel() ?: RealmUserModel()
+            teamId?.let { viewModel.fetchMembers(it) }
             viewLifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
                 launch {
                     viewModel.uiState.collect { uiState ->

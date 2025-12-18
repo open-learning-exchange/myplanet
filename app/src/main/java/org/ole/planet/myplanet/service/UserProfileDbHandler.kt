@@ -54,10 +54,8 @@ class UserProfileDbHandler @Inject constructor(
         }
     }
 
-    val userModel: RealmUserModel? get() = userRepository.getUserModel()
-
-    fun getUserModelCopy(): RealmUserModel? {
-        return userRepository.getUserModel()
+    suspend fun getUserModel(): RealmUserModel? {
+        return userRepository.getUserModelSuspending()
     }
 
     fun onLogin() {
@@ -67,7 +65,7 @@ class UserProfileDbHandler @Inject constructor(
     fun onLoginAsync(callback: (() -> Unit)? = null, onError: ((Throwable) -> Unit)? = null) {
         applicationScope.launch(Dispatchers.IO) {
             try {
-                val model = getUserModelCopy()
+                val model = getUserModel()
                 val userId = model?.id
                 val userName = model?.name
                 val parentCode = model?.parentCode
@@ -113,15 +111,15 @@ class UserProfileDbHandler @Inject constructor(
     val lastVisit: Long? get() = realmService.withRealm { realm ->
         realm.where(RealmOfflineActivity::class.java).max("loginTime") as Long?
     }
-    val offlineVisits: Int get() = getOfflineVisits(userModel)
 
-    fun getOfflineVisits(m: RealmUserModel?): Int {
+    suspend fun getOfflineVisits(): Int {
+        val m = getUserModel()
         return realmService.withRealm { realm ->
             val dbUsers = realm.where(RealmOfflineActivity::class.java)
                 .equalTo("userName", m?.name)
                 .equalTo("type", KEY_LOGIN)
                 .findAll()
-            if (!dbUsers.isEmpty()) {
+            if (dbUsers.isNotEmpty()) {
                 dbUsers.size
             } else {
                 0
@@ -153,7 +151,7 @@ class UserProfileDbHandler @Inject constructor(
 
         applicationScope.launch(Dispatchers.IO) {
             try {
-                val model = getUserModelCopy()
+                val model = getUserModel()
                 if (model?.id?.startsWith("guest") == true) {
                     return@launch
                 }

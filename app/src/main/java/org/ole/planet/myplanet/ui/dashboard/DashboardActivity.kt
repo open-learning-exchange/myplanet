@@ -185,10 +185,12 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         val guest = true
                         val intent =
                             Intent(this@DashboardActivity, BecomeMemberActivity::class.java)
-                        intent.putExtra("username", profileDbHandler.userModel?.name)
-                        intent.putExtra("guest", guest)
-                        setResult(RESULT_OK, intent)
-                        startActivity(intent)
+                        lifecycleScope.launch {
+                            intent.putExtra("username", userProfileDbHandler.getUserModel()?.name)
+                            intent.putExtra("guest", guest)
+                            setResult(RESULT_OK, intent)
+                            startActivity(intent)
+                        }
                     }
                     logout.setOnClickListener {
                         dialog.dismiss()
@@ -249,15 +251,16 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun updateAppTitle() {
-        try {
-            val userProfileModel = profileDbHandler.userModel
-            if (userProfileModel != null) {
-                var name: String? = userProfileModel.getFullName()
-                if (name.isNullOrBlank()) {
-                    name = profileDbHandler.userModel?.name
-                }
-                val communityName = settings.getString("communityName", "")
-                binding.appBarBell.appTitleName.text = if (user?.planetCode == "") {
+        lifecycleScope.launch {
+            try {
+                val userProfileModel = userProfileDbHandler.getUserModel()
+                if (userProfileModel != null) {
+                    var name: String? = userProfileModel.getFullName()
+                    if (name.isNullOrBlank()) {
+                        name = userProfileModel.name
+                    }
+                    val communityName = settings.getString("communityName", "")
+                    binding.appBarBell.appTitleName.text = if (user?.planetCode == "") {
                     "${getString(R.string.planet)} $communityName"
                 } else {
                     "${getString(R.string.planet)} ${user?.planetCode}"
@@ -269,15 +272,16 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             throw RuntimeException(err)
         }
     }
+}
 
-    private fun handleGuestAccess(): Boolean {
+    private suspend fun handleGuestAccess(): Boolean {
         if (user != null && user?.rolesList?.isEmpty() == true && !user?.userAdmin!!) {
             navigationView.visibility = View.GONE
             openCallFragment(InactiveDashboardFragment(), "Dashboard")
             return true
         }
         navigationView.setOnItemSelectedListener(this)
-        val isTopBarVisible = userProfileDbHandler.userModel?.isShowTopbar == true
+        val isTopBarVisible = userProfileDbHandler.getUserModel()?.isShowTopbar == true
         navigationView.visibility = if (isTopBarVisible) {
             View.VISIBLE
         } else {
@@ -356,7 +360,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         ChatHistoryListFragment::class.java.simpleName
                     )
                 } else {
-                    guestDialog(this, userProfileDbHandler)
+                    lifecycleScope.launch {
+                        guestDialog(this@DashboardActivity, userProfileDbHandler)
+                    }
                 }
             }
             R.id.menu_goOnline -> wifiStatusSwitch()
@@ -368,7 +374,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         FeedbackListFragment::class.java.simpleName
                     )
                 } else {
-                    guestDialog(this, userProfileDbHandler)
+                    lifecycleScope.launch {
+                        guestDialog(this@DashboardActivity, userProfileDbHandler)
+                    }
                 }
             }
             R.id.action_settings -> startActivity(Intent(this@DashboardActivity, SettingActivity::class.java))
@@ -1020,7 +1028,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             R.string.menu_community -> openCallFragment(CommunityTabFragment())
             R.string.txt_myLibrary -> {
                 if (user?.id?.startsWith("guest") == true) {
-                    guestDialog(this, userProfileDbHandler)
+                    lifecycleScope.launch {
+                        guestDialog(this@DashboardActivity, userProfileDbHandler)
+                    }
                 } else {
                     openMyFragment(ResourcesFragment())
                 }
@@ -1032,7 +1042,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             })
             R.string.txt_myCourses -> {
                 if (user?.id?.startsWith("guest") == true) {
-                    guestDialog(this, userProfileDbHandler)
+                    lifecycleScope.launch {
+                        guestDialog(this@DashboardActivity, userProfileDbHandler)
+                    }
                 } else {
                     openMyFragment(CoursesFragment())
                 }
@@ -1160,14 +1172,18 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
             R.id.menu_mycourses -> {
                 if (user?.id?.startsWith("guest") == true) {
-                    guestDialog(this, userProfileDbHandler)
+                    lifecycleScope.launch {
+                        guestDialog(this@DashboardActivity, userProfileDbHandler)
+                    }
                 } else {
                     openMyFragment(CoursesFragment())
                 }
             }
             R.id.menu_mylibrary -> {
                 if (user?.id?.startsWith("guest") == true) {
-                    guestDialog(this, userProfileDbHandler)
+                    lifecycleScope.launch {
+                        guestDialog(this@DashboardActivity, userProfileDbHandler)
+                    }
                 } else {
                     openMyFragment(ResourcesFragment())
                 }

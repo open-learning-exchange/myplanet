@@ -607,7 +607,7 @@ class TeamRepositoryImpl @Inject constructor(
         if (task.sync.isNullOrBlank()) {
             val syncObj = JsonObject().apply {
                 addProperty("type", "local")
-                addProperty("planetCode", userProfileDbHandler.userModel?.planetCode)
+                addProperty("planetCode", userProfileDbHandler.getUserModel()?.planetCode)
             }
             task.sync = gson.toJson(syncObj)
         }
@@ -870,7 +870,7 @@ class TeamRepositoryImpl @Inject constructor(
             members.map { member ->
                 val lastVisitTimestamp = RealmTeamLog.getLastVisit(realm, member.name, teamId)
                 val visitCount = RealmTeamLog.getVisitCount(realm, member.name, teamId)
-                val offlineVisits = "${userProfileDbHandler.getOfflineVisits(member)}"
+                val offlineVisits = kotlinx.coroutines.runBlocking {  "${userProfileDbHandler.getOfflineVisits()}" }
                 val profileLastVisit = userProfileDbHandler.getLastVisit(member)
                 JoinedMemberData(
                     member, visitCount, lastVisitTimestamp, offlineVisits,

@@ -168,16 +168,18 @@ class MyHealthFragment : Fragment() {
     private fun refreshHealthData() {
         if (!isAdded || requireActivity().isFinishing) return
 
-        try {
-            val currentUser = getCurrentUserProfileCopy()
-            userId = if (TextUtils.isEmpty(currentUser?._id)) {
-                currentUser?.id
-            } else {
-                currentUser?._id
+        lifecycleScope.launch {
+            try {
+                val currentUser = getCurrentUserProfileCopy()
+                userId = if (TextUtils.isEmpty(currentUser?._id)) {
+                    currentUser?.id
+                } else {
+                    currentUser?._id
+                }
+                getHealthRecords(userId)
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-            getHealthRecords(userId)
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
     }
 
@@ -211,13 +213,15 @@ class MyHealthFragment : Fragment() {
     }
 
     private fun setupInitialData() {
-        val currentUser = getCurrentUserProfileCopy()
-        userId = if (TextUtils.isEmpty(currentUser?._id)) currentUser?.id else currentUser?._id
-        getHealthRecords(userId)
+        lifecycleScope.launch {
+            val currentUser = getCurrentUserProfileCopy()
+            userId = if (TextUtils.isEmpty(currentUser?._id)) currentUser?.id else currentUser?._id
+            getHealthRecords(userId)
+        }
     }
 
-    private fun getCurrentUserProfileCopy(): RealmUserModel? {
-        return userProfileDbHandler.getUserModelCopy()
+    private suspend fun getCurrentUserProfileCopy(): RealmUserModel? {
+        return userProfileDbHandler.getUserModel()
     }
 
     private fun setupButtons() {
