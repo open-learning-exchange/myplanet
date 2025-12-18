@@ -163,16 +163,18 @@ class AdapterCourses(
         }
     }
 
-    fun toggleTitleSortOrder() {
+    fun toggleTitleSortOrder(onComplete: (() -> Unit)? = null) {
         isTitleAscending = !isTitleAscending
         val sortedList = sortCourseListByTitle(courseList)
         setCourseList(sortedList)
+        onComplete?.invoke()
     }
 
-    fun toggleSortOrder() {
+    fun toggleSortOrder(onComplete: (() -> Unit)? = null) {
         isAscending = !isAscending
         val sortedList = sortCourseList(courseList)
         setCourseList(sortedList)
+        onComplete?.invoke()
     }
 
     fun setProgressMap(progressMap: HashMap<String?, JsonObject>?) {
