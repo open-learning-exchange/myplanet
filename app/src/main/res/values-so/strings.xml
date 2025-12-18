@@ -1177,6 +1177,8 @@
     <string name="achievement_saved">Guusha waa la cusbooneysiiyay</string>
     <string name="team_name_already_exists">Koox magacaan leh ayaa horay u jiray</string>
     <string name="enterprise_name_already_exists">Shirkad magacaan leh ayaa horay u jirtay</string>
+    <string name="downloading_images_please_check_notification">Sawirada waa la soo dejinayaa, fadlan eeg ogeysiiska…</string>
+    <string name="no_images_to_download">Ma jiraan sawiro la soo dejinayo</string>
     <string name="app_theme">Mawduuca app-ka</string>
 
 </resources>

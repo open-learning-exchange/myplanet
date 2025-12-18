@@ -386,7 +386,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
     }
 
     private fun setColor(courseId: String?, star: ImageView) {
-        if (RealmCertification.isCourseCertified(mRealm, courseId)) {
+        if (isRealmInitialized() && RealmCertification.isCourseCertified(mRealm, courseId)) {
             star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.colorPrimary))
         } else {
             star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.md_blue_grey_300))
