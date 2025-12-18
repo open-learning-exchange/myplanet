@@ -11,7 +11,7 @@ import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
 import android.widget.TextView
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.findViewTreeLifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.flexbox.FlexboxLayout
@@ -44,8 +44,7 @@ class AdapterCourses(
     private var courseList: List<RealmMyCourse?>,
     private val map: HashMap<String?, JsonObject>,
     private val userProfileDbHandler: UserProfileDbHandler,
-    private val tagRepository: TagRepository,
-    private val lifecycleOwner: LifecycleOwner
+    private val tagRepository: TagRepository
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private val selectedItems: MutableList<RealmMyCourse?> = ArrayList()
     private var listener: OnCourseItemSelected? = null
@@ -163,16 +162,18 @@ class AdapterCourses(
         }
     }
 
-    fun toggleTitleSortOrder() {
+    fun toggleTitleSortOrder(onComplete: (() -> Unit)? = null) {
         isTitleAscending = !isTitleAscending
         val sortedList = sortCourseListByTitle(courseList)
         setCourseList(sortedList)
+        onComplete?.invoke()
     }
 
-    fun toggleSortOrder() {
+    fun toggleSortOrder(onComplete: (() -> Unit)? = null) {
         isAscending = !isAscending
         val sortedList = sortCourseList(courseList)
         setCourseList(sortedList)
+        onComplete?.invoke()
     }
 
     fun setProgressMap(progressMap: HashMap<String?, JsonObject>?) {
@@ -403,7 +404,7 @@ class AdapterCourses(
             return
         }
 
-        lifecycleOwner.lifecycleScope.launch {
+        holder.itemView.findViewTreeLifecycleOwner()?.lifecycleScope?.launch {
             try {
                 val tags = tagRepository.getTagsForCourse(courseId)
                 tagCache[courseId] = tags
