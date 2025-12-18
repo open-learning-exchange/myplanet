@@ -233,7 +233,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     private fun startReminderCheck() {
         surveyReminderJob?.cancel()
-        surveyReminderJob = lifecycleScope.launch {
+        surveyReminderJob = viewLifecycleOwner.lifecycleScope.launch {
             while (isActive) {
                 checkScheduledReminders()
                 delay(60000)
