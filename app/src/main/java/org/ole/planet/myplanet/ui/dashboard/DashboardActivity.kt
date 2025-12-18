@@ -1090,10 +1090,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         openCallFragment(f,tag)
     }
 
-    override fun openLibraryDetailFragment(library: RealmMyLibrary?) {
+    override fun openLibraryDetailFragment(libraryId: String?) {
         val f: Fragment = ResourceDetailFragment()
         val b = Bundle()
-        b.putString("libraryId", library?.resourceId)
+        b.putString("libraryId", libraryId)
         f.arguments = b
         openCallFragment(f)
     }
