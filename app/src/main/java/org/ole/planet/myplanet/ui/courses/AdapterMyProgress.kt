@@ -92,12 +92,14 @@ class AdapterMyProgress(private val context: Context) : ListAdapter<JsonObject, 
         val tvDescription = binding.tvDescription
     }
 
-    private fun getCourseProgressComparisonData(item: JsonObject): List<Any?> {
-        val courseName = item.asJsonObject["courseName"]?.asString
-        val progressCurrent = item.asJsonObject["progress"]?.asJsonObject?.get("current")?.asInt
-        val progressMax = item.asJsonObject["progress"]?.asJsonObject?.get("max")?.asInt
-        val mistakes = item.asJsonObject["mistakes"]?.asJsonObject
-        val stepMistake = item.asJsonObject["stepMistake"]?.asJsonObject
-        return listOf(courseName, progressCurrent, progressMax, mistakes, stepMistake)
+    companion object {
+        private fun getCourseProgressComparisonData(item: JsonObject): List<Any?> {
+            val courseName = item.asJsonObject["courseName"]?.asString
+            val progressCurrent = item.asJsonObject["progress"]?.asJsonObject?.get("current")?.asInt
+            val progressMax = item.asJsonObject["progress"]?.asJsonObject?.get("max")?.asInt
+            val mistakes = item.asJsonObject["mistakes"]?.asJsonObject
+            val stepMistake = item.asJsonObject["stepMistake"]?.asJsonObject
+            return listOf(courseName, progressCurrent, progressMax, mistakes, stepMistake)
+        }
     }
 }
