@@ -7,6 +7,7 @@ import io.realm.Sort
 import java.util.Calendar
 import javax.inject.Inject
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -113,22 +114,24 @@ class DashboardViewModel @Inject constructor(
         if (userId == null) return
         userContentJob?.cancel()
         userContentJob = viewModelScope.launch {
-            launch {
-                val myLibrary = libraryRepository.getMyLibrary(userId)
-                _uiState.update { it.copy(library = myLibrary) }
+            val libraryDeferred = async {
+                libraryRepository.getMyLibrary(userId)
             }
 
-            launch {
+            val coursesFlowJob = launch {
                 courseRepository.getMyCoursesFlow(userId).collect { courses ->
                     _uiState.update { it.copy(courses = courses) }
                 }
             }
 
-            launch {
+            val teamsFlowJob = launch {
                 teamRepository.getMyTeamsFlow(userId).collect { teams ->
                     _uiState.update { it.copy(teams = teams) }
                 }
             }
+
+            val myLibrary = libraryDeferred.await()
+            _uiState.update { it.copy(library = myLibrary) }
         }
     }
 
