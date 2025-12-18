@@ -20,6 +20,8 @@ import org.ole.planet.myplanet.repository.LifeRepositoryImpl
 import org.ole.planet.myplanet.repository.MeetupRepository
 import org.ole.planet.myplanet.repository.MeetupRepositoryImpl
 import org.ole.planet.myplanet.repository.MyPersonalRepository
+import org.ole.planet.myplanet.repository.MyHealthRepository
+import org.ole.planet.myplanet.repository.MyHealthRepositoryImpl
 import org.ole.planet.myplanet.repository.MyPersonalRepositoryImpl
 import org.ole.planet.myplanet.repository.NewsRepository
 import org.ole.planet.myplanet.repository.NewsRepositoryImpl
@@ -43,6 +45,10 @@ import org.ole.planet.myplanet.repository.UserRepositoryImpl
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class RepositoryModule {
+
+    @Binds
+    @Singleton
+    abstract fun bindMyHealthRepository(impl: MyHealthRepositoryImpl): MyHealthRepository
 
     @Binds
     @Singleton
