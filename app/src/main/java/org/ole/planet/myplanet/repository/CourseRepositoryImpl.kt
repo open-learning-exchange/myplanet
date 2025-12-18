@@ -4,6 +4,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmCourseStep
+import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRemovedLog
@@ -154,6 +155,21 @@ class CourseRepositoryImpl @Inject constructor(
                 .filter { !it.courseTitle.isNullOrBlank() }
                 .sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
             realm.copyFromRealm(sortedList)
+        }
+    }
+    override suspend fun getCompletedCourses(userId: String?): List<CourseCompletionData> {
+        return withRealm { realm ->
+            val myCourses = RealmMyCourse.getMyCourseByUserId(userId, realm.where(RealmMyCourse::class.java).findAll())
+            val courseProgress = RealmCourseProgress.getCourseProgress(realm, userId)
+
+            myCourses.filter { course ->
+                val progress = courseProgress[course.id]
+                progress?.let {
+                    it.asJsonObject["current"].asInt == it.asJsonObject["max"].asInt
+                } == true
+            }.map {
+                CourseCompletionData(it.courseId, it.courseTitle)
+            }
         }
     }
 }

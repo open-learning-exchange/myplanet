@@ -21,4 +21,6 @@ interface CourseRepository {
         subjectLevel: String,
         tagNames: List<String>
     ): List<RealmMyCourse>
+
+    suspend fun getCompletedCourses(userId: String?): List<CourseCompletionData>
 }
