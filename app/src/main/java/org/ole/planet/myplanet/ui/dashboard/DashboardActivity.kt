@@ -144,6 +144,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         super.onCreate(savedInstanceState)
         postponeEnterTransition()
         lifecycleScope.launch {
+            val isReachable = service.checkIfMyPlanetIsReachable()
+            if (!isReachable) {
+                toast(this@DashboardActivity, getString(R.string.unable_to_connect_to_planet))
+            }
             user = userRepository.getUserModelSuspending()
             withContext(Dispatchers.Main) {
                 if (user == null) {

@@ -206,68 +206,47 @@ class Service @Inject constructor(
         }
     }
 
-    @Deprecated("Use ConfigurationRepository.checkServerAvailability instead")
-    fun isPlanetAvailable(callback: PlanetAvailableListener?) {
+    suspend fun checkIfMyPlanetIsReachable(): Boolean {
         val updateUrl = "${preferences.getString("serverURL", "")}"
         serverAvailabilityCache[updateUrl]?.let { (available, timestamp) ->
             if (System.currentTimeMillis() - timestamp < 30000) {
-                if (available) {
-                    callback?.isAvailable()
-                } else {
-                    callback?.notAvailable()
-                }
-                return
+                return available
             }
         }
 
         val serverUrlMapper = ServerUrlMapper()
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
-        serviceScope.launch {
-            withContext(Dispatchers.IO) {
-                val primaryReachable = isServerReachable(mapping.primaryUrl)
-                val alternativeReachable = mapping.alternativeUrl?.let { isServerReachable(it) } == true
+        withContext(Dispatchers.IO) {
+            val primaryReachable = isServerReachable(mapping.primaryUrl)
+            val alternativeReachable = mapping.alternativeUrl?.let { isServerReachable(it) } == true
 
-                if (!primaryReachable && alternativeReachable) {
-                    mapping.alternativeUrl?.let { alternativeUrl ->
-                        val uri = updateUrl.toUri()
-                        val editor = preferences.edit()
+            if (!primaryReachable && alternativeReachable) {
+                mapping.alternativeUrl?.let { alternativeUrl ->
+                    val uri = updateUrl.toUri()
+                    val editor = preferences.edit()
 
-                        serverUrlMapper.updateUrlPreferences(
-                            editor,
-                            uri,
-                            alternativeUrl,
-                            mapping.primaryUrl,
-                            preferences
-                        )
-                    }
+                    serverUrlMapper.updateUrlPreferences(
+                        editor,
+                        uri,
+                        alternativeUrl,
+                        mapping.primaryUrl,
+                        preferences
+                    )
                 }
             }
+        }
 
-            retrofitInterface.isPlanetAvailable(UrlUtils.getUpdateUrl(preferences)).enqueue(object : Callback<ResponseBody?> {
-                override fun onResponse(call: Call<ResponseBody?>, response: Response<ResponseBody?>) {
-                    val isAvailable = callback != null && response.code() == 200
-                    serverAvailabilityCache[updateUrl] = Pair(isAvailable, System.currentTimeMillis())
-                    serviceScope.launch {
-                        withContext(Dispatchers.Main) {
-                            if (isAvailable) {
-                                callback.isAvailable()
-                            } else {
-                                callback?.notAvailable()
-                            }
-                        }
-                    }
-                }
-
-                override fun onFailure(call: Call<ResponseBody?>, t: Throwable) {
-                    serverAvailabilityCache[updateUrl] = Pair(false, System.currentTimeMillis())
-                    serviceScope.launch {
-                        withContext(Dispatchers.Main) {
-                            callback?.notAvailable()
-                        }
-                    }
-                }
-            })
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = retrofitInterface.isPlanetAvailable(UrlUtils.getUpdateUrl(preferences)).execute()
+                val isAvailable = response.isSuccessful
+                serverAvailabilityCache[updateUrl] = Pair(isAvailable, System.currentTimeMillis())
+                isAvailable
+            } catch (e: Exception) {
+                serverAvailabilityCache[updateUrl] = Pair(false, System.currentTimeMillis())
+                false
+            }
         }
     }
 
@@ -440,11 +419,6 @@ class Service @Inject constructor(
 
     interface CreateUserCallback {
         fun onSuccess(message: String)
-    }
-
-    interface PlanetAvailableListener {
-        fun isAvailable()
-        fun notAvailable()
     }
 
     interface ConfigurationIdListener {

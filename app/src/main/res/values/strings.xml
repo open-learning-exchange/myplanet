@@ -1181,3 +1181,4 @@
     <string name="no_images_to_download">No images to download</string>
 
 </resources>
+<string name="unable_to_connect_to_planet">Unable to connect to Planet</string>
