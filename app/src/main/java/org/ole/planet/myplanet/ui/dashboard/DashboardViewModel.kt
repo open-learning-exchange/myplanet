@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -115,24 +116,32 @@ class DashboardViewModel @Inject constructor(
         if (userId == null) return
         userContentJob?.cancel()
         userContentJob = viewModelScope.launch {
-            val libraryDeferred = async {
-                libraryRepository.getMyLibrary(userId)
+            val libraryFlowJob = launch {
+                libraryRepository.getMyLibraryFlow(userId)
+                    .map { library -> library.map { it.id } to library }
+                    .distinctUntilChanged { old, new -> old.first == new.first }
+                    .collect { (_, library) ->
+                        _uiState.update { it.copy(library = library) }
+                    }
             }
 
             val coursesFlowJob = launch {
-                courseRepository.getMyCoursesFlow(userId).distinctUntilChanged().collect { courses ->
-                    _uiState.update { it.copy(courses = courses) }
-                }
+                courseRepository.getMyCoursesFlow(userId)
+                    .map { courses -> courses.map { it.id } to courses }
+                    .distinctUntilChanged { old, new -> old.first == new.first }
+                    .collect { (_, courses) ->
+                        _uiState.update { it.copy(courses = courses) }
+                    }
             }
 
             val teamsFlowJob = launch {
-                teamRepository.getMyTeamsFlow(userId).distinctUntilChanged().collect { teams ->
-                    _uiState.update { it.copy(teams = teams) }
-                }
+                teamRepository.getMyTeamsFlow(userId)
+                    .map { teams -> teams.map { it._id } to teams }
+                    .distinctUntilChanged { old, new -> old.first == new.first }
+                    .collect { (_, teams) ->
+                        _uiState.update { it.copy(teams = teams) }
+                    }
             }
-
-            val myLibrary = libraryDeferred.await()
-            _uiState.update { it.copy(library = myLibrary) }
         }
     }
 

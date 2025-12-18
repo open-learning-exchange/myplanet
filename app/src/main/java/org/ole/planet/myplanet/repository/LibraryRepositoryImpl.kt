@@ -54,6 +54,12 @@ class LibraryRepositoryImpl @Inject constructor(
         return getLibraryListForUser(userId)
     }
 
+    override suspend fun getMyLibraryFlow(userId: String): Flow<List<RealmMyLibrary>> {
+        return queryListFlow(RealmMyLibrary::class.java) {
+            equalTo("userId", userId)
+        }
+    }
+
     override suspend fun getMyLibrary(userId: String?): List<RealmMyLibrary> {
         return queryList(RealmMyLibrary::class.java) {
             equalTo("userId", userId)
