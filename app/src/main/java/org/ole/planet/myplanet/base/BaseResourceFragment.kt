@@ -70,7 +70,7 @@ abstract class BaseResourceFragment : Fragment() {
     var convertView: View? = null
     internal lateinit var prgDialog: DialogUtils.CustomProgressDialog
     @Inject
-    lateinit var userRepository: UserRepository
+    open lateinit var userRepository: UserRepository
     @Inject
     lateinit var libraryRepository: LibraryRepository
     @Inject

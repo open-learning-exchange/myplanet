@@ -27,10 +27,7 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.github.chrisbanes.photoview.PhotoView
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import io.realm.Case
-import io.realm.Realm
 import io.realm.RealmList
-import io.realm.Sort
 import java.io.File
 import java.util.Locale
 import javax.inject.Inject
@@ -43,8 +40,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNewsBinding
 import org.ole.planet.myplanet.model.ChatMessage
 import org.ole.planet.myplanet.model.Conversation
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.NewsRepository
@@ -52,7 +47,7 @@ import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.ImageUtils
@@ -64,34 +59,33 @@ import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.makeExpandable
 
-class AdapterNews(var context: Context, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userProfileDbHandler: UserProfileDbHandler, private val scope: CoroutineScope, private val userRepository: UserRepository, private val newsRepository: NewsRepository, private val teamRepository: TeamRepository) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
+class AdapterNews(
+    var context: Context,
+    private var currentUser: RealmUserModel?,
+    private val parentNews: RealmNews?,
+    private val teamName: String = "",
+    private val teamId: String? = null,
+    private val userProfileDbHandler: UserProfileDbHandler,
+    private val scope: CoroutineScope,
+    private val userRepository: UserRepository,
+    private val newsRepository: NewsRepository,
+    private val teamRepository: TeamRepository
+) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem ->
             if (oldItem === newItem) return@itemCallback true
             if (oldItem == null || newItem == null) return@itemCallback oldItem == newItem
-
-            try {
-                val oId = oldItem.takeIf { it.isValid }?.id
-                val nId = newItem.takeIf { it.isValid }?.id
-                oId != null && oId == nId
-            } catch (e: Exception) {
-                false
-            }
+            val oId = oldItem.id
+            val nId = newItem.id
+            oId != null && oId == nId
         },
         areContentsTheSame = { oldItem, newItem ->
             if (oldItem === newItem) return@itemCallback true
             if (oldItem == null || newItem == null) return@itemCallback oldItem == newItem
-
-            try {
-                if (!oldItem.isValid || !newItem.isValid) return@itemCallback false
-
-                oldItem.id == newItem.id && oldItem.time == newItem.time &&
-                        oldItem.isEdited == newItem.isEdited && oldItem.message == newItem.message &&
-                        oldItem.userName == newItem.userName && oldItem.userId == newItem.userId &&
-                        oldItem.sharedBy == newItem.sharedBy
-            } catch (e: Exception) {
-                false
-            }
+            oldItem.id == newItem.id && oldItem.time == newItem.time &&
+                    oldItem.isEdited == newItem.isEdited && oldItem.message == newItem.message &&
+                    oldItem.userName == newItem.userName && oldItem.userId == newItem.userId &&
+                    oldItem.sharedBy == newItem.sharedBy
         }
     )
 ) {
@@ -99,13 +93,11 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
     private var imageList: RealmList<String>? = null
-    lateinit var mRealm: Realm
     private var fromLogin = false
     private var nonTeamMember = false
     private var recyclerView: RecyclerView? = null
     var user: RealmUserModel? = null
     private var labelManager: NewsLabelManager? = null
-    private val profileDbHandler = userProfileDbHandler
     lateinit var settings: SharedPreferences
     private val userCache = mutableMapOf<String, RealmUserModel?>()
     private val fetchingUserIds = mutableSetOf<String>()
@@ -139,7 +131,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     fun addItem(news: RealmNews?) {
         val currentList = currentList.toMutableList()
         currentList.add(0, news)
-        submitListSafely(currentList) {
+        submitList(currentList) {
             recyclerView?.post {
                 recyclerView?.scrollToPosition(0)
                 recyclerView?.smoothScrollToPosition(0)
@@ -162,20 +154,11 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         this.listener = listener
     }
 
-    fun setmRealm(mRealm: Realm?) {
-        if (mRealm != null) {
-            this.mRealm = mRealm
-            labelManager = NewsLabelManager(context, this.mRealm)
-        }
-    }
-
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val binding = RowNewsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         user = userProfileDbHandler.userModel
-        settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        if (::mRealm.isInitialized) {
-            if (labelManager == null) labelManager = NewsLabelManager(context, mRealm)
-        }
+        settings = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+        labelManager = NewsLabelManager(context, newsRepository, scope)
         return ViewHolderNews(binding)
     }
 
@@ -186,24 +169,21 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
             holder.bind(position)
             val news = getNews(holder, position)
 
-            if (news?.isValid == true) {
-                val viewHolder = holder
-                val sharedTeamName = extractSharedTeamName(news)
-                resetViews(viewHolder)
-                updateReplyCount(viewHolder, news, position)
-                val userModel = configureUser(viewHolder, news)
-                showShareButton(viewHolder, news)
-                setMessageAndDate(viewHolder, news, sharedTeamName)
-                configureEditDeleteButtons(viewHolder, news)
-                loadImage(viewHolder.binding, news)
-                showReplyButton(viewHolder, news, position)
-                val canManageLabels = canAddLabel(news)
-                labelManager?.setupAddLabelMenu(viewHolder.binding, news, canManageLabels)
-                news.let { labelManager?.showChips(viewHolder.binding, it, canManageLabels) }
-                handleChat(viewHolder, news)
-                val currentLeader = getCurrentLeader(userModel, news)
-                setMemberClickListeners(viewHolder, userModel, currentLeader)
-            }
+            val viewHolder = holder
+            val sharedTeamName = extractSharedTeamName(news)
+            resetViews(viewHolder)
+            updateReplyCount(viewHolder, news, position)
+            configureUser(viewHolder, news)
+            showShareButton(viewHolder, news)
+            setMessageAndDate(viewHolder, news, sharedTeamName)
+            configureEditDeleteButtons(viewHolder, news)
+            loadImage(viewHolder.binding, news)
+            showReplyButton(viewHolder, news, position)
+            val canManageLabels = canAddLabel(news)
+            labelManager?.setupAddLabelMenu(viewHolder.binding, news, canManageLabels)
+            news?.let { labelManager?.showChips(viewHolder.binding, it, canManageLabels) }
+            handleChat(viewHolder, news)
+            setMemberClickListeners(viewHolder, news)
         }
     }
 
@@ -222,8 +202,8 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         }
     }
 
-    private fun extractSharedTeamName(news: RealmNews): String {
-        if (!TextUtils.isEmpty(news.viewIn)) {
+    private fun extractSharedTeamName(news: RealmNews?): String {
+        if (news != null && !TextUtils.isEmpty(news.viewIn)) {
             val ar = GsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
             if (ar.size() > 1) {
                 val ob = ar[0].asJsonObject
@@ -257,25 +237,24 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         }
     }
 
-    private fun configureUser(holder: ViewHolderNews, news: RealmNews): RealmUserModel? {
-        val userId = news.userId
-        if (userId.isNullOrEmpty()) return null
+    private fun configureUser(holder: ViewHolderNews, news: RealmNews?) {
+        val userId = news?.userId
+        if (userId.isNullOrEmpty()) return
 
         if (userCache.containsKey(userId)) {
             val userModel = userCache[userId]
             val userFullName = userModel?.getFullNameWithMiddleName()?.trim()
             if (userModel != null && currentUser != null) {
                 holder.binding.tvName.text =
-                    if (userFullName.isNullOrEmpty()) news.userName else userFullName
+                    if (userFullName.isNullOrEmpty()) news?.userName else userFullName
                 ImageUtils.loadImage(userModel.userImage, holder.binding.imgUser)
                 showHideButtons(news, holder)
             } else {
-                holder.binding.tvName.text = news.userName
+                holder.binding.tvName.text = news?.userName
                 ImageUtils.loadImage(null, holder.binding.imgUser)
             }
-            return userModel
         } else {
-            holder.binding.tvName.text = news.userName
+            holder.binding.tvName.text = news?.userName
             ImageUtils.loadImage(null, holder.binding.imgUser)
             if (!fetchingUserIds.contains(userId)) {
                 fetchingUserIds.add(userId)
@@ -292,11 +271,11 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
                     }
                 }
             }
-            return null
         }
     }
 
-    private fun setMessageAndDate(holder: ViewHolderNews, news: RealmNews, sharedTeamName: String) {
+    private fun setMessageAndDate(holder: ViewHolderNews, news: RealmNews?, sharedTeamName: String) {
+        if (news == null) return
         val markdownContentWithLocalPaths = prependBaseUrlToImages(
             news.message,
             "file://" + context.getExternalFilesDir(null) + "/ole/",
@@ -318,36 +297,30 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         holder.binding.tvEdited.visibility = if (news.isEdited) View.VISIBLE else View.GONE
     }
 
-    private fun configureEditDeleteButtons(holder: ViewHolderNews, news: RealmNews) {
-        if (news.sharedBy == currentUser?._id && !fromLogin && !nonTeamMember && teamName.isEmpty()) {
+    private fun configureEditDeleteButtons(holder: ViewHolderNews, news: RealmNews?) {
+        if (news?.sharedBy == currentUser?._id && !fromLogin && !nonTeamMember && teamName.isEmpty()) {
             holder.binding.imgDelete.visibility = View.VISIBLE
         }
 
-        if (news.userId == currentUser?._id || news.sharedBy == currentUser?._id) {
+        if (news?.userId == currentUser?._id || news?.sharedBy == currentUser?._id) {
             holder.binding.imgDelete.setOnClickListener {
                 AlertDialog.Builder(context, R.style.AlertDialogTheme)
                     .setMessage(R.string.delete_record)
                     .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
-                        val currentList = currentList.toMutableList()
-                        val pos = holder.adapterPosition
-                        val adjustedPos = if (parentNews != null && pos > 0) pos - 1 else pos
-                        if (adjustedPos >= 0 && adjustedPos < currentList.size) {
-                            currentList.removeAt(adjustedPos)
-                            submitListSafely(currentList)
-                        }
-                        NewsActions.deletePost(mRealm, news, currentList.toMutableList(), teamName, listener)
+                        NewsActions.deletePost(context, newsRepository, scope, news, teamName, listener)
                     }
                     .setNegativeButton(R.string.cancel, null)
                     .show()
             }
         }
 
-        if (news.userId == currentUser?._id) {
+        if (news?.userId == currentUser?._id) {
             holder.binding.imgEdit.setOnClickListener {
                 NewsActions.showEditAlert(
                     context,
-                    mRealm,
-                    news.id,
+                    newsRepository,
+                    scope,
+                    news,
                     true,
                     currentUser,
                     listener,
@@ -362,8 +335,8 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         }
     }
 
-    private fun handleChat(holder: ViewHolderNews, news: RealmNews) {
-        if (news.newsId?.isNotEmpty() == true) {
+    private fun handleChat(holder: ViewHolderNews, news: RealmNews?) {
+        if (news?.newsId?.isNotEmpty() == true) {
             val conversations = GsonUtils.gson.fromJson(news.conversations, Array<Conversation>::class.java).toList()
             val chatAdapter = ChatAdapter(context, holder.binding.recyclerGchat, holder.itemView.findViewTreeLifecycleOwner()?.lifecycleScope)
 
@@ -398,50 +371,22 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         }
     }
 
-    private fun getCurrentLeader(userModel: RealmUserModel?, news: RealmNews): RealmUserModel? {
-        if (userModel == null) {
-            for (leader in leadersList) {
-                if (leader.name == news.userName) {
-                    return leader
-                }
-            }
-        }
-        return null
-    }
-
-    fun updateList(newList: List<RealmNews?>) {
-        submitListSafely(newList)
-    }
-
-    fun refreshCurrentItems() {
-        submitListSafely(currentList.toList())
-    }
-
-    private fun submitListSafely(list: List<RealmNews?>, commitCallback: Runnable? = null) {
-        userCache.clear()
-        val detachedList = list.map { news ->
-            if (news?.isValid == true && ::mRealm.isInitialized) {
-                try {
-                    mRealm.copyFromRealm(news)
-                } catch (e: Exception) {
-                    news
-                }
-            } else {
-                news
-            }
-        }
-        submitList(detachedList, commitCallback)
-    }
-
-    private fun setMemberClickListeners(holder: ViewHolderNews, userModel: RealmUserModel?, currentLeader: RealmUserModel?) {
+    private fun setMemberClickListeners(holder: ViewHolderNews, news: RealmNews?) {
         if (!fromLogin) {
-            holder.binding.imgUser.setOnClickListener {
-                val model = userModel ?: currentLeader
-                listener?.onMemberSelected(model)
-            }
-            holder.binding.tvName.setOnClickListener {
-                val model = userModel ?: currentLeader
-                listener?.onMemberSelected(model)
+            val userId = news?.userId
+            if (userId != null) {
+                val userModel = userCache[userId]
+                val currentLeader = if (userModel == null) {
+                    leadersList.find { it.name == news.userName }
+                } else null
+                holder.binding.imgUser.setOnClickListener {
+                    val model = userModel ?: currentLeader
+                    listener?.onMemberSelected(model)
+                }
+                holder.binding.tvName.setOnClickListener {
+                    val model = userModel ?: currentLeader
+                    listener?.onMemberSelected(model)
+                }
             }
         }
     }
@@ -473,7 +418,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         isLoggedInAndMember() && (isOwner(news) || isTeamLeader())
 
     private fun canShare(news: RealmNews?): Boolean =
-        isLoggedInAndMember() && !news?.isCommunityNews!! && !isGuestUser()
+        news != null && isLoggedInAndMember() && !news.isCommunityNews && !isGuestUser()
 
     private fun View.setVisibility(condition: Boolean) {
         visibility = if (condition) View.VISIBLE else View.GONE
@@ -542,8 +487,9 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
             viewHolder.binding.btnReply.setOnClickListener {
                 NewsActions.showEditAlert(
                     context,
-                    mRealm,
-                    finalNews?.id,
+                    newsRepository,
+                    scope,
+                    finalNews,
                     false,
                     currentUser,
                     listener,
@@ -586,24 +532,24 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
                 .setTitle(R.string.share_with_community)
                 .setMessage(R.string.confirm_share_community)
                 .setPositiveButton(R.string.yes) { _, _ ->
-                     val newsId = news?.id
-                     val userId = currentUser?.id
-                     val planetCode = currentUser?.planetCode ?: ""
-                     val parentCode = currentUser?.parentCode ?: ""
+                    val newsId = news?.id
+                    val userId = currentUser?.id
+                    val planetCode = currentUser?.planetCode ?: ""
+                    val parentCode = currentUser?.parentCode ?: ""
 
-                     if (newsId != null && userId != null) {
-                         scope.launch {
-                             val result = newsRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
-                             withContext(Dispatchers.Main) {
-                                 if (result.isSuccess) {
-                                     Utilities.toast(context, context.getString(R.string.shared_to_community))
-                                     viewHolder.binding.btnShare.visibility = View.GONE
-                                 } else {
-                                     Utilities.toast(context, "Failed to share news")
-                                 }
-                             }
-                         }
-                     }
+                    if (newsId != null && userId != null) {
+                        scope.launch {
+                            val result = newsRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
+                            withContext(Dispatchers.Main) {
+                                if (result.isSuccess) {
+                                    Utilities.toast(context, context.getString(R.string.shared_to_community))
+                                    viewHolder.binding.btnShare.visibility = View.GONE
+                                } else {
+                                    Utilities.toast(context, "Failed to share news")
+                                }
+                            }
+                        }
+                    }
                 }
                 .setNegativeButton(R.string.cancel, null)
                 .show()

@@ -32,7 +32,7 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
         }
     var team: RealmMyTeam? = null
     @Inject
-    lateinit var teamRepository: TeamRepository
+    open lateinit var teamRepository: TeamRepository
     private val _teamFlow = MutableStateFlow<RealmMyTeam?>(null)
     val teamFlow: StateFlow<RealmMyTeam?> = _teamFlow.asStateFlow()
     private val _isMemberFlow = MutableStateFlow(false)

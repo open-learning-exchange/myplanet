@@ -26,7 +26,6 @@ import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityReplyBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.NewsRepository
@@ -34,7 +33,6 @@ import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.news.AdapterNews.OnNewsItemClickListener
-import org.ole.planet.myplanet.ui.news.NewsActions
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getImagePath
@@ -46,8 +44,6 @@ import org.ole.planet.myplanet.utilities.SharedPrefManager
 @AndroidEntryPoint
 open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     private lateinit var activityReplyBinding: ActivityReplyBinding
-    @Inject
-    lateinit var databaseService: DatabaseService
     var id: String? = null
     private lateinit var newsAdapter: AdapterNews
     var user: RealmUserModel? = null
@@ -97,17 +93,14 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         id ?: return
         lifecycleScope.launch {
             val (news, list) = viewModel.getNewsWithReplies(id)
-            databaseService.withRealm { realm ->
-                newsAdapter = AdapterNews(this@ReplyActivity, user, news, "", null, userProfileDbHandler, lifecycleScope, userRepository, newsRepository, teamRepository)
-                newsAdapter.sharedPrefManager = sharedPrefManager
-                newsAdapter.setListener(this@ReplyActivity)
-                newsAdapter.setmRealm(realm)
-                newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
-                newsAdapter.setNonTeamMember(intent.getBooleanExtra("nonTeamMember", false))
-                newsAdapter.setImageList(imageList)
-                newsAdapter.updateList(list)
-                activityReplyBinding.rvReply.adapter = newsAdapter
-            }
+            newsAdapter = AdapterNews(this@ReplyActivity, user, news, "", null, userProfileDbHandler, lifecycleScope, userRepository, newsRepository, teamRepository)
+            newsAdapter.sharedPrefManager = sharedPrefManager
+            newsAdapter.setListener(this@ReplyActivity)
+            newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
+            newsAdapter.setNonTeamMember(intent.getBooleanExtra("nonTeamMember", false))
+            newsAdapter.setImageList(imageList)
+            newsAdapter.submitList(list)
+            activityReplyBinding.rvReply.adapter = newsAdapter
         }
     }
 

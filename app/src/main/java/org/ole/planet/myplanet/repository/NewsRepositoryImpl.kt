@@ -57,9 +57,15 @@ class NewsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun createNews(map: HashMap<String?, String>, user: RealmUserModel?): RealmNews {
+    override suspend fun createNews(
+        map: HashMap<String?, String>,
+        user: RealmUserModel?,
+        images: List<String>?
+    ): RealmNews {
         return withRealmAsync { realm ->
-            val managedNews = createNews(map, realm, user, null)
+            val imageList = io.realm.RealmList<String>()
+            images?.forEach { imageList.add(it) }
+            val managedNews = createNews(map, realm, user, imageList)
             realm.copyFromRealm(managedNews)
         }
     }
@@ -238,6 +244,125 @@ class NewsRepositoryImpl @Inject constructor(
                 .equalTo("replyTo", newsId, Case.INSENSITIVE)
                 .findAll()
                 .let { realm.copyFromRealm(it) }
+        }
+    }
+
+    override suspend fun deletePost(newsId: String, teamName: String) {
+        withRealm { realm ->
+            realm.executeTransaction {
+                val news = it.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
+                news?.let { newsItem ->
+                    val ar = gson.fromJson(newsItem.viewIn, JsonArray::class.java)
+                    if (teamName.isNotEmpty() || ar.size() < 2) {
+                        deleteChildPosts(it, newsItem.id)
+                        newsItem.deleteFromRealm()
+                    } else {
+                        val filtered = JsonArray()
+                        ar.forEach { elem ->
+                            if (!elem.asJsonObject.has("sharedDate")) {
+                                filtered.add(elem)
+                            }
+                        }
+                        newsItem.viewIn = gson.toJson(filtered)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun deleteChildPosts(realm: io.realm.Realm, parentId: String?) {
+        if (parentId == null) return
+        val children = realm.where(RealmNews::class.java)
+            .equalTo("replyTo", parentId)
+            .findAll()
+        children.forEach { child ->
+            deleteChildPosts(realm, child.id)
+            child.deleteFromRealm()
+        }
+    }
+
+    override suspend fun editPost(
+        newsId: String,
+        message: String,
+        images: List<String>?,
+        imagesToRemove: List<String>?
+    ) {
+        withRealm { realm ->
+            realm.executeTransaction {
+                val news = it.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
+                news?.let { newsItem ->
+                    if (imagesToRemove?.isNotEmpty() == true) {
+                        newsItem.imageUrls?.let { imageUrls ->
+                            val updatedUrls = imageUrls.filter { imageUrlJson ->
+                                try {
+                                    val imgObject = gson.fromJson(imageUrlJson, JsonObject::class.java)
+                                    val path = imgObject.get("imageUrl").asString
+                                    !imagesToRemove.contains(path)
+                                } catch (_: Exception) {
+                                    true
+                                }
+                            }
+                            newsItem.imageUrls?.clear()
+                            newsItem.imageUrls?.addAll(updatedUrls)
+                        }
+                    }
+                    images?.forEach { newsItem.imageUrls?.add(it) }
+                    newsItem.updateMessage(message)
+                }
+            }
+        }
+    }
+
+    override suspend fun postReply(
+        message: String,
+        replyTo: String,
+        viewableBy: String,
+        viewableId: String,
+        messageType: String,
+        messagePlanetCode: String,
+        viewIn: String,
+        user: RealmUserModel?,
+        images: List<String>?
+    ) {
+        withRealm { realm ->
+            realm.executeTransaction {
+                val map = HashMap<String?, String>()
+                map["message"] = message
+                map["viewableBy"] = viewableBy
+                map["viewableId"] = viewableId
+                map["replyTo"] = replyTo
+                map["messageType"] = messageType
+                map["messagePlanetCode"] = messagePlanetCode
+                map["viewIn"] = viewIn
+                val imageList = io.realm.RealmList<String>()
+                images?.forEach { imageList.add(it) }
+                createNews(map, it, user, imageList, true)
+            }
+        }
+    }
+
+    override suspend fun addLabel(newsId: String, label: String) {
+        withRealm { realm ->
+            realm.executeTransaction {
+                val news = it.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
+                news?.let { newsItem ->
+                    if (newsItem.labels == null) {
+                        newsItem.labels = io.realm.RealmList()
+                    }
+                    if (newsItem.labels?.contains(label) == false) {
+                        newsItem.labels?.add(label)
+                    }
+                }
+            }
+        }
+    }
+
+    override suspend fun removeLabel(newsId: String, label: String) {
+        withRealm { realm ->
+            realm.executeTransaction {
+                val news = it.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
+                news?.labels?.remove(label)
+            }
         }
     }
 }

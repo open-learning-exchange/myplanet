@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.team.teamDiscussion
 
 import android.content.res.Configuration
 import android.os.Bundle
-import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -10,11 +9,7 @@ import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import com.google.gson.JsonArray
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
-import io.realm.Sort
-import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
@@ -23,17 +18,15 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentDiscussionListBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
-import org.ole.planet.myplanet.model.RealmTeamNotification
 import org.ole.planet.myplanet.repository.NewsRepository
 import org.ole.planet.myplanet.repository.TeamRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.news.AdapterNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.FileUtils
-import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 
 @AndroidEntryPoint
@@ -44,11 +37,13 @@ class DiscussionListFragment : BaseTeamFragment() {
     @Inject
     lateinit var newsRepository: NewsRepository
     @Inject
+    override lateinit var userRepository: UserRepository
+    @Inject
+    override lateinit var teamRepository: TeamRepository
+    @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
-
-    private var filteredNewsList: List<RealmNews?> = listOf()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentDiscussionListBinding.inflate(inflater, container, false)
@@ -92,9 +87,7 @@ class DiscussionListFragment : BaseTeamFragment() {
             user?.let { userModel ->
                 viewLifecycleOwner.lifecycleScope.launch {
                     try {
-                        databaseService.executeTransactionAsync { realm ->
-                            createNews(map, realm, userModel, imageList)
-                        }
+                        newsRepository.createNews(map, userModel, imageList)
                         binding.rvDiscussion.post {
                             binding.rvDiscussion.smoothScrollToPosition(0)
                         }
@@ -196,10 +189,9 @@ class DiscussionListFragment : BaseTeamFragment() {
                 AdapterNews(it, user, null, getEffectiveTeamName(), teamId, userProfileDbHandler, viewLifecycleOwner.lifecycleScope, userRepository, newsRepository, teamRepository)
             }
             adapterNews?.sharedPrefManager = sharedPrefManager
-            adapterNews?.setmRealm(mRealm)
             adapterNews?.setListener(this)
             if (!isMemberFlow.value) adapterNews?.setNonTeamMember(true)
-            realmNewsList?.let { adapterNews?.updateList(it) }
+            realmNewsList?.let { adapterNews?.submitList(it) }
             binding.rvDiscussion.adapter = adapterNews
             adapterNews?.let {
                 showNoData(binding.tvNodata, it.itemCount, "discussions")
@@ -207,7 +199,7 @@ class DiscussionListFragment : BaseTeamFragment() {
         } else {
             (existingAdapter as? AdapterNews)?.let { adapter ->
                 realmNewsList?.let {
-                    adapter.updateList(it)
+                    adapter.submitList(it)
                     showNoData(binding.tvNodata, adapter.itemCount, "discussions")
                 }
             }

@@ -334,7 +334,7 @@ class ChatHistoryListFragment : Fragment() {
         }
         viewLifecycleOwner.lifecycleScope.launch {
             val currentUser = user
-            val createdNews = newsRepository.createNews(map, currentUser)
+            val createdNews = newsRepository.createNews(map, currentUser, null)
             if (currentUser?.planetCode != null) {
                 sharedNewsMessages = sharedNewsMessages + createdNews
             }
