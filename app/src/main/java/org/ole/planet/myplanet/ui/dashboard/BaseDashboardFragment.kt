@@ -44,8 +44,9 @@ import org.ole.planet.myplanet.model.TeamNotificationInfo
 import org.ole.planet.myplanet.service.TransactionSyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_LOGIN
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
-import org.ole.planet.myplanet.ui.myhealth.UserListArrayAdapter
+import org.ole.planet.myplanet.ui.myhealth.UserListAdapter
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
+import androidx.recyclerview.widget.LinearLayoutManager
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.ui.userprofile.UserProfileFragment
 import org.ole.planet.myplanet.utilities.Constants
@@ -408,22 +409,23 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             .setNegativeButton(R.string.dismiss, null)
             .create()
 
+        val adapter = UserListAdapter { user ->
+            user._id?.let { userId ->
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val libraryList = viewModel.getLibraryForSelectedUser(userId)
+                    showDownloadDialog(libraryList)
+                }
+            }
+            dialog.dismiss()
+        }
+        alertHealthListBinding.list.layoutManager = LinearLayoutManager(activity)
+        alertHealthListBinding.list.adapter = adapter
+
         val job = viewLifecycleOwner.lifecycleScope.launch {
             viewModel.uiState.collect {
                 if (dialog.isShowing) {
                     if (it.users.isNotEmpty()) {
-                        val adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, it.users)
-                        alertHealthListBinding.list.adapter = adapter
-                        alertHealthListBinding.list.onItemClickListener = AdapterView.OnItemClickListener { _, _, i, _ ->
-                            val selected = alertHealthListBinding.list.adapter.getItem(i) as RealmUserModel
-                            selected._id?.let { userId ->
-                                viewLifecycleOwner.lifecycleScope.launch {
-                                    val libraryList = viewModel.getLibraryForSelectedUser(userId)
-                                    showDownloadDialog(libraryList)
-                                }
-                            }
-                            dialog.dismiss()
-                        }
+                        adapter.submitList(it.users)
                         alertHealthListBinding.list.visibility = View.VISIBLE
                     } else {
                         alertHealthListBinding.list.visibility = View.GONE
