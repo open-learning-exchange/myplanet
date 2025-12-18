@@ -8,26 +8,23 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import androidx.lifecycle.findViewTreeLifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.snackbar.Snackbar
-import io.realm.Realm
-import java.util.UUID
-import org.json.JSONObject
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.SurveyAdoptListener
 import org.ole.planet.myplanet.databinding.RowSurveyBinding
-import org.ole.planet.myplanet.model.RealmExamQuestion
-import org.ole.planet.myplanet.model.RealmMembershipDoc
-import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.AdoptSurveyRequest
 import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.SurveyBindingData
+import org.ole.planet.myplanet.repository.SurveyRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 
 class AdapterSurvey(
     private val context: Context,
-    private val mRealm: Realm,
     private val userId: String?,
     private val isTeam: Boolean,
     val teamId: String?,
@@ -35,7 +32,8 @@ class AdapterSurvey(
     private val settings: SharedPreferences,
     private val userProfileDbHandler: UserProfileDbHandler,
     private val surveyInfoMap: Map<String, SurveyInfo>,
-    private val bindingDataMap: Map<String, SurveyBindingData>
+    private val bindingDataMap: Map<String, SurveyBindingData>,
+    private val surveyRepository: SurveyRepository
 ) : ListAdapter<RealmStepExam, AdapterSurvey.ViewHolderSurvey>(SurveyDiffCallback()) {
     private var listener: OnHomeItemClickListener? = null
     private val adoptedSurveyIds = mutableSetOf<String>()
@@ -155,165 +153,37 @@ class AdapterSurvey(
             val sParentCode = settings.getString("parentCode", "")
             val planetCode = settings.getString("planetCode", "")
 
-            val parentJsonString = try {
-                JSONObject().apply {
-                    put("_id", exam.id)
-                    put("name", exam.name)
-                    put("courseId", exam.courseId ?: "")
-                    put("sourcePlanet", exam.sourcePlanet ?: "")
-                    put("teamShareAllowed", exam.isTeamShareAllowed)
-                    put("noOfQuestions", exam.noOfQuestions)
-                    put("isFromNation", exam.isFromNation)
-                }.toString()
-            } catch (e: Exception) {
-                e.printStackTrace()
-                "{}"
-            }
+            val request = AdoptSurveyRequest(
+                exam = exam,
+                teamId = teamId,
+                isTeam = isTeam,
+                user = userModel,
+                parentCode = sParentCode,
+                planetCode = planetCode
+            )
 
-            val userJsonString = try {
-                JSONObject().apply {
-                    put("doc", JSONObject().apply {
-                        put("_id", userModel?.id)
-                        put("name", userModel?.name)
-                        put("userId", userModel?.id ?: "")
-                        put("teamPlanetCode", planetCode ?: "")
-                        put("status", "active")
-                        put("type", "team")
-                        put("createdBy", userModel?.id ?: "")
-                    })
-
-                    if (isTeam && teamId != null) {
-                        put("membershipDoc", JSONObject().apply {
-                            put("teamId", teamId)
-                        })
-                    }
-                }.toString()
-            } catch (e: Exception) {
-                e.printStackTrace()
-                "{}"
-            }
-
-            val adoptionId = "${UUID.randomUUID()}"
-            val examId = exam.id
-            val userId = userModel?.id
-
-            if (mRealm.isClosed) {
-                Snackbar.make(binding.root, context.getString(R.string.failed_to_adopt_survey), Snackbar.LENGTH_LONG).show()
-                return
-            }
-
-            try {
-                mRealm.executeTransactionAsync({ realm ->
-                    val teamName = if (isTeam && teamId != null) {
-                        realm.where(RealmMyTeam::class.java)
-                            .equalTo("_id", teamId)
-                            .findFirst()?.name
-                    } else null
-
-                    if (isTeam && teamId != null && teamName != null) {
-                        val newSurveyId = UUID.randomUUID().toString()
-
-                        val existingSurvey = realm.where(RealmStepExam::class.java)
-                            .equalTo("sourceSurveyId", examId)
-                            .equalTo("teamId", teamId)
-                            .findFirst()
-
-                        if (existingSurvey == null) {
-                            realm.createObject(RealmStepExam::class.java, newSurveyId).apply {
-                                _rev = null
-                                createdDate = System.currentTimeMillis()
-                                updatedDate = System.currentTimeMillis()
-                                createdBy = userModel?.id
-                                totalMarks = exam.totalMarks
-                                name = "${exam.name} - $teamName"
-                                description = exam.description
-                                type = exam.type
-                                stepId = exam.stepId
-                                courseId = exam.courseId
-                                sourcePlanet = exam.sourcePlanet
-                                passingPercentage = exam.passingPercentage
-                                noOfQuestions = exam.noOfQuestions
-                                isFromNation = exam.isFromNation
-
-                                this.teamId = teamId
-                                sourceSurveyId = examId
-                                isTeamShareAllowed = false
-                            }
-
-                            val questions = realm.where(RealmExamQuestion::class.java)
-                                .equalTo("examId", examId)
-                                .findAll()
-
-                            val questionsArray = RealmExamQuestion.serializeQuestions(questions)
-                            RealmExamQuestion.insertExamQuestions(questionsArray, newSurveyId, realm)
+            itemView.findViewTreeLifecycleOwner()?.lifecycleScope?.launch {
+                surveyRepository.adoptSurvey(request)
+                    .onSuccess {
+                        adoptedSurveyIds.add(exam.id!!)
+                        val position = currentList.indexOfFirst { it.id == exam.id }
+                        if (position != -1) {
+                            notifyItemChanged(position)
                         }
+                        Snackbar.make(
+                            binding.root,
+                            context.getString(R.string.survey_adopted_successfully),
+                            Snackbar.LENGTH_LONG
+                        ).show()
+                        surveyAdoptListener.onSurveyAdopted()
                     }
-
-                    val existingAdoption = if (isTeam && teamId != null) {
-                        realm.where(RealmSubmission::class.java)
-                            .equalTo("userId", userId)
-                            .equalTo("parentId", examId)
-                            .equalTo("status", "")
-                            .equalTo("membershipDoc.teamId", teamId)
-                            .findFirst()
-                    } else {
-                        realm.where(RealmSubmission::class.java)
-                            .equalTo("userId", userId)
-                            .equalTo("parentId", examId)
-                            .equalTo("status", "")
-                            .isNull("membershipDoc")
-                            .findFirst()
+                    .onFailure {
+                        Snackbar.make(
+                            binding.root,
+                            context.getString(R.string.failed_to_adopt_survey),
+                            Snackbar.LENGTH_LONG
+                        ).show()
                     }
-
-                    if (existingAdoption == null) {
-                        realm.createObject(RealmSubmission::class.java, adoptionId).apply {
-                            parentId = examId
-                            parent = parentJsonString
-                            this.userId = userId
-                            user = userJsonString
-                            type = "survey"
-                            status = ""
-                            uploaded = false
-                            source = planetCode ?: ""
-                            parentCode = sParentCode ?: ""
-                            startTime = System.currentTimeMillis()
-                            lastUpdateTime = System.currentTimeMillis()
-                            isUpdated = true
-
-                            if (isTeam && teamId != null) {
-                                val team = realm.where(RealmMyTeam::class.java)
-                                    .equalTo("_id", teamId)
-                                    .findFirst()
-
-                                if (team != null) {
-                                    val teamRef = realm.createObject(org.ole.planet.myplanet.model.RealmTeamReference::class.java)
-                                    teamRef._id = team._id
-                                    teamRef.name = team.name
-                                    teamRef.type = team.type ?: "team"
-                                    teamObject = teamRef
-                                }
-
-                                membershipDoc = realm.createObject(RealmMembershipDoc::class.java).apply {
-                                    this.teamId = teamId
-                                }
-                            }
-                        }
-                    }
-                }, {
-                    mRealm.refresh()
-                    adoptedSurveyIds.add("$examId")
-                    val position = currentList.indexOfFirst { it.id == examId }
-                    if (position != -1) {
-                        notifyItemChanged(position)
-                    }
-
-                    Snackbar.make(binding.root, context.getString(R.string.survey_adopted_successfully), Snackbar.LENGTH_LONG).show()
-                    surveyAdoptListener.onSurveyAdopted()
-                }, { error ->
-                    Snackbar.make(binding.root, context.getString(R.string.failed_to_adopt_survey), Snackbar.LENGTH_LONG).show()
-                })
-            } catch (e: Exception) {
-                Snackbar.make(binding.root, context.getString(R.string.failed_to_adopt_survey), Snackbar.LENGTH_LONG).show()
             }
         }
     }

@@ -79,7 +79,6 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         val userProfileModel = profileDbHandler.userModel
         adapter = AdapterSurvey(
             requireActivity(),
-            mRealm,
             userProfileModel?.id,
             isTeam,
             teamId,
@@ -87,7 +86,8 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
             settings,
             profileDbHandler,
             surveyInfoMap,
-            bindingDataMap
+            bindingDataMap,
+            surveyRepository
         )
         prefManager = SharedPrefManager(requireContext())
         
