@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowJoinedUserBinding
 import org.ole.planet.myplanet.repository.JoinedMemberData
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import org.ole.planet.myplanet.utilities.DiffUtils
 
@@ -34,22 +35,25 @@ class AdapterJoinedMember(
         fun onMakeLeader(member: JoinedMemberData)
         fun onLeaveTeam()
     }
-
     companion object {
-        private val DIFF_CALLBACK =
-            DiffUtils.itemCallback<JoinedMemberData>(
-                areItemsTheSame = { old, new -> old.user.id == new.user.id },
-                areContentsTheSame = { old, new -> old == new },
-                getChangePayload = { old, new ->
-                    val payload = Bundle()
-                    if (old.isLeader != new.isLeader) {
-                        payload.putBoolean("KEY_LEADER", new.isLeader)
-                    }
-                    if (payload.isEmpty) null else payload
-                }
-            )
-    }
+        private val DIFF_CALLBACK = object : DiffUtil.ItemCallback<JoinedMemberData>() {
+            override fun areItemsTheSame(oldItem: JoinedMemberData, newItem: JoinedMemberData): Boolean {
+                return oldItem.user.id == newItem.user.id
+            }
 
+            override fun areContentsTheSame(oldItem: JoinedMemberData, newItem: JoinedMemberData): Boolean {
+                return oldItem == newItem
+            }
+
+            override fun getChangePayload(oldItem: JoinedMemberData, newItem: JoinedMemberData): Any? {
+                val payload = Bundle()
+                if (oldItem.isLeader != newItem.isLeader) {
+                    payload.putBoolean("KEY_LEADER", newItem.isLeader)
+                }
+                return if (payload.isEmpty) null else payload
+            }
+        }
+    }
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderUser {
         val binding = RowJoinedUserBinding.inflate(LayoutInflater.from(context), parent, false)
         return ViewHolderUser(binding)
