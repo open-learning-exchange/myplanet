@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.LinearLayoutManager
 import org.ole.planet.myplanet.databinding.FragmentTeamCourseBinding
 import org.ole.planet.myplanet.model.RealmMyCourse
+import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 
@@ -20,7 +21,6 @@ class TeamCourseFragment : BaseTeamFragment() {
         return binding.root
     }
 
-import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getTeamCreator
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setupCoursesList()
@@ -28,13 +28,14 @@ import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getTeamCreator
     
     private fun setupCoursesList() {
         val courses = mRealm.where(RealmMyCourse::class.java).`in`("id", team?.courses?.toTypedArray<String>()).findAll()
-        val teamCreator = getTeamCreator(teamId, mRealm)
+        val teamCreator = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId).findFirst()?.userId ?: ""
         adapterTeamCourse = settings?.let { AdapterTeamCourse(requireActivity(), teamCreator, it) }
         binding.rvCourse.layoutManager = LinearLayoutManager(activity)
         binding.rvCourse.adapter = adapterTeamCourse
-        adapterTeamCourse?.submitList(mRealm.copyFromRealm(courses))
+        val unmanagedCourses = mRealm.copyFromRealm(courses)
+        adapterTeamCourse?.submitList(unmanagedCourses)
         adapterTeamCourse?.let {
-            showNoData(binding.tvNodata, it.itemCount, "teamCourses")
+            showNoData(binding.tvNodata, unmanagedCourses.size, "teamCourses")
         }
     }
     override fun onNewsItemClick(news: RealmNews?) {}
