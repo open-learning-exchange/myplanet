@@ -70,42 +70,6 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        initExam()
-        questions = mRealm.where(RealmExamQuestion::class.java).equalTo("examId", exam?.id).findAll()
-        binding.tvQuestionCount.text = getString(R.string.Q1, questions?.size)
-        var q: RealmQuery<*> = mRealm.where(RealmSubmission::class.java)
-            .equalTo("userId", user?.id)
-            .equalTo("parentId", if (!TextUtils.isEmpty(exam?.courseId)) {
-                id + "@" + exam?.courseId
-            } else {
-                id
-            }).sort("startTime", Sort.DESCENDING)
-        if (type == "exam") {
-            q = q.equalTo("status", "pending")
-        }
-        sub = q.findFirst() as RealmSubmission?
-        val courseId = exam?.courseId
-        isCertified = isCourseCertified(mRealm, courseId)
-
-        if ((questions?.size ?: 0) > 0) {
-            if (type == "exam") {
-                clearAllExistingAnswers {
-                    createSubmission()
-                    startExam(questions?.get(currentIndex))
-                    updateNavButtons()
-                }
-            } else {
-                createSubmission()
-                startExam(questions?.get(currentIndex))
-                updateNavButtons()
-            }
-        } else {
-            binding.container.visibility = View.GONE
-            binding.btnSubmit.visibility = View.GONE
-            binding.tvQuestionCount.setText(R.string.no_questions)
-            Snackbar.make(binding.tvQuestionCount, R.string.no_questions_available, Snackbar.LENGTH_LONG).show()
-        }
-
         binding.btnBack.setOnClickListener {
             saveCurrentAnswer()
             goToPreviousQuestion()
@@ -138,6 +102,44 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                 updateNavButtons()
             }
         })
+    }
+
+    override fun onDataLoaded() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            questions = examRepository.getExamQuestions(exam?.id)
+            binding.tvQuestionCount.text = getString(R.string.Q1, questions.size)
+
+            val parentId = if (!TextUtils.isEmpty(exam?.courseId)) {
+                id + "@" + exam?.courseId
+            } else {
+                id
+            }
+            sub = parentId?.let { examRepository.getPendingSubmission(user?.id, it, type) }
+            isCertified = examRepository.isCourseCertified(exam?.courseId)
+
+            if (questions.isNotEmpty()) {
+                if (type == "exam") {
+                    clearAllExistingAnswers {
+                        createSubmission()
+                        startExam(questions[currentIndex])
+                        updateNavButtons()
+                    }
+                } else {
+                    createSubmission()
+                    startExam(questions[currentIndex])
+                    updateNavButtons()
+                }
+            } else {
+                binding.container.visibility = View.GONE
+                binding.btnSubmit.visibility = View.GONE
+                binding.tvQuestionCount.setText(R.string.no_questions)
+                Snackbar.make(
+                    binding.tvQuestionCount,
+                    R.string.no_questions_available,
+                    Snackbar.LENGTH_LONG
+                ).show()
+            }
+        }
     }
 
     private fun saveCurrentAnswer() {
@@ -231,94 +233,9 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     private fun createSubmission() {
-        mRealm.beginTransaction()
-        try {
-            sub = createSubmission(null, mRealm)
-            setParentId()
-            setParentJson()
-            sub?.userId = user?.id
-            sub?.status = "pending"
-            sub?.type = type
-            sub?.startTime = Date().time
-            sub?.lastUpdateTime = Date().time
-            if (sub?.answers == null) {
-                sub?.answers = RealmList()
-            }
-
+        viewLifecycleOwner.lifecycleScope.launch {
+            sub = examRepository.createSubmission(exam, user, id, type, isTeam, teamId)
             currentIndex = 0
-            if (isTeam && teamId != null) {
-                addTeamInformation(mRealm)
-            }
-            mRealm.commitTransaction()
-        } catch (e: Exception) {
-            mRealm.cancelTransaction()
-            throw e
-        }
-    }
-
-    private fun setParentId() {
-        sub?.parentId = when {
-            !TextUtils.isEmpty(exam?.id) -> if (!TextUtils.isEmpty(exam?.courseId)) {
-                "${exam?.id}@${exam?.courseId}"
-            } else {
-                exam?.id
-            }
-            !TextUtils.isEmpty(id) -> if (!TextUtils.isEmpty(exam?.courseId)) {
-                "$id@${exam?.courseId}"
-            } else {
-                id
-            }
-            else -> sub?.parentId
-        }
-    }
-
-    private fun setParentJson() {
-        try {
-            val parentJsonString = JSONObject().apply {
-                put("_id", exam?.id ?: id)
-                put("name", exam?.name ?: "")
-                put("courseId", exam?.courseId ?: "")
-                put("sourcePlanet", exam?.sourcePlanet ?: "")
-                put("teamShareAllowed", exam?.isTeamShareAllowed ?: false)
-                put("noOfQuestions", exam?.noOfQuestions ?: 0)
-                put("isFromNation", exam?.isFromNation ?: false)
-            }.toString()
-            sub?.parent = parentJsonString
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
-    private fun addTeamInformation(realm: Realm) {
-        val team = realm.where(org.ole.planet.myplanet.model.RealmMyTeam::class.java)
-            .equalTo("_id", teamId)
-            .findFirst()
-
-        if (team != null) {
-            val teamRef = realm.createObject(org.ole.planet.myplanet.model.RealmTeamReference::class.java)
-            teamRef._id = team._id
-            teamRef.name = team.name
-            teamRef.type = team.type ?: "team"
-            sub?.teamObject = teamRef
-        }
-
-        val membershipDoc = realm.createObject(RealmMembershipDoc::class.java)
-        membershipDoc.teamId = teamId
-        sub?.membershipDoc = membershipDoc
-
-        val userModel = userProfileDbHandler.userModel
-
-        try {
-            val userJson = JSONObject()
-            userJson.put("age", userModel?.dob ?: "")
-            userJson.put("gender", userModel?.gender ?: "")
-            val membershipJson = JSONObject()
-            membershipJson.put("teamId", teamId)
-            userJson.put("membershipDoc", membershipJson)
-
-            sub?.user = userJson.toString()
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
     }
 
@@ -565,7 +482,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
     override fun onClick(view: View) {
         if (view.id == R.id.btn_submit) {
-            if (questions != null && currentIndex in 0 until (questions?.size ?: 0)) {
+            if (currentIndex in 0 until questions.size) {
                 saveCurrentAnswer()
 
                 if (!isQuestionAnswered()) {
@@ -573,16 +490,17 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                     return
                 }
 
-                val cont = updateAnsDb()
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val cont = updateAnsDb()
+                    if (type == "exam" && !cont) {
+                        Snackbar.make(binding.root, getString(R.string.incorrect_ans), Snackbar.LENGTH_LONG).show()
+                        return@launch
+                    }
 
-                if (this.type == "exam" && !cont) {
-                    Snackbar.make(binding.root, getString(R.string.incorrect_ans), Snackbar.LENGTH_LONG).show()
-                    return
+                    capturePhoto()
+                    hideSoftKeyboard(requireActivity())
+                    checkAnsAndContinue(cont)
                 }
-
-                capturePhoto()
-                hideSoftKeyboard(requireActivity())
-                checkAnsAndContinue(cont)
             }
         }
     }
@@ -598,36 +516,27 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
 
-    private fun updateAnsDb(): Boolean {
-        val questionsSize = questions?.size ?: 0
+    private suspend fun updateAnsDb(): Boolean {
+        val questionsSize = questions.size
         if (currentIndex < 0 || currentIndex >= questionsSize) return true
 
-        val currentQuestion = questions?.get(currentIndex) ?: return true
+        val currentQuestion = questions[currentIndex]
         val otherText = if (binding.etAnswer.isVisible) {
             binding.etAnswer.text.toString()
         } else {
             null
         }
-        
-        if (sub == null) {
-            sub = mRealm.where(RealmSubmission::class.java)
-                .equalTo("status", "pending")
-                .findAll().lastOrNull()
-        }
 
-        val result = ExamSubmissionUtils.saveAnswer(
-            mRealm,
-            sub,
+        return examRepository.saveAnswer(
+            sub?.id,
             currentQuestion,
             ans,
             listAns,
             otherText,
             binding.etAnswer.isVisible,
-            type ?: "exam",
-            currentIndex,
-            questions?.size ?: 0
+            type,
+            questionsSize
         )
-        return result
     }
 
     override fun onCheckedChanged(compoundButton: CompoundButton, isChecked: Boolean) {
@@ -700,49 +609,14 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     private fun clearAllExistingAnswers(onComplete: () -> Unit = {}) {
-        val examIdValue = exam?.id
-        val examCourseIdValue = exam?.courseId
-        val userIdValue = user?.id
-
-        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                databaseService.executeTransactionAsync { realm ->
-                    val parentIdToSearch = if (!TextUtils.isEmpty(examCourseIdValue)) {
-                        "${examIdValue ?: id}@${examCourseIdValue}"
-                    } else {
-                        examIdValue ?: id
-                    }
-
-                    val allSubmissions = realm.where(RealmSubmission::class.java)
-                        .equalTo("userId", userIdValue)
-                        .equalTo("parentId", parentIdToSearch)
-                        .findAll()
-
-                    allSubmissions.forEach { submission ->
-                        submission.answers?.deleteAllFromRealm()
-                        submission.deleteFromRealm()
-                    }
-                }
-
-                withContext(Dispatchers.Main) {
-                    answerCache.clear()
-                    clearAnswer()
-                    ans = ""
-                    listAns?.clear()
-                    sub = null
-                    onComplete()
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                withContext(Dispatchers.Main) {
-                    answerCache.clear()
-                    clearAnswer()
-                    ans = ""
-                    listAns?.clear()
-                    sub = null
-                    onComplete()
-                }
-            }
+        viewLifecycleOwner.lifecycleScope.launch {
+            examRepository.clearAllExistingAnswers(exam?.id, exam?.courseId, user?.id, id)
+            answerCache.clear()
+            clearAnswer()
+            ans = ""
+            listAns?.clear()
+            sub = null
+            onComplete()
         }
     }
 

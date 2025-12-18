@@ -141,4 +141,16 @@ open class RealmRepository(protected val databaseService: DatabaseService) {
     protected suspend fun executeTransaction(transaction: (Realm) -> Unit) {
         databaseService.executeTransactionAsync(transaction)
     }
+
+    protected suspend fun <T> executeTransactionAsyncWithResult(transaction: (Realm) -> T): T {
+        return withContext(databaseService.ioDispatcher) {
+            var result: T? = null
+            databaseService.realmInstance.use { realm ->
+                realm.executeTransaction {
+                    result = transaction(it)
+                }
+            }
+            result!!
+        }
+    }
 }
