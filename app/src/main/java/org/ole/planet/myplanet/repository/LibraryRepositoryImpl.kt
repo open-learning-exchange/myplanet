@@ -171,8 +171,8 @@ class LibraryRepositoryImpl @Inject constructor(
     }
 
     override suspend fun markAllResourcesOffline(isOffline: Boolean) {
-        executeTransactionAsync { bgRealm ->
-            val libraries = bgRealm.where(RealmMyLibrary::class.java).findAll()
+        executeTransaction { realm ->
+            val libraries = realm.where(RealmMyLibrary::class.java).findAll()
             for (library in libraries) {
                 library.resourceOffline = isOffline
             }
