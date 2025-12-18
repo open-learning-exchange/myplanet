@@ -55,6 +55,17 @@ class ChallengeHelper(
 
                     val hasUnfinishedSurvey = hasPendingSurvey(realm, courseId)
 
+                    val courseStatus = getCourseStatus(progress, courseName)
+                    val prereqsMet = courseStatus.contains("terminado", ignoreCase = true) && uniqueDates.size >= 5
+                    val hasValidSync = if (prereqsMet) {
+                        realm.where(RealmUserChallengeActions::class.java)
+                            .equalTo("userId", user?.id)
+                            .equalTo("actionType", "sync")
+                            .count() > 0
+                    } else {
+                        false
+                    }
+
                     val validUrls = listOf(
                         "https://${BuildConfig.PLANET_GUATEMALA_URL}",
                         "http://${BuildConfig.PLANET_XELA_URL}",
@@ -66,10 +77,8 @@ class ChallengeHelper(
 
                     val today = LocalDate.now()
                     if (user?.id?.startsWith("guest") == false && shouldPromptChallenge(today, validUrls)) {
-                        val courseStatus = getCourseStatus(progress, courseName)
-
                         withContext(Dispatchers.Main) {
-                            challengeDialog(uniqueDates.size, courseStatus, allUniqueDates.size, hasUnfinishedSurvey)
+                            challengeDialog(uniqueDates.size, courseStatus, allUniqueDates.size, hasUnfinishedSurvey, hasValidSync)
                         }
                     }
                 }
@@ -145,53 +154,43 @@ class ChallengeHelper(
                 settings.getString("serverURL", "") in validUrls
     }
 
-    private fun challengeDialog(voiceCount: Int, courseStatus: String, allVoiceCount: Int, hasUnfinishedSurvey: Boolean) {
-        Realm.getDefaultInstance().use { realm ->
-            val voiceTaskDone = if (voiceCount >= 5) "✅" else "[ ]"
-            val prereqsMet = courseStatus.contains("terminado", ignoreCase = true) && voiceCount >= 5
-            var hasValidSync = false
-            val syncTaskDone = if (prereqsMet) {
-                hasValidSync = realm.where(RealmUserChallengeActions::class.java)
-                    .equalTo("userId", user?.id)
-                    .equalTo("actionType", "sync")
-                    .count() > 0
+    private fun challengeDialog(voiceCount: Int, courseStatus: String, allVoiceCount: Int, hasUnfinishedSurvey: Boolean, hasValidSync: Boolean) {
+        val voiceTaskDone = if (voiceCount >= 5) "✅" else "[ ]"
+        val courseTaskDone = if (courseStatus.contains("terminado", ignoreCase = true)) "✅ $courseStatus" else "[ ] $courseStatus"
+        val prereqsMet = courseStatus.contains("terminado", ignoreCase = true) && voiceCount >= 5
+        val syncTaskDone = if (prereqsMet && hasValidSync) "✅" else "[ ]"
 
-                if (hasValidSync) "✅" else "[ ]"
-            } else "[ ]"
-            val courseTaskDone = if (courseStatus.contains("terminado", ignoreCase = true)) "✅ $courseStatus" else "[ ] $courseStatus"
+        val isCompleted = syncTaskDone.startsWith("✅") && voiceTaskDone.startsWith("✅") && courseTaskDone.startsWith("✅")
 
-            val isCompleted = syncTaskDone.startsWith("✅") && voiceTaskDone.startsWith("✅") && courseTaskDone.startsWith("✅")
+        val hasShownCongrats = settings.getBoolean("has_shown_congrats", false)
 
-            val hasShownCongrats = settings.getBoolean("has_shown_congrats", false)
+        if (isCompleted && hasShownCongrats) return
 
-            if (isCompleted && hasShownCongrats) return
-
-            if (isCompleted && !hasShownCongrats) {
-                editor.putBoolean("has_shown_congrats", true).apply()
-                val markdownContent = """
+        if (isCompleted && !hasShownCongrats) {
+            editor.putBoolean("has_shown_congrats", true).apply()
+            val markdownContent = """
             ${activity.getString(R.string.community_earnings, viewModel.calculateCommunityProgress(allVoiceCount, hasUnfinishedSurvey))}
             ${activity.getString(R.string.your_earnings, viewModel.calculateIndividualProgress(voiceCount, hasUnfinishedSurvey))}
             ### ${activity.getString(R.string.congratulations)} <br/>
         """.trimIndent()
-                MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount, allVoiceCount, hasUnfinishedSurvey)
-                    .show(fragmentManager, "markdown_dialog")
+            MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount, allVoiceCount, hasUnfinishedSurvey)
+                .show(fragmentManager, "markdown_dialog")
+        } else {
+            val cappedVoiceCount = minOf(voiceCount, 5)
+            val voicesText = if (cappedVoiceCount > 0) {
+                "$cappedVoiceCount ${activity.getString(R.string.daily_voices)}"
             } else {
-                val cappedVoiceCount = minOf(voiceCount, 5)
-                val voicesText = if (cappedVoiceCount > 0) {
-                    "$cappedVoiceCount ${activity.getString(R.string.daily_voices)}"
-                } else {
-                    ""
-                }
-                val markdownContent = """
+                ""
+            }
+            val markdownContent = """
             ${activity.getString(R.string.community_earnings, viewModel.calculateCommunityProgress(allVoiceCount, hasUnfinishedSurvey))}
             ${activity.getString(R.string.your_earnings, viewModel.calculateIndividualProgress(voiceCount, hasUnfinishedSurvey))}
             ### ${activity.getString(R.string.per_survey, courseTaskDone)} <br/>
             ### ${activity.getString(R.string.share_opinion)} $voicesText <br/>
             ### ${activity.getString(R.string.remember_sync)} <br/>
         """.trimIndent()
-                MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount, allVoiceCount, hasUnfinishedSurvey)
-                    .show(fragmentManager, "markdown_dialog")
-            }
+            MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount, allVoiceCount, hasUnfinishedSurvey)
+                .show(fragmentManager, "markdown_dialog")
         }
     }
 }
