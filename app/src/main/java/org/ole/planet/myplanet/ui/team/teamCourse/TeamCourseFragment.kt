@@ -20,6 +20,7 @@ class TeamCourseFragment : BaseTeamFragment() {
         return binding.root
     }
 
+import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getTeamCreator
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setupCoursesList()
@@ -27,9 +28,11 @@ class TeamCourseFragment : BaseTeamFragment() {
     
     private fun setupCoursesList() {
         val courses = mRealm.where(RealmMyCourse::class.java).`in`("id", team?.courses?.toTypedArray<String>()).findAll()
-        adapterTeamCourse = settings?.let { AdapterTeamCourse(requireActivity(), courses.toMutableList(), mRealm, teamId, it) }
+        val teamCreator = getTeamCreator(teamId, mRealm)
+        adapterTeamCourse = settings?.let { AdapterTeamCourse(requireActivity(), teamCreator, it) }
         binding.rvCourse.layoutManager = LinearLayoutManager(activity)
         binding.rvCourse.adapter = adapterTeamCourse
+        adapterTeamCourse?.submitList(mRealm.copyFromRealm(courses))
         adapterTeamCourse?.let {
             showNoData(binding.tvNodata, it.itemCount, "teamCourses")
         }
