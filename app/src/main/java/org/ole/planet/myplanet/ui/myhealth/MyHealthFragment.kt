@@ -26,8 +26,6 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Case
-import io.realm.Realm
 import io.realm.Sort
 import java.util.Calendar
 import java.util.Locale
@@ -45,7 +43,6 @@ import org.ole.planet.myplanet.callback.TableDataUpdate
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
 import org.ole.planet.myplanet.databinding.FragmentVitalSignBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.SyncManager
@@ -68,8 +65,6 @@ class MyHealthFragment : Fragment() {
     @Inject
     lateinit var syncManager: SyncManager
     @Inject
-    lateinit var databaseService: DatabaseService
-    @Inject
     lateinit var userRepository: UserRepository
     private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
     private lateinit var realtimeSyncListener: BaseRealtimeSyncListener
@@ -78,7 +73,6 @@ class MyHealthFragment : Fragment() {
     private lateinit var alertMyPersonalBinding: AlertMyPersonalBinding
     private var alertHealthListBinding: AlertHealthListBinding? = null
     var userId: String? = null
-    lateinit var mRealm: Realm
     var userModel: RealmUserModel? = null
     lateinit var userModelList: List<RealmUserModel>
     lateinit var adapter: UserListArrayAdapter
@@ -102,7 +96,6 @@ class MyHealthFragment : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentVitalSignBinding.inflate(inflater, container, false)
-        mRealm = databaseService.realmInstance
         return binding.root
     }
 
@@ -351,14 +344,7 @@ class MyHealthFragment : Fragment() {
                     }
 
                     val userModelList = withContext(Dispatchers.IO) {
-                        databaseService.withRealm { realm ->
-                            val results = realm.where(RealmUserModel::class.java)
-                                .contains("firstName", editable.toString(), Case.INSENSITIVE).or()
-                                .contains("lastName", editable.toString(), Case.INSENSITIVE).or()
-                                .contains("name", editable.toString(), Case.INSENSITIVE)
-                                .sort("joinDate", Sort.DESCENDING).findAll()
-                            realm.copyFromRealm(results)
-                        }
+                        userRepository.searchUsersSorted(editable.toString(), "joinDate", Sort.DESCENDING)
                     }
 
                     loadingJob.cancel()
@@ -488,9 +474,6 @@ class MyHealthFragment : Fragment() {
     override fun onDestroy() {
         customProgressDialog?.dismiss()
         customProgressDialog = null
-        if (this::mRealm.isInitialized && !mRealm.isClosed) {
-            mRealm.close()
-        }
         super.onDestroy()
     }
 }

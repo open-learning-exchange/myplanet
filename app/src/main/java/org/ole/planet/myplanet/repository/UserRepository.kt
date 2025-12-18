@@ -12,6 +12,7 @@ interface UserRepository {
     suspend fun getUserByName(name: String): RealmUserModel?
     suspend fun getAllUsers(): List<RealmUserModel>
     suspend fun getUsersSortedBy(fieldName: String, sortOrder: Sort): List<RealmUserModel>
+    suspend fun searchUsersSorted(query: String, sortField: String, sortOrder: Sort): List<RealmUserModel>
     suspend fun getMonthlyLoginCounts(
         userId: String,
         startMillis: Long,
