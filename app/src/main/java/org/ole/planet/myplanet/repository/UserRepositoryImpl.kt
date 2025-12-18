@@ -63,14 +63,13 @@ class UserRepositoryImpl @Inject constructor(
         sortField: String,
         sortOrder: io.realm.Sort
     ): List<RealmUserModel> {
-        return queryList(RealmUserModel::class.java) {
-            where ->
-            where.contains("firstName", query, io.realm.Case.INSENSITIVE)
-                .or()
-                .contains("lastName", query, io.realm.Case.INSENSITIVE)
-                .or()
+        return withRealm { realm ->
+            val results = realm.where(RealmUserModel::class.java)
+                .contains("firstName", query, io.realm.Case.INSENSITIVE).or()
+                .contains("lastName", query, io.realm.Case.INSENSITIVE).or()
                 .contains("name", query, io.realm.Case.INSENSITIVE)
-            sort(sortField, sortOrder)
+                .sort(sortField, sortOrder).findAll()
+            realm.copyFromRealm(results)
         }
     }
 
