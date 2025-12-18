@@ -62,7 +62,6 @@ import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.datamanager.Service.CheckVersionCallback
 import org.ole.planet.myplanet.datamanager.Service.ConfigurationIdListener
-import org.ole.planet.myplanet.datamanager.Service.PlanetAvailableListener
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.ConfigurationRepository
