@@ -187,4 +187,19 @@ class SurveyRepositoryImpl @Inject constructor(
                 .count().toInt()
         }
     }
+
+    override suspend fun hasPendingSurvey(courseId: String): Boolean {
+        return withRealm { realm ->
+            realm.where(RealmStepExam::class.java)
+                .equalTo("courseId", courseId)
+                .equalTo("type", "survey")
+                .findAll()
+                .any { survey ->
+                    realm.where(RealmSubmission::class.java)
+                        .equalTo("parentId", survey.id + "@survey")
+                        .equalTo("status", "complete", io.realm.Case.INSENSITIVE)
+                        .findFirst() == null
+                }
+        }
+    }
 }

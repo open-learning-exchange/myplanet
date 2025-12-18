@@ -18,4 +18,5 @@ interface NewsRepository {
     suspend fun updateTeamNotification(teamId: String, count: Int)
     suspend fun getFilteredNews(teamId: String): List<RealmNews>
     suspend fun getReplies(newsId: String?): List<RealmNews>
+    suspend fun getVoiceDates(startTime: Long, endTime: Long, userId: String?): List<String>
 }

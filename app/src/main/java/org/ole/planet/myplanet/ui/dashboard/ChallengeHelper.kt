@@ -4,7 +4,6 @@ import android.content.SharedPreferences
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
 import com.google.gson.JsonObject
-import io.realm.Realm
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.util.Date
@@ -12,17 +11,15 @@ import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.json.JSONArray
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.CourseRepository
+import org.ole.planet.myplanet.repository.NewsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
+import org.ole.planet.myplanet.repository.SurveyRepository
+import org.ole.planet.myplanet.repository.UserChallengeRepository
 import org.ole.planet.myplanet.ui.courses.MyProgressFragment
-import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.utilities.MarkdownDialog
 
 class ChallengeHelper(
@@ -31,7 +28,11 @@ class ChallengeHelper(
     private val settings: SharedPreferences,
     private val editor: SharedPreferences.Editor,
     private val viewModel: DashboardViewModel,
-    private val progressRepository: ProgressRepository
+    private val progressRepository: ProgressRepository,
+    private val courseRepository: CourseRepository,
+    private val newsRepository: NewsRepository,
+    private val surveyRepository: SurveyRepository,
+    private val userChallengeRepository: UserChallengeRepository
 ) {
     private val fragmentManager: FragmentManager
         get() = activity.supportFragmentManager
@@ -43,85 +44,34 @@ class ChallengeHelper(
         val courseId = "4e6b78800b6ad18b4e8b0e1e38a98cac"
         activity.lifecycleScope.launch(Dispatchers.IO) {
             try {
-                Realm.getDefaultInstance().use { realm ->
-                    val uniqueDates = fetchVoiceDates(realm, startTime, endTime, user?.id)
-                    val allUniqueDates = fetchVoiceDates(realm, startTime, endTime, null)
+                val courseName = courseRepository.getCourseByCourseId(courseId)?.courseTitle
+                val uniqueDates = newsRepository.getVoiceDates(startTime, endTime, user?.id)
+                val allUniqueDates = newsRepository.getVoiceDates(startTime, endTime, null)
+                val hasUnfinishedSurvey = surveyRepository.hasPendingSurvey(courseId)
+                val courseData = progressRepository.fetchCourseData(user?.id)
+                val progress = MyProgressFragment.getCourseProgress(courseData, courseId)
 
-                    val courseData = progressRepository.fetchCourseData(user?.id)
-                    val progress = MyProgressFragment.getCourseProgress(courseData, courseId)
-                    val courseName = realm.where(RealmMyCourse::class.java)
-                        .equalTo("courseId", courseId)
-                        .findFirst()?.courseTitle
+                val validUrls = listOf(
+                    "https://${BuildConfig.PLANET_GUATEMALA_URL}",
+                    "http://${BuildConfig.PLANET_XELA_URL}",
+                    "http://${BuildConfig.PLANET_URIUR_URL}",
+                    "http://${BuildConfig.PLANET_SANPABLO_URL}",
+                    "http://${BuildConfig.PLANET_EMBAKASI_URL}",
+                    "https://${BuildConfig.PLANET_VI_URL}"
+                )
 
-                    val hasUnfinishedSurvey = hasPendingSurvey(realm, courseId)
+                val today = LocalDate.now()
+                if (user?.id?.startsWith("guest") == false && shouldPromptChallenge(today, validUrls)) {
+                    val courseStatus = getCourseStatus(progress, courseName)
 
-                    val validUrls = listOf(
-                        "https://${BuildConfig.PLANET_GUATEMALA_URL}",
-                        "http://${BuildConfig.PLANET_XELA_URL}",
-                        "http://${BuildConfig.PLANET_URIUR_URL}",
-                        "http://${BuildConfig.PLANET_SANPABLO_URL}",
-                        "http://${BuildConfig.PLANET_EMBAKASI_URL}",
-                        "https://${BuildConfig.PLANET_VI_URL}"
-                    )
-
-                    val today = LocalDate.now()
-                    if (user?.id?.startsWith("guest") == false && shouldPromptChallenge(today, validUrls)) {
-                        val courseStatus = getCourseStatus(progress, courseName)
-
-                        withContext(Dispatchers.Main) {
-                            challengeDialog(uniqueDates.size, courseStatus, allUniqueDates.size, hasUnfinishedSurvey)
-                        }
+                    withContext(Dispatchers.Main) {
+                        challengeDialog(uniqueDates.size, courseStatus, allUniqueDates.size, hasUnfinishedSurvey)
                     }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
-    }
-
-    private fun fetchVoiceDates(realm: Realm, start: Long, end: Long, userId: String?): List<String> {
-        val query = realm.where(RealmNews::class.java)
-            .greaterThanOrEqualTo("time", start)
-            .lessThanOrEqualTo("time", end)
-        if (userId != null) query.equalTo("userId", userId)
-        val results = query.findAll()
-        return results.filter { isCommunitySection(it) }
-            .map { ChallengeHelper.getDateFromTimestamp(it.time) }
-            .distinct()
-    }
-
-    private fun isCommunitySection(news: RealmNews): Boolean {
-        news.viewIn?.let { viewInStr ->
-            try {
-                val viewInArray = JSONArray(viewInStr)
-                for (i in 0 until viewInArray.length()) {
-                    val viewInObj = viewInArray.getJSONObject(i)
-                    if (viewInObj.optString("section") == "community") {
-                        return true
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-        return false
-    }
-
-    companion object {
-        private val dateFormat = object : ThreadLocal<SimpleDateFormat>() {
-            override fun initialValue() = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-        }
-        private fun getDateFromTimestamp(timestamp: Long): String {
-            return dateFormat.get()!!.format(Date(timestamp))
-        }
-    }
-
-    private fun hasPendingSurvey(realm: Realm, courseId: String): Boolean {
-        return realm.where(RealmStepExam::class.java)
-            .equalTo("courseId", courseId)
-            .equalTo("type", "survey")
-            .findAll()
-            .any { survey -> !TakeCourseFragment.existsSubmission(realm, survey.id, "survey") }
     }
 
     private fun getCourseStatus(progress: JsonObject?, courseName: String?): String {
@@ -146,16 +96,11 @@ class ChallengeHelper(
     }
 
     private fun challengeDialog(voiceCount: Int, courseStatus: String, allVoiceCount: Int, hasUnfinishedSurvey: Boolean) {
-        Realm.getDefaultInstance().use { realm ->
+        activity.lifecycleScope.launch {
             val voiceTaskDone = if (voiceCount >= 5) "✅" else "[ ]"
             val prereqsMet = courseStatus.contains("terminado", ignoreCase = true) && voiceCount >= 5
-            var hasValidSync = false
+            val hasValidSync = if (prereqsMet) userChallengeRepository.hasValidSync(user?.id) else false
             val syncTaskDone = if (prereqsMet) {
-                hasValidSync = realm.where(RealmUserChallengeActions::class.java)
-                    .equalTo("userId", user?.id)
-                    .equalTo("actionType", "sync")
-                    .count() > 0
-
                 if (hasValidSync) "✅" else "[ ]"
             } else "[ ]"
             val courseTaskDone = if (courseStatus.contains("terminado", ignoreCase = true)) "✅ $courseStatus" else "[ ] $courseStatus"
@@ -164,7 +109,7 @@ class ChallengeHelper(
 
             val hasShownCongrats = settings.getBoolean("has_shown_congrats", false)
 
-            if (isCompleted && hasShownCongrats) return
+            if (isCompleted && hasShownCongrats) return@launch
 
             if (isCompleted && !hasShownCongrats) {
                 editor.putBoolean("has_shown_congrats", true).apply()

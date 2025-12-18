@@ -67,12 +67,16 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.CourseRepository
 import org.ole.planet.myplanet.repository.JoinRequestNotification
 import org.ole.planet.myplanet.repository.LibraryRepository
+import org.ole.planet.myplanet.repository.NewsRepository
 import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.SubmissionRepository
+import org.ole.planet.myplanet.repository.SurveyRepository
 import org.ole.planet.myplanet.repository.TeamRepository
+import org.ole.planet.myplanet.repository.UserChallengeRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.SettingActivity
@@ -126,8 +130,16 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     lateinit var submissionRepository: SubmissionRepository
     @Inject
     lateinit var notificationRepository: NotificationRepository
+    @Inject
+    lateinit var courseRepository: CourseRepository
+    @Inject
+    lateinit var newsRepository: NewsRepository
+    @Inject
+    lateinit var surveyRepository: SurveyRepository
+    @Inject
+    lateinit var userChallengeRepository: UserChallengeRepository
     private val challengeHelper: ChallengeHelper by lazy {
-        ChallengeHelper(this, user, settings, editor, dashboardViewModel, progressRepository)
+        ChallengeHelper(this, user, settings, editor, dashboardViewModel, progressRepository, courseRepository, newsRepository, surveyRepository, userChallengeRepository)
     }
     private lateinit var notificationManager: NotificationUtils.NotificationManager
     private var notificationsShownThisSession = false

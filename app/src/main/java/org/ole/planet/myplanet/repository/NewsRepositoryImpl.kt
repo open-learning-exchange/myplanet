@@ -240,4 +240,40 @@ class NewsRepositoryImpl @Inject constructor(
                 .let { realm.copyFromRealm(it) }
         }
     }
+
+    override suspend fun getVoiceDates(startTime: Long, endTime: Long, userId: String?): List<String> {
+        return withRealm { realm ->
+            val query = realm.where(RealmNews::class.java)
+                .greaterThanOrEqualTo("time", startTime)
+                .lessThanOrEqualTo("time", endTime)
+            if (userId != null) query.equalTo("userId", userId)
+            val results = query.findAll()
+            val voiceDates = results.filter { isCommunitySection(it) }
+                .map { getDateFromTimestamp(it.time) }
+                .distinct()
+            voiceDates
+        }
+    }
+
+    private fun isCommunitySection(news: RealmNews): Boolean {
+        news.viewIn?.let { viewInStr ->
+            try {
+                val viewInArray = org.json.JSONArray(viewInStr)
+                for (i in 0 until viewInArray.length()) {
+                    val viewInObj = viewInArray.getJSONObject(i)
+                    if (viewInObj.optString("section") == "community") {
+                        return true
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+        return false
+    }
+
+    private fun getDateFromTimestamp(timestamp: Long): String {
+        val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+        return dateFormat.format(java.util.Date(timestamp))
+    }
 }

@@ -20,10 +20,12 @@ class CourseRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getCourseByCourseId(courseId: String?): RealmMyCourse? {
-        if (courseId.isNullOrBlank()) {
-            return null
+        return withRealm { realm ->
+            realm.where(RealmMyCourse::class.java)
+                .equalTo("courseId", courseId)
+                .findFirst()
+                ?.let { realm.copyFromRealm(it) }
         }
-        return findByField(RealmMyCourse::class.java, "courseId", courseId)
     }
 
     override suspend fun getDetachedCourseById(courseId: String?): RealmMyCourse? {

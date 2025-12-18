@@ -20,4 +20,6 @@ interface SurveyRepository {
         surveys: List<RealmStepExam>,
         teamId: String?
     ): Map<String, SurveyBindingData>
+
+    suspend fun hasPendingSurvey(courseId: String): Boolean
 }
