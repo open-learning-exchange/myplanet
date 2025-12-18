@@ -50,6 +50,10 @@ class LibraryRepositoryImpl @Inject constructor(
             .filter { it.userId?.contains(userId) == true }
     }
 
+    override suspend fun getLibraryForSelectedUser(userId: String): List<RealmMyLibrary> {
+        return getLibraryListForUser(userId)
+    }
+
     override suspend fun getMyLibrary(userId: String?): List<RealmMyLibrary> {
         return queryList(RealmMyLibrary::class.java) {
             equalTo("userId", userId)
@@ -133,12 +137,13 @@ class LibraryRepositoryImpl @Inject constructor(
         return results.filter { it.needToUpdate() }
     }
 
-    override suspend fun getPrivateLibraryAfterDate(date: Long): List<RealmMyLibrary> {
-        return queryList(RealmMyLibrary::class.java) {
+    override suspend fun getPrivateImageUrlsCreatedAfter(timestamp: Long): List<String> {
+        val imageList = queryList(RealmMyLibrary::class.java) {
             equalTo("isPrivate", true)
-                .greaterThan("createdDate", date)
+                .greaterThan("createdDate", timestamp)
                 .equalTo("mediaType", "image")
         }
+        return imageList.mapNotNull { it.resourceRemoteAddress }
     }
 
     override suspend fun getRecentResources(userId: String): Flow<List<RealmMyLibrary>> {
@@ -154,6 +159,14 @@ class LibraryRepositoryImpl @Inject constructor(
             equalTo("userId", userId)
                 .equalTo("resourceOffline", false)
                 .isNotNull("resourceLocalAddress")
+        }
+    }
+
+    override suspend fun getPrivateImagesCreatedAfter(timestamp: Long): List<RealmMyLibrary> {
+        return queryList(RealmMyLibrary::class.java) {
+            equalTo("isPrivate", true)
+                .greaterThan("createdDate", timestamp)
+                .equalTo("mediaType", "image")
         }
     }
 }
