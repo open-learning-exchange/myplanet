@@ -55,6 +55,8 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
     lateinit var syncManager: SyncManager
     @Inject
     lateinit var surveyRepository: SurveyRepository
+    @Inject
+    lateinit var syncCoordinator: RealtimeSyncCoordinator
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
@@ -170,7 +172,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        realtimeSyncHelper = RealtimeSyncHelper(this, this)
+        realtimeSyncHelper = RealtimeSyncHelper(this, this, syncCoordinator)
         realtimeSyncHelper.setupRealtimeSync()
         initializeViews()
         textWatcher = object : TextWatcher {

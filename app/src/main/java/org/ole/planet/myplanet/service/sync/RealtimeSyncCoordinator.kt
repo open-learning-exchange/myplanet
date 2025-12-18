@@ -6,18 +6,11 @@ import kotlinx.coroutines.flow.asSharedFlow
 import org.ole.planet.myplanet.callback.RealtimeSyncListener
 import org.ole.planet.myplanet.callback.TableDataUpdate
 
-class RealtimeSyncCoordinator {
-    
-    companion object {
-        @Volatile
-        private var INSTANCE: RealtimeSyncCoordinator? = null
-        
-        fun getInstance(): RealtimeSyncCoordinator {
-            return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: RealtimeSyncCoordinator().also { INSTANCE = it }
-            }
-        }
-    }
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class RealtimeSyncCoordinator @Inject constructor() {
     
     private val listeners = mutableSetOf<RealtimeSyncListener>()
     private val _dataUpdateFlow = MutableSharedFlow<TableDataUpdate>()

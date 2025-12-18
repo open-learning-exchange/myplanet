@@ -94,6 +94,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     @Inject
     lateinit var tagRepository: TagRepository
+    @Inject
+    lateinit var syncCoordinator: RealtimeSyncCoordinator
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
 
@@ -252,7 +254,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         additionalSetup()
         setupMyProgressButton()
 
-        realtimeSyncHelper = RealtimeSyncHelper(this, this)
+        realtimeSyncHelper = RealtimeSyncHelper(this, this, syncCoordinator)
         realtimeSyncHelper.setupRealtimeSync()
         startCoursesSync()
     }

@@ -22,10 +22,9 @@ interface RealtimeSyncMixin {
 
 class RealtimeSyncHelper(
     private val fragment: Fragment,
-    private val mixin: RealtimeSyncMixin
+    private val mixin: RealtimeSyncMixin,
+    private val syncCoordinator: RealtimeSyncCoordinator
 ) {
-    
-    private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
     
     private val realtimeSyncListener = object : BaseRealtimeSyncListener() {
         override fun onTableDataUpdated(update: TableDataUpdate) {

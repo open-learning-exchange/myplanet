@@ -59,7 +59,8 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
     @Inject
     lateinit var syncManager: SyncManager
 
-    private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
+    @Inject
+    lateinit var syncCoordinator: RealtimeSyncCoordinator
     private lateinit var realtimeSyncListener: BaseRealtimeSyncListener
 
     private var _binding: FragmentTeamDetailBinding? = null

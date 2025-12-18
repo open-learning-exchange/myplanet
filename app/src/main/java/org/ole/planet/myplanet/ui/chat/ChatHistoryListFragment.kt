@@ -79,7 +79,8 @@ class ChatHistoryListFragment : Fragment() {
     lateinit var newsRepository: NewsRepository
     @Inject
     lateinit var chatApiHelper: ChatApiHelper
-    private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
+    @Inject
+    lateinit var syncCoordinator: RealtimeSyncCoordinator
     private lateinit var realtimeSyncListener: BaseRealtimeSyncListener
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""

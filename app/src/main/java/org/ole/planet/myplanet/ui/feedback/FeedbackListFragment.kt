@@ -55,8 +55,9 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     lateinit var syncManager: SyncManager
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
-    
-    private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
+
+    @Inject
+    lateinit var syncCoordinator: RealtimeSyncCoordinator
     private lateinit var realtimeSyncListener: BaseRealtimeSyncListener
     private lateinit var adapterFeedback: AdapterFeedback
 

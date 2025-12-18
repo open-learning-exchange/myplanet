@@ -71,7 +71,8 @@ class MyHealthFragment : Fragment() {
     lateinit var databaseService: DatabaseService
     @Inject
     lateinit var userRepository: UserRepository
-    private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
+    @Inject
+    lateinit var syncCoordinator: RealtimeSyncCoordinator
     private lateinit var realtimeSyncListener: BaseRealtimeSyncListener
     private var _binding: FragmentVitalSignBinding? = null
     private val binding get() = _binding!!

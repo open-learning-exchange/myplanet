@@ -61,7 +61,8 @@ class AchievementFragment : BaseContainerFragment() {
     
     @Inject
     lateinit var syncManager: SyncManager
-    private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
+    @Inject
+    lateinit var syncCoordinator: RealtimeSyncCoordinator
     private lateinit var realtimeSyncListener: BaseRealtimeSyncListener
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
