@@ -45,7 +45,10 @@ class AdapterCourses(
     private var userModel: RealmUserModel?,
     private val tagRepository: TagRepository
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-    private val selectedItems: MutableList<RealmMyCourse?> = ArrayList()
+    private val selectedCourseIds = mutableSetOf<String>()
+    private val selectedItems: MutableList<RealmMyCourse?>
+        get() = courseList.filter { selectedCourseIds.contains(it?.id) }.toMutableList()
+
     private var listener: OnCourseItemSelected? = null
     private var homeItemClickListener: OnHomeItemClickListener? = null
     private var progressMap: HashMap<String?, JsonObject>? = null
@@ -137,7 +140,10 @@ class AdapterCourses(
         newMap: HashMap<String?, JsonObject>,
         newProgressMap: HashMap<String?, JsonObject>?
     ) {
+        val newCourseIds = newCourseList.mapNotNull { it?.id }.toSet()
+        selectedCourseIds.retainAll(newCourseIds)
         dispatchDiff(newCourseList, newMap, newProgressMap)
+        listener?.onSelectedListChange(selectedItems)
     }
 
     private fun sortCourseListByTitle(list: List<RealmMyCourse?>): List<RealmMyCourse?> {
@@ -299,11 +305,16 @@ class AdapterCourses(
                 holder.rowCourseBinding.checkbox.visibility = View.GONE
             } else {
                 holder.rowCourseBinding.checkbox.visibility = View.VISIBLE
-                holder.rowCourseBinding.checkbox.isChecked = selectedItems.contains(course)
+                holder.rowCourseBinding.checkbox.isChecked = selectedCourseIds.contains(course.id)
                 holder.rowCourseBinding.checkbox.setOnClickListener { view: View ->
-                    holder.rowCourseBinding.checkbox.contentDescription =
-                        context.getString(R.string.select_res_course, course.courseTitle)
-                    SelectionUtils.handleCheck((view as CheckBox).isChecked, position, selectedItems, courseList)
+                    val isChecked = (view as CheckBox).isChecked
+                    course.id?.let { id ->
+                        if (isChecked) {
+                            selectedCourseIds.add(id)
+                        } else {
+                            selectedCourseIds.remove(id)
+                        }
+                    }
                     listener?.onSelectedListChange(selectedItems)
                 }
             }
@@ -323,29 +334,18 @@ class AdapterCourses(
 
     fun areAllSelected(): Boolean {
         val selectableCourses = courseList.filterNotNull().filter { !it.isMyCourse }
-        areAllSelected = selectedItems.size == selectableCourses.size && selectableCourses.isNotEmpty()
+        areAllSelected = selectedCourseIds.size == selectableCourses.size && selectableCourses.isNotEmpty()
         return areAllSelected
     }
 
     fun selectAllItems(selectAll: Boolean) {
-        selectedItems.clear()
-
+        selectedCourseIds.clear()
         if (selectAll) {
-            val selectableCourses = courseList.filterNotNull().filter { !it.isMyCourse }
-            selectedItems.addAll(selectableCourses)
-        }
-
-        val updatedPositions = mutableListOf<Int>()
-        courseList.forEachIndexed { index, course ->
-            if (course != null && !course.isMyCourse) {
-                updatedPositions.add(index)
+            courseList.filterNotNull().filter { !it.isMyCourse }.mapNotNull { it.id }.forEach {
+                selectedCourseIds.add(it)
             }
         }
-
-        updatedPositions.forEach { position ->
-            notifyItemChanged(position)
-        }
-
+        notifyDataSetChanged()
         listener?.onSelectedListChange(selectedItems)
     }
 
