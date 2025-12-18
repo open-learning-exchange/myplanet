@@ -371,22 +371,22 @@ class UserRepositoryImpl @Inject constructor(
         HealthRecord(mh, mm, list, userMap)
     }
 
-    override suspend fun validateUsername(username: String): UsernameValidationResult {
+    override suspend fun validateUsername(username: String): String? {
         val specialCharPattern = Pattern.compile(
             ".*[ßäöüéèêæÆœøØ¿àìòùÀÈÌÒÙáíóúýÁÉÍÓÚÝâîôûÂÊÎÔÛãñõÃÑÕëïÿÄËÏÖÜŸåÅŒçÇðÐ].*"
         )
 
         val firstChar = username.firstOrNull()
         when {
-            username.isEmpty() -> return UsernameValidationResult.Invalid(context.getString(R.string.username_cannot_be_empty))
-            username.contains(" ") -> return UsernameValidationResult.Invalid(context.getString(R.string.invalid_username))
+            username.isEmpty() -> return context.getString(R.string.username_cannot_be_empty)
+            username.contains(" ") -> return context.getString(R.string.invalid_username)
             firstChar != null && !firstChar.isDigit() && !firstChar.isLetter() ->
-                return UsernameValidationResult.Invalid(context.getString(R.string.must_start_with_letter_or_number))
+                return context.getString(R.string.must_start_with_letter_or_number)
             username.any { it != '_' && it != '.' && it != '-' && !it.isDigit() && !it.isLetter() } ||
             specialCharPattern.matcher(username).matches() ||
-            !Normalizer.normalize(username, Normal.Form.NFD).codePoints().allMatch { code ->
+            !Normalizer.normalize(username, Normalizer.Form.NFD).codePoints().allMatch { code ->
                 Character.isLetterOrDigit(code) || code == '.'.code || code == '-'.code || code == '_'.code
-            } -> return UsernameValidationResult.Invalid(context.getString(R.string.only_letters_numbers_and_are_allowed))
+            } -> return context.getString(R.string.only_letters_numbers_and_are_allowed)
         }
 
         val isTaken = withRealm { realm ->
@@ -396,7 +396,7 @@ class UserRepositoryImpl @Inject constructor(
                 .count() > 0L
         }
 
-        return if (isTaken) UsernameValidationResult.Taken else UsernameValidationResult.Valid
+        return if (isTaken) context.getString(R.string.username_taken) else null
     }
 
     override suspend fun cleanupDuplicateUsers() {

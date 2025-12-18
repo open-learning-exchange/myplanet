@@ -13,6 +13,7 @@ import java.util.Calendar
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
@@ -32,8 +33,6 @@ import org.ole.planet.myplanet.utilities.VersionUtils
 
 @AndroidEntryPoint
 class BecomeMemberActivity : BaseActivity() {
-    @Inject
-    lateinit var userRepository: UserRepository
     private lateinit var activityBecomeMemberBinding: ActivityBecomeMemberBinding
     var dob: String = ""
     var guest: Boolean = false
@@ -193,20 +192,12 @@ class BecomeMemberActivity : BaseActivity() {
         activityBecomeMemberBinding.btnSubmit.setOnClickListener {
             val info = collectMemberInfo()
             lifecycleScope.launch {
-                val validationResult = userRepository.validateUsername(info.username)
+                val error = userRepository.validateUsername(info.username)
                 withContext(Dispatchers.Main) {
-                    when (validationResult) {
-                        is UsernameValidationResult.Valid -> {
-                            if (validateMemberInfo(info)) {
-                                addMember(info)
-                            }
-                        }
-                        is UsernameValidationResult.Taken -> {
-                            activityBecomeMemberBinding.etUsername.error = getString(R.string.username_taken)
-                        }
-                        is UsernameValidationResult.Invalid -> {
-                            activityBecomeMemberBinding.etUsername.error = validationResult.reason
-                        }
+                    if (error != null) {
+                        activityBecomeMemberBinding.etUsername.error = error
+                    } else if (validateMemberInfo(info)) {
+                        addMember(info)
                     }
                 }
             }
@@ -246,23 +237,17 @@ class BecomeMemberActivity : BaseActivity() {
             override fun afterTextChanged(s: Editable?) {
                 val input = s?.toString() ?: ""
                 lifecycleScope.launch {
-                    val validationResult = userRepository.validateUsername(input)
+                    val error = userRepository.validateUsername(input)
                     withContext(Dispatchers.Main) {
-                        when (validationResult) {
-                            is UsernameValidationResult.Valid -> {
-                                val lowercase = input.lowercase()
-                                if (input != lowercase) {
-                                    activityBecomeMemberBinding.etUsername.setText(lowercase)
-                                    activityBecomeMemberBinding.etUsername.setSelection(lowercase.length)
-                                }
-                                activityBecomeMemberBinding.etUsername.error = null
+                        if (error != null) {
+                            activityBecomeMemberBinding.etUsername.error = error
+                        } else {
+                            val lowercase = input.lowercase()
+                            if (input != lowercase) {
+                                activityBecomeMemberBinding.etUsername.setText(lowercase)
+                                activityBecomeMemberBinding.etUsername.setSelection(lowercase.length)
                             }
-                            is UsernameValidationResult.Taken -> {
-                                activityBecomeMemberBinding.etUsername.error = getString(R.string.username_taken)
-                            }
-                            is UsernameValidationResult.Invalid -> {
-                                activityBecomeMemberBinding.etUsername.error = validationResult.reason
-                            }
+                            activityBecomeMemberBinding.etUsername.error = null
                         }
                     }
                 }
