@@ -62,6 +62,20 @@ class AdapterCourses(
     private val tagCache: MutableMap<String, List<RealmTag>> = mutableMapOf()
     private val tagRequestsInProgress: MutableSet<String> = mutableSetOf()
 
+    private data class CourseItem(
+        val id: String?,
+        val courseId: String?,
+        val courseTitle: String?,
+        val description: String?,
+        val gradeLevel: String?,
+        val subjectLevel: String?,
+        val createdDate: Long?,
+        val isMyCourse: Boolean,
+        val numberOfSteps: Int,
+        val rating: JsonObject?,
+        val progress: JsonObject?
+    )
+
     companion object {
         private const val TAG_PAYLOAD = "payload_tags"
         private const val RATING_PAYLOAD = "payload_rating"
@@ -94,33 +108,26 @@ class AdapterCourses(
             val oldProgressMap = progressMap?.let { HashMap(it) }
             val currentMap = newMap ?: map
             val currentProgressMap = newProgressMap ?: progressMap
-            val oldList = ArrayList(courseList)
+
+            val oldList = courseList.map { course ->
+                course?.toCourseItem(oldMap[course.courseId], oldProgressMap?.get(course.courseId))
+            }
+            val newListMapped = newList.map { course ->
+                course?.toCourseItem(currentMap[course.courseId], currentProgressMap?.get(course.courseId))
+            }
 
             val diffResult = withContext(Dispatchers.Default) {
                 DiffUtils.calculateDiff(
                     oldList,
-                    newList,
+                    newListMapped,
                     areItemsTheSame = { old, new -> old?.id == new?.id },
-                    areContentsTheSame = { old, new ->
-                        val ratingSame = oldMap[old?.courseId] == currentMap[new?.courseId]
-                        val progressSame = oldProgressMap?.get(old?.courseId) == currentProgressMap?.get(new?.courseId)
-
-                        old?.courseTitle == new?.courseTitle &&
-                                old?.description == new?.description &&
-                                old?.gradeLevel == new?.gradeLevel &&
-                                old?.subjectLevel == new?.subjectLevel &&
-                                old?.createdDate == new?.createdDate &&
-                                old?.isMyCourse == new?.isMyCourse &&
-                                old?.getNumberOfSteps() == new?.getNumberOfSteps() &&
-                                ratingSame &&
-                                progressSame
-                    },
+                    areContentsTheSame = { old, new -> old == new },
                     getChangePayload = { old, new ->
                         val bundle = Bundle()
-                        if (oldMap[old?.courseId] != currentMap[new?.courseId]) {
+                        if (old?.rating != new?.rating) {
                             bundle.putBoolean(RATING_PAYLOAD, true)
                         }
-                        if (oldProgressMap?.get(old?.courseId) != currentProgressMap?.get(new?.courseId)) {
+                        if (old?.progress != new?.progress) {
                             bundle.putBoolean(PROGRESS_PAYLOAD, true)
                         }
                         if (bundle.isEmpty) null else bundle
@@ -138,6 +145,22 @@ class AdapterCourses(
                 diffResult.dispatchUpdatesTo(this@AdapterCourses)
             }
         }
+    }
+
+    private fun RealmMyCourse.toCourseItem(rating: JsonObject?, progress: JsonObject?): CourseItem {
+        return CourseItem(
+            id = this.id,
+            courseId = this.courseId,
+            courseTitle = this.courseTitle,
+            description = this.description,
+            gradeLevel = this.gradeLevel,
+            subjectLevel = this.subjectLevel,
+            createdDate = this.createdDate,
+            isMyCourse = this.isMyCourse,
+            numberOfSteps = this.getNumberOfSteps(),
+            rating = rating,
+            progress = progress
+        )
     }
 
     fun setCourseList(courseList: List<RealmMyCourse?>) {
