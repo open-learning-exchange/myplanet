@@ -42,6 +42,8 @@ import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.Nameable
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
+import javax.inject.Inject
+import kotlin.math.ceil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -93,8 +95,6 @@ import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.NotificationUtils
 import org.ole.planet.myplanet.utilities.Utilities.toast
-import javax.inject.Inject
-import kotlin.math.ceil
 
 @AndroidEntryPoint  
 class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener, NotificationListener {
