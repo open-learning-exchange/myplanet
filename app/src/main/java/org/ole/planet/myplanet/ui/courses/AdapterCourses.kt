@@ -43,7 +43,7 @@ class AdapterCourses(
     private var courseList: List<RealmMyCourse?>,
     private val map: HashMap<String?, JsonObject>,
     private var userModel: RealmUserModel?,
-    private val tagRepository: TagRepository
+    private val tags: Map<String, List<RealmTag>>
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private val selectedItems: MutableList<RealmMyCourse?> = ArrayList()
     private var listener: OnCourseItemSelected? = null
@@ -54,8 +54,6 @@ class AdapterCourses(
     private var isAscending = true
     private var isTitleAscending = false
     private var areAllSelected = false
-    private val tagCache: MutableMap<String, List<RealmTag>> = mutableMapOf()
-    private val tagRequestsInProgress: MutableSet<String> = mutableSetOf()
 
     companion object {
         private const val TAG_PAYLOAD = "payload_tags"
@@ -388,33 +386,8 @@ class AdapterCourses(
             flexboxDrawable.removeAllViews()
             return
         }
-
-        val cachedTags = tagCache[courseId]
-        if (cachedTags != null) {
-            renderTagCloud(flexboxDrawable, cachedTags)
-            return
-        }
-
-        flexboxDrawable.removeAllViews()
-
-        if (!tagRequestsInProgress.add(courseId)) {
-            return
-        }
-
-        holder.itemView.findViewTreeLifecycleOwner()?.lifecycleScope?.launch {
-            try {
-                val tags = tagRepository.getTagsForCourse(courseId)
-                tagCache[courseId] = tags
-                val adapterPosition = holder.bindingAdapterPosition
-                if (adapterPosition != RecyclerView.NO_POSITION) {
-                    withContext(kotlinx.coroutines.Dispatchers.Main) {
-                        notifyItemChanged(adapterPosition, TAG_PAYLOAD)
-                    }
-                }
-            } finally {
-                tagRequestsInProgress.remove(courseId)
-            }
-        }
+        val tags = tags[courseId].orEmpty()
+        renderTagCloud(flexboxDrawable, tags)
     }
 
     private fun renderTagCloud(flexboxDrawable: FlexboxLayout, tags: List<RealmTag>) {

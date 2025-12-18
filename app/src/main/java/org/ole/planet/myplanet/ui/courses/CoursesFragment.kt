@@ -200,13 +200,16 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     courseLib = "courses"
                 }
 
+                val courseIds = sortedCourseList.mapNotNull { it?.id }
+                val tags = tagRepository.getTagsForCourses(courseIds)
+
                 recyclerView.adapter = null
                 adapterCourses = AdapterCourses(
                     requireActivity(),
                     sortedCourseList,
                     map,
                     userModel,
-                    tagRepository
+                    tags
                 )
                 adapterCourses.setProgressMap(progressMap)
                 adapterCourses.setListener(this@CoursesFragment)
@@ -227,7 +230,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             emptyList(),
             HashMap<String?, JsonObject>(),
             userModel,
-            tagRepository
+            emptyMap()
         )
         adapterCourses.setProgressMap(HashMap<String?, JsonObject>())
         adapterCourses.setListener(this@CoursesFragment)
