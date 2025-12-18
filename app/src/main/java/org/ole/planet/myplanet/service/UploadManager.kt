@@ -25,6 +25,7 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.FileUploadService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.MyPlanet
+import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.model.RealmCourseActivity
@@ -69,6 +70,7 @@ private inline fun <T> Iterable<T>.processInBatches(action: (T) -> Unit) {
 class UploadManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val databaseService: DatabaseService,
+    private val submissionRepository: SubmissionRepository,
     @AppPreferences private val pref: SharedPreferences,
     private val gson: Gson
 ) : FileUploadService() {
@@ -165,11 +167,10 @@ class UploadManager @Inject constructor(
         withContext(Dispatchers.IO) {
             val apiInterface = client.create(ApiInterface::class.java)
             try {
-                val submissionIds = databaseService.withRealm { realm ->
-                    realm.where(RealmSubmission::class.java).findAll()
-                        .filter { (it.answers?.size ?: 0) > 0 && it.userId?.startsWith("guest") != true }
-                        .mapNotNull { it.id }
-                }
+                val submissions = submissionRepository.getAllPendingSubmissions()
+                val submissionIds = submissions
+                    .filter { (it.answers?.size ?: 0) > 0 && it.userId?.startsWith("guest") != true }
+                    .mapNotNull { it.id }
 
                 var processedCount = 0
                 var errorCount = 0
