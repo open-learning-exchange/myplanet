@@ -45,6 +45,7 @@ import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmTag.Companion.getTagsArray
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.CourseRepository
 import org.ole.planet.myplanet.repository.TagRepository
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -142,7 +143,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                             withContext(Dispatchers.Main) {
                                 customProgressDialog?.dismiss()
                                 customProgressDialog = null
-                                refreshCoursesData()
+                                loadDataAsync()
                             }
                         }
                         prefManager.setCoursesSynced(true)
@@ -180,77 +181,57 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
 
-    private fun refreshCoursesData() {
+    private fun loadDataAsync() {
         if (!isAdded || requireActivity().isFinishing) return
 
-        try {
-            if (!mRealm.isInTransaction) {
-                mRealm.refresh()
-            }
-            val map = getRatings(mRealm, "course", model?.id)
-            val progressMap = getCourseProgress(mRealm, model?.id)
-            val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>().filter { !it?.courseTitle.isNullOrBlank() }
-            val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
+        lifecycleScope.launch {
+            try {
+                if (!mRealm.isInTransaction) {
+                    mRealm.refresh()
+                }
+                val map = getRatings(mRealm, "course", model?.id)
+                val progressMap = getCourseProgress(mRealm, model?.id)
+                val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>().filter { !it?.courseTitle.isNullOrBlank() }
+                val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
 
-            recyclerView.adapter = null
-            adapterCourses = AdapterCourses(
-                requireActivity(),
-                sortedCourseList,
-                map,
-                userProfileDbHandler,
-                tagRepository,
-                this@CoursesFragment
-            )
-            adapterCourses.setProgressMap(progressMap)
-            adapterCourses.setListener(this)
-            adapterCourses.setRatingChangeListener(this)
-            recyclerView.adapter = adapterCourses
+                if (isMyCourseLib) {
+                    val courseIds = courseList.mapNotNull { it?.id }
+                    resources = courseRepository.getCourseOfflineResources(courseIds)
+                    courseLib = "courses"
+                }
 
-            if (isMyCourseLib) {
-                val courseIds = courseList.mapNotNull { it?.id }
-                resources = mRealm.where(RealmMyLibrary::class.java)
-                    .`in`("courseId", courseIds.toTypedArray())
-                    .equalTo("resourceOffline", false)
-                    .isNotNull("resourceLocalAddress")
-                    .findAll()
+                recyclerView.adapter = null
+                adapterCourses = AdapterCourses(
+                    requireActivity(),
+                    sortedCourseList,
+                    map,
+                    userProfileDbHandler,
+                    tagRepository
+                )
+                adapterCourses.setProgressMap(progressMap)
+                adapterCourses.setListener(this@CoursesFragment)
+                adapterCourses.setRatingChangeListener(this@CoursesFragment)
+                recyclerView.adapter = adapterCourses
+
+                checkList()
+                showNoData(tvMessage, adapterCourses.itemCount, "courses")
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-            checkList()
-            showNoData(tvMessage, adapterCourses.itemCount, "courses")
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
-        if (!mRealm.isInTransaction) {
-            mRealm.refresh()
-        }
-
-        val map = getRatings(mRealm, "course", model?.id)
-        val progressMap = getCourseProgress(mRealm, model?.id)
-        val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>().filter { !it?.courseTitle.isNullOrBlank() }
-        val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
         adapterCourses = AdapterCourses(
             requireActivity(),
-            sortedCourseList,
-            map,
+            emptyList(),
+            HashMap<String?, JsonObject>(),
             userProfileDbHandler,
-            tagRepository,
-            this@CoursesFragment
+            tagRepository
         )
-        adapterCourses.setProgressMap(progressMap)
-        adapterCourses.setListener(this)
-        adapterCourses.setRatingChangeListener(this)
-
-        if (isMyCourseLib) {
-            val courseIds = courseList.mapNotNull { it?.id }
-            resources = mRealm.where(RealmMyLibrary::class.java)
-                .`in`("courseId", courseIds.toTypedArray())
-                .equalTo("resourceOffline", false)
-                .isNotNull("resourceLocalAddress")
-                .findAll()
-            courseLib = "courses"
-        }
+        adapterCourses.setProgressMap(HashMap<String?, JsonObject>())
+        adapterCourses.setListener(this@CoursesFragment)
+        adapterCourses.setRatingChangeListener(this@CoursesFragment)
         return adapterCourses
     }
 
@@ -259,6 +240,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         userModel = userProfileDbHandler.userModel
         searchTags = ArrayList()
         initializeView()
+        loadDataAsync()
         updateCheckBoxState(false)
         setupButtonVisibility()
         setupEventListeners()
@@ -308,9 +290,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             alertDialogBuilder.setMessage(message)
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
                     deleteSelected(true)
-                    val newFragment = CoursesFragment()
-                    recreateFragment(newFragment)
-                    checkList()
+                    clearAllSelections()
+                    loadDataAsync()
                 }
                 .setNegativeButton(R.string.no, null).show()
         }
@@ -325,9 +306,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             alertDialogBuilder.setMessage(message)
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
                     deleteSelected(true)
-                    val newFragment = CoursesFragment()
-                    recreateFragment(newFragment)
-                    checkList()
+                    clearAllSelections()
+                    loadDataAsync()
                 }
                 .setNegativeButton(R.string.no, null).show()
         }
@@ -561,12 +541,12 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             }
             .setNegativeButton(R.string.ok) { dialog: DialogInterface, _: Int ->
                 dialog.cancel()
-                val newFragment = CoursesFragment()
-                recreateFragment(newFragment)
+                clearAllSelections()
+                loadDataAsync()
             }
             .setOnDismissListener {
-                val newFragment = CoursesFragment()
-                recreateFragment(newFragment)
+                clearAllSelections()
+                loadDataAsync()
             }
 
         return builder.create()
