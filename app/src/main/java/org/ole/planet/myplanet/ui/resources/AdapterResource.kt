@@ -30,7 +30,6 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TagRepository
-import org.ole.planet.myplanet.ui.sync.DiffRefreshableAdapter
 import org.ole.planet.myplanet.utilities.CourseRatingUtils
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
@@ -43,7 +42,7 @@ class AdapterResource(
     private var ratingMap: HashMap<String?, JsonObject>,
     private val tagRepository: TagRepository,
     private val userModel: RealmUserModel?
-) : RecyclerView.Adapter<RecyclerView.ViewHolder>(), DiffRefreshableAdapter {
+) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private var diffJob: Job? = null
     private val selectedItems: MutableList<RealmMyLibrary?> = ArrayList()
     private var listener: OnLibraryItemSelected? = null
@@ -401,17 +400,6 @@ class AdapterResource(
             }
 
         fun bind() {}
-    }
-
-    override fun refreshWithDiff() {
-        (context as? LifecycleOwner)?.lifecycleScope?.launch {
-            val newLibraryList = withContext(Dispatchers.IO) {
-                Realm.getDefaultInstance().use { realm ->
-                    realm.copyFromRealm(realm.where(RealmMyLibrary::class.java).findAll())
-                }
-            }
-            triggerDiff(newLibraryList)
-        }
     }
 
     private fun triggerDiff(newList: List<RealmMyLibrary?>) {

@@ -46,6 +46,7 @@ import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmTag.Companion.getTagsArray
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.LibraryRepository
 import org.ole.planet.myplanet.repository.TagRepository
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
@@ -74,6 +75,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private lateinit var searchTags: MutableList<RealmTag>
     private lateinit var config: ChipCloudConfig
     private lateinit var adapterLibrary: AdapterResource
+    private var cachedLibraryList: List<RealmMyLibrary?> = emptyList()
     var userModel: RealmUserModel ?= null
     var map: HashMap<String?, JsonObject>? = null
     private var confirmation: AlertDialog? = null
@@ -88,6 +90,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     @Inject
     lateinit var tagRepository: TagRepository
+
+    @Inject
+    lateinit var libraryRepository: LibraryRepository
 
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
@@ -147,7 +152,10 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                     if (isAdded && view != null) {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
-                        refreshResourcesData()
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            cachedLibraryList = libraryRepository.getAllLibraries()
+                            refreshResourcesData()
+                        }
                         prefManager.setResourcesSynced(true)
                     }
                 }
@@ -180,7 +188,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
         try {
             map = getRatings(mRealm, "resource", model?.id)
-            val libraryList: List<RealmMyLibrary?> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary?>()
+            val libraryList: List<RealmMyLibrary?> = cachedLibraryList
             val currentSearchTags = if (::searchTags.isInitialized) searchTags else emptyList()
             val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
             val filteredLibraryList: List<RealmMyLibrary?> =
@@ -202,8 +210,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
         map = getRatings(mRealm, "resource", model?.id)
-        val libraryList: List<RealmMyLibrary?> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary?>()
-        adapterLibrary = AdapterResource(requireActivity(), libraryList, map!!, tagRepository, profileDbHandler?.userModel)
+        adapterLibrary = AdapterResource(requireActivity(), emptyList(), map!!, tagRepository, profileDbHandler?.userModel)
         adapterLibrary.setRatingChangeListener(this)
         adapterLibrary.setListener(this)
         return adapterLibrary
@@ -545,7 +552,10 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     override fun onResume() {
         super.onResume()
-        refreshResourcesData()
+        viewLifecycleOwner.lifecycleScope.launch {
+            cachedLibraryList = libraryRepository.getAllLibraries()
+            refreshResourcesData()
+        }
         selectAll.isChecked = false
     }
 
@@ -667,9 +677,14 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         return listOf("resources")
     }
     
-    override fun onDataUpdated(table: String, update: TableDataUpdate) {}
+    override fun onDataUpdated(table: String, update: TableDataUpdate) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            cachedLibraryList = libraryRepository.getAllLibraries()
+            refreshResourcesData()
+        }
+    }
 
-    override fun shouldAutoRefresh(table: String): Boolean = true
+    override fun shouldAutoRefresh(table: String): Boolean = false
     
     override fun getSyncRecyclerView(): RecyclerView? {
         return if (::recyclerView.isInitialized) recyclerView else null

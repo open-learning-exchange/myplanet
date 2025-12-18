@@ -169,4 +169,8 @@ class LibraryRepositoryImpl @Inject constructor(
                 .equalTo("mediaType", "image")
         }
     }
+
+    override suspend fun getAllLibraries(): List<RealmMyLibrary> {
+        return queryList(RealmMyLibrary::class.java)
+    }
 }
