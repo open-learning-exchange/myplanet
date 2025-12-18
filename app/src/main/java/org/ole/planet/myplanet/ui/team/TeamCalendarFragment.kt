@@ -13,7 +13,6 @@ import android.widget.Button
 import android.widget.RadioButton
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
-import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.applandeo.materialcalendarview.CalendarDay
@@ -116,7 +115,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
                 val endMillis = end.timeInMillis
                 val currentTeamId = teamId
 
-                lifecycleScope.launch {
+                viewLifecycleOwner.lifecycleScope.launch {
                     val meetup = RealmMeetup().apply {
                         id = "${UUID.randomUUID()}"
                         this.title = title
@@ -215,7 +214,6 @@ class TeamCalendarFragment : BaseTeamFragment() {
 
     override fun onResume() {
         super.onResume()
-        setupCalendarClickListener()
     }
 
     override fun onDestroyView() {
@@ -226,7 +224,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
     private fun setupCalendarClickListener(){
         binding.calendarView.setOnCalendarDayClickListener(object : OnCalendarDayClickListener {
             override fun onClick(calendarDay: CalendarDay) {
-                lifecycleScope.launch {
+                viewLifecycleOwner.lifecycleScope.launch {
                     meetupList = meetupRepository.getMeetupsForTeam(teamId)
                     clickedCalendar = calendarDay.calendar
                     val clickedDateInMillis = clickedCalendar.timeInMillis
@@ -317,7 +315,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
 
         meetupDialog?.setOnDismissListener {
             eventDates.add(clickedCalendar)
-            lifecycleScope.launch {
+            viewLifecycleOwner.lifecycleScope.launch {
                 binding.calendarView.selectedDates = emptyList()
                 binding.calendarView.selectedDates = eventDates.toList()
             }
