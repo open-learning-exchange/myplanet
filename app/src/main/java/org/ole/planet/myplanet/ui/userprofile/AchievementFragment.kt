@@ -52,7 +52,6 @@ private data class AchievementData(
 class AchievementFragment : BaseContainerFragment() {
     private var _binding: FragmentAchievementBinding? = null
     private val binding get() = _binding!!
-    private lateinit var aRealm: Realm
     var user: RealmUserModel? = null
     var listener: OnHomeItemClickListener? = null
     private var achievementData: AchievementData? = null
@@ -80,7 +79,6 @@ class AchievementFragment : BaseContainerFragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentAchievementBinding.inflate(inflater, container, false)
-        aRealm = databaseService.realmInstance
         user = profileDbHandler.userModel
         binding.btnEdit.setOnClickListener {
             if (listener != null) listener?.openCallFragment(EditAchievementFragment())
@@ -338,15 +336,6 @@ class AchievementFragment : BaseContainerFragment() {
     override fun onDestroy() {
         customProgressDialog?.dismiss()
         customProgressDialog = null
-        if (this::aRealm.isInitialized && !aRealm.isClosed) {
-            aRealm.close()
-        }
-        try {
-            if (!mRealm.isClosed) {
-                mRealm.close()
-            }
-        } catch (_: UninitializedPropertyAccessException) {
-        }
         super.onDestroy()
     }
 }
