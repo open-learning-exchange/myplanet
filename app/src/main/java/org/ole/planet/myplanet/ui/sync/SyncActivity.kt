@@ -66,6 +66,7 @@ import org.ole.planet.myplanet.datamanager.Service.PlanetAvailableListener
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.ConfigurationRepository
+import org.ole.planet.myplanet.repository.SyncRepository
 import org.ole.planet.myplanet.model.ServerAddressesModel
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.TransactionSyncManager
@@ -143,6 +144,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
     private var isProgressDialogShowing = false
     @Inject
     lateinit var configurationRepository: ConfigurationRepository
+
+    @Inject
+    lateinit var syncRepository: SyncRepository
 
     @Inject
     lateinit var syncManager: SyncManager
@@ -296,53 +300,25 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
     }
 
     suspend fun isServerReachable(processedUrl: String?, type: String): Boolean {
-        ApiClient.ensureInitialized()
-        val apiInterface = client?.create(ApiInterface::class.java)
-        try {
-            val url = if (settings.getBoolean("isAlternativeUrl", false)) {
-                if (processedUrl?.contains("/db") == true) {
-                    processedUrl.replace("/db", "") + "/db/_all_dbs"
-                } else {
-                    "$processedUrl/db/_all_dbs"
-                }
-            } else {
-                "$processedUrl/_all_dbs"
+        val reachable = processedUrl?.let { configurationRepository.isServerReachable(it) } ?: false
+        if (reachable) {
+            withContext(Dispatchers.Main) {
+                startSync(type)
             }
-            val response = apiInterface?.isPlanetAvailableSuspend(url)
-
-            if (response?.isSuccessful == true) {
-                val ss = response.body()?.string()
-                val myList = ss?.split(",")?.dropLastWhile { it.isEmpty() }
-
-                return if ((myList?.size ?: 0) < 8) {
-                    withContext(Dispatchers.Main) {
-                        customProgressDialog.dismiss()
-                        alertDialogOkay(context.getString(R.string.check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server))
-                    }
-                    false
-                } else {
-                    withContext(Dispatchers.Main) {
-                        startSync(type)
-                    }
-                    true
-                }
+        } else {
+            syncFailed = true
+            val protocol = extractProtocol("$processedUrl")
+            val errorMessage = when (protocol) {
+                context.getString(R.string.http_protocol) -> context.getString(R.string.device_couldn_t_reach_local_server)
+                context.getString(R.string.https_protocol) -> context.getString(R.string.device_couldn_t_reach_nation_server)
+                else -> context.getString(R.string.check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server)
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
+            withContext(Dispatchers.Main) {
+                customProgressDialog.dismiss()
+                alertDialogOkay(errorMessage)
+            }
         }
-
-        syncFailed = true
-        val protocol = extractProtocol("$processedUrl")
-        val errorMessage = when (protocol) {
-            context.getString(R.string.http_protocol) -> context.getString(R.string.device_couldn_t_reach_local_server)
-            context.getString(R.string.https_protocol) -> context.getString(R.string.device_couldn_t_reach_nation_server)
-            else -> ""
-        }
-        withContext(Dispatchers.Main) {
-            customProgressDialog.dismiss()
-            alertDialogOkay(errorMessage)
-        }
-        return false
+        return reachable
     }
 
     private fun dateCheck(binding: DialogServerUrlBinding) {
@@ -423,7 +399,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
     }
 
     fun startSync(type: String) {
-        syncManager.start(null, type)
+        syncRepository.startSync(type)
     }
 
     private fun saveConfigAndContinue(

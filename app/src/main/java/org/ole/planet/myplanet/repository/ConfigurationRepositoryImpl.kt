@@ -275,4 +275,30 @@ class ConfigurationRepositoryImpl @Inject constructor(
             }
         }
     }
+
+    override suspend fun isServerReachable(url: String): Boolean {
+        val dbUrl = if (preferences.getBoolean("isAlternativeUrl", false)) {
+            if (url.contains("/db")) {
+                url.replace("/db", "") + "/db/_all_dbs"
+            } else {
+                "$url/db/_all_dbs"
+            }
+        } else {
+            "$url/_all_dbs"
+        }
+
+        return try {
+            val response = apiInterface.isPlanetAvailableSuspend(dbUrl)
+            if (response.isSuccessful) {
+                val ss = response.body()?.string()
+                val myList = ss?.split(",")?.dropLastWhile { it.isEmpty() }
+                (myList?.size ?: 0) >= 8
+            } else {
+                false
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
 }
