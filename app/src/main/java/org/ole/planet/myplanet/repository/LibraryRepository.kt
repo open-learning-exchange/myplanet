@@ -23,4 +23,6 @@ interface LibraryRepository {
     suspend fun updateLibraryItem(id: String, updater: (RealmMyLibrary) -> Unit)
     suspend fun markResourceOfflineByLocalAddress(localAddress: String)
     suspend fun getPrivateImageUrlsCreatedAfter(timestamp: Long): List<String>
+    suspend fun getDownloadableLibraryItems(): List<RealmMyLibrary>
+    suspend fun markAllResourcesAsNotOffline()
 }

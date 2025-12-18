@@ -107,7 +107,7 @@ class SettingActivity : AppCompatActivity() {
         @Inject
         lateinit var profileDbHandler: UserProfileDbHandler
         @Inject
-        lateinit var databaseService: DatabaseService
+        lateinit var libraryRepository: LibraryRepository
         @Inject
         @DefaultPreferences
         lateinit var defaultPref: SharedPreferences
@@ -159,10 +159,8 @@ class SettingActivity : AppCompatActivity() {
                     defaultPref.edit { putBoolean("beta_auto_download", true) }
                     lifecycleScope.launch {
                         try {
-                            val files = libraryList ?: withContext(Dispatchers.IO) {
-                                databaseService.withRealm { realm ->
-                                    realm.copyFromRealm(getAllLibraryList(realm)).also { libraryList = it }
-                                }
+                            val files = libraryList ?: libraryRepository.getDownloadableLibraryItems().also {
+                                libraryList = it
                             }
                             backgroundDownload(downloadAllFiles(files), requireContext())
                         } finally {
@@ -213,12 +211,7 @@ class SettingActivity : AppCompatActivity() {
                             lifecycleScope.launch {
                                 try {
                                     withTimeout(60 * 1000L) {
-                                        databaseService.executeTransactionAsync { bgRealm ->
-                                            val libraries = bgRealm.where(RealmMyLibrary::class.java).findAll()
-                                            for (library in libraries) {
-                                                library.resourceOffline = false
-                                            }
-                                        }
+                                        libraryRepository.markAllResourcesAsNotOffline()
                                         val f = File(FileUtils.getOlePath(requireContext()))
                                         withContext(Dispatchers.IO) {
                                             deleteRecursive(f)

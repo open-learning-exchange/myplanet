@@ -169,4 +169,20 @@ class LibraryRepositoryImpl @Inject constructor(
                 .equalTo("mediaType", "image")
         }
     }
+
+    override suspend fun getDownloadableLibraryItems(): List<RealmMyLibrary> {
+        val results = queryList(RealmMyLibrary::class.java) {
+            equalTo("resourceOffline", false)
+        }
+        return results.filter { it.needToUpdate() }
+    }
+
+    override suspend fun markAllResourcesAsNotOffline() {
+        executeTransactionAsync { bgRealm ->
+            val libraries = bgRealm.where(RealmMyLibrary::class.java).findAll()
+            for (library in libraries) {
+                library.resourceOffline = false
+            }
+        }
+    }
 }
