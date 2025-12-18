@@ -16,7 +16,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowMyProgressBinding
 import org.ole.planet.myplanet.utilities.DiffUtils
 
-class AdapterMyProgress(private val context: Context) : ListAdapter<JsonObject, RecyclerView.ViewHolder>(DiffUtils.itemCallback({ old, new -> old.toString() == new.toString() }, { old, new -> old.toString() == new.toString() })) {
+class AdapterMyProgress(private val context: Context) : ListAdapter<JsonObject, RecyclerView.ViewHolder>(DiffUtils.itemCallback({ old, new -> old.asJsonObject["courseId"]?.asString == new.asJsonObject["courseId"]?.asString }, { old, new -> getCourseProgressComparisonData(old) == getCourseProgressComparisonData(new) })) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val binding = RowMyProgressBinding.inflate(LayoutInflater.from(parent.context), parent, false)
@@ -90,5 +90,14 @@ class AdapterMyProgress(private val context: Context) : ListAdapter<JsonObject, 
         val tvTitle = binding.tvTitle
         val tvTotal = binding.tvTotal
         val tvDescription = binding.tvDescription
+    }
+
+    private fun getCourseProgressComparisonData(item: JsonObject): List<Any?> {
+        val courseName = item.asJsonObject["courseName"]?.asString
+        val progressCurrent = item.asJsonObject["progress"]?.asJsonObject?.get("current")?.asInt
+        val progressMax = item.asJsonObject["progress"]?.asJsonObject?.get("max")?.asInt
+        val mistakes = item.asJsonObject["mistakes"]?.asJsonObject
+        val stepMistake = item.asJsonObject["stepMistake"]?.asJsonObject
+        return listOf(courseName, progressCurrent, progressMax, mistakes, stepMistake)
     }
 }
