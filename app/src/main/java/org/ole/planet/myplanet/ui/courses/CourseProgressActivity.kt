@@ -70,12 +70,14 @@ class CourseProgressActivity : BaseActivity() {
     }
 
     private suspend fun loadData(courseId: String, userId: String?): CourseProgressData? {
+        val stepsList = databaseService.withRealmAsync { realm ->
+            RealmMyCourse.getCourseSteps(realm, courseId)
+        }
+        val current = courseRepository.getCurrentProgress(stepsList, userId, courseId)
+
         return withContext(Dispatchers.IO) {
             databaseService.withRealm { realm ->
-                val stepsList = RealmMyCourse.getCourseSteps(realm, courseId)
                 val max = stepsList.size
-                val current = courseRepository.getCurrentProgress(stepsList, userId, courseId)
-
                 val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
                 val title = course?.courseTitle
 

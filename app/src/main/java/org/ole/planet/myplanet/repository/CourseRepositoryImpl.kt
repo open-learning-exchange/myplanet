@@ -3,16 +3,12 @@ package org.ole.planet.myplanet.repository
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.model.RealmCourseStep
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmStepExam
-import javax.inject.Inject
-import kotlinx.coroutines.flow.Flow
 
 class CourseRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
@@ -191,7 +187,17 @@ class CourseRepositoryImpl @Inject constructor(
                     .equalTo("courseId", course.courseId)
                     .findAll()
                 `object`.addProperty("max", steps.size)
-                `object`.addProperty("current", getCurrentProgress(steps, userId, course.courseId))
+                var i = 0
+                while (i < steps.size) {
+                    realm.where(RealmCourseProgress::class.java)
+                        .equalTo("stepNum", i + 1)
+                        .equalTo("userId", userId)
+                        .equalTo("courseId", course.courseId)
+                        .findFirst()
+                        ?: break
+                    i++
+                }
+                `object`.addProperty("current", i)
                 if (course.userId?.contains(userId) == true) {
                     map[course.courseId] = `object`
                 }
