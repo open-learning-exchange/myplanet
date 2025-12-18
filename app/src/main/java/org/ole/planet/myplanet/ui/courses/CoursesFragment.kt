@@ -205,7 +205,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     requireActivity(),
                     sortedCourseList,
                     map,
-                    userProfileDbHandler,
+                    userModel,
                     tagRepository
                 )
                 adapterCourses.setProgressMap(progressMap)
@@ -226,7 +226,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             requireActivity(),
             emptyList(),
             HashMap<String?, JsonObject>(),
-            userProfileDbHandler,
+            userModel,
             tagRepository
         )
         adapterCourses.setProgressMap(HashMap<String?, JsonObject>())
