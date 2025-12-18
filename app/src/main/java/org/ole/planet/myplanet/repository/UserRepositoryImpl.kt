@@ -19,6 +19,8 @@ import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
 import org.ole.planet.myplanet.service.UploadToShelfService
+import io.realm.Case
+import io.realm.Sort
 import org.ole.planet.myplanet.ui.myhealth.HealthRecord
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.UrlUtils
@@ -367,5 +369,19 @@ class UserRepositoryImpl @Inject constructor(
             realm.copyFromRealm(users).filter { it.id != null }.associateBy { it.id!! }
         }
         HealthRecord(mh, mm, list, userMap)
+    }
+
+    override suspend fun searchUsers(query: String): List<RealmUserModel> {
+        return withRealm { realm ->
+            val results = realm.where(RealmUserModel::class.java)
+                .contains("firstName", query, Case.INSENSITIVE)
+                .or()
+                .contains("lastName", query, Case.INSENSITIVE)
+                .or()
+                .contains("name", query, Case.INSENSITIVE)
+                .sort("joinDate", Sort.DESCENDING)
+                .findAll()
+            realm.copyFromRealm(results)
+        }
     }
 }

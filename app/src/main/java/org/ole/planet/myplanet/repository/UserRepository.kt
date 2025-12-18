@@ -57,6 +57,7 @@ interface UserRepository {
         currentUser: RealmUserModel
     ): HealthRecord?
 
+    suspend fun searchUsers(query: String): List<RealmUserModel>
     fun getUserModel(): RealmUserModel?
     suspend fun getUserModelSuspending(): RealmUserModel?
     fun getActiveUserId(): String

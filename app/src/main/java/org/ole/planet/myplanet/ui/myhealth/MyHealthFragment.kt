@@ -68,8 +68,6 @@ class MyHealthFragment : Fragment() {
     @Inject
     lateinit var syncManager: SyncManager
     @Inject
-    lateinit var databaseService: DatabaseService
-    @Inject
     lateinit var userRepository: UserRepository
     private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
     private lateinit var realtimeSyncListener: BaseRealtimeSyncListener
@@ -78,7 +76,6 @@ class MyHealthFragment : Fragment() {
     private lateinit var alertMyPersonalBinding: AlertMyPersonalBinding
     private var alertHealthListBinding: AlertHealthListBinding? = null
     var userId: String? = null
-    lateinit var mRealm: Realm
     var userModel: RealmUserModel? = null
     lateinit var userModelList: List<RealmUserModel>
     lateinit var adapter: UserListArrayAdapter
@@ -102,7 +99,6 @@ class MyHealthFragment : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentVitalSignBinding.inflate(inflater, container, false)
-        mRealm = databaseService.realmInstance
         return binding.root
     }
 
@@ -350,16 +346,7 @@ class MyHealthFragment : Fragment() {
                         lv.visibility = View.GONE
                     }
 
-                    val userModelList = withContext(Dispatchers.IO) {
-                        databaseService.withRealm { realm ->
-                            val results = realm.where(RealmUserModel::class.java)
-                                .contains("firstName", editable.toString(), Case.INSENSITIVE).or()
-                                .contains("lastName", editable.toString(), Case.INSENSITIVE).or()
-                                .contains("name", editable.toString(), Case.INSENSITIVE)
-                                .sort("joinDate", Sort.DESCENDING).findAll()
-                            realm.copyFromRealm(results)
-                        }
-                    }
+                    val userModelList = userRepository.searchUsers(editable.toString())
 
                     loadingJob.cancel()
                     if (isAdded) {
@@ -488,9 +475,6 @@ class MyHealthFragment : Fragment() {
     override fun onDestroy() {
         customProgressDialog?.dismiss()
         customProgressDialog = null
-        if (this::mRealm.isInitialized && !mRealm.isClosed) {
-            mRealm.close()
-        }
         super.onDestroy()
     }
 }
