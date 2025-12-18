@@ -30,6 +30,8 @@ class CourseProgressActivity : BaseActivity() {
     private lateinit var binding: ActivityCourseProgressBinding
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
+    @Inject
+    lateinit var courseRepository: org.ole.planet.myplanet.repository.CourseRepository
     var user: RealmUserModel? = null
     lateinit var courseId: String
 
@@ -72,7 +74,7 @@ class CourseProgressActivity : BaseActivity() {
             databaseService.withRealm { realm ->
                 val stepsList = RealmMyCourse.getCourseSteps(realm, courseId)
                 val max = stepsList.size
-                val current = RealmCourseProgress.getCurrentProgress(stepsList, realm, userId, courseId)
+                val current = courseRepository.getCurrentProgress(stepsList, userId, courseId)
 
                 val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
                 val title = course?.courseTitle

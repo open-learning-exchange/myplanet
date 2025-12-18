@@ -4,10 +4,15 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmCourseStep
+import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.model.RealmCourseProgress
+import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmStepExam
+import javax.inject.Inject
+import kotlinx.coroutines.flow.Flow
 
 class CourseRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
@@ -154,6 +159,44 @@ class CourseRepositoryImpl @Inject constructor(
                 .filter { !it.courseTitle.isNullOrBlank() }
                 .sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
             realm.copyFromRealm(sortedList)
+        }
+    }
+
+    override suspend fun getCurrentProgress(steps: List<RealmCourseStep>, userId: String?, courseId: String?): Int {
+        return withRealm { realm ->
+            var i = 0
+            while (i < steps.size) {
+                realm.where(RealmCourseProgress::class.java)
+                    .equalTo("stepNum", i + 1)
+                    .equalTo("userId", userId)
+                    .equalTo("courseId", courseId)
+                    .findFirst()
+                    ?: break
+                i++
+            }
+            i
+        }
+    }
+
+    override suspend fun getCourseProgress(userId: String?): HashMap<String?, com.google.gson.JsonObject> {
+        return withRealm { realm ->
+            val myCourses = realm.where(org.ole.planet.myplanet.model.RealmMyCourse::class.java)
+                .equalTo("userId", userId)
+                .findAll()
+
+            val map = HashMap<String?, com.google.gson.JsonObject>()
+            for (course in myCourses) {
+                val `object` = com.google.gson.JsonObject()
+                val steps = realm.where(org.ole.planet.myplanet.model.RealmCourseStep::class.java)
+                    .equalTo("courseId", course.courseId)
+                    .findAll()
+                `object`.addProperty("max", steps.size)
+                `object`.addProperty("current", getCurrentProgress(steps, userId, course.courseId))
+                if (course.userId?.contains(userId) == true) {
+                    map[course.courseId] = `object`
+                }
+            }
+            map
         }
     }
 }

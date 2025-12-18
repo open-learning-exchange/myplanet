@@ -171,9 +171,11 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         binding.finishStep.setOnClickListener(this)
         binding.courseProgress.setOnSeekBarChangeListener(object : OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar, i: Int, b: Boolean) {
-                val currentProgress = getCurrentProgress(steps, mRealm, userModel?.id, courseId)
-                if (b && i <= currentProgress + 1) {
-                    binding.viewPager2.currentItem = i
+                lifecycleScope.launch {
+                    val currentProgress = courseRepository.getCurrentProgress(steps.filterNotNull(), userModel?.id, courseId)
+                    if (b && i <= currentProgress + 1) {
+                        binding.viewPager2.currentItem = i
+                    }
                 }
             }
 
@@ -190,11 +192,13 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             binding.tvStep.text = String.format(getString(R.string.step) + " %d/%d", stepNumber, steps.size)
         }
 
-        val currentProgress = getCurrentProgress(steps, mRealm, userModel?.id, courseId)
-        if (currentProgress < steps.size) {
-            binding.courseProgress.secondaryProgress = currentProgress + 1
+        lifecycleScope.launch {
+            val currentProgress = courseRepository.getCurrentProgress(steps.filterNotNull(), userModel?.id, courseId)
+            if (currentProgress < steps.size) {
+                binding.courseProgress.secondaryProgress = currentProgress + 1
+            }
+            binding.courseProgress.progress = currentProgress
         }
-        binding.courseProgress.progress = currentProgress
     }
 
     private fun setCourseData() {
@@ -348,13 +352,9 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private suspend fun getCourseProgress(): Int {
-        return withContext(Dispatchers.IO) {
-            databaseService.withRealm { realm ->
-                val user = userProfileDbHandler.userModel
-                val courseProgressMap = RealmCourseProgress.getCourseProgress(realm, user?.id)
-                courseProgressMap[courseId]?.asJsonObject?.get("current")?.asInt ?: 0
-            }
-        }
+        val user = userProfileDbHandler.userModel
+        val courseProgressMap = courseRepository.getCourseProgress(user?.id)
+        return courseProgressMap[courseId]?.asJsonObject?.get("current")?.asInt ?: 0
     }
 
     private fun checkSurveyCompletion() {

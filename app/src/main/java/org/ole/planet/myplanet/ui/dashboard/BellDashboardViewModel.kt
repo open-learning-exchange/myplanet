@@ -16,9 +16,11 @@ import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
 
+import org.ole.planet.myplanet.repository.CourseRepository
+
 @HiltViewModel
 class BellDashboardViewModel @Inject constructor(
-    private val databaseService: DatabaseService
+    private val databaseService: DatabaseService, private val courseRepository: CourseRepository
 ) : ViewModel() {
     private val _networkStatus = MutableStateFlow<NetworkStatus>(NetworkStatus.Disconnected)
     val networkStatus: StateFlow<NetworkStatus> = _networkStatus.asStateFlow()
@@ -40,18 +42,18 @@ class BellDashboardViewModel @Inject constructor(
 
     fun loadCompletedCourses(userId: String?) {
         viewModelScope.launch {
-            val completed = databaseService.withRealmAsync { realm ->
-                val myCourses = RealmMyCourse.getMyCourseByUserId(userId, realm.where(RealmMyCourse::class.java).findAll())
-                val courseProgress = RealmCourseProgress.getCourseProgress(realm, userId)
+            val courseProgress = courseRepository.getCourseProgress(userId)
+            val myCourses = databaseService.withRealmAsync { realm ->
+                RealmMyCourse.getMyCourseByUserId(userId, realm.where(RealmMyCourse::class.java).findAll())
+            }
 
-                myCourses.filter { course ->
-                    val progress = courseProgress[course.id]
-                    progress?.let {
-                        it.asJsonObject["current"].asInt == it.asJsonObject["max"].asInt
-                    } == true
-                }.map {
-                    CourseCompletion(it.courseId, it.courseTitle)
-                }
+            val completed = myCourses.filter { course ->
+                val progress = courseProgress[course.courseId]
+                progress?.let {
+                    it.asJsonObject["current"].asInt == it.asJsonObject["max"].asInt
+                } == true
+            }.map {
+                CourseCompletion(it.courseId, it.courseTitle)
             }
             _completedCourses.value = completed
         }
