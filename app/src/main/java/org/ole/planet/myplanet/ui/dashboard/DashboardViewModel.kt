@@ -11,6 +11,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -119,13 +120,13 @@ class DashboardViewModel @Inject constructor(
             }
 
             val coursesFlowJob = launch {
-                courseRepository.getMyCoursesFlow(userId).collect { courses ->
+                courseRepository.getMyCoursesFlow(userId).distinctUntilChanged().collect { courses ->
                     _uiState.update { it.copy(courses = courses) }
                 }
             }
 
             val teamsFlowJob = launch {
-                teamRepository.getMyTeamsFlow(userId).collect { teams ->
+                teamRepository.getMyTeamsFlow(userId).distinctUntilChanged().collect { teams ->
                     _uiState.update { it.copy(teams = teams) }
                 }
             }
