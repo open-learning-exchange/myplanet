@@ -12,25 +12,20 @@ import android.widget.CompoundButton
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
-import io.realm.Realm
-import java.util.Date
-import java.util.Locale
-import javax.inject.Inject
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityAddExaminationBinding
 import org.ole.planet.myplanet.model.RealmExamination
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmMyHealthPojo
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.ExaminationRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole/planet.myplanet.utilities.AndroidDecrypter.Companion.decrypt
-import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.encrypt
-import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateIv
-import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateKey
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.DimenUtils.dpToPx
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
@@ -39,10 +34,9 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getBoolean
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.TimeUtils.getAge
 import org.ole.planet.myplanet.utilities.Utilities
-
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.repository.ExaminationRepository
+import java.util.Date
+import java.util.Locale
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChangeListener {
@@ -110,20 +104,20 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
                 binding.etTemperature.setText(getString(R.string.float_placeholder, examination?.temperature))
                 binding.etPulseRate.setText(getString(R.string.number_placeholder, examination?.pulse))
                 binding.etBloodpressure.setText(getString(R.string.message_placeholder, examination?.bp))
-            binding.etHeight.setText(getString(R.string.float_placeholder, examination?.height))
-            binding.etWeight.setText(getString(R.string.float_placeholder, examination?.weight))
-            binding.etVision.setText(examination?.vision)
-            binding.etHearing.setText(examination?.hearing)
-            val encrypted = user?.let { examination?.getEncryptedDataAsJson(it) }
-            binding.etObservation.setText(getString(getString(R.string.note_), encrypted))
-            binding.etDiag.setText(getString(getString(R.string.diagnosis), encrypted))
-            binding.etTreatments.setText(getString(getString(R.string.treatments), encrypted))
-            binding.etMedications.setText(getString(getString(R.string.medications), encrypted))
-            binding.etImmunization.setText(getString(getString(R.string.immunizations), encrypted))
-            binding.etAllergies.setText(getString(getString(R.string.allergies), encrypted))
-            binding.etXray.setText(getString(getString(R.string.xrays), encrypted))
-            binding.etLabtest.setText(getString(getString(R.string.tests), encrypted))
-            binding.etReferrals.setText(getString(getString(R.string.referrals), encrypted))
+                binding.etHeight.setText(getString(R.string.float_placeholder, examination?.height))
+                binding.etWeight.setText(getString(R.string.float_placeholder, examination?.weight))
+                binding.etVision.setText(examination?.vision)
+                binding.etHearing.setText(examination?.hearing)
+                val encrypted = user?.let { examination?.getEncryptedDataAsJson(it) }
+                binding.etObservation.setText(getString(getString(R.string.note_), encrypted))
+                binding.etDiag.setText(getString(getString(R.string.diagnosis), encrypted))
+                binding.etTreatments.setText(getString(getString(R.string.treatments), encrypted))
+                binding.etMedications.setText(getString(getString(R.string.medications), encrypted))
+                binding.etImmunization.setText(getString(getString(R.string.immunizations), encrypted))
+                binding.etAllergies.setText(getString(getString(R.string.allergies), encrypted))
+                binding.etXray.setText(getString(getString(R.string.xrays), encrypted))
+                binding.etLabtest.setText(getString(getString(R.string.tests), encrypted))
+                binding.etReferrals.setText(getString(getString(R.string.referrals), encrypted))
             }
         }
         showCheckbox(examination)
@@ -172,9 +166,9 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         val chipCloud = ChipCloud(this, binding.containerOtherDiagnosis, config)
         for (s in customDiag?: emptySet()) {
             if (s.isNullOrBlank()) {
-                    continue
+                continue
             } else {
-                    chipCloud.addChip(s)
+                chipCloud.addChip(s)
             }
         }
         chipCloud.setDeleteListener { _: Int, s1: String? -> customDiag?.remove(s1) }
@@ -288,7 +282,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
             val scrollView = binding.rootScrollView
 
             val isValidTemp = (getFloat("${binding.etTemperature.text}".trim { it <= ' ' }) in 30.0..40.0 ||
-                        getFloat("${binding.etTemperature.text}".trim { it <= ' ' }) == 0f) &&
+                    getFloat("${binding.etTemperature.text}".trim { it <= ' ' }) == 0f) &&
                     "${binding.etTemperature.text}".trim { it <= ' ' }.isNotEmpty()
             val isValidPulse = (getInt("${binding.etPulseRate.text}".trim { it <= ' ' }) in 40..120 ||
                     getFloat("${binding.etPulseRate.text}".trim { it <= ' ' }) == 0f) &&
@@ -322,8 +316,6 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
             return isValidTemp && isValidHeight && isValidPulse && isValidWeight
         }
 
-    //    private float getFloat(String trim) {
-    //    }
     private fun getInt(trim: String): Int {
         return try {
             trim.toInt()
