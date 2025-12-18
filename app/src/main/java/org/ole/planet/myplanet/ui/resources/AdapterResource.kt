@@ -26,7 +26,7 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnLibraryItemSelected
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.RowLibraryBinding
-import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.dto.LibraryItem
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TagRepository
@@ -39,13 +39,13 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 class AdapterResource(
     private val context: Context,
-    private var libraryList: List<RealmMyLibrary?>,
+    private var libraryList: List<LibraryItem>,
     private var ratingMap: HashMap<String?, JsonObject>,
     private val tagRepository: TagRepository,
     private val userModel: RealmUserModel?
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>(), DiffRefreshableAdapter {
     private var diffJob: Job? = null
-    private val selectedItems: MutableList<RealmMyLibrary?> = ArrayList()
+    private val selectedItems: MutableList<LibraryItem> = ArrayList()
     private var listener: OnLibraryItemSelected? = null
     private val config: ChipCloudConfig = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single)
     private var homeItemClickListener: OnHomeItemClickListener? = null
@@ -55,23 +55,11 @@ class AdapterResource(
     private val tagCache: MutableMap<String, List<RealmTag>> = mutableMapOf()
     private val tagRequestsInProgress: MutableSet<String> = mutableSetOf()
 
-    private data class DiffData(
-        val _id: String?,
-        val _rev: String?,
-        val uploadDate: String?
-    )
-
     companion object {
         private const val TAGS_PAYLOAD = "payload_tags"
         private const val RATING_PAYLOAD = "payload_rating"
         private const val SELECTION_PAYLOAD = "payload_selection"
     }
-
-    private fun RealmMyLibrary.toDiffData() = DiffData(
-        _id = this._id,
-        _rev = this._rev,
-        uploadDate = this.uploadDate
-    )
 
     init {
         if (context is OnHomeItemClickListener) {
@@ -83,11 +71,11 @@ class AdapterResource(
         this.ratingChangeListener = ratingChangeListener
     }
 
-    fun getLibraryList(): List<RealmMyLibrary?> {
+    fun getLibraryList(): List<LibraryItem> {
         return libraryList
     }
 
-    fun setLibraryList(libraryList: List<RealmMyLibrary?>, onComplete: (() -> Unit)? = null) {
+    fun setLibraryList(libraryList: List<LibraryItem>, onComplete: (() -> Unit)? = null) {
         updateList(libraryList, onComplete)
     }
 
@@ -108,7 +96,7 @@ class AdapterResource(
             holder.rowLibraryBinding.title.text = library.title ?: ""
             setMarkdownText(holder.rowLibraryBinding.description, library.description ?: "")
             holder.rowLibraryBinding.description.setOnClickListener {
-                openLibrary(library)
+                openLibrary(library.id)
             }
             holder.rowLibraryBinding.timesRated.text = context.getString(R.string.num_total, library.timesRated)
             holder.rowLibraryBinding.checkbox.isChecked = selectedItems.contains(library)
@@ -125,15 +113,15 @@ class AdapterResource(
             holder.rowLibraryBinding.tvDate.text = library.createdDate?.let { formatDate(it, "MMM dd, yyyy") }
             displayTagCloud(holder, position)
             holder.itemView.setOnClickListener {
-                openLibrary(library)
+                openLibrary(library.id)
             }
-            if (library.isResourceOffline() == true) {
+            if (library.isResourceOffline) {
                 holder.rowLibraryBinding.ivDownloaded.visibility = View.INVISIBLE
             } else {
                 holder.rowLibraryBinding.ivDownloaded.visibility = View.VISIBLE
             }
             holder.rowLibraryBinding.ivDownloaded.contentDescription =
-                if (library.isResourceOffline() == true) {
+                if (library.isResourceOffline) {
                     context.getString(R.string.view)
                 } else {
                     context.getString(R.string.download)
@@ -177,8 +165,14 @@ class AdapterResource(
         }
     }
 
-    private fun openLibrary(library: RealmMyLibrary?) {
-        homeItemClickListener?.openLibraryDetailFragment(library)
+    fun clearSelection() {
+        selectedItems.clear()
+        notifyItemRangeChanged(0, libraryList.size, SELECTION_PAYLOAD)
+    }
+
+    private fun openLibrary(libraryId: String?) {
+        if (libraryId == null) return
+        listener?.onItemClicked(libraryId)
     }
 
     override fun onBindViewHolder(
@@ -287,19 +281,19 @@ class AdapterResource(
         updateList(sortLibraryList(), onComplete)
     }
 
-    private fun sortLibraryListByTitle(): List<RealmMyLibrary?> {
+    private fun sortLibraryListByTitle(): List<LibraryItem> {
         return if (isTitleAscending) {
-            libraryList.sortedBy { it?.title?.lowercase(Locale.ROOT) }
+            libraryList.sortedBy { it.title?.lowercase(Locale.ROOT) }
         } else {
-            libraryList.sortedByDescending { it?.title?.lowercase(Locale.ROOT) }
+            libraryList.sortedByDescending { it.title?.lowercase(Locale.ROOT) }
         }
     }
 
-    private fun sortLibraryList(): List<RealmMyLibrary?> {
+    private fun sortLibraryList(): List<LibraryItem> {
         return if (isAscending) {
-            libraryList.sortedBy { it?.createdDate }
+            libraryList.sortedBy { it.createdDate }
         } else {
-            libraryList.sortedByDescending { it?.createdDate }
+            libraryList.sortedByDescending { it.createdDate }
         }
     }
 
@@ -307,20 +301,17 @@ class AdapterResource(
         return libraryList.size
     }
 
-    private fun updateList(newList: List<RealmMyLibrary?>, onComplete: (() -> Unit)? = null) {
+    private fun updateList(newList: List<LibraryItem>, onComplete: (() -> Unit)? = null) {
         diffJob?.cancel()
-        val oldList = libraryList.mapNotNull { it?.toDiffData() }
-        val newListMapped = newList.mapNotNull { it?.toDiffData() }
+        val oldList = libraryList
 
         diffJob = (context as? LifecycleOwner)?.lifecycleScope?.launch {
             val diffResult = withContext(Dispatchers.Default) {
                 DiffUtils.calculateDiff(
                     oldList,
-                    newListMapped,
+                    newList,
                     areItemsTheSame = { old, new -> old._id == new._id },
-                    areContentsTheSame = { old, new ->
-                        old._rev == new._rev && old.uploadDate == new.uploadDate
-                    }
+                    areContentsTheSame = { old, new -> old == new }
                 )
             }
 
@@ -359,7 +350,7 @@ class AdapterResource(
         }
     }
 
-    private fun bindRating(holder: ViewHolderLibrary, library: RealmMyLibrary) {
+    private fun bindRating(holder: ViewHolderLibrary, library: LibraryItem) {
         if (ratingMap.containsKey(library.resourceId)) {
             val ratingData = ratingMap[library.resourceId]
             CourseRatingUtils.showRating(
@@ -408,13 +399,14 @@ class AdapterResource(
             val newLibraryList = withContext(Dispatchers.IO) {
                 Realm.getDefaultInstance().use { realm ->
                     realm.copyFromRealm(realm.where(RealmMyLibrary::class.java).findAll())
+                        .map { it.toLibraryItem() }
                 }
             }
             triggerDiff(newLibraryList)
         }
     }
 
-    private fun triggerDiff(newList: List<RealmMyLibrary?>) {
+    private fun triggerDiff(newList: List<LibraryItem>) {
         val oldList = ArrayList(this.libraryList)
         diffJob?.cancel()
         diffJob = (context as? LifecycleOwner)?.lifecycleScope?.launch {
@@ -422,7 +414,7 @@ class AdapterResource(
                 DiffUtils.calculateDiff(
                     oldList,
                     newList,
-                    areItemsTheSame = { old, new -> old?.id == new?.id },
+                    areItemsTheSame = { old, new -> old.id == new.id },
                     areContentsTheSame = { old, new -> old == new }
                 )
             }
