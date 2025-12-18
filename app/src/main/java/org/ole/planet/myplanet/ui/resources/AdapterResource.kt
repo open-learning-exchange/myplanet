@@ -87,8 +87,8 @@ class AdapterResource(
         return libraryList
     }
 
-    fun setLibraryList(libraryList: List<RealmMyLibrary?>) {
-        updateList(libraryList)
+    fun setLibraryList(libraryList: List<RealmMyLibrary?>, onComplete: (() -> Unit)? = null) {
+        updateList(libraryList, onComplete)
     }
 
     fun setListener(listener: OnLibraryItemSelected?) {
@@ -277,14 +277,14 @@ class AdapterResource(
         }
     }
 
-    fun toggleTitleSortOrder() {
+    fun toggleTitleSortOrder(onComplete: (() -> Unit)? = null) {
         isTitleAscending = !isTitleAscending
-        updateList(sortLibraryListByTitle())
+        updateList(sortLibraryListByTitle(), onComplete)
     }
 
-    fun toggleSortOrder() {
+    fun toggleSortOrder(onComplete: (() -> Unit)? = null) {
         isAscending = !isAscending
-        updateList(sortLibraryList())
+        updateList(sortLibraryList(), onComplete)
     }
 
     private fun sortLibraryListByTitle(): List<RealmMyLibrary?> {
@@ -307,7 +307,7 @@ class AdapterResource(
         return libraryList.size
     }
 
-    private fun updateList(newList: List<RealmMyLibrary?>) {
+    private fun updateList(newList: List<RealmMyLibrary?>, onComplete: (() -> Unit)? = null) {
         diffJob?.cancel()
         val oldList = libraryList.mapNotNull { it?.toDiffData() }
         val newListMapped = newList.mapNotNull { it?.toDiffData() }
@@ -327,6 +327,7 @@ class AdapterResource(
             if (isActive) {
                 libraryList = newList
                 diffResult.dispatchUpdatesTo(this@AdapterResource)
+                onComplete?.invoke()
             }
         }
     }
