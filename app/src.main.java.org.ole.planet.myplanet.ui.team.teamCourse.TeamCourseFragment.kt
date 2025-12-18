@@ -24,7 +24,7 @@ class TeamCourseFragment : BaseTeamFragment() {
         super.onViewCreated(view, savedInstanceState)
         setupCoursesList()
     }
-    
+
     private fun setupCoursesList() {
         val courses = mRealm.where(RealmMyCourse::class.java).`in`("id", team?.courses?.toTypedArray<String>()).findAll()
         adapterTeamCourse = settings?.let { AdapterTeamCourse(requireActivity(), mRealm, teamId, it) }
