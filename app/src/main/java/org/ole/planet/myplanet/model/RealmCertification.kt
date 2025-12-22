@@ -36,9 +36,6 @@ open class RealmCertification : RealmObject() {
             if (courseId == null) {
                 return false
             }
-            if (realm.isClosed) {
-                return false
-            }
             val c =
                 realm.where(RealmCertification::class.java).contains("courseIds", courseId).count()
             return c > 0

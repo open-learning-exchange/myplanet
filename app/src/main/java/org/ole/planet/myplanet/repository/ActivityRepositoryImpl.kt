@@ -6,9 +6,9 @@ import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_LOGIN
 import javax.inject.Inject
 
-class OfflineActivityRepositoryImpl @Inject constructor(
+class ActivityRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
-) : RealmRepository(databaseService), OfflineActivityRepository {
+) : RealmRepository(databaseService), ActivityRepository {
     override suspend fun getOfflineLogins(userName: String): Flow<List<RealmOfflineActivity>> {
         return queryListFlow(RealmOfflineActivity::class.java) {
             equalTo("userName", userName).equalTo("type", KEY_LOGIN)

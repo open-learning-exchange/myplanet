@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.util.Log
 import com.google.gson.JsonParser
 import io.realm.Case
 import io.realm.Sort
@@ -231,12 +230,9 @@ class SubmissionRepositoryImpl @Inject constructor(
     }
 
     override suspend fun markSubmissionComplete(id: String, payload: com.google.gson.JsonObject) {
-        Log.d("SubmissionRepository", "markSubmissionComplete called for ID: $id")
         update(RealmSubmission::class.java, "id", id) { sub ->
             sub.user = payload.toString()
             sub.status = "complete"
-            sub.isUpdated = true  // Mark for upload
-            Log.d("SubmissionRepository", "Submission marked: status=complete, isUpdated=true, _id=${sub._id}")
         }
     }
 

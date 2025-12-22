@@ -82,7 +82,6 @@ class Service @Inject constructor(
     private val configurationManager =
         ConfigurationManager(context, preferences, retrofitInterface)
 
-    @Deprecated("Use ConfigurationRepository.checkHealth instead")
     fun healthAccess(listener: SuccessListener) {
         try {
             val healthUrl = UrlUtils.getHealthAccessUrl(preferences)
@@ -153,7 +152,6 @@ class Service @Inject constructor(
         }
     }
 
-    @Deprecated("Use ConfigurationRepository.checkVersion instead")
     fun checkVersion(callback: CheckVersionCallback, settings: SharedPreferences) {
         if (shouldPromptForSettings(settings)) return
 
@@ -206,7 +204,6 @@ class Service @Inject constructor(
         }
     }
 
-    @Deprecated("Use ConfigurationRepository.checkServerAvailability instead")
     fun isPlanetAvailable(callback: PlanetAvailableListener?) {
         val updateUrl = "${preferences.getString("serverURL", "")}"
         serverAvailabilityCache[updateUrl]?.let { (available, timestamp) ->

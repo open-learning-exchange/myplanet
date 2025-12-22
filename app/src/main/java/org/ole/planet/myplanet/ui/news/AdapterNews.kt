@@ -41,6 +41,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNewsBinding
+import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.ChatMessage
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -48,7 +49,6 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.NewsRepository
-import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
@@ -64,7 +64,7 @@ import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.makeExpandable
 
-class AdapterNews(var context: Context, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userProfileDbHandler: UserProfileDbHandler, private val scope: CoroutineScope, private val userRepository: UserRepository, private val newsRepository: NewsRepository, private val teamRepository: TeamRepository) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
+class AdapterNews(var context: Context, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userProfileDbHandler: UserProfileDbHandler, private val databaseService: DatabaseService, private val scope: CoroutineScope, private val userRepository: UserRepository, private val newsRepository: NewsRepository) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem ->
             if (oldItem === newItem) return@itemCallback true
@@ -126,7 +126,19 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         }
         scope.launch {
             val isLeader = withTimeoutOrNull(2000) {
-                teamRepository.isTeamLeader(teamId, currentUser?._id)
+                withContext(Dispatchers.IO) {
+                    try {
+                        databaseService.withRealm { realm ->
+                            val team = realm.where(RealmMyTeam::class.java)
+                                .equalTo("teamId", teamId)
+                                .equalTo("isLeader", true)
+                                .findFirst()
+                            team?.userId == currentUser?._id
+                        }
+                    } catch (e: Exception) {
+                        false
+                    }
+                }
             }
             _isTeamLeader = isLeader
         }
@@ -190,7 +202,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
                 val viewHolder = holder
                 val sharedTeamName = extractSharedTeamName(news)
                 resetViews(viewHolder)
-                updateReplyCount(viewHolder, news, position)
+                updateReplyCount(viewHolder = viewHolder, getReplies(news), position)
                 val userModel = configureUser(viewHolder, news)
                 showShareButton(viewHolder, news)
                 setMessageAndDate(viewHolder, news, sharedTeamName)
@@ -488,22 +500,33 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         fetchTeamLeaderStatus()
     }
 
-    private fun updateReplyCount(viewHolder: ViewHolderNews, news: RealmNews?, position: Int) {
-        viewHolder.job?.cancel()
-        viewHolder.job = scope.launch {
-            try {
-                val replies = newsRepository.getReplies(news?.id)
-                withContext(Dispatchers.Main) {
-                    with(viewHolder.binding) {
-                        btnShowReply.text = String.format(Locale.getDefault(), "(%d)", replies.size)
-                        btnShowReply.setTextColor(context.getColor(R.color.daynight_textColor))
-                        val visible = replies.isNotEmpty() && !(position == 0 && parentNews != null) && canReply()
-                        btnShowReply.visibility = if (visible) View.VISIBLE else View.GONE
-                    }
+    private fun getReplies(finalNews: RealmNews?): List<RealmNews> {
+        return try {
+            if (::mRealm.isInitialized && !mRealm.isClosed) {
+                mRealm.where(RealmNews::class.java)
+                    .sort("time", Sort.DESCENDING)
+                    .equalTo("replyTo", finalNews?.id, Case.INSENSITIVE)
+                    .findAll()
+            } else {
+                databaseService.withRealm { realm ->
+                    realm.where(RealmNews::class.java)
+                        .sort("time", Sort.DESCENDING)
+                        .equalTo("replyTo", finalNews?.id, Case.INSENSITIVE)
+                        .findAll()
+                        .let { realm.copyFromRealm(it) }
                 }
-            } catch (e: Exception) {
-                android.util.Log.e("AdapterNews", "Failed to get replies", e)
             }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    private fun updateReplyCount(viewHolder: ViewHolderNews, replies: List<RealmNews>, position: Int) {
+        with(viewHolder.binding) {
+            btnShowReply.text = String.format(Locale.getDefault(),"(%d)", replies.size)
+            btnShowReply.setTextColor(context.getColor(R.color.daynight_textColor))
+            val visible = replies.isNotEmpty() && !(position == 0 && parentNews != null) && canReply()
+            btnShowReply.visibility = if (visible) View.VISIBLE else View.GONE
         }
     }
 
@@ -554,7 +577,8 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
             viewHolder.binding.btnReply.visibility = View.GONE
         }
 
-        updateReplyCount(viewHolder, finalNews, position)
+        val replies = getReplies(finalNews)
+        updateReplyCount(viewHolder, replies, position)
 
         viewHolder.binding.btnShowReply.setOnClickListener {
             sharedPrefManager.setRepliedNewsId(finalNews?.id)
@@ -618,13 +642,6 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
         super.onDetachedFromRecyclerView(recyclerView)
         this.recyclerView = null
-    }
-
-    override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
-        super.onViewRecycled(holder)
-        if (holder is ViewHolderNews) {
-            holder.job?.cancel()
-        }
     }
 
     private fun loadImage(binding: RowNewsBinding, news: RealmNews?) {
@@ -718,65 +735,63 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
 
     private fun loadLibraryImage(binding: RowNewsBinding, resourceId: String?) {
         if (resourceId == null) return
-        scope.launch {
-            val library = newsRepository.getLibraryResource(resourceId)
-            withContext(Dispatchers.Main) {
-                val basePath = context.getExternalFilesDir(null)
-                if (library != null && basePath != null) {
-                    val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
-                    val request = Glide.with(binding.imgNews.context)
-                    val isGif = library.resourceLocalAddress?.lowercase(Locale.getDefault())?.endsWith(".gif") == true
-                    val target = if (isGif) {
-                        request.asGif().load(imageFile)
-                    } else {
-                        request.load(imageFile)
-                    }
-                    target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().placeholder(R.drawable.ic_loading)
-                        .error(R.drawable.ic_loading)
-                        .into(binding.imgNews)
-                    binding.imgNews.visibility = View.VISIBLE
-                    binding.imgNews.setOnClickListener {
-                        showZoomableImage(it.context, imageFile.toString())
-                    }
-                }
+        val library = mRealm.where(RealmMyLibrary::class.java)
+            .equalTo("_id", resourceId)
+            .findFirst()
+
+        val basePath = context.getExternalFilesDir(null)
+        if (library != null && basePath != null) {
+            val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
+            val request = Glide.with(binding.imgNews.context)
+            val isGif = library.resourceLocalAddress?.lowercase(Locale.getDefault())?.endsWith(".gif") == true
+            val target = if (isGif) {
+                request.asGif().load(imageFile)
+            } else {
+                request.load(imageFile)
+            }
+            target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().placeholder(R.drawable.ic_loading)
+                .error(R.drawable.ic_loading)
+                .into(binding.imgNews)
+            binding.imgNews.visibility = View.VISIBLE
+            binding.imgNews.setOnClickListener {
+                showZoomableImage(it.context, imageFile.toString())
             }
         }
     }
 
     private fun addLibraryImageToContainer(binding: RowNewsBinding, resourceId: String?) {
         if (resourceId == null) return
-        scope.launch {
-            val library = newsRepository.getLibraryResource(resourceId)
-            withContext(Dispatchers.Main) {
-                val basePath = context.getExternalFilesDir(null)
-                if (library != null && basePath != null) {
-                    val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
-                    val imageView = ImageView(context)
-                    val size = (100 * context.resources.displayMetrics.density).toInt()
-                    val margin = (4 * context.resources.displayMetrics.density).toInt()
-                    val params = ViewGroup.MarginLayoutParams(size, size)
-                    params.setMargins(margin, margin, margin, margin)
-                    imageView.layoutParams = params
-                    imageView.scaleType = ImageView.ScaleType.CENTER_CROP
+        val library = mRealm.where(RealmMyLibrary::class.java)
+            .equalTo("_id", resourceId)
+            .findFirst()
 
-                    val request = Glide.with(context)
-                    val isGif = library.resourceLocalAddress?.lowercase(Locale.getDefault())?.endsWith(".gif") == true
-                    val target = if (isGif) {
-                        request.asGif().load(imageFile)
-                    } else {
-                        request.load(imageFile)
-                    }
-                    target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().placeholder(R.drawable.ic_loading)
-                        .error(R.drawable.ic_loading)
-                        .into(imageView)
+        val basePath = context.getExternalFilesDir(null)
+        if (library != null && basePath != null) {
+            val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
+            val imageView = ImageView(context)
+            val size = (100 * context.resources.displayMetrics.density).toInt()
+            val margin = (4 * context.resources.displayMetrics.density).toInt()
+            val params = ViewGroup.MarginLayoutParams(size, size)
+            params.setMargins(margin, margin, margin, margin)
+            imageView.layoutParams = params
+            imageView.scaleType = ImageView.ScaleType.CENTER_CROP
 
-                    imageView.setOnClickListener {
-                        showZoomableImage(context, imageFile.toString())
-                    }
-
-                    binding.llNewsImages.addView(imageView)
-                }
+            val request = Glide.with(context)
+            val isGif = library.resourceLocalAddress?.lowercase(Locale.getDefault())?.endsWith(".gif") == true
+            val target = if (isGif) {
+                request.asGif().load(imageFile)
+            } else {
+                request.load(imageFile)
             }
+            target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().placeholder(R.drawable.ic_loading)
+                .error(R.drawable.ic_loading)
+                .into(imageView)
+
+            imageView.setOnClickListener {
+                showZoomableImage(context, imageFile.toString())
+            }
+
+            binding.llNewsImages.addView(imageView)
         }
     }
 
@@ -804,7 +819,6 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     }
 
     internal inner class ViewHolderNews(val binding: RowNewsBinding) : RecyclerView.ViewHolder(binding.root) {
-        var job: kotlinx.coroutines.Job? = null
         private var adapterPosition = 0
         fun bind(position: Int) {
             adapterPosition = position

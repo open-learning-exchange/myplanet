@@ -65,7 +65,6 @@ import org.ole.planet.myplanet.datamanager.Service.ConfigurationIdListener
 import org.ole.planet.myplanet.datamanager.Service.PlanetAvailableListener
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.ConfigurationRepository
 import org.ole.planet.myplanet.model.ServerAddressesModel
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.TransactionSyncManager
@@ -94,9 +93,8 @@ import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
-abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository.CheckVersionCallback,
+abstract class SyncActivity : ProcessUserDataActivity(), CheckVersionCallback,
     ConfigurationIdListener {
-    private var serverDialogBinding: DialogServerUrlBinding? = null
     private lateinit var syncDate: TextView
     lateinit var lblLastSyncDate: TextView
     lateinit var btnSignIn: Button
@@ -141,8 +139,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
     var serverAddressAdapter: ServerAddressAdapter? = null
     var serverListAddresses: List<ServerAddressesModel> = emptyList()
     private var isProgressDialogShowing = false
-    @Inject
-    lateinit var configurationRepository: ConfigurationRepository
 
     @Inject
     lateinit var syncManager: SyncManager
@@ -197,7 +193,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
                 }
                 isSync = false
                 forceSync = true
-                configurationRepository.checkVersion(this, settings)
+                service.checkVersion(this, settings)
             }
             else -> {
                 if (serverConfigAction == "sync") {
@@ -216,10 +212,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
                     }
                 } else if (serverConfigAction == "save") {
                     if (savedId == null || id == savedId) {
-                        currentDialog?.let {
-                            val binding = serverDialogBinding ?: return@let
-                            saveConfigAndContinue(it, binding, "", false, defaultUrl)
-                        }
+                        currentDialog?.let { saveConfigAndContinue(it, "", false, defaultUrl) }
                     } else {
                         clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server), false)
                     }
@@ -274,15 +267,15 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
         editor.putBoolean("firstRun", false).apply()
     }
 
-    fun sync(binding: DialogServerUrlBinding) {
-        spinner = binding.intervalDropper
-        syncSwitch = binding.syncSwitch
-        intervalLabel = binding.intervalLabel
+    fun sync(dialog: MaterialDialog) {
+        spinner = dialog.findViewById(R.id.intervalDropper) as Spinner
+        syncSwitch = dialog.findViewById(R.id.syncSwitch) as SwitchCompat
+        intervalLabel = dialog.findViewById(R.id.intervalLabel) as TextView
         syncSwitch.setOnCheckedChangeListener { _: CompoundButton?, isChecked: Boolean ->
             setSpinnerVisibility(isChecked)
         }
         syncSwitch.isChecked = settings.getBoolean("autoSync", true)
-        dateCheck(binding)
+        dateCheck(dialog)
     }
 
     private fun setSpinnerVisibility(isChecked: Boolean) {
@@ -345,9 +338,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
         return false
     }
 
-    private fun dateCheck(binding: DialogServerUrlBinding) {
+    private fun dateCheck(dialog: MaterialDialog) {
         // Check if the user never synced
-        syncDate = binding.lastDateSynced
+        syncDate = dialog.findViewById(R.id.lastDateSynced) as TextView
         syncDate.text = getString(R.string.last_sync_date, convertDate())
         syncDropdownAdd()
     }
@@ -428,7 +421,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
 
     private fun saveConfigAndContinue(
         dialog: MaterialDialog,
-        binding: DialogServerUrlBinding,
         url: String,
         isAlternativeUrl: Boolean,
         defaultUrl: String
@@ -436,21 +428,21 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
         dialog.dismiss()
         saveSyncInfoToPreference()
         return if (isAlternativeUrl) {
-            handleAlternativeUrlSave(binding, url, defaultUrl)
+            handleAlternativeUrlSave(dialog, url, defaultUrl)
         } else {
-            handleRegularUrlSave(binding)
+            handleRegularUrlSave(dialog)
         }
     }
 
     private fun handleAlternativeUrlSave(
-        binding: DialogServerUrlBinding,
+        dialog: MaterialDialog,
         url: String,
         defaultUrl: String
     ): String {
         val password = if (settings.getString("serverPin", "") != "") {
             settings.getString("serverPin", "")!!
         } else {
-            binding.inputServerPassword.text.toString()
+            (dialog.customView?.findViewById<View>(R.id.input_server_Password) as EditText).text.toString()
         }
 
         val couchdbURL = ServerConfigUtils.saveAlternativeUrl(url, password, settings, editor)
@@ -458,14 +450,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
         return couchdbURL
     }
 
-    private fun handleRegularUrlSave(binding: DialogServerUrlBinding): String {
+    private fun handleRegularUrlSave(dialog: MaterialDialog): String {
         val protocol = settings.getString("serverProtocol", "")
-        var url = binding.inputServerUrl.text.toString()
-        val pin = binding.inputServerPassword.text.toString()
+        var url = (dialog.customView?.findViewById<View>(R.id.input_server_url) as EditText).text.toString()
+        val pin = (dialog.customView?.findViewById<View>(R.id.input_server_Password) as EditText).text.toString()
 
         editor.putString(
             "customDeviceName",
-            binding.deviceName.text.toString()
+            (dialog.customView?.findViewById<View>(R.id.deviceName) as EditText).text.toString()
         ).apply()
 
         url = protocol + url
@@ -712,8 +704,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
     }
 
     fun settingDialog() {
-        serverDialogBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this))
-        val binding = serverDialogBinding!!
+        val binding = DialogServerUrlBinding.inflate(LayoutInflater.from(this))
         initServerDialog(binding)
 
         val contextWrapper = ContextThemeWrapper(this, R.style.AlertDialogTheme)
@@ -742,24 +733,22 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
 
         neutralAction.setOnClickListener { onNeutralButtonClick(dialog) }
 
-        dialog.setOnDismissListener { serverDialogBinding = null }
         dialog.show()
-        sync(binding)
+        sync(dialog)
         if (!prefData.getManualConfig()) {
             dialog.getActionButton(DialogAction.NEUTRAL).text = getString(R.string.show_more)
         }
     }
     fun continueSync(dialog: MaterialDialog, url: String, isAlternativeUrl: Boolean, defaultUrl: String) {
-        val binding = serverDialogBinding ?: return
-        processedUrl = saveConfigAndContinue(dialog, binding, url, isAlternativeUrl, defaultUrl)
+        processedUrl = saveConfigAndContinue(dialog, url, isAlternativeUrl, defaultUrl)
         if (TextUtils.isEmpty(processedUrl)) return
         isSync = true
         if (checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) && settings.getBoolean("firstRun", true)) {
             clearInternalStorage()
         }
-        configurationRepository.checkServerAvailability(object : ConfigurationRepository.PlanetAvailableListener {
+        Service(this).isPlanetAvailable(object : PlanetAvailableListener {
             override fun isAvailable() {
-                configurationRepository.checkVersion(this@SyncActivity, settings)
+                Service(context).checkVersion(this@SyncActivity, settings)
             }
             override fun notAvailable() {
                 if (!isFinishing) {

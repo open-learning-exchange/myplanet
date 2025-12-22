@@ -52,7 +52,6 @@ import org.ole.planet.myplanet.model.Data
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.addConversationToChatHistory
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utilities.DialogUtils
@@ -84,7 +83,7 @@ class ChatDetailFragment : Fragment() {
     lateinit var settings: SharedPreferences
     lateinit var customProgressDialog: DialogUtils.CustomProgressDialog
     @Inject
-    lateinit var chatRepository: ChatRepository
+    lateinit var databaseService: DatabaseService
     @Inject
     lateinit var chatApiHelper: ChatApiHelper
     @Inject
@@ -157,11 +156,9 @@ class ChatDetailFragment : Fragment() {
                 mAdapter.addQuery(message)
                 when {
                     _id.isNotEmpty() -> {
-                        viewLifecycleOwner.lifecycleScope.launch {
-                            val newRev = getLatestRev(_id) ?: _rev
-                            val requestBody = createContinueChatRequest(message, aiProvider, _id, newRev)
-                            launchRequest(requestBody, message, _id)
-                        }
+                        val newRev = getLatestRev(_id) ?: _rev
+                        val requestBody = createContinueChatRequest(message, aiProvider, _id, newRev)
+                        launchRequest(requestBody, message, _id)
                     }
                     currentID.isNotEmpty() -> {
                         val requestBody = createContinueChatRequest(message, aiProvider, currentID, _rev)
@@ -509,9 +506,16 @@ class ChatDetailFragment : Fragment() {
         return jsonRequestBody(jsonContent)
     }
 
-    private suspend fun getLatestRev(id: String): String? {
+    private fun getLatestRev(id: String): String? {
         return try {
-            chatRepository.getLatestRev(id)
+            databaseService.withRealm { realm ->
+                realm.refresh()
+                realm.where(RealmChatHistory::class.java)
+                    .equalTo("_id", id)
+                    .findAll()
+                    .maxByOrNull { rev -> rev._rev?.split("-")?.get(0)?.toIntOrNull() ?: 0 }
+                    ?._rev
+            }
         } catch (e: Exception) {
             e.printStackTrace()
             null
@@ -572,7 +576,9 @@ class ChatDetailFragment : Fragment() {
         val jsonObject = buildChatHistoryObject(query, chatResponse, responseBody)
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                chatRepository.saveNewChat(jsonObject)
+                databaseService.executeTransactionAsync { realm ->
+                    RealmChatHistory.insert(realm, jsonObject)
+                }
                 if (isAdded && activity is DashboardActivity) {
                     (activity as DashboardActivity).refreshChatHistoryList()
                 }
@@ -623,7 +629,9 @@ class ChatDetailFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                chatRepository.continueConversation(realmChatId, query, chatResponse, _rev)
+                databaseService.executeTransactionAsync { realm ->
+                    addConversationToChatHistory(realm, realmChatId, query, chatResponse, _rev)
+                }
                 withContext(Dispatchers.Main) {
                     if (isAdded && activity is DashboardActivity) {
                         (activity as DashboardActivity).refreshChatHistoryList()

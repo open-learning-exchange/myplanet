@@ -11,7 +11,7 @@ import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
 import android.widget.TextView
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.findViewTreeLifecycleOwner
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.flexbox.FlexboxLayout
@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TagRepository
+import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.CourseRatingUtils
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getInt
@@ -42,8 +43,9 @@ class AdapterCourses(
     private val context: Context,
     private var courseList: List<RealmMyCourse?>,
     private val map: HashMap<String?, JsonObject>,
-    private var userModel: RealmUserModel?,
-    private val tagRepository: TagRepository
+    private val userProfileDbHandler: UserProfileDbHandler,
+    private val tagRepository: TagRepository,
+    private val lifecycleOwner: LifecycleOwner
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private val selectedItems: MutableList<RealmMyCourse?> = ArrayList()
     private var listener: OnCourseItemSelected? = null
@@ -54,6 +56,7 @@ class AdapterCourses(
     private var isAscending = true
     private var isTitleAscending = false
     private var areAllSelected = false
+    var userModel: RealmUserModel?= null
     private val tagCache: MutableMap<String, List<RealmTag>> = mutableMapOf()
     private val tagRequestsInProgress: MutableSet<String> = mutableSetOf()
 
@@ -160,18 +163,16 @@ class AdapterCourses(
         }
     }
 
-    fun toggleTitleSortOrder(onComplete: (() -> Unit)? = null) {
+    fun toggleTitleSortOrder() {
         isTitleAscending = !isTitleAscending
         val sortedList = sortCourseListByTitle(courseList)
         setCourseList(sortedList)
-        onComplete?.invoke()
     }
 
-    fun toggleSortOrder(onComplete: (() -> Unit)? = null) {
+    fun toggleSortOrder() {
         isAscending = !isAscending
         val sortedList = sortCourseList(courseList)
         setCourseList(sortedList)
-        onComplete?.invoke()
     }
 
     fun setProgressMap(progressMap: HashMap<String?, JsonObject>?) {
@@ -212,6 +213,7 @@ class AdapterCourses(
         holder.rowCourseBinding.courseProgress.max = course.getNumberOfSteps()
         displayTagCloud(holder, position)
 
+        userModel = userProfileDbHandler.userModel
         val isGuest = userModel?.isGuest() ?: true
         if (!isGuest) setupRatingBar(holder, course)
         setupCheckbox(holder, course, position, isGuest)
@@ -401,7 +403,7 @@ class AdapterCourses(
             return
         }
 
-        holder.itemView.findViewTreeLifecycleOwner()?.lifecycleScope?.launch {
+        lifecycleOwner.lifecycleScope.launch {
             try {
                 val tags = tagRepository.getTagsForCourse(courseId)
                 tagCache[courseId] = tags

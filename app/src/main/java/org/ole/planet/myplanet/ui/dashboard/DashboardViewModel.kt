@@ -7,7 +7,6 @@ import io.realm.Sort
 import java.util.Calendar
 import javax.inject.Inject
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,13 +24,11 @@ import org.ole.planet.myplanet.model.TeamNotificationInfo
 import org.ole.planet.myplanet.repository.CourseRepository
 import org.ole.planet.myplanet.repository.LibraryRepository
 import org.ole.planet.myplanet.repository.NotificationRepository
-import org.ole.planet.myplanet.repository.OfflineActivityRepository
+import org.ole.planet.myplanet.repository.ActivityRepository
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.SurveyRepository
 import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.repository.UserRepository
-
-import org.ole.planet.myplanet.model.RealmUserModel
 
 data class DashboardUiState(
     val unreadNotifications: Int = 0,
@@ -39,7 +36,6 @@ data class DashboardUiState(
     val courses: List<RealmMyCourse> = emptyList(),
     val teams: List<RealmMyTeam> = emptyList(),
     val offlineLoginCount: Int = 0,
-    val users: List<RealmUserModel> = emptyList(),
 )
 
 @HiltViewModel
@@ -51,7 +47,7 @@ class DashboardViewModel @Inject constructor(
     private val submissionRepository: SubmissionRepository,
     private val notificationRepository: NotificationRepository,
     private val surveyRepository: SurveyRepository,
-    private val offlineActivityRepository: OfflineActivityRepository,
+    private val activityRepository: ActivityRepository,
     private val databaseService: DatabaseService
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -107,28 +103,112 @@ class DashboardViewModel @Inject constructor(
     }
 
     suspend fun getTeamNotificationInfo(teamId: String, userId: String): TeamNotificationInfo {
-        return notificationRepository.getTeamNotificationInfo(teamId, userId)
+        return databaseService.withRealmAsync { realm ->
+            val current = System.currentTimeMillis()
+            val tomorrow = Calendar.getInstance()
+            tomorrow.add(Calendar.DAY_OF_YEAR, 1)
+
+            val notification = realm.where(RealmTeamNotification::class.java)
+                .equalTo("parentId", teamId)
+                .equalTo("type", "chat")
+                .findFirst()
+
+            val chatCount = realm.where(RealmNews::class.java)
+                .equalTo("viewableBy", "teams")
+                .equalTo("viewableId", teamId)
+                .count()
+
+            val hasChat = notification != null && notification.lastCount < chatCount
+
+            val tasks = realm.where(RealmTeamTask::class.java)
+                .equalTo("assignee", userId)
+                .between("deadline", current, tomorrow.timeInMillis)
+                .findAll()
+
+            val hasTask = tasks.isNotEmpty()
+
+            TeamNotificationInfo(hasTask, hasChat)
+        }
     }
 
     suspend fun getTeamNotifications(teamIds: List<String>, userId: String): Map<String, TeamNotificationInfo> {
-        return notificationRepository.getTeamNotifications(teamIds, userId)
+        return databaseService.withRealmAsync { realm ->
+            if (teamIds.isEmpty()) {
+                return@withRealmAsync emptyMap()
+            }
+            val notificationMap = mutableMapOf<String, TeamNotificationInfo>()
+
+            // 1. Fetch all relevant notifications in a single query
+            val notificationQuery = realm.where(RealmTeamNotification::class.java).equalTo("type", "chat")
+            notificationQuery.beginGroup()
+            teamIds.forEachIndexed { index, id ->
+                if (index > 0) notificationQuery.or()
+                notificationQuery.equalTo("parentId", id)
+            }
+            notificationQuery.endGroup()
+            val notificationsResult = notificationQuery.findAll()
+            val notificationsById = mutableMapOf<String, RealmTeamNotification>()
+            notificationsResult.forEach {
+                it.parentId?.let { parentId ->
+                    notificationsById[parentId] = it
+                }
+            }
+
+
+            // 2. Fetch all relevant chat counts in a single query
+            val chatQuery = realm.where(RealmNews::class.java).equalTo("viewableBy", "teams")
+            chatQuery.beginGroup()
+            teamIds.forEachIndexed { index, id ->
+                if (index > 0) chatQuery.or()
+                chatQuery.equalTo("viewableId", id)
+            }
+            chatQuery.endGroup()
+            val chatsResult = chatQuery.findAll()
+            val chatCountsById = mutableMapOf<String, Long>()
+            chatsResult.forEach {
+                it.viewableId?.let { viewableId ->
+                    val currentCount = chatCountsById[viewableId] ?: 0
+                    chatCountsById[viewableId] = currentCount + 1
+                }
+            }
+
+
+            // 3. Fetch all relevant tasks once
+            val current = System.currentTimeMillis()
+            val tomorrow = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }
+            val tasks = realm.where(RealmTeamTask::class.java)
+                .equalTo("assignee", userId)
+                .between("deadline", current, tomorrow.timeInMillis)
+                .findAll()
+            val hasTask = tasks.isNotEmpty()
+
+            // 4. Combine the results in memory
+            for (teamId in teamIds) {
+                val notification = notificationsById[teamId]
+                val chatCount = chatCountsById[teamId] ?: 0L
+                val hasChat = notification != null && notification.lastCount < chatCount
+                notificationMap[teamId] = TeamNotificationInfo(hasTask, hasChat)
+            }
+            notificationMap
+        }
     }
 
     fun loadUserContent(userId: String?) {
         if (userId == null) return
         userContentJob?.cancel()
         userContentJob = viewModelScope.launch {
-            val libraryDeferred = async {
-                libraryRepository.getMyLibrary(userId)
+            launch {
+                val myLibrary = libraryRepository.getMyLibrary(userId)
+                _uiState.update { it.copy(library = myLibrary) }
             }
 
-            val coursesFlowJob = launch {
+            launch {
                 courseRepository.getMyCoursesFlow(userId).collect { courses ->
                     _uiState.update { it.copy(courses = courses) }
                 }
             }
 
-            val teamsFlowJob = launch {
+            launch {
                 teamRepository.getMyTeamsFlow(userId).collect { teams ->
                     _uiState.update { it.copy(teams = teams) }
                 }
@@ -137,25 +217,13 @@ class DashboardViewModel @Inject constructor(
             launch {
                 val user = userRepository.getUserModelSuspending()
                 user?.name?.let { name ->
-                    offlineActivityRepository.getOfflineLogins(name).collect { activities ->
+                    activityRepository.getOfflineLogins(name).collect { activities ->
                         _uiState.update { it.copy(offlineLoginCount = activities.size) }
                     }
                 }
             }
-
-            val myLibrary = libraryDeferred.await()
-            _uiState.update { it.copy(library = myLibrary) }
         }
     }
 
-    suspend fun getLibraryForSelectedUser(userId: String): List<RealmMyLibrary> {
-        return libraryRepository.getLibraryForSelectedUser(userId)
-    }
-
-    fun loadUsers() {
-        viewModelScope.launch {
-            val users = userRepository.getUsersSortedBy("joinDate", Sort.DESCENDING)
-            _uiState.update { it.copy(users = users) }
-        }
-    }
+    suspend fun getUsersSortedByDate() = userRepository.getUsersSortedBy("joinDate", Sort.DESCENDING)
 }

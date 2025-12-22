@@ -1177,7 +1177,5 @@
     <string name="achievement_saved">تم تحديث الإنجاز</string>
     <string name="team_name_already_exists">فريق بهذا الاسم موجود بالفعل</string>
     <string name="enterprise_name_already_exists">مؤسسة بهذا الاسم موجودة بالفعل</string>
-    <string name="downloading_images_please_check_notification">جارٍ تنزيل الصور، يرجى التحقق من الإشعار…</string>
-    <string name="no_images_to_download">لا توجد صور لتنزيلها</string>
 
 </resources>

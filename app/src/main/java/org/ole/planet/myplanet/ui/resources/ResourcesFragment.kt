@@ -297,9 +297,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                             etSearch.text.toString().trim(), searchTags
                         )
                     )
-                ) {
-                    recyclerView.scrollToPosition(0)
-                }
+                )
                 showNoData(tvMessage, adapterLibrary.itemCount, "resources")
             }
 
@@ -441,9 +439,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             mediums.clear()
             subjects.clear()
             languages.clear()
-            adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag("", searchTags))) {
-                recyclerView.scrollToPosition(0)
-            }
+            adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag("", searchTags)))
             showNoData(tvMessage, adapterLibrary.itemCount, "resources")
         }
     }
@@ -461,9 +457,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         chipCloud.setDeleteListener(this)
         if (!searchTags.contains(realmTag)) searchTags.add(realmTag)
         chipCloud.addChips(searchTags)
-        adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.text.toString(), searchTags))) {
-            recyclerView.scrollToPosition(0)
-        }
+        adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.text.toString(), searchTags)))
         showTagText(searchTags, tvSelected)
         showNoData(tvMessage, adapterLibrary.itemCount, "resources")
     }
@@ -474,18 +468,14 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         li.add(tag)
         searchTags = li
         tvSelected.text = getString(R.string.tag_selected, tag.name)
-        adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.text.toString(), li))) {
-            recyclerView.scrollToPosition(0)
-        }
+        adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.text.toString(), li)))
         showNoData(tvMessage, adapterLibrary.itemCount, "resources")
     }
 
     override fun onOkClicked(list: List<RealmTag>?) {
         if (list?.isEmpty() == true) {
             searchTags.clear()
-            adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.text.toString(), searchTags))) {
-                recyclerView.scrollToPosition(0)
-            }
+            adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.text.toString(), searchTags)))
             showNoData(tvMessage, adapterLibrary.itemCount, "resources")
         } else {
             for (tag in list ?: emptyList()) {
@@ -507,9 +497,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     override fun chipDeleted(i: Int, s: String) {
         searchTags.removeAt(i)
-        adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.text.toString(), searchTags))) {
-            recyclerView.scrollToPosition(0)
-        }
+        adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.text.toString(), searchTags)))
         showNoData(tvMessage, adapterLibrary.itemCount, "resources")
     }
 
@@ -518,9 +506,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         this.languages = languages
         this.mediums = mediums
         this.levels = levels
-        adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.text.toString().trim { it <= ' ' }, searchTags))) {
-            recyclerView.scrollToPosition(0)
-        }
+        adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.text.toString().trim { it <= ' ' }, searchTags)))
         showNoData(tvMessage, adapterLibrary.itemCount, "resources")
     }
 
@@ -651,16 +637,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             f.show(childFragmentManager, "")
             bottomSheet.visibility = View.GONE
         }
-        binding.orderByDateButton.setOnClickListener {
-            adapterLibrary.toggleSortOrder {
-                recyclerView.scrollToPosition(0)
-            }
-        }
-        binding.orderByTitleButton.setOnClickListener {
-            adapterLibrary.toggleTitleSortOrder {
-                recyclerView.scrollToPosition(0)
-            }
-        }
+        binding.orderByDateButton.setOnClickListener { adapterLibrary.toggleSortOrder() }
+        binding.orderByTitleButton.setOnClickListener { adapterLibrary.toggleTitleSortOrder() }
     }
     
     override fun getWatchedTables(): List<String> {
