@@ -60,11 +60,8 @@ class JoinedMemberFragment : BaseMemberFragment() {
     override val adapter: RecyclerView.Adapter<*>
         get() {
             if (adapterJoined == null) {
-                val members = joinedMembers
-                val currentUserId = user?.id
-                val isLeader = members.any { it.user.id == currentUserId && it.isLeader }
                 adapterJoined = AdapterJoinedMember(
-                    requireActivity(), members.toMutableList(), isLeader, currentUserId,
+                    requireActivity(), user?.id,
                     object : AdapterJoinedMember.MemberActionListener {
                         override fun onRemoveMember(member: JoinedMemberData, position: Int) {
                             handleRemoveMember(member)

@@ -294,11 +294,18 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
                     val bindingData = surveyRepository.getSurveyBindingData(currentSurveys, teamId)
                     Triple(currentSurveys, surveyInfos, bindingData)
                 }
-                currentSurveys = surveys
+                currentSurveys = surveys.sortedByDescending { survey ->
+                    if (survey.sourceSurveyId != null) {
+                        if (survey.adoptionDate > 0) survey.adoptionDate else survey.createdDate
+                    } else {
+                        survey.createdDate
+                    }
+                }
                 surveyInfoMap.clear()
                 surveyInfoMap.putAll(infos)
                 bindingDataMap.clear()
                 bindingDataMap.putAll(data)
+                binding.spnSort.setSelection(0, false)
                 applySearchFilter()
             } finally {
                 if (isAdded && _binding != null) {

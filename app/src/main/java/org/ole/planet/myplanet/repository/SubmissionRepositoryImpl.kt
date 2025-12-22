@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import android.util.Log
 import com.google.gson.JsonParser
 import io.realm.Case
 import io.realm.Sort
@@ -230,9 +231,12 @@ class SubmissionRepositoryImpl @Inject constructor(
     }
 
     override suspend fun markSubmissionComplete(id: String, payload: com.google.gson.JsonObject) {
+        Log.d("SubmissionRepository", "markSubmissionComplete called for ID: $id")
         update(RealmSubmission::class.java, "id", id) { sub ->
             sub.user = payload.toString()
             sub.status = "complete"
+            sub.isUpdated = true  // Mark for upload
+            Log.d("SubmissionRepository", "Submission marked: status=complete, isUpdated=true, _id=${sub._id}")
         }
     }
 
@@ -328,5 +332,19 @@ class SubmissionRepositoryImpl @Inject constructor(
                 }
             }
         }.getOrNull()
+    }
+
+    override suspend fun getAllPendingSubmissions(): List<RealmSubmission> {
+        return queryList(RealmSubmission::class.java) {
+            equalTo("status", "pending", Case.INSENSITIVE)
+        }
+    }
+
+    override suspend fun getSubmissionsByParentId(parentId: String?, userId: String?): List<RealmSubmission> {
+        return queryList(RealmSubmission::class.java) {
+            equalTo("parentId", parentId)
+                .equalTo("userId", userId)
+                .sort("lastUpdateTime", Sort.DESCENDING)
+        }
     }
 }

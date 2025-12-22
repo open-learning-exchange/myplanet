@@ -20,15 +20,12 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayout
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.RealmResults
 import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.NotificationCallback
 import org.ole.planet.myplanet.callback.SyncListener
@@ -38,7 +35,6 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.TeamNotificationInfo
 import org.ole.planet.myplanet.service.TransactionSyncManager
@@ -63,7 +59,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     private var fullName: String? = null
     private var params = LinearLayout.LayoutParams(250, 100)
     private var di: DialogUtils.CustomProgressDialog? = null
-    private lateinit var offlineActivitiesResults: RealmResults<RealmOfflineActivity>
 
     @Inject
     lateinit var transactionSyncManager: TransactionSyncManager
@@ -105,17 +100,15 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
                 mRealm.commitTransaction()
             }
 
-            if (isRealmInitialized()) {
-                offlineActivitiesResults = mRealm.where(RealmOfflineActivity::class.java)
-                    .equalTo("userName", model?.name)
-                    .equalTo("type", KEY_LOGIN)
-                    .findAllAsync()
+            viewLifecycleOwner.lifecycleScope.launch {
+                val offlineVisits = model?.name?.let {
+                    viewModel.getOfflineActivities(it, KEY_LOGIN).size
+                } ?: 0
+                v.findViewById<TextView>(R.id.txtFullName).text =
+                    getString(R.string.user_name, fullName, offlineVisits)
             }
             v.findViewById<TextView>(R.id.txtRole).text =
                 getString(R.string.user_role, model?.getRoleAsString())
-            val offlineVisits = profileDbHandler.offlineVisits
-            v.findViewById<TextView>(R.id.txtFullName).text =
-                getString(R.string.user_name, fullName, offlineVisits)
         }
     }
 
