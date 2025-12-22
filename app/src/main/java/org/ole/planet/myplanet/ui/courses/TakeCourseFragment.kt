@@ -344,7 +344,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                 withContext(Dispatchers.IO) {
                     val backgroundRealm = databaseService.realmInstance
                     try {
-                        // Modify course in transaction
                         backgroundRealm.executeTransaction { realm ->
                             val course = realm.where(RealmMyCourse::class.java)
                                 .equalTo("courseId", courseId)
@@ -359,7 +358,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                             }
                         }
 
-                        // onAdd/onRemove handle their own transactions
                         if (isCurrentlyJoined) {
                             onRemove(backgroundRealm, "courses", userModel?.id, courseId)
                         } else {
@@ -370,9 +368,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                     }
                 }
 
-                // Update UI on main thread
                 withContext(Dispatchers.Main) {
-                    // Get fresh copy for UI
                     val updatedCourse = mRealm.where(RealmMyCourse::class.java)
                         .equalTo("courseId", courseId)
                         .findFirst()
