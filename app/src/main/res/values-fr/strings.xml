@@ -1180,5 +1180,6 @@
     <string name="downloading_images_please_check_notification">Téléchargement des images, veuillez vérifier la notification…</string>
     <string name="no_images_to_download">Aucune image à télécharger</string>
     <string name="app_theme">Thème de l\'application</string>
+    <string name="team_surveys">Enquêtes d\'équipe</string>
 
 </resources>

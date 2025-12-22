@@ -62,4 +62,6 @@ interface UserRepository {
     fun getUserModel(): RealmUserModel?
     suspend fun getUserModelSuspending(): RealmUserModel?
     fun getActiveUserId(): String
+    suspend fun validateUsername(username: String): String?
+    suspend fun cleanupDuplicateUsers()
 }
