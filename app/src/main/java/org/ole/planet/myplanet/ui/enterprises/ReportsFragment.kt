@@ -223,12 +223,8 @@ class ReportsFragment : BaseTeamFragment() {
         if (_binding == null) return
         reports = results
         adapterReports.submitList(reports)
-        if (reports.isEmpty()) {
-            binding.exportCSV.visibility = View.GONE
-            BaseRecyclerFragment.showNoData(binding.tvMessage, reports.size, "reports")
-        } else {
-            binding.exportCSV.visibility = View.VISIBLE
-        }
+        BaseRecyclerFragment.showNoData(binding.tvMessage, reports.size, "reports")
+        binding.exportCSV.visibility = if (reports.isEmpty()) View.GONE else View.VISIBLE
     }
 
     override fun onDestroyView() {
