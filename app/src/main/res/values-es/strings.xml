@@ -1149,7 +1149,7 @@
     <string name="syncing_health_data">Sincronizando datos de salud…</string>
     <string name="syncing_resources">Sincronizando recursos…</string>
     <string name="syncing_achievements">Sincronizando logros…</string>
-    <string name="nation_leaders">líderes nacionales</string>
+    <string name="nation_leaders">Lideres de la nación</string>
     <string name="filter_by_label">filtrar por etiqueta</string>
     <string name="is_available">%1$s está disponible. Toca para continuar aprendiendo</string>
     <string name="failed_to_add_please_retry">Error al agregar. Por favor, inténtalo de nuevo</string>
