@@ -25,7 +25,6 @@ import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -155,7 +154,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             launch {
                 viewModel.uiState
                     .map { it.library }
-                    .distinctUntilChanged()
                     .collect { library ->
                         renderMyLibrary(library)
                     }
@@ -163,7 +161,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             launch {
                 viewModel.uiState
                     .map { it.courses }
-                    .distinctUntilChanged()
                     .collect { courses ->
                         renderMyCourses(courses)
                     }
@@ -171,7 +168,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             launch {
                 viewModel.uiState
                     .map { it.teams }
-                    .distinctUntilChanged()
                     .collect { teams ->
                         renderMyTeams(teams)
                     }
