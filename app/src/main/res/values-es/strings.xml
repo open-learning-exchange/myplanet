@@ -547,7 +547,7 @@
     <string name="order_by_date">Ordenar por fecha</string>
     <string name="order_by_title">Ordenar por título</string>
     <string name="exams">Exámenes</string>
-    <string name="survey">Encuesta</string>
+    <string name="survey">Encuestas</string>
     <string name="submitted_by">Enviado por</string>
     <string name="updated_on">Actualizado el</string>
     <string name="name">Nombre</string>
@@ -1180,5 +1180,6 @@
     <string name="downloading_images_please_check_notification">Descargando imágenes, por favor revise las notificaciones…</string>
     <string name="no_images_to_download">No hay imágenes para descargar</string>
     <string name="app_theme">Tema de la aplicación</string>
+    <string name="team_surveys">Encuestas del equipo</string>
 
 </resources>

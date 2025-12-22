@@ -32,7 +32,7 @@
                 android:gravity="center"
                 android:paddingHorizontal="30dp"
                 android:paddingVertical="3dp"
-                android:text="Team surveys"
+                android:text="@string/team_surveys"
                 android:textColor="@color/toggle_text_color"
                 android:textSize="@dimen/survey_radio_text_size" />
             <RadioButton
@@ -45,7 +45,7 @@
                 android:gravity="center"
                 android:paddingHorizontal="30dp"
                 android:paddingVertical="3dp"
-                android:text="Adopt a survey"
+                android:text="@string/adopt_survey"
                 android:textColor="@color/toggle_text_color"
                 android:textSize="@dimen/survey_radio_text_size" />
         </RadioGroup>
