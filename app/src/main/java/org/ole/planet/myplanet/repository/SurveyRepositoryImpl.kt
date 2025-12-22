@@ -75,6 +75,11 @@ class SurveyRepositoryImpl @Inject constructor(
         return queryList(RealmStepExam::class.java) {
             equalTo("type", "surveys")
             equalTo("isTeamShareAllowed", false)
+            beginGroup()
+            isNull("teamId")
+            or()
+            equalTo("teamId", "")
+            endGroup()
         }
     }
 

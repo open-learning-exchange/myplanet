@@ -56,6 +56,7 @@ class SubmissionRepositoryImpl @Inject constructor(
                 .equalTo("userId", userId)
                 .equalTo("status", "pending")
                 .equalTo("type", "survey")
+                .isNull("membershipDoc")
                 .findAll()
 
             if (pendingSurveys.isEmpty()) {
