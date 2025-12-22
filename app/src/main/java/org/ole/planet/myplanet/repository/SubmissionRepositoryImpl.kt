@@ -334,6 +334,12 @@ class SubmissionRepositoryImpl @Inject constructor(
         }.getOrNull()
     }
 
+    override suspend fun getAllPendingSubmissions(): List<RealmSubmission> {
+        return queryList(RealmSubmission::class.java) {
+            equalTo("status", "pending", Case.INSENSITIVE)
+        }
+    }
+
     override suspend fun getSubmissionsByParentId(parentId: String?, userId: String?): List<RealmSubmission> {
         return queryList(RealmSubmission::class.java) {
             equalTo("parentId", parentId)
