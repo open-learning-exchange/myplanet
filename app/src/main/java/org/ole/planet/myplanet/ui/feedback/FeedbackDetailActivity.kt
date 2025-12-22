@@ -12,7 +12,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
@@ -33,10 +35,9 @@ import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDateWithTime
 @AndroidEntryPoint
 class FeedbackDetailActivity : AppCompatActivity() {
     private lateinit var activityFeedbackDetailBinding: ActivityFeedbackDetailBinding
-    private var mAdapter: RecyclerView.Adapter<*>? = null
+    private var mAdapter: RvFeedbackAdapter? = null
     private var layoutManager: RecyclerView.LayoutManager? = null
     private var feedback: RealmFeedback? = null
-    private lateinit var rowFeedbackReplyBinding: RowFeedbackReplyBinding
     private lateinit var feedbackId: String
     private val viewModel: FeedbackDetailViewModel by viewModels()
 
@@ -68,8 +69,9 @@ class FeedbackDetailActivity : AppCompatActivity() {
                         activityFeedbackDetailBinding.tvDate.text = getFormattedDateWithTime(it.openTime)
                         activityFeedbackDetailBinding.tvMessage.text =
                             if (TextUtils.isEmpty(it.message)) "N/A" else it.message
-                        mAdapter = RvFeedbackAdapter(it.messageList, applicationContext)
+                        mAdapter = RvFeedbackAdapter(applicationContext)
                         activityFeedbackDetailBinding.rvFeedbackReply.adapter = mAdapter
+                        mAdapter!!.submitList(it.messageList)
                         updateForClosed()
                     }
                 }
@@ -136,24 +138,34 @@ class FeedbackDetailActivity : AppCompatActivity() {
         return super.onOptionsItemSelected(item)
     }
 
-    inner class RvFeedbackAdapter(private val replyList: List<FeedbackReply>?, var context: Context) : RecyclerView.Adapter<ReplyViewHolder>() {
+    inner class RvFeedbackAdapter(var context: Context) : ListAdapter<FeedbackReply, ReplyViewHolder>(DIFF_CALLBACK) {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ReplyViewHolder {
-            rowFeedbackReplyBinding = RowFeedbackReplyBinding.inflate(layoutInflater, parent, false)
+            val rowFeedbackReplyBinding = RowFeedbackReplyBinding.inflate(layoutInflater, parent, false)
             return ReplyViewHolder(rowFeedbackReplyBinding)
         }
 
         override fun onBindViewHolder(holder: ReplyViewHolder, position: Int) {
-            rowFeedbackReplyBinding.tvDate.text = replyList?.get(position)?.date?.let {
+            val feedbackReply = getItem(position)
+            holder.binding.tvDate.text = feedbackReply.date.let {
                 getFormattedDateWithTime(it.toLong())
             }
-            rowFeedbackReplyBinding.tvUser.text = replyList?.get(position)?.user
-            rowFeedbackReplyBinding.tvMessage.text = replyList?.get(position)?.message
+            holder.binding.tvUser.text = feedbackReply.user
+            holder.binding.tvMessage.text = feedbackReply.message
         }
 
-        override fun getItemCount(): Int {
-            return replyList?.size ?: 0
-        }
+        inner class ReplyViewHolder(val binding: RowFeedbackReplyBinding) : RecyclerView.ViewHolder(binding.root)
+    }
 
-        inner class ReplyViewHolder(rowFeedbackReplyBinding: RowFeedbackReplyBinding) : RecyclerView.ViewHolder(rowFeedbackReplyBinding.root)
+    companion object {
+        val DIFF_CALLBACK: DiffUtil.ItemCallback<FeedbackReply> =
+            object : DiffUtil.ItemCallback<FeedbackReply>() {
+                override fun areItemsTheSame(oldItem: FeedbackReply, newItem: FeedbackReply): Boolean {
+                    return oldItem.date == newItem.date && oldItem.user == newItem.user
+                }
+
+                override fun areContentsTheSame(oldItem: FeedbackReply, newItem: FeedbackReply): Boolean {
+                    return oldItem == newItem
+                }
+            }
     }
 }
