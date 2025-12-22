@@ -52,6 +52,8 @@ interface UserRepository {
     )
 
     suspend fun becomeMember(obj: JsonObject): Pair<Boolean, String>
+
+    suspend fun searchUsers(query: String, sortField: String, sortOrder: Sort): List<RealmUserModel>
     suspend fun getHealthRecordsAndAssociatedUsers(
         userId: String,
         currentUser: RealmUserModel

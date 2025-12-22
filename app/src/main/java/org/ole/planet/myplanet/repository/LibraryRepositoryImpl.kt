@@ -1,11 +1,11 @@
 package org.ole.planet.myplanet.repository
 
+import io.realm.Sort
 import javax.inject.Inject
+import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRemovedLog
-import io.realm.Sort
-import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onAdd
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onRemove
 
@@ -167,6 +167,15 @@ class LibraryRepositoryImpl @Inject constructor(
             equalTo("isPrivate", true)
                 .greaterThan("createdDate", timestamp)
                 .equalTo("mediaType", "image")
+        }
+    }
+
+    override suspend fun markAllResourcesOffline(isOffline: Boolean) {
+        executeTransaction { realm ->
+            val libraries = realm.where(RealmMyLibrary::class.java).findAll()
+            for (library in libraries) {
+                library.resourceOffline = isOffline
+            }
         }
     }
 }

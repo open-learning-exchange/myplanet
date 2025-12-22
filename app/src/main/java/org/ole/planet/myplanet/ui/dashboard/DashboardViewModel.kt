@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.realm.Sort
-import java.util.Calendar
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -13,15 +12,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmTeamNotification
-import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.TeamNotificationInfo
+import org.ole.planet.myplanet.repository.ActivityRepository
 import org.ole.planet.myplanet.repository.CourseRepository
 import org.ole.planet.myplanet.repository.LibraryRepository
 import org.ole.planet.myplanet.repository.NotificationRepository
@@ -30,14 +28,13 @@ import org.ole.planet.myplanet.repository.SurveyRepository
 import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.repository.UserRepository
 
-import org.ole.planet.myplanet.model.RealmUserModel
-
 data class DashboardUiState(
     val unreadNotifications: Int = 0,
     val library: List<RealmMyLibrary> = emptyList(),
     val courses: List<RealmMyCourse> = emptyList(),
     val teams: List<RealmMyTeam> = emptyList(),
     val users: List<RealmUserModel> = emptyList(),
+    val offlineLogins: Int = 0,
 )
 
 @HiltViewModel
@@ -49,6 +46,7 @@ class DashboardViewModel @Inject constructor(
     private val submissionRepository: SubmissionRepository,
     private val notificationRepository: NotificationRepository,
     private val surveyRepository: SurveyRepository,
+    private val activityRepository: ActivityRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
@@ -130,9 +128,23 @@ class DashboardViewModel @Inject constructor(
                 }
             }
 
+            launch {
+                val user = userRepository.getUserById(userId)
+                val userName = user?.name
+                if (userName != null) {
+                    activityRepository.getOfflineLogins(userName).collect { logins ->
+                        _uiState.update { it.copy(offlineLogins = logins.size) }
+                    }
+                }
+            }
+
             val myLibrary = libraryDeferred.await()
             _uiState.update { it.copy(library = myLibrary) }
         }
+    }
+
+    suspend fun getOfflineActivities(userName: String, type: String): List<RealmOfflineActivity> {
+        return activityRepository.getOfflineActivities(userName, type)
     }
 
     suspend fun getLibraryForSelectedUser(userId: String): List<RealmMyLibrary> {

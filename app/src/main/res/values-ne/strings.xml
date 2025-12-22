@@ -1177,7 +1177,8 @@
     <string name="achievement_saved">उपलब्धि अद्यावधिक गरियो</string>
     <string name="team_name_already_exists">यो नामको टोली पहिले नै अवस्थित छ</string>
     <string name="enterprise_name_already_exists">यो नामको उद्यम पहिले नै अवस्थित छ</string>
-    <string name="downloading_images_please_check_notification">तस्बिरहरू डाउनलोड हुँदैछ, कृपया सूचना जाँच गर्नुहोस्...</string>
+    <string name="downloading_images_please_check_notification">तस्बिरहरू डाउनलोड हुँदैछ, कृपया सूचना जाँच गर्नुहोस्…</string>
     <string name="no_images_to_download">डाउनलोड गर्नका लागि कुनै तस्बिरहरू छैनन्</string>
+    <string name="app_theme">एप थिम</string>
 
 </resources>

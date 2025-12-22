@@ -12,15 +12,13 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Sort
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentSubmissionListBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.utilities.SubmissionPdfGenerator
 
 @AndroidEntryPoint
@@ -28,7 +26,7 @@ class SubmissionListFragment : Fragment() {
     private var _binding: FragmentSubmissionListBinding? = null
     private val binding get() = _binding!!
     @Inject
-    lateinit var databaseService: DatabaseService
+    lateinit var submissionRepository: SubmissionRepository
     private var parentId: String? = null
     private var examTitle: String? = null
     private var userId: String? = null
@@ -76,33 +74,21 @@ class SubmissionListFragment : Fragment() {
 
     private fun loadSubmissions() {
         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-            var submissionItems: List<SubmissionItem> = emptyList()
-            var submissionsCopy: List<RealmSubmission> = emptyList()
-            databaseService.withRealm { realm ->
-                val submissions = realm.where(RealmSubmission::class.java)
-                    .equalTo("parentId", parentId)
-                    .equalTo("userId", userId)
-                    .sort("lastUpdateTime", Sort.DESCENDING)
-                    .findAll()
-
-                submissionItems = submissions.map {
-                    SubmissionItem(
-                        id = it.id,
-                        lastUpdateTime = it.lastUpdateTime,
-                        status = it.status ?: "",
-                        uploaded = it.uploaded
-                    )
-                }
-                submissionsCopy = realm.copyFromRealm(submissions)
+            val submissions = submissionRepository.getSubmissionsByParentId(parentId, userId)
+            val submissionItems = submissions.map {
+                SubmissionItem(
+                    id = it.id,
+                    lastUpdateTime = it.lastUpdateTime,
+                    status = it.status ?: "",
+                    uploaded = it.uploaded
+                )
             }
 
             withContext(Dispatchers.Main) {
                 if (_binding == null) return@withContext
                 adapter.submitList(submissionItems)
 
-                // Cache IDs for report generation
-                val submissionIds = submissionsCopy.mapNotNull { it.id }
-
+                val submissionIds = submissions.mapNotNull { it.id }
                 binding.btnDownloadReport.setOnClickListener {
                     generateReport(submissionIds)
                 }

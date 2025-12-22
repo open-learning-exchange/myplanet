@@ -41,18 +41,13 @@ import com.mikepenz.materialdrawer.model.PrimaryDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.Nameable
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Case
-import kotlinx.coroutines.flow.collect
 import io.realm.Realm
-import io.realm.RealmChangeListener
-import io.realm.RealmResults
 import javax.inject.Inject
 import kotlin.math.ceil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeout
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
@@ -65,7 +60,6 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.JoinRequestNotification
 import org.ole.planet.myplanet.repository.LibraryRepository
@@ -73,7 +67,6 @@ import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.TeamRepository
-import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.chat.ChatHistoryListFragment
@@ -98,6 +91,7 @@ import org.ole.planet.myplanet.utilities.Constants.isBetaWifiFeatureEnabled
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils
+import org.ole.planet.myplanet.utilities.ThemeManager
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.NotificationUtils
@@ -113,7 +107,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private var tl: TabLayout? = null
     private var dl: DrawerLayout? = null
     private val dashboardViewModel: DashboardViewModel by viewModels()
-    private lateinit var tabSelectedListener: TabLayout.OnTabSelectedListener
+    private lateinit var tabSelectedListener: OnTabSelectedListener
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     @Inject
@@ -143,60 +137,70 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         postponeEnterTransition()
+        checkUser()
+        initViews()
+        updateAppTitle()
+        notificationManager = NotificationUtils.getInstance(this)
+        if (handleGuestAccess()) return
+
+        handleInitialFragment()
+        addBackPressCallback()
+        collectUiState()
+
         lifecycleScope.launch {
-            user = userRepository.getUserModelSuspending()
-            withContext(Dispatchers.Main) {
-                if (user == null) {
-                    toast(this@DashboardActivity, getString(R.string.session_expired))
-                    logout()
-                    return@withContext
-                }
-                initViews()
-                updateAppTitle()
-                notificationManager = NotificationUtils.getInstance(this@DashboardActivity)
-                if (handleGuestAccess()) return@withContext
-                handleInitialFragment()
-                addBackPressCallback()
-                collectUiState()
-                initializeDashboard()
-                val content: View = findViewById(android.R.id.content)
-                content.viewTreeObserver.addOnPreDrawListener(object :
-                    android.view.ViewTreeObserver.OnPreDrawListener {
-                    override fun onPreDraw(): Boolean {
-                        content.viewTreeObserver.removeOnPreDrawListener(this)
-                        startPostponedEnterTransition()
-                        return true
-                    }
-                })
-                if (user?.id?.startsWith("guest") == true && profileDbHandler.offlineVisits >= 3) {
-                    val builder = AlertDialog.Builder(this@DashboardActivity, R.style.AlertDialogTheme)
-                    builder.setTitle(getString(R.string.become_a_member))
-                    builder.setMessage(getString(R.string.trial_period_ended))
-                    builder.setCancelable(false)
-                    builder.setPositiveButton(getString(R.string.become_a_member), null)
-                    builder.setNegativeButton(getString(R.string.menu_logout), null)
-                    val dialog = builder.create()
-                    dialog.show()
-                    val becomeMember = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-                    val logout = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
-                    becomeMember.contentDescription = getString(R.string.confirm_membership)
-                    logout.contentDescription = getString(R.string.menu_logout)
-                    becomeMember.setOnClickListener {
-                        val guest = true
-                        val intent =
-                            Intent(this@DashboardActivity, BecomeMemberActivity::class.java)
-                        intent.putExtra("username", profileDbHandler.userModel?.name)
-                        intent.putExtra("guest", guest)
-                        setResult(RESULT_OK, intent)
-                        startActivity(intent)
-                    }
-                    logout.setOnClickListener {
-                        dialog.dismiss()
-                        logout()
-                    }
+            initializeDashboard()
+        }
+
+        val content: View = findViewById(android.R.id.content)
+        content.viewTreeObserver.addOnPreDrawListener(
+            object : android.view.ViewTreeObserver.OnPreDrawListener {
+                override fun onPreDraw(): Boolean {
+                    content.viewTreeObserver.removeOnPreDrawListener(this)
+                    startPostponedEnterTransition()
+                    return true
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                 }
             }
-        }
+        )
     }
 
     private fun initializeDashboard() {
@@ -376,6 +380,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             R.id.action_about -> openCallFragment(AboutFragment(), AboutFragment::class.java.simpleName)
             R.id.action_logout -> logout()
             R.id.change_language -> SettingActivity.SettingFragment.languageChanger(this)
+            R.id.action_theme -> ThemeManager.showThemeDialog(this)
             else -> {}
         }
     }
@@ -639,7 +644,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         if (fromLogin || !notificationsShownThisSession) {
             notificationsShownThisSession = true
             lifecycleScope.launch {
-                kotlinx.coroutines.delay(1000)
+                delay(1000)
                 checkAndCreateNewNotifications()
             }
         }
@@ -879,8 +884,42 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun hideWifi() {
         val navMenu = binding.appBarBell.bellToolbar.menu
-        navMenu.findItem(R.id.menu_goOnline)
-            .setVisible(isBetaWifiFeatureEnabled(this))
+        navMenu.findItem(R.id.menu_goOnline).isVisible = isBetaWifiFeatureEnabled(this)
+    }
+
+    private fun checkUser() {
+        user = userProfileDbHandler.userModel
+        if (user == null) {
+            toast(this, getString(R.string.session_expired))
+            logout()
+            return
+        }
+        if (user?.id?.startsWith("guest") == true && profileDbHandler.offlineVisits >= 3) {
+            val builder = AlertDialog.Builder(this, R.style.AlertDialogTheme)
+            builder.setTitle(getString(R.string.become_a_member))
+            builder.setMessage(getString(R.string.trial_period_ended))
+            builder.setCancelable(false)
+            builder.setPositiveButton(getString(R.string.become_a_member), null)
+            builder.setNegativeButton(getString(R.string.menu_logout), null)
+            val dialog = builder.create()
+            dialog.show()
+            val becomeMember = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            val logout = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
+            becomeMember.contentDescription = getString(R.string.confirm_membership)
+            logout.contentDescription = getString(R.string.menu_logout)
+            becomeMember.setOnClickListener {
+                val guest = true
+                val intent = Intent(this, BecomeMemberActivity::class.java)
+                intent.putExtra("username", profileDbHandler.userModel?.name)
+                intent.putExtra("guest", guest)
+                setResult(RESULT_OK, intent)
+                startActivity(intent)
+            }
+            logout.setOnClickListener {
+                dialog.dismiss()
+                logout()
+            }
+        }
     }
 
     private fun topBarVisible(){
@@ -915,7 +954,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             title.text = tabLayout.getTabAt(i)?.text
             icon.setImageResource(R.drawable.ic_home)
             icon.setImageDrawable(tabLayout.getTabAt(i)?.icon)
-            tabLayout.getTabAt(i)?.setCustomView(customTabBinding.root)
+            tabLayout.getTabAt(i)?.customView = customTabBinding.root
         }
         tabLayout.isTabIndicatorFullWidth = false
     }
@@ -1231,6 +1270,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun showNotificationDisabledReminder() {
+        if (!::binding.isInitialized) return
+
         val snackbar = Snackbar.make(
             binding.root,
             "Notifications are disabled. You might miss important updates.",

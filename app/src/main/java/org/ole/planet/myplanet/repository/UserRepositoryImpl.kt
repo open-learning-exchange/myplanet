@@ -60,6 +60,17 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun searchUsers(query: String, sortField: String, sortOrder: io.realm.Sort): List<RealmUserModel> {
+        return withRealm { realm ->
+            val results = realm.where(RealmUserModel::class.java)
+                .contains("firstName", query, io.realm.Case.INSENSITIVE).or()
+                .contains("lastName", query, io.realm.Case.INSENSITIVE).or()
+                .contains("name", query, io.realm.Case.INSENSITIVE)
+                .sort(sortField, sortOrder).findAll()
+            realm.copyFromRealm(results)
+        }
+    }
+
     override suspend fun getMonthlyLoginCounts(
         userId: String,
         startMillis: Long,
