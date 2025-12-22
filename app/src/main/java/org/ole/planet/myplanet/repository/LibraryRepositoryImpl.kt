@@ -169,4 +169,13 @@ class LibraryRepositoryImpl @Inject constructor(
                 .equalTo("mediaType", "image")
         }
     }
+
+    override suspend fun markAllResourcesOffline(isOffline: Boolean) {
+        executeTransaction { realm ->
+            val libraries = realm.where(RealmMyLibrary::class.java).findAll()
+            for (library in libraries) {
+                library.resourceOffline = isOffline
+            }
+        }
+    }
 }

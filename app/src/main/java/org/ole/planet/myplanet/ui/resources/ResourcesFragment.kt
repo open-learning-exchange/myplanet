@@ -80,6 +80,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private var confirmation: AlertDialog? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     private var searchTextWatcher: TextWatcher? = null
+    private var isFirstResume = true
 
     @Inject
     lateinit var prefManager: SharedPrefManager
@@ -546,7 +547,10 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     override fun onResume() {
         super.onResume()
-        refreshResourcesData()
+        if (isFirstResume) {
+            refreshResourcesData()
+            isFirstResume = false
+        }
         selectAll.isChecked = false
     }
 
@@ -556,6 +560,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     override fun onDestroyView() {
+        isFirstResume = true
         etSearch.removeTextChangedListener(searchTextWatcher)
         searchTextWatcher = null
 

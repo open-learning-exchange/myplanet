@@ -20,21 +20,40 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowJoinedUserBinding
 import org.ole.planet.myplanet.repository.JoinedMemberData
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import org.ole.planet.myplanet.utilities.DiffUtils
 
 class AdapterJoinedMember(
     private val context: Context,
-    private var list: MutableList<JoinedMemberData>,
-    private var isLoggedInUserTeamLeader: Boolean,
     private val currentUserId: String?,
     private val actionListener: MemberActionListener
-) : RecyclerView.Adapter<AdapterJoinedMember.ViewHolderUser>() {
+) : ListAdapter<JoinedMemberData, AdapterJoinedMember.ViewHolderUser>(DIFF_CALLBACK) {
+    private var isLoggedInUserTeamLeader: Boolean = false
     interface MemberActionListener {
         fun onRemoveMember(member: JoinedMemberData, position: Int)
         fun onMakeLeader(member: JoinedMemberData)
         fun onLeaveTeam()
     }
+    companion object {
+        private val DIFF_CALLBACK = object : DiffUtil.ItemCallback<JoinedMemberData>() {
+            override fun areItemsTheSame(oldItem: JoinedMemberData, newItem: JoinedMemberData): Boolean {
+                return oldItem.user.id == newItem.user.id
+            }
 
+            override fun areContentsTheSame(oldItem: JoinedMemberData, newItem: JoinedMemberData): Boolean {
+                return oldItem == newItem
+            }
+
+            override fun getChangePayload(oldItem: JoinedMemberData, newItem: JoinedMemberData): Any? {
+                val payload = Bundle()
+                if (oldItem.isLeader != newItem.isLeader) {
+                    payload.putBoolean("KEY_LEADER", newItem.isLeader)
+                }
+                return if (payload.isEmpty) null else payload
+            }
+        }
+    }
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderUser {
         val binding = RowJoinedUserBinding.inflate(LayoutInflater.from(context), parent, false)
         return ViewHolderUser(binding)
@@ -60,7 +79,7 @@ class AdapterJoinedMember(
     }
 
     override fun onBindViewHolder(holder: ViewHolderUser, position: Int) {
-        val memberData = list[position]
+        val memberData = getItem(position)
         val member = memberData.user
         val binding = holder.binding
 
@@ -108,7 +127,7 @@ class AdapterJoinedMember(
                 member.dob.toString().substringBefore("T"),
                 member.language.toString(),
                 member.phoneNumber.toString(),
-                memberData.offlineVisits,
+                "${memberData.visitCount}",
                 memberData.profileLastVisit,
                 "${member.firstName} ${member.lastName}",
                 member.level.toString(),
@@ -124,10 +143,10 @@ class AdapterJoinedMember(
     }
 
     private fun checkUserAndShowOverflowMenu(binding: RowJoinedUserBinding, position: Int) {
-        if (isLoggedInUserTeamLeader && list.size > 1) {
+        if (isLoggedInUserTeamLeader && itemCount > 1) {
             binding.icMore.visibility = View.VISIBLE
             binding.icMore.setOnClickListener {
-                val currentMember = list[position]
+                val currentMember = getItem(position)
                 val isOwnCard = currentMember.user.id == currentUserId
 
                 val overflowMenuOptions = if (isOwnCard) {
@@ -159,8 +178,8 @@ class AdapterJoinedMember(
                         }
                     } else {
                         when (i) {
-                            0 -> actionListener.onRemoveMember(list[position], position)
-                            1 -> actionListener.onMakeLeader(list[position])
+                            0 -> actionListener.onRemoveMember(getItem(position), position)
+                            1 -> actionListener.onMakeLeader(getItem(position))
                         }
                     }
                 }.setNegativeButton(R.string.dismiss, null).show()
@@ -170,28 +189,9 @@ class AdapterJoinedMember(
         }
     }
 
-    override fun getItemCount(): Int = list.size
-
     fun updateData(newList: List<JoinedMemberData>, isLoggedInUserTeamLeader: Boolean) {
-        if (this.list === newList) return
         this.isLoggedInUserTeamLeader = isLoggedInUserTeamLeader
-        val oldList = ArrayList(this.list)
-        val diffResult = DiffUtils.calculateDiff(
-            oldList,
-            newList,
-            areItemsTheSame = { old, new -> old.user.id == new.user.id },
-            areContentsTheSame = { old, new -> old == new },
-            getChangePayload = { old, new ->
-                val payload = Bundle()
-                if (old.isLeader != new.isLeader) {
-                    payload.putBoolean("KEY_LEADER", new.isLeader)
-                }
-                if (payload.isEmpty) null else payload
-            }
-        )
-        this.list.clear()
-        this.list.addAll(newList)
-        diffResult.dispatchUpdatesTo(this)
+        submitList(newList)
     }
 
     class ViewHolderUser(val binding: RowJoinedUserBinding) :
