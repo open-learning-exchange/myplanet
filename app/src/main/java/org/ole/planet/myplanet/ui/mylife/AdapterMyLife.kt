@@ -169,7 +169,7 @@ class AdapterMyLife(
                 }
                 context = context.baseContext
             }
-            
+
             val activity = context as? AppCompatActivity
             activity?.let { act ->
                 f?.let {

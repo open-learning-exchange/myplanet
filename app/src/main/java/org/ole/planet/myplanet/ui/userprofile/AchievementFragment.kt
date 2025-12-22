@@ -58,7 +58,7 @@ class AchievementFragment : BaseContainerFragment() {
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     lateinit var prefManager: SharedPrefManager
     private val serverUrlMapper = ServerUrlMapper()
-    
+
     @Inject
     lateinit var syncManager: SyncManager
     private val syncCoordinator = RealtimeSyncCoordinator.getInstance()

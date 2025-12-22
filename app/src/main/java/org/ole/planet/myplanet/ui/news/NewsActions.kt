@@ -276,7 +276,7 @@ object NewsActions {
                         .equalTo("id", newsItem.id)
                         .findFirst()
                 }
-                
+
                 managedNews?.deleteFromRealm()
             }
         } else {
@@ -288,7 +288,7 @@ object NewsActions {
                         }
                     }
                 }
-                
+
                 val managedNews = if (newsItem.isManaged) {
                     newsItem
                 } else {
@@ -296,7 +296,7 @@ object NewsActions {
                         .equalTo("id", newsItem.id)
                         .findFirst()
                 }
-                
+
                 managedNews?.viewIn = GsonUtils.gson.toJson(filtered)
             }
         }

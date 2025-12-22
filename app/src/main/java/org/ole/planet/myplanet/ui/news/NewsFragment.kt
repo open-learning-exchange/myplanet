@@ -46,7 +46,7 @@ class NewsFragment : BaseNewsFragment() {
     private var _binding: FragmentNewsBinding? = null
     private val binding get() = _binding!!
     var user: RealmUserModel? = null
-    
+
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     @Inject
@@ -267,7 +267,7 @@ class NewsFragment : BaseNewsFragment() {
             adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, "news") }
         }
     }
-    
+
     private fun setupSearchTextListener() {
         etSearch.textChanges()
             .debounce(300)
@@ -279,14 +279,14 @@ class NewsFragment : BaseNewsFragment() {
             }
             .launchIn(viewLifecycleOwner.lifecycleScope)
     }
-    
+
     private fun applySearchFilter(list: List<RealmNews?>, queryParam: String? = null): List<RealmNews?> {
         val query = queryParam ?: etSearch.text.toString().trim()
-        
+
         if (query.isEmpty()) {
             return list
         }
-        
+
         val filtered = list.filter { news ->
             val message = news?.message?.trim() ?: ""
             val matches = message.contains(query, ignoreCase = true)
@@ -294,7 +294,7 @@ class NewsFragment : BaseNewsFragment() {
         }
         return filtered
     }
-    
+
     private fun setupLabelFilter(precomputedLabels: List<String>? = null) {
         updateLabelSpinner(precomputedLabels)
 
@@ -310,7 +310,7 @@ class NewsFragment : BaseNewsFragment() {
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
     }
-    
+
     private fun updateLabelSpinner(precomputedLabels: List<String>? = null) {
         val binding = _binding ?: return
         val labels = precomputedLabels ?: collectAllLabels(filteredNewsList)
@@ -327,7 +327,7 @@ class NewsFragment : BaseNewsFragment() {
             binding.filterByLabel.setSelection(0)
         }
     }
-    
+
     private fun collectAllLabels(list: List<RealmNews?>): List<String> {
         labelDisplayToValue.clear()
 
@@ -369,12 +369,12 @@ class NewsFragment : BaseNewsFragment() {
 
         return allLabels.sorted()
     }
-    
+
     private fun applyLabelFilter(list: List<RealmNews?>): List<RealmNews?> {
         if (selectedLabel == "All") {
             return list
         }
-        
+
         return list.filter { news ->
             when {
                 selectedLabel == "Shared Chat" -> {
@@ -390,7 +390,7 @@ class NewsFragment : BaseNewsFragment() {
             }
         }
     }
-    
+
     private fun extractSharedTeamName(news: RealmNews?): String {
         if (!news?.viewIn.isNullOrEmpty()) {
             try {

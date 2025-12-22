@@ -105,5 +105,5 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
         _isMemberFlow.value = false
         super.onDestroy()
     }
-    
+
 }

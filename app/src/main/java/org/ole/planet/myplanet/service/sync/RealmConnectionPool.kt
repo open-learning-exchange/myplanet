@@ -37,7 +37,7 @@ class RealmConnectionPool(
     private val activeConnections = AtomicInteger(0)
     private val connectionSemaphore = Semaphore(config.maxConnections)
     private val poolMutex = Mutex()
-    
+
     private var lastValidationTime = 0L
     suspend fun <T> useRealm(operation: suspend (Realm) -> T): T {
         // Check if current thread already has a realm instance
@@ -45,7 +45,7 @@ class RealmConnectionPool(
         if (existingRealm != null && !existingRealm.isClosed) {
             return operation(existingRealm)
         }
-        
+
         return connectionSemaphore.withPermit {
             val pooledRealm = acquireConnection()
             threadLocalConnections.set(pooledRealm.realm)
@@ -57,13 +57,13 @@ class RealmConnectionPool(
             }
         }
     }
-    
+
     private suspend fun acquireConnection(): PooledRealm = poolMutex.withLock {
         validateConnectionsIfNeeded()
-        
+
         // Try to get an available connection
         var pooledRealm = availableConnections.poll()
-        
+
         if (pooledRealm != null) {
             // Validate the connection before use
             if (isConnectionValid(pooledRealm)) {
@@ -78,7 +78,7 @@ class RealmConnectionPool(
                 closeConnection(pooledRealm)
             }
         }
-        
+
         // Create a new connection if under the limit
         if (allConnections.size < config.maxConnections) {
             pooledRealm = createNewConnection()
@@ -86,10 +86,10 @@ class RealmConnectionPool(
             activeConnections.incrementAndGet()
             return pooledRealm
         }
-        
+
         throw IllegalStateException("Connection pool exhausted and cannot create new connections")
     }
-    
+
     private suspend fun releaseConnection(pooledRealm: PooledRealm) = poolMutex.withLock {
         if (isConnectionValid(pooledRealm)) {
             val updatedConnection = pooledRealm.copy(
@@ -102,7 +102,7 @@ class RealmConnectionPool(
             closeConnection(pooledRealm)
         }
     }
-    
+
     private fun createNewConnection(): PooledRealm {
         val realm = databaseService.realmInstance
         return PooledRealm(
@@ -112,19 +112,19 @@ class RealmConnectionPool(
             isInUse = true
         )
     }
-    
+
     private fun isConnectionValid(pooledRealm: PooledRealm): Boolean {
         if (!config.enableConnectionValidation) return true
-        
+
         return try {
-            !pooledRealm.realm.isClosed && 
+            !pooledRealm.realm.isClosed &&
             pooledRealm.realm.isInTransaction.not() &&
             (System.currentTimeMillis() - pooledRealm.lastUsedAt) < config.idleTimeoutMs
         } catch (e: Exception) {
             false
         }
     }
-    
+
     private fun closeConnection(pooledRealm: PooledRealm) {
         try {
             if (!pooledRealm.realm.isClosed) {
@@ -137,19 +137,19 @@ class RealmConnectionPool(
             activeConnections.decrementAndGet()
         }
     }
-    
+
     private fun validateConnectionsIfNeeded() {
         val now = System.currentTimeMillis()
         if (now - lastValidationTime > config.validationIntervalMs) {
             lastValidationTime = now
-            
+
             // Remove expired connections
-            val expiredConnections = allConnections.values.filter { 
-                !it.isInUse && (now - it.lastUsedAt) > config.idleTimeoutMs 
+            val expiredConnections = allConnections.values.filter {
+                !it.isInUse && (now - it.lastUsedAt) > config.idleTimeoutMs
             }
-            
+
             expiredConnections.forEach { closeConnection(it) }
-            
+
             // Remove expired connections from available queue
             val validConnections = availableConnections.filter { pooledRealm ->
                 allConnections.containsKey(pooledRealm.id) && isConnectionValid(pooledRealm)
@@ -164,17 +164,17 @@ class RealmPoolManager private constructor() {
     companion object {
         @Volatile
         private var INSTANCE: RealmPoolManager? = null
-        
+
         fun getInstance(): RealmPoolManager {
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: RealmPoolManager().also { INSTANCE = it }
             }
         }
     }
-    
+
     private var connectionPool: RealmConnectionPool? = null
     private val mutex = Mutex()
-    
+
     suspend fun initializePool(
         context: Context,
         databaseService: DatabaseService,
@@ -184,10 +184,10 @@ class RealmPoolManager private constructor() {
             connectionPool = RealmConnectionPool(context, databaseService, config)
         }
     }
-    
+
     suspend fun <T> useRealm(operation: suspend (Realm) -> T): T {
         val pool = connectionPool ?: throw IllegalStateException("Pool not initialized")
         return pool.useRealm(operation)
     }
-    
+
 }

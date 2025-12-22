@@ -20,12 +20,12 @@ enum class NetworkSpeed {
 }
 
 class AdaptiveBatchProcessor(private val context: Context) {
-    
+
     private val baseConfig = SyncConfig()
     private var cachedCapabilities: SystemCapabilities? = null
     private var lastCapabilityCheck = 0L
     private val cacheValidityMs = 30000L // 30 seconds
-    
+
     fun getOptimalConfig(table: String): SyncConfig {
         val capabilities = getSystemCapabilities()
         return when (table) {
@@ -35,34 +35,34 @@ class AdaptiveBatchProcessor(private val context: Context) {
             else -> getStandardSyncConfig(capabilities)
         }
     }
-    
+
     private fun getSystemCapabilities(): SystemCapabilities {
         val now = System.currentTimeMillis()
         if (cachedCapabilities != null && (now - lastCapabilityCheck) < cacheValidityMs) {
             return cachedCapabilities!!
         }
-        
+
         val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
         val memInfo = ActivityManager.MemoryInfo()
         activityManager.getMemoryInfo(memInfo)
-        
+
         val capabilities = SystemCapabilities(
             availableMemoryMB = memInfo.availMem / (1024 * 1024),
             cpuCores = Runtime.getRuntime().availableProcessors(),
             networkSpeed = detectNetworkSpeed(),
             isLowMemoryDevice = activityManager.isLowRamDevice
         )
-        
+
         cachedCapabilities = capabilities
         lastCapabilityCheck = now
         return capabilities
     }
-    
+
     private fun detectNetworkSpeed(): NetworkSpeed {
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val network = connectivityManager.activeNetwork ?: return NetworkSpeed.UNKNOWN
         val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return NetworkSpeed.UNKNOWN
-        
+
         return when {
             capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -82,7 +82,7 @@ class AdaptiveBatchProcessor(private val context: Context) {
             else -> NetworkSpeed.SLOW
         }
     }
-    
+
     private fun getResourceSyncConfig(capabilities: SystemCapabilities): SyncConfig {
         val baseBatchSize = when (capabilities.networkSpeed) {
             NetworkSpeed.FAST -> 1000
@@ -90,15 +90,15 @@ class AdaptiveBatchProcessor(private val context: Context) {
             NetworkSpeed.SLOW -> 100
             NetworkSpeed.UNKNOWN -> 250
         }
-        
+
         val memoryAdjustedBatchSize = if (capabilities.isLowMemoryDevice) {
             baseBatchSize / 2
         } else {
             min(baseBatchSize, (capabilities.availableMemoryMB / 10).toInt())
         }
-        
+
         val concurrency = calculateOptimalConcurrency(capabilities)
-        
+
         return baseConfig.copy(
             batchSize = max(50, memoryAdjustedBatchSize),
             concurrencyLevel = concurrency,
@@ -111,14 +111,14 @@ class AdaptiveBatchProcessor(private val context: Context) {
             }
         )
     }
-    
+
     private fun getCourseSyncConfig(capabilities: SystemCapabilities): SyncConfig {
         return getResourceSyncConfig(capabilities).copy(
             batchSize = getResourceSyncConfig(capabilities).batchSize / 2,
             concurrencyLevel = max(1, getResourceSyncConfig(capabilities).concurrencyLevel - 1)
         )
     }
-    
+
     private fun getLibrarySyncConfig(capabilities: SystemCapabilities): SyncConfig {
         return baseConfig.copy(
             batchSize = when (capabilities.networkSpeed) {
@@ -131,7 +131,7 @@ class AdaptiveBatchProcessor(private val context: Context) {
             enableOptimizations = true
         )
     }
-    
+
     private fun getStandardSyncConfig(capabilities: SystemCapabilities): SyncConfig {
         return baseConfig.copy(
             batchSize = 50,
@@ -139,7 +139,7 @@ class AdaptiveBatchProcessor(private val context: Context) {
             enableOptimizations = !capabilities.isLowMemoryDevice
         )
     }
-    
+
     private fun calculateOptimalConcurrency(capabilities: SystemCapabilities): Int {
         val baseConcurrency = when {
             capabilities.isLowMemoryDevice -> 1
@@ -147,7 +147,7 @@ class AdaptiveBatchProcessor(private val context: Context) {
             capabilities.availableMemoryMB < 1024 -> 3
             else -> min(5, capabilities.cpuCores)
         }
-        
+
         return when (capabilities.networkSpeed) {
             NetworkSpeed.FAST -> baseConcurrency
             NetworkSpeed.MEDIUM -> max(1, baseConcurrency - 1)
@@ -155,5 +155,5 @@ class AdaptiveBatchProcessor(private val context: Context) {
             NetworkSpeed.UNKNOWN -> max(1, baseConcurrency - 1)
         }
     }
-    
+
 }

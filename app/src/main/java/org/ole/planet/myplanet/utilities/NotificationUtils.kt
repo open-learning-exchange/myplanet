@@ -170,7 +170,7 @@ object NotificationUtils {
             val notificationId = config.id.hashCode()
             val activeNotifications = notificationManager.activeNotifications
             val isAlreadyShowing = activeNotifications.any { it.id == notificationId }
-            
+
             if (isAlreadyShowing) {
                 return false
             }
@@ -320,13 +320,13 @@ object NotificationUtils {
 
         private fun canShowNotification(type: String): Boolean {
             val notificationsEnabled = notificationManager.areNotificationsEnabled()
-            
+
             if (!notificationsEnabled) {
                 return false
             }
 
             val globalEnabled = preferences.getBoolean(KEY_ENABLED, true)
-            
+
             if (!globalEnabled) {
                 return false
             }
@@ -338,7 +338,7 @@ object NotificationUtils {
                 TYPE_JOIN_REQUEST -> preferences.getBoolean(KEY_TEAM_ENABLED, true)
                 else -> true
             }
-            
+
             return typeEnabled
         }
 

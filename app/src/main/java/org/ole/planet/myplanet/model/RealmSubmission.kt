@@ -82,7 +82,7 @@ open class RealmSubmission : RealmObject() {
                 sub?.parentCode = JsonUtils.getString("parentCode", submission)
                 sub?.parent = GsonUtils.gson.toJson(JsonUtils.getJsonObject("parent", submission))
                 sub?.user = GsonUtils.gson.toJson(JsonUtils.getJsonObject("user", submission))
-                
+
                 if (submission.has("team") && submission.get("team").isJsonObject) {
                     val teamJson = submission.getAsJsonObject("team")
                     val teamRef = mRealm.createObject(RealmTeamReference::class.java)

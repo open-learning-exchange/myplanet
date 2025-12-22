@@ -32,8 +32,8 @@ open class RealmApkLog : RealmObject() {
         if (cause != null) {
             error += """
                 $cause
-                
-                
+
+
                 """.trimIndent()
             val arr = cause.stackTrace
             for (i in arr.indices) {

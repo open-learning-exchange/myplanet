@@ -50,12 +50,12 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     private val serverUrlMapper = ServerUrlMapper()
-    
+
     @Inject
     lateinit var syncManager: SyncManager
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
-    
+
     private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
     private lateinit var realtimeSyncListener: BaseRealtimeSyncListener
     private lateinit var adapterFeedback: AdapterFeedback
@@ -83,7 +83,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
 
         return binding.root
     }
-    
+
     private fun setupRealtimeSync() {
         realtimeSyncListener = object : BaseRealtimeSyncListener() {
             override fun onTableDataUpdated(update: TableDataUpdate) {
@@ -93,14 +93,14 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
                     }
                 }
             }
-            
+
             override fun onSyncStarted() {}
             override fun onSyncComplete() {}
             override fun onSyncFailed(msg: String?) {}
         }
         syncCoordinator.addListener(realtimeSyncListener)
     }
-    
+
     private fun refreshFeedbackListData() {
         onFeedbackSubmitted()
     }

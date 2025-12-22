@@ -36,7 +36,7 @@ class BecomeMemberActivity : BaseActivity() {
     var guest: Boolean = false
     private var usernameWatcher: TextWatcher? = null
     private var passwordWatcher: TextWatcher? = null
-    
+
     private data class MemberInfo(
         val username: String,
         var password: String,

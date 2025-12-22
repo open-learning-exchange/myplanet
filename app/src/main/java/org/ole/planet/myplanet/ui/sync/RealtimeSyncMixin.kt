@@ -24,9 +24,9 @@ class RealtimeSyncHelper(
     private val fragment: Fragment,
     private val mixin: RealtimeSyncMixin
 ) {
-    
+
     private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
-    
+
     private val realtimeSyncListener = object : BaseRealtimeSyncListener() {
         override fun onTableDataUpdated(update: TableDataUpdate) {
             if (mixin.getWatchedTables().contains(update.table)) {
@@ -36,24 +36,24 @@ class RealtimeSyncHelper(
                 }
             }
         }
-        
+
         override fun onSyncStarted() {}
         override fun onSyncComplete() {}
         override fun onSyncFailed(msg: String?) {}
     }
-    
+
     fun setupRealtimeSync() {
         syncCoordinator.addListener(realtimeSyncListener)
-        
+
         // Listen to data update flow
         fragment.lifecycleScope.launch {
             fragment.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 syncCoordinator.dataUpdateFlow
                     .filter { update -> mixin.getWatchedTables().contains(update.table) }
-                    .distinctUntilChanged { old, new -> 
-                        old.table == new.table && 
-                        old.newItemsCount == new.newItemsCount && 
-                        old.updatedItemsCount == new.updatedItemsCount 
+                    .distinctUntilChanged { old, new ->
+                        old.table == new.table &&
+                        old.newItemsCount == new.newItemsCount &&
+                        old.updatedItemsCount == new.updatedItemsCount
                     }
                     .collect { update ->
                         mixin.onDataUpdated(update.table, update)
@@ -64,7 +64,7 @@ class RealtimeSyncHelper(
             }
         }
     }
-    
+
     private fun refreshRecyclerView() {
         fragment.viewLifecycleOwner.lifecycleScope.launch {
             val adapter = mixin.getSyncRecyclerView()?.adapter ?: return@launch
@@ -78,7 +78,7 @@ class RealtimeSyncHelper(
             }
         }
     }
-    
+
     fun cleanup() {
         syncCoordinator.removeListener(realtimeSyncListener)
     }

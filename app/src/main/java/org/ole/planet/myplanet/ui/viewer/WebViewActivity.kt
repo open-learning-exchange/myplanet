@@ -69,27 +69,27 @@ class WebViewActivity : AppCompatActivity() {
             val isLocalResource = intent.getStringExtra("RESOURCE_ID") != null
             javaScriptEnabled = isLocalResource
             javaScriptCanOpenWindowsAutomatically = false
-            
+
             // File access settings - only allow for local resources
             allowFileAccess = isLocalResource
             allowContentAccess = false
             allowFileAccessFromFileURLs = false
             allowUniversalAccessFromFileURLs = false
-            
+
             // Safe settings
             domStorageEnabled = true
             defaultTextEncodingName = "utf-8"
-            
+
             // Security settings
             setSupportZoom(false)
             builtInZoomControls = false
             displayZoomControls = false
-            
+
             // Disable geolocation
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN) {
                 setGeolocationEnabled(false)
             }
-            
+
             // Disable save password
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR2) {
                 setSavePassword(false)
@@ -119,14 +119,14 @@ class WebViewActivity : AppCompatActivity() {
         activityWebViewBinding.contentWebView.wv.webViewClient = object : WebViewClient() {
             override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
                 super.onPageStarted(view, url, favicon)
-                
+
                 // Validate URL before loading
                 if (!isUrlSafe(url)) {
                     view.stopLoading()
                     finish()
                     return
                 }
-                
+
                 if (!url.startsWith("file://") && url.endsWith("/eng/")) {
                     finish()
                 }
@@ -137,10 +137,10 @@ class WebViewActivity : AppCompatActivity() {
                     activityWebViewBinding.contentWebView.webSource.text = i.host
                 }
             }
-            
+
             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                 val url = request?.url?.toString() ?: return true
-                
+
                 // Use our comprehensive URL safety check
                 return !isUrlSafe(url) // Block unsafe URLs, allow safe ones
             }
@@ -201,17 +201,17 @@ class WebViewActivity : AppCompatActivity() {
         cookieManager.removeAllCookies(null)
         cookieManager.flush()
     }
-    
+
     private fun isUrlSafe(url: String): Boolean {
         return try {
             val uri = url.toUri()
             when {
                 // Allow HTTPS URLs
                 uri.scheme == "https" -> true
-                
+
                 // Allow HTTP URLs only for trusted Planet servers
                 uri.scheme == "http" -> isTrustedPlanetServer(uri.host)
-                
+
                 // Allow file URLs only for local resources and only from app's directory
                 uri.scheme == "file" -> {
                     val resourceId = intent.getStringExtra("RESOURCE_ID")
@@ -229,7 +229,7 @@ class WebViewActivity : AppCompatActivity() {
             false
         }
     }
-    
+
     private fun isTrustedPlanetServer(host: String?): Boolean {
         if (host == null) return false
 

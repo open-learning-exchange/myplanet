@@ -225,7 +225,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             apiClientInitialized.complete(Unit)
         }
     }
-    
+
     private suspend fun initializeDatabaseConnection() {
         withContext(Dispatchers.IO) {
             databaseService.withRealm { }

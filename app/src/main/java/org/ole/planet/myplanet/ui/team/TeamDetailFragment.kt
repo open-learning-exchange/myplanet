@@ -52,10 +52,10 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateListener {
-    
+
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
-    
+
     @Inject
     lateinit var syncManager: SyncManager
 

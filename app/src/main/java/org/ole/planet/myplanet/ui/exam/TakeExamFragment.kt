@@ -405,7 +405,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     private var selectedRatingButton: Button? = null
-    
+
     private fun setupRatingScale(oldAnswer: String) {
         val ratingButtons = listOf(
             binding.rbRating1,
@@ -418,7 +418,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             binding.rbRating8,
             binding.rbRating9
         )
-        
+
         ratingButtons.forEachIndexed { index, button ->
             button.setOnClickListener {
                 selectedRatingButton?.isSelected = false
@@ -426,7 +426,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                 button.isSelected = true
                 selectedRatingButton = button
                 ans = (index + 1).toString()
-                
+
                 updateNavButtons()
             }
         }
@@ -435,7 +435,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             selectRatingValue(oldAnswer.toIntOrNull() ?: 1)
         }
     }
-    
+
     private fun selectRatingValue(value: Int) {
         val ratingButtons = listOf(
             binding.rbRating1,
@@ -450,7 +450,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         )
 
         selectedRatingButton?.isSelected = false
-        
+
         if (value in 1..9) {
             val button = ratingButtons[value - 1]
             button.isSelected = true
@@ -608,7 +608,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         } else {
             null
         }
-        
+
         if (sub == null) {
             sub = mRealm.where(RealmSubmission::class.java)
                 .equalTo("status", "pending")

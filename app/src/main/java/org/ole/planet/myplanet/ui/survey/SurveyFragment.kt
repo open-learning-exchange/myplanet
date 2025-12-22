@@ -90,7 +90,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
             bindingDataMap
         )
         prefManager = SharedPrefManager(requireContext())
-        
+
         startExamSync()
     }
 

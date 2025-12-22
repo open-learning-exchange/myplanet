@@ -17,11 +17,11 @@ interface RealtimeSyncListener : SyncListener {
 }
 
 abstract class BaseRealtimeSyncListener : RealtimeSyncListener {
-    
+
     override fun onSyncStarted() {
         // Default implementation - can be overridden
     }
-    
+
     override fun onSyncComplete() {
         // Default implementation - can be overridden
     }

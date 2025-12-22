@@ -109,11 +109,11 @@ open class RealmMyLibrary : RealmObject() {
         if (userId.isNullOrBlank()) return
 
         val executeInTransaction = realm != null && !realm.isInTransaction
-        
+
         if (executeInTransaction) {
             realm.beginTransaction()
         }
-        
+
         try {
             if (this.userId == null) {
                 this.userId = RealmList()
@@ -121,7 +121,7 @@ open class RealmMyLibrary : RealmObject() {
             if (!this.userId!!.contains(userId)) {
                 this.userId?.add(userId)
             }
-            
+
             if (executeInTransaction) {
                 realm.commitTransaction()
             }

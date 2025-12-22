@@ -51,14 +51,14 @@ import org.ole.planet.myplanet.utilities.UrlUtils
 
 @AndroidEntryPoint
 abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
-    
+
     @Inject
     @AppPreferences
     lateinit var appPreferences: SharedPreferences
-    
+
     @Inject
     lateinit var databaseService: DatabaseService
-    
+
     @Inject
     lateinit var uploadManager: UploadManager
 

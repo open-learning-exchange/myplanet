@@ -61,7 +61,7 @@ class RatingFragment : DialogFragment() {
         observeViewModel()
         loadRatingData()
     }
-    
+
     private fun setupUI() {
         binding.ratingBar.onRatingBarChangeListener =
             OnRatingBarChangeListener { _: RatingBar?, _: Float, fromUser: Boolean ->
@@ -82,7 +82,7 @@ class RatingFragment : DialogFragment() {
             }
         }
     }
-    
+
     private fun observeViewModel() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -134,7 +134,7 @@ class RatingFragment : DialogFragment() {
             }
         }
     }
-    
+
     private fun loadRatingData() {
         val userId = settings.getString("userId", "") ?: ""
         if (type != null && id != null && userId.isNotEmpty()) {

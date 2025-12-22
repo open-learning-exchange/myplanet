@@ -9,14 +9,14 @@ import org.ole.planet.myplanet.service.TransactionSyncManager
 class StandardSyncStrategy @Inject constructor(
     private val transactionSyncManager: TransactionSyncManager
 ) : SyncStrategy {
-    
+
     override suspend fun syncTable(
         table: String,
         realm: Realm,
         config: SyncConfig
     ): Flow<SyncResult> = flow {
         val startTime = System.currentTimeMillis()
-        
+
         try {
             // Use the existing TransactionSyncManager for standard sync
             transactionSyncManager.syncDb(table)
@@ -45,7 +45,7 @@ class StandardSyncStrategy @Inject constructor(
             )
         }
     }
-    
+
     override fun getStrategyName(): String = "standard"
 
     override fun isSupported(table: String): Boolean = true

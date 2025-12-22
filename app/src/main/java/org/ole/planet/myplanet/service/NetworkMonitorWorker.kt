@@ -39,13 +39,13 @@ class NetworkMonitorWorker(
                 }
                 wasConnected = isConnected
             }
-            
+
             Result.success()
         } catch (e: Exception) {
             Result.retry()
         }
     }
-    
+
     private fun scheduleServerReachabilityCheck() {
         val inputData = Data.Builder()
             .putBoolean("network_reconnection_trigger", true)

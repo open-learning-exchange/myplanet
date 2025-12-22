@@ -27,7 +27,7 @@ class ChatApiHelper @Inject constructor(
                 result(null)
                 return
             }
-            
+
             val checkProvidersUrl = "${hostUrl}checkProviders/"
 
             apiInterface.checkAiProviders(checkProvidersUrl).enqueue(object : Callback<ResponseBody> {

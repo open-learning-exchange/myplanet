@@ -53,7 +53,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     var user: RealmUserModel? = null
 
     private val viewModel: ReplyViewModel by viewModels()
-    
+
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     @Inject

@@ -95,7 +95,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     lateinit var serverUrlMapper: ServerUrlMapper
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
-    
+
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -234,7 +234,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         tvFragmentInfo = binding.tvFragmentInfo
         if (isMyCourseLib) tvFragmentInfo.setText(R.string.txt_myLibrary)
         checkList()
-        
+
         realtimeSyncHelper = RealtimeSyncHelper(this, this)
         realtimeSyncHelper.setupRealtimeSync()
     }
@@ -668,17 +668,17 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             }
         }
     }
-    
+
     override fun getWatchedTables(): List<String> {
         return listOf("resources")
     }
-    
+
     override fun onDataUpdated(table: String, update: TableDataUpdate) {}
 
     override fun shouldAutoRefresh(table: String): Boolean = true
-    
+
     override fun getSyncRecyclerView(): RecyclerView? {
         return if (::recyclerView.isInitialized) recyclerView else null
     }
-    
+
 }

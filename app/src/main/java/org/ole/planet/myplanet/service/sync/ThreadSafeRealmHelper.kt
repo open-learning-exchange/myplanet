@@ -4,9 +4,9 @@ import io.realm.Realm
 import org.ole.planet.myplanet.datamanager.DatabaseService
 
 object ThreadSafeRealmHelper {
-    
+
     private val threadLocalRealm = ThreadLocal<Realm?>()
-    
+
     fun <T> withRealm(databaseService: DatabaseService, operation: (Realm) -> T): T? {
         return try {
             // Get or create Realm instance for current thread
@@ -15,7 +15,7 @@ object ThreadSafeRealmHelper {
                 threadLocalRealm.set(newRealm)
                 newRealm
             }
-            
+
             if (realm.isClosed) {
                 // If realm is closed, create a new one
                 val newRealm = databaseService.realmInstance
@@ -29,7 +29,7 @@ object ThreadSafeRealmHelper {
             null
         }
     }
-    
+
     fun closeThreadRealm() {
         try {
             val realm = threadLocalRealm.get()
@@ -42,5 +42,5 @@ object ThreadSafeRealmHelper {
             threadLocalRealm.remove()
         }
     }
-    
+
 }

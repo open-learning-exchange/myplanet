@@ -66,7 +66,7 @@ class ChatHistoryListFragment : Fragment() {
     private var shareTargets = ChatShareTargets(null, emptyList(), emptyList())
     private var memoizedShareTargets: ChatShareTargets? = null
     private var searchBarWatcher: TextWatcher? = null
-    
+
     @Inject
     lateinit var syncManager: SyncManager
     @Inject

@@ -33,7 +33,7 @@ class AdapterTeamCourse(
         this.settings = settings
         teamCreator = getTeamCreator(teamId, mRealm)
     }
-    
+
     fun getList(): List<RealmMyCourse> = list
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderTeamCourse {

@@ -193,7 +193,7 @@ class ImprovedSyncManager @Inject constructor(
             SyncMode.Optimized -> "Optimized"
         }
     }
-    
+
     private fun handleException(message: String) {
         if (listener != null) {
             isSyncing = false

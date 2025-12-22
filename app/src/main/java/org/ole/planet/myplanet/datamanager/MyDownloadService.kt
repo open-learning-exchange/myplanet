@@ -109,13 +109,13 @@ class MyDownloadService : Service() {
                 downloadFailed("Invalid URL - empty or blank", fromSync)
                 return
             }
-            
+
             val retrofitInterface = ApiClient.client.create(ApiInterface::class.java)
             if (retrofitInterface == null) {
                 downloadFailed("Network client not available", fromSync)
                 return
             }
-            
+
             val authHeader = header
             if (authHeader.isBlank()) {
                 downloadFailed("Authentication header not available", fromSync)
@@ -146,7 +146,7 @@ class MyDownloadService : Service() {
                         downloadFailed("Empty response body", fromSync)
                         return
                     }
-                    
+
                     try {
                         val contentLength = responseBody.contentLength()
                         if (contentLength > 0 && !checkStorage(contentLength)) {

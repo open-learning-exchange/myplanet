@@ -428,7 +428,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     fun addToLibrary(libraryItems: List<RealmMyLibrary?>, selectedItems: ArrayList<Int>) {
         if (!isRealmInitialized()) return
-        
+
         val userId = profileDbHandler.userModel?.id ?: return
 
         try {
@@ -443,7 +443,7 @@ abstract class BaseResourceFragment : Fragment() {
                     RealmRemovedLog.onAdd(mRealm, "resources", userId, item.resourceId)
                 }
             }
-            
+
             if (mRealm.isInTransaction) {
                 mRealm.commitTransaction()
             }
@@ -472,7 +472,7 @@ abstract class BaseResourceFragment : Fragment() {
                     RealmRemovedLog.onAdd(mRealm, "resources", userId, libraryItem.resourceId)
                 }
             }
-            
+
             if (mRealm.isInTransaction) {
                 mRealm.commitTransaction()
             }

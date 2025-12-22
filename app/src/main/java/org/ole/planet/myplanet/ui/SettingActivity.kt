@@ -70,7 +70,7 @@ class SettingActivity : AppCompatActivity() {
     lateinit var appPreferences: SharedPreferences
 
     @Inject
-    @DefaultPreferences 
+    @DefaultPreferences
     lateinit var defaultPreferences: SharedPreferences
 
     override fun attachBaseContext(base: Context) {

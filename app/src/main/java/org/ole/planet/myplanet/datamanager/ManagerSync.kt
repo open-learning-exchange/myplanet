@@ -37,15 +37,15 @@ class ManagerSync private constructor(
                 listener.onSyncFailed("Username and password are required.")
                 return
             }
-            
+
             listener.onSyncStarted()
-            
+
             val apiInterface = ApiClient.client.create(ApiInterface::class.java)
             if (apiInterface == null) {
                 listener.onSyncFailed("Network client not available.")
                 return
             }
-            
+
             val authHeader = try {
                 "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)
             } catch (e: Exception) {
@@ -53,7 +53,7 @@ class ManagerSync private constructor(
                 listener.onSyncFailed("Authentication encoding failed.")
                 return
             }
-            
+
             val userUrl = try {
                 String.format("%s/_users/%s", UrlUtils.getUrl(), "org.couchdb.user:$userName")
             } catch (e: Exception) {
@@ -144,17 +144,17 @@ class ManagerSync private constructor(
             val selector = JsonObject()
             selector.addProperty("isUserAdmin", true)
             `object`.add("selector", selector)
-            
+
             val apiInterface = ApiClient.client.create(ApiInterface::class.java)
             if (apiInterface == null) {
                 return
             }
-            
+
             val header = UrlUtils.header
             if (header.isBlank()) {
                 return
             }
-            
+
             val url = try {
                 UrlUtils.getUrl() + "/_users/_find"
             } catch (e: Exception) {

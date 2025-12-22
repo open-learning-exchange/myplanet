@@ -221,7 +221,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
             settings.edit { putBoolean(Constants.KEY_LOGIN, false) }
             settings.edit { putBoolean(Constants.KEY_NOTIFICATION_SHOWN, false) }
             NotificationUtils.cancelAll(this@DashboardElementActivity)
-            
+
             val loginScreen = Intent(this@DashboardElementActivity, LoginActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
                 .putExtra("fromLogout", true)

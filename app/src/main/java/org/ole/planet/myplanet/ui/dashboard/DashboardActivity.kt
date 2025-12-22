@@ -96,7 +96,7 @@ import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.NotificationUtils
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
-@AndroidEntryPoint  
+@AndroidEntryPoint
 class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener, NotificationListener {
 
     private lateinit var binding: ActivityDashboardBinding
@@ -468,10 +468,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         if (intent?.getBooleanExtra("auto_navigate", false) == true) {
             isFromNotificationAction = true
             result?.closeDrawer()
-            
+
             val notificationType = intent.getStringExtra("notification_type")
             val relatedId = intent.getStringExtra("related_id")
-            
+
             when (notificationType) {
                 NotificationUtils.TYPE_SURVEY -> {
                     lifecycleScope.launch {
@@ -499,7 +499,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
         }
     }
-    
+
     private suspend fun handleSurveyNavigation(surveyId: String?) {
         if (surveyId != null) {
             val currentStepExam = databaseService.withRealmAsync { realm ->
@@ -511,7 +511,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             AdapterMySubmission.openSurvey(this, currentStepExam?.id, false, false, "")
         }
     }
-    
+
     private suspend fun handleTaskNavigation(taskId: String?) {
         if (taskId == null) return
 
@@ -627,7 +627,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 }
             }
         }
-        
+
         val filter = IntentFilter("org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM")
         if (Build.VERSION.SDK_INT >= 33) {
             registerReceiver(systemNotificationReceiver, filter, RECEIVER_NOT_EXPORTED)
@@ -676,7 +676,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     onNotificationCountUpdated(unreadCount)
 
                     val groupedNotifications = newNotifications.groupBy { it.type }
-                    
+
                     groupedNotifications.forEach { (type, notifications) ->
                         when {
                             notifications.size == 1 -> {
@@ -708,7 +708,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun createSummaryNotification(type: String, count: Int): NotificationUtils.NotificationConfig {
         val summaryId = "summary_${type}"
-        
+
         return when (type) {
             "survey" -> NotificationUtils.NotificationConfig(
                 id = summaryId,
@@ -817,7 +817,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun createNotificationConfigFromDatabase(dbNotification: RealmNotification): NotificationUtils.NotificationConfig? {
         return when (dbNotification.type.lowercase()) {
             "survey" -> notificationManager.createSurveyNotification(
-                dbNotification.id, 
+                dbNotification.id,
                 dbNotification.message
             ).copy(
                 extras = mapOf("surveyId" to (dbNotification.relatedId ?: dbNotification.id))

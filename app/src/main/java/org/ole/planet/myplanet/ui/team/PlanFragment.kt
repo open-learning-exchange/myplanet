@@ -50,7 +50,7 @@ class PlanFragment : BaseTeamFragment() {
                 }
             }
         }
-        
+
         if (team != null) {
             updateUIWithTeamData(team)
             updateButtonVisibility(team!!)
