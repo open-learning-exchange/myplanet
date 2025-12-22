@@ -330,20 +330,68 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private fun addRemoveCourse() {
-        if (!mRealm.isInTransaction) mRealm.beginTransaction()
-        if (currentCourse?.userId?.contains(userModel?.id) == true) {
-            currentCourse?.removeUserId(userModel?.id)
-            onRemove(mRealm, "courses", userModel?.id, courseId)
-        } else {
-            currentCourse?.setUserId(userModel?.id)
-            onAdd(mRealm, "courses", userModel?.id, courseId)
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val isCurrentlyJoined = withContext(Dispatchers.IO) {
+                    databaseService.withRealm { realm ->
+                        val course = realm.where(RealmMyCourse::class.java)
+                            .equalTo("courseId", courseId)
+                            .findFirst()
+                        course?.userId?.contains(userModel?.id) == true
+                    }
+                }
+
+                withContext(Dispatchers.IO) {
+                    val backgroundRealm = databaseService.realmInstance
+                    try {
+                        backgroundRealm.executeTransaction { realm ->
+                            val course = realm.where(RealmMyCourse::class.java)
+                                .equalTo("courseId", courseId)
+                                .findFirst()
+
+                            if (course != null) {
+                                if (isCurrentlyJoined) {
+                                    course.removeUserId(userModel?.id)
+                                } else {
+                                    course.setUserId(userModel?.id)
+                                }
+                            }
+                        }
+
+                        if (isCurrentlyJoined) {
+                            onRemove(backgroundRealm, "courses", userModel?.id, courseId)
+                        } else {
+                            onAdd(backgroundRealm, "courses", userModel?.id, courseId)
+                        }
+                    } finally {
+                        backgroundRealm.close()
+                    }
+                }
+
+                withContext(Dispatchers.Main) {
+                    val updatedCourse = mRealm.where(RealmMyCourse::class.java)
+                        .equalTo("courseId", courseId)
+                        .findFirst()
+                    if (updatedCourse != null) {
+                        currentCourse = mRealm.copyFromRealm(updatedCourse)
+                    }
+
+                    val statusMessage = if (isCurrentlyJoined) {
+                        getString(R.string.removed_from)
+                    } else {
+                        getString(R.string.added_to)
+                    }
+
+                    Utilities.toast(activity, "course $statusMessage ${getString(R.string.my_courses)}")
+                    setCourseData()
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    e.printStackTrace()
+                    Utilities.toast(activity, "Failed to update course: ${e.message}")
+                }
+            }
         }
-        Utilities.toast(activity, "course ${(if (currentCourse?.userId?.contains(userModel?.id) == true) {
-            getString(R.string.added_to)
-        } else {
-            getString(R.string.removed_from)
-        })} ${getString(R.string.my_courses)}")
-        setCourseData()
     }
 
     private suspend fun getCourseProgress(): Int {
