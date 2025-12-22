@@ -1,11 +1,10 @@
 package org.ole.planet.myplanet.repository
 
-import io.realm.RealmResults
+import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import javax.inject.Inject
 
 class ActivityRepositoryImpl @Inject constructor(
     databaseService: DatabaseService

@@ -12,7 +12,6 @@ import com.google.android.material.snackbar.Snackbar
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

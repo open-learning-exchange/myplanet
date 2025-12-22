@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import io.realm.RealmResults
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 

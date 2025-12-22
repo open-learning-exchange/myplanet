@@ -40,6 +40,12 @@
         android:contentDescription="@string/language"
         app:showAsAction="ifRoom" />
     <item
+        android:id="@+id/action_theme"
+        android:icon="@drawable/sun_35"
+        android:title="@string/app_theme"
+        android:contentDescription="@string/app_theme"
+        app:showAsAction="never" />
+    <item
         android:id="@+id/action_about"
         android:icon="@drawable/ic_my_survey"
         android:contentDescription="@string/action_about"

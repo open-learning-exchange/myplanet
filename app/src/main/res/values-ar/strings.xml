@@ -1179,5 +1179,6 @@
     <string name="enterprise_name_already_exists">مؤسسة بهذا الاسم موجودة بالفعل</string>
     <string name="downloading_images_please_check_notification">جارٍ تنزيل الصور، يرجى التحقق من الإشعار…</string>
     <string name="no_images_to_download">لا توجد صور لتنزيلها</string>
+    <string name="app_theme">سمة التطبيق</string>
 
 </resources>

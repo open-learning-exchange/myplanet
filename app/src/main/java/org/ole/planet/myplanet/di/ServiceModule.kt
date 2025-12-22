@@ -16,6 +16,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.service.ImprovedSyncManager
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.TransactionSyncManager
@@ -56,10 +57,11 @@ object ServiceModule {
     fun provideUploadManager(
         @ApplicationContext context: Context,
         databaseService: DatabaseService,
+        submissionRepository: SubmissionRepository,
         @AppPreferences preferences: SharedPreferences,
         gson: Gson
     ): UploadManager {
-        return UploadManager(context, databaseService, preferences, gson)
+        return UploadManager(context, databaseService, submissionRepository, preferences, gson)
     }
 
     @Provides
