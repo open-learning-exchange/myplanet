@@ -42,6 +42,7 @@ import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.LibraryRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
@@ -108,6 +109,8 @@ class SettingActivity : AppCompatActivity() {
         lateinit var profileDbHandler: UserProfileDbHandler
         @Inject
         lateinit var databaseService: DatabaseService
+    @Inject
+    lateinit var libraryRepository: LibraryRepository
         @Inject
         @DefaultPreferences
         lateinit var defaultPref: SharedPreferences
@@ -213,12 +216,7 @@ class SettingActivity : AppCompatActivity() {
                             lifecycleScope.launch {
                                 try {
                                     withTimeout(60 * 1000L) {
-                                        databaseService.executeTransactionAsync { bgRealm ->
-                                            val libraries = bgRealm.where(RealmMyLibrary::class.java).findAll()
-                                            for (library in libraries) {
-                                                library.resourceOffline = false
-                                            }
-                                        }
+                                        libraryRepository.markAllResourcesOffline(false)
                                         val f = File(FileUtils.getOlePath(requireContext()))
                                         withContext(Dispatchers.IO) {
                                             deleteRecursive(f)
