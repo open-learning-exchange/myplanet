@@ -1268,6 +1268,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun showNotificationDisabledReminder() {
+        if (!::binding.isInitialized) return
+
         val snackbar = Snackbar.make(
             binding.root,
             "Notifications are disabled. You might miss important updates.",
