@@ -1,8 +1,10 @@
 package org.ole.planet.myplanet.repository
 
 import io.realm.RealmResults
+import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmOfflineActivity
+import org.ole.planet.myplanet.service.UserProfileDbHandler
 import javax.inject.Inject
 
 class ActivityRepositoryImpl @Inject constructor(
@@ -12,6 +14,13 @@ class ActivityRepositoryImpl @Inject constructor(
         return queryList(RealmOfflineActivity::class.java) {
             equalTo("userName", userName)
             equalTo("type", type)
+        }
+    }
+
+    override suspend fun getOfflineLogins(userName: String): Flow<List<RealmOfflineActivity>> {
+        return queryListFlow(RealmOfflineActivity::class.java) {
+            equalTo("userName", userName)
+            equalTo("type", UserProfileDbHandler.KEY_LOGIN)
         }
     }
 }
