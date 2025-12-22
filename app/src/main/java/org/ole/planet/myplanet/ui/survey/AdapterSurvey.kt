@@ -223,6 +223,7 @@ class AdapterSurvey(
                                 _rev = null
                                 createdDate = System.currentTimeMillis()
                                 updatedDate = System.currentTimeMillis()
+                                adoptionDate = System.currentTimeMillis()
                                 createdBy = userModel?.id
                                 totalMarks = exam.totalMarks
                                 name = "${exam.name} - $teamName"
