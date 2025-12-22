@@ -63,6 +63,7 @@ import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.makeExpandable
+import kotlin.coroutines.cancellation.CancellationException
 
 class AdapterNews(var context: Context, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userProfileDbHandler: UserProfileDbHandler, private val scope: CoroutineScope, private val userRepository: UserRepository, private val newsRepository: NewsRepository, private val teamRepository: TeamRepository) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
     DiffUtils.itemCallback(
@@ -501,8 +502,10 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
                         btnShowReply.visibility = if (visible) View.VISIBLE else View.GONE
                     }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                android.util.Log.e("AdapterNews", "Failed to get replies", e)
+                e.printStackTrace()
             }
         }
     }
