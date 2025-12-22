@@ -20,6 +20,8 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
 import org.ole.planet.myplanet.service.UploadToShelfService
 import org.ole.planet.myplanet.ui.myhealth.HealthRecord
+import java.text.Normalizer
+import java.util.regex.Pattern
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.UrlUtils
 
@@ -378,5 +380,58 @@ class UserRepositoryImpl @Inject constructor(
             realm.copyFromRealm(users).filter { it.id != null }.associateBy { it.id!! }
         }
         HealthRecord(mh, mm, list, userMap)
+    }
+
+    override suspend fun validateUsername(username: String): String? {
+        val specialCharPattern = Pattern.compile(
+            ".*[ßäöüéèêæÆœøØ¿àìòùÀÈÌÒÙáíóúýÁÉÍÓÚÝâîôûÂÊÎÔÛãñõÃÑÕëïÿÄËÏÖÜŸåÅŒçÇðÐ].*"
+        )
+
+        val firstChar = username.firstOrNull()
+        when {
+            username.isEmpty() -> return context.getString(R.string.username_cannot_be_empty)
+            username.contains(" ") -> return context.getString(R.string.invalid_username)
+            firstChar != null && !firstChar.isDigit() && !firstChar.isLetter() ->
+                return context.getString(R.string.must_start_with_letter_or_number)
+            username.any { it != '_' && it != '.' && it != '-' && !it.isDigit() && !it.isLetter() } ||
+            specialCharPattern.matcher(username).matches() ||
+            !Normalizer.normalize(username, Normalizer.Form.NFD).codePoints().allMatch { code ->
+                Character.isLetterOrDigit(code) || code == '.'.code || code == '-'.code || code == '_'.code
+            } -> return context.getString(R.string.only_letters_numbers_and_are_allowed)
+        }
+
+        val isTaken = withRealm { realm ->
+            realm.where(RealmUserModel::class.java)
+                .equalTo("name", username)
+                .not().beginsWith("_id", "guest")
+                .count() > 0L
+        }
+
+        return if (isTaken) context.getString(R.string.username_taken) else null
+    }
+
+    override suspend fun cleanupDuplicateUsers() {
+        withRealm { realm ->
+            val allUsers = realm.where(RealmUserModel::class.java).findAll()
+            val usersByName = allUsers.groupBy { it.name }
+
+            usersByName.forEach { (_, users) ->
+                if (users.size > 1) {
+                    val sortedUsers = users.sortedWith { user1, user2 ->
+                        when {
+                            user1._id?.startsWith("org.couchdb.user:") == true &&
+                                    user2._id?.startsWith("guest_") == true -> -1
+                            user1._id?.startsWith("guest_") == true &&
+                                    user2._id?.startsWith("org.couchdb.user:") == true -> 1
+                            else -> 0
+                        }
+                    }
+
+                    for (i in 1 until sortedUsers.size) {
+                        sortedUsers[i].deleteFromRealm()
+                    }
+                }
+            }
+        }
     }
 }
