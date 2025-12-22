@@ -38,7 +38,6 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.TeamNotificationInfo
 import org.ole.planet.myplanet.service.TransactionSyncManager
-import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_LOGIN
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
 import org.ole.planet.myplanet.ui.myhealth.UserListArrayAdapter
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
@@ -100,13 +99,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
                 mRealm.commitTransaction()
             }
 
-            viewLifecycleOwner.lifecycleScope.launch {
-                val offlineVisits = model?.name?.let {
-                    viewModel.getOfflineActivities(it, KEY_LOGIN).size
-                } ?: 0
-                v.findViewById<TextView>(R.id.txtFullName).text =
-                    getString(R.string.user_name, fullName, offlineVisits)
-            }
             v.findViewById<TextView>(R.id.txtRole).text =
                 getString(R.string.user_role, model?.getRoleAsString())
         }
@@ -167,6 +159,15 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
                     .distinctUntilChanged()
                     .collect { teams ->
                         renderMyTeams(teams)
+                    }
+            }
+            launch {
+                viewModel.uiState
+                    .map { it.offlineLogins }
+                    .distinctUntilChanged()
+                    .collect { offlineLogins ->
+                        view?.findViewById<TextView>(R.id.txtFullName)?.text =
+                            getString(R.string.user_name, fullName, offlineLogins)
                     }
             }
         }

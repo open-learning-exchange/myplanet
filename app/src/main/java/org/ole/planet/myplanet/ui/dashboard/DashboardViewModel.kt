@@ -34,6 +34,7 @@ data class DashboardUiState(
     val courses: List<RealmMyCourse> = emptyList(),
     val teams: List<RealmMyTeam> = emptyList(),
     val users: List<RealmUserModel> = emptyList(),
+    val offlineLogins: Int = 0,
 )
 
 @HiltViewModel
@@ -124,6 +125,16 @@ class DashboardViewModel @Inject constructor(
             val teamsFlowJob = launch {
                 teamRepository.getMyTeamsFlow(userId).collect { teams ->
                     _uiState.update { it.copy(teams = teams) }
+                }
+            }
+
+            launch {
+                val user = userRepository.getUserById(userId)
+                val userName = user?.name
+                if (userName != null) {
+                    activityRepository.getOfflineLogins(userName).collect { logins ->
+                        _uiState.update { it.copy(offlineLogins = logins.size) }
+                    }
                 }
             }
 
