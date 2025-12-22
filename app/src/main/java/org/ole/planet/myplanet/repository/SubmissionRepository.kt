@@ -28,4 +28,5 @@ interface SubmissionRepository {
     suspend fun markSubmissionComplete(id: String, payload: com.google.gson.JsonObject)
     suspend fun getSubmissionDetail(submissionId: String): org.ole.planet.myplanet.ui.submission.SubmissionDetail?
     fun getNormalizedSubmitterName(submission: RealmSubmission): String?
+    suspend fun getSubmissionsByParentId(parentId: String?, userId: String?): List<RealmSubmission>
 }

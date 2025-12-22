@@ -333,4 +333,12 @@ class SubmissionRepositoryImpl @Inject constructor(
             }
         }.getOrNull()
     }
+
+    override suspend fun getSubmissionsByParentId(parentId: String?, userId: String?): List<RealmSubmission> {
+        return queryList(RealmSubmission::class.java) {
+            equalTo("parentId", parentId)
+                .equalTo("userId", userId)
+                .sort("lastUpdateTime", Sort.DESCENDING)
+        }
+    }
 }
