@@ -48,6 +48,10 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
+    abstract fun bindActivityRepository(impl: ActivityRepositoryImpl): ActivityRepository
+
+    @Binds
+    @Singleton
     abstract fun bindConfigurationRepository(impl: ConfigurationRepositoryImpl): ConfigurationRepository
 
     @Binds
@@ -113,8 +117,4 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindUserRepository(impl: UserRepositoryImpl): UserRepository
-
-    @Binds
-    @Singleton
-    abstract fun bindActivityRepository(impl: ActivityRepositoryImpl): ActivityRepository
 }
