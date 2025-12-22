@@ -163,7 +163,8 @@
                             android:hint="@string/my_purpose_description"
                             android:textSize="20sp"
                             android:textColor="@color/daynight_textColor"
-                            android:backgroundTint="@color/daynight_textColor" />
+                            android:backgroundTint="@color/daynight_textColor"
+                            android:inputType="textCapWords|textPersonName"/>
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
@@ -180,7 +181,8 @@
                             android:hint="@string/my_goals_description"
                             android:textSize="20sp"
                             android:textColor="@color/daynight_textColor"
-                            android:backgroundTint="@color/daynight_textColor" />
+                            android:backgroundTint="@color/daynight_textColor"
+                            android:inputType="textCapWords|textPersonName"/>
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
@@ -197,7 +199,8 @@
                             android:hint="@string/summary_of_achievemnets"
                             android:textSize="20sp"
                             android:textColor="@color/daynight_textColor"
-                            android:backgroundTint="@color/daynight_textColor" />
+                            android:backgroundTint="@color/daynight_textColor"
+                            android:inputType="textCapWords|textPersonName"/>
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <TextView
