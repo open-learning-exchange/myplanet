@@ -108,7 +108,7 @@ class AdapterJoinedMember(
                 member.dob.toString().substringBefore("T"),
                 member.language.toString(),
                 member.phoneNumber.toString(),
-                memberData.offlineVisits,
+                "${memberData.visitCount}",
                 memberData.profileLastVisit,
                 "${member.firstName} ${member.lastName}",
                 member.level.toString(),

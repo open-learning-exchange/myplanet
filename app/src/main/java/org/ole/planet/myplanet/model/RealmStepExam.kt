@@ -13,6 +13,7 @@ open class RealmStepExam : RealmObject() {
     var _rev: String? = null
     var createdDate: Long = 0
     var updatedDate: Long = 0
+    var adoptionDate: Long = 0
     var createdBy: String? = null
     var totalMarks = 0
     var name: String? = null
@@ -60,6 +61,7 @@ open class RealmStepExam : RealmObject() {
                 myExam?.sourcePlanet = JsonUtils.getString("sourcePlanet", exam)
                 myExam?.createdDate = JsonUtils.getLong("createdDate", exam)
                 myExam?.updatedDate = JsonUtils.getLong("updatedDate", exam)
+                myExam?.adoptionDate = JsonUtils.getLong("adoptionDate", exam)
                 myExam?.totalMarks = JsonUtils.getInt("totalMarks", exam)
                 myExam?.noOfQuestions = JsonUtils.getJsonArray("questions", exam).size()
                 myExam?.isFromNation = !TextUtils.isEmpty(parentId)
@@ -102,6 +104,7 @@ open class RealmStepExam : RealmObject() {
             `object`.addProperty("type", exam.type)
             `object`.addProperty("updatedDate", exam.updatedDate)
             `object`.addProperty("createdDate", exam.createdDate)
+            `object`.addProperty("adoptionDate", exam.adoptionDate)
             `object`.addProperty("sourcePlanet", exam.sourcePlanet)
             `object`.addProperty("totalMarks", exam.totalMarks)
             `object`.addProperty("createdBy", exam.createdBy)
