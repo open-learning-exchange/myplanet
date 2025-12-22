@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import io.realm.RealmResults
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 
 interface ActivityRepository {

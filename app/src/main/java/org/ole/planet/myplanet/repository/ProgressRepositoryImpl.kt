@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import org.ole.planet.myplanet.utilities.GsonUtils
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import javax.inject.Inject
@@ -12,6 +11,7 @@ import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.utilities.GsonUtils
 
 class ProgressRepositoryImpl @Inject constructor(databaseService: DatabaseService) : RealmRepository(databaseService), ProgressRepository {
     override suspend fun fetchCourseData(userId: String?): JsonArray {
