@@ -29,4 +29,5 @@ interface SubmissionRepository {
     suspend fun getSubmissionDetail(submissionId: String): org.ole.planet.myplanet.ui.submission.SubmissionDetail?
     fun getNormalizedSubmitterName(submission: RealmSubmission): String?
     suspend fun getAllPendingSubmissions(): List<RealmSubmission>
+    suspend fun getSubmissionsByParentId(parentId: String?, userId: String?): List<RealmSubmission>
 }

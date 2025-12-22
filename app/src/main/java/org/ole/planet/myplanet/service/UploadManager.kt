@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.service
 import android.content.Context
 import android.content.SharedPreferences
 import android.text.TextUtils
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -509,13 +510,36 @@ class UploadManager @Inject constructor(
         }
     }
 
-    suspend fun uploadSubmissions() {
+    suspend fun uploadSubmissions(buttonClickTime: Long = 0L) {
+        Log.d("UploadManager", "uploadSubmissions called with buttonClickTime: $buttonClickTime")
+        val startTime = if (buttonClickTime > 0) buttonClickTime else System.currentTimeMillis()
+
+        if (buttonClickTime > 0) {
+            Log.d("UploadManager", "Mini survey sync timer started from button click at: $startTime")
+        } else {
+            Log.d("UploadManager", "Mini survey sync started at: $startTime (buttonClickTime was $buttonClickTime)")
+        }
+
         val apiInterface = client.create(ApiInterface::class.java)
 
         try {
             databaseService.executeTransactionAsync { transactionRealm ->
                 val list: List<RealmSubmission> = transactionRealm.where(RealmSubmission::class.java)
                     .equalTo("isUpdated", true).or().isEmpty("_id").findAll()
+
+                Log.d("UploadManager", "Found ${list.size} submissions to upload")
+                if (list.isEmpty()) {
+                    // Debug: Show all submissions to understand why none matched
+                    val allSubmissions = transactionRealm.where(RealmSubmission::class.java).findAll()
+                    Log.d("UploadManager", "Total submissions in DB: ${allSubmissions.size}")
+                    allSubmissions.take(5).forEach { sub ->
+                        Log.d("UploadManager", "  Submission: id=${sub.id}, _id=${sub._id}, isUpdated=${sub.isUpdated}, status=${sub.status}")
+                    }
+                } else {
+                    list.forEach { sub ->
+                        Log.d("UploadManager", "  Will upload: id=${sub.id}, _id=${sub._id}, isUpdated=${sub.isUpdated}")
+                    }
+                }
 
                 list.processInBatches { submission ->
                     try {
@@ -548,6 +572,11 @@ class UploadManager @Inject constructor(
             }
         } catch (e: Exception) {
             e.printStackTrace()
+        } finally {
+            val endTime = System.currentTimeMillis()
+            val duration = endTime - startTime
+            Log.d("UploadManager", "Mini survey sync completed at: $endTime")
+            Log.d("UploadManager", "Total time from button click to sync completion: ${duration}ms (${duration / 1000.0}s)")
         }
     }
 

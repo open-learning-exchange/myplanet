@@ -63,7 +63,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     private var fullName: String? = null
     private var params = LinearLayout.LayoutParams(250, 100)
     private var di: DialogUtils.CustomProgressDialog? = null
-    private lateinit var offlineActivitiesResults: RealmResults<RealmOfflineActivity>
 
     @Inject
     lateinit var transactionSyncManager: TransactionSyncManager
@@ -105,17 +104,15 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
                 mRealm.commitTransaction()
             }
 
-            if (isRealmInitialized()) {
-                offlineActivitiesResults = mRealm.where(RealmOfflineActivity::class.java)
-                    .equalTo("userName", model?.name)
-                    .equalTo("type", KEY_LOGIN)
-                    .findAllAsync()
+            viewLifecycleOwner.lifecycleScope.launch {
+                val offlineVisits = model?.name?.let {
+                    viewModel.getOfflineActivities(it, KEY_LOGIN).size
+                } ?: 0
+                v.findViewById<TextView>(R.id.txtFullName).text =
+                    getString(R.string.user_name, fullName, offlineVisits)
             }
             v.findViewById<TextView>(R.id.txtRole).text =
                 getString(R.string.user_role, model?.getRoleAsString())
-            val offlineVisits = profileDbHandler.offlineVisits
-            v.findViewById<TextView>(R.id.txtFullName).text =
-                getString(R.string.user_name, fullName, offlineVisits)
         }
     }
 
