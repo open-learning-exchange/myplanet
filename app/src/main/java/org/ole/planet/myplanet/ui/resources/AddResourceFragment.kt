@@ -62,7 +62,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
     private lateinit var requestCameraLauncher: ActivityResultLauncher<String>
     private var type: Int = 0
     @Inject
-    lateinit var myPersonalRepository: PersonalRepository
+    lateinit var personalRepository: PersonalRepository
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -263,7 +263,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
             startActivity(Intent(activity, AddResourceActivity::class.java).putExtra("resource_local_url", path))
         } else {
             val userModel = userProfileDbHandler.userModel ?: return
-            showAlert(requireContext(), path, myPersonalRepository, userModel.id, userModel.name, viewLifecycleOwner.lifecycleScope) {
+            showAlert(requireContext(), path, personalRepository, userModel.id, userModel.name, viewLifecycleOwner.lifecycleScope) {
                 dismiss()
             }
         }

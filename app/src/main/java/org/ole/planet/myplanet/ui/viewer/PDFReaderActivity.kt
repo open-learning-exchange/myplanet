@@ -36,7 +36,7 @@ class PDFReaderActivity : AppCompatActivity(), AudioRecordListener {
     private lateinit var audioRecorderService: AudioRecorderService
     private var fileName: String? = null
     @Inject
-    lateinit var myPersonalRepository: PersonalRepository
+    lateinit var personalRepository: PersonalRepository
     @Inject
     lateinit var libraryRepository: LibraryRepository
     @Inject
@@ -123,7 +123,7 @@ class PDFReaderActivity : AppCompatActivity(), AudioRecordListener {
             AddResourceFragment.showAlert(
                 this,
                 outputFile,
-                myPersonalRepository,
+                personalRepository,
                 userModel.id,
                 userModel.name,
                 lifecycleScope
