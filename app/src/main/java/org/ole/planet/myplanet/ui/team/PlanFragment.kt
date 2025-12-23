@@ -19,6 +19,7 @@ import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
 import org.ole.planet.myplanet.databinding.FragmentPlanBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -165,7 +166,7 @@ class PlanFragment : BaseTeamFragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val teamTypeForValidation = team.type ?: "team"
-                val nameExists = teamRepository.isTeamNameExists(name, teamTypeForValidation, teamIdentifier)
+                val nameExists = teamsRepository.isTeamNameExists(name, teamTypeForValidation, teamIdentifier)
 
                 if (nameExists) {
                     val duplicateMessage = if (isEnterprise) {
@@ -178,7 +179,7 @@ class PlanFragment : BaseTeamFragment() {
                     return@launch
                 }
 
-                val wasUpdated = teamRepository.updateTeamDetails(
+                val wasUpdated = teamsRepository.updateTeamDetails(
                     teamId = teamIdentifier,
                     name = name,
                     description = descriptionToSave,
@@ -190,7 +191,7 @@ class PlanFragment : BaseTeamFragment() {
                 )
 
                 if (wasUpdated) {
-                    val refreshedTeam = teamRepository.getTeamByDocumentIdOrTeamId(teamIdentifier)
+                    val refreshedTeam = teamsRepository.getTeamByDocumentIdOrTeamId(teamIdentifier)
                         ?: (this@PlanFragment.team ?: team)
 
                     refreshedTeam.apply {

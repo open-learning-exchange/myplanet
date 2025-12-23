@@ -15,7 +15,7 @@ import org.ole.planet.myplanet.repository.TeamsRepository
 
 @HiltViewModel
 class TeamViewModel @Inject constructor(
-    private val teamRepository: TeamsRepository
+    private val teamsRepository: TeamsRepository
 ) : ViewModel() {
     private val _teamData = MutableStateFlow<List<TeamData>>(emptyList())
     val teamData: StateFlow<List<TeamData>> = _teamData
@@ -36,8 +36,8 @@ class TeamViewModel @Inject constructor(
 
                 val teamIds = validTeams.mapNotNull { it._id }
 
-                val visitCountsDeferred = async { teamRepository.getRecentVisitCounts(teamIds) }
-                val memberStatusesDeferred = async { teamRepository.getTeamMemberStatuses(userId, teamIds) }
+                val visitCountsDeferred = async { teamsRepository.getRecentVisitCounts(teamIds) }
+                val memberStatusesDeferred = async { teamsRepository.getTeamMemberStatuses(userId, teamIds) }
 
                 val visitCounts = visitCountsDeferred.await()
                 val memberStatuses = memberStatusesDeferred.await()
@@ -83,16 +83,16 @@ class TeamViewModel @Inject constructor(
 
     fun requestToJoin(teamId: String, userId: String?, userPlanetCode: String?, teamType: String?) {
         viewModelScope.launch {
-            teamRepository.requestToJoin(teamId, userId, userPlanetCode, teamType)
-            teamRepository.syncTeamActivities()
+            teamsRepository.requestToJoin(teamId, userId, userPlanetCode, teamType)
+            teamsRepository.syncTeamActivities()
             prepareTeamData(currentTeams, userId)
         }
     }
 
     fun leaveTeam(teamId: String, userId: String?) {
         viewModelScope.launch {
-            teamRepository.leaveTeam(teamId, userId)
-            teamRepository.syncTeamActivities()
+            teamsRepository.leaveTeam(teamId, userId)
+            teamsRepository.syncTeamActivities()
             prepareTeamData(currentTeams, userId)
         }
     }

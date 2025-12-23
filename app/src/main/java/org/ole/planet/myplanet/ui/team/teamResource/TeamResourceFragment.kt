@@ -25,6 +25,7 @@ import org.ole.planet.myplanet.databinding.FragmentTeamResourceBinding
 import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.CheckboxListView
 
@@ -65,8 +66,8 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdat
         val safeActivity = activity ?: return
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val libraries = teamRepository.getTeamResources(teamId)
-            val canRemoveResources = teamRepository.isTeamLeader(teamId, user?.id)
+            val libraries = teamsRepository.getTeamResources(teamId)
+            val canRemoveResources = teamsRepository.isTeamLeader(teamId, user?.id)
 
             if (!::adapterLibrary.isInitialized) {
                 adapterLibrary = AdapterTeamResource(
@@ -91,7 +92,7 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdat
         val safeActivity = activity ?: return
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val existing = teamRepository.getTeamResources(teamId)
+            val existing = teamsRepository.getTeamResources(teamId)
             val existingIds = existing.mapNotNull { it._id }
             val availableLibraries = libraryRepository.getAllLibraryItems()
                 .filter { it._id !in existingIds }
@@ -113,7 +114,7 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdat
                     val selectedResources = myLibraryAlertdialogBinding.alertDialogListView.selectedItemsList
                         .map { index -> availableLibraries[index] }
                     viewLifecycleOwner.lifecycleScope.launch {
-                        teamRepository.addResourceLinks(teamId, selectedResources, user)
+                        teamsRepository.addResourceLinks(teamId, selectedResources, user)
                         showLibraryList()
                     }
                 }.setNegativeButton(R.string.cancel, null)
@@ -158,7 +159,7 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdat
         }
         viewLifecycleOwner.lifecycleScope.launch {
             runCatching {
-                teamRepository.removeResourceLink(teamId, resourceId)
+                teamsRepository.removeResourceLink(teamId, resourceId)
             }.onSuccess {
                 adapterLibrary.removeResourceAt(position)
             }.onFailure {

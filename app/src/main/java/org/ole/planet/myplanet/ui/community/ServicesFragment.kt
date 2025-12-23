@@ -12,6 +12,7 @@ import org.ole.planet.myplanet.databinding.FragmentServicesBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper.replaceFragment
+import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
@@ -54,7 +55,7 @@ class ServicesFragment : BaseTeamFragment() {
         binding?.let { setMarkdownText(it.tvDescription, markdownContentWithLocalPaths) }
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val links = teamRepository.getTeamLinks()
+            val links = teamsRepository.getTeamLinks()
             val currentBinding = binding ?: return@launch
             if (links.isEmpty()) {
                 currentBinding.llServices.visibility = View.GONE
@@ -86,7 +87,7 @@ class ServicesFragment : BaseTeamFragment() {
                 if (route != null && route.size >= 4) {
                     val teamId = route[3]
                     viewLifecycleOwner.lifecycleScope.launch {
-                        val isMyTeam = teamRepository.isMember(user?.id, teamId)
+                        val isMyTeam = teamsRepository.isMember(user?.id, teamId)
 
                         val f = TeamDetailFragment()
                         val args = Bundle().apply {

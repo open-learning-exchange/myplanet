@@ -15,6 +15,6 @@ interface WorkerDependenciesEntryPoint {
     fun databaseService(): DatabaseService
     fun userProfileDbHandler(): UserProfileDbHandler
     fun uploadManager(): UploadManager
-    fun teamRepository(): TeamsRepository
+    fun teamsRepository(): TeamsRepository
     fun submissionRepository(): SubmissionRepository
 }

@@ -63,7 +63,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     @Inject
     lateinit var newsRepository: NewsRepository
     @Inject
-    lateinit var teamRepository: TeamsRepository
+    lateinit var teamsRepository: TeamsRepository
 
     private lateinit var imageList: RealmList<String>
     private var llImage: ViewGroup? = null
@@ -98,7 +98,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         lifecycleScope.launch {
             val (news, list) = viewModel.getNewsWithReplies(id)
             databaseService.withRealm { realm ->
-                newsAdapter = AdapterNews(this@ReplyActivity, user, news, "", null, userProfileDbHandler, lifecycleScope, userRepository, newsRepository, teamRepository)
+                newsAdapter = AdapterNews(this@ReplyActivity, user, news, "", null, userProfileDbHandler, lifecycleScope, userRepository, newsRepository, teamsRepository)
                 newsAdapter.sharedPrefManager = sharedPrefManager
                 newsAdapter.setListener(this@ReplyActivity)
                 newsAdapter.setmRealm(realm)

@@ -42,7 +42,7 @@ class DashboardViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val libraryRepository: LibraryRepository,
     private val courseRepository: CourseRepository,
-    private val teamRepository: TeamsRepository,
+    private val teamsRepository: TeamsRepository,
     private val submissionRepository: SubmissionRepository,
     private val notificationRepository: NotificationRepository,
     private val surveyRepository: SurveyRepository,
@@ -123,7 +123,7 @@ class DashboardViewModel @Inject constructor(
             }
 
             val teamsFlowJob = launch {
-                teamRepository.getMyTeamsFlow(userId).collect { teams ->
+                teamsRepository.getMyTeamsFlow(userId).collect { teams ->
                     _uiState.update { it.copy(teams = teams) }
                 }
             }

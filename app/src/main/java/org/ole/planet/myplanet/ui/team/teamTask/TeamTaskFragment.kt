@@ -32,6 +32,7 @@ import org.ole.planet.myplanet.databinding.FragmentTeamTaskBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.ui.myhealth.UserListArrayAdapter
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.ui.team.teamTask.AdapterTask.OnCompletedListener
@@ -99,7 +100,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
 
             if (!t.assignee.isNullOrBlank()) {
                 lifecycleScope.launch {
-                    val assigneeUser = teamRepository.getAssignee(t.assignee!!)
+                    val assigneeUser = teamsRepository.getAssignee(t.assignee!!)
                     if (assigneeUser != null) {
                         selectedAssignee = assigneeUser
                         val displayName = assigneeUser.getFullName().ifBlank {
@@ -122,7 +123,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
         // Handle member assignment
         alertTaskBinding.tvAssignMember.setOnClickListener {
             lifecycleScope.launch {
-                val userList = teamRepository.getJoinedMembers(teamId)
+                val userList = teamsRepository.getJoinedMembers(teamId)
                 val filteredUserList = userList.filter { user -> user.getFullName().isNotBlank() || !user.name.isNullOrBlank() }
 
                 if (filteredUserList.isEmpty()) {
@@ -195,9 +196,9 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
             }
 
             if (teamTask == null) {
-                teamRepository.createTask(task, desc, deadlineMillis, teamId, assigneeId)
+                teamsRepository.createTask(task, desc, deadlineMillis, teamId, assigneeId)
             } else {
-                teamRepository.updateTask(teamTask.id!!, task, desc, deadlineMillis, assigneeId)
+                teamsRepository.updateTask(teamTask.id!!, task, desc, deadlineMillis, assigneeId)
             }
 
             Utilities.toast(
@@ -234,7 +235,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
                     }
                 }
                 launch {
-                    teamRepository.getTasksByTeamId(teamId).collect { tasks ->
+                    teamsRepository.getTasksByTeamId(teamId).collect { tasks ->
                         list = tasks
                         updateTasks()
                     }
@@ -276,7 +277,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
     override fun onCheckChange(realmTeamTask: RealmTeamTask?, completed: Boolean) {
         val taskId = realmTeamTask?.id ?: return
         viewLifecycleOwner.lifecycleScope.launch {
-            teamRepository.setTaskCompletion(taskId, completed)
+            teamsRepository.setTaskCompletion(taskId, completed)
         }
     }
 
@@ -287,7 +288,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
     override fun onDelete(task: RealmTeamTask?) {
         val taskId = task?.id ?: return
         viewLifecycleOwner.lifecycleScope.launch {
-            teamRepository.deleteTask(taskId)
+            teamsRepository.deleteTask(taskId)
             Utilities.toast(activity, getString(R.string.task_deleted_successfully))
         }
     }
@@ -299,7 +300,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
         }
 
         lifecycleScope.launch {
-            val userList = teamRepository.getJoinedMembers(teamId)
+            val userList = teamsRepository.getJoinedMembers(teamId)
             val filteredUserList = userList.filter { user -> user.getFullName().isNotBlank() || !user.name.isNullOrBlank() }
 
             if (filteredUserList.isEmpty()) {
@@ -326,7 +327,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
                         return@setPositiveButton
                     }
                     viewLifecycleOwner.lifecycleScope.launch {
-                        teamRepository.assignTask(taskId, user.id)
+                        teamsRepository.assignTask(taskId, user.id)
                         Utilities.toast(activity, getString(R.string.assign_task_to) + " " + user.name)
                         updateTasks()
                     }

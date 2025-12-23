@@ -74,7 +74,7 @@ class ChatHistoryListFragment : Fragment() {
     @Inject
     lateinit var userRepository: UserRepository
     @Inject
-    lateinit var teamRepository: TeamsRepository
+    lateinit var teamsRepository: TeamsRepository
     @Inject
     lateinit var newsRepository: NewsRepository
     @Inject
@@ -317,14 +317,14 @@ class ChatHistoryListFragment : Fragment() {
     }
 
     private suspend fun loadShareTargets(parentCode: String?, communityName: String?): ChatShareTargets {
-        val teams = teamRepository.getShareableTeams()
-        val enterprises = teamRepository.getShareableEnterprises()
+        val teams = teamsRepository.getShareableTeams()
+        val enterprises = teamsRepository.getShareableEnterprises()
         val communityId = if (!communityName.isNullOrBlank() && !parentCode.isNullOrBlank()) {
             "$communityName@$parentCode"
         } else {
             null
         }
-        val community = communityId?.let { teamRepository.getTeamById(it) }
+        val community = communityId?.let { teamsRepository.getTeamById(it) }
         return ChatShareTargets(community, teams, enterprises)
     }
 

@@ -254,7 +254,7 @@ class FinanceFragment : BaseTeamFragment() {
                         return@setPositiveButton
                     }
                     viewLifecycleOwner.lifecycleScope.launch {
-                        val result = teamRepository.createTransaction(
+                        val result = teamsRepository.createTransaction(
                             teamId = teamId,
                             type = type,
                             note = note,
@@ -319,7 +319,7 @@ class FinanceFragment : BaseTeamFragment() {
     ) {
         transactionsJob?.cancel()
         transactionsJob = viewLifecycleOwner.lifecycleScope.launch {
-            teamRepository.getTeamTransactionsWithBalance(
+            teamsRepository.getTeamTransactionsWithBalance(
                 teamId = teamId,
                 startDate = startDate,
                 endDate = endDate,

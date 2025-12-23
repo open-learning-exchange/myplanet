@@ -31,6 +31,7 @@ import org.ole.planet.myplanet.databinding.DialogAddReportBinding
 import org.ole.planet.myplanet.databinding.FragmentReportsBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
@@ -145,7 +146,7 @@ class ReportsFragment : BaseTeamFragment() {
                         addProperty("updated", true)
                     }
                     viewLifecycleOwner.lifecycleScope.launch {
-                        teamRepository.addReport(doc)
+                        teamsRepository.addReport(doc)
                     }
                     dialog.dismiss()
                 }
@@ -173,7 +174,7 @@ class ReportsFragment : BaseTeamFragment() {
                 result.data?.data?.let { uri ->
                     viewLifecycleOwner.lifecycleScope.launch {
                         try {
-                            val csvContent = teamRepository.exportReportsAsCsv(reports, prefData.getTeamName() ?: "")
+                            val csvContent = teamsRepository.exportReportsAsCsv(reports, prefData.getTeamName() ?: "")
                             requireContext().contentResolver.openOutputStream(uri)?.use { outputStream ->
                                 outputStream.write(csvContent.toByteArray())
                             }
@@ -191,7 +192,7 @@ class ReportsFragment : BaseTeamFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        adapterReports = AdapterReports(requireContext(), teamRepository, viewLifecycleOwner.lifecycleScope, prefData)
+        adapterReports = AdapterReports(requireContext(), teamsRepository, viewLifecycleOwner.lifecycleScope, prefData)
         binding.rvReports.adapter = adapterReports
         binding.rvReports.layoutManager = LinearLayoutManager(activity)
 
@@ -204,7 +205,7 @@ class ReportsFragment : BaseTeamFragment() {
                     }
                 }
                 launch {
-                    teamRepository.getReportsFlow(teamId).collectLatest { reportList ->
+                    teamsRepository.getReportsFlow(teamId).collectLatest { reportList ->
                         updatedReportsList(reportList)
                     }
                 }

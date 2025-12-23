@@ -23,7 +23,7 @@ data class MembersUiState(
 
 @HiltViewModel
 class MembersViewModel @Inject constructor(
-    private val teamRepository: TeamsRepository,
+    private val teamsRepository: TeamsRepository,
     private val userProfileDbHandler: UserProfileDbHandler
 ) : ViewModel() {
 
@@ -34,9 +34,9 @@ class MembersViewModel @Inject constructor(
 
     fun fetchMembers(teamId: String) {
         viewModelScope.launch(Dispatchers.IO) {
-            val members = teamRepository.getRequestedMembers(teamId)
-            val memberCount = teamRepository.getJoinedMembers(teamId).size
-            val isLeader = teamRepository.isTeamLeader(teamId, userProfileDbHandler.userModel?.id)
+            val members = teamsRepository.getRequestedMembers(teamId)
+            val memberCount = teamsRepository.getJoinedMembers(teamId).size
+            val isLeader = teamsRepository.isTeamLeader(teamId, userProfileDbHandler.userModel?.id)
             _uiState.value = MembersUiState(members, isLeader, memberCount)
         }
     }
@@ -51,9 +51,9 @@ class MembersViewModel @Inject constructor(
         _uiState.value = optimisticState
 
         viewModelScope.launch(Dispatchers.IO) {
-            val result = teamRepository.respondToMemberRequest(teamId, user.id!!, isAccepted)
+            val result = teamsRepository.respondToMemberRequest(teamId, user.id!!, isAccepted)
             if (result.isSuccess) {
-                teamRepository.syncTeamActivities()
+                teamsRepository.syncTeamActivities()
                 _successAction.emit(Unit)
                 fetchMembers(teamId)
             } else {
