@@ -21,8 +21,6 @@ import org.ole.planet.myplanet.repository.LifeRepository
 import org.ole.planet.myplanet.repository.LifeRepositoryImpl
 import org.ole.planet.myplanet.repository.MeetupRepository
 import org.ole.planet.myplanet.repository.MeetupRepositoryImpl
-import org.ole.planet.myplanet.repository.NewsRepository
-import org.ole.planet.myplanet.repository.NewsRepositoryImpl
 import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.repository.NotificationRepositoryImpl
 import org.ole.planet.myplanet.repository.PersonalRepository
@@ -41,6 +39,8 @@ import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.repository.TeamRepositoryImpl
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserRepositoryImpl
+import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.repository.VoicesRepositoryImpl
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -52,11 +52,11 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindConfigurationRepository(impl: ConfigurationRepositoryImpl): ConfigurationRepository
+    abstract fun bindChatRepository(impl: ChatRepositoryImpl): ChatRepository
 
     @Binds
     @Singleton
-    abstract fun bindChatRepository(impl: ChatRepositoryImpl): ChatRepository
+    abstract fun bindConfigurationRepository(impl: ConfigurationRepositoryImpl): ConfigurationRepository
 
     @Binds
     @Singleton
@@ -77,10 +77,6 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindMeetupRepository(impl: MeetupRepositoryImpl): MeetupRepository
-
-    @Binds
-    @Singleton
-    abstract fun bindNewsRepository(impl: NewsRepositoryImpl): NewsRepository
 
     @Binds
     @Singleton
@@ -117,4 +113,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindUserRepository(impl: UserRepositoryImpl): UserRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindVoicesRepository(impl: VoicesRepositoryImpl): VoicesRepository
 }

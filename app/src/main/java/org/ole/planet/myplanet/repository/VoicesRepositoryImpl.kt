@@ -20,10 +20,10 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
 
-class NewsRepositoryImpl @Inject constructor(
+class VoicesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     private val gson: Gson,
-) : RealmRepository(databaseService), NewsRepository {
+) : RealmRepository(databaseService), VoicesRepository {
     override suspend fun getLibraryResource(resourceId: String): RealmMyLibrary? {
         return withRealm { realm ->
             realm.findCopyByField(RealmMyLibrary::class.java, "_id", resourceId)
