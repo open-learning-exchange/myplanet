@@ -7,7 +7,6 @@ import dagger.hilt.android.EntryPointAccessors
 import java.util.Calendar
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.di.WorkerDependenciesEntryPoint
-import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.utilities.NotificationUtils.create
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
