@@ -54,7 +54,7 @@ class ServicesFragment : BaseTeamFragment() {
         binding?.let { setMarkdownText(it.tvDescription, markdownContentWithLocalPaths) }
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val links = teamRepository.getTeamLinks()
+            val links = teamsRepository.getTeamLinks()
             val currentBinding = binding ?: return@launch
             if (links.isEmpty()) {
                 currentBinding.llServices.visibility = View.GONE
@@ -86,7 +86,7 @@ class ServicesFragment : BaseTeamFragment() {
                 if (route != null && route.size >= 4) {
                     val teamId = route[3]
                     viewLifecycleOwner.lifecycleScope.launch {
-                        val isMyTeam = teamRepository.isMember(user?.id, teamId)
+                        val isMyTeam = teamsRepository.isMember(user?.id, teamId)
 
                         val f = TeamDetailFragment()
                         val args = Bundle().apply {

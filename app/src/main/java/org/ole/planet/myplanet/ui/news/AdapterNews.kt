@@ -44,7 +44,7 @@ import org.ole.planet.myplanet.model.ChatMessage
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.TeamRepository
+import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -61,7 +61,7 @@ import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.makeExpandable
 
-class AdapterNews(var context: Context, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userProfileDbHandler: UserProfileDbHandler, private val scope: CoroutineScope, private val userRepository: UserRepository, private val voicesRepository: VoicesRepository, private val teamRepository: TeamRepository) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
+class AdapterNews(var context: Context, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userProfileDbHandler: UserProfileDbHandler, private val scope: CoroutineScope, private val userRepository: UserRepository, private val voicesRepository: VoicesRepository, private val teamsRepository: TeamsRepository) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem ->
             if (oldItem === newItem) return@itemCallback true
@@ -123,7 +123,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         }
         scope.launch {
             val isLeader = withTimeoutOrNull(2000) {
-                teamRepository.isTeamLeader(teamId, currentUser?._id)
+                teamsRepository.isTeamLeader(teamId, currentUser?._id)
             }
             _isTeamLeader = isLeader
         }

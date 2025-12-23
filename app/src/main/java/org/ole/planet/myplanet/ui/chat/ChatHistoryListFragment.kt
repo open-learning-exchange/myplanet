@@ -35,7 +35,7 @@ import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.ChatRepository
-import org.ole.planet.myplanet.repository.TeamRepository
+import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.service.SyncManager
@@ -74,7 +74,7 @@ class ChatHistoryListFragment : Fragment() {
     @Inject
     lateinit var userRepository: UserRepository
     @Inject
-    lateinit var teamRepository: TeamRepository
+    lateinit var teamsRepository: TeamsRepository
     @Inject
     lateinit var voicesRepository: VoicesRepository
     @Inject
@@ -317,14 +317,14 @@ class ChatHistoryListFragment : Fragment() {
     }
 
     private suspend fun loadShareTargets(parentCode: String?, communityName: String?): ChatShareTargets {
-        val teams = teamRepository.getShareableTeams()
-        val enterprises = teamRepository.getShareableEnterprises()
+        val teams = teamsRepository.getShareableTeams()
+        val enterprises = teamsRepository.getShareableEnterprises()
         val communityId = if (!communityName.isNullOrBlank() && !parentCode.isNullOrBlank()) {
             "$communityName@$parentCode"
         } else {
             null
         }
-        val community = communityId?.let { teamRepository.getTeamById(it) }
+        val community = communityId?.let { teamsRepository.getTeamById(it) }
         return ChatShareTargets(community, teams, enterprises)
     }
 

@@ -23,13 +23,13 @@ class TaskNotificationWorker(appContext: Context, workerParams: WorkerParameters
             WorkerDependenciesEntryPoint::class.java
         )
         val userProfileDbHandler = entryPoint.userProfileDbHandler()
-        val teamRepository = entryPoint.teamRepository()
+        val teamsRepository = entryPoint.teamsRepository()
 
         val user = userProfileDbHandler.userModel
         val userId = user?.id
         if (!userId.isNullOrBlank()) {
             val tasks = runCatching {
-                teamRepository.getPendingTasksForUser(userId, current, tomorrow.timeInMillis)
+                teamsRepository.getPendingTasksForUser(userId, current, tomorrow.timeInMillis)
             }.getOrElse { emptyList() }
 
             if (tasks.isNotEmpty()) {
@@ -44,7 +44,7 @@ class TaskNotificationWorker(appContext: Context, workerParams: WorkerParameters
 
                 val taskIds = tasks.mapNotNull { it.id }.filter { it.isNotBlank() }
                 if (taskIds.isNotEmpty()) {
-                    runCatching { teamRepository.markTasksNotified(taskIds) }
+                    runCatching { teamsRepository.markTasksNotified(taskIds) }
                 }
             }
         }

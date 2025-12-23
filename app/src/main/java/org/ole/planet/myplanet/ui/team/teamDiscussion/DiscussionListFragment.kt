@@ -185,7 +185,7 @@ class DiscussionListFragment : BaseTeamFragment() {
         val existingAdapter = binding.rvDiscussion.adapter
         if (existingAdapter == null) {
             val adapterNews = activity?.let {
-                AdapterNews(it, user, null, getEffectiveTeamName(), teamId, userProfileDbHandler, viewLifecycleOwner.lifecycleScope, userRepository, voicesRepository, teamRepository)
+                AdapterNews(it, user, null, getEffectiveTeamName(), teamId, userProfileDbHandler, viewLifecycleOwner.lifecycleScope, userRepository, voicesRepository, teamsRepository)
             }
             adapterNews?.sharedPrefManager = sharedPrefManager
             adapterNews?.setmRealm(mRealm)

@@ -23,7 +23,7 @@ import org.ole.planet.myplanet.databinding.FragmentTeamBinding
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.TeamRepository
+import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
@@ -35,7 +35,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
     private val binding get() = _binding!!
     private lateinit var alertCreateTeamBinding: AlertCreateTeamBinding
     @Inject
-    lateinit var teamRepository: TeamRepository
+    lateinit var teamsRepository: TeamsRepository
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     @Inject
@@ -133,7 +133,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
                         viewLifecycleOwner.lifecycleScope.launch {
                             val teamTypeForValidation = if (type == "enterprise") "enterprise" else "team"
                             val excludeTeamId = if (team != null) (team._id ?: team.teamId) else null
-                            val nameExists = teamRepository.isTeamNameExists(name, teamTypeForValidation, excludeTeamId)
+                            val nameExists = teamsRepository.isTeamNameExists(name, teamTypeForValidation, excludeTeamId)
 
                             if (nameExists) {
                                 val duplicateMessage = if (type == "enterprise") {
@@ -147,7 +147,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
                             }
 
                             if (team == null) {
-                                teamRepository.createTeam(
+                                teamsRepository.createTeam(
                                     category = type,
                                     name = name,
                                     description = description,
@@ -171,7 +171,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
                                     Utilities.toast(activity, failureMessage)
                                     return@launch
                                 }
-                                teamRepository.updateTeam(
+                                teamsRepository.updateTeam(
                                     teamId = targetTeamId,
                                     name = name,
                                     description = description,
@@ -282,7 +282,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
             when {
                 fromDashboard -> {
                     user?._id?.let { userId ->
-                        teamRepository.getMyTeamsFlow(userId).collectLatest {
+                        teamsRepository.getMyTeamsFlow(userId).collectLatest {
                             teamList = it
                             setTeamList()
                         }
@@ -290,12 +290,12 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
                 }
                 type == "enterprise" -> {
                     conditionApplied = true
-                    teamList = teamRepository.getShareableEnterprises()
+                    teamList = teamsRepository.getShareableEnterprises()
                     setTeamList()
                 }
                 else -> {
                     conditionApplied = false
-                    teamList = teamRepository.getShareableTeams()
+                    teamList = teamsRepository.getShareableTeams()
                     setTeamList()
                 }
             }

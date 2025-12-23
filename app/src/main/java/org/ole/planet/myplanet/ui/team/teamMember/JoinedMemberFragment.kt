@@ -35,7 +35,7 @@ class JoinedMemberFragment : BaseMemberFragment() {
     }
 
     private suspend fun loadAndDisplayJoinedMembers() {
-        val joinedMembersData = teamRepository.getJoinedMembersWithVisitInfo(teamId)
+        val joinedMembersData = teamsRepository.getJoinedMembersWithVisitInfo(teamId)
         cachedJoinedMembers = joinedMembersData
         val currentUserId = user?.id
         val isLoggedInUserLeader = joinedMembersData.any { it.user.id == currentUserId && it.isLeader }
@@ -98,7 +98,7 @@ class JoinedMemberFragment : BaseMemberFragment() {
                         }
 
                         currentUser?.id?.let { userId ->
-                            teamRepository.removeMember(teamId, userId)
+                            teamsRepository.removeMember(teamId, userId)
                         }
 
                         loadAndDisplayJoinedMembers()
@@ -155,7 +155,7 @@ class JoinedMemberFragment : BaseMemberFragment() {
                         }
                     }
 
-                    teamRepository.removeMember(teamId, memberId)
+                    teamsRepository.removeMember(teamId, memberId)
                     loadAndDisplayJoinedMembers()
                     memberChangeListener.onMemberChanged()
                 } else {

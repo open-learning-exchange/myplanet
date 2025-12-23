@@ -143,13 +143,13 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
         loadTeamJob = viewLifecycleOwner.lifecycleScope.launch {
             val resolvedTeam = when {
                 shouldQueryRealm(teamId) && teamId.isNotEmpty() -> {
-                    teamRepository.getTeamByDocumentIdOrTeamId(teamId)
+                    teamsRepository.getTeamByDocumentIdOrTeamId(teamId)
                 }
 
                 else -> {
                     val effectiveTeamId = (directTeamId ?: "").ifEmpty { teamId }
                     if (effectiveTeamId.isNotEmpty()) {
-                        teamRepository.getTeamById(effectiveTeamId)
+                        teamsRepository.getTeamById(effectiveTeamId)
                     } else {
                         null
                     }
@@ -348,10 +348,10 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
                     val userId = user?.id
                     val userPlanetCode = user?.planetCode
                     val teamType = team?.teamType
-                    teamRepository.requestToJoin(teamId, userId, userPlanetCode, teamType)
+                    teamsRepository.requestToJoin(teamId, userId, userPlanetCode, teamType)
                     binding.btnLeave.text = getString(R.string.requested)
                     binding.btnLeave.isEnabled = false
-                    teamRepository.syncTeamActivities()
+                    teamsRepository.syncTeamActivities()
                 }
             }
         }
@@ -391,8 +391,8 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
             val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
 
             val updatedTeam = when {
-                primaryTeamId.isNotEmpty() -> teamRepository.getTeamByDocumentIdOrTeamId(primaryTeamId)
-                fallbackTeamId.isNotEmpty() -> teamRepository.getTeamById(fallbackTeamId)
+                primaryTeamId.isNotEmpty() -> teamsRepository.getTeamByDocumentIdOrTeamId(primaryTeamId)
+                fallbackTeamId.isNotEmpty() -> teamsRepository.getTeamById(fallbackTeamId)
                 else -> null
             }
 
@@ -467,7 +467,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
 
         viewLifecycleOwner.lifecycleScope.launch {
             withContext(kotlinx.coroutines.Dispatchers.IO) {
-                teamRepository.logTeamVisit(
+                teamsRepository.logTeamVisit(
                     teamId = getEffectiveTeamId(),
                     userName = userName,
                     userPlanetCode = userPlanetCode,

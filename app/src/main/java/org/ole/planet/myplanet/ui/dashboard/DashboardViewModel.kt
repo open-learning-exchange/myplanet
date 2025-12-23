@@ -25,7 +25,7 @@ import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.SurveyRepository
-import org.ole.planet.myplanet.repository.TeamRepository
+import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 
 data class DashboardUiState(
@@ -42,7 +42,7 @@ class DashboardViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val resourcesRepository: ResourcesRepository,
     private val coursesRepository: CoursesRepository,
-    private val teamRepository: TeamRepository,
+    private val teamsRepository: TeamsRepository,
     private val submissionRepository: SubmissionRepository,
     private val notificationRepository: NotificationRepository,
     private val surveyRepository: SurveyRepository,
@@ -123,7 +123,7 @@ class DashboardViewModel @Inject constructor(
             }
 
             val teamsFlowJob = launch {
-                teamRepository.getMyTeamsFlow(userId).collect { teams ->
+                teamsRepository.getMyTeamsFlow(userId).collect { teams ->
                     _uiState.update { it.copy(teams = teams) }
                 }
             }
