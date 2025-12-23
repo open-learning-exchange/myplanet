@@ -232,9 +232,9 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
 
     private fun setListeners() {
         viewLifecycleOwner.lifecycleScope.launch {
-            val notDownloadedResources = libraryRepository.getStepResources(stepId, resourceOffline = false)
+            val notDownloadedResources = resourcesRepository.getStepResources(stepId, resourceOffline = false)
             setResourceButton(notDownloadedResources, fragmentCourseStepBinding.btnResources)
-            val downloadedResources = libraryRepository.getStepResources(stepId, resourceOffline = true)
+            val downloadedResources = resourcesRepository.getStepResources(stepId, resourceOffline = true)
             setOpenResourceButton(downloadedResources, fragmentCourseStepBinding.btnOpen)
         }
         fragmentCourseStepBinding.btnTakeTest.setOnClickListener {

@@ -174,7 +174,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val resource = items.resourceId?.let { libraryRepository.getLibraryItemByResourceId(it) }
+            val resource = items.resourceId?.let { resourcesRepository.getLibraryItemByResourceId(it) }
             val downloadUrls = resource?.attachments
                 ?.mapNotNull { attachment ->
                     attachment.name?.let { name ->
@@ -209,7 +209,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     private fun openNonHtmlResource(items: RealmMyLibrary) {
         viewLifecycleOwner.lifecycleScope.launch {
             val matchingItems = items.resourceLocalAddress?.let {
-                libraryRepository.getLibraryItemsByLocalAddress(it)
+                resourcesRepository.getLibraryItemsByLocalAddress(it)
             } ?: emptyList()
 
             val offlineItem = matchingItems.firstOrNull { it.isResourceOffline() }

@@ -62,7 +62,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.JoinRequestNotification
-import org.ole.planet.myplanet.repository.LibraryRepository
+import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.SubmissionRepository
@@ -115,7 +115,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     @Inject
     lateinit var progressRepository: ProgressRepository
     @Inject
-    lateinit var libraryRepository: LibraryRepository
+    lateinit var resourcesRepository: ResourcesRepository
     @Inject
     lateinit var submissionRepository: SubmissionRepository
     @Inject
@@ -554,10 +554,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
     private fun setupRealmListeners() {
         lifecycleScope.launch {
-            libraryRepository.getRecentResources(user?.id ?: "").collect { onRealmDataChange() }
+            resourcesRepository.getRecentResources(user?.id ?: "").collect { onRealmDataChange() }
         }
         lifecycleScope.launch {
-            libraryRepository.getPendingDownloads(user?.id ?: "").collect { onRealmDataChange() }
+            resourcesRepository.getPendingDownloads(user?.id ?: "").collect { onRealmDataChange() }
         }
         lifecycleScope.launch {
             submissionRepository.getPendingSurveysFlow(user?.id).collect { onRealmDataChange() }

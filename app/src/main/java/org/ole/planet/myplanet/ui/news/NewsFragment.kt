@@ -185,7 +185,7 @@ class NewsFragment : BaseNewsFragment() {
             }
             viewLifecycleOwner.lifecycleScope.launch {
                 if (resourceIds.isNotEmpty()) {
-                    val libraries = libraryRepository.getLibraryItemsByIds(resourceIds)
+                    val libraries = resourcesRepository.getLibraryItemsByIds(resourceIds)
                     getUrlsAndStartDownload(
                         libraries.map<RealmMyLibrary, RealmMyLibrary?> { it },
                         arrayListOf()

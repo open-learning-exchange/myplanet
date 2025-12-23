@@ -45,7 +45,7 @@ import org.ole.planet.myplanet.model.RealmSubmission.Companion.getExamMap
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.CourseRepository
-import org.ole.planet.myplanet.repository.LibraryRepository
+import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -72,7 +72,7 @@ abstract class BaseResourceFragment : Fragment() {
     @Inject
     lateinit var userRepository: UserRepository
     @Inject
-    lateinit var libraryRepository: LibraryRepository
+    lateinit var resourcesRepository: ResourcesRepository
     @Inject
     lateinit var courseRepository: CourseRepository
     @Inject
@@ -128,7 +128,7 @@ abstract class BaseResourceFragment : Fragment() {
             val pendingResult = goAsync()
             this@BaseResourceFragment.lifecycleScope.launch {
                 try {
-                    val list = libraryRepository.getLibraryListForUser(
+                    val list = resourcesRepository.getLibraryListForUser(
                         settings.getString("userId", "--")
                     )
                     showDownloadDialog(list)
