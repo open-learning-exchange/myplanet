@@ -19,7 +19,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.nex3z.togglebuttongroup.SingleSelectToggleGroup
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
 import java.util.Date
@@ -216,9 +215,11 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
         adapterTask = AdapterTask(requireContext(), !isMemberFlow.value, viewLifecycleOwner.lifecycleScope, userRepository)
         adapterTask.setListener(this)
         binding.rvTask.adapter = adapterTask
-        binding.taskToggle.setOnCheckedChangeListener { _: SingleSelectToggleGroup?, checkedId: Int ->
-            currentTab = checkedId
-            updateTasks()
+        binding.taskToggle.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (isChecked) {
+                currentTab = checkedId
+                updateTasks()
+            }
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
