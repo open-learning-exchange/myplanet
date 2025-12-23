@@ -377,7 +377,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     override fun showResourceDownloadDialog() {
         viewLifecycleOwner.lifecycleScope.launch {
             val userId = settings?.getString("userId", "--")
-            val libraryList = libraryRepository.getLibraryListForUser(userId)
+            val libraryList = resourcesRepository.getLibraryListForUser(userId)
             showDownloadDialog(libraryList)
         }
     }

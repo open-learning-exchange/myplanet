@@ -42,7 +42,7 @@ import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.LibraryRepository
+import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
@@ -110,7 +110,7 @@ class SettingActivity : AppCompatActivity() {
         @Inject
         lateinit var databaseService: DatabaseService
     @Inject
-    lateinit var libraryRepository: LibraryRepository
+    lateinit var resourcesRepository: ResourcesRepository
         @Inject
         @DefaultPreferences
         lateinit var defaultPref: SharedPreferences
@@ -216,7 +216,7 @@ class SettingActivity : AppCompatActivity() {
                             lifecycleScope.launch {
                                 try {
                                     withTimeout(60 * 1000L) {
-                                        libraryRepository.markAllResourcesOffline(false)
+                                        resourcesRepository.markAllResourcesOffline(false)
                                         val f = File(FileUtils.getOlePath(requireContext()))
                                         withContext(Dispatchers.IO) {
                                             deleteRecursive(f)
