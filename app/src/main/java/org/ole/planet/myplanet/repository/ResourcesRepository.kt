@@ -3,7 +3,7 @@ package org.ole.planet.myplanet.repository
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmMyLibrary
 
-interface LibraryRepository {
+interface ResourcesRepository {
     suspend fun getAllLibraryItems(): List<RealmMyLibrary>
     suspend fun getLibraryItemById(id: String): RealmMyLibrary?
     suspend fun getLibraryItemByResourceId(resourceId: String): RealmMyLibrary?

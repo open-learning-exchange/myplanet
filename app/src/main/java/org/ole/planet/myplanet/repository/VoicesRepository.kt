@@ -6,7 +6,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 
-interface NewsRepository {
+interface VoicesRepository {
     suspend fun getLibraryResource(resourceId: String): RealmMyLibrary?
     suspend fun getCommunityNews(userIdentifier: String): Flow<List<RealmNews>>
     suspend fun getNewsWithReplies(newsId: String): Pair<RealmNews?, List<RealmNews>>

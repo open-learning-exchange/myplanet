@@ -11,22 +11,20 @@ import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.ChatRepositoryImpl
 import org.ole.planet.myplanet.repository.ConfigurationRepository
 import org.ole.planet.myplanet.repository.ConfigurationRepositoryImpl
-import org.ole.planet.myplanet.repository.CourseRepository
-import org.ole.planet.myplanet.repository.CourseRepositoryImpl
+import org.ole.planet.myplanet.repository.CoursesRepository
+import org.ole.planet.myplanet.repository.CoursesRepositoryImpl
 import org.ole.planet.myplanet.repository.FeedbackRepository
 import org.ole.planet.myplanet.repository.FeedbackRepositoryImpl
-import org.ole.planet.myplanet.repository.LibraryRepository
-import org.ole.planet.myplanet.repository.LibraryRepositoryImpl
+import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.repository.ResourcesRepositoryImpl
 import org.ole.planet.myplanet.repository.LifeRepository
 import org.ole.planet.myplanet.repository.LifeRepositoryImpl
 import org.ole.planet.myplanet.repository.MeetupRepository
 import org.ole.planet.myplanet.repository.MeetupRepositoryImpl
-import org.ole.planet.myplanet.repository.MyPersonalRepository
-import org.ole.planet.myplanet.repository.MyPersonalRepositoryImpl
-import org.ole.planet.myplanet.repository.NewsRepository
-import org.ole.planet.myplanet.repository.NewsRepositoryImpl
 import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.repository.NotificationRepositoryImpl
+import org.ole.planet.myplanet.repository.PersonalRepository
+import org.ole.planet.myplanet.repository.PersonalRepositoryImpl
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.ProgressRepositoryImpl
 import org.ole.planet.myplanet.repository.RatingRepository
@@ -41,6 +39,8 @@ import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsRepositoryImpl
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserRepositoryImpl
+import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.repository.VoicesRepositoryImpl
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -52,15 +52,15 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindConfigurationRepository(impl: ConfigurationRepositoryImpl): ConfigurationRepository
-
-    @Binds
-    @Singleton
     abstract fun bindChatRepository(impl: ChatRepositoryImpl): ChatRepository
 
     @Binds
     @Singleton
-    abstract fun bindCourseRepository(impl: CourseRepositoryImpl): CourseRepository
+    abstract fun bindConfigurationRepository(impl: ConfigurationRepositoryImpl): ConfigurationRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindCoursesRepository(impl: CoursesRepositoryImpl): CoursesRepository
 
     @Binds
     @Singleton
@@ -68,7 +68,7 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindLibraryRepository(impl: LibraryRepositoryImpl): LibraryRepository
+    abstract fun bindResourcesRepository(impl: ResourcesRepositoryImpl): ResourcesRepository
 
     @Binds
     @Singleton
@@ -80,15 +80,11 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindMyPersonalRepository(impl: MyPersonalRepositoryImpl): MyPersonalRepository
-
-    @Binds
-    @Singleton
-    abstract fun bindNewsRepository(impl: NewsRepositoryImpl): NewsRepository
-
-    @Binds
-    @Singleton
     abstract fun bindNotificationRepository(impl: NotificationRepositoryImpl): NotificationRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindPersonalRepository(impl: PersonalRepositoryImpl): PersonalRepository
 
     @Binds
     @Singleton
@@ -117,4 +113,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindUserRepository(impl: UserRepositoryImpl): UserRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindVoicesRepository(impl: VoicesRepositoryImpl): VoicesRepository
 }

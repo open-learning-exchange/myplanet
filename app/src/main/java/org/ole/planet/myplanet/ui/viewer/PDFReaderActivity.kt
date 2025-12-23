@@ -17,8 +17,8 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityPdfreaderBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.repository.LibraryRepository
-import org.ole.planet.myplanet.repository.MyPersonalRepository
+import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.repository.PersonalRepository
 import org.ole.planet.myplanet.service.AudioRecorderService
 import org.ole.planet.myplanet.service.AudioRecorderService.AudioRecordListener
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -36,9 +36,9 @@ class PDFReaderActivity : AppCompatActivity(), AudioRecordListener {
     private lateinit var audioRecorderService: AudioRecorderService
     private var fileName: String? = null
     @Inject
-    lateinit var myPersonalRepository: MyPersonalRepository
+    lateinit var personalRepository: PersonalRepository
     @Inject
-    lateinit var libraryRepository: LibraryRepository
+    lateinit var resourcesRepository: ResourcesRepository
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     private lateinit var library: RealmMyLibrary
@@ -53,7 +53,7 @@ class PDFReaderActivity : AppCompatActivity(), AudioRecordListener {
             val resourceID = intent.getStringExtra("resourceId")
             lifecycleScope.launch {
                 resourceID?.let {
-                    library = libraryRepository.getLibraryItemById(it)!!
+                    library = resourcesRepository.getLibraryItemById(it)!!
                 }
             }
         }
@@ -123,7 +123,7 @@ class PDFReaderActivity : AppCompatActivity(), AudioRecordListener {
             AddResourceFragment.showAlert(
                 this,
                 outputFile,
-                myPersonalRepository,
+                personalRepository,
                 userModel.id,
                 userModel.name,
                 lifecycleScope
@@ -135,7 +135,7 @@ class PDFReaderActivity : AppCompatActivity(), AudioRecordListener {
     private fun updateTranslation(outputFile: String?) {
         if (this::library.isInitialized) {
             lifecycleScope.launch {
-                libraryRepository.updateLibraryItem(library.id!!) {
+                resourcesRepository.updateLibraryItem(library.id!!) {
                     it.translationAudioPath = outputFile
                 }
                 library.translationAudioPath = outputFile

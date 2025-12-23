@@ -5,7 +5,7 @@ import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 
-interface CourseRepository {
+interface CoursesRepository {
     suspend fun getMyCoursesFlow(userId: String): Flow<List<RealmMyCourse>>
     suspend fun getCourseByCourseId(courseId: String?): RealmMyCourse?
     suspend fun getDetachedCourseById(courseId: String?): RealmMyCourse?
