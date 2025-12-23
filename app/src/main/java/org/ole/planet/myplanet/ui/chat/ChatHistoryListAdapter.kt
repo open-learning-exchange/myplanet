@@ -23,7 +23,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.news.ExpandableListAdapter
-import org.ole.planet.myplanet.ui.team.GrandChildAdapter
+import org.ole.planet.myplanet.ui.team.TeamSelectionAdapter
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.GsonUtils
 
@@ -260,13 +260,13 @@ class ChatHistoryListAdapter(
             context.getString(R.string.enterprises)
         }
 
-        val grandChildAdapter = GrandChildAdapter(section) { selectedItem ->
+        val teamSelectionAdapter = TeamSelectionAdapter(section) { selectedItem ->
             showEditTextAndShareButton(selectedItem, section, realmChatHistory)
             dialog?.dismiss()
         }
         grandChildDialogBinding.recyclerView.layoutManager = LinearLayoutManager(context)
-        grandChildDialogBinding.recyclerView.adapter = grandChildAdapter
-        grandChildAdapter.submitList(items)
+        grandChildDialogBinding.recyclerView.adapter = teamSelectionAdapter
+        teamSelectionAdapter.submitList(items)
 
         val builder = AlertDialog.Builder(context, R.style.CustomAlertDialog)
         builder.setView(grandChildDialogBinding.root)
