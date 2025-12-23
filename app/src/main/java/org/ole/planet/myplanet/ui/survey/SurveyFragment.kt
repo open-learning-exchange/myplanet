@@ -26,7 +26,7 @@ import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.callback.TableDataUpdate
 import org.ole.planet.myplanet.databinding.FragmentSurveyBinding
 import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.SurveyBindingData
+import org.ole.planet.myplanet.ui.survey.SurveyBindingData
 import org.ole.planet.myplanet.repository.SurveyRepository
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper

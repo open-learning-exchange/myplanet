@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.model
+package org.ole.planet.myplanet.ui.survey
 
 data class SurveyBindingData(
     val teamSubmission: RealmSubmission?,
