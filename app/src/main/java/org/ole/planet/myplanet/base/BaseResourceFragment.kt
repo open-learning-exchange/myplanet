@@ -74,7 +74,7 @@ abstract class BaseResourceFragment : Fragment() {
     @Inject
     lateinit var libraryRepository: LibraryRepository
     @Inject
-    lateinit var courseRepository: CoursesRepository
+    lateinit var coursesRepository: CoursesRepository
     @Inject
     lateinit var submissionRepository: SubmissionRepository
     @Inject

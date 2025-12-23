@@ -41,7 +41,7 @@ data class DashboardUiState(
 class DashboardViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val libraryRepository: LibraryRepository,
-    private val courseRepository: CoursesRepository,
+    private val coursesRepository: CoursesRepository,
     private val teamRepository: TeamRepository,
     private val submissionRepository: SubmissionRepository,
     private val notificationRepository: NotificationRepository,
@@ -117,7 +117,7 @@ class DashboardViewModel @Inject constructor(
             }
 
             val coursesFlowJob = launch {
-                courseRepository.getMyCoursesFlow(userId).collect { courses ->
+                coursesRepository.getMyCoursesFlow(userId).collect { courses ->
                     _uiState.update { it.copy(courses = courses) }
                 }
             }

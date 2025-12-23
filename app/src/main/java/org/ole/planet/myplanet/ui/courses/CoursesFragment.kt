@@ -196,7 +196,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
                 if (isMyCourseLib) {
                     val courseIds = courseList.mapNotNull { it?.id }
-                    resources = courseRepository.getCourseOfflineResources(courseIds)
+                    resources = coursesRepository.getCourseOfflineResources(courseIds)
                     courseLib = "courses"
                 }
 
@@ -504,7 +504,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
         lifecycleScope.launch {
             val (filteredCourses, map, progressMap) = withContext(Dispatchers.IO) {
-                val courses = courseRepository.filterCourses(searchText, selectedGrade, selectedSubject, tagNames)
+                val courses = coursesRepository.filterCourses(searchText, selectedGrade, selectedSubject, tagNames)
                 val ratings = databaseService.withRealm { realm -> getRatings(realm, "course", model?.id) }
                 val progress = databaseService.withRealm { realm -> getCourseProgress(realm, model?.id) }
                 Triple(courses, ratings, progress)
