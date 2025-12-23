@@ -38,7 +38,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.isStepCompleted
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.CourseRepository
+import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.DialogUtils.getDialog
@@ -53,7 +53,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     @Inject
-    lateinit var courseRepository: CourseRepository
+    lateinit var coursesRepository: CoursesRepository
     lateinit var mRealm: Realm
     private var currentCourse: RealmMyCourse? = null
     lateinit var steps: List<RealmCourseStep?>
@@ -86,7 +86,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         binding.contentLayout.visibility = View.GONE
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val course: RealmMyCourse? = courseRepository.getDetachedCourseById(courseId)
+            val course: RealmMyCourse? = coursesRepository.getDetachedCourseById(courseId)
             binding.loadingIndicator.visibility = View.GONE
             if (course == null) {
                 Toast.makeText(requireContext(), getString(R.string.failed_to_load_course), Toast.LENGTH_LONG).show()
@@ -98,7 +98,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             binding.tvCourseTitle.text = currentCourse?.courseTitle
 
             withContext(Dispatchers.IO) {
-                steps = courseRepository.getCourseSteps(courseId)
+                steps = coursesRepository.getCourseSteps(courseId)
 
                 if (cachedCourseProgress == null && isFetchingProgress.compareAndSet(false, true)) {
                     try {

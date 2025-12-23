@@ -20,7 +20,7 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.TeamNotificationInfo
 import org.ole.planet.myplanet.repository.ActivityRepository
-import org.ole.planet.myplanet.repository.CourseRepository
+import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.LibraryRepository
 import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.repository.SubmissionRepository
@@ -41,7 +41,7 @@ data class DashboardUiState(
 class DashboardViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val libraryRepository: LibraryRepository,
-    private val courseRepository: CourseRepository,
+    private val coursesRepository: CoursesRepository,
     private val teamRepository: TeamRepository,
     private val submissionRepository: SubmissionRepository,
     private val notificationRepository: NotificationRepository,
@@ -117,7 +117,7 @@ class DashboardViewModel @Inject constructor(
             }
 
             val coursesFlowJob = launch {
-                courseRepository.getMyCoursesFlow(userId).collect { courses ->
+                coursesRepository.getMyCoursesFlow(userId).collect { courses ->
                     _uiState.update { it.copy(courses = courses) }
                 }
             }
