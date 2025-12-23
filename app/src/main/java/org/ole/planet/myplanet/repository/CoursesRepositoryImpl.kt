@@ -9,9 +9,9 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmStepExam
 
-class CourseRepositoryImpl @Inject constructor(
+class CoursesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
-) : RealmRepository(databaseService), CourseRepository {
+) : RealmRepository(databaseService), CoursesRepository {
 
     override suspend fun getMyCoursesFlow(userId: String): Flow<List<RealmMyCourse>> {
         return queryListFlow(RealmMyCourse::class.java) {
