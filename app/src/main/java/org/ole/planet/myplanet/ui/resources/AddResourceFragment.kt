@@ -40,7 +40,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertSoundRecorderBinding
 import org.ole.planet.myplanet.databinding.FragmentAddResourceBinding
-import org.ole.planet.myplanet.repository.MyPersonalRepository
+import org.ole.planet.myplanet.repository.PersonalRepository
 import org.ole.planet.myplanet.service.AudioRecorderService
 import org.ole.planet.myplanet.service.AudioRecorderService.AudioRecordListener
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -62,7 +62,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
     private lateinit var requestCameraLauncher: ActivityResultLauncher<String>
     private var type: Int = 0
     @Inject
-    lateinit var myPersonalRepository: MyPersonalRepository
+    lateinit var myPersonalRepository: PersonalRepository
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -276,7 +276,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
         fun showAlert(
             context: Context,
             path: String?,
-            repository: MyPersonalRepository,
+            repository: PersonalRepository,
             userId: String?,
             userName: String?,
             scope: CoroutineScope,

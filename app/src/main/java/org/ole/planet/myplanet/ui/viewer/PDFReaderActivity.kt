@@ -18,7 +18,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityPdfreaderBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.repository.LibraryRepository
-import org.ole.planet.myplanet.repository.MyPersonalRepository
+import org.ole.planet.myplanet.repository.PersonalRepository
 import org.ole.planet.myplanet.service.AudioRecorderService
 import org.ole.planet.myplanet.service.AudioRecorderService.AudioRecordListener
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -36,7 +36,7 @@ class PDFReaderActivity : AppCompatActivity(), AudioRecordListener {
     private lateinit var audioRecorderService: AudioRecorderService
     private var fileName: String? = null
     @Inject
-    lateinit var myPersonalRepository: MyPersonalRepository
+    lateinit var myPersonalRepository: PersonalRepository
     @Inject
     lateinit var libraryRepository: LibraryRepository
     @Inject
