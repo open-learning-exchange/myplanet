@@ -44,9 +44,9 @@ import org.ole.planet.myplanet.model.ChatMessage
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.NewsRepository
 import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
@@ -61,7 +61,7 @@ import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.makeExpandable
 
-class AdapterNews(var context: Context, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userProfileDbHandler: UserProfileDbHandler, private val scope: CoroutineScope, private val userRepository: UserRepository, private val newsRepository: NewsRepository, private val teamRepository: TeamRepository) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
+class AdapterNews(var context: Context, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userProfileDbHandler: UserProfileDbHandler, private val scope: CoroutineScope, private val userRepository: UserRepository, private val voicesRepository: VoicesRepository, private val teamRepository: TeamRepository) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem ->
             if (oldItem === newItem) return@itemCallback true
@@ -489,7 +489,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         viewHolder.job?.cancel()
         viewHolder.job = scope.launch {
             try {
-                val replies = newsRepository.getReplies(news?.id)
+                val replies = voicesRepository.getReplies(news?.id)
                 withContext(Dispatchers.Main) {
                     with(viewHolder.binding) {
                         btnShowReply.text = String.format(Locale.getDefault(), "(%d)", replies.size)
@@ -592,7 +592,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
 
                      if (newsId != null && userId != null) {
                          scope.launch {
-                             val result = newsRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
+                             val result = voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
                              withContext(Dispatchers.Main) {
                                  if (result.isSuccess) {
                                      Utilities.toast(context, context.getString(R.string.shared_to_community))
@@ -718,7 +718,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     private fun loadLibraryImage(binding: RowNewsBinding, resourceId: String?) {
         if (resourceId == null) return
         scope.launch {
-            val library = newsRepository.getLibraryResource(resourceId)
+            val library = voicesRepository.getLibraryResource(resourceId)
             withContext(Dispatchers.Main) {
                 val basePath = context.getExternalFilesDir(null)
                 if (library != null && basePath != null) {
@@ -745,7 +745,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     private fun addLibraryImageToContainer(binding: RowNewsBinding, resourceId: String?) {
         if (resourceId == null) return
         scope.launch {
-            val library = newsRepository.getLibraryResource(resourceId)
+            val library = voicesRepository.getLibraryResource(resourceId)
             withContext(Dispatchers.Main) {
                 val basePath = context.getExternalFilesDir(null)
                 if (library != null && basePath != null) {

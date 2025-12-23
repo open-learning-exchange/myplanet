@@ -19,7 +19,7 @@ import org.ole.planet.myplanet.databinding.FragmentDiscussionListBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
-import org.ole.planet.myplanet.repository.NewsRepository
+import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
@@ -34,7 +34,7 @@ class DiscussionListFragment : BaseTeamFragment() {
     private val binding get() = _binding!!
 
     @Inject
-    lateinit var newsRepository: NewsRepository
+    lateinit var voicesRepository: VoicesRepository
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     @Inject
@@ -128,16 +128,16 @@ class DiscussionListFragment : BaseTeamFragment() {
         changeLayoutManager(resources.configuration.orientation, binding.rvDiscussion)
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val realmNewsList = newsRepository.getFilteredNews(getEffectiveTeamId())
+            val realmNewsList = voicesRepository.getFilteredNews(getEffectiveTeamId())
             val count = realmNewsList.size
-            newsRepository.updateTeamNotification(getEffectiveTeamId(), count)
+            voicesRepository.updateTeamNotification(getEffectiveTeamId(), count)
             showRecyclerView(realmNewsList)
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
-                    newsRepository.getDiscussionsByTeamIdFlow(getEffectiveTeamId()).collect {
+                    voicesRepository.getDiscussionsByTeamIdFlow(getEffectiveTeamId()).collect {
                         setData(it)
                     }
                 }
@@ -185,7 +185,7 @@ class DiscussionListFragment : BaseTeamFragment() {
         val existingAdapter = binding.rvDiscussion.adapter
         if (existingAdapter == null) {
             val adapterNews = activity?.let {
-                AdapterNews(it, user, null, getEffectiveTeamName(), teamId, userProfileDbHandler, viewLifecycleOwner.lifecycleScope, userRepository, newsRepository, teamRepository)
+                AdapterNews(it, user, null, getEffectiveTeamName(), teamId, userProfileDbHandler, viewLifecycleOwner.lifecycleScope, userRepository, voicesRepository, teamRepository)
             }
             adapterNews?.sharedPrefManager = sharedPrefManager
             adapterNews?.setmRealm(mRealm)
