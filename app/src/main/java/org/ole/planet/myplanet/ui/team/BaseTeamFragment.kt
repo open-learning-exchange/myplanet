@@ -15,7 +15,7 @@ import org.ole.planet.myplanet.base.BaseNewsFragment
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.TeamRepository
+import org.ole.planet.myplanet.repository.TeamsRepository
 
 private val Realm.isOpen: Boolean
     get() = !isClosed
@@ -32,7 +32,7 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
         }
     var team: RealmMyTeam? = null
     @Inject
-    lateinit var teamRepository: TeamRepository
+    lateinit var teamsRepository: TeamsRepository
     private val _teamFlow = MutableStateFlow<RealmMyTeam?>(null)
     val teamFlow: StateFlow<RealmMyTeam?> = _teamFlow.asStateFlow()
     private val _isMemberFlow = MutableStateFlow(false)
@@ -57,7 +57,7 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
         lifecycleScope.launch(Dispatchers.IO) {
             val teamResult = if (shouldQueryTeam) {
                 try {
-                    teamRepository.getTeamByDocumentIdOrTeamId(teamId)
+                    teamsRepository.getTeamByDocumentIdOrTeamId(teamId)
                 } catch (e: IllegalArgumentException) {
                     e.printStackTrace()
                     null
@@ -70,7 +70,7 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
                 return@launch
             }
 
-            val membership = teamRepository.isMember(user?.id, teamId)
+            val membership = teamsRepository.isMember(user?.id, teamId)
 
             withContext(Dispatchers.Main) {
                 teamResult?.let {

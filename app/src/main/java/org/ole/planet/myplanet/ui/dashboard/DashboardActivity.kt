@@ -66,7 +66,7 @@ import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.SubmissionRepository
-import org.ole.planet.myplanet.repository.TeamRepository
+import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.chat.ChatHistoryListFragment
@@ -111,7 +111,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     @Inject
-    lateinit var teamRepository: TeamRepository
+    lateinit var teamsRepository: TeamsRepository
     @Inject
     lateinit var progressRepository: ProgressRepository
     @Inject
@@ -517,7 +517,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private suspend fun handleTaskNavigation(taskId: String?) {
         if (taskId == null) return
 
-        val teamData = teamRepository.getTaskTeamInfo(taskId)
+        val teamData = teamsRepository.getTaskTeamInfo(taskId)
 
         teamData?.let { (teamId, teamName, teamType) ->
             val f = TeamDetailFragment.newInstance(
@@ -539,7 +539,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 requestId
             }
 
-            val teamId = teamRepository.getJoinRequestTeamId(actualJoinRequestId)
+            val teamId = teamsRepository.getJoinRequestTeamId(actualJoinRequestId)
 
             if (teamId?.isNotEmpty() == true) {
                 val f = TeamDetailFragment()
@@ -563,7 +563,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             submissionRepository.getPendingSurveysFlow(user?.id).collect { onRealmDataChange() }
         }
         lifecycleScope.launch {
-            teamRepository.getTasksFlow(user?.id).collect { onRealmDataChange() }
+            teamsRepository.getTasksFlow(user?.id).collect { onRealmDataChange() }
         }
     }
 
@@ -660,8 +660,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             try {
                 dashboardViewModel.updateResourceNotification(userId)
 
-                val taskData = teamRepository.getTaskNotifications(userId)
-                val joinRequestData = teamRepository.getJoinRequestNotifications(userId)
+                val taskData = teamsRepository.getTaskNotifications(userId)
+                val joinRequestData = teamsRepository.getJoinRequestNotifications(userId)
 
                 databaseService.realmInstance.use { backgroundRealm ->
                     val createdNotifications = createNotifications(backgroundRealm, userId, taskData, joinRequestData)

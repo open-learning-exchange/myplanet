@@ -1146,7 +1146,7 @@ git rebase --continue
 | Core data service | `app/src/main/java/org/ole/planet/myplanet/datamanager/Service.kt` | ~650 |
 | Sync orchestration | `app/src/main/java/org/ole/planet/myplanet/service/SyncManager.kt` | ~1000 |
 | Upload handling | `app/src/main/java/org/ole/planet/myplanet/service/UploadManager.kt` | ~1200 |
-| Team management | `app/src/main/java/org/ole/planet/myplanet/repository/TeamRepositoryImpl.kt` | ~650 |
+| Team management | `app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt` | ~650 |
 | Build configuration | `app/build.gradle` | ~250 |
 | Dependency versions | `gradle/libs.versions.toml` | ~200 |
 

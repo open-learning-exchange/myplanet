@@ -35,14 +35,14 @@ import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
-class TeamRepositoryImpl @Inject constructor(
+class TeamsRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     private val userProfileDbHandler: UserProfileDbHandler,
     private val uploadManager: UploadManager,
     private val gson: Gson,
     @AppPreferences private val preferences: SharedPreferences,
     private val serverUrlMapper: ServerUrlMapper,
-) : RealmRepository(databaseService), TeamRepository {
+) : RealmRepository(databaseService), TeamsRepository {
     override suspend fun getTasksFlow(userId: String?): Flow<List<RealmTeamTask>> {
         return queryListFlow(RealmTeamTask::class.java) {
             notEqualTo("status", "archived")
