@@ -15,7 +15,7 @@ import org.ole.planet.myplanet.base.BaseNewsFragment
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.TeamRepository
+import org.ole.planet.myplanet.repository.TeamsRepository
 
 private val Realm.isOpen: Boolean
     get() = !isClosed
@@ -32,7 +32,7 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
         }
     var team: RealmMyTeam? = null
     @Inject
-    lateinit var teamRepository: TeamRepository
+    lateinit var teamRepository: TeamsRepository
     private val _teamFlow = MutableStateFlow<RealmMyTeam?>(null)
     val teamFlow: StateFlow<RealmMyTeam?> = _teamFlow.asStateFlow()
     private val _isMemberFlow = MutableStateFlow(false)

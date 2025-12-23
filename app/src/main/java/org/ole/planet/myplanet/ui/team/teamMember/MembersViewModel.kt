@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.TeamRepository
+import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 
 data class MembersUiState(
@@ -23,7 +23,7 @@ data class MembersUiState(
 
 @HiltViewModel
 class MembersViewModel @Inject constructor(
-    private val teamRepository: TeamRepository,
+    private val teamRepository: TeamsRepository,
     private val userProfileDbHandler: UserProfileDbHandler
 ) : ViewModel() {
 

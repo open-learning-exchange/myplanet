@@ -25,7 +25,7 @@ import org.ole.planet.myplanet.repository.LibraryRepository
 import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.SurveyRepository
-import org.ole.planet.myplanet.repository.TeamRepository
+import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 
 data class DashboardUiState(
@@ -42,7 +42,7 @@ class DashboardViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val libraryRepository: LibraryRepository,
     private val courseRepository: CourseRepository,
-    private val teamRepository: TeamRepository,
+    private val teamRepository: TeamsRepository,
     private val submissionRepository: SubmissionRepository,
     private val notificationRepository: NotificationRepository,
     private val surveyRepository: SurveyRepository,

@@ -30,7 +30,7 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.NewsRepository
-import org.ole.planet.myplanet.repository.TeamRepository
+import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.news.AdapterNews.OnNewsItemClickListener
@@ -63,7 +63,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     @Inject
     lateinit var newsRepository: NewsRepository
     @Inject
-    lateinit var teamRepository: TeamRepository
+    lateinit var teamRepository: TeamsRepository
 
     private lateinit var imageList: RealmList<String>
     private var llImage: ViewGroup? = null

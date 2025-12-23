@@ -66,7 +66,7 @@ import org.ole.planet.myplanet.repository.LibraryRepository
 import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.SubmissionRepository
-import org.ole.planet.myplanet.repository.TeamRepository
+import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.chat.ChatHistoryListFragment
@@ -111,7 +111,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     @Inject
-    lateinit var teamRepository: TeamRepository
+    lateinit var teamRepository: TeamsRepository
     @Inject
     lateinit var progressRepository: ProgressRepository
     @Inject

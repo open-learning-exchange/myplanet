@@ -29,7 +29,7 @@ data class JoinRequestNotification(
     val requestId: String
 )
 
-interface TeamRepository {
+interface TeamsRepository {
     suspend fun getMyTeamsFlow(userId: String): Flow<List<RealmMyTeam>>
     suspend fun getShareableTeams(): List<RealmMyTeam>
     suspend fun getShareableEnterprises(): List<RealmMyTeam>

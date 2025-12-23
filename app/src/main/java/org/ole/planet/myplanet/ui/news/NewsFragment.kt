@@ -29,7 +29,7 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.NewsRepository
-import org.ole.planet.myplanet.repository.TeamRepository
+import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
@@ -52,7 +52,7 @@ class NewsFragment : BaseNewsFragment() {
     @Inject
     lateinit var newsRepository: NewsRepository
     @Inject
-    lateinit var teamRepository: TeamRepository
+    lateinit var teamRepository: TeamsRepository
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
     private var filteredNewsList: List<RealmNews?> = listOf()

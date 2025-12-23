@@ -11,11 +11,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.repository.TeamRepository
+import org.ole.planet.myplanet.repository.TeamsRepository
 
 @HiltViewModel
 class TeamViewModel @Inject constructor(
-    private val teamRepository: TeamRepository
+    private val teamRepository: TeamsRepository
 ) : ViewModel() {
     private val _teamData = MutableStateFlow<List<TeamData>>(emptyList())
     val teamData: StateFlow<List<TeamData>> = _teamData

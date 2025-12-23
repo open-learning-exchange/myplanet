@@ -36,7 +36,7 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.NewsRepository
-import org.ole.planet.myplanet.repository.TeamRepository
+import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
@@ -74,7 +74,7 @@ class ChatHistoryListFragment : Fragment() {
     @Inject
     lateinit var userRepository: UserRepository
     @Inject
-    lateinit var teamRepository: TeamRepository
+    lateinit var teamRepository: TeamsRepository
     @Inject
     lateinit var newsRepository: NewsRepository
     @Inject

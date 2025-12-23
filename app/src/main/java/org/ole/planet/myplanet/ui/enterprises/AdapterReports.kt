@@ -20,14 +20,14 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.DialogAddReportBinding
 import org.ole.planet.myplanet.databinding.ReportListItemBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.repository.TeamRepository
+import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils
 
 class AdapterReports(
     private val context: Context,
-    private val teamRepository: TeamRepository,
+    private val teamRepository: TeamsRepository,
     private val scope: CoroutineScope,
     private val prefData: SharedPrefManager
 ) : ListAdapter<RealmMyTeam, AdapterReports.ViewHolderReports>(diffCallback) {
