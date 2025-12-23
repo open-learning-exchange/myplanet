@@ -47,7 +47,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         viewLifecycleOwner.lifecycleScope.launch {
-            courses = id?.takeIf { it.isNotBlank() }?.let { courseRepository.getCourseByCourseId(it) }
+            courses = id?.takeIf { it.isNotBlank() }?.let { coursesRepository.getCourseByCourseId(it) }
             initRatingView("course", id ?: courses?.courseId, courses?.courseTitle, this@CourseDetailFragment)
             courses?.let { bindCourseData(it) }
         }
@@ -66,16 +66,16 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         )
         setMarkdownText(binding.description, markdownContentWithLocalPaths)
         val courseId = course.courseId
-        val examCount = courseRepository.getCourseExamCount(courseId)
+        val examCount = coursesRepository.getCourseExamCount(courseId)
         binding.noOfExams.text = context?.getString(
             R.string.number_placeholder,
             examCount
         )
-        val resources = courseRepository.getCourseOnlineResources(courseId)
+        val resources = coursesRepository.getCourseOnlineResources(courseId)
         setResourceButton(resources, binding.btnResources)
-        val downloadedResources = courseRepository.getCourseOfflineResources(courseId)
+        val downloadedResources = coursesRepository.getCourseOfflineResources(courseId)
         setOpenResourceButton(downloadedResources, binding.btnOpen)
-        val steps = courseRepository.getCourseSteps(courseId)
+        val steps = coursesRepository.getCourseSteps(courseId)
         setStepsList(steps)
         refreshRatings()
     }
@@ -125,7 +125,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     override fun onDownloadComplete() {
         super.onDownloadComplete()
         viewLifecycleOwner.lifecycleScope.launch {
-            courses = id?.takeIf { it.isNotBlank() }?.let { courseRepository.getCourseByCourseId(it) } ?: courses
+            courses = id?.takeIf { it.isNotBlank() }?.let { coursesRepository.getCourseByCourseId(it) } ?: courses
             courses?.let { bindCourseData(it) }
         }
     }
