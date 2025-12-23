@@ -22,7 +22,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityAddResourceBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.LibraryRepository
+import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.CheckboxListView
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
@@ -34,7 +34,7 @@ class AddResourceActivity : AppCompatActivity() {
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     @Inject
-    lateinit var libraryRepository: LibraryRepository
+    lateinit var resourcesRepository: ResourcesRepository
     private lateinit var binding: ActivityAddResourceBinding
     var userModel: RealmUserModel? = null
     var subjects: RealmList<String>? = null
@@ -92,8 +92,8 @@ class AddResourceActivity : AppCompatActivity() {
             setUserId(userModel?.id)
         }
         lifecycleScope.launch {
-            libraryRepository.saveLibraryItem(resource)
-            libraryRepository.markResourceAdded(userModel?.id, id)
+            resourcesRepository.saveLibraryItem(resource)
+            resourcesRepository.markResourceAdded(userModel?.id, id)
             toast(this@AddResourceActivity, getString(R.string.added_to_my_library))
             finish()
         }

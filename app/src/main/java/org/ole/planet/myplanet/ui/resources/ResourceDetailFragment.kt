@@ -34,8 +34,8 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private lateinit var library: RealmMyLibrary
     var userModel: RealmUserModel? = null
     private suspend fun fetchLibrary(libraryId: String): RealmMyLibrary? {
-        return libraryRepository.getLibraryItemById(libraryId)
-            ?: libraryRepository.getLibraryItemByResourceId(libraryId)
+        return resourcesRepository.getLibraryItemById(libraryId)
+            ?: resourcesRepository.getLibraryItemByResourceId(libraryId)
     }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -61,7 +61,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                     when {
                         backgroundLibrary == null -> null
                         backgroundLibrary.userId?.contains(userId) != true && userId != null ->
-                            libraryRepository.updateUserLibrary(libraryId!!, userId, true)
+                            resourcesRepository.updateUserLibrary(libraryId!!, userId, true)
                         else -> backgroundLibrary
                     }
                 }
@@ -226,7 +226,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                 val updatedLibrary = withContext(Dispatchers.IO) {
                     try {
                         if (userId != null) {
-                            libraryRepository.updateUserLibrary(libraryId!!, userId, isAdd)
+                            resourcesRepository.updateUserLibrary(libraryId!!, userId, isAdd)
                         } else {
                             null
                         }

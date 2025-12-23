@@ -21,7 +21,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.TeamNotificationInfo
 import org.ole.planet.myplanet.repository.ActivityRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
-import org.ole.planet.myplanet.repository.LibraryRepository
+import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.SurveyRepository
@@ -40,7 +40,7 @@ data class DashboardUiState(
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     private val userRepository: UserRepository,
-    private val libraryRepository: LibraryRepository,
+    private val resourcesRepository: ResourcesRepository,
     private val coursesRepository: CoursesRepository,
     private val teamRepository: TeamRepository,
     private val submissionRepository: SubmissionRepository,
@@ -71,7 +71,7 @@ class DashboardViewModel @Inject constructor(
     }
 
     suspend fun updateResourceNotification(userId: String?) {
-        val resourceCount = libraryRepository.countLibrariesNeedingUpdate(userId)
+        val resourceCount = resourcesRepository.countLibrariesNeedingUpdate(userId)
         notificationRepository.updateResourceNotification(userId, resourceCount)
     }
 
@@ -113,7 +113,7 @@ class DashboardViewModel @Inject constructor(
         userContentJob?.cancel()
         userContentJob = viewModelScope.launch {
             val libraryDeferred = async {
-                libraryRepository.getMyLibrary(userId)
+                resourcesRepository.getMyLibrary(userId)
             }
 
             val coursesFlowJob = launch {
@@ -148,7 +148,7 @@ class DashboardViewModel @Inject constructor(
     }
 
     suspend fun getLibraryForSelectedUser(userId: String): List<RealmMyLibrary> {
-        return libraryRepository.getLibraryForSelectedUser(userId)
+        return resourcesRepository.getLibraryForSelectedUser(userId)
     }
 
     fun loadUsers() {

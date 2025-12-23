@@ -97,7 +97,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             } else if (isMyCourseLib && courseLib == null && !isSurvey) {
                 viewLifecycleOwner.lifecycleScope.launch {
                     val userId = settings.getString("userId", "--")
-                    val libraryList = libraryRepository.getLibraryListForUser(userId)
+                    val libraryList = resourcesRepository.getLibraryListForUser(userId)
                     showDownloadDialog(libraryList)
                 }
             }
@@ -149,7 +149,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             val result = runCatching {
                 resourceIds.forEach { resourceId ->
                     if (!userId.isNullOrBlank()) {
-                        libraryRepository.updateUserLibrary(resourceId, userId, isAdd = true)
+                        resourcesRepository.updateUserLibrary(resourceId, userId, isAdd = true)
                         libraryAdded = true
                     }
                 }
