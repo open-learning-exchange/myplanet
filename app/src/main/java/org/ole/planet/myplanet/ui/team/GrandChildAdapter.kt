@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.news
+package org.ole.planet.myplanet.ui.team
 
 import android.view.LayoutInflater
 import android.view.View
