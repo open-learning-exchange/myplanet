@@ -20,68 +20,68 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
 
-class NewsRepositoryImpl @Inject constructor(
+class VoicesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     private val gson: Gson,
-) : RealmRepository(databaseService), NewsRepository {
+) : RealmRepository(databaseService), VoicesRepository {
     override suspend fun getLibraryResource(resourceId: String): RealmMyLibrary? {
         return withRealm { realm ->
             realm.findCopyByField(RealmMyLibrary::class.java, "_id", resourceId)
         }
     }
 
-    override suspend fun getNewsWithReplies(newsId: String): Pair<RealmNews?, List<RealmNews>> {
+    override suspend fun getVoicesWithReplies(voicesId: String): Pair<RealmNews?, List<RealmNews>> {
         return withRealm(ensureLatest = true) { realm ->
-            val news = realm.findCopyByField(RealmNews::class.java, "id", newsId)
+            val voice = realm.findCopyByField(RealmNews::class.java, "id", voicesId)
             val replies = realm.where(RealmNews::class.java)
-                .equalTo("replyTo", newsId, Case.INSENSITIVE)
+                .equalTo("replyTo", voicesId, Case.INSENSITIVE)
                 .sort("time", Sort.DESCENDING)
                 .findAll()
                 .let { realm.copyFromRealm(it) }
-            news to replies
+            voice to replies
         }
     }
 
-    override suspend fun getCommunityVisibleNews(userIdentifier: String): List<RealmNews> {
-        val allNews = queryList(RealmNews::class.java) {
+    override suspend fun getCommunityVisibleVoices(userIdentifier: String): List<RealmNews> {
+        val allVoices = queryList(RealmNews::class.java) {
             isEmpty("replyTo")
             equalTo("docType", "message", Case.INSENSITIVE)
             sort("time", Sort.DESCENDING)
         }
-        if (allNews.isEmpty()) {
+        if (allVoices.isEmpty()) {
             return emptyList()
         }
 
-        return allNews.filter { news ->
-            isVisibleToUser(news, userIdentifier)
+        return allVoices.filter { voice ->
+            isVisibleToUser(voice, userIdentifier)
         }
     }
 
-    override suspend fun createNews(map: HashMap<String?, String>, user: RealmUserModel?): RealmNews {
+    override suspend fun createVoice(map: HashMap<String?, String>, user: RealmUserModel?): RealmNews {
         return withRealmAsync { realm ->
-            val managedNews = createNews(map, realm, user, null)
-            realm.copyFromRealm(managedNews)
+            val managedVoice = createNews(map, realm, user, null)
+            realm.copyFromRealm(managedVoice)
         }
     }
 
-    override suspend fun getNewsByTeamId(teamId: String): List<RealmNews> {
+    override suspend fun getVoicesByTeamId(teamId: String): List<RealmNews> {
         return withRealm { realm ->
-            val allNews = realm.where(RealmNews::class.java)
+            val allVoices = realm.where(RealmNews::class.java)
                 .isEmpty("replyTo")
                 .sort("time", Sort.DESCENDING)
                 .findAll()
 
             val filteredList = mutableListOf<RealmNews>()
-            for (news in allNews) {
-                if (!news.viewableBy.isNullOrEmpty() && news.viewableBy.equals("teams", ignoreCase = true) && news.viewableId.equals(teamId, ignoreCase = true)) {
-                    filteredList.add(realm.copyFromRealm(news))
-                } else if (!news.viewIn.isNullOrEmpty()) {
+            for (voice in allVoices) {
+                if (!voice.viewableBy.isNullOrEmpty() && voice.viewableBy.equals("teams", ignoreCase = true) && voice.viewableId.equals(teamId, ignoreCase = true)) {
+                    filteredList.add(realm.copyFromRealm(voice))
+                } else if (!voice.viewIn.isNullOrEmpty()) {
                     try {
-                        val ar = gson.fromJson(news.viewIn, JsonArray::class.java)
+                        val ar = gson.fromJson(voice.viewIn, JsonArray::class.java)
                         for (e in ar) {
                             val ob = e.asJsonObject
                             if (ob["_id"].asString.equals(teamId, ignoreCase = true)) {
-                                filteredList.add(realm.copyFromRealm(news))
+                                filteredList.add(realm.copyFromRealm(voice))
                                 break
                             }
                         }
@@ -94,12 +94,12 @@ class NewsRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun isVisibleToUser(news: RealmNews, userIdentifier: String): Boolean {
-        if (news.viewableBy.equals("community", ignoreCase = true)) {
+    private fun isVisibleToUser(voice: RealmNews, userIdentifier: String): Boolean {
+        if (voice.viewableBy.equals("community", ignoreCase = true)) {
             return true
         }
 
-        val viewIn = news.viewIn ?: return false
+        val viewIn = voice.viewIn ?: return false
         if (viewIn.isEmpty()) {
             return false
         }
@@ -116,22 +116,22 @@ class NewsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getCommunityNews(userIdentifier: String): Flow<List<RealmNews>> {
-        val allNewsFlow = queryListFlow(RealmNews::class.java) {
+    override suspend fun getCommunityVoices(userIdentifier: String): Flow<List<RealmNews>> {
+        val allVoicesFlow = queryListFlow(RealmNews::class.java) {
             isEmpty("replyTo")
             equalTo("docType", "message", Case.INSENSITIVE)
             sort("time", Sort.DESCENDING)
         }
         .flowOn(Dispatchers.Main) // Realm async queries require a Looper thread.
 
-        return allNewsFlow.map { allNews ->
-            // allNews are unmanaged copies (POJOs) created by copyFromRealm in queryListFlow.
+        return allVoicesFlow.map { allVoices ->
+            // allVoices are unmanaged copies (POJOs) created by copyFromRealm in queryListFlow.
             // It is safe to process them on a background thread.
-            allNews.filter { news ->
-                isVisibleToUser(news, userIdentifier)
-            }.map { news ->
-                news.sortDate = news.calculateSortDate()
-                news
+            allVoices.filter { voice ->
+                isVisibleToUser(voice, userIdentifier)
+            }.map { voice ->
+                voice.sortDate = voice.calculateSortDate()
+                voice
             }
         }.flowOn(Dispatchers.Default)
     }
@@ -141,14 +141,14 @@ class NewsRepositoryImpl @Inject constructor(
             isEmpty("replyTo")
             sort("time", Sort.DESCENDING)
         }.map { discussions ->
-            discussions.filter { news ->
-                val viewableByTeams = !news.viewableBy.isNullOrEmpty() &&
-                        news.viewableBy.equals("teams", ignoreCase = true) &&
-                        news.viewableId.equals(teamId, ignoreCase = true)
+            discussions.filter { voice ->
+                val viewableByTeams = !voice.viewableBy.isNullOrEmpty() &&
+                        voice.viewableBy.equals("teams", ignoreCase = true) &&
+                        voice.viewableId.equals(teamId, ignoreCase = true)
 
-                val viewInTeam = if (!news.viewIn.isNullOrEmpty()) {
+                val viewInTeam = if (!voice.viewIn.isNullOrEmpty()) {
                     try {
-                        val ar = gson.fromJson(news.viewIn, JsonArray::class.java)
+                        val ar = gson.fromJson(voice.viewIn, JsonArray::class.java)
                         ar.any { e ->
                             val ob = e.asJsonObject
                             ob["_id"].asString.equals(teamId, ignoreCase = true)
@@ -165,12 +165,12 @@ class NewsRepositoryImpl @Inject constructor(
         }.flowOn(Dispatchers.Default)
     }
 
-    override suspend fun shareNewsToCommunity(newsId: String, userId: String, planetCode: String, parentCode: String, teamName: String): Result<Unit> {
+    override suspend fun shareVoiceToCommunity(voicesId: String, userId: String, planetCode: String, parentCode: String, teamName: String): Result<Unit> {
         return try {
             databaseService.executeTransactionAsync { realm ->
-                val news = realm.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
-                if (news != null) {
-                    val array = gson.fromJson(news.viewIn, JsonArray::class.java)
+                val voice = realm.where(RealmNews::class.java).equalTo("id", voicesId).findFirst()
+                if (voice != null) {
+                    val array = gson.fromJson(voice.viewIn, JsonArray::class.java)
                     if (array != null && array.size() > 0) {
                         val firstElement = array.get(0)
                         if (firstElement.isJsonObject) {
@@ -187,8 +187,8 @@ class NewsRepositoryImpl @Inject constructor(
                     ob.addProperty("sharedDate", Calendar.getInstance().timeInMillis)
                     array?.add(ob)
 
-                    news.sharedBy = userId
-                    news.viewIn = gson.toJson(array)
+                    voice.sharedBy = userId
+                    voice.viewIn = gson.toJson(array)
                 }
             }
             Result.success(Unit)
@@ -215,7 +215,7 @@ class NewsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getFilteredNews(teamId: String): List<RealmNews> {
+    override suspend fun getFilteredVoices(teamId: String): List<RealmNews> {
         return withRealm { realm ->
             val query = realm.where(RealmNews::class.java)
                 .isEmpty("replyTo")
@@ -231,11 +231,11 @@ class NewsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getReplies(newsId: String?): List<RealmNews> {
+    override suspend fun getReplies(voicesId: String?): List<RealmNews> {
         return withRealm { realm ->
             realm.where(RealmNews::class.java)
                 .sort("time", Sort.DESCENDING)
-                .equalTo("replyTo", newsId, Case.INSENSITIVE)
+                .equalTo("replyTo", voicesId, Case.INSENSITIVE)
                 .findAll()
                 .let { realm.copyFromRealm(it) }
         }
