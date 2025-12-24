@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.team.teamCourse
+package org.ole.planet.myplanet.ui.team.courses
 
 import android.content.Context
 import android.content.SharedPreferences

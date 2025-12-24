@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.team.teamTask
+package org.ole.planet.myplanet.ui.team.task
 
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
@@ -34,7 +34,7 @@ import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.myhealth.UserListArrayAdapter
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
-import org.ole.planet.myplanet.ui.team.teamTask.AdapterTask.OnCompletedListener
+import org.ole.planet.myplanet.ui.team.task.TeamTaskAdapter.OnCompletedListener
 import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDateTZ
@@ -49,7 +49,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
     var list: List<RealmTeamTask> = emptyList()
     private var currentTab = R.id.btn_all
 
-    private lateinit var adapterTask: AdapterTask
+    private lateinit var adapterTask: TeamTaskAdapter
     var listener = DatePickerDialog.OnDateSetListener { _: DatePicker?, year: Int, monthOfYear: Int, dayOfMonth: Int ->
             deadline = Calendar.getInstance()
             deadline?.set(Calendar.YEAR, year)
@@ -213,7 +213,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.rvTask.layoutManager = LinearLayoutManager(activity)
-        adapterTask = AdapterTask(requireContext(), !isMemberFlow.value, viewLifecycleOwner.lifecycleScope, userRepository)
+        adapterTask = TeamTaskAdapter(requireContext(), !isMemberFlow.value, viewLifecycleOwner.lifecycleScope, userRepository)
         adapterTask.setListener(this)
         binding.rvTask.adapter = adapterTask
         binding.taskToggle.setOnCheckedChangeListener { _: SingleSelectToggleGroup?, checkedId: Int ->

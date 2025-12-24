@@ -23,7 +23,7 @@ import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
-import org.ole.planet.myplanet.ui.news.AdapterNews
+import org.ole.planet.myplanet.ui.news.NewsAdapter
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.SharedPrefManager
@@ -148,7 +148,7 @@ class DiscussionListFragment : BaseTeamFragment() {
                     val isPublicTeam = isPublicTeamFromFlow || team?.isPublic == true
                     val canPost = !isGuest && (isMember || isPublicTeam)
                     binding.addMessage.isVisible = canPost
-                    (binding.rvDiscussion.adapter as? AdapterNews)?.setNonTeamMember(!isMember)
+                    (binding.rvDiscussion.adapter as? NewsAdapter)?.setNonTeamMember(!isMember)
                 }
             }
         }
@@ -185,7 +185,7 @@ class DiscussionListFragment : BaseTeamFragment() {
         val existingAdapter = binding.rvDiscussion.adapter
         if (existingAdapter == null) {
             val adapterNews = activity?.let {
-                AdapterNews(it, user, null, getEffectiveTeamName(), teamId, userProfileDbHandler, viewLifecycleOwner.lifecycleScope, userRepository, voicesRepository, teamsRepository)
+                NewsAdapter(it, user, null, getEffectiveTeamName(), teamId, userProfileDbHandler, viewLifecycleOwner.lifecycleScope, userRepository, voicesRepository, teamsRepository)
             }
             adapterNews?.sharedPrefManager = sharedPrefManager
             adapterNews?.setmRealm(mRealm)
@@ -197,7 +197,7 @@ class DiscussionListFragment : BaseTeamFragment() {
                 showNoData(binding.tvNodata, it.itemCount, "discussions")
             }
         } else {
-            (existingAdapter as? AdapterNews)?.let { adapter ->
+            (existingAdapter as? NewsAdapter)?.let { adapter ->
                 realmNewsList?.let {
                     adapter.updateList(it)
                     showNoData(binding.tvNodata, adapter.itemCount, "discussions")

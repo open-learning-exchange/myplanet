@@ -28,8 +28,8 @@ import org.ole.planet.myplanet.databinding.ImageThumbBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
-import org.ole.planet.myplanet.ui.news.AdapterNews
-import org.ole.planet.myplanet.ui.news.AdapterNews.OnNewsItemClickListener
+import org.ole.planet.myplanet.ui.news.NewsAdapter
+import org.ole.planet.myplanet.ui.news.NewsAdapter.OnNewsItemClickListener
 import org.ole.planet.myplanet.ui.news.NewsActions
 import org.ole.planet.myplanet.ui.news.ReplyActivity
 import org.ole.planet.myplanet.utilities.FileUtils
@@ -43,7 +43,7 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
     @JvmField
     protected var llImage: ViewGroup? = null
     @JvmField
-    protected var adapterNews: AdapterNews? = null
+    protected var adapterNews: NewsAdapter? = null
     lateinit var openFolderLauncher: ActivityResultLauncher<Intent>
     private lateinit var replyActivityLauncher: ActivityResultLauncher<Intent>
 
