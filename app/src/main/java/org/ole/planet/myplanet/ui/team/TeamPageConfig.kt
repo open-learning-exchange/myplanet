@@ -10,7 +10,7 @@ import org.ole.planet.myplanet.ui.team.teamCourse.TeamCoursesFragment
 import org.ole.planet.myplanet.ui.team.teamDiscussion.DiscussionListFragment
 import org.ole.planet.myplanet.ui.team.teamMember.JoinedMemberFragment
 import org.ole.planet.myplanet.ui.team.teamMember.MembersFragment
-import org.ole.planet.myplanet.ui.team.teamResource.TeamResourceFragment
+import org.ole.planet.myplanet.ui.team.resources.TeamResourceFragment
 import org.ole.planet.myplanet.ui.team.teamTask.TeamTaskFragment
 
 sealed class TeamPageConfig(val id: String, @StringRes val titleRes: Int) {
