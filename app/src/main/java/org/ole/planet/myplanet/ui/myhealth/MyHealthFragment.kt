@@ -76,7 +76,7 @@ class MyHealthFragment : Fragment() {
     var userModel: RealmUserModel? = null
     lateinit var userModelList: List<RealmUserModel>
     lateinit var adapter: UserListArrayAdapter
-    private lateinit var healthAdapter: AdapterHealthExamination
+    private lateinit var healthAdapter: HealthExaminationAdapter
     var dialog: AlertDialog? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     lateinit var prefManager: SharedPrefManager
@@ -420,7 +420,7 @@ class MyHealthFragment : Fragment() {
                     binding.tvDataPlaceholder.visibility = View.VISIBLE
 
                     if (!::healthAdapter.isInitialized) {
-                        healthAdapter = AdapterHealthExamination(requireActivity(), mh, currentUser, userMap)
+                        healthAdapter = HealthExaminationAdapter(requireActivity(), mh, currentUser, userMap)
                     } else {
                         healthAdapter.updateData(mh, currentUser, userMap)
                     }
