@@ -7,7 +7,7 @@ import org.ole.planet.myplanet.ui.enterprises.FinanceFragment
 import org.ole.planet.myplanet.ui.enterprises.ReportsFragment
 import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.ui.team.courses.TeamCoursesFragment
-import org.ole.planet.myplanet.ui.team.teamDiscussion.DiscussionListFragment
+import org.ole.planet.myplanet.ui.team.discussion.DiscussionListFragment
 import org.ole.planet.myplanet.ui.team.member.JoinedMemberFragment
 import org.ole.planet.myplanet.ui.team.member.MembersFragment
 import org.ole.planet.myplanet.ui.team.resources.TeamResourcesFragment

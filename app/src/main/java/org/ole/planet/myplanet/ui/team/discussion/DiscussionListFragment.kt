@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.team.teamDiscussion
+package org.ole.planet.myplanet.ui.team.discussion
 
 import android.content.res.Configuration
 import android.os.Bundle
