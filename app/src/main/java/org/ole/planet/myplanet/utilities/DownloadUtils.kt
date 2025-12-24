@@ -22,9 +22,9 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.datamanager.DownloadWorker
-import org.ole.planet.myplanet.datamanager.MyDownloadService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.service.MyDownloadService
 
 object DownloadUtils {
     private const val DOWNLOAD_CHANNEL = "DownloadChannel"
