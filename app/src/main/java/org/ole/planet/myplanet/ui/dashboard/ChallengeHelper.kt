@@ -16,7 +16,7 @@ import org.json.JSONArray
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.RealmVoices
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -80,7 +80,7 @@ class ChallengeHelper(
     }
 
     private fun fetchVoiceDates(realm: Realm, start: Long, end: Long, userId: String?): List<String> {
-        val query = realm.where(RealmNews::class.java)
+        val query = realm.where(RealmVoices::class.java)
             .greaterThanOrEqualTo("time", start)
             .lessThanOrEqualTo("time", end)
         if (userId != null) query.equalTo("userId", userId)
@@ -90,7 +90,7 @@ class ChallengeHelper(
             .distinct()
     }
 
-    private fun isCommunitySection(news: RealmNews): Boolean {
+    private fun isCommunitySection(news: RealmVoices): Boolean {
         news.viewIn?.let { viewInStr ->
             try {
                 val viewInArray = JSONArray(viewInStr)

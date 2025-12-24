@@ -25,7 +25,7 @@ import java.io.File
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ImageThumbBinding
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.RealmVoices
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.news.AdapterNews
@@ -38,7 +38,7 @@ import org.ole.planet.myplanet.utilities.FileUtils.getRealPathFromURI
 import org.ole.planet.myplanet.utilities.GsonUtils
 
 @RequiresApi(api = Build.VERSION_CODES.O)
-abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListener {
+abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickListener {
     lateinit var imageList: RealmList<String>
     @JvmField
     protected var llImage: ViewGroup? = null
@@ -84,7 +84,7 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
         if (context is OnHomeItemClickListener) homeItemClickListener = context
     }
 
-    override fun showReply(news: RealmNews?, fromLogin: Boolean, nonTeamMember: Boolean) {
+    override fun showReply(news: RealmVoices?, fromLogin: Boolean, nonTeamMember: Boolean) {
         if (news != null) {
             val intent = Intent(activity, ReplyActivity::class.java).putExtra("id", news.id)
                 .putExtra("fromLogin", fromLogin)
@@ -105,7 +105,7 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
         )
     }
 
-    abstract fun setData(list: List<RealmNews?>?)
+    abstract fun setData(list: List<RealmVoices?>?)
     fun showNoData(v: View?, count: Int?, source: String) {
         count?.let { BaseRecyclerFragment.showNoData(v, it, source) }
     }

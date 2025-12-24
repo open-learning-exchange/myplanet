@@ -36,7 +36,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AddMeetupBinding
 import org.ole.planet.myplanet.databinding.FragmentEnterpriseCalendarBinding
 import org.ole.planet.myplanet.model.RealmMeetup
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.RealmVoices
 import org.ole.planet.myplanet.repository.MeetupRepository
 import org.ole.planet.myplanet.ui.mymeetup.AdapterMeetup
 import org.ole.planet.myplanet.utilities.TimeUtils
@@ -263,7 +263,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
         refreshCalendarView()
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {}
+    override fun onNewsItemClick(news: RealmVoices?) {}
     override fun clearImages() {
         imageList.clear()
         llImage?.removeAllViews()

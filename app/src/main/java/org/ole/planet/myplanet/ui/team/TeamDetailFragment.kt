@@ -25,7 +25,7 @@ import org.ole.planet.myplanet.callback.TableDataUpdate
 import org.ole.planet.myplanet.callback.TeamUpdateListener
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMemberCount
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.RealmVoices
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -451,7 +451,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
         createTeamLog()
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {}
+    override fun onNewsItemClick(news: RealmVoices?) {}
 
     override fun clearImages() {
         imageList.clear()

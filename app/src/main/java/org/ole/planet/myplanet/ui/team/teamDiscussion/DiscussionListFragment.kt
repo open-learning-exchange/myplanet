@@ -17,8 +17,8 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentDiscussionListBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
+import org.ole.planet.myplanet.model.RealmVoices
+import org.ole.planet.myplanet.model.RealmVoices.Companion.createVoices
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
@@ -40,7 +40,7 @@ class DiscussionListFragment : BaseTeamFragment() {
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
 
-    private var filteredNewsList: List<RealmNews?> = listOf()
+    private var filteredNewsList: List<RealmVoices?> = listOf()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentDiscussionListBinding.inflate(inflater, container, false)
@@ -85,7 +85,7 @@ class DiscussionListFragment : BaseTeamFragment() {
                 viewLifecycleOwner.lifecycleScope.launch {
                     try {
                         databaseService.executeTransactionAsync { realm ->
-                            createNews(map, realm, userModel, imageList)
+                            createVoices(map, realm, userModel, imageList)
                         }
                         binding.rvDiscussion.post {
                             binding.rvDiscussion.smoothScrollToPosition(0)
@@ -128,7 +128,7 @@ class DiscussionListFragment : BaseTeamFragment() {
         changeLayoutManager(resources.configuration.orientation, binding.rvDiscussion)
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val realmNewsList = voicesRepository.getFilteredNews(getEffectiveTeamId())
+            val realmNewsList = voicesRepository.getFilteredVoices(getEffectiveTeamId())
             val count = realmNewsList.size
             voicesRepository.updateTeamNotification(getEffectiveTeamId(), count)
             showRecyclerView(realmNewsList)
@@ -154,10 +154,10 @@ class DiscussionListFragment : BaseTeamFragment() {
         }
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {
+    override fun onNewsItemClick(news: RealmVoices?) {
         val bundle = Bundle()
-        bundle.putString("newsId", news?.newsId)
-        bundle.putString("newsRev", news?.newsRev)
+        bundle.putString("newsId", news?.voicesId)
+        bundle.putString("newsRev", news?.voicesRev)
         bundle.putString("conversations", news?.conversations)
 
         val chatDetailFragment = ChatDetailFragment()
@@ -181,7 +181,7 @@ class DiscussionListFragment : BaseTeamFragment() {
         changeLayoutManager(newConfig.orientation, binding.rvDiscussion)
     }
 
-    private fun showRecyclerView(realmNewsList: List<RealmNews?>?) {
+    private fun showRecyclerView(realmNewsList: List<RealmVoices?>?) {
         val existingAdapter = binding.rvDiscussion.adapter
         if (existingAdapter == null) {
             val adapterNews = activity?.let {
@@ -206,7 +206,7 @@ class DiscussionListFragment : BaseTeamFragment() {
         }
     }
 
-    override fun setData(list: List<RealmNews?>?) {
+    override fun setData(list: List<RealmVoices?>?) {
         showRecyclerView(list)
     }
 

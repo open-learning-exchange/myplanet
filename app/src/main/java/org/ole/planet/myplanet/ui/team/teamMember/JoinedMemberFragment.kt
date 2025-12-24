@@ -14,7 +14,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseMemberFragment
 import org.ole.planet.myplanet.callback.MemberChangeListener
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.RealmVoices
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.JoinedMemberData
@@ -238,7 +238,7 @@ class JoinedMemberFragment : BaseMemberFragment() {
         return result
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {}
+    override fun onNewsItemClick(news: RealmVoices?) {}
 
     override fun clearImages() {
         imageList.clear()

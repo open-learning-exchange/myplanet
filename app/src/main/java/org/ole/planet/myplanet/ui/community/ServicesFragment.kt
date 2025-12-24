@@ -10,7 +10,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentServicesBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.RealmVoices
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper.replaceFragment
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
@@ -67,7 +67,7 @@ class ServicesFragment : BaseTeamFragment() {
         }
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {}
+    override fun onNewsItemClick(news: RealmVoices?) {}
 
     override fun clearImages() {
         imageList.clear()

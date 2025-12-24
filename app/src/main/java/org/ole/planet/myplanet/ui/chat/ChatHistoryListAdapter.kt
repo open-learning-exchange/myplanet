@@ -20,7 +20,7 @@ import org.ole.planet.myplanet.databinding.RowChatHistoryBinding
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.RealmVoices
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.news.ExpandableListAdapter
 import org.ole.planet.myplanet.ui.team.TeamSelectionAdapter
@@ -37,7 +37,7 @@ class ChatHistoryListAdapter(
     private val context: Context,
     private var chatHistory: List<RealmChatHistory>,
     private var currentUser: RealmUserModel?,
-    private var newsList: List<RealmNews>,
+    private var newsList: List<RealmVoices>,
     private var shareTargets: ChatShareTargets,
     private val onShareChat: (HashMap<String?, String>, RealmChatHistory) -> Unit,
 ) : ListAdapter<RealmChatHistory, ChatHistoryListAdapter.ViewHolderChat>(
@@ -68,7 +68,7 @@ class ChatHistoryListAdapter(
         submitList(chatHistory)
     }
 
-    fun updateCachedData(user: RealmUserModel?, sharedNews: List<RealmNews>) {
+    fun updateCachedData(user: RealmUserModel?, sharedNews: List<RealmVoices>) {
         currentUser = user
         newsList = sharedNews
     }
@@ -204,7 +204,7 @@ class ChatHistoryListAdapter(
         }
 
         val isInNewsList = newsList.any { newsItem ->
-            newsItem.newsId == item._id
+            newsItem.voicesId == item._id
         }
 
         if (isInNewsList) {

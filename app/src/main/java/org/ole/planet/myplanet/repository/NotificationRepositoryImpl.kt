@@ -6,7 +6,7 @@ import java.util.UUID
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.RealmVoices
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmTeamNotification
 import org.ole.planet.myplanet.model.RealmTeamTask
@@ -249,7 +249,7 @@ class NotificationRepositoryImpl @Inject constructor(
                 .equalTo("type", "chat")
                 .findFirst()
 
-            val chatCount = realm.where(RealmNews::class.java)
+            val chatCount = realm.where(RealmVoices::class.java)
                 .equalTo("viewableBy", "teams")
                 .equalTo("viewableId", teamId)
                 .count()
@@ -292,7 +292,7 @@ class NotificationRepositoryImpl @Inject constructor(
 
 
             // 2. Fetch all relevant chat counts in a single query
-            val chatQuery = realm.where(RealmNews::class.java).equalTo("viewableBy", "teams")
+            val chatQuery = realm.where(RealmVoices::class.java).equalTo("viewableBy", "teams")
             chatQuery.beginGroup()
             teamIds.forEachIndexed { index, id ->
                 if (index > 0) chatQuery.or()

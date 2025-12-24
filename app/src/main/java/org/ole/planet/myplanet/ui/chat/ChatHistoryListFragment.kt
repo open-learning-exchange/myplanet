@@ -32,7 +32,7 @@ import org.ole.planet.myplanet.databinding.FragmentChatHistoryListBinding
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.RealmChatHistory
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.RealmVoices
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
@@ -62,7 +62,7 @@ class ChatHistoryListFragment : Fragment() {
     @AppPreferences
     lateinit var settings: SharedPreferences
     private val serverUrlMapper = ServerUrlMapper()
-    private var sharedNewsMessages: List<RealmNews> = emptyList()
+    private var sharedNewsMessages: List<RealmVoices> = emptyList()
     private var shareTargets = ChatShareTargets(null, emptyList(), emptyList())
     private var memoizedShareTargets: ChatShareTargets? = null
     private var searchBarWatcher: TextWatcher? = null
@@ -334,7 +334,7 @@ class ChatHistoryListFragment : Fragment() {
         }
         viewLifecycleOwner.lifecycleScope.launch {
             val currentUser = user
-            val createdNews = voicesRepository.createNews(map, currentUser)
+            val createdNews = voicesRepository.createVoices(map, currentUser)
             if (currentUser?.planetCode != null) {
                 sharedNewsMessages = sharedNewsMessages + createdNews
             }

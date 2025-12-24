@@ -16,8 +16,8 @@ import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.findCopyByField
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
+import org.ole.planet.myplanet.model.RealmVoices
+import org.ole.planet.myplanet.model.RealmVoices.Companion.createVoices
 import org.ole.planet.myplanet.model.RealmUserModel
 
 class VoicesRepositoryImpl @Inject constructor(
@@ -30,11 +30,11 @@ class VoicesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getNewsWithReplies(newsId: String): Pair<RealmNews?, List<RealmNews>> {
+    override suspend fun getVoicesWithReplies(voicesId: String): Pair<RealmVoices?, List<RealmVoices>> {
         return withRealm(ensureLatest = true) { realm ->
-            val news = realm.findCopyByField(RealmNews::class.java, "id", newsId)
-            val replies = realm.where(RealmNews::class.java)
-                .equalTo("replyTo", newsId, Case.INSENSITIVE)
+            val news = realm.findCopyByField(RealmVoices::class.java, "id", voicesId)
+            val replies = realm.where(RealmVoices::class.java)
+                .equalTo("replyTo", voicesId, Case.INSENSITIVE)
                 .sort("time", Sort.DESCENDING)
                 .findAll()
                 .let { realm.copyFromRealm(it) }
@@ -42,8 +42,8 @@ class VoicesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getCommunityVisibleNews(userIdentifier: String): List<RealmNews> {
-        val allNews = queryList(RealmNews::class.java) {
+    override suspend fun getCommunityVisibleVoices(userIdentifier: String): List<RealmVoices> {
+        val allNews = queryList(RealmVoices::class.java) {
             isEmpty("replyTo")
             equalTo("docType", "message", Case.INSENSITIVE)
             sort("time", Sort.DESCENDING)
@@ -57,21 +57,21 @@ class VoicesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun createNews(map: HashMap<String?, String>, user: RealmUserModel?): RealmNews {
+    override suspend fun createVoices(map: HashMap<String?, String>, user: RealmUserModel?): RealmVoices {
         return withRealmAsync { realm ->
-            val managedNews = createNews(map, realm, user, null)
+            val managedNews = createVoices(map, realm, user, null)
             realm.copyFromRealm(managedNews)
         }
     }
 
-    override suspend fun getNewsByTeamId(teamId: String): List<RealmNews> {
+    override suspend fun getVoicesByTeamId(teamId: String): List<RealmVoices> {
         return withRealm { realm ->
-            val allNews = realm.where(RealmNews::class.java)
+            val allNews = realm.where(RealmVoices::class.java)
                 .isEmpty("replyTo")
                 .sort("time", Sort.DESCENDING)
                 .findAll()
 
-            val filteredList = mutableListOf<RealmNews>()
+            val filteredList = mutableListOf<RealmVoices>()
             for (news in allNews) {
                 if (!news.viewableBy.isNullOrEmpty() && news.viewableBy.equals("teams", ignoreCase = true) && news.viewableId.equals(teamId, ignoreCase = true)) {
                     filteredList.add(realm.copyFromRealm(news))
@@ -94,7 +94,7 @@ class VoicesRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun isVisibleToUser(news: RealmNews, userIdentifier: String): Boolean {
+    private fun isVisibleToUser(news: RealmVoices, userIdentifier: String): Boolean {
         if (news.viewableBy.equals("community", ignoreCase = true)) {
             return true
         }
@@ -116,8 +116,8 @@ class VoicesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getCommunityNews(userIdentifier: String): Flow<List<RealmNews>> {
-        val allNewsFlow = queryListFlow(RealmNews::class.java) {
+    override suspend fun getCommunityVoices(userIdentifier: String): Flow<List<RealmVoices>> {
+        val allNewsFlow = queryListFlow(RealmVoices::class.java) {
             isEmpty("replyTo")
             equalTo("docType", "message", Case.INSENSITIVE)
             sort("time", Sort.DESCENDING)
@@ -136,8 +136,8 @@ class VoicesRepositoryImpl @Inject constructor(
         }.flowOn(Dispatchers.Default)
     }
 
-    override suspend fun getDiscussionsByTeamIdFlow(teamId: String): Flow<List<RealmNews>> {
-        return queryListFlow(RealmNews::class.java) {
+    override suspend fun getDiscussionsByTeamIdFlow(teamId: String): Flow<List<RealmVoices>> {
+        return queryListFlow(RealmVoices::class.java) {
             isEmpty("replyTo")
             sort("time", Sort.DESCENDING)
         }.map { discussions ->
@@ -165,10 +165,10 @@ class VoicesRepositoryImpl @Inject constructor(
         }.flowOn(Dispatchers.Default)
     }
 
-    override suspend fun shareNewsToCommunity(newsId: String, userId: String, planetCode: String, parentCode: String, teamName: String): Result<Unit> {
+    override suspend fun shareVoicesToCommunity(voicesId: String, userId: String, planetCode: String, parentCode: String, teamName: String): Result<Unit> {
         return try {
             databaseService.executeTransactionAsync { realm ->
-                val news = realm.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
+                val news = realm.where(RealmVoices::class.java).equalTo("id", voicesId).findFirst()
                 if (news != null) {
                     val array = gson.fromJson(news.viewIn, JsonArray::class.java)
                     if (array != null && array.size() > 0) {
@@ -215,9 +215,9 @@ class VoicesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getFilteredNews(teamId: String): List<RealmNews> {
+    override suspend fun getFilteredVoices(teamId: String): List<RealmVoices> {
         return withRealm { realm ->
-            val query = realm.where(RealmNews::class.java)
+            val query = realm.where(RealmVoices::class.java)
                 .isEmpty("replyTo")
                 .beginGroup()
                 .equalTo("viewableBy", "teams", Case.INSENSITIVE)
@@ -231,11 +231,11 @@ class VoicesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getReplies(newsId: String?): List<RealmNews> {
+    override suspend fun getReplies(voicesId: String?): List<RealmVoices> {
         return withRealm { realm ->
-            realm.where(RealmNews::class.java)
+            realm.where(RealmVoices::class.java)
                 .sort("time", Sort.DESCENDING)
-                .equalTo("replyTo", newsId, Case.INSENSITIVE)
+                .equalTo("replyTo", voicesId, Case.INSENSITIVE)
                 .findAll()
                 .let { realm.copyFromRealm(it) }
         }

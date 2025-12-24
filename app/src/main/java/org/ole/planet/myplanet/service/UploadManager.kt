@@ -34,7 +34,7 @@ import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyPersonal
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.RealmVoices
 import org.ole.planet.myplanet.model.RealmNewsLog
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmRating
@@ -700,18 +700,18 @@ class UploadManager @Inject constructor(
         }
     }
 
-    suspend fun uploadNews() {
+    suspend fun uploadVoices() {
         val apiInterface = client.create(ApiInterface::class.java)
 
         databaseService.executeTransactionAsync { transactionRealm ->
-            val activities = transactionRealm.where(RealmNews::class.java).findAll()
+            val activities = transactionRealm.where(RealmVoices::class.java).findAll()
             activities.processInBatches { act ->
                 try {
                     if (act.userId?.startsWith("guest") == true) {
                         return@processInBatches
                     }
 
-                    val `object` = RealmNews.serializeNews(act)
+                    val `object` = RealmVoices.serializeVoices(act)
                     val image = act.imagesArray
                     val user = transactionRealm.where(RealmUserModel::class.java).equalTo("id", pref.getString("userId", "")).findFirst()
 

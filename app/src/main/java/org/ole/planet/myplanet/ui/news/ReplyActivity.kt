@@ -27,7 +27,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityReplyBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.RealmVoices
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
@@ -124,7 +124,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         refreshData()
     }
 
-    override fun showReply(news: RealmNews?, fromLogin: Boolean, nonTeamMember: Boolean) {
+    override fun showReply(news: RealmVoices?, fromLogin: Boolean, nonTeamMember: Boolean) {
         startActivity(Intent(this, ReplyActivity::class.java).putExtra("id", news?.id))
     }
 
@@ -135,7 +135,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         openFolderLauncher.launch(Intent.createChooser(intent, "Select Image"))
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {}
+    override fun onNewsItemClick(news: RealmVoices?) {}
 
     override fun onMemberSelected(userModel: RealmUserModel?) {
         val fragment = NewsActions.showMemberDetails(userModel, userProfileDbHandler) ?: return

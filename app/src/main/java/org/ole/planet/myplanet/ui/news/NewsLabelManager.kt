@@ -10,12 +10,12 @@ import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNewsBinding
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.RealmVoices
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Utilities
 
 class NewsLabelManager(private val context: Context, private val realm: Realm) {
-    fun setupAddLabelMenu(binding: RowNewsBinding, news: RealmNews?, canManageLabels: Boolean) {
+    fun setupAddLabelMenu(binding: RowNewsBinding, news: RealmVoices?, canManageLabels: Boolean) {
         binding.btnAddLabel.setOnClickListener(null)
         binding.btnAddLabel.isEnabled = canManageLabels
         if (!canManageLabels) {
@@ -41,7 +41,7 @@ class NewsLabelManager(private val context: Context, private val realm: Realm) {
 
                     val labelAdded = AtomicBoolean(false)
                     realm.executeTransactionAsync({ transactionRealm ->
-                        val managedNews = transactionRealm.where(RealmNews::class.java)
+                        val managedNews = transactionRealm.where(RealmVoices::class.java)
                             .equalTo("id", newsId)
                             .findFirst()
                         if (managedNews != null) {
@@ -57,7 +57,7 @@ class NewsLabelManager(private val context: Context, private val realm: Realm) {
                         }
                     }, {
                         if (labelAdded.get()) {
-                            val managedNews = realm.where(RealmNews::class.java)
+                            val managedNews = realm.where(RealmVoices::class.java)
                                 .equalTo("id", newsId)
                                 .findFirst()
                             val managedLabels = managedNews?.labels
@@ -79,7 +79,7 @@ class NewsLabelManager(private val context: Context, private val realm: Realm) {
         }
     }
 
-    fun showChips(binding: RowNewsBinding, news: RealmNews, canManageLabels: Boolean) {
+    fun showChips(binding: RowNewsBinding, news: RealmVoices, canManageLabels: Boolean) {
         binding.fbChips.removeAllViews()
 
         for (label in news.labels ?: emptyList()) {
@@ -101,7 +101,7 @@ class NewsLabelManager(private val context: Context, private val realm: Realm) {
                     if (selectedLabel != null && newsId != null) {
                         val labelRemoved = AtomicBoolean(false)
                         realm.executeTransactionAsync({ transactionRealm ->
-                            val managedNews = transactionRealm.where(RealmNews::class.java)
+                            val managedNews = transactionRealm.where(RealmVoices::class.java)
                                 .equalTo("id", newsId)
                                 .findFirst()
                             if (managedNews != null) {
@@ -116,7 +116,7 @@ class NewsLabelManager(private val context: Context, private val realm: Realm) {
                             }
                         }, {
                             if (labelRemoved.get()) {
-                                val managedNews = realm.where(RealmNews::class.java)
+                                val managedNews = realm.where(RealmVoices::class.java)
                                     .equalTo("id", newsId)
                                     .findFirst()
                                 val managedLabels = managedNews?.labels
@@ -138,7 +138,7 @@ class NewsLabelManager(private val context: Context, private val realm: Realm) {
 
     private fun updateAddLabelVisibility(
         binding: RowNewsBinding,
-        news: RealmNews?,
+        news: RealmVoices?,
         canManageLabels: Boolean,
     ) {
         if (!canManageLabels) {
