@@ -20,7 +20,7 @@ import org.ole.planet.myplanet.model.ChatMessage
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
-class ChatAdapter(val context: Context, private val recyclerView: RecyclerView, private val scope: CoroutineScope?) :
+class ChatMessagesAdapter(val context: Context, private val recyclerView: RecyclerView, private val scope: CoroutineScope?) :
     ListAdapter<ChatMessage, RecyclerView.ViewHolder>(
         DiffUtils.itemCallback(
             { old, new -> old == new },

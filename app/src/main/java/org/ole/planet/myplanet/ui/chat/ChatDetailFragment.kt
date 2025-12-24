@@ -63,7 +63,7 @@ import retrofit2.Response
 class ChatDetailFragment : Fragment() {
     private var _binding: FragmentChatDetailBinding? = null
     private val binding get() = _binding!!
-    private lateinit var mAdapter: ChatAdapter
+    private lateinit var mAdapter: ChatMessagesAdapter
     private lateinit var sharedViewModel: ChatViewModel
     private lateinit var messageTextWatcher: TextWatcher
     private var _id: String = ""
@@ -128,7 +128,7 @@ class ChatDetailFragment : Fragment() {
             isUserLoaded = true
             refreshInputState()
         }
-        mAdapter = ChatAdapter(requireContext(), binding.recyclerGchat, viewLifecycleOwner.lifecycleScope)
+        mAdapter = ChatMessagesAdapter(requireContext(), binding.recyclerGchat, viewLifecycleOwner.lifecycleScope)
         binding.recyclerGchat.apply {
             adapter = mAdapter
             layoutManager = LinearLayoutManager(requireContext())
