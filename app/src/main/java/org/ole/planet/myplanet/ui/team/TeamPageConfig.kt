@@ -6,11 +6,11 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.ui.enterprises.FinanceFragment
 import org.ole.planet.myplanet.ui.enterprises.ReportsFragment
 import org.ole.planet.myplanet.ui.survey.SurveyFragment
-import org.ole.planet.myplanet.ui.team.teamCourse.TeamCoursesFragment
+import org.ole.planet.myplanet.ui.team.courses.TeamCoursesFragment
 import org.ole.planet.myplanet.ui.team.discussion.DiscussionListFragment
-import org.ole.planet.myplanet.ui.team.teamMember.JoinedMemberFragment
-import org.ole.planet.myplanet.ui.team.teamMember.MembersFragment
-import org.ole.planet.myplanet.ui.team.teamResource.TeamResourceFragment
+import org.ole.planet.myplanet.ui.team.member.JoinedMemberFragment
+import org.ole.planet.myplanet.ui.team.member.MembersFragment
+import org.ole.planet.myplanet.ui.team.resources.TeamResourcesFragment
 import org.ole.planet.myplanet.ui.team.task.TeamTaskFragment
 
 sealed class TeamPageConfig(val id: String, @StringRes val titleRes: Int) {
@@ -61,11 +61,11 @@ sealed class TeamPageConfig(val id: String, @StringRes val titleRes: Int) {
     }
 
     object DocumentsPage : TeamPageConfig("DOCUMENTS", R.string.documents) {
-        override fun createFragment() = TeamResourceFragment()
+        override fun createFragment() = TeamResourcesFragment()
     }
 
     object ResourcesPage : TeamPageConfig("RESOURCES", R.string.resources) {
-        override fun createFragment() = TeamResourceFragment()
+        override fun createFragment() = TeamResourcesFragment()
     }
 
     object ApplicantsPage : TeamPageConfig("APPLICANTS", R.string.applicants) {
