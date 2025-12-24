@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.dashboard
+package org.ole.planet.myplanet.ui.news
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
