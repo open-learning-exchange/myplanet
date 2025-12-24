@@ -29,8 +29,8 @@ import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
-class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamList.OnUpdateCompleteListener,
-    AdapterTeamList.OnTeamActionsListener {
+class TeamFragment : Fragment(), TeamListAdapter.OnClickTeamItem, TeamListAdapter.OnUpdateCompleteListener,
+    TeamListAdapter.OnTeamActionsListener {
     private var _binding: FragmentTeamBinding? = null
     private val binding get() = _binding!!
     private lateinit var alertCreateTeamBinding: AlertCreateTeamBinding
@@ -48,7 +48,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
     private var fromDashboard: Boolean = false
     var user: RealmUserModel? = null
     private var teamList: List<RealmMyTeam> = emptyList()
-    private lateinit var adapterTeamList: AdapterTeamList
+    private lateinit var teamListAdapter: TeamListAdapter
     private var conditionApplied: Boolean = false
     private var textWatcher: TextWatcher? = null
 
@@ -210,7 +210,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
 
     private fun setupRecyclerView() {
         binding.rvTeamList.layoutManager = LinearLayoutManager(activity)
-        adapterTeamList = AdapterTeamList(
+        teamListAdapter = TeamListAdapter(
             requireActivity(),
             childFragmentManager,
             user,
@@ -221,13 +221,13 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem, AdapterTeamLis
             setUpdateCompleteListener(this@TeamFragment)
             setTeamActionsListener(this@TeamFragment)
         }
-        binding.rvTeamList.adapter = adapterTeamList
+        binding.rvTeamList.adapter = teamListAdapter
     }
 
     private fun observeTeamData() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.teamData.collectLatest { teamDataList ->
-                adapterTeamList.submitList(teamDataList)
+                teamListAdapter.submitList(teamDataList)
                 onUpdateComplete(teamDataList.size)
                 listContentDescription(conditionApplied)
             }

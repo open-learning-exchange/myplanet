@@ -21,12 +21,12 @@ import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils
 
-class AdapterTeamList(
+class TeamListAdapter(
     private val context: Context,
     private val fragmentManager: FragmentManager,
     private val currentUser: RealmUserModel?,
     private val sharedPrefManager: SharedPrefManager
-) : ListAdapter<TeamData, AdapterTeamList.ViewHolderTeam>(TeamDiffCallback) {
+) : ListAdapter<TeamData, TeamListAdapter.ViewHolderTeam>(TeamDiffCallback) {
     private var type: String? = ""
     private var teamListener: OnClickTeamItem? = null
     private var updateCompleteListener: OnUpdateCompleteListener? = null
