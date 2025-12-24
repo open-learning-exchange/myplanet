@@ -14,8 +14,8 @@ import org.ole.planet.myplanet.ui.team.TeamPageConfig.MembersPage
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.ResourcesPage
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.SurveyPage
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.TeamPage
-import org.ole.planet.myplanet.ui.team.teamMember.JoinedMemberFragment
-import org.ole.planet.myplanet.ui.team.teamMember.MembersFragment
+import org.ole.planet.myplanet.ui.team.member.JoinedMemberFragment
+import org.ole.planet.myplanet.ui.team.member.MembersFragment
 import org.ole.planet.myplanet.ui.team.resources.TeamResourcesFragment
 
 class TeamPagerAdapter(

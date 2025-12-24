@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.team.teamCourse
+package org.ole.planet.myplanet.ui.team.courses
 
 import android.os.Bundle
 import android.view.LayoutInflater

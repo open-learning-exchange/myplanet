@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.team.teamMember
+package org.ole.planet.myplanet.ui.team.member
 
 import android.content.Context
 import android.content.res.Configuration

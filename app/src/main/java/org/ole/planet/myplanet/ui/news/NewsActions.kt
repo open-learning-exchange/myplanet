@@ -24,7 +24,7 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.ui.team.teamMember.MemberDetailFragment
+import org.ole.planet.myplanet.ui.team.member.MemberDetailFragment
 import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 
@@ -40,7 +40,7 @@ object NewsActions {
 
     fun createEditDialogComponents(
         context: Context,
-        listener: AdapterNews.OnNewsItemClickListener?
+        listener: NewsAdapter.OnNewsItemClickListener?
     ): EditDialogComponents {
         val v = android.view.LayoutInflater.from(context).inflate(R.layout.alert_input, null)
         val tlInput = v.findViewById<TextInputLayout>(R.id.tl_input)
@@ -133,7 +133,7 @@ object NewsActions {
         realm: Realm,
         currentUser: RealmUserModel?,
         imageList: RealmList<String>?,
-        listener: AdapterNews.OnNewsItemClickListener?
+        listener: NewsAdapter.OnNewsItemClickListener?
     ) {
         val s = components.editText.text.toString().trim()
         if (s.isEmpty()) {
@@ -156,7 +156,7 @@ object NewsActions {
         id: String?,
         isEdit: Boolean,
         currentUser: RealmUserModel?,
-        listener: AdapterNews.OnNewsItemClickListener?,
+        listener: NewsAdapter.OnNewsItemClickListener?,
         viewHolder: RecyclerView.ViewHolder,
         updateReplyButton: (RecyclerView.ViewHolder, RealmNews?, Int) -> Unit = { _, _, _ -> }
     ) {
@@ -257,7 +257,7 @@ object NewsActions {
         news: RealmNews?,
         list: MutableList<RealmNews?>,
         teamName: String,
-        listener: AdapterNews.OnNewsItemClickListener? = null
+        listener: NewsAdapter.OnNewsItemClickListener? = null
     ) {
         val ar = GsonUtils.gson.fromJson(news?.viewIn, JsonArray::class.java)
         if (!realm.isInTransaction) realm.beginTransaction()
