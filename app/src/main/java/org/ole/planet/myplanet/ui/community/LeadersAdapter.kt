@@ -12,7 +12,7 @@ import org.ole.planet.myplanet.databinding.RowJoinedUserBinding
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
-import org.ole.planet.myplanet.ui.team.teamMember.MemberDetailFragment
+import org.ole.planet.myplanet.ui.team.member.MemberDetailFragment
 import org.ole.planet.myplanet.utilities.DiffUtils
 
 internal class LeadersAdapter(
