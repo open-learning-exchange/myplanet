@@ -25,22 +25,22 @@ import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils
 
-class AdapterReports(
+class ReportsAdapter(
     private val context: Context,
     private val teamsRepository: TeamsRepository,
     private val scope: CoroutineScope,
     private val prefData: SharedPrefManager
-) : ListAdapter<RealmMyTeam, AdapterReports.ViewHolderReports>(diffCallback) {
+) : ListAdapter<RealmMyTeam, ReportsAdapter.ReportsViewHolder>(diffCallback) {
     private var startTimeStamp: String? = null
     private var endTimeStamp: String? = null
     private var nonTeamMember = false
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderReports {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ReportsViewHolder {
         val binding = ReportListItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return ViewHolderReports(binding)
+        return ReportsViewHolder(binding)
     }
 
-    override fun onBindViewHolder(holder: ViewHolderReports, position: Int) {
+    override fun onBindViewHolder(holder: ReportsViewHolder, position: Int) {
         val binding = holder.binding
         if (nonTeamMember) {
             binding.edit.visibility = View.GONE
@@ -249,7 +249,7 @@ class AdapterReports(
         this.nonTeamMember = nonTeamMember
     }
 
-    class ViewHolderReports(val binding: ReportListItemBinding) : RecyclerView.ViewHolder(binding.root)
+    class ReportsViewHolder(val binding: ReportListItemBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {
         val diffCallback = DiffUtils.itemCallback<RealmMyTeam>(
