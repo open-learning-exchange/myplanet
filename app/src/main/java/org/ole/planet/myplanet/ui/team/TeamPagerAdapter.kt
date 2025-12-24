@@ -16,7 +16,7 @@ import org.ole.planet.myplanet.ui.team.TeamPageConfig.SurveyPage
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.TeamPage
 import org.ole.planet.myplanet.ui.team.member.JoinedMemberFragment
 import org.ole.planet.myplanet.ui.team.member.MembersFragment
-import org.ole.planet.myplanet.ui.team.teamResource.TeamResourceFragment
+import org.ole.planet.myplanet.ui.team.resources.TeamResourcesFragment
 
 class TeamPagerAdapter(
     private val fm: FragmentActivity,
@@ -56,7 +56,7 @@ class TeamPagerAdapter(
             ApplicantsPage, JoinRequestsPage -> if (fragment is MembersFragment) {
                 fragment.setMemberChangeListener(memberChangeListener)
             }
-            DocumentsPage, ResourcesPage -> if (fragment is TeamResourceFragment) {
+            DocumentsPage, ResourcesPage -> if (fragment is TeamResourcesFragment) {
                 MainApplication.listener = fragment
             }
             SurveyPage -> {

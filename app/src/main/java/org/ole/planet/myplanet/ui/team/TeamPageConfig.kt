@@ -10,7 +10,7 @@ import org.ole.planet.myplanet.ui.team.courses.TeamCoursesFragment
 import org.ole.planet.myplanet.ui.team.teamDiscussion.DiscussionListFragment
 import org.ole.planet.myplanet.ui.team.member.JoinedMemberFragment
 import org.ole.planet.myplanet.ui.team.member.MembersFragment
-import org.ole.planet.myplanet.ui.team.teamResource.TeamResourceFragment
+import org.ole.planet.myplanet.ui.team.resources.TeamResourcesFragment
 import org.ole.planet.myplanet.ui.team.task.TeamTaskFragment
 
 sealed class TeamPageConfig(val id: String, @StringRes val titleRes: Int) {
@@ -61,11 +61,11 @@ sealed class TeamPageConfig(val id: String, @StringRes val titleRes: Int) {
     }
 
     object DocumentsPage : TeamPageConfig("DOCUMENTS", R.string.documents) {
-        override fun createFragment() = TeamResourceFragment()
+        override fun createFragment() = TeamResourcesFragment()
     }
 
     object ResourcesPage : TeamPageConfig("RESOURCES", R.string.resources) {
-        override fun createFragment() = TeamResourceFragment()
+        override fun createFragment() = TeamResourcesFragment()
     }
 
     object ApplicantsPage : TeamPageConfig("APPLICANTS", R.string.applicants) {
