@@ -37,7 +37,7 @@ import org.ole.planet.myplanet.databinding.AddMeetupBinding
 import org.ole.planet.myplanet.databinding.FragmentEnterpriseCalendarBinding
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.repository.MeetupRepository
+import org.ole.planet.myplanet.repository.MeetupsRepository
 import org.ole.planet.myplanet.ui.mymeetup.AdapterMeetup
 import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
@@ -59,7 +59,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
     private var meetupDialog: AlertDialog? = null
     private var meetupAdapter: AdapterMeetup? = null
     @Inject
-    lateinit var meetupRepository: MeetupRepository
+    lateinit var meetupRepository: MeetupsRepository
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentEnterpriseCalendarBinding.inflate(inflater, container, false)

@@ -19,7 +19,7 @@ import org.ole.planet.myplanet.databinding.FragmentMyMeetupDetailBinding
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.getHashMap
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.MeetupRepository
+import org.ole.planet.myplanet.repository.MeetupsRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
@@ -32,7 +32,7 @@ class MyMeetupDetailFragment : Fragment(), View.OnClickListener {
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     @Inject
-    lateinit var meetupRepository: MeetupRepository
+    lateinit var meetupRepository: MeetupsRepository
     private var meetUpId: String? = null
     var user: RealmUserModel? = null
     private var listUsers: ListView? = null

@@ -19,8 +19,8 @@ import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepositoryImpl
 import org.ole.planet.myplanet.repository.LifeRepository
 import org.ole.planet.myplanet.repository.LifeRepositoryImpl
-import org.ole.planet.myplanet.repository.MeetupRepository
-import org.ole.planet.myplanet.repository.MeetupRepositoryImpl
+import org.ole.planet.myplanet.repository.MeetupsRepository
+import org.ole.planet.myplanet.repository.MeetupsRepositoryImpl
 import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.repository.NotificationRepositoryImpl
 import org.ole.planet.myplanet.repository.PersonalRepository
@@ -76,7 +76,7 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindMeetupRepository(impl: MeetupRepositoryImpl): MeetupRepository
+    abstract fun bindMeetupRepository(impl: MeetupsRepositoryImpl): MeetupsRepository
 
     @Binds
     @Singleton
