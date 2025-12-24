@@ -29,10 +29,10 @@ import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.CheckboxListView
 
 @AndroidEntryPoint
-class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdateListner {
+class TeamResourcesFragment : BaseTeamFragment(), TeamPageListener, ResourcesUpdateListner {
     private var _binding: FragmentTeamResourceBinding? = null
     private val binding get() = _binding!!
-    private lateinit var adapterLibrary: AdapterTeamResource
+    private lateinit var adapterLibrary: TeamResourcesAdapter
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTeamResourceBinding.inflate(inflater, container, false)
@@ -69,10 +69,10 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdat
             val canRemoveResources = teamsRepository.isTeamLeader(teamId, user?.id)
 
             if (!::adapterLibrary.isInitialized) {
-                adapterLibrary = AdapterTeamResource(
+                adapterLibrary = TeamResourcesAdapter(
                     safeActivity,
                     canRemoveResources,
-                    this@TeamResourceFragment,
+                    this@TeamResourcesFragment,
                 ) { resource, position ->
                     handleResourceRemoval(resource, position)
                 }

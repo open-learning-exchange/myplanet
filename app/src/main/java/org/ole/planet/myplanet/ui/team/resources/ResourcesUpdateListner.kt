@@ -1,6 +1,6 @@
 package org.ole.planet.myplanet.ui.team.resources
 
-interface  ResourceUpdateListner {
+interface  ResourcesUpdateListner {
     fun onResourceListUpdated()
     fun onResourceUpdateFailed(messageResId: Int)
 }
