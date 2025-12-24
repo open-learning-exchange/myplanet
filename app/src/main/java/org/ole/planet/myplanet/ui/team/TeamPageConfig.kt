@@ -8,8 +8,8 @@ import org.ole.planet.myplanet.ui.enterprises.ReportsFragment
 import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.ui.team.teamCourse.TeamCoursesFragment
 import org.ole.planet.myplanet.ui.team.teamDiscussion.DiscussionListFragment
-import org.ole.planet.myplanet.ui.team.teamMember.JoinedMemberFragment
-import org.ole.planet.myplanet.ui.team.teamMember.MembersFragment
+import org.ole.planet.myplanet.ui.team.member.JoinedMemberFragment
+import org.ole.planet.myplanet.ui.team.member.MembersFragment
 import org.ole.planet.myplanet.ui.team.teamResource.TeamResourceFragment
 import org.ole.planet.myplanet.ui.team.teamTask.TeamTaskFragment
 
