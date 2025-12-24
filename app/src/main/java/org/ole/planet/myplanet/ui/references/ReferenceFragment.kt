@@ -8,19 +8,16 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentReferenceBinding
-import org.ole.planet.myplanet.databinding.RowReferenceBinding
 import org.ole.planet.myplanet.model.Reference
 import org.ole.planet.myplanet.ui.dictionary.DictionaryActivity
 import org.ole.planet.myplanet.ui.map.OfflineMapActivity
 
-class ReferenceFragment : Fragment() {
+class ReferenceFragment : Fragment(), ReferenceAdapter.OnReferenceItemClickListener {
     private var _binding: FragmentReferenceBinding? = null
     private val binding get() = _binding!!
-    private lateinit var rowReferenceBinding: RowReferenceBinding
     private var homeItemClickListener: OnHomeItemClickListener? = null
 
     override fun onAttach(context: Context) {
@@ -40,29 +37,15 @@ class ReferenceFragment : Fragment() {
     }
 
     private fun setRecyclerAdapter(list: List<Reference>) {
-        binding.rvReferences.adapter = object : RecyclerView.Adapter<ViewHolderReference>() {
-            override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderReference {
-                rowReferenceBinding = RowReferenceBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-                return ViewHolderReference(rowReferenceBinding.root)
-            }
-
-            override fun onBindViewHolder(holder: ViewHolderReference, position: Int) {
-                rowReferenceBinding.title.text = list[position].title
-                rowReferenceBinding.icon.setImageResource(list[position].icon)
-                rowReferenceBinding.root.setOnClickListener {
-                    if (position == 0)
-                        startActivity(Intent(activity, OfflineMapActivity::class.java))
-                    else {
-                        startActivity(Intent(activity, DictionaryActivity::class.java))
-                    }
-                }
-            }
-
-            override fun getItemCount(): Int = list.size
-        }
+        binding.rvReferences.adapter = ReferenceAdapter(list, this)
     }
 
-    class ViewHolderReference(itemView: View) : RecyclerView.ViewHolder(itemView)
+    override fun onReferenceItemClick(reference: Reference) {
+        when (reference.title) {
+            getString(R.string.maps) -> startActivity(Intent(activity, OfflineMapActivity::class.java))
+            getString(R.string.english_dictionary) -> startActivity(Intent(activity, DictionaryActivity::class.java))
+        }
+    }
 
     override fun onDestroyView() {
         _binding = null
