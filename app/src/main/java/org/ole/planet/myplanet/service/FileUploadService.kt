@@ -1,6 +1,8 @@
-package org.ole.planet.myplanet.datamanager
+package org.ole.planet.myplanet.service
 
 import com.google.gson.JsonObject
+import org.ole.planet.myplanet.datamanager.ApiClient
+import org.ole.planet.myplanet.datamanager.ApiInterface
 import java.io.File
 import java.io.IOException
 import okhttp3.MediaType.Companion.toMediaTypeOrNull

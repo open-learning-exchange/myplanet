@@ -15,9 +15,9 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.DialogProgressBinding
-import org.ole.planet.myplanet.datamanager.MyDownloadService
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.model.MyPlanet
+import org.ole.planet.myplanet.service.MyDownloadService
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
