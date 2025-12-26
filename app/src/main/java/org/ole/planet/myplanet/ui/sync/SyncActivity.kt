@@ -59,10 +59,10 @@ import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.datamanager.ApiClient
 import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.datamanager.ApiInterface
-import org.ole.planet.myplanet.datamanager.Service
-import org.ole.planet.myplanet.datamanager.Service.CheckVersionCallback
-import org.ole.planet.myplanet.datamanager.Service.ConfigurationIdListener
-import org.ole.planet.myplanet.datamanager.Service.PlanetAvailableListener
+import org.ole.planet.myplanet.datamanager.PlanetService
+import org.ole.planet.myplanet.datamanager.PlanetService.CheckVersionCallback
+import org.ole.planet.myplanet.datamanager.PlanetService.ConfigurationIdListener
+import org.ole.planet.myplanet.datamanager.PlanetService.PlanetAvailableListener
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.ServerAddressesModel
@@ -133,7 +133,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
     var forceSync = false
     var syncFailed = false
     lateinit var defaultPref: SharedPreferences
-    lateinit var service: Service
+    lateinit var service: PlanetService
     var currentDialog: MaterialDialog? = null
     var serverConfigAction = ""
     var serverCheck = true

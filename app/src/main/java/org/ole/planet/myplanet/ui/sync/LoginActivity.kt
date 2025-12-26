@@ -36,7 +36,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityLoginBinding
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
-import org.ole.planet.myplanet.datamanager.Service
+import org.ole.planet.myplanet.datamanager.PlanetService
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -86,7 +86,7 @@ class LoginActivity : SyncActivity(), ProfileAdapter.OnItemClickListener {
         btnLang = binding.btnLang
         inputName = binding.inputName
         inputPassword = binding.inputPassword
-        service = Service(this)
+        service = PlanetService(this)
 
         binding.tvAvailableSpace.text = buildString {
             append(getString(R.string.available_space_colon))

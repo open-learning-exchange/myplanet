@@ -45,7 +45,7 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-class Service @Inject constructor(
+class PlanetService @Inject constructor(
     private val context: Context,
     private val retrofitInterface: ApiInterface,
     private val databaseService: DatabaseService,

@@ -20,7 +20,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.callback.SecurityDataCallback
 import org.ole.planet.myplanet.databinding.ActivityBecomeMemberBinding
-import org.ole.planet.myplanet.datamanager.Service
+import org.ole.planet.myplanet.datamanager.PlanetService
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils.CustomProgressDialog
@@ -142,7 +142,7 @@ class BecomeMemberActivity : BaseActivity() {
             show()
         }
 
-        Service(this).becomeMember(obj, object : Service.CreateUserCallback {
+        PlanetService(this).becomeMember(obj, object : PlanetService.CreateUserCallback {
             override fun onSuccess(success: String) {
                 runOnUiThread { Utilities.toast(this@BecomeMemberActivity, success) }
             }
