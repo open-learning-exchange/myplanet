@@ -19,7 +19,7 @@ import org.ole.planet.myplanet.repository.FeedbackRepository
 import org.ole.planet.myplanet.repository.FeedbackRepositoryImpl
 import org.ole.planet.myplanet.repository.LifeRepository
 import org.ole.planet.myplanet.repository.LifeRepositoryImpl
-import org.ole.planet.myplanet.repository.NotificationRepositoryImpl
+import org.ole.planet.myplanet.repository.NotificationsRepositoryImpl
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.PersonalRepository
 import org.ole.planet.myplanet.repository.PersonalRepositoryImpl
@@ -76,7 +76,7 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindNotificationRepository(impl: NotificationRepositoryImpl): NotificationsRepository
+    abstract fun bindNotificationsRepository(impl: NotificationsRepositoryImpl): NotificationsRepository
 
     @Binds
     @Singleton

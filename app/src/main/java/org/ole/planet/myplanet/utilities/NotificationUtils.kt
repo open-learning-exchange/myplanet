@@ -484,7 +484,7 @@ object NotificationUtils {
 @AndroidEntryPoint
 class NotificationActionReceiver : BroadcastReceiver() {
     @Inject
-    lateinit var notificationRepository: NotificationsRepository
+    lateinit var notificationsRepository: NotificationsRepository
     override fun onReceive(context: Context, intent: Intent) {
         val pendingResult = goAsync()
         MainApplication.applicationScope.launch {
@@ -542,7 +542,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
 
         try {
             withContext(Dispatchers.IO) {
-                notificationRepository.markNotificationsAsRead(setOf(notificationId))
+                notificationsRepository.markNotificationsAsRead(setOf(notificationId))
             }
         } catch (e: Exception) {
             e.printStackTrace()

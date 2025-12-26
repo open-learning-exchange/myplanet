@@ -44,7 +44,7 @@ class DashboardViewModel @Inject constructor(
     private val coursesRepository: CoursesRepository,
     private val teamsRepository: TeamsRepository,
     private val submissionRepository: SubmissionRepository,
-    private val notificationRepository: NotificationsRepository,
+    private val notificationsRepository: NotificationsRepository,
     private val surveyRepository: SurveyRepository,
     private val activityRepository: ActivityRepository,
 ) : ViewModel() {
@@ -72,7 +72,7 @@ class DashboardViewModel @Inject constructor(
 
     suspend fun updateResourceNotification(userId: String?) {
         val resourceCount = resourcesRepository.countLibrariesNeedingUpdate(userId)
-        notificationRepository.updateResourceNotification(userId, resourceCount)
+        notificationsRepository.updateResourceNotification(userId, resourceCount)
     }
 
     suspend fun createNotificationIfMissing(
@@ -81,7 +81,7 @@ class DashboardViewModel @Inject constructor(
         relatedId: String?,
         userId: String?,
     ) {
-        notificationRepository.createNotificationIfMissing(type, message, relatedId, userId)
+        notificationsRepository.createNotificationIfMissing(type, message, relatedId, userId)
     }
 
     suspend fun getPendingSurveys(userId: String?): List<RealmSubmission> {
@@ -97,15 +97,15 @@ class DashboardViewModel @Inject constructor(
     }
 
     suspend fun getUnreadNotificationsSize(userId: String?): Int {
-        return notificationRepository.getUnreadCount(userId)
+        return notificationsRepository.getUnreadCount(userId)
     }
 
     suspend fun getTeamNotificationInfo(teamId: String, userId: String): TeamNotificationInfo {
-        return notificationRepository.getTeamNotificationInfo(teamId, userId)
+        return notificationsRepository.getTeamNotificationInfo(teamId, userId)
     }
 
     suspend fun getTeamNotifications(teamIds: List<String>, userId: String): Map<String, TeamNotificationInfo> {
-        return notificationRepository.getTeamNotifications(teamIds, userId)
+        return notificationsRepository.getTeamNotifications(teamIds, userId)
     }
 
     fun loadUserContent(userId: String?) {
