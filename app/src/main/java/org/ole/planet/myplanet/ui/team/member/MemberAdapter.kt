@@ -23,11 +23,11 @@ import org.ole.planet.myplanet.databinding.RowJoinedUserBinding
 import org.ole.planet.myplanet.repository.JoinedMemberData
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 
-class AdapterJoinedMember(
+class MemberAdapter(
     private val context: Context,
     private val currentUserId: String?,
     private val actionListener: MemberActionListener
-) : ListAdapter<JoinedMemberData, AdapterJoinedMember.ViewHolderUser>(DIFF_CALLBACK) {
+) : ListAdapter<JoinedMemberData, MemberAdapter.ViewHolderUser>(DIFF_CALLBACK) {
     private var isLoggedInUserTeamLeader: Boolean = false
     interface MemberActionListener {
         fun onRemoveMember(member: JoinedMemberData, position: Int)
