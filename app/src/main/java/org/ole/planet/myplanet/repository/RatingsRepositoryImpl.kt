@@ -9,10 +9,10 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmUserModel
 
-class RatingRepositoryImpl @Inject constructor(
+class RatingsRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     private val gson: Gson,
-) : RealmRepository(databaseService), RatingRepository {
+) : RealmRepository(databaseService), RatingsRepository {
 
     override suspend fun getRatingSummary(
         type: String,

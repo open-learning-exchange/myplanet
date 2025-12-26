@@ -9,12 +9,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.RatingEntry
-import org.ole.planet.myplanet.repository.RatingRepository
+import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.RatingSummary
 import org.ole.planet.myplanet.repository.UserRepository
 
 class RatingViewModel @Inject constructor(
-    private val ratingRepository: RatingRepository,
+    private val ratingRepository: RatingsRepository,
     private val userRepository: UserRepository
 ) : ViewModel() {
 
