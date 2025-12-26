@@ -38,7 +38,7 @@ import org.ole.planet.myplanet.databinding.FragmentEnterpriseCalendarBinding
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.repository.EventsRepository
-import org.ole.planet.myplanet.ui.mymeetup.AdapterMeetup
+import org.ole.planet.myplanet.ui.events.EventsAdapter
 import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -57,7 +57,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
     private val eventDates: MutableList<Calendar> = mutableListOf()
     private var addMeetupDialog: AlertDialog? = null
     private var meetupDialog: AlertDialog? = null
-    private var meetupAdapter: AdapterMeetup? = null
+    private var meetupAdapter: EventsAdapter? = null
     @Inject
     lateinit var eventsRepository: EventsRepository
 
@@ -291,7 +291,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
         recyclerView.layoutParams.height = cardHeight + extraHeight
         recyclerView.requestLayout()
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
-        meetupAdapter = AdapterMeetup()
+        meetupAdapter = EventsAdapter()
         recyclerView.adapter = meetupAdapter
         meetupAdapter?.submitList(meetupList)
 
