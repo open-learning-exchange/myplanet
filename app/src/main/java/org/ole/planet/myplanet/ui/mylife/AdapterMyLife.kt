@@ -27,7 +27,7 @@ import org.ole.planet.myplanet.ui.myhealth.MyHealthFragment
 import org.ole.planet.myplanet.ui.mylife.helper.ItemTouchHelperAdapter
 import org.ole.planet.myplanet.ui.mylife.helper.ItemTouchHelperViewHolder
 import org.ole.planet.myplanet.ui.mylife.helper.OnStartDragListener
-import org.ole.planet.myplanet.ui.mypersonals.MyPersonalsFragment
+import org.ole.planet.myplanet.ui.personals.PersonalsFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.references.ReferenceFragment
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
@@ -150,7 +150,7 @@ class AdapterMyLife(
         )
         fun findFragment(frag: String?): Fragment? {
             when (frag) {
-                "ic_mypersonals" -> return MyPersonalsFragment()
+                "ic_mypersonals" -> return PersonalsFragment()
                 "ic_submissions" -> return MySubmissionFragment()
                 "ic_my_survey" -> return newInstance("survey")
                 "ic_myhealth" -> return MyHealthFragment()
