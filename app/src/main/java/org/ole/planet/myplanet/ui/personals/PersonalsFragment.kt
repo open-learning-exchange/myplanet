@@ -25,12 +25,12 @@ import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
-class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
+class PersonalsFragment : Fragment(), OnSelectedMyPersonal {
     private var _binding: FragmentMyPersonalsBinding? = null
     private val binding get() = _binding!!
     private lateinit var pg: DialogUtils.CustomProgressDialog
     private var addResourceFragment: AddResourceFragment? = null
-    private var personalAdapter: AdapterMyPersonal? = null
+    private var personalAdapter: PersonalsAdapter? = null
 
     @Inject
     lateinit var uploadManager: UploadManager
@@ -59,7 +59,7 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
 
     private fun setAdapter() {
         val model = userProfileDbHandler.userModel
-        personalAdapter = AdapterMyPersonal(requireActivity())
+        personalAdapter = PersonalsAdapter(requireActivity())
         personalAdapter?.setListener(this)
         binding.rvMypersonal.adapter = personalAdapter
         viewLifecycleOwner.lifecycleScope.launch {

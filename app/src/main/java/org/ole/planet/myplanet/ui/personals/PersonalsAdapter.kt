@@ -12,7 +12,7 @@ import java.io.File
 import org.ole.planet.myplanet.callback.OnSelectedMyPersonal
 import org.ole.planet.myplanet.databinding.RowMyPersonalBinding
 import org.ole.planet.myplanet.model.RealmMyPersonal
-import org.ole.planet.myplanet.ui.personals.AdapterMyPersonal.ViewHolderMyPersonal
+import org.ole.planet.myplanet.ui.personals.PersonalsAdapter.ViewHolderPersonals
 import org.ole.planet.myplanet.ui.viewer.ImageViewerActivity
 import org.ole.planet.myplanet.ui.viewer.PDFReaderActivity
 import org.ole.planet.myplanet.ui.viewer.VideoPlayerActivity
@@ -20,19 +20,19 @@ import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.IntentUtils.openAudioFile
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
 
-class AdapterMyPersonal(private val context: Context) : ListAdapter<RealmMyPersonal, ViewHolderMyPersonal>(DiffCallback) {
+class PersonalsAdapter(private val context: Context) : ListAdapter<RealmMyPersonal, ViewHolderPersonals>(DiffCallback) {
     private var listener: OnSelectedMyPersonal? = null
 
     fun setListener(listener: OnSelectedMyPersonal?) {
         this.listener = listener
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderMyPersonal {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderPersonals {
         val binding = RowMyPersonalBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return ViewHolderMyPersonal(binding)
+        return ViewHolderPersonals(binding)
     }
 
-    override fun onBindViewHolder(holder: ViewHolderMyPersonal, position: Int) {
+    override fun onBindViewHolder(holder: ViewHolderPersonals, position: Int) {
         val binding = holder.binding
         val item = getItem(position)
         binding.title.text = item.title
@@ -92,7 +92,7 @@ class AdapterMyPersonal(private val context: Context) : ListAdapter<RealmMyPerso
         context.startActivity(i)
     }
 
-    class ViewHolderMyPersonal(val binding: RowMyPersonalBinding) : RecyclerView.ViewHolder(binding.root)
+    class ViewHolderPersonals(val binding: RowMyPersonalBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {
         private val DiffCallback =
