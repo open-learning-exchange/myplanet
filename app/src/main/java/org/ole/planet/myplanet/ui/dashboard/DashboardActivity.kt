@@ -63,7 +63,7 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.JoinRequestNotification
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.repository.NotificationRepository
+import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
@@ -119,7 +119,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     @Inject
     lateinit var submissionRepository: SubmissionRepository
     @Inject
-    lateinit var notificationRepository: NotificationRepository
+    lateinit var notificationRepository: NotificationsRepository
     private val challengeHelper: ChallengeHelper by lazy {
         ChallengeHelper(this, user, settings, editor, dashboardViewModel, progressRepository)
     }
