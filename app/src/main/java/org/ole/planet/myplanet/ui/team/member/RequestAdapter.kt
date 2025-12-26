@@ -9,11 +9,11 @@ import org.ole.planet.myplanet.databinding.RowMemberRequestBinding
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.DiffUtils
 
-class AdapterMemberRequest(
+class RequestAdapter(
     private val context: Context,
     private val currentUser: RealmUserModel,
     private val onAction: (RealmUserModel, Boolean) -> Unit
-) : ListAdapter<RealmUserModel, AdapterMemberRequest.ViewHolderUser>(MWC_DIFF_CALLBACK) {
+) : ListAdapter<RealmUserModel, RequestAdapter.ViewHolderUser>(MWC_DIFF_CALLBACK) {
     companion object {
         val MWC_DIFF_CALLBACK = DiffUtils.itemCallback<RealmUserModel>(
             areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id },
