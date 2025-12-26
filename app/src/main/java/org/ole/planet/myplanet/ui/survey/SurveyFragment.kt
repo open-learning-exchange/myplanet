@@ -39,7 +39,7 @@ import org.ole.planet.myplanet.utilities.SharedPrefManager
 class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListener, RealtimeSyncMixin {
     private var _binding: FragmentSurveyBinding? = null
     private val binding get() = _binding!!
-    private lateinit var adapter: AdapterSurvey
+    private lateinit var adapter: SurveyAdapter
     private var isTeam: Boolean = false
     private var teamId: String? = null
     private var currentIsTeamShareAllowed: Boolean = false
@@ -77,7 +77,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         isTeam = arguments?.getBoolean("isTeam", false) == true
         teamId = arguments?.getString("teamId", null)
         val userProfileModel = profileDbHandler.userModel
-        adapter = AdapterSurvey(
+        adapter = SurveyAdapter(
             requireActivity(),
             mRealm,
             userProfileModel?.id,
