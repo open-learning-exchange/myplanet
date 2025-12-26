@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.team.teamCourse
+package org.ole.planet.myplanet.ui.team.courses
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -10,10 +10,10 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 
-class TeamCourseFragment : BaseTeamFragment() {
+class TeamCoursesFragment : BaseTeamFragment() {
     private var _binding: FragmentTeamCourseBinding? = null
     private val binding get() = _binding!!
-    private var adapterTeamCourse: AdapterTeamCourse? = null
+    private var adapterTeamCourse: TeamCoursesAdapter? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTeamCourseBinding.inflate(inflater, container, false)
@@ -27,7 +27,7 @@ class TeamCourseFragment : BaseTeamFragment() {
     
     private fun setupCoursesList() {
         val courses = mRealm.where(RealmMyCourse::class.java).`in`("id", team?.courses?.toTypedArray<String>()).findAll()
-        adapterTeamCourse = settings?.let { AdapterTeamCourse(requireActivity(), courses.toMutableList(), mRealm, teamId, it) }
+        adapterTeamCourse = settings?.let { TeamCoursesAdapter(requireActivity(), courses.toMutableList(), mRealm, teamId, it) }
         binding.rvCourse.layoutManager = LinearLayoutManager(activity)
         binding.rvCourse.adapter = adapterTeamCourse
         adapterTeamCourse?.let {

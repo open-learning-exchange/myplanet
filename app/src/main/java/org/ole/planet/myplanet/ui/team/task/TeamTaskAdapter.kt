@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.team.teamTask
+package org.ole.planet.myplanet.ui.team.task
 
 import android.app.AlertDialog
 import android.content.Context
@@ -17,11 +17,11 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowTaskBinding
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.ui.team.teamTask.AdapterTask.ViewHolderTask
+import org.ole.planet.myplanet.ui.team.task.TeamTaskAdapter.ViewHolderTask
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
-class AdapterTask(
+class TeamTaskAdapter(
     private val context: Context,
     var nonTeamMember: Boolean,
     private val coroutineScope: CoroutineScope,

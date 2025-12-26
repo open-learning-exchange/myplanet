@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:padding="@dimen/padding_normal"
     android:background="@color/secondary_bg"
-    tools:context=".ui.team.teamResource.TeamResourceFragment">
+    tools:context=".ui.team.resources.TeamResourcesFragment">
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv_resource"

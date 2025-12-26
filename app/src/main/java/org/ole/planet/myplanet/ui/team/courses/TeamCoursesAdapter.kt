@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.team.teamCourse
+package org.ole.planet.myplanet.ui.team.courses
 
 import android.content.Context
 import android.content.SharedPreferences
@@ -13,15 +13,14 @@ import org.ole.planet.myplanet.databinding.RowTeamResourceBinding
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getTeamCreator
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
-import org.ole.planet.myplanet.ui.team.teamCourse.AdapterTeamCourse.ViewHolderTeamCourse
 
-class AdapterTeamCourse(
+class TeamCoursesAdapter(
     private val context: Context,
     private var list: MutableList<RealmMyCourse>,
     mRealm: Realm?,
     teamId: String?,
     settings: SharedPreferences
-) : RecyclerView.Adapter<ViewHolderTeamCourse>() {
+) : RecyclerView.Adapter<TeamCoursesAdapter.ViewHolder>() {
     private var listener: OnHomeItemClickListener? = null
     private val settings: SharedPreferences
     private val teamCreator: String
@@ -33,15 +32,15 @@ class AdapterTeamCourse(
         this.settings = settings
         teamCreator = getTeamCreator(teamId, mRealm)
     }
-    
+
     fun getList(): List<RealmMyCourse> = list
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderTeamCourse {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = RowTeamResourceBinding.inflate(LayoutInflater.from(context), parent, false)
-        return ViewHolderTeamCourse(binding)
+        return ViewHolder(binding)
     }
 
-    override fun onBindViewHolder(holder: ViewHolderTeamCourse, position: Int) {
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val course = list[position]
         holder.binding.tvTitle.text = course.courseTitle
         holder.binding.tvDescription.text = course.description
@@ -61,6 +60,5 @@ class AdapterTeamCourse(
         return list.size
     }
 
-    class ViewHolderTeamCourse(val binding: RowTeamResourceBinding) :
-        RecyclerView.ViewHolder(binding.root)
+    class ViewHolder(val binding: RowTeamResourceBinding) : RecyclerView.ViewHolder(binding.root)
 }
