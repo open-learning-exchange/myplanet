@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.model
 
+import org.ole.planet.myplanet.utilities.JsonUtils
 import android.content.SharedPreferences
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -12,8 +13,6 @@ import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utilities.DownloadUtils.openDownloadService
-import org.ole.planet.myplanet.utilities.GsonUtils
-import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.UrlUtils.getUrl
 
 open class RealmMyTeam : RealmObject() {
@@ -289,7 +288,7 @@ open class RealmMyTeam : RealmObject() {
                 `object`.addProperty("type", team.teamType)
             }
 
-            return JsonParser.parseString(GsonUtils.gson.toJson(`object`)).asJsonObject
+            return JsonParser.parseString(JsonUtils.gson.toJson(`object`)).asJsonObject
         }
 
         fun getMyTeamsByUserId(mRealm: Realm, settings: SharedPreferences?): RealmResults<RealmMyTeam> {

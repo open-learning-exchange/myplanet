@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.chat
 
+import org.ole.planet.myplanet.utilities.JsonUtils
 import android.content.Context
 import android.content.SharedPreferences
 import android.graphics.Typeface
@@ -51,10 +52,9 @@ import org.ole.planet.myplanet.model.Data
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utilities.DialogUtils
-import org.ole.planet.myplanet.utilities.GsonUtils
-import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -208,7 +208,7 @@ class ChatDetailFragment : Fragment() {
             customProgressDialog.show()
             try {
                 val messages = withContext(Dispatchers.Default) {
-                    val conversations = GsonUtils.gson.fromJson(newsConversations, Array<Conversation>::class.java).toList()
+                    val conversations = JsonUtils.gson.fromJson(newsConversations, Array<Conversation>::class.java).toList()
                     val list = mutableListOf<ChatMessage>()
                     val limit = 20
                     val limitedConversations = if (conversations.size > limit) conversations.takeLast(limit) else conversations
@@ -485,7 +485,7 @@ class ChatDetailFragment : Fragment() {
     private fun getModelsMap(): Map<String, String> {
         val modelsString = settings.getString("ai_models", null)
         return if (modelsString != null) {
-            GsonUtils.gson.fromJson(modelsString, object : TypeToken<Map<String, String>>() {}.type)
+            JsonUtils.gson.fromJson(modelsString, object : TypeToken<Map<String, String>>() {}.type)
         } else {
             emptyMap()
         }
@@ -496,13 +496,13 @@ class ChatDetailFragment : Fragment() {
 
     private fun createContinueChatRequest(message: String, aiProvider: AiProvider, id: String, rev: String): RequestBody {
         val continueChatData = ContinueChatModel(data = Data("${user?.name}", message, aiProvider, id, rev), save = true)
-        val jsonContent = GsonUtils.gson.toJson(continueChatData)
+        val jsonContent = JsonUtils.gson.toJson(continueChatData)
         return jsonRequestBody(jsonContent)
     }
 
     private fun createChatRequest(message: String, aiProvider: AiProvider): RequestBody {
         val chatData = ChatRequestModel(data = ContentData("${user?.name}", message, aiProvider), save = true)
-        val jsonContent = GsonUtils.gson.toJson(chatData)
+        val jsonContent = JsonUtils.gson.toJson(chatData)
         return jsonRequestBody(jsonContent)
     }
 

@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.model
 
+import org.ole.planet.myplanet.utilities.JsonUtils
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Realm
@@ -9,8 +10,6 @@ import io.realm.RealmResults
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 import java.util.Locale
-import org.ole.planet.myplanet.utilities.GsonUtils
-import org.ole.planet.myplanet.utilities.JsonUtils
 
 open class RealmExamQuestion : RealmObject() {
     @PrimaryKey
@@ -70,7 +69,7 @@ open class RealmExamQuestion : RealmObject() {
                     header = JsonUtils.getString("title", question)
                     marks = JsonUtils.getString("marks", question)
                     choices = if (question.has("choices")) {
-                        GsonUtils.gson.toJson(JsonUtils.getJsonArray("choices", question))
+                        JsonUtils.gson.toJson(JsonUtils.getJsonArray("choices", question))
                     } else {
                         "[]"
                     }

@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import org.ole.planet.myplanet.utilities.JsonUtils
 import android.content.Context
 import android.content.SharedPreferences
 import com.google.gson.JsonObject
@@ -353,7 +354,7 @@ class UserRepositoryImpl @Inject constructor(
             null
         } else {
             try {
-                org.ole.planet.myplanet.utilities.GsonUtils.gson.fromJson(json, org.ole.planet.myplanet.model.RealmMyHealth::class.java)
+                org.ole.planet.myplanet.utilities.JsonUtils.gson.fromJson(json, org.ole.planet.myplanet.model.RealmMyHealth::class.java)
             } catch (e: Exception) {
                 e.printStackTrace()
                 null

@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.ui.userprofile
 
+import org.ole.planet.myplanet.utilities.JsonUtils.getString
+import org.ole.planet.myplanet.utilities.JsonUtils
 import android.content.Context
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -9,8 +11,6 @@ import com.google.gson.JsonObject
 import org.ole.planet.myplanet.databinding.RowOtherInfoBinding
 import org.ole.planet.myplanet.ui.userprofile.OtherAdapter.ViewHolderOtherInfo
 import org.ole.planet.myplanet.utilities.DiffUtils
-import org.ole.planet.myplanet.utilities.GsonUtils
-import org.ole.planet.myplanet.utilities.JsonUtils.getString
 
 class OtherAdapter(private val context: Context, list: List<String>) :
     ListAdapter<String, ViewHolderOtherInfo>(DIFF_CALLBACK) {
@@ -28,7 +28,7 @@ class OtherAdapter(private val context: Context, list: List<String>) :
 
     override fun onBindViewHolder(holder: ViewHolderOtherInfo, position: Int) {
         val jsonString = getItem(position)
-        val `object` = GsonUtils.gson.fromJson(jsonString, JsonObject::class.java)
+        val `object` = JsonUtils.gson.fromJson(jsonString, JsonObject::class.java)
         val res = """
             ${getString("name", `object`)}
             ${getString("relationship", `object`)}

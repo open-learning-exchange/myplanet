@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.courses
 
+import org.ole.planet.myplanet.utilities.JsonUtils
 import android.app.AlertDialog
 import android.content.Context
 import android.content.DialogInterface
@@ -53,7 +54,6 @@ import org.ole.planet.myplanet.ui.resources.CollectionsFragment
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utilities.DialogUtils
-import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
@@ -643,7 +643,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     filter.add("tags", getTagsArray(tags))
                     filter.addProperty("doc.gradeLevel", grade)
                     filter.addProperty("doc.subjectLevel", subject)
-                    activity.filter = GsonUtils.gson.toJson(filter)
+                    activity.filter = JsonUtils.gson.toJson(filter)
                 }
             }
         }
