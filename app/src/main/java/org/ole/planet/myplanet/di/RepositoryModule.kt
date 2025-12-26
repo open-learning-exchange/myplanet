@@ -13,14 +13,12 @@ import org.ole.planet.myplanet.repository.ConfigurationRepository
 import org.ole.planet.myplanet.repository.ConfigurationRepositoryImpl
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.CoursesRepositoryImpl
+import org.ole.planet.myplanet.repository.EventsRepository
+import org.ole.planet.myplanet.repository.EventsRepositoryImpl
 import org.ole.planet.myplanet.repository.FeedbackRepository
 import org.ole.planet.myplanet.repository.FeedbackRepositoryImpl
-import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.repository.ResourcesRepositoryImpl
 import org.ole.planet.myplanet.repository.LifeRepository
 import org.ole.planet.myplanet.repository.LifeRepositoryImpl
-import org.ole.planet.myplanet.repository.MeetupRepository
-import org.ole.planet.myplanet.repository.MeetupRepositoryImpl
 import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.repository.NotificationRepositoryImpl
 import org.ole.planet.myplanet.repository.PersonalRepository
@@ -29,6 +27,8 @@ import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.ProgressRepositoryImpl
 import org.ole.planet.myplanet.repository.RatingRepository
 import org.ole.planet.myplanet.repository.RatingRepositoryImpl
+import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.repository.ResourcesRepositoryImpl
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.SubmissionRepositoryImpl
 import org.ole.planet.myplanet.repository.SurveyRepository
@@ -64,19 +64,15 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
+    abstract fun bindEventsRepository(impl: EventsRepositoryImpl): EventsRepository
+
+    @Binds
+    @Singleton
     abstract fun bindFeedbackRepository(impl: FeedbackRepositoryImpl): FeedbackRepository
 
     @Binds
     @Singleton
-    abstract fun bindResourcesRepository(impl: ResourcesRepositoryImpl): ResourcesRepository
-
-    @Binds
-    @Singleton
     abstract fun bindLifeRepository(impl: LifeRepositoryImpl): LifeRepository
-
-    @Binds
-    @Singleton
-    abstract fun bindMeetupRepository(impl: MeetupRepositoryImpl): MeetupRepository
 
     @Binds
     @Singleton
@@ -93,6 +89,10 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindRatingRepository(impl: RatingRepositoryImpl): RatingRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindResourcesRepository(impl: ResourcesRepositoryImpl): ResourcesRepository
 
     @Binds
     @Singleton

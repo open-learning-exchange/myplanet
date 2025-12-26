@@ -19,7 +19,7 @@ import org.ole.planet.myplanet.databinding.FragmentMyMeetupDetailBinding
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.getHashMap
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.MeetupRepository
+import org.ole.planet.myplanet.repository.EventsRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
@@ -32,7 +32,7 @@ class MyMeetupDetailFragment : Fragment(), View.OnClickListener {
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     @Inject
-    lateinit var meetupRepository: MeetupRepository
+    lateinit var eventsRepository: EventsRepository
     private var meetUpId: String? = null
     var user: RealmUserModel? = null
     private var listUsers: ListView? = null
@@ -60,10 +60,10 @@ class MyMeetupDetailFragment : Fragment(), View.OnClickListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         viewLifecycleOwner.lifecycleScope.launch {
-            meetups = meetUpId?.takeIf { it.isNotBlank() }?.let { meetupRepository.getMeetupById(it) }
+            meetups = meetUpId?.takeIf { it.isNotBlank() }?.let { eventsRepository.getMeetupById(it) }
             meetups?.let { setUpData(it) }
             updateAttendanceButton()
-            val members = meetUpId?.takeIf { it.isNotBlank() }?.let { meetupRepository.getJoinedMembers(it) }.orEmpty()
+            val members = meetUpId?.takeIf { it.isNotBlank() }?.let { eventsRepository.getJoinedMembers(it) }.orEmpty()
             setUserList(members)
         }
     }
@@ -107,9 +107,9 @@ class MyMeetupDetailFragment : Fragment(), View.OnClickListener {
     private fun leaveJoinMeetUp() {
         val meetupId = meetUpId ?: return
         viewLifecycleOwner.lifecycleScope.launch {
-            meetups = meetupRepository.toggleAttendance(meetupId, user?.id)
+            meetups = eventsRepository.toggleAttendance(meetupId, user?.id)
             updateAttendanceButton()
-            val members = meetupRepository.getJoinedMembers(meetupId)
+            val members = eventsRepository.getJoinedMembers(meetupId)
             setUserList(members)
         }
     }

@@ -9,12 +9,12 @@ import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowFeedbackBinding
 import org.ole.planet.myplanet.model.RealmFeedback
-import org.ole.planet.myplanet.ui.feedback.AdapterFeedback.ViewHolderFeedback
+import org.ole.planet.myplanet.ui.feedback.FeedbackAdapter.FeedbackViewHolder
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
 
-class AdapterFeedback :
-    ListAdapter<RealmFeedback, ViewHolderFeedback>(
+class FeedbackAdapter :
+    ListAdapter<RealmFeedback, FeedbackViewHolder>(
         DiffUtils.itemCallback(
             { oldItem, newItem ->
                 oldItem.id == newItem.id
@@ -29,12 +29,12 @@ class AdapterFeedback :
         )
     ) {
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderFeedback {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FeedbackViewHolder {
         val binding = RowFeedbackBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return ViewHolderFeedback(binding)
+        return FeedbackViewHolder(binding)
     }
 
-    override fun onBindViewHolder(holder: ViewHolderFeedback, position: Int) {
+    override fun onBindViewHolder(holder: FeedbackViewHolder, position: Int) {
         val feedback = getItem(position)
         val binding = holder.rowFeedbackBinding
         val context = binding.root.context
@@ -74,6 +74,6 @@ class AdapterFeedback :
         }
     }
 
-    class ViewHolderFeedback(val rowFeedbackBinding: RowFeedbackBinding) :
+    class FeedbackViewHolder(val rowFeedbackBinding: RowFeedbackBinding) :
         RecyclerView.ViewHolder(rowFeedbackBinding.root)
 }

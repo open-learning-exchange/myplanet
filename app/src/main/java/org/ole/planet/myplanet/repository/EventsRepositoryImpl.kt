@@ -5,9 +5,9 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmUserModel
 
-class MeetupRepositoryImpl @Inject constructor(
+class EventsRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
-) : RealmRepository(databaseService), MeetupRepository {
+) : RealmRepository(databaseService), EventsRepository {
 
     override suspend fun getMeetupsForTeam(teamId: String): List<RealmMeetup> {
         return queryList(RealmMeetup::class.java) {
