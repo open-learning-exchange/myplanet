@@ -12,6 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.service.UploadManager
+import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 
 object SyncTimeLogger {
     private val processTimes = ConcurrentHashMap<String, Long>()

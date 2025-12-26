@@ -46,7 +46,7 @@ import org.ole.planet.myplanet.ui.team.TeamPageConfig.SurveyPage
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.TasksPage
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.TeamPage
 import org.ole.planet.myplanet.utilities.DialogUtils
-import org.ole.planet.myplanet.utilities.ServerUrlMapper
+import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
 
