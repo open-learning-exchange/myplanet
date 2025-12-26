@@ -17,19 +17,18 @@ import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowFinanceBinding
 import org.ole.planet.myplanet.model.TransactionData
-import org.ole.planet.myplanet.ui.enterprises.AdapterFinance.ViewHolderFinance
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
-class AdapterFinance(
+class FinanceAdapter(
     private val context: Context,
-) : ListAdapter<TransactionData, ViewHolderFinance>(TransactionDataDiffCallback()) {
+) : ListAdapter<TransactionData, FinanceAdapter.FinanceViewHolder>(TransactionDataDiffCallback()) {
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderFinance {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FinanceViewHolder {
         val binding = RowFinanceBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return ViewHolderFinance(binding)
+        return FinanceViewHolder(binding)
     }
 
-    override fun onBindViewHolder(holder: ViewHolderFinance, position: Int) {
+    override fun onBindViewHolder(holder: FinanceViewHolder, position: Int) {
         val item = getItem(position)
         val binding = holder.binding
         binding.date.text = item.date?.let { formatDate(it, "MMM dd, yyyy") } ?: ""
@@ -60,7 +59,7 @@ class AdapterFinance(
         }
     }
 
-    class ViewHolderFinance(val binding: RowFinanceBinding) : RecyclerView.ViewHolder(
+    class FinanceViewHolder(val binding: RowFinanceBinding) : RecyclerView.ViewHolder(
         binding.root
     )
 
