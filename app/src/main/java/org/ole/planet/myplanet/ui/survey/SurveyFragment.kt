@@ -32,7 +32,7 @@ import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utilities.DialogUtils
-import org.ole.planet.myplanet.utilities.ServerUrlMapper
+import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 
 @AndroidEntryPoint

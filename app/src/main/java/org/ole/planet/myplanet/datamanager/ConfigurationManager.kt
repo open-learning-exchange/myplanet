@@ -22,7 +22,7 @@ import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.IntentUtils
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.NetworkUtils.extractProtocol
-import org.ole.planet.myplanet.utilities.ServerUrlMapper
+import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.UrlUtils
 
 class ConfigurationManager(

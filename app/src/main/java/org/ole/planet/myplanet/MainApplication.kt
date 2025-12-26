@@ -51,7 +51,7 @@ import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utilities.NetworkUtils.startListenNetworkState
 import org.ole.planet.myplanet.utilities.NetworkUtils.stopListenNetworkState
-import org.ole.planet.myplanet.utilities.ServerUrlMapper
+import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.ThemeMode
 import org.ole.planet.myplanet.utilities.VersionUtils.getVersionName
 

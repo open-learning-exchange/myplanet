@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.utilities
+package org.ole.planet.myplanet.service.sync
 
 import android.content.SharedPreferences
 import android.net.Uri
