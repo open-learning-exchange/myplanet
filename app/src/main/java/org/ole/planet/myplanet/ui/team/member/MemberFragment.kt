@@ -19,7 +19,7 @@ import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.JoinedMemberData
 
-class JoinedMemberFragment : BaseMemberFragment() {
+class MemberFragment : BaseMemberFragment() {
     private var memberChangeListener: MemberChangeListener = object : MemberChangeListener {
         override fun onMemberChanged() {
             viewLifecycleOwner.lifecycleScope.launch {

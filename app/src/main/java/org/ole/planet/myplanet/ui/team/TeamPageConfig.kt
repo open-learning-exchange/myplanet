@@ -8,7 +8,7 @@ import org.ole.planet.myplanet.ui.enterprises.ReportsFragment
 import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.ui.team.courses.TeamCoursesFragment
 import org.ole.planet.myplanet.ui.team.discussion.DiscussionListFragment
-import org.ole.planet.myplanet.ui.team.member.JoinedMemberFragment
+import org.ole.planet.myplanet.ui.team.member.MemberFragment
 import org.ole.planet.myplanet.ui.team.member.MembersFragment
 import org.ole.planet.myplanet.ui.team.resources.TeamResourcesFragment
 import org.ole.planet.myplanet.ui.team.task.TeamTaskFragment
@@ -29,11 +29,11 @@ sealed class TeamPageConfig(val id: String, @StringRes val titleRes: Int) {
     }
 
     object TeamPage : TeamPageConfig("TEAM", R.string.team) {
-        override fun createFragment() = JoinedMemberFragment()
+        override fun createFragment() = MemberFragment()
     }
 
     object MembersPage : TeamPageConfig("MEMBERS", R.string.members) {
-        override fun createFragment() = JoinedMemberFragment()
+        override fun createFragment() = MemberFragment()
     }
 
     object TasksPage : TeamPageConfig("TASKS", R.string.tasks) {
