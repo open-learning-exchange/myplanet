@@ -19,7 +19,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentSubmissionListBinding
 import org.ole.planet.myplanet.repository.SubmissionRepository
-import org.ole.planet.myplanet.utilities.SubmissionPdfGenerator
+import org.ole.planet.myplanet.ui.submission.export.SubmissionPdfGenerator
 
 @AndroidEntryPoint
 class SubmissionListFragment : Fragment() {
