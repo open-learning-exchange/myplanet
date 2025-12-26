@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.news
+package org.ole.planet.myplanet.ui.voices
 
 import android.app.Activity
 import android.content.Intent
@@ -27,14 +27,14 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityReplyBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.RealmVoices
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
-import org.ole.planet.myplanet.ui.news.NewsAdapter.OnNewsItemClickListener
-import org.ole.planet.myplanet.ui.news.NewsActions
+import org.ole.planet.myplanet.ui.voices.VoicesAdapter.OnVoicesItemClickListener
+import org.ole.planet.myplanet.ui.voices.VoicesActions
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getImagePath
@@ -44,15 +44,15 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 
 @AndroidEntryPoint
-open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
+open class ReplyActivity : AppCompatActivity(), OnVoicesItemClickListener {
     private lateinit var activityReplyBinding: ActivityReplyBinding
     @Inject
     lateinit var databaseService: DatabaseService
     var id: String? = null
-    private lateinit var newsAdapter: NewsAdapter
+    private lateinit var voicesAdapter: VoicesAdapter
     var user: RealmUserModel? = null
 
-    private val viewModel: ReplyViewModel by viewModels()
+    private val viewModel: VoicesReplyViewModel by viewModels()
     
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
@@ -89,24 +89,24 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
                 handleImageSelection(url)
             }
         }
-        val resultIntent = Intent().putExtra("newsId", id)
+        val resultIntent = Intent().putExtra("voicesId", id)
         setResult(Activity.RESULT_OK, resultIntent)
     }
 
     private fun showData(id: String?) {
         id ?: return
         lifecycleScope.launch {
-            val (news, list) = viewModel.getNewsWithReplies(id)
+            val (voices, list) = viewModel.getVoicesWithReplies(id)
             databaseService.withRealm { realm ->
-                newsAdapter = NewsAdapter(this@ReplyActivity, user, news, "", null, userProfileDbHandler, lifecycleScope, userRepository, voicesRepository, teamsRepository)
-                newsAdapter.sharedPrefManager = sharedPrefManager
-                newsAdapter.setListener(this@ReplyActivity)
-                newsAdapter.setmRealm(realm)
-                newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
-                newsAdapter.setNonTeamMember(intent.getBooleanExtra("nonTeamMember", false))
-                newsAdapter.setImageList(imageList)
-                newsAdapter.updateList(list)
-                activityReplyBinding.rvReply.adapter = newsAdapter
+                voicesAdapter = VoicesAdapter(this@ReplyActivity, user, voices, "", null, userProfileDbHandler, lifecycleScope, userRepository, voicesRepository, teamsRepository)
+                voicesAdapter.sharedPrefManager = sharedPrefManager
+                voicesAdapter.setListener(this@ReplyActivity)
+                voicesAdapter.setmRealm(realm)
+                voicesAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
+                voicesAdapter.setNonTeamMember(intent.getBooleanExtra("nonTeamMember", false))
+                voicesAdapter.setImageList(imageList)
+                voicesAdapter.updateList(list)
+                activityReplyBinding.rvReply.adapter = voicesAdapter
             }
         }
     }
@@ -124,8 +124,8 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         refreshData()
     }
 
-    override fun showReply(news: RealmNews?, fromLogin: Boolean, nonTeamMember: Boolean) {
-        startActivity(Intent(this, ReplyActivity::class.java).putExtra("id", news?.id))
+    override fun showReply(voices: RealmVoices?, fromLogin: Boolean, nonTeamMember: Boolean) {
+        startActivity(Intent(this, ReplyActivity::class.java).putExtra("id", voices?.id))
     }
 
     override fun addImage(llImage: ViewGroup?) {
@@ -135,10 +135,10 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         openFolderLauncher.launch(Intent.createChooser(intent, "Select Image"))
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {}
+    override fun onVoicesItemClick(voices: RealmVoices?) {}
 
     override fun onMemberSelected(userModel: RealmUserModel?) {
-        val fragment = NewsActions.showMemberDetails(userModel, userProfileDbHandler) ?: return
+        val fragment = VoicesActions.showMemberDetails(userModel, userProfileDbHandler) ?: return
         NavigationHelper.replaceFragment(
             supportFragmentManager,
             R.id.fragment_container,
@@ -196,7 +196,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
                 .into(imgView)
             llImage?.addView(inflater)
         }
-        newsAdapter.setImageList(imageList)
+        voicesAdapter.setImageList(imageList)
     }
 
 

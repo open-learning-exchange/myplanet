@@ -38,7 +38,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.TeamNotificationInfo
 import org.ole.planet.myplanet.service.TransactionSyncManager
-import org.ole.planet.myplanet.ui.news.NewsViewModel
+import org.ole.planet.myplanet.ui.voices.VoicesViewModel
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
 import org.ole.planet.myplanet.ui.myhealth.UserListArrayAdapter
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
@@ -54,7 +54,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCallback,
     SyncListener {
     private val viewModel: DashboardViewModel by viewModels()
-    private val newsViewModel: NewsViewModel by viewModels()
+    private val voicesViewModel: VoicesViewModel by viewModels()
     private val realm get() = requireRealmInstance()
     private var fullName: String? = null
     private var params = LinearLayout.LayoutParams(250, 100)
@@ -105,14 +105,14 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         }
     }
 
-    override fun forceDownloadNewsImages() {
+    override fun forceDownloadVoicesImages() {
         Utilities.toast(activity, getString(R.string.please_select_starting_date))
         val now = Calendar.getInstance()
         val dpd = DatePickerDialog(requireActivity(), { _: DatePicker?, i: Int, i1: Int, i2: Int ->
             now[Calendar.YEAR] = i
             now[Calendar.MONTH] = i1
             now[Calendar.DAY_OF_MONTH] = i2
-            newsViewModel.getPrivateImageUrlsCreatedAfter(now.timeInMillis) { urls ->
+            voicesViewModel.getPrivateImageUrlsCreatedAfter(now.timeInMillis) { urls ->
                 if (urls.isNotEmpty()) {
                     Utilities.toast(activity, getString(R.string.downloading_images_please_check_notification))
                     DownloadUtils.openDownloadService(activity, ArrayList(urls), false)

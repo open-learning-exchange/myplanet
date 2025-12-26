@@ -11,9 +11,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.base.BaseNewsFragment
+import org.ole.planet.myplanet.ui.voices.BaseVoicesFragment
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.RealmVoices
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TeamsRepository
 
@@ -21,7 +21,7 @@ private val Realm.isOpen: Boolean
     get() = !isClosed
 
 @AndroidEntryPoint
-abstract class BaseTeamFragment : BaseNewsFragment() {
+abstract class BaseTeamFragment : BaseVoicesFragment() {
     var user: RealmUserModel? = null
     var teamId: String = ""
         set(value) {
@@ -48,8 +48,6 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
 
         loadTeamData()
     }
-
-    override fun setData(list: List<RealmNews?>?) {}
 
     private fun loadTeamData() {
         val shouldQueryTeam = shouldQueryTeamFromRealm()

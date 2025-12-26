@@ -8,14 +8,14 @@ import org.ole.planet.myplanet.model.RealmUserModel
 
 interface VoicesRepository {
     suspend fun getLibraryResource(resourceId: String): RealmMyLibrary?
-    suspend fun getCommunityNews(userIdentifier: String): Flow<List<RealmNews>>
-    suspend fun getNewsWithReplies(newsId: String): Pair<RealmNews?, List<RealmNews>>
-    suspend fun getCommunityVisibleNews(userIdentifier: String): List<RealmNews>
-    suspend fun getNewsByTeamId(teamId: String): List<RealmNews>
-    suspend fun createNews(map: HashMap<String?, String>, user: RealmUserModel?): RealmNews
-    suspend fun getDiscussionsByTeamIdFlow(teamId: String): Flow<List<RealmNews>>
-    suspend fun shareNewsToCommunity(newsId: String, userId: String, planetCode: String, parentCode: String, teamName: String): Result<Unit>
+    suspend fun getCommunityVoices(userIdentifier: String): Flow<List<RealmVoices>>
+    suspend fun getVoicesWithReplies(voicesId: String): Pair<RealmVoices?, List<RealmVoices>>
+    suspend fun getCommunityVisibleVoices(userIdentifier: String): List<RealmVoices>
+    suspend fun getVoicesByTeamId(teamId: String): List<RealmVoices>
+    suspend fun createVoices(map: HashMap<String?, String>, user: RealmUserModel?): RealmVoices
+    suspend fun getDiscussionsByTeamIdFlow(teamId: String): Flow<List<RealmVoices>>
+    suspend fun shareVoicesToCommunity(voicesId: String, userId: String, planetCode: String, parentCode: String, teamName: String): Result<Unit>
     suspend fun updateTeamNotification(teamId: String, count: Int)
-    suspend fun getFilteredNews(teamId: String): List<RealmNews>
-    suspend fun getReplies(newsId: String?): List<RealmNews>
+    suspend fun getFilteredVoices(teamId: String): List<RealmVoices>
+    suspend fun getReplies(voicesId: String?): List<RealmVoices>
 }

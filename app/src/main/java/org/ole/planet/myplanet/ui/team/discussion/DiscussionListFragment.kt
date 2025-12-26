@@ -17,13 +17,13 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentDiscussionListBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
+import org.ole.planet.myplanet.model.RealmVoices
+import org.ole.planet.myplanet.model.RealmVoices.Companion.createVoices
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
-import org.ole.planet.myplanet.ui.news.NewsAdapter
+import org.ole.planet.myplanet.ui.voices.VoicesAdapter
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.SharedPrefManager
@@ -40,7 +40,7 @@ class DiscussionListFragment : BaseTeamFragment() {
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
 
-    private var filteredNewsList: List<RealmNews?> = listOf()
+    private var filteredVoicesList: List<RealmVoices?> = listOf()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentDiscussionListBinding.inflate(inflater, container, false)
@@ -85,7 +85,7 @@ class DiscussionListFragment : BaseTeamFragment() {
                 viewLifecycleOwner.lifecycleScope.launch {
                     try {
                         databaseService.executeTransactionAsync { realm ->
-                            createNews(map, realm, userModel, imageList)
+                            createVoices(map, realm, userModel, imageList)
                         }
                         binding.rvDiscussion.post {
                             binding.rvDiscussion.smoothScrollToPosition(0)
@@ -128,10 +128,10 @@ class DiscussionListFragment : BaseTeamFragment() {
         changeLayoutManager(resources.configuration.orientation, binding.rvDiscussion)
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val realmNewsList = voicesRepository.getFilteredNews(getEffectiveTeamId())
-            val count = realmNewsList.size
+            val realmVoicesList = voicesRepository.getFilteredVoices(getEffectiveTeamId())
+            val count = realmVoicesList.size
             voicesRepository.updateTeamNotification(getEffectiveTeamId(), count)
-            showRecyclerView(realmNewsList)
+            showRecyclerView(realmVoicesList)
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
@@ -148,17 +148,17 @@ class DiscussionListFragment : BaseTeamFragment() {
                     val isPublicTeam = isPublicTeamFromFlow || team?.isPublic == true
                     val canPost = !isGuest && (isMember || isPublicTeam)
                     binding.addMessage.isVisible = canPost
-                    (binding.rvDiscussion.adapter as? NewsAdapter)?.setNonTeamMember(!isMember)
+                    (binding.rvDiscussion.adapter as? VoicesAdapter)?.setNonTeamMember(!isMember)
                 }
             }
         }
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {
+    override fun onVoicesItemClick(voices: RealmVoices?) {
         val bundle = Bundle()
-        bundle.putString("newsId", news?.newsId)
-        bundle.putString("newsRev", news?.newsRev)
-        bundle.putString("conversations", news?.conversations)
+        bundle.putString("voicesId", voices?.id)
+        bundle.putString("voicesRev", voices?._rev)
+        bundle.putString("conversations", voices?.conversations)
 
         val chatDetailFragment = ChatDetailFragment()
         chatDetailFragment.arguments = bundle
@@ -181,24 +181,24 @@ class DiscussionListFragment : BaseTeamFragment() {
         changeLayoutManager(newConfig.orientation, binding.rvDiscussion)
     }
 
-    private fun showRecyclerView(realmNewsList: List<RealmNews?>?) {
+    private fun showRecyclerView(realmVoicesList: List<RealmVoices?>?) {
         val existingAdapter = binding.rvDiscussion.adapter
         if (existingAdapter == null) {
-            val adapterNews = activity?.let {
-                NewsAdapter(it, user, null, getEffectiveTeamName(), teamId, userProfileDbHandler, viewLifecycleOwner.lifecycleScope, userRepository, voicesRepository, teamsRepository)
+            val adapterVoices = activity?.let {
+                VoicesAdapter(it, user, null, getEffectiveTeamName(), teamId, userProfileDbHandler, viewLifecycleOwner.lifecycleScope, userRepository, voicesRepository, teamsRepository)
             }
-            adapterNews?.sharedPrefManager = sharedPrefManager
-            adapterNews?.setmRealm(mRealm)
-            adapterNews?.setListener(this)
-            if (!isMemberFlow.value) adapterNews?.setNonTeamMember(true)
-            realmNewsList?.let { adapterNews?.updateList(it) }
-            binding.rvDiscussion.adapter = adapterNews
-            adapterNews?.let {
+            adapterVoices?.sharedPrefManager = sharedPrefManager
+            adapterVoices?.setmRealm(mRealm)
+            adapterVoices?.setListener(this)
+            if (!isMemberFlow.value) adapterVoices?.setNonTeamMember(true)
+            realmVoicesList?.let { adapterVoices?.updateList(it) }
+            binding.rvDiscussion.adapter = adapterVoices
+            adapterVoices?.let {
                 showNoData(binding.tvNodata, it.itemCount, "discussions")
             }
         } else {
-            (existingAdapter as? NewsAdapter)?.let { adapter ->
-                realmNewsList?.let {
+            (existingAdapter as? VoicesAdapter)?.let { adapter ->
+                realmVoicesList?.let {
                     adapter.updateList(it)
                     showNoData(binding.tvNodata, adapter.itemCount, "discussions")
                 }
@@ -206,7 +206,7 @@ class DiscussionListFragment : BaseTeamFragment() {
         }
     }
 
-    override fun setData(list: List<RealmNews?>?) {
+    override fun setData(list: List<RealmVoices?>?) {
         showRecyclerView(list)
     }
 

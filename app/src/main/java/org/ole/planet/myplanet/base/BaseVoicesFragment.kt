@@ -25,25 +25,25 @@ import java.io.File
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ImageThumbBinding
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.RealmVoices
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
-import org.ole.planet.myplanet.ui.news.NewsAdapter
-import org.ole.planet.myplanet.ui.news.NewsAdapter.OnNewsItemClickListener
-import org.ole.planet.myplanet.ui.news.NewsActions
-import org.ole.planet.myplanet.ui.news.ReplyActivity
+import org.ole.planet.myplanet.ui.voices.VoicesAdapter
+import org.ole.planet.myplanet.ui.voices.VoicesAdapter.OnVoicesItemClickListener
+import org.ole.planet.myplanet.ui.voices.VoicesActions
+import org.ole.planet.myplanet.ui.voices.ReplyActivity
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getRealPathFromURI
 import org.ole.planet.myplanet.utilities.GsonUtils
 
 @RequiresApi(api = Build.VERSION_CODES.O)
-abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListener {
+abstract class BaseVoicesFragment : BaseContainerFragment(), OnVoicesItemClickListener {
     lateinit var imageList: RealmList<String>
     @JvmField
     protected var llImage: ViewGroup? = null
     @JvmField
-    protected var adapterNews: NewsAdapter? = null
+    protected var adapterVoices: VoicesAdapter? = null
     lateinit var openFolderLauncher: ActivityResultLauncher<Intent>
     private lateinit var replyActivityLauncher: ActivityResultLauncher<Intent>
 
@@ -68,15 +68,15 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
         replyActivityLauncher = registerForActivityResult(
             ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
             if (result.resultCode == Activity.RESULT_OK) {
-                val newsId = result.data?.getStringExtra("newsId")
-                newsId.let { adapterNews?.updateReplyBadge(it) }
-                adapterNews?.refreshCurrentItems()
+                val voicesId = result.data?.getStringExtra("voicesId")
+                voicesId.let { adapterVoices?.updateReplyBadge(it) }
+                adapterVoices?.refreshCurrentItems()
             }
         }
     }
 
     override fun onDataChanged() {
-        adapterNews?.refreshCurrentItems()
+        adapterVoices?.refreshCurrentItems()
     }
 
     override fun onAttach(context: Context) {
@@ -84,9 +84,9 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
         if (context is OnHomeItemClickListener) homeItemClickListener = context
     }
 
-    override fun showReply(news: RealmNews?, fromLogin: Boolean, nonTeamMember: Boolean) {
-        if (news != null) {
-            val intent = Intent(activity, ReplyActivity::class.java).putExtra("id", news.id)
+    override fun showReply(voices: RealmVoices?, fromLogin: Boolean, nonTeamMember: Boolean) {
+        if (voices != null) {
+            val intent = Intent(activity, ReplyActivity::class.java).putExtra("id", voices.id)
                 .putExtra("fromLogin", fromLogin)
                 .putExtra("nonTeamMember", nonTeamMember)
             replyActivityLauncher.launch(intent)
@@ -96,7 +96,7 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
     override fun onMemberSelected(userModel: RealmUserModel?) {
         if (!isAdded) return
         val handler = profileDbHandler
-        val fragment = NewsActions.showMemberDetails(userModel, handler) ?: return
+        val fragment = VoicesActions.showMemberDetails(userModel, handler) ?: return
         NavigationHelper.replaceFragment(
             requireActivity().supportFragmentManager,
             R.id.fragment_container,
@@ -105,7 +105,7 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
         )
     }
 
-    abstract fun setData(list: List<RealmNews?>?)
+    abstract fun setData(list: List<RealmVoices?>?)
     fun showNoData(v: View?, count: Int?, source: String) {
         count?.let { BaseRecyclerFragment.showNoData(v, it, source) }
     }
@@ -153,7 +153,7 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
                 .load(File(path))
                 .into(imageBinding.thumb)
             llImage?.addView(imageBinding.root)
-            if (resultCode == 102) adapterNews?.setImageList(imageList)
+            if (resultCode == 102) adapterVoices?.setImageList(imageList)
         } catch (e: Exception) {
             e.printStackTrace()
         }

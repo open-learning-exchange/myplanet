@@ -7,7 +7,7 @@ import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utilities.NetworkUtils
 
-open class RealmNewsLog : RealmObject() {
+open class RealmVoicesLog : RealmObject() {
     @PrimaryKey
     var id: String? = null
     @Index
@@ -21,7 +21,7 @@ open class RealmNewsLog : RealmObject() {
 
     companion object {
         @JvmStatic
-        fun serialize(log: RealmNewsLog): JsonObject {
+        fun serialize(log: RealmVoicesLog): JsonObject {
             val ob = JsonObject()
             ob.addProperty("user", log.userId)
             ob.addProperty("type", log.type)

@@ -60,7 +60,7 @@ class MembersFragment : BaseMemberFragment() {
         }
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {}
+    override fun onVoicesItemClick(voices: RealmVoices?) {}
     override fun clearImages() {
         imageList.clear()
         llImage?.removeAllViews()

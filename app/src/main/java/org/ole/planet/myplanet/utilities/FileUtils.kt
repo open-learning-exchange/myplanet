@@ -309,4 +309,11 @@ object FileUtils {
     fun nameWithoutExtension(fileName: String?): String? {
         return fileName?.let { File(it).name.takeIf { name -> name.isNotEmpty() } }?.substringBeforeLast('.')
     }
+
+    fun loadImageFromFile(context: Context, imagePath: String?, imageView: android.widget.ImageView) {
+        if (imagePath.isNullOrEmpty()) return
+        com.bumptech.glide.Glide.with(context)
+            .load(java.io.File(imagePath))
+            .into(imageView)
+    }
 }

@@ -255,7 +255,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
         return list.filter { !it.completed && it.assignee == user?.id }.sortedByDescending { it.deadline }
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {}
+    override fun onVoicesItemClick(voices: RealmVoices?) {}
     override fun clearImages() {
         imageList.clear()
         llImage?.removeAllViews()
