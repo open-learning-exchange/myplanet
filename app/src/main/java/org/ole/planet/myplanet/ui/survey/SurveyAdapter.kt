@@ -25,7 +25,7 @@ import org.ole.planet.myplanet.ui.survey.SurveyBindingData
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 
-class AdapterSurvey(
+class SurveyAdapter(
     private val context: Context,
     private val mRealm: Realm,
     private val userId: String?,
@@ -36,7 +36,7 @@ class AdapterSurvey(
     private val userProfileDbHandler: UserProfileDbHandler,
     private val surveyInfoMap: Map<String, SurveyInfo>,
     private val bindingDataMap: Map<String, SurveyBindingData>
-) : ListAdapter<RealmStepExam, AdapterSurvey.ViewHolderSurvey>(SurveyDiffCallback()) {
+) : ListAdapter<RealmStepExam, SurveyAdapter.ViewHolderSurvey>(SurveyDiffCallback()) {
     private var listener: OnHomeItemClickListener? = null
     private val adoptedSurveyIds = mutableSetOf<String>()
     private var isTitleAscending = true
