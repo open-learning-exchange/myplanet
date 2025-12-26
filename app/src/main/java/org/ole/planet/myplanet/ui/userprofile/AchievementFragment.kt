@@ -325,9 +325,9 @@ class AchievementFragment : BaseContainerFragment() {
     private fun setupReferences(data: AchievementData) {
         binding.rvOtherInfo.layoutManager = LinearLayoutManager(requireContext())
         if (binding.rvOtherInfo.adapter == null) {
-            binding.rvOtherInfo.adapter = OtherInfoAdapter(requireContext(), data.references)
+            binding.rvOtherInfo.adapter = OtherAdapter(requireContext(), data.references)
         } else {
-            (binding.rvOtherInfo.adapter as OtherInfoAdapter).submitList(data.references)
+            (binding.rvOtherInfo.adapter as OtherAdapter).submitList(data.references)
         }
     }
 
