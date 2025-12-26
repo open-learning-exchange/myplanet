@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.datamanager
+package org.ole.planet.myplanet.data
 
 import android.content.Context
 import io.realm.Realm

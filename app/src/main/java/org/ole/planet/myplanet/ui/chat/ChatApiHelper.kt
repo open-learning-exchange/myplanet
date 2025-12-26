@@ -7,7 +7,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import okhttp3.RequestBody
 import okhttp3.ResponseBody
-import org.ole.planet.myplanet.datamanager.ApiInterface
+import org.ole.planet.myplanet.data.ApiInterface
 import org.ole.planet.myplanet.model.ChatModel
 import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.UrlUtils

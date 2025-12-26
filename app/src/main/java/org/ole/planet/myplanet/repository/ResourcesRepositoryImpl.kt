@@ -3,7 +3,7 @@ package org.ole.planet.myplanet.repository
 import io.realm.Sort
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
-import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onAdd
