@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.news
 
+import org.ole.planet.myplanet.utilities.JsonUtils
 import android.annotation.SuppressLint
 import android.app.Dialog
 import android.content.Context
@@ -51,9 +52,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DiffUtils
-import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.ImageUtils
-import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.SharedPrefManager
@@ -221,7 +220,7 @@ class NewsAdapter(var context: Context, private var currentUser: RealmUserModel?
 
     private fun extractSharedTeamName(news: RealmNews): String {
         if (!TextUtils.isEmpty(news.viewIn)) {
-            val ar = GsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
+            val ar = JsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
             if (ar.size() > 1) {
                 val ob = ar[0].asJsonObject
                 if (ob.has("name") && !ob.get("name").isJsonNull) {
@@ -361,7 +360,7 @@ class NewsAdapter(var context: Context, private var currentUser: RealmUserModel?
 
     private fun handleChat(holder: ViewHolderNews, news: RealmNews) {
         if (news.newsId?.isNotEmpty() == true) {
-            val conversations = GsonUtils.gson.fromJson(news.conversations, Array<Conversation>::class.java).toList()
+            val conversations = JsonUtils.gson.fromJson(news.conversations, Array<Conversation>::class.java).toList()
             val chatAdapter = ChatAdapter(context, holder.binding.recyclerGchat, holder.itemView.findViewTreeLifecycleOwner()?.lifecycleScope)
 
             if (user?.id?.startsWith("guest") == false) {
@@ -635,13 +634,13 @@ class NewsAdapter(var context: Context, private var currentUser: RealmUserModel?
         if (!imageUrls.isNullOrEmpty()) {
             try {
                 if (imageUrls.size == 1) {
-                    val imgObject = GsonUtils.gson.fromJson(imageUrls[0], JsonObject::class.java)
+                    val imgObject = JsonUtils.gson.fromJson(imageUrls[0], JsonObject::class.java)
                     val path = JsonUtils.getString("imageUrl", imgObject)
                     loadSingleImage(binding, path)
                 } else {
                     binding.llNewsImages.visibility = View.VISIBLE
                     for (imageUrl in imageUrls) {
-                        val imgObject = GsonUtils.gson.fromJson(imageUrl, JsonObject::class.java)
+                        val imgObject = JsonUtils.gson.fromJson(imageUrl, JsonObject::class.java)
                         val path = JsonUtils.getString("imageUrl", imgObject)
                         addImageToContainer(binding, path)
                     }

@@ -1,5 +1,8 @@
 package org.ole.planet.myplanet.ui.myhealth
 
+import org.ole.planet.myplanet.utilities.JsonUtils.getString
+import org.ole.planet.myplanet.utilities.JsonUtils.getBoolean
+import org.ole.planet.myplanet.utilities.JsonUtils
 import android.content.DialogInterface
 import android.os.Bundle
 import android.text.Editable
@@ -36,9 +39,6 @@ import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateKey
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.DimenUtils.dpToPx
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
-import org.ole.planet.myplanet.utilities.GsonUtils
-import org.ole.planet.myplanet.utilities.JsonUtils.getBoolean
-import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.TimeUtils.getAge
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -95,7 +95,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
             mRealm.commitTransaction()
         }
         if (pojo != null && !TextUtils.isEmpty(pojo?.data)) {
-            health = GsonUtils.gson.fromJson(decrypt(pojo?.data, user?.key, user?.iv), RealmMyHealth::class.java)
+            health = JsonUtils.gson.fromJson(decrypt(pojo?.data, user?.key, user?.iv), RealmMyHealth::class.java)
         }
         if (health == null) {
             initHealth()
@@ -193,7 +193,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         val arr = resources.getStringArray(R.array.diagnosis_list)
         val mainList = listOf(*arr)
         if (customDiag?.isEmpty() == true && examination != null) {
-            val conditions = GsonUtils.gson.fromJson(examination?.conditions, JsonObject::class.java)
+            val conditions = JsonUtils.gson.fromJson(examination?.conditions, JsonObject::class.java)
             for (s in conditions.keySet()) {
                 if (!mainList.contains(s) && getBoolean(s, conditions)) {
                     chipCloud.addChip(s)
@@ -215,7 +215,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
             c.setTextColor(ContextCompat.getColor(this, R.color.daynight_textColor))
 
             if (examination != null) {
-                val conditions = GsonUtils.gson.fromJson(examination.conditions, JsonObject::class.java)
+                val conditions = JsonUtils.gson.fromJson(examination.conditions, JsonObject::class.java)
                 c.isChecked = getBoolean(s, conditions)
             }
             c.setPadding(dpToPx(8), dpToPx(8), dpToPx(8), dpToPx(8))
@@ -267,7 +267,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         examination?.setWeight(getFloat("${binding.etWeight.text}".trim { it <= ' ' }))
         examination?.height = getFloat("${binding.etHeight.text}".trim { it <= ' ' })
         otherConditions
-        examination?.conditions = GsonUtils.gson.toJson(mapConditions)
+        examination?.conditions = JsonUtils.gson.toJson(mapConditions)
         examination?.hearing = "${binding.etHearing.text}".trim { it <= ' ' }
         sign.immunizations = "${binding.etImmunization.text}".trim { it <= ' ' }
         sign.tests = "${binding.etLabtest.text}".trim { it <= ' ' }
@@ -285,7 +285,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         try {
             val key = user?.key ?: generateKey().also { user?.key = it }
             val iv = user?.iv ?: generateIv().also { user?.iv = it }
-            examination?.data = encrypt(GsonUtils.gson.toJson(sign), key, iv)
+            examination?.data = encrypt(JsonUtils.gson.toJson(sign), key, iv)
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -378,7 +378,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
             val userKey = user?.key
             val userIv = user?.iv
             if (userKey != null && userIv != null) {
-                pojo?.data = encrypt(GsonUtils.gson.toJson(health), userKey, userIv)
+                pojo?.data = encrypt(JsonUtils.gson.toJson(health), userKey, userIv)
             }
         } catch (e: Exception) {
             e.printStackTrace()

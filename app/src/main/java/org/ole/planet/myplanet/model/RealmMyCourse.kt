@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.model
 
+import org.ole.planet.myplanet.utilities.JsonUtils
 import android.content.Context.MODE_PRIVATE
 import android.content.SharedPreferences
 import android.text.TextUtils
@@ -19,8 +20,6 @@ import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.createStepResource
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DownloadUtils.extractLinks
-import org.ole.planet.myplanet.utilities.GsonUtils
-import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.UrlUtils
 
 open class RealmMyCourse : RealmObject() {
@@ -130,7 +129,7 @@ open class RealmMyCourse : RealmObject() {
             val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             val existingJsonLinks = settings.getString("concatenated_links", null)
             val existingConcatenatedLinks = if (existingJsonLinks != null) {
-                GsonUtils.gson.fromJson(existingJsonLinks, Array<String>::class.java).toMutableList()
+                JsonUtils.gson.fromJson(existingJsonLinks, Array<String>::class.java).toMutableList()
             } else {
                 mutableListOf()
             }
@@ -143,7 +142,7 @@ open class RealmMyCourse : RealmObject() {
                     existingConcatenatedLinks.add(link)
                 }
             }
-            val jsonConcatenatedLinks = GsonUtils.gson.toJson(existingConcatenatedLinks)
+            val jsonConcatenatedLinks = JsonUtils.gson.toJson(existingConcatenatedLinks)
             settings.edit { putString("concatenated_links", jsonConcatenatedLinks) }
         }
 

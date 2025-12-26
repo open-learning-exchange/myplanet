@@ -4,10 +4,15 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
+import com.google.gson.Gson
 import com.google.gson.JsonParser.parseString
 import io.realm.RealmList
 
 object JsonUtils {
+    val gson: Gson by lazy {
+        Gson()
+    }
+
     @JvmStatic
     fun getString(fieldName: String, jsonObject: JsonObject?): String {
         return try {

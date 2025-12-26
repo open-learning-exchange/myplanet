@@ -1,12 +1,11 @@
 package org.ole.planet.myplanet.model
 
+import org.ole.planet.myplanet.utilities.JsonUtils
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.utilities.GsonUtils
-import org.ole.planet.myplanet.utilities.JsonUtils
 
 open class RealmCertification : RealmObject() {
     @PrimaryKey
@@ -16,7 +15,7 @@ open class RealmCertification : RealmObject() {
     private var courseIds: String? = null
 
     fun setCourseIds(courseIds: JsonArray?) {
-        this.courseIds = GsonUtils.gson.toJson(courseIds)
+        this.courseIds = JsonUtils.gson.toJson(courseIds)
     }
 
     companion object {

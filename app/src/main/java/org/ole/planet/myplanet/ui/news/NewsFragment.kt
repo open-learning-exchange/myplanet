@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.ui.news
 
+import org.ole.planet.myplanet.utilities.JsonUtils.getString
+import org.ole.planet.myplanet.utilities.JsonUtils
 import android.content.res.Configuration
 import android.os.Bundle
 import android.os.Trace
@@ -35,8 +37,6 @@ import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.FileUtils
-import org.ole.planet.myplanet.utilities.GsonUtils
-import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.textChanges
@@ -344,7 +344,7 @@ class NewsFragment : BaseNewsFragment() {
         list.forEach { news ->
             if (!news?.viewIn.isNullOrEmpty()) {
                 try {
-                    val ar = GsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
+                    val ar = JsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
                     if (ar.size() > 1) {
                         val ob = ar[0].asJsonObject
                         if (ob.has("name") && !ob.get("name").isJsonNull) {
@@ -394,7 +394,7 @@ class NewsFragment : BaseNewsFragment() {
     private fun extractSharedTeamName(news: RealmNews?): String {
         if (!news?.viewIn.isNullOrEmpty()) {
             try {
-                val ar = GsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
+                val ar = JsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
                 if (ar.size() > 1) {
                     val ob = ar[0].asJsonObject
                     if (ob.has("name") && !ob.get("name").isJsonNull) {

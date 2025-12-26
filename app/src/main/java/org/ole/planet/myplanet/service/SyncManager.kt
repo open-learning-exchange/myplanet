@@ -1,5 +1,8 @@
 package org.ole.planet.myplanet.service
 
+import org.ole.planet.myplanet.utilities.JsonUtils.getJsonObject
+import org.ole.planet.myplanet.utilities.JsonUtils.getJsonArray
+import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import android.content.Context
 import android.content.SharedPreferences
 import android.net.wifi.SupplicantState
@@ -55,9 +58,6 @@ import org.ole.planet.myplanet.service.sync.SyncMode
 import org.ole.planet.myplanet.service.sync.ThreadSafeRealmHelper
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.JsonUtils.getJsonArray
-import org.ole.planet.myplanet.utilities.JsonUtils.getJsonObject
-import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.NotificationUtils.cancel
 import org.ole.planet.myplanet.utilities.NotificationUtils.create
 import org.ole.planet.myplanet.utilities.SyncTimeLogger

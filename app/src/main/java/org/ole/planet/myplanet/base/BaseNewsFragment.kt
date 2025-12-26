@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.base
 
+import org.ole.planet.myplanet.utilities.JsonUtils
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -35,7 +36,6 @@ import org.ole.planet.myplanet.ui.news.ReplyActivity
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getRealPathFromURI
-import org.ole.planet.myplanet.utilities.GsonUtils
 
 @RequiresApi(api = Build.VERSION_CODES.O)
 abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListener {
@@ -144,7 +144,7 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
         val `object` = JsonObject()
         `object`.addProperty("imageUrl", path)
         `object`.addProperty("fileName", getFileNameFromUrl(path))
-        imageList.add(GsonUtils.gson.toJson(`object`))
+        imageList.add(JsonUtils.gson.toJson(`object`))
 
         try {
             llImage?.visibility = View.VISIBLE

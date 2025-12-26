@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.model
 
+import org.ole.planet.myplanet.utilities.JsonUtils
 import android.text.TextUtils
 import android.widget.EditText
 import com.google.gson.JsonArray
@@ -9,8 +10,6 @@ import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.utilities.GsonUtils
-import org.ole.planet.myplanet.utilities.JsonUtils
 
 open class RealmAchievement : RealmObject() {
     var achievements: RealmList<String>? = null
@@ -27,7 +26,7 @@ open class RealmAchievement : RealmObject() {
         get() {
             val array = JsonArray()
             for (s in achievements ?: emptyList()) {
-                val ob = GsonUtils.gson.fromJson(s, JsonElement::class.java)
+                val ob = JsonUtils.gson.fromJson(s, JsonElement::class.java)
                 array.add(ob)
             }
             return array
@@ -36,7 +35,7 @@ open class RealmAchievement : RealmObject() {
     fun getReferencesArray(): JsonArray {
         val array = JsonArray()
         for (s in references ?: emptyList()) {
-            val ob = GsonUtils.gson.fromJson(s, JsonElement::class.java)
+            val ob = JsonUtils.gson.fromJson(s, JsonElement::class.java)
             array.add(ob)
         }
         return array
@@ -45,7 +44,7 @@ open class RealmAchievement : RealmObject() {
     fun setAchievements(ac: JsonArray) {
         achievements = RealmList()
         for (el in ac) {
-            val achievement = GsonUtils.gson.toJson(el)
+            val achievement = JsonUtils.gson.toJson(el)
             if (achievements?.contains(achievement) != true) {
                 achievements?.add(achievement)
             }
@@ -56,7 +55,7 @@ open class RealmAchievement : RealmObject() {
         references = RealmList()
         if (of == null) return
         for (el in of) {
-            val e = GsonUtils.gson.toJson(el)
+            val e = JsonUtils.gson.toJson(el)
             if (references?.contains(e) != true) {
                 references?.add(e)
             }

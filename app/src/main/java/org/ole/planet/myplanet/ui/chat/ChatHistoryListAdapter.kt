@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.chat
 
+import org.ole.planet.myplanet.utilities.JsonUtils
 import android.app.AlertDialog
 import android.content.Context
 import android.view.LayoutInflater
@@ -25,7 +26,6 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.news.ExpandableListAdapter
 import org.ole.planet.myplanet.ui.team.TeamSelectionAdapter
 import org.ole.planet.myplanet.utilities.DiffUtils
-import org.ole.planet.myplanet.utilities.GsonUtils
 
 data class ChatShareTargets(
     val community: RealmMyTeam?,
@@ -293,7 +293,7 @@ class ChatHistoryListAdapter(
             serializedMap["aiProvider"] = chatHistory.aiProvider ?: ""
             serializedMap["createdDate"] = "${Date().time}"
             serializedMap["updatedDate"] = "${Date().time}"
-            serializedMap["conversations"] = GsonUtils.gson.toJson(serializedConversations)
+            serializedMap["conversations"] = JsonUtils.gson.toJson(serializedConversations)
 
             val map = HashMap<String?, String>()
             map["message"] = "${addNoteDialogBinding.editText.text}"
@@ -302,7 +302,7 @@ class ChatHistoryListAdapter(
             map["messageType"] = team?.teamType ?: ""
             map["messagePlanetCode"] = team?.teamPlanetCode ?: ""
             map["chat"] = "true"
-            map["news"] = GsonUtils.gson.toJson(serializedMap)
+            map["news"] = JsonUtils.gson.toJson(serializedMap)
 
             onShareChat(map, chatHistory)
             dialog.dismiss()

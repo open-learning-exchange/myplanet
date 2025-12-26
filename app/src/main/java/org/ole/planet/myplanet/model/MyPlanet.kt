@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.model
 
+import org.ole.planet.myplanet.utilities.JsonUtils
 import android.app.usage.UsageStats
 import android.app.usage.UsageStatsManager
 import android.content.Context
@@ -12,7 +13,6 @@ import java.util.Calendar
 import java.util.Date
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.VersionUtils
 
@@ -32,7 +32,7 @@ class MyPlanet : Serializable {
         fun getMyPlanetActivities(context: Context, pref: SharedPreferences, model: RealmUserModel): JsonObject {
             val postJSON = JsonObject()
             val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            val planet = GsonUtils.gson.fromJson(preferences.getString("versionDetail", ""), MyPlanet::class.java)
+            val planet = JsonUtils.gson.fromJson(preferences.getString("versionDetail", ""), MyPlanet::class.java)
             if (planet != null) postJSON.addProperty("planetVersion", planet.planetVersion)
             postJSON.addProperty("_id", VersionUtils.getAndroidId(MainApplication.context) + "@" + NetworkUtils.getUniqueIdentifier())
             postJSON.addProperty("last_synced", pref.getLong("LastSync", 0))
@@ -47,7 +47,7 @@ class MyPlanet : Serializable {
         fun getNormalMyPlanetActivities(context: Context, pref: SharedPreferences, model: RealmUserModel): JsonObject {
             val postJSON = JsonObject()
             val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            val planet = GsonUtils.gson.fromJson(preferences.getString("versionDetail", ""), MyPlanet::class.java)
+            val planet = JsonUtils.gson.fromJson(preferences.getString("versionDetail", ""), MyPlanet::class.java)
             if (planet != null) postJSON.addProperty("planetVersion", planet.planetVersion)
             postJSON.addProperty("last_synced", pref.getLong("LastSync", 0))
             postJSON.addProperty("parentCode", model.parentCode)

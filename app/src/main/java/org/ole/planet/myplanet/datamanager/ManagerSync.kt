@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.datamanager
 
+import org.ole.planet.myplanet.utilities.JsonUtils
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Base64
@@ -18,8 +19,6 @@ import org.ole.planet.myplanet.di.RepositoryEntryPoint
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.androidDecrypter
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.GsonUtils
-import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.UrlUtils
 import retrofit2.Call
 import retrofit2.Callback
@@ -172,7 +171,7 @@ class ManagerSync private constructor(
                             val array = JsonUtils.getJsonArray("docs", responseBody)
                             if (array != null && array.size() > 0) {
                                 try {
-                                    settings.edit { putString("user_admin", GsonUtils.gson.toJson(array[0])) }
+                                    settings.edit { putString("user_admin", JsonUtils.gson.toJson(array[0])) }
                                 } catch (e: Exception) {
                                     e.printStackTrace()
                                 }
