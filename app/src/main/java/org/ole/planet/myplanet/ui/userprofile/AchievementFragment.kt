@@ -1,7 +1,5 @@
 package org.ole.planet.myplanet.ui.userprofile
 
-import org.ole.planet.myplanet.utilities.JsonUtils.getString
-import org.ole.planet.myplanet.utilities.JsonUtils
 import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
