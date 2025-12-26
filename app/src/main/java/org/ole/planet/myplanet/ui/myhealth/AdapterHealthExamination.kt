@@ -21,7 +21,6 @@ import org.ole.planet.myplanet.model.RealmMyHealthPojo
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.myhealth.AdapterHealthExamination.ViewHolderMyHealthExamination
 import org.ole.planet.myplanet.utilities.DiffUtils
-import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
@@ -119,7 +118,7 @@ class AdapterHealthExamination(
     }
 
     private fun showConditions(tvCondition: TextView, realmExamination: RealmMyHealthPojo?) {
-        val conditionsMap = GsonUtils.gson.fromJson(realmExamination?.conditions, JsonObject::class.java)
+        val conditionsMap = JsonUtils.gson.fromJson(realmExamination?.conditions, JsonObject::class.java)
         val keys = conditionsMap.keySet()
         val conditions = StringBuilder()
         for (key in keys) {

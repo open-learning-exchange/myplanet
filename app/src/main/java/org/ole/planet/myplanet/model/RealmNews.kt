@@ -17,7 +17,6 @@ import java.util.UUID
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DownloadUtils.extractLinks
-import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.UrlUtils
 
@@ -61,7 +60,7 @@ open class RealmNews : RealmObject() {
     var sortDate: Long = 0
 
     val imagesArray: JsonArray
-        get() = if (images == null) JsonArray() else GsonUtils.gson.fromJson(images, JsonArray::class.java)
+        get() = if (images == null) JsonArray() else JsonUtils.gson.fromJson(images, JsonArray::class.java)
 
     val labelsArray: JsonArray
         get() {
@@ -95,7 +94,7 @@ open class RealmNews : RealmObject() {
 
     val isCommunityNews: Boolean
         get() {
-            val array = GsonUtils.gson.fromJson(viewIn, JsonArray::class.java)
+            val array = JsonUtils.gson.fromJson(viewIn, JsonArray::class.java)
             var isCommunity = false
             for (e in array) {
                 val `object` = e.asJsonObject
@@ -110,7 +109,7 @@ open class RealmNews : RealmObject() {
     fun calculateSortDate(): Long {
         try {
             if (!viewIn.isNullOrEmpty()) {
-                val ar = GsonUtils.gson.fromJson(viewIn, JsonArray::class.java)
+                val ar = JsonUtils.gson.fromJson(viewIn, JsonArray::class.java)
                 for (elem in ar) {
                     val obj = elem.asJsonObject
                     if (obj.has("section") && obj.get("section").asString.equals("community", true) && obj.has("sharedDate")) {
@@ -146,7 +145,7 @@ open class RealmNews : RealmObject() {
             news?.replyTo = JsonUtils.getString("replyTo", doc)
             news?.parentCode = JsonUtils.getString("parentCode", doc)
             val user = JsonUtils.getJsonObject("user", doc)
-            news?.user = GsonUtils.gson.toJson(JsonUtils.getJsonObject("user", doc))
+            news?.user = JsonUtils.gson.toJson(JsonUtils.getJsonObject("user", doc))
             news?.userId = JsonUtils.getString("_id", user)
             news?.userName = JsonUtils.getString("name", user)
             news?.time = JsonUtils.getLong("time", doc)
@@ -159,9 +158,9 @@ open class RealmNews : RealmObject() {
                 val concatenatedLink = "$baseUrl/$link"
                 concatenatedLinks.add(concatenatedLink)
             }
-            news?.images = GsonUtils.gson.toJson(images)
+            news?.images = JsonUtils.gson.toJson(images)
             val labels = JsonUtils.getJsonArray("labels", doc)
-            news?.viewIn = GsonUtils.gson.toJson(JsonUtils.getJsonArray("viewIn", doc))
+            news?.viewIn = JsonUtils.gson.toJson(JsonUtils.getJsonArray("viewIn", doc))
             news?.setLabels(labels)
             news?.chat = JsonUtils.getBoolean("chat", doc)
 
@@ -171,7 +170,7 @@ open class RealmNews : RealmObject() {
             news?.newsUser = JsonUtils.getString("user", newsObj)
             news?.aiProvider = JsonUtils.getString("aiProvider", newsObj)
             news?.newsTitle = JsonUtils.getString("title", newsObj)
-            news?.conversations = GsonUtils.gson.toJson(JsonUtils.getJsonArray("conversations", newsObj))
+            news?.conversations = JsonUtils.gson.toJson(JsonUtils.getJsonArray("conversations", newsObj))
             news?.newsCreatedDate = JsonUtils.getLong("createdDate", newsObj)
             news?.newsUpdatedDate = JsonUtils.getLong("updatedDate", newsObj)
             news?.sharedBy = JsonUtils.getString("sharedBy", newsObj)
@@ -198,14 +197,14 @@ open class RealmNews : RealmObject() {
             `object`.addProperty("parentCode", news.parentCode)
             `object`.add("images", news.imagesArray)
             `object`.add("labels", news.labelsArray)
-            `object`.add("user", GsonUtils.gson.fromJson(news.user, JsonObject::class.java))
+            `object`.add("user", JsonUtils.gson.fromJson(news.user, JsonObject::class.java))
             val newsObject = JsonObject()
             newsObject.addProperty("_id", news.newsId)
             newsObject.addProperty("_rev", news.newsRev)
             newsObject.addProperty("user", news.newsUser)
             newsObject.addProperty("aiProvider", news.aiProvider)
             newsObject.addProperty("title", news.newsTitle)
-            newsObject.add("conversations", GsonUtils.gson.fromJson(news.conversations, JsonArray::class.java))
+            newsObject.add("conversations", JsonUtils.gson.fromJson(news.conversations, JsonArray::class.java))
             newsObject.addProperty("createdDate", news.newsCreatedDate)
             newsObject.addProperty("updatedDate", news.newsUpdatedDate)
             newsObject.addProperty("sharedBy", news.sharedBy)
@@ -219,7 +218,7 @@ open class RealmNews : RealmObject() {
                 `object`.addProperty("viewableBy", news.viewableBy)
             }
             if (!TextUtils.isEmpty(news.viewIn)) {
-                val ar = GsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
+                val ar = JsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
                 if (ar.size() > 0) `object`.add("viewIn", ar)
             }
         }
@@ -257,7 +256,7 @@ open class RealmNews : RealmObject() {
 
             news.userId = user?.id
             news.replyTo = map["replyTo"] ?: ""
-            news.user = GsonUtils.gson.toJson(user?.serialize())
+            news.user = JsonUtils.gson.toJson(user?.serialize())
             if (news.imageUrls == null) {
                 news.imageUrls = RealmList()
             }
@@ -267,7 +266,7 @@ open class RealmNews : RealmObject() {
                 val newsObj = map["news"]
                 try {
                     val newsJsonString = newsObj?.replace("=", ":")
-                    val newsJson = GsonUtils.gson.fromJson(newsJsonString, JsonObject::class.java)
+                    val newsJson = JsonUtils.gson.fromJson(newsJsonString, JsonObject::class.java)
                     news.newsId = JsonUtils.getString("_id", newsJson)
                     news.newsRev = JsonUtils.getString("_rev", newsJson)
                     news.newsUser = JsonUtils.getString("user", newsJson)
@@ -278,7 +277,7 @@ open class RealmNews : RealmObject() {
                         if (conversationsElement.isJsonPrimitive && conversationsElement.asJsonPrimitive.isString) {
                             val conversationsString = conversationsElement.asString
                             try {
-                                val conversationsArray = GsonUtils.gson.fromJson(conversationsString, JsonArray::class.java)
+                                val conversationsArray = JsonUtils.gson.fromJson(conversationsString, JsonArray::class.java)
                                 if (conversationsArray.size() > 0) {
                                     val conversationsList = ArrayList<HashMap<String, String>>()
                                     conversationsArray.forEach { conversationElement ->
@@ -288,7 +287,7 @@ open class RealmNews : RealmObject() {
                                         conversationMap["response"] = conversationObj.get("response").asString
                                         conversationsList.add(conversationMap)
                                     }
-                                    news.conversations = GsonUtils.gson.toJson(conversationsList)
+                                    news.conversations = JsonUtils.gson.toJson(conversationsList)
                                 }
                             } catch (e: JsonSyntaxException) {
                                 e.printStackTrace()
@@ -318,14 +317,14 @@ open class RealmNews : RealmObject() {
                 `object`.addProperty("name", map["name"])
                 viewInArray.add(`object`)
             }
-            return GsonUtils.gson.toJson(viewInArray)
+            return JsonUtils.gson.toJson(viewInArray)
         }
 
         fun saveConcatenatedLinksToPrefs() {
             val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             val existingJsonLinks = settings.getString("concatenated_links", null)
             val existingConcatenatedLinks = if (existingJsonLinks != null) {
-                GsonUtils.gson.fromJson(existingJsonLinks, Array<String>::class.java).toMutableList()
+                JsonUtils.gson.fromJson(existingJsonLinks, Array<String>::class.java).toMutableList()
             } else {
                 mutableListOf()
             }
@@ -338,7 +337,7 @@ open class RealmNews : RealmObject() {
                     existingConcatenatedLinks.add(link)
                 }
             }
-            val jsonConcatenatedLinks = GsonUtils.gson.toJson(existingConcatenatedLinks)
+            val jsonConcatenatedLinks = JsonUtils.gson.toJson(existingConcatenatedLinks)
             settings.edit { putString("concatenated_links", jsonConcatenatedLinks) }
         }
     }

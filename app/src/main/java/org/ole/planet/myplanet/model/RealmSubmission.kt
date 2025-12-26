@@ -13,7 +13,6 @@ import io.realm.annotations.PrimaryKey
 import java.util.Date
 import java.util.UUID
 import org.ole.planet.myplanet.utilities.Constants
-import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 
@@ -80,8 +79,8 @@ open class RealmSubmission : RealmObject() {
                 sub?.sender = JsonUtils.getString("sender", submission)
                 sub?.source = JsonUtils.getString("source", submission)
                 sub?.parentCode = JsonUtils.getString("parentCode", submission)
-                sub?.parent = GsonUtils.gson.toJson(JsonUtils.getJsonObject("parent", submission))
-                sub?.user = GsonUtils.gson.toJson(JsonUtils.getJsonObject("user", submission))
+                sub?.parent = JsonUtils.gson.toJson(JsonUtils.getJsonObject("parent", submission))
+                sub?.user = JsonUtils.gson.toJson(JsonUtils.getJsonObject("user", submission))
                 
                 if (submission.has("team") && submission.get("team").isJsonObject) {
                     val teamJson = submission.getAsJsonObject("team")
@@ -196,7 +195,7 @@ open class RealmSubmission : RealmObject() {
             if (exam != null) {
                 `object`.add("parent", RealmStepExam.serializeExam(mRealm, exam))
             } else {
-                val parent = GsonUtils.gson.fromJson(sub.parent, JsonObject::class.java)
+                val parent = JsonUtils.gson.fromJson(sub.parent, JsonObject::class.java)
                 `object`.add("parent", parent)
             }
             if (TextUtils.isEmpty(sub.user)) {

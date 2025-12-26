@@ -11,7 +11,7 @@ import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.utilities.GsonUtils
+import org.ole.planet.myplanet.utilities.JsonUtils
 
 class ProgressRepositoryImpl @Inject constructor(databaseService: DatabaseService) : RealmRepository(databaseService), ProgressRepository {
     override suspend fun fetchCourseData(userId: String?): JsonArray {
@@ -97,7 +97,7 @@ class ProgressRepositoryImpl @Inject constructor(databaseService: DatabaseServic
                     }
                 }
             }
-            obj.add("stepMistake", GsonUtils.gson.toJsonTree(mistakesMap).asJsonObject)
+            obj.add("stepMistake", JsonUtils.gson.toJsonTree(mistakesMap).asJsonObject)
             obj.addProperty("mistakes", totalMistakes)
         }
     }

@@ -25,7 +25,6 @@ import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.team.member.MemberDetailFragment
-import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 
 object NewsActions {
@@ -58,7 +57,7 @@ object NewsActions {
         if (!imageUrls.isNullOrEmpty()) {
             imageUrls.forEach { imageUrl ->
                 try {
-                    val imgObject = GsonUtils.gson.fromJson(imageUrl, JsonObject::class.java)
+                    val imgObject = JsonUtils.gson.fromJson(imageUrl, JsonObject::class.java)
                     val path = JsonUtils.getString("imageUrl", imgObject)
                     if (path.isNotEmpty()) {
                         addImageWithRemoveIcon(context, path, imageLayout)
@@ -213,7 +212,7 @@ object NewsActions {
             news?.imageUrls?.let { imageUrls ->
                 val updatedUrls = imageUrls.filter { imageUrlJson ->
                     try {
-                        val imgObject = GsonUtils.gson.fromJson(imageUrlJson, JsonObject::class.java)
+                        val imgObject = JsonUtils.gson.fromJson(imageUrlJson, JsonObject::class.java)
                         val path = JsonUtils.getString("imageUrl", imgObject)
                         !imagesToRemove.contains(path)
                     } catch (_: Exception) {
@@ -259,7 +258,7 @@ object NewsActions {
         teamName: String,
         listener: NewsAdapter.OnNewsItemClickListener? = null
     ) {
-        val ar = GsonUtils.gson.fromJson(news?.viewIn, JsonArray::class.java)
+        val ar = JsonUtils.gson.fromJson(news?.viewIn, JsonArray::class.java)
         if (!realm.isInTransaction) realm.beginTransaction()
         val position = list.indexOf(news)
         if (position != -1) {
@@ -297,7 +296,7 @@ object NewsActions {
                         .findFirst()
                 }
                 
-                managedNews?.viewIn = GsonUtils.gson.toJson(filtered)
+                managedNews?.viewIn = JsonUtils.gson.toJson(filtered)
             }
         }
         realm.commitTransaction()

@@ -9,7 +9,6 @@ import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import java.io.StringReader
-import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 
 open class RealmFeedback : RealmObject() {
@@ -32,7 +31,7 @@ open class RealmFeedback : RealmObject() {
     var parentCode: String? = null
     var state: String? = null
     fun setMessages(messages: JsonArray?) {
-        this.messages = GsonUtils.gson.toJson(messages)
+        this.messages = JsonUtils.gson.toJson(messages)
     }
 
     val messageList: List<FeedbackReply>?
@@ -123,7 +122,7 @@ open class RealmFeedback : RealmObject() {
             feedback?.type = JsonUtils.getString("type", act)
             feedback?.url = JsonUtils.getString("url", act)
             feedback?.parentCode = JsonUtils.getString("parentCode", act)
-            feedback?.setMessages(GsonUtils.gson.toJson(JsonUtils.getJsonArray("messages", act)))
+            feedback?.setMessages(JsonUtils.gson.toJson(JsonUtils.getJsonArray("messages", act)))
             feedback?.isUploaded = true
             feedback?.item = JsonUtils.getString("item", act)
             feedback?.state = JsonUtils.getString("state", act)
