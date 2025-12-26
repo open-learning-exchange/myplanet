@@ -38,7 +38,7 @@ import org.ole.planet.myplanet.databinding.FragmentEnterpriseCalendarBinding
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.repository.EventsRepository
-import org.ole.planet.myplanet.ui.mymeetup.AdapterMeetup
+import org.ole.planet.myplanet.ui.events.AdapterMeetup
 import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
 

@@ -19,7 +19,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.ui.myhealth.MyHealthFragment
-import org.ole.planet.myplanet.ui.mymeetup.MyMeetupDetailFragment
+import org.ole.planet.myplanet.ui.events.MyMeetupDetailFragment
 import org.ole.planet.myplanet.ui.mypersonals.MyPersonalsFragment
 import org.ole.planet.myplanet.ui.references.ReferenceFragment
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment

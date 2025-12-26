@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.mymeetup
+package org.ole.planet.myplanet.ui.events
 
 import android.os.Bundle
 import android.view.LayoutInflater
