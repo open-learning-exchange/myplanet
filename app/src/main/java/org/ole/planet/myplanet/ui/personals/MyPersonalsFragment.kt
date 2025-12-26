@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.mypersonals
+package org.ole.planet.myplanet.ui.personals
 
 import android.os.Bundle
 import android.view.LayoutInflater
