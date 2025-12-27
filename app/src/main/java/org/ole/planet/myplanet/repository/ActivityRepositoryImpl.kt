@@ -2,7 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
-import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 
