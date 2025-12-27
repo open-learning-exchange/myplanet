@@ -1,12 +1,11 @@
 package org.ole.planet.myplanet.model
 
+import org.ole.planet.myplanet.utilities.JsonUtils
 import android.text.TextUtils
 import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.utilities.GsonUtils
-import org.ole.planet.myplanet.utilities.JsonUtils
 
 open class RealmTeamTask : RealmObject() {
     @PrimaryKey
@@ -45,8 +44,8 @@ open class RealmTeamTask : RealmObject() {
                 task.deadline = JsonUtils.getLong("deadline", obj)
                 task.completedTime = JsonUtils.getLong("completedTime", obj)
                 task.description = JsonUtils.getString("description", obj)
-                task.link = GsonUtils.gson.toJson(JsonUtils.getJsonObject("link", obj))
-                task.sync = GsonUtils.gson.toJson(JsonUtils.getJsonObject("sync", obj))
+                task.link = JsonUtils.gson.toJson(JsonUtils.getJsonObject("link", obj))
+                task.sync = JsonUtils.gson.toJson(JsonUtils.getJsonObject("sync", obj))
                 task.teamId = JsonUtils.getString("teams", JsonUtils.getJsonObject("link", obj))
                 val user = JsonUtils.getJsonObject("assignee", obj)
                 if (user.has("_id")) {
@@ -71,8 +70,8 @@ open class RealmTeamTask : RealmObject() {
             val user = realm.where(RealmUserModel::class.java).equalTo("id", task.assignee).findFirst()
             if (user != null) `object`.add("assignee", user.serialize())
             else `object`.addProperty("assignee", "")
-            `object`.add("sync", GsonUtils.gson.fromJson(task.sync, JsonObject::class.java))
-            `object`.add("link", GsonUtils.gson.fromJson(task.link, JsonObject::class.java))
+            `object`.add("sync", JsonUtils.gson.fromJson(task.sync, JsonObject::class.java))
+            `object`.add("link", JsonUtils.gson.fromJson(task.link, JsonObject::class.java))
             return `object`
         }
     }

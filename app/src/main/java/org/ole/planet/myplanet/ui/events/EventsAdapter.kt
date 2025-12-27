@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.mymeetup
+package org.ole.planet.myplanet.ui.events
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -10,13 +10,13 @@ import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
-class AdapterMeetup : ListAdapter<RealmMeetup, AdapterMeetup.ViewHolderMeetup>(DIFF_CALLBACK) {
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderMeetup {
+class EventsAdapter : ListAdapter<RealmMeetup, EventsAdapter.ViewHolderEvent>(DIFF_CALLBACK) {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderEvent {
         val binding = ItemMeetupBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return ViewHolderMeetup(binding)
+        return ViewHolderEvent(binding)
     }
 
-    override fun onBindViewHolder(holder: ViewHolderMeetup, position: Int) {
+    override fun onBindViewHolder(holder: ViewHolderEvent, position: Int) {
         val meetup = getItem(position)
         val binding = holder.binding
         val context = binding.root.context
@@ -31,7 +31,7 @@ class AdapterMeetup : ListAdapter<RealmMeetup, AdapterMeetup.ViewHolderMeetup>(D
         binding.tvCreator.text = context.getString(R.string.message_placeholder, meetup.creator)
     }
 
-    class ViewHolderMeetup(val binding: ItemMeetupBinding) : RecyclerView.ViewHolder(binding.root)
+    class ViewHolderEvent(val binding: ItemMeetupBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {
         val DIFF_CALLBACK = DiffUtils.itemCallback<RealmMeetup>(

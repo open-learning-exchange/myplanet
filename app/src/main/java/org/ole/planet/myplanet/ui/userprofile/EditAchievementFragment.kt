@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.userprofile
 
+import org.ole.planet.myplanet.utilities.JsonUtils
 import android.app.DatePickerDialog
 import android.content.DialogInterface
 import android.os.Bundle
@@ -44,7 +45,6 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.CheckboxListView
 import org.ole.planet.myplanet.utilities.DialogUtils.getDialog
-import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -85,8 +85,8 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             val goals = fragmentEditAchievementBinding.etGoals.text.toString().trim { it <= ' ' }
             val purpose = fragmentEditAchievementBinding.etPurpose.text.toString().trim { it <= ' ' }
             val sendToNation = fragmentEditAchievementBinding.cbSendToNation.isChecked.toString() + ""
-            val achievementsJson = if (achievementArray != null) GsonUtils.gson.toJson(achievementArray) else "[]"
-            val referencesJson = if (referenceArray != null) GsonUtils.gson.toJson(referenceArray) else "[]"
+            val achievementsJson = if (achievementArray != null) JsonUtils.gson.toJson(achievementArray) else "[]"
+            val referencesJson = if (referenceArray != null) JsonUtils.gson.toJson(referenceArray) else "[]"
 
             fragmentEditAchievementBinding.btnUpdate.isEnabled = false
             Utilities.toast(activity, getString(R.string.saving))
@@ -103,8 +103,8 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
                                 achievement.goals = goals
                                 achievement.purpose = purpose
                                 achievement.sendToNation = sendToNation
-                                achievement.setAchievements(GsonUtils.gson.fromJson(achievementsJson, JsonArray::class.java))
-                                achievement.setReferences(GsonUtils.gson.fromJson(referencesJson, JsonArray::class.java))
+                                achievement.setAchievements(JsonUtils.gson.fromJson(achievementsJson, JsonArray::class.java))
+                                achievement.setReferences(JsonUtils.gson.fromJson(referencesJson, JsonArray::class.java))
                             }
                         }
                     }

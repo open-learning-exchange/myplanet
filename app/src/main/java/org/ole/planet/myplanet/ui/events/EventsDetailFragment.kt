@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.mymeetup
+package org.ole.planet.myplanet.ui.events
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -15,7 +15,7 @@ import java.util.HashMap
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.databinding.FragmentMyMeetupDetailBinding
+import org.ole.planet.myplanet.databinding.FragmentEventsDetailBinding
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.getHashMap
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -25,8 +25,8 @@ import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 
 @AndroidEntryPoint
-class MyMeetupDetailFragment : Fragment(), View.OnClickListener {
-    private var _binding: FragmentMyMeetupDetailBinding? = null
+class EventsDetailFragment : Fragment(), View.OnClickListener {
+    private var _binding: FragmentEventsDetailBinding? = null
     private val binding get() = _binding!!
     private var meetups: RealmMeetup? = null
     @Inject
@@ -46,7 +46,7 @@ class MyMeetupDetailFragment : Fragment(), View.OnClickListener {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentMyMeetupDetailBinding.inflate(inflater, container, false)
+        _binding = FragmentEventsDetailBinding.inflate(inflater, container, false)
         listDesc = binding.root.findViewById(R.id.list_desc)
         listUsers = binding.root.findViewById(R.id.list_users)
         tvJoined = binding.root.findViewById(R.id.tv_joined)

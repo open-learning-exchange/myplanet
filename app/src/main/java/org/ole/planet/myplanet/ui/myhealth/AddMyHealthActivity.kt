@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.myhealth
 
+import org.ole.planet.myplanet.utilities.JsonUtils
 import android.app.DatePickerDialog
 import android.os.Bundle
 import android.text.TextUtils
@@ -17,7 +18,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityAddMyHealthBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmMyHealth.RealmMyHealthProfile
 import org.ole.planet.myplanet.model.RealmMyHealthPojo
@@ -27,7 +28,6 @@ import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.encrypt
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateIv
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateKey
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
-import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
@@ -116,7 +116,7 @@ class AddMyHealthActivity : AppCompatActivity() {
                 try {
                     val key = userModel?.key ?: generateKey().also { newKey -> userModel?.key = newKey }
                     val iv = userModel?.iv ?: generateIv().also { newIv -> userModel?.iv = newIv }
-                    healthPojo.data = encrypt(GsonUtils.gson.toJson(myHealth), key, iv)
+                    healthPojo.data = encrypt(JsonUtils.gson.toJson(myHealth), key, iv)
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
@@ -142,7 +142,7 @@ class AddMyHealthActivity : AppCompatActivity() {
                 var decodedHealth: RealmMyHealth? = null
                 if (healthPojo != null && !TextUtils.isEmpty(healthPojo.data)) {
                     try {
-                        decodedHealth = GsonUtils.gson.fromJson(
+                        decodedHealth = JsonUtils.gson.fromJson(
                             decrypt(healthPojo.data, userModel?.key, userModel?.iv),
                             RealmMyHealth::class.java
                         )

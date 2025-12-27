@@ -43,7 +43,7 @@ class MembersFragment : BaseMemberFragment() {
             viewLifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
                 launch {
                     viewModel.uiState.collect { uiState ->
-                        (adapter as? AdapterMemberRequest)?.setData(
+                        (adapter as? RequestsAdapter)?.setData(
                             uiState.members,
                             uiState.isLeader,
                             uiState.memberCount
@@ -70,7 +70,7 @@ class MembersFragment : BaseMemberFragment() {
         get() = emptyList()
 
     override val adapter: RecyclerView.Adapter<*> by lazy {
-        AdapterMemberRequest(
+        RequestsAdapter(
             requireActivity(),
             currentUser,
         ) { user, isAccepted ->
