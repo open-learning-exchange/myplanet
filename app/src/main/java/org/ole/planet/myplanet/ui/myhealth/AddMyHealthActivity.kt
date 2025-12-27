@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.myhealth
 
-import org.ole.planet.myplanet.utilities.JsonUtils
 import android.app.DatePickerDialog
 import android.os.Bundle
 import android.text.TextUtils
@@ -17,8 +16,8 @@ import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.databinding.ActivityAddMyHealthBinding
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.databinding.ActivityAddMyHealthBinding
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmMyHealth.RealmMyHealthProfile
 import org.ole.planet.myplanet.model.RealmMyHealthPojo
@@ -28,6 +27,7 @@ import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.encrypt
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateIv
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateKey
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
+import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint

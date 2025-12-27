@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.chat
 
-import org.ole.planet.myplanet.utilities.JsonUtils
 import android.app.AlertDialog
 import android.content.Context
 import android.view.LayoutInflater
@@ -26,6 +25,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.news.ExpandableListAdapter
 import org.ole.planet.myplanet.ui.team.TeamSelectionAdapter
 import org.ole.planet.myplanet.utilities.DiffUtils
+import org.ole.planet.myplanet.utilities.JsonUtils
 
 data class ChatShareTargets(
     val community: RealmMyTeam?,

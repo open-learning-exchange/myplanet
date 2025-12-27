@@ -18,7 +18,7 @@ import org.ole.planet.myplanet.databinding.FragmentCourseDetailBinding
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.RatingRepository
+import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 
@@ -30,7 +30,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     var user: RealmUserModel? = null
     var id: String? = null
     @Inject
-    lateinit var ratingRepository: RatingRepository
+    lateinit var ratingsRepository: RatingsRepository
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) {
@@ -110,7 +110,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         val courseId = courses?.courseId
         val userId = user?.id
         if (courseId != null && userId != null) {
-            val ratingSummary = ratingRepository.getRatingSummary("course", courseId, userId)
+            val ratingSummary = ratingsRepository.getRatingSummary("course", courseId, userId)
             val jsonObject = com.google.gson.JsonObject().apply {
                 addProperty("averageRating", ratingSummary.averageRating)
                 addProperty("total", ratingSummary.totalRatings)

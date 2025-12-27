@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.model
 
-import org.ole.planet.myplanet.utilities.JsonUtils
 import android.content.Context
 import com.google.gson.JsonObject
 import io.realm.Realm
@@ -9,6 +8,7 @@ import io.realm.Sort
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 
 open class RealmOfflineActivity : RealmObject() {

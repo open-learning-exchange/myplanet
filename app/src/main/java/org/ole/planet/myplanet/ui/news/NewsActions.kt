@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.news
 
-import org.ole.planet.myplanet.utilities.JsonUtils
 import android.content.Context
 import android.view.Gravity
 import android.view.View
@@ -26,6 +25,7 @@ import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.team.member.MemberDetailFragment
+import org.ole.planet.myplanet.utilities.JsonUtils
 
 object NewsActions {
     private val imagesToRemove = mutableSetOf<String>()
