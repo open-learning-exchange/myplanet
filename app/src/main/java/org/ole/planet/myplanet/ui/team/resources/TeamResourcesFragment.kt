@@ -24,7 +24,7 @@ import org.ole.planet.myplanet.callback.TeamPageListener
 import org.ole.planet.myplanet.databinding.FragmentTeamResourceBinding
 import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.RealmVoices
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.CheckboxListView
 
@@ -54,7 +54,7 @@ class TeamResourcesFragment : BaseTeamFragment(), TeamPageListener, ResourcesUpd
         }
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {}
+    override fun onVoicesItemClick(voice: RealmVoices?) {}
     override fun clearImages() {
         imageList.clear()
         llImage?.removeAllViews()

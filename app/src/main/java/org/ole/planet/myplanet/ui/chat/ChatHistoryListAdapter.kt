@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.chat
 
-import org.ole.planet.myplanet.utilities.JsonUtils
 import android.app.AlertDialog
 import android.content.Context
 import android.view.LayoutInflater
@@ -21,11 +20,12 @@ import org.ole.planet.myplanet.databinding.RowChatHistoryBinding
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.ui.news.ExpandableListAdapter
+import org.ole.planet.myplanet.model.RealmVoices
 import org.ole.planet.myplanet.ui.team.TeamSelectionAdapter
+import org.ole.planet.myplanet.ui.voices.ExpandableListAdapter
 import org.ole.planet.myplanet.utilities.DiffUtils
+import org.ole.planet.myplanet.utilities.JsonUtils
 
 data class ChatShareTargets(
     val community: RealmMyTeam?,
@@ -37,7 +37,7 @@ class ChatHistoryListAdapter(
     private val context: Context,
     private var chatHistory: List<RealmChatHistory>,
     private var currentUser: RealmUserModel?,
-    private var newsList: List<RealmNews>,
+    private var voicesList: List<RealmVoices>,
     private var shareTargets: ChatShareTargets,
     private val onShareChat: (HashMap<String?, String>, RealmChatHistory) -> Unit,
 ) : ListAdapter<RealmChatHistory, ChatHistoryListAdapter.ViewHolderChat>(
@@ -68,9 +68,9 @@ class ChatHistoryListAdapter(
         submitList(chatHistory)
     }
 
-    fun updateCachedData(user: RealmUserModel?, sharedNews: List<RealmNews>) {
+    fun updateCachedData(user: RealmUserModel?, sharedVoices: List<RealmVoices>) {
         currentUser = user
-        newsList = sharedNews
+        voicesList = sharedVoices
     }
 
     fun updateShareTargets(newTargets: ChatShareTargets) {
@@ -203,11 +203,11 @@ class ChatHistoryListAdapter(
             )
         }
 
-        val isInNewsList = newsList.any { newsItem ->
-            newsItem.newsId == item._id
+        val isInVoicesList = voicesList.any { voiceItem ->
+            voiceItem.voicesId == item._id
         }
 
-        if (isInNewsList) {
+        if (isInVoicesList) {
             holder.rowChatHistoryBinding.shareChat.setImageResource(R.drawable.baseline_check_24)
         } else {
             holder.rowChatHistoryBinding.shareChat.setImageResource(R.drawable.baseline_share_24)
@@ -302,7 +302,7 @@ class ChatHistoryListAdapter(
             map["messageType"] = team?.teamType ?: ""
             map["messagePlanetCode"] = team?.teamPlanetCode ?: ""
             map["chat"] = "true"
-            map["news"] = JsonUtils.gson.toJson(serializedMap)
+            map["voices"] = JsonUtils.gson.toJson(serializedMap)
 
             onShareChat(map, chatHistory)
             dialog.dismiss()

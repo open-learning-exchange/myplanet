@@ -10,13 +10,13 @@ import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyHealthPojo
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.model.RealmVoices
 
 object Constants {
     const val KEY_LOGIN = "isLoggedIn"
@@ -50,7 +50,7 @@ object Constants {
     }
 
     private fun initClasses() {
-        classList["news"] = RealmNews::class.java
+        classList["voices"] = RealmVoices::class.java
         classList["tags"] = RealmTag::class.java
         classList["login_activities"] = RealmOfflineActivity::class.java
         classList["ratings"] = RealmRating::class.java

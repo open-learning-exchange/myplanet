@@ -32,17 +32,17 @@ import org.ole.planet.myplanet.databinding.FragmentChatHistoryListBinding
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.RealmChatHistory
-import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmVoices
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
+import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.DialogUtils
-import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 
 private data class Quartet<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
@@ -62,7 +62,7 @@ class ChatHistoryListFragment : Fragment() {
     @AppPreferences
     lateinit var settings: SharedPreferences
     private val serverUrlMapper = ServerUrlMapper()
-    private var sharedNewsMessages: List<RealmNews> = emptyList()
+    private var sharedVoicesMessages: List<RealmVoices> = emptyList()
     private var shareTargets = ChatShareTargets(null, emptyList(), emptyList())
     private var memoizedShareTargets: ChatShareTargets? = null
     private var searchBarWatcher: TextWatcher? = null
@@ -257,19 +257,19 @@ class ChatHistoryListFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             val cachedUser = user
             val cachedTargets = memoizedShareTargets
-            val (currentUser, newsMessages, chatHistory, targets) = withContext(Dispatchers.IO) {
+            val (currentUser, voicesMessages, chatHistory, targets) = withContext(Dispatchers.IO) {
                 val currentUser = cachedUser ?: loadCurrentUser(settings.getString("userId", ""))
-                val newsMessages = chatRepository.getPlanetNewsMessages(currentUser?.planetCode)
+                val voicesMessages = chatRepository.getPlanetVoicesMessages(currentUser?.planetCode)
                 val chatHistory = chatRepository.getChatHistoryForUser(currentUser?.name)
                 val targets = cachedTargets ?: loadShareTargets(
                     settings.getString("parentCode", ""),
                     settings.getString("communityName", "")
                 )
-                Quartet(currentUser, newsMessages, chatHistory, targets)
+                Quartet(currentUser, voicesMessages, chatHistory, targets)
             }
 
             user = currentUser
-            sharedNewsMessages = newsMessages
+            sharedVoicesMessages = voicesMessages
             shareTargets = targets
             memoizedShareTargets = targets
 
@@ -279,7 +279,7 @@ class ChatHistoryListFragment : Fragment() {
                     requireContext(),
                     chatHistory,
                     currentUser,
-                    sharedNewsMessages,
+                    sharedVoicesMessages,
                     shareTargets,
                     ::shareChat,
                 )
@@ -294,7 +294,7 @@ class ChatHistoryListFragment : Fragment() {
                 })
                 binding.recyclerView.adapter = newAdapter
             } else {
-                adapter.updateCachedData(currentUser, sharedNewsMessages)
+                adapter.updateCachedData(currentUser, sharedVoicesMessages)
                 adapter.updateShareTargets(shareTargets)
                 adapter.updateChatHistory(chatHistory)
                 binding.searchBar.visibility = View.VISIBLE
@@ -334,12 +334,12 @@ class ChatHistoryListFragment : Fragment() {
         }
         viewLifecycleOwner.lifecycleScope.launch {
             val currentUser = user
-            val createdNews = voicesRepository.createNews(map, currentUser)
+            val createdVoice = voicesRepository.createVoice(map, currentUser)
             if (currentUser?.planetCode != null) {
-                sharedNewsMessages = sharedNewsMessages + createdNews
+                sharedVoicesMessages = sharedVoicesMessages + createdVoice
             }
             (binding.recyclerView.adapter as? ChatHistoryListAdapter)?.let { adapter ->
-                adapter.updateCachedData(currentUser, sharedNewsMessages)
+                adapter.updateCachedData(currentUser, sharedVoicesMessages)
                 adapter.notifyChatShared(chatHistory._id)
             }
         }

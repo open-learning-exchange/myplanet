@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.chat
 
-import org.ole.planet.myplanet.utilities.JsonUtils
 import android.content.Context
 import android.content.SharedPreferences
 import android.graphics.Typeface
@@ -55,9 +54,7 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utilities.DialogUtils
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
+import org.ole.planet.myplanet.utilities.JsonUtils
 
 @AndroidEntryPoint
 class ChatDetailFragment : Fragment() {
@@ -74,7 +71,7 @@ class ChatDetailFragment : Fragment() {
     var user: RealmUserModel? = null
     private var isUserLoaded = false
     private var isAiUnavailable = false
-    private var newsId: String? = null
+    private var voiceId: String? = null
     private var loadingJob: Job? = null
     @Inject
     @AppPreferences
@@ -105,13 +102,13 @@ class ChatDetailFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         initChatComponents()
-        val newsRev = arguments?.getString("newsRev")
-        val newsConversations = arguments?.getString("conversations")
+        val voiceRev = arguments?.getString("voicesRev")
+        val voiceConversations = arguments?.getString("conversations")
         observeAiProviders()
         setupSendButton()
         setupMessageInputListeners()
-        if (newsId != null) {
-            loadNewsConversations(newsId, newsRev, newsConversations)
+        if (voiceId != null) {
+            loadVoicesConversations(voiceId, voiceRev, voiceConversations)
         } else {
             observeViewModelData()
         }
@@ -135,7 +132,7 @@ class ChatDetailFragment : Fragment() {
             isNestedScrollingEnabled = true
             setHasFixedSize(true)
         }
-        newsId = arguments?.getString("newsId")
+        voiceId = arguments?.getString("voicesId")
         if (mAdapter.itemCount > 0) {
             binding.recyclerGchat.scrollToPosition(mAdapter.itemCount - 1)
             binding.recyclerGchat.smoothScrollToPosition(mAdapter.itemCount - 1)
@@ -198,9 +195,9 @@ class ChatDetailFragment : Fragment() {
         binding.editGchatMessage.addTextChangedListener(messageTextWatcher)
     }
 
-    private fun loadNewsConversations(newsId: String?, newsRev: String?, newsConversations: String?) {
-        _id = newsId ?: ""
-        _rev = newsRev ?: ""
+    private fun loadVoicesConversations(voiceId: String?, voiceRev: String?, voiceConversations: String?) {
+        _id = voiceId ?: ""
+        _rev = voiceRev ?: ""
         loadingJob?.cancel()
         loadingJob = viewLifecycleOwner.lifecycleScope.launch {
             if (!isAdded) return@launch
@@ -208,7 +205,7 @@ class ChatDetailFragment : Fragment() {
             customProgressDialog.show()
             try {
                 val messages = withContext(Dispatchers.Default) {
-                    val conversations = JsonUtils.gson.fromJson(newsConversations, Array<Conversation>::class.java).toList()
+                    val conversations = JsonUtils.gson.fromJson(voiceConversations, Array<Conversation>::class.java).toList()
                     val list = mutableListOf<ChatMessage>()
                     val limit = 20
                     val limitedConversations = if (conversations.size > limit) conversations.takeLast(limit) else conversations
@@ -637,7 +634,7 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun clearChatDetail() {
-        if (newsId == null && sharedViewModel.selectedChatHistory.value.isNullOrEmpty()) {
+        if (voiceId == null && sharedViewModel.selectedChatHistory.value.isNullOrEmpty()) {
             if (::mAdapter.isInitialized) {
                 mAdapter.clearData()
                 _id = ""

@@ -38,12 +38,12 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.TeamNotificationInfo
 import org.ole.planet.myplanet.service.TransactionSyncManager
-import org.ole.planet.myplanet.ui.news.NewsViewModel
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
 import org.ole.planet.myplanet.ui.myhealth.UserListArrayAdapter
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.ui.userprofile.UserProfileFragment
+import org.ole.planet.myplanet.ui.voices.VoicesViewModel
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DownloadUtils
@@ -54,7 +54,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCallback,
     SyncListener {
     private val viewModel: DashboardViewModel by viewModels()
-    private val newsViewModel: NewsViewModel by viewModels()
+    private val voicesViewModel: VoicesViewModel by viewModels()
     private val realm get() = requireRealmInstance()
     private var fullName: String? = null
     private var params = LinearLayout.LayoutParams(250, 100)
@@ -112,7 +112,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             now[Calendar.YEAR] = i
             now[Calendar.MONTH] = i1
             now[Calendar.DAY_OF_MONTH] = i2
-            newsViewModel.getPrivateImageUrlsCreatedAfter(now.timeInMillis) { urls ->
+            voicesViewModel.getPrivateImageUrlsCreatedAfter(now.timeInMillis) { urls ->
                 if (urls.isNotEmpty()) {
                     Utilities.toast(activity, getString(R.string.downloading_images_please_check_notification))
                     DownloadUtils.openDownloadService(activity, ArrayList(urls), false)
@@ -121,7 +121,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
                 }
             }
         }, now[Calendar.YEAR], now[Calendar.MONTH], now[Calendar.DAY_OF_MONTH])
-        dpd.setTitle(getString(R.string.read_offline_news_from))
+        dpd.setTitle(getString(R.string.read_offline_voices_from))
         dpd.show()
     }
 

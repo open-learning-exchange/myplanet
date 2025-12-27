@@ -7,7 +7,7 @@ import javax.inject.Inject
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.addConversationToChatHistory
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.RealmVoices
 
 class ChatRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
@@ -22,11 +22,11 @@ class ChatRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getPlanetNewsMessages(planetCode: String?): List<RealmNews> {
+    override suspend fun getPlanetVoicesMessages(planetCode: String?): List<RealmVoices> {
         if (planetCode.isNullOrEmpty()) {
             return emptyList()
         }
-        return queryList(RealmNews::class.java) {
+        return queryList(RealmVoices::class.java) {
             equalTo("docType", "message", Case.INSENSITIVE)
             equalTo("createdOn", planetCode, Case.INSENSITIVE)
         }

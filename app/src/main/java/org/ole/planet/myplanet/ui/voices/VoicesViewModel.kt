@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.news
+package org.ole.planet.myplanet.ui.voices
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -8,7 +8,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.repository.ResourcesRepository
 
 @HiltViewModel
-class NewsViewModel @Inject constructor(
+class VoicesViewModel @Inject constructor(
     private val resourcesRepository: ResourcesRepository
 ) : ViewModel() {
     fun getPrivateImageUrlsCreatedAfter(timestamp: Long, callback: (List<String>) -> Unit) {

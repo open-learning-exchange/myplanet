@@ -49,7 +49,7 @@ class ImprovedSyncManager @Inject constructor(
         "tablet_users",
         "tags",
         "teams",
-        "news",
+        "voices",
         "library",
         "resources",
         "courses",

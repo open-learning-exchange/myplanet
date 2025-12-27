@@ -2,7 +2,7 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/news_fragment_parent_layout"
+    android:id="@+id/voices_fragment_parent_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/secondary_bg"
@@ -26,7 +26,7 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/linearLayout6" />
         <LinearLayout
-            android:id="@+id/ll_add_news"
+            android:id="@+id/ll_add_voice"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
@@ -72,7 +72,7 @@
                             android:text="@string/button_submit"
                             android:theme="@style/PrimaryButton" />
                         <Button
-                            android:id="@+id/add_news_image"
+                            android:id="@+id/add_voice_image"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_gravity="center"

@@ -1,10 +1,10 @@
 package org.ole.planet.myplanet.model
 
-import org.ole.planet.myplanet.utilities.JsonUtils
 import com.google.gson.JsonObject
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.VersionUtils
 
@@ -40,7 +40,7 @@ open class RealmSearchActivity(
 
     companion object {
         @JvmStatic
-        fun insert(log: RealmNewsLog): JsonObject {
+        fun insert(log: RealmVoicesLog): JsonObject {
             val ob = JsonObject()
             ob.addProperty("user", log.userId)
             ob.addProperty("type", log.type)

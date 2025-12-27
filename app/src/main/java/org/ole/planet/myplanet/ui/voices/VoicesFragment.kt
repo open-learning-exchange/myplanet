@@ -1,7 +1,5 @@
-package org.ole.planet.myplanet.ui.news
+package org.ole.planet.myplanet.ui.voices
 
-import org.ole.planet.myplanet.utilities.JsonUtils.getString
-import org.ole.planet.myplanet.utilities.JsonUtils
 import android.content.res.Configuration
 import android.os.Bundle
 import android.os.Trace
@@ -24,12 +22,12 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.BaseNewsFragment
-import org.ole.planet.myplanet.databinding.FragmentNewsBinding
+import org.ole.planet.myplanet.base.BaseVoicesFragment
+import org.ole.planet.myplanet.databinding.FragmentVoicesBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmVoices
+import org.ole.planet.myplanet.model.RealmVoices.Companion.createVoices
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -37,13 +35,15 @@ import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.FileUtils
+import org.ole.planet.myplanet.utilities.JsonUtils
+import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.textChanges
 
 @AndroidEntryPoint
-class NewsFragment : BaseNewsFragment() {
-    private var _binding: FragmentNewsBinding? = null
+class VoicesFragment : BaseVoicesFragment() {
+    private var _binding: FragmentVoicesBinding? = null
     private val binding get() = _binding!!
     var user: RealmUserModel? = null
     
@@ -55,24 +55,24 @@ class NewsFragment : BaseNewsFragment() {
     lateinit var teamsRepository: TeamsRepository
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
-    private var filteredNewsList: List<RealmNews?> = listOf()
-    private var searchFilteredList: List<RealmNews?> = listOf()
-    private var labelFilteredList: List<RealmNews?> = listOf()
+    private var filteredVoicesList: List<RealmVoices?> = listOf()
+    private var searchFilteredList: List<RealmVoices?> = listOf()
+    private var labelFilteredList: List<RealmVoices?> = listOf()
     private lateinit var etSearch: EditText
     private var selectedLabel: String = "All"
     private val labelDisplayToValue = mutableMapOf<String, String>()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentNewsBinding.inflate(inflater, container, false)
+        _binding = FragmentVoicesBinding.inflate(inflater, container, false)
         llImage = binding.llImages
         user = userProfileDbHandler.getUserModelCopy()
-        setupUI(binding.newsFragmentParentLayout, requireActivity())
+        setupUI(binding.voicesFragmentParentLayout, requireActivity())
         if (user?.id?.startsWith("guest") == true) {
             binding.btnNewVoice.visibility = View.GONE
         }
         etSearch = binding.root.findViewById(R.id.et_search)
         binding.btnNewVoice.setOnClickListener {
-            binding.llAddNews.visibility = if (binding.llAddNews.isVisible) {
+            binding.llAddVoice.visibility = if (binding.llAddVoice.isVisible) {
                 binding.etMessage.setText("")
                 binding.tlMessage.error = null
                 clearImages()
@@ -80,7 +80,7 @@ class NewsFragment : BaseNewsFragment() {
             } else {
                 View.VISIBLE
             }
-            binding.btnNewVoice.text = if (binding.llAddNews.isVisible) {
+            binding.btnNewVoice.text = if (binding.llAddVoice.isVisible) {
                 getString(R.string.hide_new_voice)
             } else {
                 getString(R.string.new_voice)
@@ -88,7 +88,7 @@ class NewsFragment : BaseNewsFragment() {
         }
         if (requireArguments().getBoolean("fromLogin")) {
             binding.btnNewVoice.visibility = View.GONE
-            binding.llAddNews.visibility = View.GONE
+            binding.llAddVoice.visibility = View.GONE
         }
 
         if (mRealm.isInTransaction) {
@@ -109,15 +109,15 @@ class NewsFragment : BaseNewsFragment() {
         super.onViewCreated(view, savedInstanceState)
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                voicesRepository.getCommunityNews(getUserIdentifier()).collect { news ->
+                voicesRepository.getCommunityVoices(getUserIdentifier()).collect { voices ->
                     kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                        val filtered = news.map { it as RealmNews? }
+                        val filtered = voices.map { it as RealmVoices? }
                         val labels = collectAllLabels(filtered)
                         val labelFiltered = applyLabelFilter(filtered)
                         val searchFiltered =
                             applySearchFilter(labelFiltered, etSearch.text.toString().trim())
                         if (_binding != null) {
-                            filteredNewsList = filtered
+                            filteredVoicesList = filtered
                             labelFilteredList = labelFiltered
                             searchFilteredList = searchFiltered
                             setupLabelFilter(labels)
@@ -141,17 +141,17 @@ class NewsFragment : BaseNewsFragment() {
             map["messageType"] = "sync"
             map["messagePlanetCode"] = user?.planetCode ?: ""
 
-            val n = user?.let { it1 -> createNews(map, mRealm, it1, imageList) }
+            val n = user?.let { it1 -> createVoices(map, mRealm, it1, imageList) }
             imageList.clear()
             llImage?.removeAllViews()
-            adapterNews?.addItem(n)
-            labelFilteredList = applyLabelFilter(filteredNewsList)
+            adapterVoices?.addItem(n)
+            labelFilteredList = applyLabelFilter(filteredVoicesList)
             searchFilteredList = applySearchFilter(labelFilteredList)
             setData(searchFilteredList)
             scrollToTop()
         }
 
-        binding.addNewsImage.setOnClickListener {
+        binding.addVoiceImage.setOnClickListener {
             llImage = binding.llImages
             val openFolderIntent = FileUtils.openOleFolder(requireContext())
             openFolderLauncher.launch(openFolderIntent)
@@ -168,15 +168,15 @@ class NewsFragment : BaseNewsFragment() {
         return "$planetCode@$parentCode"
     }
 
-    override fun setData(list: List<RealmNews?>?) {
+    override fun setData(list: List<RealmVoices?>?) {
         if (!isAdded || list == null) return
 
-        if (binding.rvNews.adapter == null) {
-            changeLayoutManager(resources.configuration.orientation, binding.rvNews)
+        if (binding.rvVoices.adapter == null) {
+            changeLayoutManager(resources.configuration.orientation, binding.rvVoices)
             val resourceIds = mutableSetOf<String>()
-            list.forEach { news ->
-                if ((news?.imagesArray?.size() ?: 0) > 0) {
-                    val ob = news?.imagesArray?.get(0)?.asJsonObject
+            list.forEach { voice ->
+                if ((voice?.imagesArray?.size() ?: 0) > 0) {
+                    val ob = voice?.imagesArray?.get(0)?.asJsonObject
                     val resourceId = getString("resourceId", ob?.asJsonObject)
                     if (!resourceId.isNullOrBlank()) {
                         resourceIds.add(resourceId)
@@ -192,38 +192,38 @@ class NewsFragment : BaseNewsFragment() {
                     )
                 }
             }
-            val updatedListAsMutable: MutableList<RealmNews?> = list.toMutableList()
-            Trace.beginSection("NewsFragment.sort")
+            val updatedListAsMutable: MutableList<RealmVoices?> = list.toMutableList()
+            Trace.beginSection("VoicesFragment.sort")
             val sortedList = try {
-                updatedListAsMutable.sortedWith(compareByDescending { news ->
-                    news?.sortDate ?: 0L
+                updatedListAsMutable.sortedWith(compareByDescending { voice ->
+                    voice?.sortDate ?: 0L
                 })
             } finally {
                 Trace.endSection()
             }
-            adapterNews = NewsAdapter(requireActivity(), user, null, "", null, userProfileDbHandler, viewLifecycleOwner.lifecycleScope, userRepository, voicesRepository, teamsRepository)
-            adapterNews?.sharedPrefManager = sharedPrefManager
-            adapterNews?.setmRealm(mRealm)
-            adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
-            adapterNews?.setListener(this)
-            adapterNews?.registerAdapterDataObserver(observer)
-            adapterNews?.updateList(sortedList)
-            binding.rvNews.adapter = adapterNews
+            adapterVoices = VoicesAdapter(requireActivity(), user, null, "", null, userProfileDbHandler, viewLifecycleOwner.lifecycleScope, userRepository, voicesRepository, teamsRepository)
+            adapterVoices?.sharedPrefManager = sharedPrefManager
+            adapterVoices?.setmRealm(mRealm)
+            adapterVoices?.setFromLogin(requireArguments().getBoolean("fromLogin"))
+            adapterVoices?.setListener(this)
+            adapterVoices?.registerAdapterDataObserver(observer)
+            adapterVoices?.updateList(sortedList)
+            binding.rvVoices.adapter = adapterVoices
         } else {
-            (binding.rvNews.adapter as? NewsAdapter)?.updateList(list)
+            (binding.rvVoices.adapter as? VoicesAdapter)?.updateList(list)
         }
-        adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, "news") }
-        binding.llAddNews.visibility = View.GONE
+        adapterVoices?.let { showNoData(binding.tvMessage, it.itemCount, "voices") }
+        binding.llAddVoice.visibility = View.GONE
         binding.btnNewVoice.text = getString(R.string.new_voice)
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {
+    override fun onVoicesItemClick(voice: RealmVoices?) {
         val fromLogin = arguments?.getBoolean("fromLogin")
         if (fromLogin == false) {
             val bundle = Bundle()
-            bundle.putString("newsId", news?.newsId)
-            bundle.putString("newsRev", news?.newsRev)
-            bundle.putString("conversations", news?.conversations)
+            bundle.putString("voicesId", voice?.voicesId)
+            bundle.putString("voicesRev", voice?.voicesRev)
+            bundle.putString("conversations", voice?.conversations)
 
             val chatDetailFragment = ChatDetailFragment()
             chatDetailFragment.arguments = bundle
@@ -245,26 +245,26 @@ class NewsFragment : BaseNewsFragment() {
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         val orientation = newConfig.orientation
-        changeLayoutManager(orientation, binding.rvNews)
+        changeLayoutManager(orientation, binding.rvVoices)
     }
 
     private fun scrollToTop() {
-        binding.rvNews.post {
-            binding.rvNews.scrollToPosition(0)
+        binding.rvVoices.post {
+            binding.rvVoices.scrollToPosition(0)
         }
     }
 
     private val observer: AdapterDataObserver = object : AdapterDataObserver() {
         override fun onChanged() {
-            adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, "news") }
+            adapterVoices?.let { showNoData(binding.tvMessage, it.itemCount, "voices") }
         }
 
         override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
-            adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, "news") }
+            adapterVoices?.let { showNoData(binding.tvMessage, it.itemCount, "voices") }
         }
 
         override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) {
-            adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, "news") }
+            adapterVoices?.let { showNoData(binding.tvMessage, it.itemCount, "voices") }
         }
     }
     
@@ -280,15 +280,15 @@ class NewsFragment : BaseNewsFragment() {
             .launchIn(viewLifecycleOwner.lifecycleScope)
     }
     
-    private fun applySearchFilter(list: List<RealmNews?>, queryParam: String? = null): List<RealmNews?> {
+    private fun applySearchFilter(list: List<RealmVoices?>, queryParam: String? = null): List<RealmVoices?> {
         val query = queryParam ?: etSearch.text.toString().trim()
         
         if (query.isEmpty()) {
             return list
         }
         
-        val filtered = list.filter { news ->
-            val message = news?.message?.trim() ?: ""
+        val filtered = list.filter { voice ->
+            val message = voice?.message?.trim() ?: ""
             val matches = message.contains(query, ignoreCase = true)
             matches
         }
@@ -302,7 +302,7 @@ class NewsFragment : BaseNewsFragment() {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                 val labels = (binding.filterByLabel.adapter as ArrayAdapter<String>)
                 selectedLabel = labels.getItem(position) ?: "All"
-                labelFilteredList = applyLabelFilter(filteredNewsList)
+                labelFilteredList = applyLabelFilter(filteredVoicesList)
                 searchFilteredList = applySearchFilter(labelFilteredList)
                 setData(searchFilteredList)
                 scrollToTop()
@@ -313,7 +313,7 @@ class NewsFragment : BaseNewsFragment() {
     
     private fun updateLabelSpinner(precomputedLabels: List<String>? = null) {
         val binding = _binding ?: return
-        val labels = precomputedLabels ?: collectAllLabels(filteredNewsList)
+        val labels = precomputedLabels ?: collectAllLabels(filteredVoicesList)
         val themedContext = androidx.appcompat.view.ContextThemeWrapper(requireContext(), R.style.ResourcePopupMenu)
         val adapter = ArrayAdapter(themedContext, android.R.layout.simple_spinner_item, labels)
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
@@ -328,7 +328,7 @@ class NewsFragment : BaseNewsFragment() {
         }
     }
     
-    private fun collectAllLabels(list: List<RealmNews?>): List<String> {
+    private fun collectAllLabels(list: List<RealmVoices?>): List<String> {
         labelDisplayToValue.clear()
 
         val allLabels = mutableSetOf<String>()
@@ -341,10 +341,10 @@ class NewsFragment : BaseNewsFragment() {
 
         allLabels.add("Shared Chat")
 
-        list.forEach { news ->
-            if (!news?.viewIn.isNullOrEmpty()) {
+        list.forEach { voice ->
+            if (!voice?.viewIn.isNullOrEmpty()) {
                 try {
-                    val ar = JsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
+                    val ar = JsonUtils.gson.fromJson(voice.viewIn, JsonArray::class.java)
                     if (ar.size() > 1) {
                         val ob = ar[0].asJsonObject
                         if (ob.has("name") && !ob.get("name").isJsonNull) {
@@ -359,9 +359,9 @@ class NewsFragment : BaseNewsFragment() {
                 }
             }
 
-            news?.labels?.forEach { label ->
+            voice?.labels?.forEach { label ->
                 val labelName = Constants.LABELS.entries.find { it.value == label }?.key
-                    ?: NewsLabelManager.formatLabelValue(label)
+                    ?: VoicesLabelManager.formatLabelValue(label)
                 allLabels.add(labelName)
                 labelDisplayToValue.putIfAbsent(labelName, label)
             }
@@ -370,31 +370,31 @@ class NewsFragment : BaseNewsFragment() {
         return allLabels.sorted()
     }
     
-    private fun applyLabelFilter(list: List<RealmNews?>): List<RealmNews?> {
+    private fun applyLabelFilter(list: List<RealmVoices?>): List<RealmVoices?> {
         if (selectedLabel == "All") {
             return list
         }
         
-        return list.filter { news ->
+        return list.filter { voice ->
             when {
                 selectedLabel == "Shared Chat" -> {
-                    news?.chat == true || news?.viewableBy.equals("community", ignoreCase = true)
+                    voice?.chat == true || voice?.viewableBy.equals("community", ignoreCase = true)
                 }
                 labelDisplayToValue.containsKey(selectedLabel) -> {
                     val labelValue = labelDisplayToValue[selectedLabel]
-                    news?.labels?.contains(labelValue) == true
+                    voice?.labels?.contains(labelValue) == true
                 }
                 else -> {
-                    extractSharedTeamName(news) == selectedLabel
+                    extractSharedTeamName(voice) == selectedLabel
                 }
             }
         }
     }
     
-    private fun extractSharedTeamName(news: RealmNews?): String {
-        if (!news?.viewIn.isNullOrEmpty()) {
+    private fun extractSharedTeamName(voice: RealmVoices?): String {
+        if (!voice?.viewIn.isNullOrEmpty()) {
             try {
-                val ar = JsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
+                val ar = JsonUtils.gson.fromJson(voice.viewIn, JsonArray::class.java)
                 if (ar.size() > 1) {
                     val ob = ar[0].asJsonObject
                     if (ob.has("name") && !ob.get("name").isJsonNull) {
@@ -410,7 +410,7 @@ class NewsFragment : BaseNewsFragment() {
 
     override fun onDestroyView() {
         binding.filterByLabel.onItemSelectedListener = null
-        adapterNews?.unregisterAdapterDataObserver(observer)
+        adapterVoices?.unregisterAdapterDataObserver(observer)
         if (isRealmInitialized()) {
             mRealm.close()
         }

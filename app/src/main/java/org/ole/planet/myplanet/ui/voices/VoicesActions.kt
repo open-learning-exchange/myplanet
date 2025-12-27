@@ -1,6 +1,5 @@
-package org.ole.planet.myplanet.ui.news
+package org.ole.planet.myplanet.ui.voices
 
-import org.ole.planet.myplanet.utilities.JsonUtils
 import android.content.Context
 import android.view.Gravity
 import android.view.View
@@ -21,13 +20,14 @@ import io.realm.RealmList
 import java.io.File
 import java.util.Locale
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmVoices
+import org.ole.planet.myplanet.model.RealmVoices.Companion.createVoices
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.team.member.MemberDetailFragment
+import org.ole.planet.myplanet.utilities.JsonUtils
 
-object NewsActions {
+object VoicesActions {
     private val imagesToRemove = mutableSetOf<String>()
 
     data class EditDialogComponents(
@@ -39,7 +39,7 @@ object NewsActions {
 
     fun createEditDialogComponents(
         context: Context,
-        listener: NewsAdapter.OnNewsItemClickListener?
+        listener: VoicesAdapter.OnVoicesItemClickListener?
     ): EditDialogComponents {
         val v = android.view.LayoutInflater.from(context).inflate(R.layout.alert_input, null)
         val tlInput = v.findViewById<TextInputLayout>(R.id.tl_input)
@@ -49,11 +49,11 @@ object NewsActions {
         return EditDialogComponents(v, et, tlInput, llImage)
     }
 
-    private fun loadExistingImages(context: Context, news: RealmNews?, imageLayout: ViewGroup) {
+    private fun loadExistingImages(context: Context, voice: RealmVoices?, imageLayout: ViewGroup) {
         imagesToRemove.clear()
         imageLayout.removeAllViews()
 
-        val imageUrls = news?.imageUrls
+        val imageUrls = voice?.imageUrls
         if (!imageUrls.isNullOrEmpty()) {
             imageUrls.forEach { imageUrl ->
                 try {
@@ -128,11 +128,11 @@ object NewsActions {
         dialog: AlertDialog,
         isEdit: Boolean,
         components: EditDialogComponents,
-        news: RealmNews?,
+        voice: RealmVoices?,
         realm: Realm,
         currentUser: RealmUserModel?,
         imageList: RealmList<String>?,
-        listener: NewsAdapter.OnNewsItemClickListener?
+        listener: VoicesAdapter.OnVoicesItemClickListener?
     ) {
         val s = components.editText.text.toString().trim()
         if (s.isEmpty()) {
@@ -140,9 +140,9 @@ object NewsActions {
             return
         }
         if (isEdit) {
-            editPost(realm, s, news, imageList)
+            editPost(realm, s, voice, imageList)
         } else {
-            postReply(realm, s, news, currentUser, imageList)
+            postReply(realm, s, voice, currentUser, imageList)
         }
         dialog.dismiss()
         listener?.clearImages()
@@ -155,9 +155,9 @@ object NewsActions {
         id: String?,
         isEdit: Boolean,
         currentUser: RealmUserModel?,
-        listener: NewsAdapter.OnNewsItemClickListener?,
+        listener: VoicesAdapter.OnVoicesItemClickListener?,
         viewHolder: RecyclerView.ViewHolder,
-        updateReplyButton: (RecyclerView.ViewHolder, RealmNews?, Int) -> Unit = { _, _, _ -> }
+        updateReplyButton: (RecyclerView.ViewHolder, RealmVoices?, Int) -> Unit = { _, _, _ -> }
     ) {
         val components = createEditDialogComponents(context, listener)
         val message = components.view.findViewById<TextView>(R.id.cust_msg)
@@ -165,10 +165,10 @@ object NewsActions {
         val icon = components.view.findViewById<ImageView>(R.id.alert_icon)
         icon.setImageResource(R.drawable.ic_edit)
 
-        val news = realm.where(RealmNews::class.java).equalTo("id", id).findFirst()
+        val voice = realm.where(RealmVoices::class.java).equalTo("id", id).findFirst()
         if (isEdit) {
-            components.editText.setText(context.getString(R.string.message_placeholder, news?.message))
-            loadExistingImages(context, news, components.imageLayout)
+            components.editText.setText(context.getString(R.string.message_placeholder, voice?.message))
+            loadExistingImages(context, voice, components.imageLayout)
         }
         val dialog = AlertDialog.Builder(context, R.style.ReplyAlertDialog)
             .setView(components.view)
@@ -178,15 +178,15 @@ object NewsActions {
         dialog.show()
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
             val currentImageList = listener?.getCurrentImageList()
-            handlePositiveButton(dialog, isEdit, components, news, realm, currentUser, currentImageList, listener)
-            updateReplyButton(viewHolder,news,viewHolder.bindingAdapterPosition)
+            handlePositiveButton(dialog, isEdit, components, voice, realm, currentUser, currentImageList, listener)
+            updateReplyButton(viewHolder,voice,viewHolder.bindingAdapterPosition)
         }
     }
 
     private fun postReply(
         realm: Realm,
         s: String?,
-        news: RealmNews?,
+        voice: RealmVoices?,
         currentUser: RealmUserModel?,
         imageList: RealmList<String>?
     ) {
@@ -194,22 +194,22 @@ object NewsActions {
         if (shouldCommit) realm.beginTransaction()
         val map = HashMap<String?, String>()
         map["message"] = s ?: ""
-        map["viewableBy"] = news?.viewableBy ?: ""
-        map["viewableId"] = news?.viewableId ?: ""
-        map["replyTo"] = news?.id ?: ""
-        map["messageType"] = news?.messageType ?: ""
-        map["messagePlanetCode"] = news?.messagePlanetCode ?: ""
-        map["viewIn"] = news?.viewIn ?: ""
-        currentUser?.let { createNews(map, realm, it, imageList, true) }
+        map["viewableBy"] = voice?.viewableBy ?: ""
+        map["viewableId"] = voice?.viewableId ?: ""
+        map["replyTo"] = voice?.id ?: ""
+        map["messageType"] = voice?.messageType ?: ""
+        map["messagePlanetCode"] = voice?.messagePlanetCode ?: ""
+        map["viewIn"] = voice?.viewIn ?: ""
+        currentUser?.let { createVoices(map, realm, it, imageList, true) }
         if (shouldCommit) realm.commitTransaction()
     }
 
-    private fun editPost(realm: Realm, s: String, news: RealmNews?, imageList: RealmList<String>?) {
+    private fun editPost(realm: Realm, s: String, voice: RealmVoices?, imageList: RealmList<String>?) {
         if (s.isEmpty()) return
         if (!realm.isInTransaction) realm.beginTransaction()
 
         if (imagesToRemove.isNotEmpty()) {
-            news?.imageUrls?.let { imageUrls ->
+            voice?.imageUrls?.let { imageUrls ->
                 val updatedUrls = imageUrls.filter { imageUrlJson ->
                     try {
                         val imgObject = JsonUtils.gson.fromJson(imageUrlJson, JsonObject::class.java)
@@ -219,14 +219,14 @@ object NewsActions {
                         true
                     }
                 }
-                news.imageUrls?.clear()
-                news.imageUrls?.addAll(updatedUrls)
+                voice.imageUrls?.clear()
+                voice.imageUrls?.addAll(updatedUrls)
             }
             imagesToRemove.clear()
         }
 
-        imageList?.forEach { news?.imageUrls?.add(it) }
-        news?.updateMessage(s)
+        imageList?.forEach { voice?.imageUrls?.add(it) }
+        voice?.updateMessage(s)
         realm.commitTransaction()
     }
 
@@ -253,33 +253,33 @@ object NewsActions {
 
     fun deletePost(
         realm: Realm,
-        news: RealmNews?,
-        list: MutableList<RealmNews?>,
+        voice: RealmVoices?,
+        list: MutableList<RealmVoices?>,
         teamName: String,
-        listener: NewsAdapter.OnNewsItemClickListener? = null
+        listener: VoicesAdapter.OnVoicesItemClickListener? = null
     ) {
-        val ar = JsonUtils.gson.fromJson(news?.viewIn, JsonArray::class.java)
+        val ar = JsonUtils.gson.fromJson(voice?.viewIn, JsonArray::class.java)
         if (!realm.isInTransaction) realm.beginTransaction()
-        val position = list.indexOf(news)
+        val position = list.indexOf(voice)
         if (position != -1) {
             list.removeAt(position)
         }
         if (teamName.isNotEmpty() || ar.size() < 2) {
-            news?.let { newsItem ->
-                deleteChildPosts(realm, newsItem.id, list)
+            voice?.let { voiceItem ->
+                deleteChildPosts(realm, voiceItem.id, list)
 
-                val managedNews = if (newsItem.isManaged) {
-                    newsItem
+                val managedVoice = if (voiceItem.isManaged) {
+                    voiceItem
                 } else {
-                    realm.where(RealmNews::class.java)
-                        .equalTo("id", newsItem.id)
+                    realm.where(RealmVoices::class.java)
+                        .equalTo("id", voiceItem.id)
                         .findFirst()
                 }
                 
-                managedNews?.deleteFromRealm()
+                managedVoice?.deleteFromRealm()
             }
         } else {
-            news?.let { newsItem ->
+            voice?.let { voiceItem ->
                 val filtered = JsonArray().apply {
                     ar.forEach { elem ->
                         if (!elem.asJsonObject.has("sharedDate")) {
@@ -288,15 +288,15 @@ object NewsActions {
                     }
                 }
                 
-                val managedNews = if (newsItem.isManaged) {
-                    newsItem
+                val managedVoice = if (voiceItem.isManaged) {
+                    voiceItem
                 } else {
-                    realm.where(RealmNews::class.java)
-                        .equalTo("id", newsItem.id)
+                    realm.where(RealmVoices::class.java)
+                        .equalTo("id", voiceItem.id)
                         .findFirst()
                 }
                 
-                managedNews?.viewIn = JsonUtils.gson.toJson(filtered)
+                managedVoice?.viewIn = JsonUtils.gson.toJson(filtered)
             }
         }
         realm.commitTransaction()
@@ -306,10 +306,10 @@ object NewsActions {
     private fun deleteChildPosts(
         realm: Realm,
         parentId: String?,
-        list: MutableList<RealmNews?>
+        list: MutableList<RealmVoices?>
     ) {
         if (parentId == null) return
-        val children = realm.where(RealmNews::class.java)
+        val children = realm.where(RealmVoices::class.java)
             .equalTo("replyTo", parentId)
             .findAll()
         children.forEach { child ->

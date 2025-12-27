@@ -17,7 +17,7 @@ class SharedPrefManager @Inject constructor(@ApplicationContext context: Context
 
     companion object {
         private const val SAVED_USERS = "savedUsers"
-        private const val REPLIED_NEWS_ID = "repliedNewsId"
+        private const val REPLIED_VOICES_ID = "repliedVoicesId"
         const val MANUAL_CONFIG = "manualConfig"
         private const val SELECTED_TEAM_ID = "selectedTeamId"
         const val FIRST_LAUNCH = "firstLaunch"
@@ -50,8 +50,8 @@ class SharedPrefManager @Inject constructor(@ApplicationContext context: Context
         editor.apply()
     }
 
-    fun setRepliedNewsId(repliedNewsId: String?) {
-        editor.putString(REPLIED_NEWS_ID, repliedNewsId)
+    fun setRepliedVoicesId(repliedVoicesId: String?) {
+        editor.putString(REPLIED_VOICES_ID, repliedVoicesId)
         editor.apply()
     }
 

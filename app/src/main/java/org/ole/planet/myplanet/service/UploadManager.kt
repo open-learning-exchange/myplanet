@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.service
 
-import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import android.content.Context
 import android.content.SharedPreferences
 import android.text.TextUtils
@@ -35,8 +34,6 @@ import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyPersonal
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmNewsLog
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmResourceActivity
@@ -47,8 +44,11 @@ import org.ole.planet.myplanet.model.RealmSubmitPhotos
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmVoices
+import org.ole.planet.myplanet.model.RealmVoicesLog
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.utilities.FileUtils
+import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.VersionUtils.getAndroidId
@@ -75,19 +75,19 @@ class UploadManager @Inject constructor(
     private val gson: Gson
 ) : FileUploadService() {
 
-    private suspend fun uploadNewsActivities() {
+    private suspend fun uploadVoicesActivities() {
         val apiInterface = client.create(ApiInterface::class.java)
         databaseService.executeTransactionAsync { transactionRealm ->
-                val newsLog: List<RealmNewsLog> = transactionRealm.where(RealmNewsLog::class.java)
+                val voicesLog: List<RealmVoicesLog> = transactionRealm.where(RealmVoicesLog::class.java)
                     .isNull("_id").or().isEmpty("_id")
                     .findAll()
 
-                newsLog.processInBatches { news ->
+                voicesLog.processInBatches { voice ->
                         try {
-                            val `object` = apiInterface.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/myplanet_activities", RealmNewsLog.serialize(news)).execute().body()
+                            val `object` = apiInterface.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/myplanet_activities", RealmVoicesLog.serialize(voice)).execute().body()
                             if (`object` != null) {
-                                news._id = getString("id", `object`)
-                                news._rev = getString("rev", `object`)
+                                voice._id = getString("id", `object`)
+                                voice._rev = getString("rev", `object`)
                             }
                         } catch (e: IOException) {
                             e.printStackTrace()
@@ -700,18 +700,18 @@ class UploadManager @Inject constructor(
         }
     }
 
-    suspend fun uploadNews() {
+    suspend fun uploadVoices() {
         val apiInterface = client.create(ApiInterface::class.java)
 
         databaseService.executeTransactionAsync { transactionRealm ->
-            val activities = transactionRealm.where(RealmNews::class.java).findAll()
+            val activities = transactionRealm.where(RealmVoices::class.java).findAll()
             activities.processInBatches { act ->
                 try {
                     if (act.userId?.startsWith("guest") == true) {
                         return@processInBatches
                     }
 
-                    val `object` = RealmNews.serializeNews(act)
+                    val `object` = RealmVoices.serializeVoices(act)
                     val image = act.imagesArray
                     val user = transactionRealm.where(RealmUserModel::class.java).equalTo("id", pref.getString("userId", "")).findFirst()
 
@@ -756,23 +756,23 @@ class UploadManager @Inject constructor(
                     act.images = gson.toJson(image)
                     `object`.add("images", image)
 
-                    val newsUploadResponse: Response<JsonObject>? =
+                    val voicesUploadResponse: Response<JsonObject>? =
                         if (TextUtils.isEmpty(act._id)) {
-                            apiInterface.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/news", `object`).execute()
+                            apiInterface.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/voices", `object`).execute()
                         } else {
-                            apiInterface.putDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/news/" + act._id, `object`).execute()
+                            apiInterface.putDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/voices/" + act._id, `object`).execute()
                         }
-                    if (newsUploadResponse?.body() != null) {
+                    if (voicesUploadResponse?.body() != null) {
                         act.imageUrls?.clear()
-                        act._id = getString("id", newsUploadResponse.body())
-                        act._rev = getString("rev", newsUploadResponse.body())
+                        act._id = getString("id", voicesUploadResponse.body())
+                        act._rev = getString("rev", voicesUploadResponse.body())
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
             }
         }
-        uploadNewsActivities()
+        uploadVoicesActivities()
     }
 
     suspend fun uploadCrashLog() {

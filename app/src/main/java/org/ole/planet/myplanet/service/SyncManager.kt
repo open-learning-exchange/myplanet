@@ -1,8 +1,5 @@
 package org.ole.planet.myplanet.service
 
-import org.ole.planet.myplanet.utilities.JsonUtils.getJsonObject
-import org.ole.planet.myplanet.utilities.JsonUtils.getJsonArray
-import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import android.content.Context
 import android.content.SharedPreferences
 import android.net.wifi.SupplicantState
@@ -58,6 +55,9 @@ import org.ole.planet.myplanet.service.sync.SyncMode
 import org.ole.planet.myplanet.service.sync.ThreadSafeRealmHelper
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.JsonUtils.getJsonArray
+import org.ole.planet.myplanet.utilities.JsonUtils.getJsonObject
+import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.NotificationUtils.cancel
 import org.ole.planet.myplanet.utilities.NotificationUtils.create
 import org.ole.planet.myplanet.utilities.SyncTimeLogger
@@ -233,9 +233,9 @@ class SyncManager constructor(
                         logger.endProcess("submissions_sync")
                     },
                     async {
-                        logger.startProcess("news_sync")
-                        transactionSyncManager.syncDb("news")
-                        logger.endProcess("news_sync")
+                        logger.startProcess("voices_sync")
+                        transactionSyncManager.syncDb("voices")
+                        logger.endProcess("voices_sync")
                     },
                     async {
                         logger.startProcess("feedback_sync")
@@ -376,9 +376,9 @@ class SyncManager constructor(
 
                     syncJobs.add(
                         async {
-                            logger.startProcess("news_sync")
-                            transactionSyncManager.syncDb("news")
-                            logger.endProcess("news_sync")
+                            logger.startProcess("voices_sync")
+                            transactionSyncManager.syncDb("voices")
+                            logger.endProcess("voices_sync")
                         })
                 }
 

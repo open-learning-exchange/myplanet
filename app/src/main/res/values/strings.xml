@@ -597,7 +597,7 @@
     <string name="storage_running_low">"Storage running low: "</string>
     <string name="storage_available">"Storage available: "</string>
     <string name="please_select_starting_date">"Please select starting date : "</string>
-    <string name="read_offline_news_from">"Read offline news from: "</string>
+    <string name="read_offline_voices_from">"Read offline voices from: "</string>
     <string name="downloading_started_please_check_notification">Downloading started, please check notification…</string>
     <string name="file_already_exists">File already exists…</string>
     <string name="feature_not_available">Feature Not Available</string>
@@ -802,7 +802,7 @@
     <p>The information given by the Service is for general guidance on matters of interest only. Even if the Company takes every precaution to ensure that the content of the Service is both current and accurate, errors can occur. Plus, given the changing nature of laws, rules, and regulations, there may be delays, omissions, or inaccuracies in the information contained on the Service.</p>
     <p>The Company is not responsible for any errors or omissions, or for the results obtained from the use of this information.</p>
     <h1>Fair Use Disclaimer</h1>
-    <p>The Company may use copyrighted material which has not always been specifically authorized by the copyright owner. The Company is making such material available for criticism, comment, news reporting, teaching, scholarship, or research.</p>
+    <p>The Company may use copyrighted material which has not always been specifically authorized by the copyright owner. The Company is making such material available for criticism, comment, voices reporting, teaching, scholarship, or research.</p>
     <p>The Company believes this constitutes a "fair use" of any such copyrighted material as provided for in section 107 of the United States Copyright law.</p>
     <p>If You wish to use copyrighted material from the Service for your own purposes that go beyond fair use, You must obtain permission from the copyright owner.</p>
     <h1>Views Expressed Disclaimer</h1>
@@ -930,7 +930,7 @@
     <string name="no_links_available">No links available</string>
     <string name="user_requested_to_join_team">%1$s has requested to join %2$s</string>
     <string name="join_request_prefix">Join Request:</string>
-    <string name="no_news">news not available</string>
+    <string name="no_voices">voices not available</string>
     <string name="no_surveys">surveys not available</string>
     <string name="edit_image">edit profile image</string>
     <string name="compulsory_first_name">first name required</string>
