@@ -63,7 +63,7 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.JoinRequestNotification
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.repository.NotificationRepository
+import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
@@ -119,7 +119,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     @Inject
     lateinit var submissionRepository: SubmissionRepository
     @Inject
-    lateinit var notificationRepository: NotificationRepository
+    lateinit var notificationsRepository: NotificationsRepository
     private val challengeHelper: ChallengeHelper by lazy {
         ChallengeHelper(this, user, settings, editor, dashboardViewModel, progressRepository)
     }
@@ -598,7 +598,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                                         withContext(Dispatchers.IO) {
                                             delay(300)
                                             try {
-                                                 notificationRepository.refresh()
+                                                 notificationsRepository.refresh()
                                                 val unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
                                                 withContext(Dispatchers.Main) {
                                                     onNotificationCountUpdated(unreadCount)
@@ -607,7 +607,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                                                 e.printStackTrace()
                                                 delay(300)
                                                 try {
-                                                     notificationRepository.refresh()
+                                                     notificationsRepository.refresh()
                                                     val unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
                                                     withContext(Dispatchers.Main) {
                                                         onNotificationCountUpdated(unreadCount)
@@ -701,7 +701,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun markDatabaseNotificationAsRead(notificationId: String) {
         lifecycleScope.launch {
             try {
-                notificationRepository.markNotificationAsRead(notificationId, user?.id)
+                notificationsRepository.markNotificationAsRead(notificationId, user?.id)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -1244,7 +1244,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 lifecycleScope.launch {
                     delay(100)
                     try {
-                          notificationRepository.refresh()
+                          notificationsRepository.refresh()
                         val unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
                         onNotificationCountUpdated(unreadCount)
                     } catch (e: Exception) {

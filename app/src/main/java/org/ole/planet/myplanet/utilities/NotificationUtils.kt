@@ -22,7 +22,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.repository.NotificationRepository
+import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.service.getBroadcastService
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 
@@ -484,7 +484,7 @@ object NotificationUtils {
 @AndroidEntryPoint
 class NotificationActionReceiver : BroadcastReceiver() {
     @Inject
-    lateinit var notificationRepository: NotificationRepository
+    lateinit var notificationsRepository: NotificationsRepository
     override fun onReceive(context: Context, intent: Intent) {
         val pendingResult = goAsync()
         MainApplication.applicationScope.launch {
@@ -542,7 +542,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
 
         try {
             withContext(Dispatchers.IO) {
-                notificationRepository.markNotificationsAsRead(setOf(notificationId))
+                notificationsRepository.markNotificationsAsRead(setOf(notificationId))
             }
         } catch (e: Exception) {
             e.printStackTrace()
