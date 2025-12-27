@@ -4,7 +4,7 @@ import org.ole.planet.myplanet.utilities.JsonUtils
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import javax.inject.Inject
-import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseStep

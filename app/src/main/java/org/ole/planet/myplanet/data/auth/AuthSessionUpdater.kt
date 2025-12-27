@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.datamanager.auth
+package org.ole.planet.myplanet.data.auth
 
 import android.content.SharedPreferences
 import dagger.assisted.Assisted

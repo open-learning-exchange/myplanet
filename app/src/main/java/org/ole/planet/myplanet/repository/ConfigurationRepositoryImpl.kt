@@ -15,9 +15,9 @@ import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SuccessListener
-import org.ole.planet.myplanet.datamanager.ApiClient
-import org.ole.planet.myplanet.datamanager.ApiInterface
-import org.ole.planet.myplanet.datamanager.NetworkResult
+import org.ole.planet.myplanet.data.ApiClient
+import org.ole.planet.myplanet.data.ApiInterface
+import org.ole.planet.myplanet.data.NetworkResult
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.utilities.Constants

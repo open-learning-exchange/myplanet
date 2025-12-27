@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.datamanager
+package org.ole.planet.myplanet.data
 
 import org.ole.planet.myplanet.utilities.JsonUtils
 import android.content.Context

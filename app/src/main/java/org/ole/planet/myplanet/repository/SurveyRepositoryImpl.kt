@@ -6,7 +6,7 @@ import javax.inject.Inject
 import org.json.JSONException
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission

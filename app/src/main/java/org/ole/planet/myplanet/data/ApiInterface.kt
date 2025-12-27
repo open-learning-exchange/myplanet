@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.datamanager
+package org.ole.planet.myplanet.data
 
 import com.google.gson.JsonObject
 import okhttp3.RequestBody

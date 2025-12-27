@@ -8,7 +8,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
-import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.data.DatabaseService
 
 data class RealmPoolConfig(
     val maxConnections: Int = 5,

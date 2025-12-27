@@ -33,9 +33,9 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.PermissionActivity
 import org.ole.planet.myplanet.callback.SecurityDataCallback
 import org.ole.planet.myplanet.callback.SuccessListener
-import org.ole.planet.myplanet.datamanager.ApiClient.client
-import org.ole.planet.myplanet.datamanager.ApiInterface
-import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.data.ApiClient.client
+import org.ole.planet.myplanet.data.ApiInterface
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmUserModel
