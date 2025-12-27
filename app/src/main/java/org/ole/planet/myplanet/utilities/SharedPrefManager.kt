@@ -139,4 +139,8 @@ class SharedPrefManager @Inject constructor(@ApplicationContext context: Context
     fun isExamsSynced(): Boolean = isSynced(SyncKey.EXAMS)
 
     fun setExamsSynced(synced: Boolean) = setSynced(SyncKey.EXAMS, synced)
+
+    fun getUserName(): String {
+        return pref.getString("name", "") ?: ""
+    }
 }

@@ -63,8 +63,9 @@ import org.ole.planet.myplanet.databinding.RowStatBinding
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.TimeUtils
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.checkNA
 
 @AndroidEntryPoint
 class UserProfileFragment : Fragment() {
@@ -130,7 +131,7 @@ class UserProfileFragment : Fragment() {
                         .setNegativeButton(R.string.cancel) { dialog, _ -> dialog.dismiss() }
                         .show()
                 } else {
-                    Utilities.toast(requireContext(), "camera permission is required.")
+                    DialogUtils.toast(requireContext(), "camera permission is required.")
                 }
             }
         }
@@ -187,14 +188,14 @@ class UserProfileFragment : Fragment() {
                 viewModel.updateState.collect { state ->
                     when (state) {
                         ProfileUpdateState.Success -> {
-                            Utilities.toast(requireContext(), "User details updated successfully")
+                            DialogUtils.toast(requireContext(), "User details updated successfully")
                             editProfileDialog?.dismiss()
                             editProfileDialog = null
                             viewModel.resetUpdateState()
                         }
 
                         is ProfileUpdateState.Error -> {
-                            Utilities.toast(requireContext(), state.message)
+                            DialogUtils.toast(requireContext(), state.message)
                             viewModel.resetUpdateState()
                         }
 
@@ -211,12 +212,12 @@ class UserProfileFragment : Fragment() {
         } else {
             model?.name ?: ""
         }
-        binding.txtEmail.text = getString(R.string.two_strings, getString(R.string.email_colon), Utilities.checkNA(model?.email))
+        binding.txtEmail.text = getString(R.string.two_strings, getString(R.string.email_colon), model?.email.checkNA())
         val dob = if (TextUtils.isEmpty(model?.dob)) getString(R.string.n_a) else TimeUtils.getFormattedDate(model?.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
         binding.txtDob.text = getString(R.string.two_strings, getString(R.string.date_of_birth), dob)
-        binding.txtGender.text = getString(R.string.gender_colon, Utilities.checkNA(model?.gender))
-        binding.txtLanguage.text = getString(R.string.two_strings, getString(R.string.language_colon), Utilities.checkNA(model?.language))
-        binding.txtLevel.text = getString(R.string.level_colon, Utilities.checkNA(model?.level))
+        binding.txtGender.text = getString(R.string.gender_colon, model?.gender.checkNA())
+        binding.txtLanguage.text = getString(R.string.two_strings, getString(R.string.language_colon), model?.language.checkNA())
+        binding.txtLevel.text = getString(R.string.level_colon, model?.level.checkNA())
     }
 
     private fun loadProfileImage() {
@@ -324,7 +325,7 @@ class UserProfileFragment : Fragment() {
     private fun setupLevelSpinner(binding: EditProfileDialogBinding) {
         val levels = resources.getStringArray(subject_level).toMutableList().apply { remove("All") }
         levels.add(0, getString(R.string.select_level))
-        selectedLevel = Utilities.checkNA(model?.level)
+        selectedLevel = model?.level.checkNA()
         val levelAdapter = ArrayAdapter(requireContext(), R.layout.spinner_item, levels)
         levelAdapter.setDropDownViewResource(R.layout.spinner_item)
         binding.level.adapter = levelAdapter
@@ -455,11 +456,11 @@ class UserProfileFragment : Fragment() {
 
     private fun createStatsMap(): LinkedHashMap<String, String?> {
         return linkedMapOf(
-            getString(R.string.community_name) to Utilities.checkNA(model?.planetCode),
+            getString(R.string.community_name) to model?.planetCode.checkNA(),
             getString(R.string.last_login) to viewModel.lastVisit?.let { TimeUtils.getRelativeTime(it) },
             getString(R.string.total_visits_overall) to viewModel.offlineVisits.toString(),
-            getString(R.string.most_opened_resource) to Utilities.checkNA(viewModel.maxOpenedResource.value),
-            getString(R.string.number_of_resources_opened) to Utilities.checkNA(viewModel.numberOfResourceOpen)
+            getString(R.string.most_opened_resource) to viewModel.maxOpenedResource.value.checkNA(),
+            getString(R.string.number_of_resources_opened) to viewModel.numberOfResourceOpen.checkNA()
         )
     }
 

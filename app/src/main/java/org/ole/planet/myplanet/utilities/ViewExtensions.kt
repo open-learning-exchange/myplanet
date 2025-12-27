@@ -3,6 +3,8 @@ package org.ole.planet.myplanet.utilities
 import android.text.Editable
 import android.text.TextWatcher
 import android.widget.EditText
+import androidx.core.graphics.toColorInt
+import fisk.chipcloud.ChipCloudConfig
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -20,4 +22,13 @@ fun EditText.textChanges(): Flow<CharSequence?> {
         addTextChangedListener(listener)
         awaitClose { removeTextChangedListener(listener) }
     }.onStart { emit(text) }
+}
+
+fun getCloudConfig(): ChipCloudConfig {
+    return ChipCloudConfig()
+        .useInsetPadding(true)
+        .checkedChipColor("#e0e0e0".toColorInt())
+        .checkedTextColor("#000000".toColorInt())
+        .uncheckedChipColor("#e0e0e0".toColorInt())
+        .uncheckedTextColor("#000000".toColorInt())
 }

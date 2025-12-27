@@ -40,8 +40,8 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
+import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.TimeUtils
-import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
@@ -237,10 +237,10 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             viewLifecycleOwner.lifecycleScope.launch {
                 try {
                     userRepository.updateProfileFields(userId, user)
-                    Utilities.toast(MainApplication.context, getString(R.string.user_profile_updated))
+                    DialogUtils.toast(MainApplication.context, getString(R.string.user_profile_updated))
                     if (isAdded) dialog?.dismiss()
                 } catch (_: Exception) {
-                    Utilities.toast(MainApplication.context, getString(R.string.unable_to_update_user))
+                    DialogUtils.toast(MainApplication.context, getString(R.string.unable_to_update_user))
                     if (isAdded) dialog?.dismiss()
                 }
             }
@@ -255,7 +255,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             try {
                 val submissionId = id
                 if (submissionId.isNullOrEmpty()) {
-                    Utilities.toast(
+                    DialogUtils.toast(
                         MainApplication.context,
                         "Error: Unable to save submission - no ID provided"
                     )
@@ -268,7 +268,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
                 Log.d("UserInformationFragment", "Submission marked complete, about to dismiss dialog")
 
                 withContext(Dispatchers.Main) {
-                    Utilities.toast(
+                    DialogUtils.toast(
                         MainApplication.context,
                         getString(R.string.thank_you_for_taking_this_survey)
                     )
@@ -281,7 +281,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
                 e.printStackTrace()
                 Log.e("UserInformationFragment", "Error in saveSubmission", e)
                 withContext(Dispatchers.Main) {
-                    Utilities.toast(MainApplication.context, "Error saving submission: ${e.message}")
+                    DialogUtils.toast(MainApplication.context, "Error saving submission: ${e.message}")
                     if (isAdded) {
                         dialog?.dismiss()
                     }
@@ -300,7 +300,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             return
         } else {
             Log.d("UserInformationFragment", "Team survey detected, starting server check and upload process")
-            Utilities.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
+            DialogUtils.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
             val settings = MainApplication.context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
             checkAvailableServer(settings)
             val activity = requireActivity()

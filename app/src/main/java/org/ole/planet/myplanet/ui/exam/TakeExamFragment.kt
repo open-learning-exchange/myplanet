@@ -40,9 +40,9 @@ import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
+import org.ole.planet.myplanet.utilities.DialogUtils.toast
 import org.ole.planet.myplanet.utilities.KeyboardUtils.hideSoftKeyboard
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
-import org.ole.planet.myplanet.utilities.Utilities.toast
 
 @AndroidEntryPoint
 class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButton.OnCheckedChangeListener, ImageCaptureCallback {

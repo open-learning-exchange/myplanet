@@ -31,12 +31,13 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TagRepository
 import org.ole.planet.myplanet.utilities.CourseRatingUtils
+import org.ole.planet.myplanet.utilities.CourseRatingUtils
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.SelectionUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.getCloudConfig
 
 class AdapterCourses(
     private val context: Context,
@@ -67,7 +68,7 @@ class AdapterCourses(
         if (context is OnHomeItemClickListener) {
             homeItemClickListener = context
         }
-        config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single)
+        config = getCloudConfig().selectMode(ChipCloud.SelectMode.single)
     }
 
     fun setRatingChangeListener(ratingChangeListener: OnRatingChangeListener?) {

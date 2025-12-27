@@ -18,7 +18,7 @@ import org.ole.planet.myplanet.databinding.ItemAiResponseMessageBinding
 import org.ole.planet.myplanet.databinding.ItemUserMessageBinding
 import org.ole.planet.myplanet.model.ChatMessage
 import org.ole.planet.myplanet.utilities.DiffUtils
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.DialogUtils
 
 class ChatAdapter(val context: Context, private val recyclerView: RecyclerView, private val scope: CoroutineScope?) :
     ListAdapter<ChatMessage, RecyclerView.ViewHolder>(
@@ -104,7 +104,7 @@ class ChatAdapter(val context: Context, private val recyclerView: RecyclerView, 
         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         val clip = ClipData.newPlainText("copied Text", text)
         clipboard.setPrimaryClip(clip)
-        Utilities.toast(
+        DialogUtils.toast(
             context,
             context.getString(R.string.copied_to_clipboard),
             android.widget.Toast.LENGTH_SHORT

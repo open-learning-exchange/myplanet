@@ -57,7 +57,6 @@ import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.ThemeManager
 import org.ole.planet.myplanet.utilities.TimeUtils
-import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 class SettingActivity : AppCompatActivity() {
@@ -222,12 +221,12 @@ class SettingActivity : AppCompatActivity() {
                                             deleteRecursive(f)
                                         }
                                     }
-                                    Utilities.toast(requireActivity(), getString(R.string.data_cleared))
+                                    DialogUtils.toast(requireActivity(), getString(R.string.data_cleared))
                                 } catch (e: Exception) {
                                     if (e is CancellationException && e !is TimeoutCancellationException) {
                                         throw e
                                     }
-                                    Utilities.toast(requireActivity(), getString(R.string.unable_to_clear_files))
+                                    DialogUtils.toast(requireActivity(), getString(R.string.unable_to_clear_files))
                                     e.printStackTrace()
                                 } finally {
                                     dialog.dismiss()

@@ -93,9 +93,9 @@ import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.ThemeManager
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
+import org.ole.planet.myplanet.utilities.DialogUtils.toast
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.NotificationUtils
-import org.ole.planet.myplanet.utilities.Utilities.toast
 
 @AndroidEntryPoint  
 class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener, NotificationListener {

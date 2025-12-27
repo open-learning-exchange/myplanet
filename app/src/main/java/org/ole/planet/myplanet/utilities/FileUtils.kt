@@ -12,6 +12,7 @@ import android.os.StatFs
 import android.os.storage.StorageManager
 import android.provider.MediaStore
 import android.text.format.Formatter
+import android.webkit.MimeTypeMap
 import androidx.core.net.toUri
 import java.io.File
 import java.io.FileOutputStream
@@ -308,5 +309,10 @@ object FileUtils {
     }
     fun nameWithoutExtension(fileName: String?): String? {
         return fileName?.let { File(it).name.takeIf { name -> name.isNotEmpty() } }?.substringBeforeLast('.')
+    }
+
+    fun getMimeType(url: String?): String? {
+        val extension = getFileExtension(url)
+        return MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
     }
 }

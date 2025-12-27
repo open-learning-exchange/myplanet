@@ -10,7 +10,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertGuestLoginBinding
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.AuthHelper
-import org.ole.planet.myplanet.utilities.Utilities.toast
+import org.ole.planet.myplanet.utilities.DialogUtils.toast
 
 fun LoginActivity.showGuestLoginDialog() {
     val databaseService = (this.applicationContext as MainApplication).databaseService

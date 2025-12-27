@@ -16,7 +16,7 @@ import org.ole.planet.myplanet.databinding.FragmentFeedbackBinding
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.FeedbackRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.DialogUtils
 
 @AndroidEntryPoint
 class FeedbackFragment : DialogFragment(), View.OnClickListener {
@@ -89,7 +89,7 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
         val feedback = feedbackRepository.createFeedback(user, urgent, type, message, item, state)
         viewLifecycleOwner.lifecycleScope.launch {
             feedbackRepository.saveFeedback(feedback)
-            Utilities.toast(activity, getString(R.string.feedback_saved))
+            DialogUtils.toast(activity, getString(R.string.feedback_saved))
         }
         Toast.makeText(activity, R.string.thank_you_your_feedback_has_been_submitted, Toast.LENGTH_SHORT).show()
         mListener?.onFeedbackSubmitted()

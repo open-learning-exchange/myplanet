@@ -39,8 +39,8 @@ import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.utilities.CameraUtils
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
+import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils.getUniqueIdentifier
-import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
@@ -169,7 +169,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
             if (!mRealm.isInTransaction) mRealm.beginTransaction()
             sub?.status = "complete"
             mRealm.commitTransaction()
-            Utilities.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
+            DialogUtils.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
             navigateToSurveyList(requireActivity())
         }
     }

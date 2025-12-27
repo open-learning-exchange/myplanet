@@ -21,9 +21,9 @@ import java.io.File
 import java.util.regex.Pattern
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityAudioPlayerBinding
+import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils
-import org.ole.planet.myplanet.utilities.Utilities
 
 class AudioPlayerActivity : AppCompatActivity() {
 
@@ -109,7 +109,7 @@ class AudioPlayerActivity : AppCompatActivity() {
 
                 player.addListener(object : Player.Listener {
                     override fun onPlayerError(error: PlaybackException) {
-                        Utilities.toast(this@AudioPlayerActivity, "Unable to play audio.")
+                        DialogUtils.toast(this@AudioPlayerActivity, "Unable to play audio.")
                     }
 
                     override fun onPlaybackStateChanged(playbackState: Int) {
@@ -120,7 +120,7 @@ class AudioPlayerActivity : AppCompatActivity() {
                 })
             }
         } catch (e: Exception) {
-            Utilities.toast(this, "Unable to play audio.")
+            DialogUtils.toast(this, "Unable to play audio.")
         }
     }
 

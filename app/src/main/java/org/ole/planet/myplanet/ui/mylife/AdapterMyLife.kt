@@ -34,7 +34,7 @@ import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment.Companion.newInstance
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment
 import org.ole.planet.myplanet.utilities.DiffUtils
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.DialogUtils
 
 class AdapterMyLife(
     private val context: Context,
@@ -88,13 +88,13 @@ class AdapterMyLife(
                 launch(Dispatchers.Main) {
                     if (isVisible) {
                         changeVisibility(holder, R.drawable.ic_visibility, hide)
-                        Utilities.toast(
+                        DialogUtils.toast(
                             context,
                             myLife.title + context.getString(R.string.is_now_hidden)
                         )
                     } else {
                         changeVisibility(holder, R.drawable.ic_visibility_off, show)
-                        Utilities.toast(
+                        DialogUtils.toast(
                             context,
                             myLife.title + " " + context.getString(R.string.is_now_shown)
                         )

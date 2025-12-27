@@ -28,10 +28,10 @@ import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityExoPlayerVideoBinding
 import org.ole.planet.myplanet.data.auth.AuthSessionUpdater
+import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils
-import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback {
@@ -101,7 +101,7 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
     }
 
     override fun onError(s: String) {
-        runOnUiThread { Utilities.toast(this, getString(R.string.connection_failed_reason) + s) }
+        runOnUiThread { DialogUtils.toast(this, getString(R.string.connection_failed_reason) + s) }
     }
 
     override fun onStart() {

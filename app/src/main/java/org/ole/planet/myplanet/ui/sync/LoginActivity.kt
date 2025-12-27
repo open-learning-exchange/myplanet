@@ -49,10 +49,10 @@ import org.ole.planet.myplanet.utilities.AuthHelper
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.LocaleHelper
+import org.ole.planet.myplanet.utilities.DialogUtils.toast
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.ThemeManager
 import org.ole.planet.myplanet.utilities.UrlUtils.getUrl
-import org.ole.planet.myplanet.utilities.Utilities.toast
 
 @AndroidEntryPoint
 class LoginActivity : SyncActivity(), ProfileAdapter.OnItemClickListener {

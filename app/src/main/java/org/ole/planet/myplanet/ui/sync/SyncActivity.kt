@@ -91,7 +91,6 @@ import org.ole.planet.myplanet.utilities.ServerConfigUtils
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.UrlUtils
-import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository.CheckVersionCallback,
@@ -823,7 +822,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
     }
 
     override fun onError(msg: String, blockSync: Boolean) {
-        Utilities.toast(this, msg)
+        DialogUtils.toast(this, msg)
         if (msg.startsWith("Config")) {
             settingDialog()
         }

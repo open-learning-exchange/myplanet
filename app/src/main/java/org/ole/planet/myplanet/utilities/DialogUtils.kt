@@ -8,9 +8,12 @@ import android.provider.Settings
 import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.view.View
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import com.google.android.material.snackbar.Snackbar
+import android.content.ContextWrapper
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
@@ -275,6 +278,33 @@ object DialogUtils {
 
         fun disableNegativeButton() {
             binding.buttonNegative.isEnabled = false
+        }
+    }
+
+    private fun getActivityFromContext(context: Context?): Activity? {
+        var ctx = context
+        while (ctx is ContextWrapper) {
+            if (ctx is Activity) {
+                return ctx
+            }
+            ctx = ctx.baseContext
+        }
+        return null
+    }
+
+    @JvmStatic
+    fun toast(context: Context?, message: CharSequence?, duration: Int = Toast.LENGTH_LONG) {
+        context ?: return
+        MainApplication.applicationScope.launch(Dispatchers.Main) {
+            val visualContext = getActivityFromContext(context)
+
+            if (visualContext != null) {
+                try {
+                    Toast.makeText(visualContext, message, duration).show()
+                } catch (e: IllegalAccessException) {
+                    e.printStackTrace()
+                }
+            }
         }
     }
 }

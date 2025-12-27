@@ -41,8 +41,8 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
+import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DialogUtils.getDialog
-import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnClickListener {
@@ -382,13 +382,13 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                         getString(R.string.added_to)
                     }
 
-                    Utilities.toast(activity, "course $statusMessage ${getString(R.string.my_courses)}")
+                    DialogUtils.toast(activity, "course $statusMessage ${getString(R.string.my_courses)}")
                     setCourseData()
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
                     e.printStackTrace()
-                    Utilities.toast(activity, "Failed to update course: ${e.message}")
+                    DialogUtils.toast(activity, "Failed to update course: ${e.message}")
                 }
             }
         }

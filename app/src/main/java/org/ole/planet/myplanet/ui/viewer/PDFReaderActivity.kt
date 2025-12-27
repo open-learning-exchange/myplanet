@@ -23,12 +23,12 @@ import org.ole.planet.myplanet.service.AudioRecorderService
 import org.ole.planet.myplanet.service.AudioRecorderService.AudioRecordListener
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.resources.AddResourceFragment
+import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.IntentUtils.openAudioFile
 import org.ole.planet.myplanet.utilities.NotificationUtils.cancelAll
 import org.ole.planet.myplanet.utilities.NotificationUtils.create
-import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 class PDFReaderActivity : AppCompatActivity(), AudioRecordListener {
@@ -109,13 +109,13 @@ class PDFReaderActivity : AppCompatActivity(), AudioRecordListener {
 
 
     override fun onRecordStarted() {
-        Utilities.toast(this, getString(R.string.recording_started))
+        DialogUtils.toast(this, getString(R.string.recording_started))
         create(this, R.drawable.ic_mic, "Recording Audio", getString(R.string.ole_is_recording_audio))
         binding.fabRecord.setImageResource(R.drawable.ic_stop)
     }
 
     override fun onRecordStopped(outputFile: String?) {
-        Utilities.toast(this, getString(R.string.recording_stopped))
+        DialogUtils.toast(this, getString(R.string.recording_stopped))
         cancelAll(this)
         updateTranslation(outputFile)
         val userModel = userProfileDbHandler.userModel
@@ -139,7 +139,7 @@ class PDFReaderActivity : AppCompatActivity(), AudioRecordListener {
                     it.translationAudioPath = outputFile
                 }
                 library.translationAudioPath = outputFile
-                Utilities.toast(
+                DialogUtils.toast(
                     this@PDFReaderActivity,
                     getString(R.string.audio_file_saved_in_database)
                 )
@@ -156,7 +156,7 @@ class PDFReaderActivity : AppCompatActivity(), AudioRecordListener {
 
     override fun onError(error: String?) {
         cancelAll(this)
-        Utilities.toast(this, error)
+        DialogUtils.toast(this, error)
         binding.fabRecord.setImageResource(R.drawable.ic_mic)
     }
 }
