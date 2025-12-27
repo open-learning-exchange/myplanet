@@ -1,6 +1,6 @@
 package org.ole.planet.myplanet.repository
 
-interface RatingRepository {
+interface RatingsRepository {
     suspend fun getRatingSummary(type: String, itemId: String, userId: String): RatingSummary
 
     suspend fun submitRating(
