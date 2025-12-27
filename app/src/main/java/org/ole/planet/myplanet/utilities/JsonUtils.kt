@@ -1,10 +1,10 @@
 package org.ole.planet.myplanet.utilities
 
+import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
-import com.google.gson.Gson
 import com.google.gson.JsonParser.parseString
 import io.realm.RealmList
 

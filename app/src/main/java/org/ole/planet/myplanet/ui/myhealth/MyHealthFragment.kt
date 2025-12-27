@@ -48,10 +48,10 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
+import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
-import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
 import org.ole.planet.myplanet.utilities.Utilities

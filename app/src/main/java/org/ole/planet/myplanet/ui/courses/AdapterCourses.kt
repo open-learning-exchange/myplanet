@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.courses
 
-import org.ole.planet.myplanet.utilities.JsonUtils.getInt
 import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -32,6 +31,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TagRepository
 import org.ole.planet.myplanet.utilities.CourseRatingUtils
 import org.ole.planet.myplanet.utilities.DiffUtils
+import org.ole.planet.myplanet.utilities.JsonUtils.getInt
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.SelectionUtils

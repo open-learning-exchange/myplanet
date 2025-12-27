@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.data
 
-import org.ole.planet.myplanet.utilities.JsonUtils
 import android.app.AlertDialog
 import android.content.Context
 import android.content.DialogInterface
@@ -17,12 +16,13 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.DialogUtils.CustomProgressDialog
 import org.ole.planet.myplanet.utilities.IntentUtils
+import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.NetworkUtils.extractProtocol
-import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.UrlUtils
 
 class ConfigurationManager(

@@ -1,12 +1,12 @@
 package org.ole.planet.myplanet.model
 
-import org.ole.planet.myplanet.utilities.JsonUtils
 import android.text.TextUtils
 import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
+import org.ole.planet.myplanet.utilities.JsonUtils
 
 open class RealmMyHealthPojo : RealmObject() {
     @PrimaryKey

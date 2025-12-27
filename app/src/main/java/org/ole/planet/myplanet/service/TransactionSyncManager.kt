@@ -1,8 +1,5 @@
 package org.ole.planet.myplanet.service
 
-import org.ole.planet.myplanet.utilities.JsonUtils.getJsonObject
-import org.ole.planet.myplanet.utilities.JsonUtils.getJsonArray
-import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Base64
@@ -26,6 +23,9 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.JsonUtils.getJsonArray
+import org.ole.planet.myplanet.utilities.JsonUtils.getJsonObject
+import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.SecurePrefs
 import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.Utilities

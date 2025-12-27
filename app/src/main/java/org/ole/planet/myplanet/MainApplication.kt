@@ -44,6 +44,7 @@ import org.ole.planet.myplanet.service.AutoSyncWorker
 import org.ole.planet.myplanet.service.NetworkMonitorWorker
 import org.ole.planet.myplanet.service.StayOnlineWorker
 import org.ole.planet.myplanet.service.TaskNotificationWorker
+import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.ANRWatchdog
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
@@ -51,7 +52,6 @@ import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utilities.NetworkUtils.startListenNetworkState
 import org.ole.planet.myplanet.utilities.NetworkUtils.stopListenNetworkState
-import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.ThemeMode
 import org.ole.planet.myplanet.utilities.VersionUtils.getVersionName
 

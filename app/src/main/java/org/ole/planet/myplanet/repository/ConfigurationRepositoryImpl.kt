@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import org.ole.planet.myplanet.utilities.JsonUtils
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
@@ -20,9 +19,10 @@ import org.ole.planet.myplanet.data.ApiInterface
 import org.ole.planet.myplanet.data.NetworkResult
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyPlanet
-import org.ole.planet.myplanet.utilities.Constants
-import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
+import org.ole.planet.myplanet.utilities.Constants
+import org.ole.planet.myplanet.utilities.JsonUtils
+import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.VersionUtils
 import retrofit2.Call

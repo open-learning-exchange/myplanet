@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.data
 
-import org.ole.planet.myplanet.utilities.JsonUtils
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Base64
@@ -19,6 +18,7 @@ import org.ole.planet.myplanet.di.RepositoryEntryPoint
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.androidDecrypter
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.UrlUtils
 import retrofit2.Call
 import retrofit2.Callback

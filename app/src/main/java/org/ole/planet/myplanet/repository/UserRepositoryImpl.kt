@@ -1,11 +1,12 @@
 package org.ole.planet.myplanet.repository
 
-import org.ole.planet.myplanet.utilities.JsonUtils
 import android.content.Context
 import android.content.SharedPreferences
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.text.Normalizer
 import java.util.Calendar
+import java.util.regex.Pattern
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
@@ -21,9 +22,8 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
 import org.ole.planet.myplanet.service.UploadToShelfService
 import org.ole.planet.myplanet.ui.myhealth.HealthRecord
-import java.text.Normalizer
-import java.util.regex.Pattern
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
+import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.UrlUtils
 
 class UserRepositoryImpl @Inject constructor(

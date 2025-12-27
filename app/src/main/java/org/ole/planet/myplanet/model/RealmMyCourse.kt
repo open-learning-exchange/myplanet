@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.model
 
-import org.ole.planet.myplanet.utilities.JsonUtils
 import android.content.Context.MODE_PRIVATE
 import android.content.SharedPreferences
 import android.text.TextUtils
@@ -20,6 +19,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.createStepResource
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DownloadUtils.extractLinks
+import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.UrlUtils
 
 open class RealmMyCourse : RealmObject() {

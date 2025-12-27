@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.databinding.FragmentHomeBellBinding
 import org.ole.planet.myplanet.model.RealmCertification
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.ui.mylife.LifeFragment
@@ -37,7 +38,6 @@ import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
 import org.ole.planet.myplanet.ui.team.TeamFragment
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
-import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 
 class BellDashboardFragment : BaseDashboardFragment() {
     private var _binding: FragmentHomeBellBinding? = null
