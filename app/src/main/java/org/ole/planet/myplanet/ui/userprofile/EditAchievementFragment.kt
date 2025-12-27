@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.userprofile
 
-import org.ole.planet.myplanet.utilities.JsonUtils
 import android.app.DatePickerDialog
 import android.content.DialogInterface
 import android.os.Bundle
@@ -45,6 +44,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.CheckboxListView
 import org.ole.planet.myplanet.utilities.DialogUtils.getDialog
+import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
 import org.ole.planet.myplanet.utilities.Utilities
 

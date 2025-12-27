@@ -31,7 +31,6 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.Service
 import org.ole.planet.myplanet.data.Service.PlanetAvailableListener
-import org.ole.planet.myplanet.service.MyDownloadService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmMyCourse
@@ -48,6 +47,7 @@ import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.service.MyDownloadService
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission

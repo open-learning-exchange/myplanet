@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.news
 
-import org.ole.planet.myplanet.utilities.JsonUtils
 import android.annotation.SuppressLint
 import android.app.Dialog
 import android.content.Context
@@ -53,6 +52,7 @@ import org.ole.planet.myplanet.ui.chat.ChatAdapter
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.ImageUtils
+import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.SharedPrefManager

@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.model
 
-import org.ole.planet.myplanet.utilities.JsonUtils
 import android.text.TextUtils
 import android.widget.EditText
 import com.google.gson.JsonArray
@@ -10,6 +9,7 @@ import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
+import org.ole.planet.myplanet.utilities.JsonUtils
 
 open class RealmAchievement : RealmObject() {
     var achievements: RealmList<String>? = null

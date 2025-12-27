@@ -40,9 +40,9 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
+import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.DialogUtils
-import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 
 private data class Quartet<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
