@@ -13,9 +13,9 @@ import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.TeamNotificationInfo
 
-class NotificationRepositoryImpl @Inject constructor(
+class NotificationsRepositoryImpl @Inject constructor(
         databaseService: DatabaseService,
-) : RealmRepository(databaseService), NotificationRepository {
+) : RealmRepository(databaseService), NotificationsRepository {
     override suspend fun refresh() {
         databaseService.realmInstance.refresh()
     }

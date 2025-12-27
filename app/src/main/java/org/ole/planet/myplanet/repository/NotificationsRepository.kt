@@ -2,7 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import org.ole.planet.myplanet.model.TeamNotificationInfo
 
-interface NotificationRepository {
+interface NotificationsRepository {
     suspend fun refresh()
     suspend fun markNotificationAsRead(notificationId: String, userId: String?)
     suspend fun getNotifications(userId: String, filter: String): List<org.ole.planet.myplanet.model.RealmNotification>

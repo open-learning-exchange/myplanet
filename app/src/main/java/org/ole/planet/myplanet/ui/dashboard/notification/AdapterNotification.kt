@@ -11,11 +11,11 @@ import java.util.regex.Pattern
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNotificationsBinding
 import org.ole.planet.myplanet.model.RealmNotification
-import org.ole.planet.myplanet.repository.NotificationRepository
+import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.utilities.DiffUtils as DiffUtilExtensions
 
 class AdapterNotification(
-    private val notificationRepository: NotificationRepository,
+    private val notificationsRepository: NotificationsRepository,
     notifications: List<RealmNotification>,
     private val onMarkAsReadClick: (String) -> Unit,
     private val onNotificationClick: (RealmNotification) -> Unit
@@ -97,7 +97,7 @@ class AdapterNotification(
                     } ?: notification.message
                 }
                 "join_request" -> {
-                    val (requesterName, teamName) = notificationRepository.getJoinRequestDetails(notification.relatedId)
+                    val (requesterName, teamName) = notificationsRepository.getJoinRequestDetails(notification.relatedId)
                     "<b>${context.getString(R.string.join_request_prefix)}</b> " +
                             context.getString(R.string.user_requested_to_join_team, requesterName, teamName)
                 }
@@ -106,7 +106,7 @@ class AdapterNotification(
         }
 
         private fun formatTaskNotification(context: Context, taskTitle: String, dateValue: String): String {
-            val teamName = notificationRepository.getTaskTeamName(taskTitle)
+            val teamName = notificationsRepository.getTaskTeamName(taskTitle)
             return if (teamName != null) {
                 "<b>$teamName</b>: ${context.getString(R.string.task_notification, taskTitle, dateValue)}"
             } else {
