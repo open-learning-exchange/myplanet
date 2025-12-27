@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.utilities
+package org.ole.planet.myplanet.ui.submission
 
 import android.content.Context
 import android.graphics.Canvas
@@ -13,11 +13,12 @@ import java.util.Date
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 
-object SubmissionPdfGenerator {
+object SubmissionPdfExport {
 
     private const val PAGE_WIDTH = 595
     private const val PAGE_HEIGHT = 842
