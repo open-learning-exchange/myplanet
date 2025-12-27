@@ -1,12 +1,12 @@
 package org.ole.planet.myplanet.model
 
-import org.ole.planet.myplanet.utilities.JsonUtils
 import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 
 open class RealmRating : RealmObject() {

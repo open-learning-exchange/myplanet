@@ -1,7 +1,5 @@
 package org.ole.planet.myplanet.ui.userprofile
 
-import org.ole.planet.myplanet.utilities.JsonUtils.getString
-import org.ole.planet.myplanet.utilities.JsonUtils
 import android.content.Context
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -11,6 +9,8 @@ import com.google.gson.JsonObject
 import org.ole.planet.myplanet.databinding.RowOtherInfoBinding
 import org.ole.planet.myplanet.ui.userprofile.OtherAdapter.ViewHolderOtherInfo
 import org.ole.planet.myplanet.utilities.DiffUtils
+import org.ole.planet.myplanet.utilities.JsonUtils
+import org.ole.planet.myplanet.utilities.JsonUtils.getString
 
 class OtherAdapter(private val context: Context, list: List<String>) :
     ListAdapter<String, ViewHolderOtherInfo>(DIFF_CALLBACK) {

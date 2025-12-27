@@ -55,7 +55,6 @@ import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
-import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.data.ApiClient
 import org.ole.planet.myplanet.data.ApiClient.client
 import org.ole.planet.myplanet.data.ApiInterface
@@ -63,6 +62,7 @@ import org.ole.planet.myplanet.data.Service
 import org.ole.planet.myplanet.data.Service.CheckVersionCallback
 import org.ole.planet.myplanet.data.Service.ConfigurationIdListener
 import org.ole.planet.myplanet.data.Service.PlanetAvailableListener
+import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.ServerAddressesModel

@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.model
 
-import org.ole.planet.myplanet.utilities.JsonUtils
 import android.app.usage.UsageStats
 import android.app.usage.UsageStatsManager
 import android.content.Context
@@ -13,6 +12,7 @@ import java.util.Calendar
 import java.util.Date
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.VersionUtils
 

@@ -1,7 +1,5 @@
 package org.ole.planet.myplanet.ui.news
 
-import org.ole.planet.myplanet.utilities.JsonUtils.getString
-import org.ole.planet.myplanet.utilities.JsonUtils
 import android.content.res.Configuration
 import android.os.Bundle
 import android.os.Trace
@@ -37,6 +35,8 @@ import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.FileUtils
+import org.ole.planet.myplanet.utilities.JsonUtils
+import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.textChanges

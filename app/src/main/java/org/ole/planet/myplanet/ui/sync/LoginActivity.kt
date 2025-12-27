@@ -34,9 +34,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.data.Service
 import org.ole.planet.myplanet.databinding.ActivityLoginBinding
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
-import org.ole.planet.myplanet.data.Service
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUserModel

@@ -1,9 +1,9 @@
 package org.ole.planet.myplanet.ui.exam
 
-import org.ole.planet.myplanet.utilities.JsonUtils.getStringAsJsonArray
 import java.util.Arrays
 import java.util.Locale
 import org.ole.planet.myplanet.model.RealmExamQuestion
+import org.ole.planet.myplanet.utilities.JsonUtils.getStringAsJsonArray
 
 object ExamAnswerUtils {
     fun getChoiceTextById(question: RealmExamQuestion, id: String): String {

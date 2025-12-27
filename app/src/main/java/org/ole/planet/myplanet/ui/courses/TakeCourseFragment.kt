@@ -24,8 +24,8 @@ import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.databinding.FragmentTakeCourseBinding
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.databinding.FragmentTakeCourseBinding
 import org.ole.planet.myplanet.model.RealmCourseActivity.Companion.createActivity
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseProgress.Companion.getCurrentProgress

@@ -1,7 +1,5 @@
 package org.ole.planet.myplanet.ui.news
 
-import org.ole.planet.myplanet.utilities.JsonUtils.getString
-import org.ole.planet.myplanet.utilities.JsonUtils
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
@@ -27,20 +25,22 @@ import java.io.File
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.databinding.ActivityReplyBinding
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.databinding.ActivityReplyBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
-import org.ole.planet.myplanet.ui.news.NewsAdapter.OnNewsItemClickListener
 import org.ole.planet.myplanet.ui.news.NewsActions
+import org.ole.planet.myplanet.ui.news.NewsAdapter.OnNewsItemClickListener
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getImagePath
 import org.ole.planet.myplanet.utilities.FileUtils.getRealPathFromURI
+import org.ole.planet.myplanet.utilities.JsonUtils
+import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 
 @AndroidEntryPoint

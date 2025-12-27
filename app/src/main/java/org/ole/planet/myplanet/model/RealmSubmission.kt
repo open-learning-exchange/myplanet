@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.model
 
-import org.ole.planet.myplanet.utilities.JsonUtils
 import android.content.Context
 import android.text.TextUtils
 import com.google.gson.JsonObject
@@ -14,6 +13,7 @@ import io.realm.annotations.PrimaryKey
 import java.util.Date
 import java.util.UUID
 import org.ole.planet.myplanet.utilities.Constants
+import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 
 open class RealmSubmission : RealmObject() {

@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.chat
 
-import org.ole.planet.myplanet.utilities.JsonUtils
 import android.content.Context
 import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -10,6 +9,7 @@ import okhttp3.RequestBody
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.data.ApiInterface
 import org.ole.planet.myplanet.model.ChatModel
+import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.UrlUtils
 import retrofit2.Call
 import retrofit2.Callback

@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.dictionary
 
-import org.ole.planet.myplanet.utilities.JsonUtils
 import android.os.Bundle
 import androidx.core.text.HtmlCompat
 import androidx.lifecycle.lifecycleScope
@@ -19,6 +18,7 @@ import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils
+import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint

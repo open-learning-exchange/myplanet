@@ -20,10 +20,10 @@ import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.di.WorkerDependenciesEntryPoint
+import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.NetworkUtils
-import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 
 class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters) : CoroutineWorker(context, workerParams) {
     private val workerEntryPoint = EntryPointAccessors.fromApplication(

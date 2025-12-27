@@ -1,7 +1,5 @@
 package org.ole.planet.myplanet.ui.myhealth
 
-import org.ole.planet.myplanet.utilities.JsonUtils.getString
-import org.ole.planet.myplanet.utilities.JsonUtils
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
@@ -23,6 +21,8 @@ import org.ole.planet.myplanet.model.RealmMyHealthPojo
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.myhealth.AdapterHealthExamination.ViewHolderMyHealthExamination
 import org.ole.planet.myplanet.utilities.DiffUtils
+import org.ole.planet.myplanet.utilities.JsonUtils
+import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 
