@@ -25,8 +25,8 @@ import org.ole.planet.myplanet.repository.PersonalRepository
 import org.ole.planet.myplanet.repository.PersonalRepositoryImpl
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.ProgressRepositoryImpl
-import org.ole.planet.myplanet.repository.RatingRepository
-import org.ole.planet.myplanet.repository.RatingRepositoryImpl
+import org.ole.planet.myplanet.repository.RatingsRepository
+import org.ole.planet.myplanet.repository.RatingsRepositoryImpl
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepositoryImpl
 import org.ole.planet.myplanet.repository.SubmissionRepository
@@ -88,7 +88,7 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindRatingRepository(impl: RatingRepositoryImpl): RatingRepository
+    abstract fun bindRatingsRepository(impl: RatingsRepositoryImpl): RatingsRepository
 
     @Binds
     @Singleton
