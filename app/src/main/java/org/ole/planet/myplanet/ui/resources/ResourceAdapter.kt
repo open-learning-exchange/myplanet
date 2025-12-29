@@ -37,7 +37,7 @@ import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 
-class AdapterResource(
+class ResourceAdapter(
     private val context: Context,
     private var libraryList: List<RealmMyLibrary?>,
     private var ratingMap: HashMap<String?, JsonObject>,
@@ -327,7 +327,7 @@ class AdapterResource(
 
             if (isActive) {
                 libraryList = newList
-                diffResult.dispatchUpdatesTo(this@AdapterResource)
+                diffResult.dispatchUpdatesTo(this@ResourceAdapter)
                 onComplete?.invoke()
             }
         }
@@ -425,7 +425,7 @@ class AdapterResource(
             }
             if (isActive) {
                 libraryList = newList
-                diffResult.dispatchUpdatesTo(this@AdapterResource)
+                diffResult.dispatchUpdatesTo(this@ResourceAdapter)
             }
         }
     }
