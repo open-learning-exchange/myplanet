@@ -27,7 +27,7 @@ import org.ole.planet.myplanet.databinding.RowFeedbackReplyBinding
 import org.ole.planet.myplanet.model.FeedbackReply
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import org.ole.planet.myplanet.ui.feedback.FeedbackDetailActivity.RvFeedbackAdapter.ReplyViewHolder
+import org.ole.planet.myplanet.ui.feedback.FeedbackDetailActivity.FeedbackReplyAdapter.ReplyViewHolder
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.LocaleUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDateWithTime
@@ -35,7 +35,7 @@ import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDateWithTime
 @AndroidEntryPoint
 class FeedbackDetailActivity : AppCompatActivity() {
     private lateinit var activityFeedbackDetailBinding: ActivityFeedbackDetailBinding
-    private var mAdapter: RvFeedbackAdapter? = null
+    private var mAdapter: FeedbackReplyAdapter? = null
     private var layoutManager: RecyclerView.LayoutManager? = null
     private var feedback: RealmFeedback? = null
     private lateinit var feedbackId: String
@@ -69,7 +69,7 @@ class FeedbackDetailActivity : AppCompatActivity() {
                         activityFeedbackDetailBinding.tvDate.text = getFormattedDateWithTime(it.openTime)
                         activityFeedbackDetailBinding.tvMessage.text =
                             if (TextUtils.isEmpty(it.message)) "N/A" else it.message
-                        mAdapter = RvFeedbackAdapter(applicationContext)
+                        mAdapter = FeedbackReplyAdapter(applicationContext)
                         activityFeedbackDetailBinding.rvFeedbackReply.adapter = mAdapter
                         mAdapter!!.submitList(it.messageList)
                         updateForClosed()
@@ -138,7 +138,7 @@ class FeedbackDetailActivity : AppCompatActivity() {
         return super.onOptionsItemSelected(item)
     }
 
-    inner class RvFeedbackAdapter(var context: Context) : ListAdapter<FeedbackReply, ReplyViewHolder>(DIFF_CALLBACK) {
+    inner class FeedbackReplyAdapter(var context: Context) : ListAdapter<FeedbackReply, ReplyViewHolder>(DIFF_CALLBACK) {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ReplyViewHolder {
             val rowFeedbackReplyBinding = RowFeedbackReplyBinding.inflate(layoutInflater, parent, false)
             return ReplyViewHolder(rowFeedbackReplyBinding)
