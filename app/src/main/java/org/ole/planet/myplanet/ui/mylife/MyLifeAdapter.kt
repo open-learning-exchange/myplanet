@@ -36,7 +36,7 @@ import org.ole.planet.myplanet.ui.userprofile.AchievementFragment
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
-class AdapterMyLife(
+class MyLifeAdapter(
     private val context: Context,
     private val mDragStartListener: OnStartDragListener,
     private val lifeRepository: LifeRepository
