@@ -36,7 +36,7 @@ import org.ole.planet.myplanet.ui.userprofile.AchievementFragment
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
-class MyLifeAdapter(
+class LifeAdapter(
     private val context: Context,
     private val mDragStartListener: OnStartDragListener,
     private val lifeRepository: LifeRepository
@@ -45,13 +45,13 @@ class MyLifeAdapter(
     private val show = 1f
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val v = LayoutInflater.from(context).inflate(R.layout.row_life, parent, false)
-        return ViewHolderMyLife(v)
+        return ViewHolderLife(v)
     }
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val myLife = getItem(position)
-        if (holder is ViewHolderMyLife) {
+        if (holder is ViewHolderLife) {
             holder.title.text = myLife.title
             holder.imageView.setImageResource(context.resources.getIdentifier(myLife.imageId, "drawable", context.packageName))
             holder.imageView.contentDescription = context.getString(R.string.icon, myLife.title)
@@ -105,7 +105,7 @@ class MyLifeAdapter(
     }
 
     private fun changeVisibility(holder: RecyclerView.ViewHolder, imageId: Int, alpha: Float) {
-        (holder as ViewHolderMyLife).visibility.setImageResource(imageId)
+        (holder as ViewHolderLife).visibility.setImageResource(imageId)
         holder.rvItemContainer.alpha = alpha
     }
 
@@ -120,7 +120,7 @@ class MyLifeAdapter(
         return true
     }
 
-    internal inner class ViewHolderMyLife(itemView: View) : RecyclerView.ViewHolder(itemView),
+    internal inner class ViewHolderLife(itemView: View) : RecyclerView.ViewHolder(itemView),
         ItemTouchHelperViewHolder {
         var title: TextView = itemView.findViewById(R.id.titleTextView)
         var imageView: ImageView = itemView.findViewById(R.id.itemImageView)
@@ -137,7 +137,7 @@ class MyLifeAdapter(
             if (viewHolder != null) {
                 val myLife = getItem(viewHolder.bindingAdapterPosition)
                 if (!myLife.isVisible) {
-                    (viewHolder as ViewHolderMyLife?)?.rvItemContainer?.alpha = hide
+                    (viewHolder as ViewHolderLife?)?.rvItemContainer?.alpha = hide
                 }
             }
         }
