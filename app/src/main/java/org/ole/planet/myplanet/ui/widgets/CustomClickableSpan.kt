@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.utilities
+package org.ole.planet.myplanet.ui.widgets
 
 import android.content.Context
 import android.content.Intent
