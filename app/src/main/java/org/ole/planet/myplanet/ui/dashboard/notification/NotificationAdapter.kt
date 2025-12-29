@@ -14,12 +14,12 @@ import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.utilities.DiffUtils as DiffUtilExtensions
 
-class AdapterNotification(
+class NotificationAdapter(
     private val notificationsRepository: NotificationsRepository,
     notifications: List<RealmNotification>,
     private val onMarkAsReadClick: (String) -> Unit,
     private val onNotificationClick: (RealmNotification) -> Unit
-) : ListAdapter<RealmNotification, AdapterNotification.ViewHolderNotifications>(
+) : ListAdapter<RealmNotification, NotificationAdapter.ViewHolderNotifications>(
     DiffUtilExtensions.itemCallback(
         areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id },
         areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
