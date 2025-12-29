@@ -7,12 +7,12 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.JsonObject
 import org.ole.planet.myplanet.databinding.RowOtherInfoBinding
-import org.ole.planet.myplanet.ui.userprofile.UserProfileOtherInfoAdapter.ViewHolderOtherInfo
+import org.ole.planet.myplanet.ui.userprofile.ReferencesAdapter.ViewHolderOtherInfo
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 
-class UserProfileOtherInfoAdapter(private val context: Context, list: List<String>) :
+class ReferencesAdapter(private val context: Context, list: List<String>) :
     ListAdapter<String, ViewHolderOtherInfo>(DIFF_CALLBACK) {
 
     init {
