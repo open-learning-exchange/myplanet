@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.myhealth
+package org.ole.planet.myplanet.model
 
 import java.io.Serializable
 

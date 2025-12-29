@@ -12,25 +12,25 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.databinding.FragmentMyProgressBinding
+import org.ole.planet.myplanet.databinding.FragmentProgressBinding
 
 @AndroidEntryPoint
-class MyProgressFragment : Fragment() {
-    private var _binding: FragmentMyProgressBinding? = null
+class ProgressFragment : Fragment() {
+    private var _binding: FragmentProgressBinding? = null
     private val binding get() = _binding!!
     private val progressViewModel: ProgressViewModel by viewModels()
-    private lateinit var myProgressAdapter: AdapterMyProgress
+    private lateinit var progressAdapter: ProgressAdapter
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentMyProgressBinding.inflate(inflater, container, false)
+        _binding = FragmentProgressBinding.inflate(inflater, container, false)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        myProgressAdapter = AdapterMyProgress(requireActivity())
+        progressAdapter = ProgressAdapter(requireActivity())
         binding.rvMyprogress.layoutManager = LinearLayoutManager(requireActivity())
-        binding.rvMyprogress.adapter = myProgressAdapter
+        binding.rvMyprogress.adapter = progressAdapter
         progressViewModel.loadCourseData()
         observeCourseData()
     }
@@ -40,7 +40,7 @@ class MyProgressFragment : Fragment() {
             progressViewModel.courseData.collect { courseData ->
                 courseData?.let { jsonArray ->
                     val list = jsonArray.map { it.asJsonObject }
-                    myProgressAdapter.submitList(list)
+                    progressAdapter.submitList(list)
                 }
             }
         }
