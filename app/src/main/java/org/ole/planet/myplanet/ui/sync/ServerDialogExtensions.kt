@@ -50,6 +50,7 @@ fun SyncActivity.performSync(dialog: MaterialDialog) {
     var url = "${serverUrl.text}"
     val pin = "${serverPassword.text}"
     editor.putString("serverURL", url).apply()
+    editor.putString("serverPin", pin).apply()
     url = protocol + url
     if (isUrlValid(url)) {
         currentDialog = dialog
