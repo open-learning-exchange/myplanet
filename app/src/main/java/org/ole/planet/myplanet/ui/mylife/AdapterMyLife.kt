@@ -24,9 +24,9 @@ import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.repository.LifeRepository
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment
 import org.ole.planet.myplanet.ui.myhealth.MyHealthFragment
-import org.ole.planet.myplanet.ui.mylife.helper.ItemTouchHelperAdapter
-import org.ole.planet.myplanet.ui.mylife.helper.ItemTouchHelperViewHolder
-import org.ole.planet.myplanet.ui.mylife.helper.OnStartDragListener
+import org.ole.planet.myplanet.ui.mylife.touchhelper.ItemTouchHelperAdapter
+import org.ole.planet.myplanet.ui.mylife.touchhelper.ItemTouchHelperViewHolder
+import org.ole.planet.myplanet.ui.mylife.touchhelper.OnStartDragListener
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.personals.PersonalsFragment
 import org.ole.planet.myplanet.ui.references.ReferenceFragment
