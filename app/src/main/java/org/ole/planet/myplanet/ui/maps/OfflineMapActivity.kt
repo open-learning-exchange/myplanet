@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.map
+package org.ole.planet.myplanet.ui.maps
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
