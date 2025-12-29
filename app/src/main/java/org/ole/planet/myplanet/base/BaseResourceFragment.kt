@@ -51,7 +51,7 @@ import org.ole.planet.myplanet.service.MyDownloadService
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.submission.SubmissionsAdapter
-import org.ole.planet.myplanet.utilities.CheckboxListView
+import org.ole.planet.myplanet.ui.widgets.CheckboxListView
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DialogUtils.getProgressDialog
 import org.ole.planet.myplanet.utilities.DialogUtils.showError
