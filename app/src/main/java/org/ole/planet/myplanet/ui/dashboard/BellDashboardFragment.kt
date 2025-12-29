@@ -34,8 +34,8 @@ import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.ui.life.LifeFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
-import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
 import org.ole.planet.myplanet.ui.submission.SubmissionsAdapter
+import org.ole.planet.myplanet.ui.submission.SubmissionsFragment
 import org.ole.planet.myplanet.ui.team.TeamFragment
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 
@@ -314,7 +314,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
             .setTitle(title)
             .setView(dialogView)
             .setPositiveButton(getString(R.string.ok)) { dialog, _ ->
-                homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("survey"))
+                homeItemClickListener?.openCallFragment(SubmissionsFragment.newInstance("survey"))
                 dialog.dismiss()
             }
             .setNeutralButton(getString(R.string.remind_later)) { _, _ -> }

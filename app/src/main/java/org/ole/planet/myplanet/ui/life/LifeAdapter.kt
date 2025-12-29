@@ -30,8 +30,8 @@ import org.ole.planet.myplanet.ui.myhealth.MyHealthFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.personals.PersonalsFragment
 import org.ole.planet.myplanet.ui.references.ReferenceFragment
-import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
-import org.ole.planet.myplanet.ui.submission.MySubmissionFragment.Companion.newInstance
+import org.ole.planet.myplanet.ui.submission.SubmissionsFragment
+import org.ole.planet.myplanet.ui.submission.SubmissionsFragment.Companion.newInstance
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.Utilities
@@ -151,7 +151,7 @@ class LifeAdapter(
         fun findFragment(frag: String?): Fragment? {
             when (frag) {
                 "ic_mypersonals" -> return PersonalsFragment()
-                "ic_submissions" -> return MySubmissionFragment()
+                "ic_submissions" -> return SubmissionsFragment()
                 "ic_my_survey" -> return newInstance("survey")
                 "ic_myhealth" -> return MyHealthFragment()
                 "ic_calendar" -> return CalendarFragment()
