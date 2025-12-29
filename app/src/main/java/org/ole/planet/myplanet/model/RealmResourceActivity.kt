@@ -40,16 +40,16 @@ open class RealmResourceActivity : RealmObject() {
         }
 
         @JvmStatic
-        fun onSynced(mRealm: Realm, settings: SharedPreferences) {
-            if (!mRealm.isInTransaction) {
-                mRealm.beginTransaction()
+        fun onSynced(realm: Realm, settings: SharedPreferences) {
+            if (!realm.isInTransaction) {
+                realm.beginTransaction()
             }
-            val user = mRealm.where(RealmUserModel::class.java).equalTo("id", settings.getString("userId", "")).findFirst()
+            val user = realm.where(RealmUserModel::class.java).equalTo("id", settings.getString("userId", "")).findFirst()
                 ?: return
             if (user.id?.startsWith("guest") == true) {
                 return
             }
-            val activities = mRealm.createObject(RealmResourceActivity::class.java, UUID.randomUUID().toString())
+            val activities = realm.createObject(RealmResourceActivity::class.java, UUID.randomUUID().toString())
             activities.user = user.name
             activities._rev = null
             activities._id = null
@@ -57,7 +57,7 @@ open class RealmResourceActivity : RealmObject() {
             activities.createdOn = user.planetCode
             activities.type = "sync"
             activities.time = Date().time
-            mRealm.commitTransaction()
+            realm.commitTransaction()
         }
     }
 }

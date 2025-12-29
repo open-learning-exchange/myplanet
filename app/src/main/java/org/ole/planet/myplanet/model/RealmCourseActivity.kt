@@ -6,8 +6,6 @@ import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import java.util.Date
 import java.util.UUID
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.utilities.NetworkUtils
 
 open class RealmCourseActivity : RealmObject() {
@@ -26,23 +24,21 @@ open class RealmCourseActivity : RealmObject() {
     companion object {
         @JvmStatic
         suspend fun createActivity(realm: Realm, userModel: RealmUserModel?, course: RealmMyCourse?) {
-            withContext(Dispatchers.IO) {
-                try {
-                    if (!realm.isInTransaction) {
-                        realm.executeTransaction { realmInstance ->
-                            val activity = realmInstance.createObject(RealmCourseActivity::class.java, UUID.randomUUID().toString())
-                            activity.type = "visit"
-                            activity.title = course?.courseTitle
-                            activity.courseId = course?.courseId
-                            activity.time = Date().time
-                            activity.parentCode = userModel?.parentCode
-                            activity.createdOn = userModel?.planetCode
-                            activity.user = userModel?.name
-                        }
+            try {
+                if (!realm.isInTransaction) {
+                    realm.executeTransaction { realmInstance ->
+                        val activity = realmInstance.createObject(RealmCourseActivity::class.java, UUID.randomUUID().toString())
+                        activity.type = "visit"
+                        activity.title = course?.courseTitle
+                        activity.courseId = course?.courseId
+                        activity.time = Date().time
+                        activity.parentCode = userModel?.parentCode
+                        activity.createdOn = userModel?.planetCode
+                        activity.user = userModel?.name
                     }
-                } catch (e: Exception) {
-                    e.printStackTrace()
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
 

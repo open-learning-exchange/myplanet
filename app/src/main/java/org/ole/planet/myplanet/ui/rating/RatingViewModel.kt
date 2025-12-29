@@ -9,12 +9,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.RatingEntry
-import org.ole.planet.myplanet.repository.RatingRepository
 import org.ole.planet.myplanet.repository.RatingSummary
+import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 
 class RatingViewModel @Inject constructor(
-    private val ratingRepository: RatingRepository,
+    private val ratingsRepository: RatingsRepository,
     private val userRepository: UserRepository
 ) : ViewModel() {
 
@@ -52,7 +52,7 @@ class RatingViewModel @Inject constructor(
 
                 _userState.value = userRepository.getUserById(userId)
 
-                val summary = ratingRepository.getRatingSummary(type, itemId, userId)
+                val summary = ratingsRepository.getRatingSummary(type, itemId, userId)
                 _ratingState.value = summary.toUiState()
             } catch (e: Exception) {
                 _userState.value = null
@@ -82,11 +82,11 @@ class RatingViewModel @Inject constructor(
 
                 _userState.value = user
 
-                val summary = ratingRepository.submitRating(
+                val summary = ratingsRepository.submitRating(
                     type = type,
                     itemId = itemId,
                     title = title,
-                    user = user,
+                    userId = user.id?.takeIf { it.isNotBlank() } ?: user._id ?: userId,
                     rating = rating,
                     comment = comment
                 )

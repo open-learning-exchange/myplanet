@@ -1,43 +1,127 @@
 package org.ole.planet.myplanet.ui.news
 
 import android.content.Context
+import android.view.Gravity
+import android.view.View
+import android.view.ViewGroup
 import android.widget.EditText
+import android.widget.FrameLayout
 import android.widget.ImageView
-import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
-import com.google.gson.Gson
+import com.bumptech.glide.Glide
+import com.google.android.material.textfield.TextInputLayout
 import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmList
+import java.io.File
+import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.ui.navigation.NavigationHelper
-import org.ole.planet.myplanet.ui.team.teamMember.MemberDetailFragment
+import org.ole.planet.myplanet.ui.team.member.MemberDetailFragment
+import org.ole.planet.myplanet.utilities.JsonUtils
 
 object NewsActions {
+    private val imagesToRemove = mutableSetOf<String>()
+
     data class EditDialogComponents(
-        val view: android.view.View,
+        val view: View,
         val editText: EditText,
-        val inputLayout: com.google.android.material.textfield.TextInputLayout,
-        val imageLayout: LinearLayout
+        val inputLayout: TextInputLayout,
+        val imageLayout: ViewGroup
     )
 
     fun createEditDialogComponents(
         context: Context,
-        listener: AdapterNews.OnNewsItemClickListener?
+        listener: NewsAdapter.OnNewsItemClickListener?
     ): EditDialogComponents {
         val v = android.view.LayoutInflater.from(context).inflate(R.layout.alert_input, null)
-        val tlInput = v.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.tl_input)
+        val tlInput = v.findViewById<TextInputLayout>(R.id.tl_input)
         val et = v.findViewById<EditText>(R.id.et_input)
-        val llImage = v.findViewById<LinearLayout>(R.id.ll_alert_image)
-        v.findViewById<android.view.View>(R.id.add_news_image).setOnClickListener { listener?.addImage(llImage) }
+        val llImage = v.findViewById<ViewGroup>(R.id.ll_alert_image)
+        v.findViewById<View>(R.id.add_news_image).setOnClickListener { listener?.addImage(llImage) }
         return EditDialogComponents(v, et, tlInput, llImage)
+    }
+
+    private fun loadExistingImages(context: Context, news: RealmNews?, imageLayout: ViewGroup) {
+        imagesToRemove.clear()
+        imageLayout.removeAllViews()
+
+        val imageUrls = news?.imageUrls
+        if (!imageUrls.isNullOrEmpty()) {
+            imageUrls.forEach { imageUrl ->
+                try {
+                    val imgObject = JsonUtils.gson.fromJson(imageUrl, JsonObject::class.java)
+                    val path = JsonUtils.getString("imageUrl", imgObject)
+                    if (path.isNotEmpty()) {
+                        addImageWithRemoveIcon(context, path, imageLayout)
+                    }
+                } catch (_: Exception) {
+                }
+            }
+        }
+    }
+
+    private fun addImageWithRemoveIcon(context: Context, imagePath: String, imageLayout: ViewGroup) {
+        val frameLayout = FrameLayout(context).apply {
+            layoutParams = ViewGroup.MarginLayoutParams(
+                dpToPx(context, 100),
+                dpToPx(context, 100)
+            ).apply {
+                setMargins(dpToPx(context, 4), dpToPx(context, 4), dpToPx(context, 4), dpToPx(context, 4))
+            }
+        }
+
+        val imageView = ImageView(context).apply {
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+            scaleType = ImageView.ScaleType.CENTER_CROP
+        }
+
+        val request = Glide.with(context)
+        val target = if (imagePath.lowercase(Locale.getDefault()).endsWith(".gif")) {
+            request.asGif().load(if (File(imagePath).exists()) File(imagePath) else imagePath)
+        } else {
+            request.load(if (File(imagePath).exists()) File(imagePath) else imagePath)
+        }
+        target.placeholder(R.drawable.ic_loading)
+            .error(R.drawable.ic_loading)
+            .into(imageView)
+
+        val removeIcon = ImageView(context).apply {
+            layoutParams = FrameLayout.LayoutParams(
+                dpToPx(context, 24),
+                dpToPx(context, 24)
+            ).apply {
+                gravity = Gravity.TOP or Gravity.END
+                setMargins(dpToPx(context, 4), dpToPx(context, 4), dpToPx(context, 4), dpToPx(context, 4))
+            }
+            setImageResource(R.drawable.baseline_close_24)
+            background = ContextCompat.getDrawable(context, R.drawable.rounded_background)
+            setPadding(dpToPx(context, 4), dpToPx(context, 4), dpToPx(context, 4), dpToPx(context, 4))
+            setOnClickListener {
+                imagesToRemove.add(imagePath)
+                (parent as? ViewGroup)?.let { parentView ->
+                    (parentView.parent as? ViewGroup)?.removeView(parentView)
+                }
+            }
+        }
+
+        frameLayout.addView(imageView)
+        frameLayout.addView(removeIcon)
+        imageLayout.addView(frameLayout)
+    }
+
+    private fun dpToPx(context: Context, dp: Int): Int {
+        return (dp * context.resources.displayMetrics.density).toInt()
     }
 
     fun handlePositiveButton(
@@ -48,7 +132,7 @@ object NewsActions {
         realm: Realm,
         currentUser: RealmUserModel?,
         imageList: RealmList<String>?,
-        listener: AdapterNews.OnNewsItemClickListener?
+        listener: NewsAdapter.OnNewsItemClickListener?
     ) {
         val s = components.editText.text.toString().trim()
         if (s.isEmpty()) {
@@ -56,7 +140,7 @@ object NewsActions {
             return
         }
         if (isEdit) {
-            editPost(realm, s, news)
+            editPost(realm, s, news, imageList)
         } else {
             postReply(realm, s, news, currentUser, imageList)
         }
@@ -71,8 +155,7 @@ object NewsActions {
         id: String?,
         isEdit: Boolean,
         currentUser: RealmUserModel?,
-        imageList: RealmList<String>?,
-        listener: AdapterNews.OnNewsItemClickListener?,
+        listener: NewsAdapter.OnNewsItemClickListener?,
         viewHolder: RecyclerView.ViewHolder,
         updateReplyButton: (RecyclerView.ViewHolder, RealmNews?, Int) -> Unit = { _, _, _ -> }
     ) {
@@ -85,6 +168,7 @@ object NewsActions {
         val news = realm.where(RealmNews::class.java).equalTo("id", id).findFirst()
         if (isEdit) {
             components.editText.setText(context.getString(R.string.message_placeholder, news?.message))
+            loadExistingImages(context, news, components.imageLayout)
         }
         val dialog = AlertDialog.Builder(context, R.style.ReplyAlertDialog)
             .setView(components.view)
@@ -93,7 +177,8 @@ object NewsActions {
             .create()
         dialog.show()
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-            handlePositiveButton(dialog, isEdit, components, news, realm, currentUser, imageList, listener)
+            val currentImageList = listener?.getCurrentImageList()
+            handlePositiveButton(dialog, isEdit, components, news, realm, currentUser, currentImageList, listener)
             updateReplyButton(viewHolder,news,viewHolder.bindingAdapterPosition)
         }
     }
@@ -105,7 +190,8 @@ object NewsActions {
         currentUser: RealmUserModel?,
         imageList: RealmList<String>?
     ) {
-        if (!realm.isInTransaction) realm.beginTransaction()
+        val shouldCommit = !realm.isInTransaction
+        if (shouldCommit) realm.beginTransaction()
         val map = HashMap<String?, String>()
         map["message"] = s ?: ""
         map["viewableBy"] = news?.viewableBy ?: ""
@@ -115,21 +201,40 @@ object NewsActions {
         map["messagePlanetCode"] = news?.messagePlanetCode ?: ""
         map["viewIn"] = news?.viewIn ?: ""
         currentUser?.let { createNews(map, realm, it, imageList, true) }
+        if (shouldCommit) realm.commitTransaction()
     }
 
-    private fun editPost(realm: Realm, s: String, news: RealmNews?) {
+    private fun editPost(realm: Realm, s: String, news: RealmNews?, imageList: RealmList<String>?) {
         if (s.isEmpty()) return
         if (!realm.isInTransaction) realm.beginTransaction()
+
+        if (imagesToRemove.isNotEmpty()) {
+            news?.imageUrls?.let { imageUrls ->
+                val updatedUrls = imageUrls.filter { imageUrlJson ->
+                    try {
+                        val imgObject = JsonUtils.gson.fromJson(imageUrlJson, JsonObject::class.java)
+                        val path = JsonUtils.getString("imageUrl", imgObject)
+                        !imagesToRemove.contains(path)
+                    } catch (_: Exception) {
+                        true
+                    }
+                }
+                news.imageUrls?.clear()
+                news.imageUrls?.addAll(updatedUrls)
+            }
+            imagesToRemove.clear()
+        }
+
+        imageList?.forEach { news?.imageUrls?.add(it) }
         news?.updateMessage(s)
         realm.commitTransaction()
     }
 
     fun showMemberDetails(
-        activity: AppCompatActivity,
         userModel: RealmUserModel?,
         profileDbHandler: UserProfileDbHandler
-    ) {
-        if (userModel == null) return
+    ): MemberDetailFragment? {
+        if (userModel == null) return null
         val userName = "${userModel.firstName} ${userModel.lastName}".trim().ifBlank { userModel.name }
         val fragment = MemberDetailFragment.newInstance(
             userName.toString(),
@@ -143,23 +248,17 @@ object NewsActions {
             userModel.level.toString(),
             userModel.userImage
         )
-        NavigationHelper.replaceFragment(
-            activity.supportFragmentManager,
-            R.id.fragment_container,
-            fragment,
-            addToBackStack = true
-        )
+        return fragment
     }
 
     fun deletePost(
-        context: Context,
         realm: Realm,
         news: RealmNews?,
         list: MutableList<RealmNews?>,
         teamName: String,
-        listener: AdapterNews.OnNewsItemClickListener? = null
+        listener: NewsAdapter.OnNewsItemClickListener? = null
     ) {
-        val ar = Gson().fromJson(news?.viewIn, JsonArray::class.java)
+        val ar = JsonUtils.gson.fromJson(news?.viewIn, JsonArray::class.java)
         if (!realm.isInTransaction) realm.beginTransaction()
         val position = list.indexOf(news)
         if (position != -1) {
@@ -197,7 +296,7 @@ object NewsActions {
                         .findFirst()
                 }
                 
-                managedNews?.viewIn = Gson().toJson(filtered)
+                managedNews?.viewIn = JsonUtils.gson.toJson(filtered)
             }
         }
         realm.commitTransaction()

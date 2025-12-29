@@ -1,12 +1,12 @@
 package org.ole.planet.myplanet.model
 
 import android.text.TextUtils
-import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
+import org.ole.planet.myplanet.utilities.JsonUtils
 
 open class RealmAnswer : RealmObject() {
     @PrimaryKey
@@ -26,24 +26,10 @@ open class RealmAnswer : RealmObject() {
                 return array
             }
             for (choice in valueChoices ?: emptyList()) {
-                array.add(Gson().fromJson(choice, JsonObject::class.java))
+                array.add(JsonUtils.gson.fromJson(choice, JsonObject::class.java))
             }
             return array
         }
-
-    fun setValueChoices(map: HashMap<String, String>?, isLastAnsValid: Boolean) {
-        if (!isLastAnsValid) {
-            valueChoices?.clear()
-        }
-        if (map != null) {
-            for (key in map.keys) {
-                val ob = JsonObject()
-                ob.addProperty("id", map[key])
-                ob.addProperty("text", key)
-                valueChoices?.add(Gson().toJson(ob))
-            }
-        }
-    }
 
     companion object {
         @JvmStatic
@@ -64,6 +50,9 @@ open class RealmAnswer : RealmObject() {
             }
             `object`.addProperty("mistakes", ans.mistakes)
             `object`.addProperty("passed", ans.isPassed)
+            if (!TextUtils.isEmpty(ans.questionId)) {
+                `object`.addProperty("questionId", ans.questionId)
+            }
             return `object`
         }
     }

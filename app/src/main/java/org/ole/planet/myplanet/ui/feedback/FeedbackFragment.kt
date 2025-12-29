@@ -24,6 +24,8 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
     private val binding get() = _binding!!
     @Inject
     lateinit var feedbackRepository: FeedbackRepository
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
     private var model: RealmUserModel ?= null
     var user: String? = ""
 
@@ -43,7 +45,7 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentFeedbackBinding.inflate(inflater, container, false)
-        model = UserProfileDbHandler(requireContext()).userModel
+        model = userProfileDbHandler.userModel
         user = model?.name
         binding.btnSubmit.setOnClickListener(this)
         binding.btnCancel.setOnClickListener(this)
@@ -87,7 +89,7 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
         val feedback = feedbackRepository.createFeedback(user, urgent, type, message, item, state)
         viewLifecycleOwner.lifecycleScope.launch {
             feedbackRepository.saveFeedback(feedback)
-            Utilities.toast(activity, R.string.feedback_saved.toString())
+            Utilities.toast(activity, getString(R.string.feedback_saved))
         }
         Toast.makeText(activity, R.string.thank_you_your_feedback_has_been_submitted, Toast.LENGTH_SHORT).show()
         mListener?.onFeedbackSubmitted()

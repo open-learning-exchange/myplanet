@@ -67,7 +67,7 @@ class ServerAddressAdapter(
         holder.bind(serverAddress, position == selectedPosition)
         holder.itemView.setOnClickListener {
             if (!urlWithoutProtocol.isNullOrEmpty() &&
-                serverAddress.url.replace(Regex("^https?://"), "") != urlWithoutProtocol
+                serverAddress.url.replace(URL_PROTOCOL_REGEX, "") != urlWithoutProtocol
             ) {
                 onClearDataDialog(serverAddress, position)
             } else {
@@ -99,5 +99,7 @@ class ServerAddressAdapter(
             }
         }
     }
+    companion object {
+        private val URL_PROTOCOL_REGEX = Regex("^https?://")
+    }
 }
-

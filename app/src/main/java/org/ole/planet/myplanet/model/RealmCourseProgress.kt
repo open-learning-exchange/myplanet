@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.model
 import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmObject
+import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getCourseSteps
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourseByUserId
@@ -12,6 +13,7 @@ import org.ole.planet.myplanet.utilities.JsonUtils
 open class RealmCourseProgress : RealmObject() {
     @PrimaryKey
     var id: String? = null
+    @Index
     var _id: String? = null
     var createdOn: String? = null
     var createdDate: Long = 0
@@ -52,29 +54,18 @@ open class RealmCourseProgress : RealmObject() {
             return map
         }
 
-//        @JvmStatic
-//        fun getPassedCourses(mRealm: Realm, userId: String?): List<RealmSubmission> {
-//            val progresses = mRealm.where(RealmCourseProgress::class.java).equalTo("userId", userId).equalTo("passed", true).findAll()
-//            val list: MutableList<RealmSubmission> = ArrayList()
-//            for (progress in progresses) {
-//                Utilities.log("Course id  certified " + progress.courseId)
-//                val sub = progress.courseId?.let {
-//                    mRealm.where(RealmSubmission::class.java)
-//                        .contains("parentId", it).equalTo("userId", userId)
-//                        .sort("lastUpdateTime", Sort.DESCENDING).findFirst()
-//                }
-//                if (sub != null) list.add(sub)
-//            }
-//            return list
-//        }
-
         @JvmStatic
         fun getCurrentProgress(steps: List<RealmCourseStep?>?, mRealm: Realm, userId: String?, courseId: String?): Int {
+            val progresses = mRealm.where(RealmCourseProgress::class.java)
+                .equalTo("userId", userId)
+                .equalTo("courseId", courseId)
+                .findAll()
+            val completedSteps = progresses.map { it.stepNum }.toSet()
             var i = 0
             while (i < (steps?.size ?: 0)) {
-                mRealm.where(RealmCourseProgress::class.java).equalTo("stepNum", i + 1).equalTo("userId", userId).equalTo("courseId", courseId)
-                    .findFirst()
-                    ?: break
+                if (!completedSteps.contains(i + 1)) {
+                    break
+                }
                 i++
             }
             return i

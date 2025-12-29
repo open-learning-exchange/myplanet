@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.courses
 
 import android.os.Bundle
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -8,12 +9,14 @@ import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.RealmResults
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.databinding.ActivityCourseProgressBinding
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmCourseProgress
-import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmStepExam
@@ -29,6 +32,7 @@ class CourseProgressActivity : BaseActivity() {
     lateinit var userProfileDbHandler: UserProfileDbHandler
     var user: RealmUserModel? = null
     lateinit var courseId: String
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityCourseProgressBinding.inflate(layoutInflater)
@@ -37,50 +41,64 @@ class CourseProgressActivity : BaseActivity() {
         initActionBar()
         courseId = intent.getStringExtra("courseId").toString()
         user = userProfileDbHandler.userModel
-        databaseService.withRealm { realm ->
-            val courseProgress = RealmCourseProgress.getCourseProgress(realm, user?.id)
-            val progress = courseProgress[courseId]
-            val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
-            if (progress != null) {
-                val maxProgress = progress["max"].asInt
-                if (maxProgress != 0) {
-                    binding.progressView.setProgress((progress["current"].asInt.toDouble() / maxProgress.toDouble() * 100).toInt(), true)
-                } else {
-                    binding.progressView.setProgress(0, true)
-                }
+
+        binding.rvProgress.layoutManager = GridLayoutManager(this, 4)
+
+        lifecycleScope.launch {
+            val data = loadData(courseId, user?.id)
+            if (data != null) {
+                updateUI(data)
             }
-            binding.tvCourse.text = course?.courseTitle
-            binding.tvProgress.text = getString(
-                R.string.course_progress,
-                courseProgress[courseId]?.get("current")?.asString,
-                courseProgress[courseId]?.get("max")?.asString
-            )
-            binding.rvProgress.layoutManager = GridLayoutManager(this, 4)
-            showProgress(realm)
         }
     }
 
-    private fun showProgress(realm: Realm) {
-        val steps = realm.where(RealmCourseStep::class.java).contains("courseId", courseId).findAll()
-        val array = JsonArray()
-        steps.map {
-            val ob = JsonObject()
-            ob.addProperty("stepId", it.id)
-            val exams = realm.where(RealmStepExam::class.java).equalTo("stepId", it.id).findAll()
-            getExamObject(realm, exams, ob)
-            array.add(ob)
+    private fun updateUI(data: CourseProgressData) {
+        if (data.max != 0) {
+            binding.progressView.setProgress((data.current.toDouble() / data.max.toDouble() * 100).toInt(), true)
+        } else {
+            binding.progressView.setProgress(0, true)
         }
-        binding.rvProgress.adapter = AdapterProgressGrid(this, array)
+        binding.tvCourse.text = data.title
+        binding.tvProgress.text = getString(
+            R.string.course_progress,
+            data.current.toString(),
+            data.max.toString()
+        )
+        binding.rvProgress.adapter = ProgressGridAdapter(this, data.steps)
+    }
+
+    private suspend fun loadData(courseId: String, userId: String?): CourseProgressData? {
+        return withContext(Dispatchers.IO) {
+            databaseService.withRealm { realm ->
+                val stepsList = RealmMyCourse.getCourseSteps(realm, courseId)
+                val max = stepsList.size
+                val current = RealmCourseProgress.getCurrentProgress(stepsList, realm, userId, courseId)
+
+                val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
+                val title = course?.courseTitle
+
+                val array = JsonArray()
+                stepsList.forEach { step ->
+                    val ob = JsonObject()
+                    ob.addProperty("stepId", step.id)
+                    val exams = realm.where(RealmStepExam::class.java).equalTo("stepId", step.id).findAll()
+                    getExamObject(realm, exams, ob, userId)
+                    array.add(ob)
+                }
+                CourseProgressData(title, current, max, array)
+            }
+        }
     }
 
     private fun getExamObject(
         realm: Realm,
         exams: RealmResults<RealmStepExam>,
-        ob: JsonObject
+        ob: JsonObject,
+        userId: String?
     ) {
         exams.forEach { it ->
             it.id?.let { it1 ->
-                realm.where(RealmSubmission::class.java).equalTo("userId", user?.id)
+                realm.where(RealmSubmission::class.java).equalTo("userId", userId)
                     .contains("parentId", it1).equalTo("type", "exam").findAll()
             }?.map {
                 val answers = realm.where(RealmAnswer::class.java).equalTo("submissionId", it.id).findAll()
@@ -103,3 +121,10 @@ class CourseProgressActivity : BaseActivity() {
         }
     }
 }
+
+data class CourseProgressData(
+    val title: String?,
+    val current: Int,
+    val max: Int,
+    val steps: JsonArray
+)

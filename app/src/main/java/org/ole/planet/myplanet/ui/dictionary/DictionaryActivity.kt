@@ -2,11 +2,14 @@ package org.ole.planet.myplanet.ui.dictionary
 
 import android.os.Bundle
 import androidx.core.text.HtmlCompat
-import com.google.gson.Gson
+import androidx.lifecycle.lifecycleScope
 import com.google.gson.JsonArray
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Case
 import java.util.UUID
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.databinding.FragmentDictionaryBinding
@@ -29,14 +32,15 @@ class DictionaryActivity : BaseActivity() {
         initActionBar()
         title = getString(R.string.dictionary)
 
-        databaseService.withRealm { realm ->
-            val list = realm.where(RealmDictionary::class.java).findAll()
-            fragmentDictionaryBinding.tvResult.text =
-                getString(R.string.list_size, list.size)
+        lifecycleScope.launch {
+            val count = loadDictionaryCount()
+            fragmentDictionaryBinding.tvResult.text = getString(R.string.list_size, count)
         }
 
         if (FileUtils.checkFileExist(this, Constants.DICTIONARY_URL)) {
-            insertDictionary()
+            lifecycleScope.launch {
+                loadDictionaryIfNeeded()
+            }
         } else {
             val list = ArrayList<String>()
             list.add(Constants.DICTIONARY_URL)
@@ -45,42 +49,56 @@ class DictionaryActivity : BaseActivity() {
         }
     }
 
-    private fun insertDictionary() {
+    private suspend fun loadDictionaryIfNeeded() {
+        var isEmpty = true
         databaseService.withRealm { realm ->
-            val list = realm.where(RealmDictionary::class.java).findAll()
-            if (list.isEmpty()) {
+            isEmpty = realm.where(RealmDictionary::class.java).count() == 0L
+        }
+        if (isEmpty) {
+            val context = this@DictionaryActivity
+            val json = withContext(Dispatchers.IO) {
                 try {
                     val data = FileUtils.getStringFromFile(
-                        FileUtils.getSDPathFromUrl(this, Constants.DICTIONARY_URL)
+                        FileUtils.getSDPathFromUrl(context, Constants.DICTIONARY_URL)
                     )
-                    val json = Gson().fromJson(data, JsonArray::class.java)
-                    realm.executeTransactionAsync {
-                        json?.forEach { js ->
-                            val doc = js.asJsonObject
-                            var dict = it.where(RealmDictionary::class.java)
-                                .equalTo("id", UUID.randomUUID().toString())
-                                .findFirst()
-                            if (dict == null) {
-                                dict = it.createObject(
-                                    RealmDictionary::class.java, UUID.randomUUID().toString()
-                                )
-                            }
-                            dict?.code = JsonUtils.getString("code", doc)
-                            dict?.language = JsonUtils.getString("language", doc)
-                            dict?.advanceCode = JsonUtils.getString("advance_code", doc)
-                            dict?.word = JsonUtils.getString("word", doc)
-                            dict?.meaning = JsonUtils.getString("meaning", doc)
-                            dict?.definition = JsonUtils.getString("definition", doc)
-                            dict?.synonym = JsonUtils.getString("synonym", doc)
-                            dict?.antonym = JsonUtils.getString("antonoym", doc)
-                        }
-                    }
+                    JsonUtils.gson.fromJson(data, JsonArray::class.java)
                 } catch (e: Exception) {
                     e.printStackTrace()
+                    null
                 }
-            } else {
-                setClickListener()
             }
+            json?.let { jsonArray ->
+                databaseService.withRealm { realm ->
+                    realm.executeTransactionAsync { bgRealm ->
+                        jsonArray.forEach { js ->
+                            val doc = js.asJsonObject
+                            val dict = bgRealm.createObject(
+                                RealmDictionary::class.java, UUID.randomUUID().toString()
+                            )
+                            dict.code = JsonUtils.getString("code", doc)
+                            dict.language = JsonUtils.getString("language", doc)
+                            dict.advanceCode = JsonUtils.getString("advance_code", doc)
+                            dict.word = JsonUtils.getString("word", doc)
+                            dict.meaning = JsonUtils.getString("meaning", doc)
+                            dict.definition = JsonUtils.getString("definition", doc)
+                            dict.synonym = JsonUtils.getString("synonym", doc)
+                            dict.antonym = JsonUtils.getString("antonoym", doc)
+                        }
+                    }
+                }
+            }
+        } else {
+            setClickListener()
+        }
+    }
+
+    private suspend fun loadDictionaryCount(): Long {
+        return withContext(Dispatchers.IO) {
+            var count = 0L
+            databaseService.withRealm { realm ->
+                count = realm.where(RealmDictionary::class.java).count()
+            }
+            count
         }
     }
 

@@ -4,7 +4,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.net.wifi.WifiManager
 import android.os.Build
@@ -19,19 +18,19 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.RealmResults
 import javax.inject.Inject
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
-import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.datamanager.MyDownloadService
-import org.ole.planet.myplanet.datamanager.Service
-import org.ole.planet.myplanet.datamanager.Service.PlanetAvailableListener
+import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.Service
+import org.ole.planet.myplanet.data.Service.PlanetAvailableListener
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmMyCourse
@@ -44,14 +43,15 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.getExamMap
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.CourseRepository
-import org.ole.planet.myplanet.repository.LibraryRepository
+import org.ole.planet.myplanet.repository.CoursesRepository
+import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.service.MyDownloadService
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
-import org.ole.planet.myplanet.utilities.CheckboxListView
+import org.ole.planet.myplanet.ui.submission.SubmissionsAdapter
+import org.ole.planet.myplanet.ui.widgets.CheckboxListView
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DialogUtils.getProgressDialog
 import org.ole.planet.myplanet.utilities.DialogUtils.showError
@@ -65,7 +65,6 @@ abstract class BaseResourceFragment : Fragment() {
     var homeItemClickListener: OnHomeItemClickListener? = null
     var model: RealmUserModel? = null
     protected lateinit var mRealm: Realm
-    var profileDbHandler: UserProfileDbHandler? = null
     var editor: SharedPreferences.Editor? = null
     var lv: CheckboxListView? = null
     var convertView: View? = null
@@ -73,18 +72,32 @@ abstract class BaseResourceFragment : Fragment() {
     @Inject
     lateinit var userRepository: UserRepository
     @Inject
-    lateinit var libraryRepository: LibraryRepository
+    lateinit var resourcesRepository: ResourcesRepository
+    @Inject
+    lateinit var coursesRepository: CoursesRepository
     @Inject
     lateinit var submissionRepository: SubmissionRepository
     @Inject
     lateinit var databaseService: DatabaseService
     @Inject
+    lateinit var profileDbHandler: UserProfileDbHandler
+    @Inject
     @AppPreferences
     lateinit var settings: SharedPreferences
+    @Inject
+    lateinit var broadcastService: org.ole.planet.myplanet.service.BroadcastService
     private var resourceNotFoundDialog: AlertDialog? = null
     private var downloadSuggestionDialog: AlertDialog? = null
     private var pendingSurveyDialog: AlertDialog? = null
     private var stayOnlineDialog: AlertDialog? = null
+    private var broadcastJob: Job? = null
+
+    protected fun requireRealmInstance(): Realm {
+        if (!isRealmInitialized()) {
+            mRealm = databaseService.realmInstance
+        }
+        return mRealm
+    }
 
     protected fun isRealmInitialized(): Boolean {
         return ::mRealm.isInitialized && !mRealm.isClosed
@@ -112,24 +125,41 @@ abstract class BaseResourceFragment : Fragment() {
 
     private var receiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
+            val pendingResult = goAsync()
             this@BaseResourceFragment.lifecycleScope.launch {
-                val list = libraryRepository.getLibraryListForUser(
-                    settings.getString("userId", "--")
-                )
-                showDownloadDialog(list)
+                try {
+                    val list = resourcesRepository.getLibraryListForUser(
+                        settings.getString("userId", "--")
+                    )
+                    showDownloadDialog(list)
+                } finally {
+                    pendingResult.finish()
+                }
             }
         }
     }
 
     private var stateReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
+            val pendingResult = goAsync()
             stayOnlineDialog?.dismiss()
-            stayOnlineDialog = AlertDialog.Builder(requireContext()).setMessage(R.string.do_you_want_to_stay_online)
-                .setPositiveButton(R.string.yes, null)
-                .setNegativeButton(R.string.no) { _: DialogInterface?, _: Int ->
-                    val wifi = requireContext().applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-                    wifi.setWifiEnabled(false)
-                }.create()
+            stayOnlineDialog = AlertDialog.Builder(requireContext())
+                .setMessage(R.string.do_you_want_to_stay_online)
+                .setPositiveButton(R.string.yes) { _, _ ->
+                    pendingResult.finish()
+                }
+                .setNegativeButton(R.string.no) { _, _ ->
+                    lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                        try {
+                            val wifi = requireContext().applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+                            wifi.setWifiEnabled(false)
+                        } finally {
+                            pendingResult.finish()
+                        }
+                    }
+                }
+                .setCancelable(false)
+                .create()
             stayOnlineDialog?.setOnDismissListener {
                 stayOnlineDialog = null
             }
@@ -160,7 +190,7 @@ abstract class BaseResourceFragment : Fragment() {
         Service(requireContext()).isPlanetAvailable(object : PlanetAvailableListener {
             override fun isAvailable() {
                 if (!isAdded) return
-                val userId = profileDbHandler?.userModel?.id
+                val userId = profileDbHandler.userModel?.id
                 val librariesForDialog = if (userId.isNullOrBlank()) {
                     dbMyLibrary
                 } else {
@@ -215,7 +245,7 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     fun showPendingSurveyDialog() {
-        model = UserProfileDbHandler(requireContext()).userModel
+        model = profileDbHandler.userModel
         viewLifecycleOwner.lifecycleScope.launch {
             val list = submissionRepository.getPendingSurveys(model?.id)
             if (list.isEmpty()) return@launch
@@ -224,7 +254,7 @@ abstract class BaseResourceFragment : Fragment() {
             pendingSurveyDialog?.dismiss()
             pendingSurveyDialog = AlertDialog.Builder(requireActivity()).setTitle("Pending Surveys")
                 .setAdapter(arrayAdapter) { _: DialogInterface?, i: Int ->
-                    AdapterMySubmission.openSurvey(homeItemClickListener, list[i].id, true, false, "")
+                    SubmissionsAdapter.openSurvey(homeItemClickListener, list[i].id, true, false, "")
                 }.setPositiveButton(R.string.dismiss, null).create()
             pendingSurveyDialog?.setOnDismissListener {
                 pendingSurveyDialog = null
@@ -337,38 +367,21 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     private fun registerReceiver() {
-        val bManager = LocalBroadcastManager.getInstance(requireActivity())
-
-        val intentFilter = IntentFilter()
-        intentFilter.addAction(DashboardActivity.MESSAGE_PROGRESS)
-        bManager.registerReceiver(broadcastReceiver, intentFilter)
-
-        val intentFilter2 = IntentFilter()
-        intentFilter2.addAction("ACTION_NETWORK_CHANGED")
-        bManager.registerReceiver(receiver, intentFilter2)
-
-        val intentFilter3 = IntentFilter()
-        intentFilter3.addAction("SHOW_WIFI_ALERT")
-        bManager.registerReceiver(stateReceiver, intentFilter3)
-
-        val resourceNotFoundFilter = IntentFilter(MyDownloadService.RESOURCE_NOT_FOUND_ACTION)
-        bManager.registerReceiver(resourceNotFoundReceiver, resourceNotFoundFilter)
+        broadcastJob?.cancel()
+        broadcastJob = lifecycleScope.launch {
+            broadcastService.events.collect { intent ->
+                if (isActive) {
+                    when (intent.action) {
+                        DashboardActivity.MESSAGE_PROGRESS -> broadcastReceiver.onReceive(requireContext(), intent)
+                        "ACTION_NETWORK_CHANGED" -> receiver.onReceive(requireContext(), intent)
+                        "SHOW_WIFI_ALERT" -> stateReceiver.onReceive(requireContext(), intent)
+                        MyDownloadService.RESOURCE_NOT_FOUND_ACTION -> resourceNotFoundReceiver.onReceive(requireContext(), intent)
+                    }
+                }
+            }
+        }
     }
 
-    private fun unregisterReceiver() {
-        val fragmentActivity = activity ?: return
-        val bManager = LocalBroadcastManager.getInstance(fragmentActivity)
-        bManager.unregisterReceiver(receiver)
-        bManager.unregisterReceiver(broadcastReceiver)
-        bManager.unregisterReceiver(stateReceiver)
-        bManager.unregisterReceiver(resourceNotFoundReceiver)
-    }
-
-    suspend fun getLibraryList(mRealm: Realm): List<RealmMyLibrary> {
-        return libraryRepository.getLibraryListForUser(
-            settings.getString("userId", "--")
-        )
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -379,7 +392,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     override fun onPause() {
         super.onPause()
-        unregisterReceiver()
+        broadcastJob?.cancel()
     }
 
     override fun onDetach() {
@@ -416,7 +429,7 @@ abstract class BaseResourceFragment : Fragment() {
     fun addToLibrary(libraryItems: List<RealmMyLibrary?>, selectedItems: ArrayList<Int>) {
         if (!isRealmInitialized()) return
         
-        val userId = profileDbHandler?.userModel?.id ?: return
+        val userId = profileDbHandler.userModel?.id ?: return
 
         try {
             if (!mRealm.isInTransaction) {
@@ -446,7 +459,7 @@ abstract class BaseResourceFragment : Fragment() {
     fun addAllToLibrary(libraryItems: List<RealmMyLibrary?>) {
         if (!isRealmInitialized()) return
 
-        val userId = profileDbHandler?.userModel?.id ?: return
+        val userId = profileDbHandler.userModel?.id ?: return
 
         try {
             if (!mRealm.isInTransaction) {
@@ -482,12 +495,11 @@ abstract class BaseResourceFragment : Fragment() {
         resourceNotFoundDialog?.dismiss()
         resourceNotFoundDialog = null
         convertView = null
+        broadcastJob?.cancel()
         super.onDestroyView()
     }
 
     override fun onDestroy() {
-        profileDbHandler?.onDestroy()
-        profileDbHandler = null
         cleanupRealm()
         super.onDestroy()
     }
@@ -534,18 +546,6 @@ abstract class BaseResourceFragment : Fragment() {
 
                 override fun notAvailable() {}
             })
-        }
-
-        fun getLibraryList(mRealm: Realm, userId: String?): List<RealmMyLibrary> {
-            val l = mRealm.where(RealmMyLibrary::class.java).equalTo("isPrivate", false).findAll()
-            val libList: MutableList<RealmMyLibrary> = ArrayList()
-            val libraries = getLibraries(l)
-            for (item in libraries) {
-                if (item.userId?.contains(userId) == true) {
-                    libList.add(item)
-                }
-            }
-            return libList
         }
 
         private fun getLibraries(l: RealmResults<RealmMyLibrary>): List<RealmMyLibrary> {

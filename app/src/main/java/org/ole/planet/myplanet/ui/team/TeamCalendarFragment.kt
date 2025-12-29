@@ -21,7 +21,7 @@ import com.applandeo.materialcalendarview.CalendarView
 import com.applandeo.materialcalendarview.listeners.OnCalendarDayClickListener
 import com.google.gson.Gson
 import com.google.gson.JsonObject
-import io.realm.RealmResults
+import dagger.hilt.android.AndroidEntryPoint
 import java.net.MalformedURLException
 import java.net.URL
 import java.text.SimpleDateFormat
@@ -30,18 +30,19 @@ import java.time.ZoneId
 import java.util.Calendar
 import java.util.Locale
 import java.util.UUID
-import kotlinx.coroutines.Dispatchers
+import javax.inject.Inject
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AddMeetupBinding
 import org.ole.planet.myplanet.databinding.FragmentEnterpriseCalendarBinding
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.ui.mymeetup.AdapterMeetup
+import org.ole.planet.myplanet.repository.EventsRepository
+import org.ole.planet.myplanet.ui.events.EventsAdapter
 import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class TeamCalendarFragment : BaseTeamFragment() {
     private var _binding: FragmentEnterpriseCalendarBinding? = null
     private val binding get() = _binding!!
@@ -52,9 +53,13 @@ class TeamCalendarFragment : BaseTeamFragment() {
     private lateinit var end: Calendar
     private lateinit var clickedCalendar: Calendar
     private lateinit var calendarEventsMap: MutableMap<CalendarDay, RealmMeetup>
-    private lateinit var meetupList: RealmResults<RealmMeetup>
+    private var meetupList: List<RealmMeetup> = emptyList()
     private val eventDates: MutableList<Calendar> = mutableListOf()
     private var addMeetupDialog: AlertDialog? = null
+    private var meetupDialog: AlertDialog? = null
+    private var meetupAdapter: EventsAdapter? = null
+    @Inject
+    lateinit var eventsRepository: EventsRepository
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentEnterpriseCalendarBinding.inflate(inflater, container, false)
@@ -99,51 +104,61 @@ class TeamCalendarFragment : BaseTeamFragment() {
             } else if (!link.isValidWebLink() && link.isNotEmpty()) {
                 Utilities.toast(activity, getString(R.string.invalid_url))
             } else {
-                try {
-                    if (!mRealm.isInTransaction) {
-                        mRealm.beginTransaction()
+                val defaultPlaceholder = getString(R.string.click_here_to_pick_time)
+                val startTimeText = "${addMeetupBinding.tvStartTime.text}"
+                val endTimeText = "${addMeetupBinding.tvEndTime.text}"
+                val recurringId = addMeetupBinding.rgRecuring.checkedRadioButtonId
+                val rb = addMeetupBinding.rgRecuring.findViewById<RadioButton>(recurringId)
+                val recurringText = rb?.text?.toString()
+                val teamPlanetCode = team?.teamPlanetCode
+                val userName = user?.name
+                val startMillis = start.timeInMillis
+                val endMillis = end.timeInMillis
+                val currentTeamId = teamId
+
+                lifecycleScope.launch {
+                    val meetup = RealmMeetup().apply {
+                        id = "${UUID.randomUUID()}"
+                        this.title = title
+                        meetupLink = link
+                        this.description = description
+                        meetupLocation = location
+                        creator = userName
+                        startDate = startMillis
+                        endDate = endMillis
+                        if (startTimeText == defaultPlaceholder) {
+                            startTime = ""
+                        } else {
+                            startTime = startTimeText
+                        }
+                        if (endTimeText == defaultPlaceholder) {
+                            endTime = ""
+                        } else {
+                            endTime = endTimeText
+                        }
+                        createdDate = System.currentTimeMillis()
+                        sourcePlanet = teamPlanetCode
+                        val jo = JsonObject()
+                        jo.addProperty("type", "local")
+                        jo.addProperty("planetCode", teamPlanetCode)
+                        sync = Gson().toJson(jo)
+                        if (recurringText != null) {
+                            recurring = recurringText
+                        }
+                        val ob = JsonObject()
+                        ob.addProperty("teams", currentTeamId)
+                        this.link = Gson().toJson(ob)
+                        this.teamId = currentTeamId
                     }
-                    val defaultPlaceholder = getString(R.string.click_here_to_pick_time)
-                    val meetup = mRealm.createObject(RealmMeetup::class.java, "${UUID.randomUUID()}")
-                    meetup.title = title
-                    meetup.meetupLink = link
-                    meetup.description = description
-                    meetup.meetupLocation = location
-                    meetup.creator = user?.name
-                    meetup.startDate = start.timeInMillis
-                    meetup.endDate = end.timeInMillis
-                    if (addMeetupBinding.tvStartTime.text == defaultPlaceholder) {
-                        meetup.startTime = ""
+                    val success = eventsRepository.createMeetup(meetup)
+                    if (success) {
+                        Utilities.toast(activity, getString(R.string.meetup_added))
+                        addMeetupDialog?.dismiss()
+                        refreshCalendarView()
+                        refreshMeetupDialog()
                     } else {
-                        meetup.startTime = "${addMeetupBinding.tvStartTime.text}"
+                        Utilities.toast(activity, getString(R.string.meetup_not_added))
                     }
-                    if (addMeetupBinding.tvEndTime.text == defaultPlaceholder) {
-                        meetup.endTime = ""
-                    } else {
-                        meetup.endTime = "${addMeetupBinding.tvEndTime.text}"
-                    }
-                    meetup.createdDate = System.currentTimeMillis()
-                    meetup.sourcePlanet = team?.teamPlanetCode
-                    val jo = JsonObject()
-                    jo.addProperty("type", "local")
-                    jo.addProperty("planetCode", team?.teamPlanetCode)
-                    meetup.sync = Gson().toJson(jo)
-                    val rb = addMeetupBinding.rgRecuring.findViewById<RadioButton>(addMeetupBinding.rgRecuring.checkedRadioButtonId)
-                    if (rb != null) {
-                        meetup.recurring = "${rb.text}"
-                    }
-                    val ob = JsonObject()
-                    ob.addProperty("teams", teamId)
-                    meetup.link = Gson().toJson(ob)
-                    meetup.teamId = teamId
-                    mRealm.commitTransaction()
-                    Utilities.toast(activity, getString(R.string.meetup_added))
-                    addMeetupDialog?.dismiss()
-                    refreshCalendarView()
-                } catch (e: Exception) {
-                    mRealm.cancelTransaction()
-                    e.printStackTrace()
-                    Utilities.toast(activity, getString(R.string.meetup_not_added))
                 }
             }
         }
@@ -211,35 +226,37 @@ class TeamCalendarFragment : BaseTeamFragment() {
     private fun setupCalendarClickListener(){
         binding.calendarView.setOnCalendarDayClickListener(object : OnCalendarDayClickListener {
             override fun onClick(calendarDay: CalendarDay) {
-                meetupList = mRealm.where(RealmMeetup::class.java).equalTo("teamId", teamId).findAll()
-                clickedCalendar = calendarDay.calendar
-                val clickedDateInMillis = clickedCalendar.timeInMillis
-                val clickedDate = Instant.ofEpochMilli(clickedDateInMillis)
-                    .atZone(ZoneId.systemDefault())
-                    .toLocalDate()
-
-                val markedDates = meetupList.mapNotNull { meetup ->
-                    val meetupDate = Instant.ofEpochMilli(meetup.startDate)
+                lifecycleScope.launch {
+                    meetupList = eventsRepository.getMeetupsForTeam(teamId)
+                    clickedCalendar = calendarDay.calendar
+                    val clickedDateInMillis = clickedCalendar.timeInMillis
+                    val clickedDate = Instant.ofEpochMilli(clickedDateInMillis)
                         .atZone(ZoneId.systemDefault())
                         .toLocalDate()
-                    if (meetupDate == clickedDate) meetup else null
-                }
 
-                if (markedDates.isNotEmpty()) {
-                    showMeetupDialog(markedDates)
-                } else {
-                    if(arguments?.getBoolean("fromLogin", false) != false || user?.id?.startsWith("guest") == true){
-                        binding.calendarView.selectedDates = eventDates
-                    } else{
-                        start = clickedCalendar.clone() as Calendar
-                        end = clickedCalendar.clone() as Calendar
-                        showMeetupAlert()
+                    val markedDates = meetupList.filter { meetup ->
+                        val meetupDate = Instant.ofEpochMilli(meetup.startDate)
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalDate()
+                        meetupDate == clickedDate
                     }
-                }
-                if (!selectedDates.contains(clickedCalendar)) {
-                    selectedDates.add(clickedCalendar)
-                } else {
-                    selectedDates.remove(clickedCalendar)
+
+                    if (markedDates.isNotEmpty()) {
+                        showMeetupDialog(markedDates)
+                    } else {
+                        if(arguments?.getBoolean("fromLogin", false) != false || user?.id?.startsWith("guest") == true){
+                            binding.calendarView.selectedDates = eventDates
+                        } else{
+                            start = clickedCalendar.clone() as Calendar
+                            end = clickedCalendar.clone() as Calendar
+                            showMeetupAlert()
+                        }
+                    }
+                    if (!selectedDates.contains(clickedCalendar)) {
+                        selectedDates.add(clickedCalendar)
+                    } else {
+                        selectedDates.remove(clickedCalendar)
+                    }
                 }
             }
         })
@@ -274,9 +291,11 @@ class TeamCalendarFragment : BaseTeamFragment() {
         recyclerView.layoutParams.height = cardHeight + extraHeight
         recyclerView.requestLayout()
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
-        recyclerView.adapter = AdapterMeetup(meetupList)
+        meetupAdapter = EventsAdapter()
+        recyclerView.adapter = meetupAdapter
+        meetupAdapter?.submitList(meetupList)
 
-        val dialog = AlertDialog.Builder(requireContext())
+        meetupDialog = AlertDialog.Builder(requireContext())
             .setView(dialogView)
             .create()
         val btnAdd = dialogView.findViewById<Button>(R.id.btnadd)
@@ -286,7 +305,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
             btnAdd.visibility = View.GONE
         }
         dialogView.findViewById<Button>(R.id.btnClose).setOnClickListener {
-            dialog.dismiss()
+            meetupDialog?.dismiss()
         }
         btnAdd.setOnClickListener {
             if(arguments?.getBoolean("fromLogin", false) != true){
@@ -296,47 +315,58 @@ class TeamCalendarFragment : BaseTeamFragment() {
             }
         }
 
-        dialog.setOnDismissListener {
+        meetupDialog?.setOnDismissListener {
             eventDates.add(clickedCalendar)
-            lifecycleScope.launch(Dispatchers.Main) {
+            lifecycleScope.launch {
                 binding.calendarView.selectedDates = emptyList()
                 binding.calendarView.selectedDates = eventDates.toList()
             }
             binding.calendarView.selectedDates = eventDates
         }
 
-        dialog.show()
+        meetupDialog?.show()
     }
 
     private fun refreshCalendarView() {
         if (teamId.isEmpty()) {
             return
         }
-        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-            val newDates = mutableListOf<Calendar>()
-            databaseService.withRealm { realm ->
-                try {
-                    val meetupList = realm.where(RealmMeetup::class.java).equalTo("teamId", teamId).findAll()
-                    val calendarInstance = Calendar.getInstance()
-
-                    for (meetup in meetupList) {
-                        val startDateMillis = meetup.startDate
-                        calendarInstance.timeInMillis = startDateMillis
-                        newDates.add(calendarInstance.clone() as Calendar)
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
+        viewLifecycleOwner.lifecycleScope.launch {
+            val newDates = eventsRepository.getMeetupsForTeam(teamId).mapTo(mutableListOf()) { meetup ->
+                val calendarInstance = Calendar.getInstance()
+                calendarInstance.timeInMillis = meetup.startDate
+                calendarInstance
             }
-            withContext(Dispatchers.Main) {
-                if (isAdded && activity != null) {
-                    eventDates.clear()
-                    eventDates.addAll(newDates)
-                    binding.calendarView.selectedDates = ArrayList(newDates)
-                }
+
+            if (isAdded && activity != null) {
+                eventDates.clear()
+                eventDates.addAll(newDates)
+                binding.calendarView.selectedDates = ArrayList(newDates)
             }
         }
     }
 
-    
+    private fun refreshMeetupDialog() {
+        if (!::clickedCalendar.isInitialized || meetupDialog?.isShowing != true) {
+            return
+        }
+        viewLifecycleOwner.lifecycleScope.launch {
+            val updatedMeetupList = eventsRepository.getMeetupsForTeam(teamId)
+            val clickedDateInMillis = clickedCalendar.timeInMillis
+            val clickedDate = Instant.ofEpochMilli(clickedDateInMillis)
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate()
+
+            val filteredMeetups = updatedMeetupList.filter { meetup ->
+                val meetupDate = Instant.ofEpochMilli(meetup.startDate)
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDate()
+                meetupDate == clickedDate
+            }
+
+            meetupAdapter?.submitList(filteredMeetups)
+        }
+    }
+
+
 }

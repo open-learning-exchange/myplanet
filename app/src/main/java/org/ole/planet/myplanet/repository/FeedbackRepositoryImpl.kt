@@ -8,7 +8,7 @@ import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
-import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.RealmUserModel
 
@@ -36,7 +36,8 @@ class FeedbackRepositoryImpl @Inject constructor(
             feedback.title = "Question regarding /"
             feedback.url = "/"
         }
-        feedback.openTime = Date().time
+        val timestamp = Date().time
+        feedback.openTime = timestamp
         feedback.owner = user
         feedback.source = user
         feedback.status = "Open"
@@ -45,15 +46,15 @@ class FeedbackRepositoryImpl @Inject constructor(
         feedback.parentCode = "dev"
         val obj = JsonObject().apply {
             addProperty("message", message)
-            addProperty("time", Date().time.toString() + "")
-            addProperty("user", user + "")
+            addProperty("time", timestamp.toString())
+            addProperty("user", user.orEmpty())
         }
         val msgArray = JsonArray().apply { add(obj) }
         feedback.setMessages(msgArray)
         return feedback
     }
 
-    override fun getFeedback(userModel: RealmUserModel?): Flow<List<RealmFeedback>> =
+    override suspend fun getFeedback(userModel: RealmUserModel?): Flow<List<RealmFeedback>> =
         queryListFlow(RealmFeedback::class.java) {
             if (userModel?.isManager() == true) {
                 sort("openTime", Sort.DESCENDING)

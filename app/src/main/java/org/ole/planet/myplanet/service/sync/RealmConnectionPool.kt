@@ -4,12 +4,11 @@ import android.content.Context
 import io.realm.Realm
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicInteger
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
-import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.data.DatabaseService
 
 data class RealmPoolConfig(
     val maxConnections: Int = 5,
@@ -40,8 +39,6 @@ class RealmConnectionPool(
     private val poolMutex = Mutex()
     
     private var lastValidationTime = 0L
-    private var isShuttingDown = false
-    
     suspend fun <T> useRealm(operation: suspend (Realm) -> T): T {
         // Check if current thread already has a realm instance
         val existingRealm = threadLocalConnections.get()
@@ -61,26 +58,7 @@ class RealmConnectionPool(
         }
     }
     
-    suspend fun <T> useRealmTransaction(operation: suspend (Realm) -> T): T {
-        return useRealm { realm ->
-            var result: T? = null
-            realm.executeTransaction { transactionRealm ->
-                // Note: This is a simplified approach. In practice, you'd need to handle
-                // the fact that executeTransaction is blocking and doesn't support suspend functions
-                // You might need to use executeTransactionAsync with callbacks
-                runBlocking {
-                    result = operation(transactionRealm)
-                }
-            }
-            result!!
-        }
-    }
-    
     private suspend fun acquireConnection(): PooledRealm = poolMutex.withLock {
-        if (isShuttingDown) {
-            throw IllegalStateException("Connection pool is shutting down")
-        }
-        
         validateConnectionsIfNeeded()
         
         // Try to get an available connection
@@ -113,7 +91,7 @@ class RealmConnectionPool(
     }
     
     private suspend fun releaseConnection(pooledRealm: PooledRealm) = poolMutex.withLock {
-        if (!isShuttingDown && isConnectionValid(pooledRealm)) {
+        if (isConnectionValid(pooledRealm)) {
             val updatedConnection = pooledRealm.copy(
                 lastUsedAt = System.currentTimeMillis(),
                 isInUse = false
@@ -180,56 +158,6 @@ class RealmConnectionPool(
             availableConnections.addAll(validConnections)
         }
     }
-    
-    suspend fun shutdown() = poolMutex.withLock {
-        isShuttingDown = true
-        
-        // Close all connections
-        allConnections.values.forEach { closeConnection(it) }
-        availableConnections.clear()
-        allConnections.clear()
-        activeConnections.set(0)
-    }
-    
-    fun getPoolStats(): PoolStats {
-        return PoolStats(
-            totalConnections = allConnections.size,
-            activeConnections = allConnections.values.count { it.isInUse },
-            availableConnections = availableConnections.size,
-            maxConnections = config.maxConnections
-        )
-    }
-}
-
-data class PoolStats(
-    val totalConnections: Int,
-    val activeConnections: Int,
-    val availableConnections: Int,
-    val maxConnections: Int
-)
-
-// Helper function to handle the blocking executeTransaction in a suspend context
-private suspend fun <T> Realm.executeTransactionSuspend(operation: suspend (Realm) -> T): T {
-    return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-        var result: T? = null
-        var exception: Exception? = null
-        
-        executeTransaction { realm ->
-            try {
-                // This is still problematic as executeTransaction doesn't support suspend
-                // In a real implementation, you'd need to restructure this
-                kotlinx.coroutines.runBlocking {
-                    result = operation(realm)
-                }
-            } catch (e: Exception) {
-                exception = e
-                throw e
-            }
-        }
-        
-        exception?.let { throw it }
-        result!!
-    }
 }
 
 class RealmPoolManager private constructor() {
@@ -262,17 +190,4 @@ class RealmPoolManager private constructor() {
         return pool.useRealm(operation)
     }
     
-    suspend fun <T> useRealmTransaction(operation: suspend (Realm) -> T): T {
-        val pool = connectionPool ?: throw IllegalStateException("Pool not initialized")
-        return pool.useRealmTransaction(operation)
-    }
-    
-    fun getPoolStats(): PoolStats? {
-        return connectionPool?.getPoolStats()
-    }
-    
-    suspend fun shutdown() = mutex.withLock {
-        connectionPool?.shutdown()
-        connectionPool = null
-    }
 }

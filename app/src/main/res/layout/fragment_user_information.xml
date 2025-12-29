@@ -192,18 +192,19 @@
         </LinearLayout>
 
         <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/ltAge"
+            android:id="@+id/ltYob"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textColorHint="@color/hint_color"
             android:visibility="gone">
 
             <EditText
-                android:id="@+id/etAge"
+                android:id="@+id/etYob"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:backgroundTint="@color/hint_color"
-                android:hint="@string/age"
+                android:hint="@string/year_of_birth"
+                android:maxLength="4"
                 android:inputType="number"
                 android:textColor="@color/daynight_textColor" />
         </com.google.android.material.textfield.TextInputLayout>

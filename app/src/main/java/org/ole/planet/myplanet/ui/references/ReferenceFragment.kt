@@ -32,7 +32,7 @@ class ReferenceFragment : Fragment() {
         _binding = FragmentReferenceBinding.inflate(inflater, container, false)
         val list = listOf(
             Reference(getString(R.string.maps), android.R.drawable.ic_dialog_map),
-            Reference(getString(R.string.engilsh_dictionary), R.drawable.ic_dictionary)
+            Reference(getString(R.string.english_dictionary), R.drawable.ic_dictionary)
         )
         binding.rvReferences.layoutManager = GridLayoutManager(activity, 3)
         setRecyclerAdapter(list)

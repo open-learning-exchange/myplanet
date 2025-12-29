@@ -1,12 +1,12 @@
 package org.ole.planet.myplanet.model
 
-import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.RealmResults
+import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 import java.util.Locale
 import org.ole.planet.myplanet.utilities.JsonUtils
@@ -17,6 +17,7 @@ open class RealmExamQuestion : RealmObject() {
     var header: String? = null
     var body: String? = null
     var type: String? = null
+    @Index
     var examId: String? = null
     private var correctChoice: RealmList<String>? = null
     var marks: String? = null
@@ -68,7 +69,7 @@ open class RealmExamQuestion : RealmObject() {
                     header = JsonUtils.getString("title", question)
                     marks = JsonUtils.getString("marks", question)
                     choices = if (question.has("choices")) {
-                        Gson().toJson(JsonUtils.getJsonArray("choices", question))
+                        JsonUtils.gson.toJson(JsonUtils.getJsonArray("choices", question))
                     } else {
                         "[]"
                     }

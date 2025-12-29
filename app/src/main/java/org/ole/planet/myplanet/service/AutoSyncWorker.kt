@@ -9,11 +9,15 @@ import androidx.work.Worker
 import androidx.work.WorkerParameters
 import dagger.hilt.android.EntryPointAccessors
 import java.util.Date
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.callback.SyncListener
-import org.ole.planet.myplanet.datamanager.Service
-import org.ole.planet.myplanet.datamanager.Service.CheckVersionCallback
+import org.ole.planet.myplanet.data.Service
+import org.ole.planet.myplanet.data.Service.CheckVersionCallback
 import org.ole.planet.myplanet.di.AutoSyncEntryPoint
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.ui.sync.LoginActivity
@@ -26,12 +30,11 @@ class AutoSyncWorker(
     private val context: Context,
     workerParams: WorkerParameters
 ) : Worker(context, workerParams), SyncListener, CheckVersionCallback, SuccessListener {
-    
     private lateinit var preferences: SharedPreferences
     private lateinit var syncManager: SyncManager
     private lateinit var uploadManager: UploadManager
     private lateinit var uploadToShelfService: UploadToShelfService
-    
+    private val workerScope = CoroutineScope(Dispatchers.IO)
     override fun doWork(): Result {
         preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         
@@ -64,7 +67,7 @@ class AutoSyncWorker(
     }
 
     override fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean) {
-        startDownloadUpdate(context, UrlUtils.getApkUpdateUrl(info?.localapkpath), null)
+        startDownloadUpdate(context, UrlUtils.getApkUpdateUrl(info?.localapkpath), null, workerScope)
     }
 
     override fun onCheckingVersion() {}
@@ -78,22 +81,25 @@ class AutoSyncWorker(
             }
             if (!MainApplication.isSyncRunning) {
                 MainApplication.isSyncRunning = true
-                uploadManager.uploadExamResult(this)
-                uploadManager.uploadFeedback(this)
-                uploadManager.uploadAchievement()
-                uploadManager.uploadResourceActivities("")
-                uploadManager.uploadUserActivities(this)
-                uploadManager.uploadCourseActivities()
-                uploadManager.uploadSearchActivity()
-                uploadManager.uploadRating()
-                uploadManager.uploadResource(this)
-                uploadManager.uploadNews()
-                uploadManager.uploadTeams()
-                uploadManager.uploadTeamTask()
-                uploadManager.uploadMeetups()
-                uploadManager.uploadCrashLog()
-                uploadManager.uploadSubmissions()
-                uploadManager.uploadActivities { MainApplication.isSyncRunning = false }
+                workerScope.launch {
+                    uploadManager.uploadExamResult(this@AutoSyncWorker)
+                    uploadManager.uploadFeedback()
+                    uploadManager.uploadAchievement()
+                    uploadManager.uploadResourceActivities("")
+                    uploadManager.uploadUserActivities(this@AutoSyncWorker)
+                    uploadManager.uploadCourseActivities()
+                    uploadManager.uploadSearchActivity()
+                    uploadManager.uploadRating()
+                    uploadManager.uploadResource(this@AutoSyncWorker)
+                    uploadManager.uploadNews()
+                    uploadManager.uploadTeams()
+                    uploadManager.uploadTeamTask()
+                    uploadManager.uploadMeetups()
+                    uploadManager.uploadAdoptedSurveys()
+                    uploadManager.uploadCrashLog()
+                    uploadManager.uploadSubmissions()
+                    uploadManager.uploadActivities { MainApplication.isSyncRunning = false }
+                }
             }
         }
     }
@@ -101,6 +107,11 @@ class AutoSyncWorker(
     override fun onSuccess(success: String?) {
         val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         settings.edit { putLong("lastUsageUploaded", Date().time) }
+    }
+
+    override fun onStopped() {
+        super.onStopped()
+        workerScope.cancel()
     }
 
     private fun isAppInForeground(context: Context): Boolean {

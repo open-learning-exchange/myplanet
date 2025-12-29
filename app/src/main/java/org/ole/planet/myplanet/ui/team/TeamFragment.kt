@@ -1,6 +1,6 @@
 package org.ole.planet.myplanet.ui.team
 
-import android.content.Context
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
@@ -10,52 +10,47 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Case
-import io.realm.Realm
-import io.realm.RealmQuery
-import io.realm.RealmResults
-import java.util.Date
 import javax.inject.Inject
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
 import org.ole.planet.myplanet.databinding.FragmentTeamBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getMyTeamsByUserId
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.TeamRepository
+import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.utilities.AndroidDecrypter
-import org.ole.planet.myplanet.utilities.Constants
+import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
-class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
+class TeamFragment : Fragment(), TeamListAdapter.OnClickTeamItem, TeamListAdapter.OnUpdateCompleteListener,
+    TeamListAdapter.OnTeamActionsListener {
     private var _binding: FragmentTeamBinding? = null
     private val binding get() = _binding!!
     private lateinit var alertCreateTeamBinding: AlertCreateTeamBinding
-    private lateinit var mRealm: Realm
     @Inject
-    lateinit var databaseService: DatabaseService
-    @Inject
-    lateinit var teamRepository: TeamRepository
+    lateinit var teamsRepository: TeamsRepository
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
+    @Inject
+    lateinit var sharedPrefManager: SharedPrefManager
+    @Inject
+    @AppPreferences
+    lateinit var settings: SharedPreferences
+    private val viewModel: TeamViewModel by viewModels()
     var type: String? = null
     private var fromDashboard: Boolean = false
     var user: RealmUserModel? = null
-    private var teamList: RealmResults<RealmMyTeam>? = null
-    private lateinit var adapterTeamList: AdapterTeamList
+    private var teamList: List<RealmMyTeam> = emptyList()
+    private lateinit var teamListAdapter: TeamListAdapter
     private var conditionApplied: Boolean = false
-    private val settings by lazy {
-        requireActivity().getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
-    }
+    private var textWatcher: TextWatcher? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -70,8 +65,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTeamBinding.inflate(inflater, container, false)
-        mRealm = databaseService.realmInstance
-        user = userProfileDbHandler.userModel?.let { userProfileDbHandler.mRealm.copyFromRealm(it) }
+        user = userProfileDbHandler.getUserModelCopy()
 
         if (user?.isGuest() == true) {
             binding.addTeam.visibility = View.GONE
@@ -85,28 +79,10 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         } else {
             getString(R.string.team)
         }
-        if (fromDashboard) {
-            teamList = getMyTeamsByUserId(mRealm, settings)
-        } else {
-            val query = mRealm.where(RealmMyTeam::class.java)
-                .isEmpty("teamId")
-                .notEqualTo("status", "archived")
-            teamList = if (TextUtils.isEmpty(type) || type == "team") {
-                conditionApplied = false
-                query.notEqualTo("type", "enterprise").findAllAsync()
-            } else {
-                conditionApplied = true
-                query.equalTo("type", "enterprise").findAllAsync()
-            }
-        }
-
-        teamList?.addChangeListener { _ ->
-            updatedTeamList()
-        }
         return binding.root
     }
 
-     fun createTeamAlert(team: RealmMyTeam?) {
+     fun createTeamAlert(team: TeamData?) {
         alertCreateTeamBinding = AlertCreateTeamBinding.inflate(LayoutInflater.from(context))
         if (TextUtils.equals(type, "enterprise")) {
             alertCreateTeamBinding.spnTeamType.visibility = View.GONE
@@ -133,64 +109,87 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         dialog.setOnShowListener {
             val okButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
             okButton.setOnClickListener {
-                val map = HashMap<String, String>()
-                val userId = user?._id
                 val name = alertCreateTeamBinding.etName.text.toString().trim()
-                map["desc"] = alertCreateTeamBinding.etDescription.text.toString()
-                map["services"] = alertCreateTeamBinding.etServices.text.toString()
-                map["rules"] = alertCreateTeamBinding.etRules.text.toString()
+                val description = alertCreateTeamBinding.etDescription.text.toString()
+                val services = alertCreateTeamBinding.etServices.text.toString()
+                val rules = alertCreateTeamBinding.etRules.text.toString()
+                val selectedTeamType =
+                    if (alertCreateTeamBinding.spnTeamType.selectedItemPosition == 0) {
+                        "local"
+                    } else {
+                        "sync"
+                    }
+                val currentUser = user
                 when {
                     name.isEmpty() -> {
                         Utilities.toast(activity, getString(R.string.name_is_required))
                         alertCreateTeamBinding.etName.error = getString(R.string.please_enter_a_name)
                     } else -> {
-                        if (team == null) {
-                            viewLifecycleOwner.lifecycleScope.launch {
-                                createTeam(name,
-                                    if (alertCreateTeamBinding.spnTeamType.selectedItemPosition == 0) "local" else "sync", map,
-                                    alertCreateTeamBinding.switchPublic.isChecked
-                                )
-                                withContext(Dispatchers.Main) {
-                                    binding.etSearch.visibility = View.VISIBLE
-                                    binding.tableTitle.visibility = View.VISIBLE
-                                    Utilities.toast(activity, getString(R.string.team_created))
-                                    refreshTeamList()
-                                    dialog.dismiss()
+                        val failureMessage = getString(R.string.request_failed_please_retry)
+                        val userModel = currentUser ?: run {
+                            Utilities.toast(activity, failureMessage)
+                            return@setOnClickListener
+                        }
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            val teamTypeForValidation = if (type == "enterprise") "enterprise" else "team"
+                            val excludeTeamId = if (team != null) (team._id ?: team.teamId) else null
+                            val nameExists = teamsRepository.isTeamNameExists(name, teamTypeForValidation, excludeTeamId)
+
+                            if (nameExists) {
+                                val duplicateMessage = if (type == "enterprise") {
+                                    getString(R.string.enterprise_name_already_exists)
+                                } else {
+                                    getString(R.string.team_name_already_exists)
                                 }
+                                Utilities.toast(activity, duplicateMessage)
+                                alertCreateTeamBinding.etName.error = duplicateMessage
+                                return@launch
                             }
-                        } else {
-                            viewLifecycleOwner.lifecycleScope.launch {
-                                withContext(Dispatchers.IO) {
-                                    val backgroundRealm = databaseService.realmInstance
-                                    try {
-                                        val teamToUpdate = backgroundRealm.where(RealmMyTeam::class.java)
-                                            .equalTo("_id", team._id)
-                                            .findFirst()
-                                        if (teamToUpdate != null) {
-                                            if (!backgroundRealm.isInTransaction) {
-                                                backgroundRealm.beginTransaction()
-                                            }
-                                            teamToUpdate.name = name
-                                            teamToUpdate.services = "${alertCreateTeamBinding.etServices.text}"
-                                            teamToUpdate.rules = "${alertCreateTeamBinding.etRules.text}"
-                                            teamToUpdate.limit = 12
-                                            teamToUpdate.description = "${alertCreateTeamBinding.etDescription.text}"
-                                            teamToUpdate.createdBy = userId
-                                            teamToUpdate.updated = true
-                                            backgroundRealm.commitTransaction()
-                                        }
-                                    } finally {
-                                        if (!backgroundRealm.isClosed) {
-                                            backgroundRealm.close()
-                                        }
-                                    }
-                                }
-                                withContext(Dispatchers.Main) {
+
+                            if (team == null) {
+                                teamsRepository.createTeam(
+                                    category = type,
+                                    name = name,
+                                    description = description,
+                                    services = services,
+                                    rules = rules,
+                                    teamType = selectedTeamType,
+                                    isPublic = alertCreateTeamBinding.switchPublic.isChecked,
+                                    user = userModel,
+                                ).onSuccess {
                                     binding.etSearch.visibility = View.VISIBLE
                                     binding.tableTitle.visibility = View.VISIBLE
                                     Utilities.toast(activity, getString(R.string.team_created))
                                     refreshTeamList()
                                     dialog.dismiss()
+                                }.onFailure {
+                                    Utilities.toast(activity, failureMessage)
+                                }
+                            } else {
+                                val targetTeamId = team._id ?: team.teamId
+                                if (targetTeamId.isNullOrBlank()) {
+                                    Utilities.toast(activity, failureMessage)
+                                    return@launch
+                                }
+                                teamsRepository.updateTeam(
+                                    teamId = targetTeamId,
+                                    name = name,
+                                    description = description,
+                                    services = services,
+                                    rules = rules,
+                                    updatedBy = userModel._id,
+                                ).onSuccess { updated ->
+                                    if (updated) {
+                                        binding.etSearch.visibility = View.VISIBLE
+                                        binding.tableTitle.visibility = View.VISIBLE
+                                        Utilities.toast(activity, getString(R.string.team_created))
+                                        refreshTeamList()
+                                        dialog.dismiss()
+                                    } else {
+                                        Utilities.toast(activity, failureMessage)
+                                    }
+                                }.onFailure {
+                                    Utilities.toast(activity, failureMessage)
                                 }
                             }
                         }
@@ -201,209 +200,131 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         dialog.show()
     }
 
-    private suspend fun createTeam(name: String?, type: String?, map: HashMap<String, String>, isPublic: Boolean) {
-        val user = userProfileDbHandler.userModel?.let {
-            userProfileDbHandler.mRealm.copyFromRealm(it)
-        } ?: return
-
-        withContext(Dispatchers.IO) {
-            val backgroundRealm = databaseService.realmInstance
-            try {
-                if (!backgroundRealm.isInTransaction) backgroundRealm.beginTransaction()
-                val teamId = AndroidDecrypter.generateIv()
-                val team = backgroundRealm.createObject(RealmMyTeam::class.java, teamId)
-                team.status = "active"
-                team.createdDate = Date().time
-                if (TextUtils.equals(this@TeamFragment.type, "enterprise")) {
-                    team.type = "enterprise"
-                    team.services = map["services"]
-                    team.rules = map["rules"]
-                } else {
-                    team.type = "team"
-                    team.teamType = type
-                }
-                team.name = name
-                team.description = map["desc"]
-                team.createdBy = user._id
-                team.teamId = ""
-                team.isPublic = isPublic
-                team.userId = user.id
-                team.parentCode = user.parentCode
-                team.teamPlanetCode = user.planetCode
-                team.updated = true
-
-                val teamMemberObj = backgroundRealm.createObject(RealmMyTeam::class.java, AndroidDecrypter.generateIv())
-                teamMemberObj.userId = user._id
-                teamMemberObj.teamId = teamId
-                teamMemberObj.teamPlanetCode = user.planetCode
-                teamMemberObj.userPlanetCode = user.planetCode
-                teamMemberObj.docType = "membership"
-                teamMemberObj.isLeader = true
-                teamMemberObj.teamType = type
-                teamMemberObj.updated = true
-
-                backgroundRealm.commitTransaction()
-            } finally {
-                if (!backgroundRealm.isClosed) {
-                    backgroundRealm.close()
-                }
-            }
-        }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        setTeamList()
-    }
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        binding.rvTeamList.layoutManager = LinearLayoutManager(activity)
-        setTeamList()
-        binding.etSearch.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
-            override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {
-                if (TextUtils.isEmpty(charSequence)) {
-                    showNoResultsMessage(false)
-                    updatedTeamList()
-                    return
-                }
-                var list: List<RealmMyTeam>
-                var conditionApplied = false
-                if(fromDashboard){
-                    list = teamList?.filter {
-                        it.name?.contains(charSequence.toString(), ignoreCase = true) == true
-                    } ?: emptyList()
-                } else {
-                    val query = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId")
-                        .notEqualTo("status", "archived")
-                        .contains("name", charSequence.toString(), Case.INSENSITIVE)
-                    val result = getList(query)
-                    list = result.first
-                    conditionApplied = result.second
-                }
-
-                if (list.isEmpty()) {
-                    showNoResultsMessage(true, charSequence.toString())
-                    binding.rvTeamList.adapter = null
-                } else {
-                    showNoResultsMessage(false)
-                    val sortedList = list.sortedWith(compareByDescending<RealmMyTeam> {
-                        it.name?.startsWith(charSequence.toString(), ignoreCase = true)
-                    }.thenBy { it.name })
-
-                    val adapterTeamList = AdapterTeamList(
-                        activity as Context,
-                        sortedList,
-                        mRealm,
-                        childFragmentManager,
-                        teamRepository,
-                    )
-                    adapterTeamList.setTeamListener(this@TeamFragment)
-                    binding.rvTeamList.adapter = adapterTeamList
-                    listContentDescription(conditionApplied)
-                }
-            }
-
-            override fun afterTextChanged(editable: Editable) {}
-        })
+        setupRecyclerView()
+        observeTeamData()
+        refreshTeamList()
+        setupTextWatcher()
     }
 
-    private fun getList(query: RealmQuery<RealmMyTeam>): Pair<List<RealmMyTeam>, Boolean> {
-        var queried = query
-        val conditionApplied: Boolean
-        queried = if (TextUtils.isEmpty(type) || type == "team") {
-            conditionApplied = false
-            queried.notEqualTo("type", "enterprise")
-        } else {
-            conditionApplied = true
-            queried.equalTo("type", "enterprise")
+    private fun setupRecyclerView() {
+        binding.rvTeamList.layoutManager = LinearLayoutManager(activity)
+        teamListAdapter = TeamListAdapter(
+            requireActivity(),
+            childFragmentManager,
+            user,
+            sharedPrefManager
+        ).apply {
+            setType(type)
+            setTeamListener(this@TeamFragment)
+            setUpdateCompleteListener(this@TeamFragment)
+            setTeamActionsListener(this@TeamFragment)
+        }
+        binding.rvTeamList.adapter = teamListAdapter
+    }
+
+    private fun observeTeamData() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.teamData.collectLatest { teamDataList ->
+                teamListAdapter.submitList(teamDataList)
+                onUpdateComplete(teamDataList.size)
+                listContentDescription(conditionApplied)
+            }
+        }
+    }
+
+    private fun setupTextWatcher() {
+        textWatcher = object : TextWatcher {
+            override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
+            override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {
+                val filteredList = if (TextUtils.isEmpty(charSequence)) {
+                    teamList
+                } else {
+                    teamList.filter {
+                        it.name?.contains(charSequence.toString(), ignoreCase = true) == true
+                    }
+                }
+                viewModel.prepareTeamData(filteredList, user?.id)
+            }
+            override fun afterTextChanged(editable: Editable) {}
+        }
+        binding.etSearch.addTextChangedListener(textWatcher)
+    }
+
+
+    private fun getList(searchText: String): Pair<List<RealmMyTeam>, Boolean> {
+        val nameFilteredList = teamList.filter {
+            it.name?.contains(searchText, ignoreCase = true) == true
         }
 
-        return Pair(queried.findAll(), conditionApplied)
+        val typeFilteredList: List<RealmMyTeam>
+        val newConditionApplied: Boolean
+
+        if (TextUtils.isEmpty(type) || type == "team") {
+            typeFilteredList = nameFilteredList.filter { it.type != "enterprise" }
+            newConditionApplied = false
+        } else {
+            typeFilteredList = nameFilteredList.filter { it.type == "enterprise" }
+            newConditionApplied = true
+        }
+
+        return Pair(typeFilteredList, newConditionApplied)
     }
 
     private fun setTeamList() {
-        val list = teamList ?: return
-        adapterTeamList = activity?.let {
-            AdapterTeamList(it, list, mRealm, childFragmentManager, teamRepository)
-        } ?: return
-        adapterTeamList.setType(type)
-        adapterTeamList.setTeamListener(this@TeamFragment)
-        requireView().findViewById<View>(R.id.type).visibility =
-            if (type == null) {
-                View.GONE
-            } else {
-                View.VISIBLE
-            }
-        binding.rvTeamList.adapter = adapterTeamList
+        viewModel.prepareTeamData(teamList, user?.id)
         listContentDescription(conditionApplied)
-        val itemCount = adapterTeamList.itemCount
+    }
 
+    private fun refreshTeamList() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            when {
+                fromDashboard -> {
+                    user?._id?.let { userId ->
+                        teamsRepository.getMyTeamsFlow(userId).collectLatest {
+                            teamList = it
+                            setTeamList()
+                        }
+                    }
+                }
+                type == "enterprise" -> {
+                    conditionApplied = true
+                    teamList = teamsRepository.getShareableEnterprises()
+                    setTeamList()
+                }
+                else -> {
+                    conditionApplied = false
+                    teamList = teamsRepository.getShareableTeams()
+                    setTeamList()
+                }
+            }
+        }
+    }
+
+    override fun onEditTeam(team: TeamData?) {
+        team?.let { createTeamAlert(it) }
+    }
+
+    override fun onLeaveTeam(team: TeamData, user: RealmUserModel?) {
+        AlertDialog.Builder(requireContext(), R.style.CustomAlertDialog)
+            .setMessage(R.string.confirm_exit)
+            .setPositiveButton(R.string.yes) { _, _ ->
+                viewModel.leaveTeam(team._id!!, user?.id)
+            }
+            .setNegativeButton(R.string.no, null)
+            .show()
+    }
+
+    override fun onRequestToJoin(team: TeamData, user: RealmUserModel?) {
+        viewModel.requestToJoin(team._id!!, user?.id, user?.planetCode, team.teamType)
+    }
+
+    override fun onUpdateComplete(itemCount: Int) {
         if (itemCount == 0) {
             showNoResultsMessage(true)
         } else {
             showNoResultsMessage(false)
-        }
-    }
-
-    private fun refreshTeamList() {
-        mRealm.refresh()
-        teamList?.removeAllChangeListeners()
-
-        if (fromDashboard) {
-            teamList = getMyTeamsByUserId(mRealm, settings)
-        } else {
-            val query = mRealm.where(RealmMyTeam::class.java)
-                .isEmpty("teamId")
-                .notEqualTo("status", "archived")
-            teamList = if (TextUtils.isEmpty(type) || type == "team") {
-                conditionApplied = false
-                query.notEqualTo("type", "enterprise").findAllAsync()
-            } else {
-                conditionApplied = true
-                query.equalTo("type", "enterprise").findAllAsync()
-            }
-        }
-
-        teamList?.addChangeListener { _ ->
-            updatedTeamList()
-        }
-        setTeamList()
-    }
-
-    private fun sortTeams(list: List<RealmMyTeam>): List<RealmMyTeam> {
-        val user = user?.id
-        return list.sortedWith(compareByDescending<RealmMyTeam> { team ->
-            when {
-                RealmMyTeam.isTeamLeader(team.teamId, user, mRealm) -> 3
-                team.isMyTeam(user, mRealm) -> 2
-                else -> 1
-            }
-        })
-    }
-
-    override fun onEditTeam(team: RealmMyTeam?) {
-        team?.let { createTeamAlert(it) }
-    }
-
-    private fun updatedTeamList() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            val list = teamList ?: return@launch
-            val sortedList = sortTeams(list)
-            val adapterTeamList = AdapterTeamList(
-                activity as Context,
-                sortedList,
-                mRealm,
-                childFragmentManager,
-                teamRepository,
-            ).apply {
-                setType(type)
-                setTeamListener(this@TeamFragment)
-            }
-
-            binding.rvTeamList.adapter = adapterTeamList
-            listContentDescription(conditionApplied)
         }
     }
 
@@ -441,10 +362,8 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     }
 
     override fun onDestroyView() {
-        teamList?.removeAllChangeListeners()
-        if (this::mRealm.isInitialized && !mRealm.isClosed) {
-            mRealm.close()
-        }
+        _binding?.etSearch?.removeTextChangedListener(textWatcher)
+        textWatcher = null
         _binding = null
         super.onDestroyView()
     }

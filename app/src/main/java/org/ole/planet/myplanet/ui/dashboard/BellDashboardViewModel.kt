@@ -2,6 +2,8 @@ package org.ole.planet.myplanet.ui.dashboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -9,11 +11,20 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
+import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.model.RealmCourseProgress
+import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
 
-class BellDashboardViewModel : ViewModel() {
+@HiltViewModel
+class BellDashboardViewModel @Inject constructor(
+    private val databaseService: DatabaseService
+) : ViewModel() {
     private val _networkStatus = MutableStateFlow<NetworkStatus>(NetworkStatus.Disconnected)
     val networkStatus: StateFlow<NetworkStatus> = _networkStatus.asStateFlow()
+
+    private val _completedCourses = MutableStateFlow<List<CourseCompletion>>(emptyList())
+    val completedCourses: StateFlow<List<CourseCompletion>> = _completedCourses.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -24,6 +35,25 @@ class BellDashboardViewModel : ViewModel() {
                     updateNetworkStatus(NetworkStatus.Disconnected)
                 }
             }
+        }
+    }
+
+    fun loadCompletedCourses(userId: String?) {
+        viewModelScope.launch {
+            val completed = databaseService.withRealmAsync { realm ->
+                val myCourses = RealmMyCourse.getMyCourseByUserId(userId, realm.where(RealmMyCourse::class.java).findAll())
+                val courseProgress = RealmCourseProgress.getCourseProgress(realm, userId)
+
+                myCourses.filter { course ->
+                    val progress = courseProgress[course.id]
+                    progress?.let {
+                        it.asJsonObject["current"].asInt == it.asJsonObject["max"].asInt
+                    } == true
+                }.map {
+                    CourseCompletion(it.courseId, it.courseTitle)
+                }
+            }
+            _completedCourses.value = completed
         }
     }
 
@@ -39,6 +69,8 @@ class BellDashboardViewModel : ViewModel() {
         return reachable
     }
 }
+
+data class CourseCompletion(val courseId: String?, val courseTitle: String?)
 
 sealed class NetworkStatus {
     object Disconnected : NetworkStatus()

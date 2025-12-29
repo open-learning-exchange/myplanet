@@ -12,10 +12,8 @@ import android.net.Uri
 import android.os.Build
 import android.text.TextUtils
 import android.view.View
-import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
 import android.webkit.URLUtil
-import android.widget.EditText
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -23,25 +21,25 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.core.net.toUri
-import com.google.android.material.textfield.TextInputLayout
+import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import kotlin.math.roundToInt
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.PermissionActivity
-import org.ole.planet.myplanet.callback.SecurityDataCallback
+import org.ole.planet.myplanet.callback.SecurityDataListener
 import org.ole.planet.myplanet.callback.SuccessListener
-import org.ole.planet.myplanet.datamanager.ApiClient.client
-import org.ole.planet.myplanet.datamanager.ApiInterface
-import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.data.ApiClient.client
+import org.ole.planet.myplanet.data.ApiInterface
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UploadToShelfService
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
@@ -66,7 +64,9 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
 
     @Inject
     lateinit var uploadToShelfService: UploadToShelfService
-    
+
+    @Inject
+    lateinit var userRepository: UserRepository
     lateinit var settings: SharedPreferences
     val customProgressDialog: DialogUtils.CustomProgressDialog by lazy {
         DialogUtils.CustomProgressDialog(this)
@@ -88,17 +88,6 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
                 }
             }
         }
-    }
-
-    fun validateEditText(textField: EditText, textLayout: TextInputLayout, errMessage: String?): Boolean {
-        if (textField.text.toString().trim { it <= ' ' }.isEmpty()) {
-            textLayout.error = errMessage
-            requestFocus(textField)
-            return false
-        } else {
-            textLayout.isErrorEnabled = false
-        }
-        return true
     }
 
     fun checkDownloadResult(download: Download?) {
@@ -134,12 +123,6 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
             .putExtra("from_login", true)
         startActivity(dashboard)
         finish()
-    }
-
-    private fun requestFocus(view: View) {
-        if (view.requestFocus()) {
-            window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE)
-        }
     }
 
     fun changeLogoColor() {
@@ -197,7 +180,7 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         return true
     }
 
-    fun startUpload(source: String, userName: String? = null, securityCallback: SecurityDataCallback? = null) {
+    fun startUpload(source: String, userName: String? = null, securityCallback: SecurityDataListener? = null) {
         if (source == "becomeMember") {
             uploadToShelfService.uploadSingleUserData(userName, object : SuccessListener {
                 override fun onSuccess(success: String?) {
@@ -214,78 +197,84 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
             })
             return
         } else if (source == "login") {
-            uploadManager.uploadUserActivities(this@ProcessUserDataActivity)
+            lifecycleScope.launch(Dispatchers.IO) {
+                uploadManager.uploadUserActivities(this@ProcessUserDataActivity)
+            }
             return
         }
         customProgressDialog.setText(this.getString(R.string.uploading_data_to_server_please_wait))
         customProgressDialog.show()
 
-        uploadManager.uploadAchievement()
-        uploadManager.uploadNews()
-        uploadManager.uploadResourceActivities("")
-        uploadManager.uploadCourseActivities()
-        uploadManager.uploadSearchActivity()
-        uploadManager.uploadTeams()
-        uploadManager.uploadRating()
-        uploadManager.uploadTeamTask()
-        uploadManager.uploadMeetups()
-        uploadManager.uploadSubmissions()
-        uploadManager.uploadCrashLog()
+        lifecycleScope.launch {
+            val asyncOperationsCounter = AtomicInteger(0)
+            val totalAsyncOperations = 6
 
-        val asyncOperationsCounter = AtomicInteger(0)
-        val totalAsyncOperations = 6
-
-        fun checkAllOperationsComplete() {
-            if (asyncOperationsCounter.incrementAndGet() == totalAsyncOperations) {
-                runOnUiThread {
-                    if (!isFinishing && !isDestroyed) {
-                        customProgressDialog.dismiss()
-                        Toast.makeText(this@ProcessUserDataActivity, "upload complete", Toast.LENGTH_SHORT).show()
+            fun checkAllOperationsComplete() {
+                if (asyncOperationsCounter.incrementAndGet() == totalAsyncOperations) {
+                    runOnUiThread {
+                        if (!isFinishing && !isDestroyed) {
+                            customProgressDialog.dismiss()
+                            Toast.makeText(this@ProcessUserDataActivity, "upload complete", Toast.LENGTH_SHORT).show()
+                        }
                     }
                 }
             }
+
+            uploadManager.uploadAchievement()
+            uploadManager.uploadNews()
+            uploadManager.uploadResourceActivities("")
+            uploadManager.uploadCourseActivities()
+            uploadManager.uploadSearchActivity()
+            uploadManager.uploadTeams()
+            uploadManager.uploadRating()
+            uploadManager.uploadTeamTask()
+            uploadManager.uploadMeetups()
+            uploadManager.uploadAdoptedSurveys()
+            uploadManager.uploadSubmissions()
+            uploadManager.uploadCrashLog()
+
+            uploadToShelfService.uploadUserData {
+                uploadToShelfService.uploadHealth()
+                checkAllOperationsComplete()
+            }
+
+            uploadManager.uploadUserActivities(object : SuccessListener {
+                override fun onSuccess(success: String?) {
+                    checkAllOperationsComplete()
+                }
+            })
+
+            uploadManager.uploadExamResult(object : SuccessListener {
+                override fun onSuccess(success: String?) {
+                    checkAllOperationsComplete()
+                }
+            })
+
+            lifecycleScope.launch(Dispatchers.IO) {
+                val success = uploadManager.uploadFeedback()
+                withContext(Dispatchers.Main) {
+                    checkAllOperationsComplete()
+                }
+            }
+
+            uploadManager.uploadResource(object : SuccessListener {
+                override fun onSuccess(success: String?) {
+                    checkAllOperationsComplete()
+                }
+            })
+
+            uploadManager.uploadSubmitPhotos(object : SuccessListener {
+                override fun onSuccess(success: String?) {
+                    checkAllOperationsComplete()
+                }
+            })
+
+            uploadManager.uploadActivities(object : SuccessListener {
+                override fun onSuccess(success: String?) {
+                    checkAllOperationsComplete()
+                }
+            })
         }
-
-        uploadToShelfService.uploadUserData {
-            uploadToShelfService.uploadHealth()
-            checkAllOperationsComplete()
-        }
-
-        uploadManager.uploadUserActivities(object : SuccessListener {
-            override fun onSuccess(success: String?) {
-                checkAllOperationsComplete()
-            }
-        })
-
-        uploadManager.uploadExamResult(object : SuccessListener {
-            override fun onSuccess(success: String?) {
-                checkAllOperationsComplete()
-            }
-        })
-
-        uploadManager.uploadFeedback(object : SuccessListener {
-            override fun onSuccess(success: String?) {
-                checkAllOperationsComplete()
-            }
-        })
-
-        uploadManager.uploadResource(object : SuccessListener {
-            override fun onSuccess(success: String?) {
-                checkAllOperationsComplete()
-            }
-        })
-
-        uploadManager.uploadSubmitPhotos(object : SuccessListener {
-            override fun onSuccess(success: String?) {
-                checkAllOperationsComplete()
-            }
-        })
-
-        uploadManager.uploadActivities(object : SuccessListener {
-            override fun onSuccess(success: String?) {
-                checkAllOperationsComplete()
-            }
-        })
     }
 
     protected fun hideKeyboard(view: View?) {
@@ -337,12 +326,12 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         editor.putString("couchdbURL", couchdbURL)
     }
 
-    fun fetchAndLogUserSecurityData(name: String, securityCallback: SecurityDataCallback? = null) {
-        CoroutineScope(Dispatchers.IO).launch {
+    fun fetchAndLogUserSecurityData(name: String, securityCallback: SecurityDataListener? = null) {
+        lifecycleScope.launch {
             try {
                 val apiInterface = client?.create(ApiInterface::class.java)
                 val userDocUrl = "${UrlUtils.getUrl()}/tablet_users/org.couchdb.user:$name"
-                val response = apiInterface?.getJsonObject(UrlUtils.header, userDocUrl)?.execute()
+                val response = apiInterface?.getJsonObjectSuspended(UrlUtils.header, userDocUrl)
 
                 if (response?.isSuccessful == true && response.body() != null) {
                     val userDoc = response.body()
@@ -352,9 +341,7 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
                     val iterations = userDoc?.get("iterations")?.asString
                     val userId = userDoc?.get("_id")?.asString
                     val rev = userDoc?.get("_rev")?.asString
-                    withContext(Dispatchers.Main) {
-                        updateRealmUserSecurityData(name, userId, rev, derivedKey, salt, passwordScheme, iterations, securityCallback)
-                    }
+                    updateRealmUserSecurityData(name, userId, rev, derivedKey, salt, passwordScheme, iterations, securityCallback)
 
                 } else {
                     withContext(Dispatchers.Main) {
@@ -371,33 +358,26 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         }
     }
 
-    private fun updateRealmUserSecurityData(name: String, userId: String?, rev: String?, derivedKey: String?, salt: String?, passwordScheme: String?, iterations: String?, securityCallback: SecurityDataCallback? = null) {
+    private suspend fun updateRealmUserSecurityData(
+        name: String,
+        userId: String?,
+        rev: String?,
+        derivedKey: String?,
+        salt: String?,
+        passwordScheme: String?,
+        iterations: String?,
+        securityCallback: SecurityDataListener? = null,
+    ) {
         try {
-            databaseService.withRealm { realm ->
-                realm.executeTransactionAsync({ transactionRealm ->
-                    val user = transactionRealm.where(RealmUserModel::class.java)
-                        .equalTo("name", name)
-                        .findFirst()
-
-                    if (user != null) {
-                        user._id = userId
-                        user._rev = rev
-                        user.derived_key = derivedKey
-                        user.salt = salt
-                        user.password_scheme = passwordScheme
-                        user.iterations = iterations
-                        user.isUpdated = false
-                    }
-                }, {
-                    securityCallback?.onSecurityDataUpdated()
-                }) { error ->
-                    error.printStackTrace()
-                    securityCallback?.onSecurityDataUpdated()
-                }
+            userRepository.updateSecurityData(name, userId, rev, derivedKey, salt, passwordScheme, iterations)
+            withContext(Dispatchers.Main) {
+                securityCallback?.onSecurityDataUpdated()
             }
         } catch (e: Exception) {
-            e.printStackTrace()
-            securityCallback?.onSecurityDataUpdated()
+            withContext(Dispatchers.Main) {
+                e.printStackTrace()
+                securityCallback?.onSecurityDataUpdated()
+            }
         }
     }
 }

@@ -15,12 +15,12 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.SuccessListener
-import org.ole.planet.myplanet.datamanager.ApiClient.client
-import org.ole.planet.myplanet.datamanager.ApiInterface
-import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.data.ApiClient.client
+import org.ole.planet.myplanet.data.ApiInterface
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.getMyMeetUpIds
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourseIds
@@ -37,7 +37,6 @@ import org.ole.planet.myplanet.utilities.RetryUtils
 import org.ole.planet.myplanet.utilities.SecurePrefs
 import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.Utilities
-import retrofit2.Response
 
 @Singleton
 class UploadToShelfService @Inject constructor(
@@ -149,22 +148,24 @@ class UploadToShelfService @Inject constructor(
     }
 
     private fun processUserAfterCreation(apiInterface: ApiInterface?, realm: Realm, model: RealmUserModel, obj: JsonObject) {
-        try {
-            val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
-            val header = "Basic ${Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
-            val fetchDataResponse = apiInterface?.getJsonObject(header, "${replacedUrl(model)}/_users/${model._id}")?.execute()
-            if (fetchDataResponse?.isSuccessful == true) {
-                model.password_scheme = getString("password_scheme", fetchDataResponse.body())
-                model.derived_key = getString("derived_key", fetchDataResponse.body())
-                model.salt = getString("salt", fetchDataResponse.body())
-                model.iterations = getString("iterations", fetchDataResponse.body())
-
-                if (saveKeyIv(apiInterface, model, obj)) {
+        MainApplication.applicationScope.launch {
+            try {
+                val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
+                val header = "Basic ${Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
+                val fetchDataResponse = withContext(Dispatchers.IO) {
+                    apiInterface?.getJsonObject(header, "${replacedUrl(model)}/_users/${model._id}")?.execute()
+                }
+                if (fetchDataResponse?.isSuccessful == true) {
+                    model.password_scheme = getString("password_scheme", fetchDataResponse.body())
+                    model.derived_key = getString("derived_key", fetchDataResponse.body())
+                    model.salt = getString("salt", fetchDataResponse.body())
+                    model.iterations = getString("iterations", fetchDataResponse.body())
+                    saveKeyIv(apiInterface, model, obj)
                     updateHealthData(realm, model)
                 }
+            } catch (e: IOException) {
+                e.printStackTrace()
             }
-        } catch (e: IOException) {
-            e.printStackTrace()
         }
     }
 
@@ -212,45 +213,45 @@ class UploadToShelfService @Inject constructor(
         }
     }
 
-    @Throws(IOException::class)
-    fun saveKeyIv(apiInterface: ApiInterface?, model: RealmUserModel, obj: JsonObject): Boolean {
+    suspend fun saveKeyIv(apiInterface: ApiInterface?, model: RealmUserModel, obj: JsonObject) {
         val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
         val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
         val ob = JsonObject()
         var keyString = generateKey()
         var iv: String? = generateIv()
+
         if (!TextUtils.isEmpty(model.iv)) {
             iv = model.iv
         }
         if (!TextUtils.isEmpty(model.key)) {
             keyString = model.key
         }
+
         ob.addProperty("key", keyString)
         ob.addProperty("iv", iv)
         ob.addProperty("createdOn", Date().time)
+
         val maxAttempts = 3
         val retryDelayMs = 2000L
 
-        val response = runBlocking {
+        val response = withContext(Dispatchers.IO) {
             RetryUtils.retry(
                 maxAttempts = maxAttempts,
                 delayMs = retryDelayMs,
                 shouldRetry = { resp -> resp == null || !resp.isSuccessful || resp.body() == null }
             ) {
-                apiInterface?.postDoc(header, "application/json", "${UrlUtils.getUrl()}/$table", ob)?.execute()
+                apiInterface?.postDocSuspend(header, "application/json", "${UrlUtils.getUrl()}/$table", ob)
             }
         }
 
         if (response?.isSuccessful == true && response.body() != null) {
             model.key = keyString
             model.iv = iv
+            changeUserSecurity(model, obj)
         } else {
             val errorMessage = "Failed to save key/IV after $maxAttempts attempts"
             throw IOException(errorMessage)
         }
-
-        changeUserSecurity(model, obj)
-        return true
     }
 
     fun uploadHealth() {
@@ -320,82 +321,85 @@ class UploadToShelfService @Inject constructor(
 
     private fun uploadToShelf(listener: SuccessListener) {
         val apiInterface = client?.create(ApiInterface::class.java)
-        mRealm = dbService.realmInstance
-        var unmanagedUsers: List<RealmUserModel> = emptyList()
-
-        mRealm.executeTransactionAsync({ realm ->
-            val users = realm.where(RealmUserModel::class.java).isNotEmpty("_id").findAll()
-            unmanagedUsers = realm.copyFromRealm(users)
-        }, {
-            mRealm.close()
-            if (unmanagedUsers.isEmpty()) {
-                listener.onSuccess("Sync with server completed successfully")
-                return@executeTransactionAsync
-            }
-            Thread {
-                var backgroundRealm: Realm? = null
-                try {
-                    backgroundRealm = dbService.realmInstance
-                    unmanagedUsers.forEach { model ->
-                        try {
-                            if (model.id?.startsWith("guest") == true) return@forEach
-                            val jsonDoc = apiInterface?.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/${model._id}")?.execute()?.body()
-                            val `object` = getShelfData(backgroundRealm, model.id, jsonDoc)
-                            `object`.addProperty("_rev", getString("_rev", jsonDoc))
-                            apiInterface?.putDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/shelf/${sharedPreferences.getString("userId", "")}", `object`)?.execute()
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        }
-                    }
-                    MainApplication.applicationScope.launch(Dispatchers.Main) {
-                        listener.onSuccess("Sync with server completed successfully")
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    MainApplication.applicationScope.launch(Dispatchers.Main) {
-                        listener.onSuccess("Unable to update documents: ${e.localizedMessage}")
-                    }
-                } finally {
-                    backgroundRealm?.close()
+        MainApplication.applicationScope.launch(Dispatchers.IO) {
+            val unmanagedUsers = dbService.realmInstance.use { realm ->
+                realm.where(RealmUserModel::class.java).isNotEmpty("_id").findAll().let {
+                    realm.copyFromRealm(it)
                 }
-            }.start()
-        }, { error ->
-            mRealm.close()
-            listener.onSuccess("Unable to update documents: ${error.localizedMessage}")
-        })
+            }
+
+            if (unmanagedUsers.isEmpty()) {
+                withContext(Dispatchers.Main) {
+                    listener.onSuccess("Sync with server completed successfully")
+                }
+                return@launch
+            }
+
+            try {
+                unmanagedUsers.forEach { model ->
+                    if (model.id?.startsWith("guest") == true) return@forEach
+                    try {
+                        val jsonDoc = apiInterface?.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/${model._id}")?.execute()?.body()
+                        val shelfData = dbService.realmInstance.use { backgroundRealm ->
+                            getShelfData(backgroundRealm, model.id, jsonDoc)
+                        }
+                        shelfData.addProperty("_rev", getString("_rev", jsonDoc))
+                        apiInterface?.putDoc(
+                            UrlUtils.header,
+                            "application/json",
+                            "${UrlUtils.getUrl()}/shelf/${sharedPreferences.getString("userId", "")}",
+                            shelfData
+                        )?.execute()
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+                withContext(Dispatchers.Main) {
+                    listener.onSuccess("Sync with server completed successfully")
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    listener.onSuccess("Unable to update documents: ${e.localizedMessage}")
+                }
+            }
+        }
     }
 
     private fun uploadSingleUserToShelf(userName: String?, listener: SuccessListener) {
         val apiInterface = client?.create(ApiInterface::class.java)
-        mRealm = dbService.realmInstance
+        MainApplication.applicationScope.launch(Dispatchers.IO) {
+            try {
+                val model = dbService.realmInstance.use { realm ->
+                    realm.where(RealmUserModel::class.java)
+                        .equalTo("name", userName)
+                        .isNotEmpty("_id")
+                        .findFirst()
+                        ?.let { realm.copyFromRealm(it) }
+                }
 
-        mRealm.executeTransactionAsync({ realm: Realm ->
-            val model = realm.where(RealmUserModel::class.java)
-                .equalTo("name", userName)
-                .isNotEmpty("_id")
-                .findFirst()
+                if (model != null) {
+                    if (model.id?.startsWith("guest") != true) {
+                        val shelfUrl = "${UrlUtils.getUrl()}/shelf/${model._id}"
+                        val jsonDoc = apiInterface?.getJsonObject(UrlUtils.header, shelfUrl)?.execute()?.body()
+                        val shelfObject = dbService.realmInstance.use { realm ->
+                            getShelfData(realm, model.id, jsonDoc)
+                        }
+                        shelfObject.addProperty("_rev", getString("_rev", jsonDoc))
 
-            if (model != null) {
-                try {
-                    if (model.id?.startsWith("guest") == true) return@executeTransactionAsync
-
-                    val shelfUrl = "${UrlUtils.getUrl()}/shelf/${model._id}"
-                    val jsonDoc = apiInterface?.getJsonObject(UrlUtils.header, shelfUrl)?.execute()?.body()
-                    val shelfObject = getShelfData(realm, model.id, jsonDoc)
-                    shelfObject.addProperty("_rev", getString("_rev", jsonDoc))
-
-                    val targetUrl = "${UrlUtils.getUrl()}/shelf/${sharedPreferences.getString("userId", "")}" 
-                    apiInterface?.putDoc(UrlUtils.header, "application/json", targetUrl, shelfObject)?.execute()?.body()
-                } catch (e: Exception) {
-                    e.printStackTrace()
+                        val targetUrl = "${UrlUtils.getUrl()}/shelf/${sharedPreferences.getString("userId", "")}"
+                        apiInterface?.putDoc(UrlUtils.header, "application/json", targetUrl, shelfObject)?.execute()
+                    }
+                }
+                withContext(Dispatchers.Main) {
+                    listener.onSuccess("Single user shelf sync completed successfully")
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    listener.onSuccess("Unable to update document: ${e.localizedMessage}")
                 }
             }
-        }, {
-            mRealm.close()
-            listener.onSuccess("Single user shelf sync completed successfully")
-        }) { error ->
-            mRealm.close()
-            listener.onSuccess("Unable to update document: ${error.localizedMessage}")
         }
     }
 
@@ -427,12 +431,12 @@ class UploadToShelfService @Inject constructor(
     }
 
     companion object {
-        private fun changeUserSecurity(model: RealmUserModel, obj: JsonObject) {
+        private suspend fun changeUserSecurity(model: RealmUserModel, obj: JsonObject) {
             val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
             val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
             val apiInterface = client?.create(ApiInterface::class.java)
             try {
-                val response: Response<JsonObject?>? = apiInterface?.getJsonObject(header, "${UrlUtils.getUrl()}/${table}/_security")?.execute()
+                val response = apiInterface?.getJsonObjectSuspended(header, "${UrlUtils.getUrl()}/${table}/_security")
                 if (response?.body() != null) {
                     val jsonObject = response.body()
                     val members = jsonObject?.getAsJsonObject("members")
@@ -444,7 +448,7 @@ class UploadToShelfService @Inject constructor(
                     rolesArray.add("health")
                     members?.add("roles", rolesArray)
                     jsonObject?.add("members", members)
-                    apiInterface.putDoc(header, "application/json", "${UrlUtils.getUrl()}/${table}/_security", jsonObject).execute()
+                    apiInterface.putDocSuspend(header, "application/json", "${UrlUtils.getUrl()}/${table}/_security", jsonObject)
                 }
             } catch (e: IOException) {
                 e.printStackTrace()

@@ -25,10 +25,9 @@ import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import javax.inject.Provider
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.data.auth.AuthSessionUpdater
 import org.ole.planet.myplanet.databinding.ActivityExoPlayerVideoBinding
-import org.ole.planet.myplanet.datamanager.auth.AuthSessionUpdater
 import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils
@@ -44,8 +43,9 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
     private var playWhenReady = true
     private var currentPosition = 0L
     private var isActivityVisible = false
+    private var isAudioReceiverRegistered = false
     @Inject
-    lateinit var authSessionUpdaterProvider: Provider<AuthSessionUpdater>
+    lateinit var authSessionUpdaterFactory: AuthSessionUpdater.Factory
     private var authSessionUpdater: AuthSessionUpdater? = null
 
     private val audioBecomingNoisyReceiver = object : BroadcastReceiver() {
@@ -72,7 +72,7 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
         when (videoType) {
             "offline" -> prepareExoPlayerFromFileUri(videoURL)
             "online" -> {
-                authSessionUpdater = authSessionUpdaterProvider.get()
+                authSessionUpdater = authSessionUpdaterFactory.create(this)
             }
         }
 
@@ -241,16 +241,18 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
     }
 
     private fun registerAudioNoisyReceiver() {
-        val filter = IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
-        registerReceiver(audioBecomingNoisyReceiver, filter)
+        if (!isAudioReceiverRegistered) {
+            val filter = IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
+            registerReceiver(audioBecomingNoisyReceiver, filter)
+            isAudioReceiverRegistered = true
+        }
     }
 
     override fun onDestroy() {
         authSessionUpdater?.stop()
-        try {
+        if (isAudioReceiverRegistered) {
             unregisterReceiver(audioBecomingNoisyReceiver)
-        } catch (e: IllegalArgumentException) {
-            e.printStackTrace()
+            isAudioReceiverRegistered = false
         }
         super.onDestroy()
     }

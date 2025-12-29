@@ -1,7 +1,7 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-kapt'
-apply plugin: 'kotlinx-serialization'
+apply plugin: 'com.google.devtools.ksp'
 apply plugin: 'dagger.hilt.android.plugin'
 apply plugin: 'realm-android'
 android {
@@ -10,15 +10,13 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
-        versionCode = 3276
-        versionName = "0.32.76"
+        versionCode = 4187
+        versionName = "0.41.87"
         ndkVersion = '26.3.11579264'
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
-        multiDexEnabled = true
     }
     configurations.configureEach {
-        resolutionStrategy.force 'com.google.android.material:material:1.12.0'
+        resolutionStrategy.force "com.google.android.material:material:${libs.versions.material.get()}"
     }
     buildTypes {
         release {
@@ -78,6 +76,7 @@ android {
     buildFeatures {
         viewBinding = true
         buildConfig = true
+        dataBinding = true
     }
 
     bundle {
@@ -114,8 +113,6 @@ android {
     def planetEmbakasiClonePin = project.findProperty('PLANET_EMBAKASI_CLONE_PIN') ?: ""
     def planetCambridgeUrl = project.findProperty('PLANET_CAMBRIDGE_URL') ?: ""
     def planetCambridgePin = project.findProperty('PLANET_CAMBRIDGE_PIN') ?: ""
-    //def planetEgdirbmacUrl = project.findProperty('PLANET_EGDIRBMAC_URL') ?: ""
-    //def planetEgdirbmacPin = project.findProperty('PLANET_EGDIRBMAC_PIN') ?: ""
 
     buildTypes.each {
         it.buildConfigField 'String', 'PLANET_LEARNING_URL', "\"$planetLearningUrl\""
@@ -146,8 +143,6 @@ android {
         it.buildConfigField 'String', 'PLANET_EMBAKASI_CLONE_PIN', "\"${planetEmbakasiClonePin}\""
         it.buildConfigField 'String', 'PLANET_CAMBRIDGE_URL', "\"${planetCambridgeUrl}\""
         it.buildConfigField 'String', 'PLANET_CAMBRIDGE_PIN', "\"${planetCambridgePin}\""
-        //it.buildConfigField 'String', 'PLANET_EGDIRBMAC_URL', "\"${planetEgdirbmacUrl}\""
-        //it.buildConfigField 'String', 'PLANET_EGDIRBMAC_PIN', "\"${planetEgdirbmacPin}\""
     }
 }
 
@@ -175,91 +170,53 @@ repositories {
 }
 
 dependencies {
-    testImplementation 'junit:junit:4.13.2'
     implementation fileTree(include: ['*.jar', '*.aar'], dir: 'libs')
-    implementation 'androidx.constraintlayout:constraintlayout:2.2.1'
-    implementation 'androidx.legacy:legacy-support-v4:1.0.0'
-    implementation 'androidx.multidex:multidex:2.0.1'
-    implementation 'androidx.appcompat:appcompat:1.7.1'
-    implementation 'androidx.recyclerview:recyclerview:1.4.0'
-    implementation 'androidx.annotation:annotation:1.9.1'
-    implementation 'androidx.exifinterface:exifinterface:1.4.1'
-    implementation 'androidx.cardview:cardview:1.0.0'
-    implementation "androidx.core:core-ktx:1.17.0"
-    implementation "androidx.security:security-crypto:1.1.0"
-    implementation "androidx.work:work-runtime:2.10.3"
-    implementation "androidx.slidingpanelayout:slidingpanelayout:1.2.0"
-    implementation 'androidx.preference:preference-ktx:1.2.1'
+    implementation platform(libs.kotlin.bom)
 
-    implementation 'com.google.code.gson:gson:2.13.1'
-    implementation 'com.google.android.material:material:1.12.0'
-
-    implementation "com.github.VaibhavLakhera:Circular-Progress-View:0.1.2"
-    implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
-    implementation 'com.github.jeancsanchez:jcplayer:2.7.2'
-    implementation 'com.github.clans:fab:1.6.4'
-    implementation 'com.applandeo:material-calendar-view:1.9.2'
-    implementation 'com.afollestad.material-dialogs:commons:0.9.6.0'
-    implementation 'com.borax12.materialdaterangepicker:library:2.0'
-    implementation 'com.nex3z:toggle-button-group:1.2.3'
-    implementation 'com.caverock:androidsvg-aar:1.4'
-    implementation('com.opencsv:opencsv:5.12.0') {
-        exclude group: 'commons-logging', module: 'commons-logging'
-    }
-
-    implementation 'de.hdodenhof:circleimageview:3.1.0'
-    implementation 'de.rtner:PBKDF2:1.1.4'
-    implementation 'org.osmdroid:osmdroid-android:6.1.20'
-    implementation 'org.jetbrains:annotations:26.0.2'
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:${rootProject.ext['kotlin_version']}"
-    implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0"
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2"
-    implementation 'pl.droidsonroids.gif:android-gif-drawable:1.2.29'
-
-    implementation 'com.mikepenz:google-material-typeface:3.0.1.1.original@aar'
-    implementation 'com.mikepenz:fontawesome-typeface:5.3.1.1@aar'
-    implementation 'com.mikepenz:octicons-typeface:3.2.0.5@aar'
-    implementation 'com.mikepenz:itemanimators:1.1.0@aar'
-    implementation 'com.mikepenz:crossfader:1.6.0@aar'
-    implementation 'com.mikepenz:crossfadedrawerlayout:1.1.0@aar'
-    implementation('com.mikepenz:materialdrawer:6.1.1@aar') { transitive = true}
-
-    def camera_version = "1.4.2"
-    implementation "androidx.camera:camera-core:$camera_version"
-    implementation "androidx.camera:camera-camera2:$camera_version"
-    implementation "androidx.camera:camera-lifecycle:$camera_version"
-    implementation "androidx.camera:camera-view:$camera_version"
-
-    def dagger_hilt_version = "2.57.1"
-    implementation "com.google.dagger:hilt-android:$dagger_hilt_version"
-    kapt "com.google.dagger:hilt-android-compiler:$dagger_hilt_version"
-
-    def hilt_work_version = "1.3.0"
-    implementation "androidx.hilt:hilt-work:$hilt_work_version"
-    kapt "androidx.hilt:hilt-compiler:$hilt_work_version"
-
-    def retrofit2_version = "3.0.0"
-    implementation "com.squareup.retrofit2:retrofit:$retrofit2_version"
-    implementation "com.squareup.retrofit2:converter-gson:$retrofit2_version"
-    implementation("com.squareup.okhttp3:okhttp:5.1.0")
-
-    def glide_version = "4.16.0"
-    implementation "com.github.bumptech.glide:glide:$glide_version"
-    kapt "com.github.bumptech.glide:compiler:$glide_version"
-
-    def media3_version = "1.8.0"
-    implementation "androidx.media3:media3-exoplayer:$media3_version"
-    implementation "androidx.media3:media3-ui:$media3_version"
-    implementation "androidx.media3:media3-common:$media3_version"
-
-    def markwon_version = "4.6.2"
-    implementation "io.noties.markwon:editor:$markwon_version"
-    implementation "io.noties.markwon:image:$markwon_version"
-    implementation "io.noties.markwon:html:$markwon_version"
-    implementation "io.noties.markwon:ext-tables:$markwon_version"
-    implementation(platform("org.jetbrains.kotlin:kotlin-bom:2.2.10"))
-
-    implementation 'com.github.chrisbanes:PhotoView:2.3.0'
+    implementation(libs.annotation)
+    implementation(libs.appcompat)
+    implementation(libs.cardview)
+    implementation(libs.constraintlayout)
+    implementation(libs.core.ktx)
+    implementation(libs.hilt.work)
+    kapt(libs.hilt.compiler)
+    implementation(libs.media3.exoplayer)
+    implementation(libs.media3.ui)
+    implementation(libs.media3.common)
+    implementation(libs.preference.ktx)
+    implementation(libs.recyclerview)
+    implementation(libs.security.crypto)
+    implementation(libs.slidingpanelayout)
+    implementation(libs.work.runtime)
+    implementation(libs.material.dialogs.commons)
+    implementation(libs.material.calendar.view)
+    implementation(libs.glide)
+    ksp(libs.glide.ksp)
+    implementation(libs.photoView)
+    implementation(libs.fab)
+    implementation(libs.mpAndroidChart)
+    implementation(libs.circular.progress.view)
+    implementation(libs.material)
+    implementation(libs.gson)
+    implementation(libs.hilt.android)
+    kapt(libs.hilt.android.compiler)
+    implementation(libs.toggle.button.group)
+    implementation(libs.materialdrawer) { transitive = true }
+    implementation(libs.opencsv) { exclude group: 'commons-logging', module: 'commons-logging' }
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
+    implementation(libs.okhttp)
+    implementation(libs.circleimageview)
+    implementation(libs.pbkdf2)
+    implementation(libs.markwon.editor)
+    implementation(libs.markwon.image)
+    implementation(libs.markwon.html)
+    implementation(libs.markwon.ext.tables)
+    implementation(libs.osmdroid.android)
+    implementation(libs.kotlin.stdlib)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.android.gif.drawable)
 }
 realm {
     syncEnabled = true

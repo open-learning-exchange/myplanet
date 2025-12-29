@@ -63,7 +63,7 @@
                 android:id="@+id/name"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="@string/name_normal"
+                android:text="@string/name"
                 android:textColor="@color/teams_heading"
                 android:textStyle="bold"
                 app:layout_constraintStart_toStartOf="parent"
@@ -142,5 +142,5 @@
         android:layout_gravity="bottom|end"
         android:contentDescription="@string/add"
         android:padding="@dimen/padding_normal"
-        app:srcCompat="@drawable/ic_add" />
+        app:srcCompat="@drawable/ic_add_white" />
 </FrameLayout>

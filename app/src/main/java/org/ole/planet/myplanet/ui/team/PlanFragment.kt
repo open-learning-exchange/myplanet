@@ -9,14 +9,16 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.callback.TeamUpdateListener
 import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
 import org.ole.planet.myplanet.databinding.FragmentPlanBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -24,6 +26,11 @@ class PlanFragment : BaseTeamFragment() {
     private var _binding: FragmentPlanBinding? = null
     private val binding get() = _binding!!
     private var isEnterprise: Boolean = false
+    private var teamUpdateListener: TeamUpdateListener? = null
+
+    fun setTeamUpdateListener(listener: TeamUpdateListener) {
+        teamUpdateListener = listener
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentPlanBinding.inflate(inflater, container, false)
@@ -32,10 +39,27 @@ class PlanFragment : BaseTeamFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        updateUIWithTeamData(team)
 
-        val isMyTeam = RealmMyTeam.isTeamLeader(team?._id, user?.id, mRealm)
-        isEnterprise = team?.type?.equals("enterprise", ignoreCase = true) == true
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                teamFlow.collect { updatedTeam ->
+                    if (updatedTeam != null) {
+                        updateUIWithTeamData(updatedTeam)
+                        updateButtonVisibility(updatedTeam)
+                    }
+                }
+            }
+        }
+        
+        if (team != null) {
+            updateUIWithTeamData(team)
+            updateButtonVisibility(team!!)
+        }
+    }
+
+    private fun updateButtonVisibility(currentTeam: RealmMyTeam) {
+        val isMyTeam = RealmMyTeam.isTeamLeader(currentTeam._id, user?.id, mRealm)
+        isEnterprise = currentTeam.type?.equals("enterprise", ignoreCase = true) == true
 
         binding.btnAddPlan.text = if (isEnterprise) {
             getString(R.string.edit_mission_and_services)
@@ -120,8 +144,8 @@ class PlanFragment : BaseTeamFragment() {
             return
         }
 
-        val userId = UserProfileDbHandler(activity).userModel?._id
-        val createdBy = userId.orEmpty()
+        val userId = user?.id ?: return
+        val createdBy = userId
         val teamIdentifier = team._id?.takeIf { it.isNotBlank() }
             ?: team.teamId?.takeIf { it.isNotBlank() }
         if (teamIdentifier == null) {
@@ -140,7 +164,21 @@ class PlanFragment : BaseTeamFragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val wasUpdated = teamRepository.updateTeamDetails(
+                val teamTypeForValidation = team.type ?: "team"
+                val nameExists = teamsRepository.isTeamNameExists(name, teamTypeForValidation, teamIdentifier)
+
+                if (nameExists) {
+                    val duplicateMessage = if (isEnterprise) {
+                        context.getString(R.string.enterprise_name_already_exists)
+                    } else {
+                        context.getString(R.string.team_name_already_exists)
+                    }
+                    Utilities.toast(activity, duplicateMessage)
+                    binding.etName.error = duplicateMessage
+                    return@launch
+                }
+
+                val wasUpdated = teamsRepository.updateTeamDetails(
                     teamId = teamIdentifier,
                     name = name,
                     description = descriptionToSave,
@@ -152,7 +190,7 @@ class PlanFragment : BaseTeamFragment() {
                 )
 
                 if (wasUpdated) {
-                    val refreshedTeam = teamRepository.getTeamByDocumentIdOrTeamId(teamIdentifier)
+                    val refreshedTeam = teamsRepository.getTeamByDocumentIdOrTeamId(teamIdentifier)
                         ?: (this@PlanFragment.team ?: team)
 
                     refreshedTeam.apply {
@@ -168,6 +206,7 @@ class PlanFragment : BaseTeamFragment() {
 
                     this@PlanFragment.team = refreshedTeam
                     updateUIWithTeamData(refreshedTeam)
+                    teamUpdateListener?.onTeamDetailsUpdated()
                     Utilities.toast(requireContext(), context.getString(R.string.added_successfully))
                     dialog.dismiss()
                 } else {
@@ -181,7 +220,7 @@ class PlanFragment : BaseTeamFragment() {
 
     private fun updateUIWithTeamData(updatedTeam: RealmMyTeam?) {
         if (updatedTeam == null) return
-        isEnterprise=  team?.type?.equals("enterprise", ignoreCase = true) == true
+        isEnterprise = updatedTeam.type?.equals("enterprise", ignoreCase = true) == true
 
         val missionText = formatTeamDetail(updatedTeam.description,
             getString(if (isEnterprise) R.string.entMission else R.string.what_is_your_team_s_plan)

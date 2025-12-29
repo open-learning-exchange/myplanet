@@ -1,7 +1,7 @@
 package org.ole.planet.myplanet.service.sync
 
 import io.realm.Realm
-import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.data.DatabaseService
 
 object ThreadSafeRealmHelper {
     
@@ -43,8 +43,4 @@ object ThreadSafeRealmHelper {
         }
     }
     
-    fun closeAllThreadRealms() {
-        // This is called during app shutdown
-        closeThreadRealm()
-    }
 }

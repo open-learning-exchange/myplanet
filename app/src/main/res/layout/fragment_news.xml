@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/news_fragment_parent_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="@dimen/padding_normal"
     android:background="@color/secondary_bg"
+    android:padding="@dimen/padding_normal"
     tools:context=".ui.news.NewsFragment">
 
     <LinearLayout
@@ -28,12 +28,12 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/filter_by_label"
-                    android:textColor="@color/daynight_textColor"
-                    android:textSize="14sp"
                     android:paddingStart="8dp"
                     android:paddingEnd="8dp"
-                    android:paddingBottom="@dimen/padding_small" />
+                    android:paddingBottom="@dimen/padding_small"
+                    android:text="@string/filter_by_label"
+                    android:textColor="@color/daynight_textColor"
+                    android:textSize="14sp" />
                 <Spinner
                     android:id="@+id/filterByLabel"
                     android:layout_width="match_parent"
@@ -65,9 +65,9 @@
             android:id="@+id/ll_add_news"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
             android:orientation="vertical"
-            android:visibility="gone"
-            android:layout_marginTop="10dp">
+            android:visibility="gone">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -85,54 +85,50 @@
                         android:id="@+id/et_message"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textColor="@color/daynight_textColor"
-                        android:backgroundTint="@color/daynight_textColor" />
+                        android:backgroundTint="@color/daynight_textColor"
+                        android:textColor="@color/daynight_textColor" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:gravity="left"
-                    android:orientation="horizontal">
+                    android:orientation="vertical">
 
-                    <Button
-                        android:id="@+id/btn_submit"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:minWidth="@dimen/user_image_size"
-                        android:text="@string/button_submit"
-                        android:theme="@style/PrimaryButton" />
-                    <Button
-                        android:id="@+id/add_news_image"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:text="@string/add_image"
-                        android:theme="@style/PrimaryButton" />
-                    <HorizontalScrollView
+                    <LinearLayout
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content">
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
 
-                        <LinearLayout
-                            android:id="@+id/ll_images"
-                            android:layout_width="match_parent"
+                        <Button
+                            android:id="@+id/btn_submit"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_gravity="center" />
-                    </HorizontalScrollView>
+                            android:layout_gravity="center"
+                            android:minWidth="@dimen/user_image_size"
+                            android:text="@string/button_submit"
+                            android:theme="@style/PrimaryButton" />
+                        <Button
+                            android:id="@+id/add_news_image"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center"
+                            android:text="@string/add_image"
+                            android:theme="@style/PrimaryButton" />
+                    </LinearLayout>
+
+                    <com.google.android.flexbox.FlexboxLayout
+                        android:id="@+id/ll_images"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        app:alignContent="flex_start"
+                        app:alignItems="flex_start"
+                        app:flexWrap="wrap"
+                        app:justifyContent="flex_start" />
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>
 
-        <Button
-            android:id="@+id/btn_main"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="@dimen/padding_normal"
-            android:text="@string/show_main_conversation"
-            android:theme="@style/PrimaryFlatButton"
-            android:visibility="gone" />
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
@@ -148,8 +144,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:textColor="@color/daynight_textColor"
-                android:gravity="center" />
+                android:gravity="center"
+                android:textColor="@color/daynight_textColor" />
         </FrameLayout>
     </LinearLayout>
 </FrameLayout>

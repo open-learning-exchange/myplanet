@@ -1,7 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import javax.inject.Inject
-import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmTag
 
 class TagRepositoryImpl @Inject constructor(
@@ -32,22 +32,34 @@ class TagRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getTagsForResource(resourceId: String): List<RealmTag> {
+        return getLinkedTags("resources", resourceId)
+    }
+
+    override suspend fun getTagsForCourse(courseId: String): List<RealmTag> {
+        return getLinkedTags("courses", courseId)
+    }
+
+    private suspend fun getLinkedTags(db: String, linkId: String): List<RealmTag> {
         val links = queryList(RealmTag::class.java) {
-            equalTo("db", "resources")
-            equalTo("linkId", resourceId)
+            equalTo("db", db)
+            equalTo("linkId", linkId)
         }
         if (links.isEmpty()) {
             return emptyList()
         }
-        val parents = mutableListOf<RealmTag>()
-        for (link in links) {
-            val tagId = link.tagId ?: continue
-            val parent = findByField(RealmTag::class.java, "id", tagId)
-            if (parent != null) {
-                parents.add(parent)
-            }
+        val tagIds = links.mapNotNull { it.tagId }.distinct()
+        if (tagIds.isEmpty()) {
+            return emptyList()
         }
-        return parents
+
+        val parents = queryList(RealmTag::class.java) {
+            `in`("id", tagIds.toTypedArray())
+        }
+        if (parents.isEmpty()) {
+            return emptyList()
+        }
+
+        val parentsById = parents.associateBy { it.id }
+        return tagIds.mapNotNull { parentsById[it] }
     }
 }
-

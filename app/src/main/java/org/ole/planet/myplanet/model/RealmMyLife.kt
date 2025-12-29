@@ -4,7 +4,7 @@ import android.content.SharedPreferences
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
-import java.util.concurrent.Executors
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 
 open class RealmMyLife : RealmObject {
@@ -37,48 +37,17 @@ open class RealmMyLife : RealmObject {
                 .sort("weight")
         }
 
-        @JvmStatic
-        fun updateWeight(weight: Int, id: String?, userId: String?) {
-            val executor = Executors.newSingleThreadExecutor()
-            try {
-                executor.execute {
-                    MainApplication.service.withRealm { backgroundRealm ->
-                        backgroundRealm.executeTransaction { mRealm ->
-                            val targetItem = mRealm.where(RealmMyLife::class.java).equalTo("_id", id)
-                                .findFirst()
-
-                            targetItem?.let {
-                                val currentWeight = it.weight
-                                it.weight = weight
-
-                                val otherItem = mRealm.where(RealmMyLife::class.java)
-                                    .equalTo("userId", userId).equalTo("weight", weight)
-                                    .notEqualTo("_id", id).findFirst()
-
-                                otherItem?.weight = currentWeight
-                            }
-                        }
-                    }
-                }
-            } finally {
-                executor.shutdown()
-            }
-        }
 
         @JvmStatic
         fun updateVisibility(isVisible: Boolean, id: String?) {
-            val executor = Executors.newSingleThreadExecutor()
-            try {
-                executor.execute {
-                    MainApplication.service.withRealm { backgroundRealm ->
-                        backgroundRealm.executeTransaction { mRealm ->
-                            mRealm.where(RealmMyLife::class.java).equalTo("_id", id).findFirst()
-                                ?.isVisible = isVisible
-                        }
-                    }
+            MainApplication.applicationScope.launch {
+                val databaseService = (MainApplication.context as MainApplication).databaseService
+                databaseService.executeTransactionAsync { realm ->
+                    realm.where(RealmMyLife::class.java)
+                        .equalTo("_id", id)
+                        .findFirst()
+                        ?.isVisible = isVisible
                 }
-            } finally {
-                executor.shutdown()
             }
         }
     }

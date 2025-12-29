@@ -15,13 +15,17 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.snackbar.Snackbar
-import com.google.gson.Gson
 import com.google.gson.JsonObject
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmQuery
 import io.realm.Sort
 import java.util.Date
+import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentTakeExamBinding
@@ -33,22 +37,24 @@ import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
+import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.JsonUtils.getStringAsJsonArray
 import org.ole.planet.myplanet.utilities.KeyboardUtils.hideSoftKeyboard
+import org.ole.planet.myplanet.utilities.ExamSubmissionUtils
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.Utilities.toast
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
+@AndroidEntryPoint
 class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButton.OnCheckedChangeListener, ImageCaptureCallback {
     private var _binding: FragmentTakeExamBinding? = null
     private val binding get() = _binding!!
     private var isCertified = false
-    private val gson = Gson()
 
     private val answerCache = mutableMapOf<String, AnswerData>()
+
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
 
     data class AnswerData(
         var singleAnswer: String = "",
@@ -59,8 +65,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     override fun onCreateView(inflater: LayoutInflater, parent: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTakeExamBinding.inflate(inflater, parent, false)
         listAns = HashMap()
-        val dbHandler = UserProfileDbHandler(requireActivity())
-        user = dbHandler.userModel
+        user = userProfileDbHandler.userModel
         return binding.root
     }
 
@@ -84,10 +89,17 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         isCertified = isCourseCertified(mRealm, courseId)
 
         if ((questions?.size ?: 0) > 0) {
-            clearAllExistingAnswers()
-            createSubmission()
-            startExam(questions?.get(currentIndex))
-            updateNavButtons()
+            if (type == "exam") {
+                clearAllExistingAnswers {
+                    createSubmission()
+                    startExam(questions?.get(currentIndex))
+                    updateNavButtons()
+                }
+            } else {
+                createSubmission()
+                startExam(questions?.get(currentIndex))
+                updateNavButtons()
+            }
         } else {
             binding.container.visibility = View.GONE
             binding.btnSubmit.visibility = View.GONE
@@ -135,7 +147,6 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
         val currentQuestion = questions?.get(currentIndex) ?: return
         val questionId = currentQuestion.id ?: return
-
         val answerData = answerCache.getOrPut(questionId) { AnswerData() }
 
         when (currentQuestion.type) {
@@ -156,7 +167,6 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                 answerData.singleAnswer = binding.etAnswer.text.toString()
             }
         }
-
         updateAnsDb()
     }
 
@@ -226,6 +236,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         try {
             sub = createSubmission(null, mRealm)
             setParentId()
+            setParentJson()
             sub?.userId = user?.id
             sub?.status = "pending"
             sub?.type = type
@@ -262,13 +273,41 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         }
     }
 
+    private fun setParentJson() {
+        try {
+            val parentJsonString = JSONObject().apply {
+                put("_id", exam?.id ?: id)
+                put("name", exam?.name ?: "")
+                put("courseId", exam?.courseId ?: "")
+                put("sourcePlanet", exam?.sourcePlanet ?: "")
+                put("teamShareAllowed", exam?.isTeamShareAllowed ?: false)
+                put("noOfQuestions", exam?.noOfQuestions ?: 0)
+                put("isFromNation", exam?.isFromNation ?: false)
+            }.toString()
+            sub?.parent = parentJsonString
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     private fun addTeamInformation(realm: Realm) {
-        sub?.team = teamId
+        val team = realm.where(org.ole.planet.myplanet.model.RealmMyTeam::class.java)
+            .equalTo("_id", teamId)
+            .findFirst()
+
+        if (team != null) {
+            val teamRef = realm.createObject(org.ole.planet.myplanet.model.RealmTeamReference::class.java)
+            teamRef._id = team._id
+            teamRef.name = team.name
+            teamRef.type = team.type ?: "team"
+            sub?.teamObject = teamRef
+        }
+
         val membershipDoc = realm.createObject(RealmMembershipDoc::class.java)
         membershipDoc.teamId = teamId
         sub?.membershipDoc = membershipDoc
 
-        val userModel = UserProfileDbHandler(requireActivity()).userModel
+        val userModel = userProfileDbHandler.userModel
 
         try {
             val userJson = JSONObject()
@@ -301,22 +340,19 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                 binding.groupChoices.visibility = View.VISIBLE
                 selectQuestion(question, ans)
             }
-            question?.type.equals("input", ignoreCase = true) ||
-                    question?.type.equals("textarea", ignoreCase = true) -> {
+            question?.type.equals("input", ignoreCase = true) || question?.type.equals("textarea", ignoreCase = true) -> {
                 question?.type?.let {
                     setMarkdownViewAndShowInput(binding.etAnswer, it, ans)
+                    val questionId = question.id
+                    val answerData = answerCache[questionId]
+                    if (answerData != null && answerData.singleAnswer.isNotEmpty()) {
+                        binding.etAnswer.setText(answerData.singleAnswer)
+                    }
                 }
             }
             question?.type.equals("selectMultiple", ignoreCase = true) -> {
                 binding.llCheckbox.visibility = View.VISIBLE
                 showCheckBoxes(question, ans)
-                for (i in 0 until binding.llCheckbox.childCount) {
-                    val child = binding.llCheckbox.getChildAt(i)
-                    if (child is CompoundButton) {
-                        val choiceText = child.text.toString()
-                        child.isChecked = listAns?.containsKey(choiceText) == true
-                    }
-                }
             }
             question?.type.equals("ratingScale", ignoreCase = true) -> {
                 binding.llRatingScale.visibility = View.VISIBLE
@@ -334,6 +370,11 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         val questionId = question?.id ?: return
         val answerData = answerCache[questionId]
 
+        ans = ""
+        listAns?.clear()
+        selectedRatingButton?.isSelected = false
+        selectedRatingButton = null
+
         if (answerData != null) {
             when (question.type) {
                 "select", "ratingScale" -> {
@@ -346,7 +387,6 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                     }
                 }
                 "selectMultiple" -> {
-                    listAns?.clear()
                     listAns?.putAll(answerData.multipleAnswers)
                     if (answerData.otherText.isNotEmpty()) {
                         binding.etAnswer.setText(answerData.otherText)
@@ -361,7 +401,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                 }
             }
         } else {
-            clearAnswer()
+            binding.etAnswer.setText("")
         }
     }
 
@@ -443,7 +483,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         }
 
         if (question?.hasOtherOption == true) {
-            val otherChoice = gson.fromJson("""{"text":"Other","id":"other"}""", JsonObject::class.java)
+            val otherChoice = JsonUtils.gson.fromJson("""{"text":"Other","id":"other"}""", JsonObject::class.java)
 
             addCompoundButton(otherChoice, false, oldAnswer)
         }
@@ -463,7 +503,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
         if (question?.hasOtherOption == true) {
             if (choices.size() > 0 && choices[0].isJsonObject) {
-                val otherChoice = gson.fromJson("""{"text":"Other","id":"other"}""", JsonObject::class.java)
+                val otherChoice = JsonUtils.gson.fromJson("""{"text":"Other","id":"other"}""", JsonObject::class.java)
 
                 addCompoundButton(otherChoice, isRadio, oldAnswer)
             } else {
@@ -569,7 +609,14 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         } else {
             null
         }
-        return ExamSubmissionUtils.saveAnswer(
+        
+        if (sub == null) {
+            sub = mRealm.where(RealmSubmission::class.java)
+                .equalTo("status", "pending")
+                .findAll().lastOrNull()
+        }
+
+        val result = ExamSubmissionUtils.saveAnswer(
             mRealm,
             sub,
             currentQuestion,
@@ -581,6 +628,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             currentIndex,
             questions?.size ?: 0
         )
+        return result
     }
 
     override fun onCheckedChanged(compoundButton: CompoundButton, isChecked: Boolean) {
@@ -652,18 +700,22 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         return false
     }
 
-    private fun clearAllExistingAnswers() {
+    private fun clearAllExistingAnswers(onComplete: () -> Unit = {}) {
+        val examIdValue = exam?.id
+        val examCourseIdValue = exam?.courseId
+        val userIdValue = user?.id
+
         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             try {
                 databaseService.executeTransactionAsync { realm ->
-                    val parentIdToSearch = if (!TextUtils.isEmpty(exam?.courseId)) {
-                        "${exam?.id ?: id}@${exam?.courseId}"
+                    val parentIdToSearch = if (!TextUtils.isEmpty(examCourseIdValue)) {
+                        "${examIdValue ?: id}@${examCourseIdValue}"
                     } else {
-                        exam?.id ?: id
+                        examIdValue ?: id
                     }
 
                     val allSubmissions = realm.where(RealmSubmission::class.java)
-                        .equalTo("userId", user?.id)
+                        .equalTo("userId", userIdValue)
                         .equalTo("parentId", parentIdToSearch)
                         .findAll()
 
@@ -679,6 +731,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                     ans = ""
                     listAns?.clear()
                     sub = null
+                    onComplete()
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -688,6 +741,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                     ans = ""
                     listAns?.clear()
                     sub = null
+                    onComplete()
                 }
             }
         }
@@ -696,6 +750,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     override fun onDestroyView() {
         super.onDestroyView()
         saveCurrentAnswer()
+        answerTextWatcher?.let { binding.etAnswer.removeTextChangedListener(it) }
         selectedRatingButton = null
         _binding = null
     }

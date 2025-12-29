@@ -22,19 +22,14 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.createMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getAllCourses
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourseByUserId
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.createFromResource
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getMyLibraryByUserId
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getOurLibrary
-import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onAdd
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTag
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
 abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), OnRatingChangeListener {
@@ -52,6 +47,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     var list: MutableList<LI>? = null
     var resources: List<RealmMyLibrary>? = null
     var courseLib: String? = null
+    private var isAddInProgress = false
 
 
     abstract fun getLayout(): Int
@@ -85,19 +81,29 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         tvMessage = v.findViewById(R.id.tv_message)
         selectedItems = mutableListOf()
         list = mutableListOf()
-        mRealm = databaseService.realmInstance
-        profileDbHandler = UserProfileDbHandler(requireActivity())
-        model = profileDbHandler?.userModel
-        val adapter = getAdapter()
-        recyclerView.adapter = adapter
-        if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {
-            resources?.let { showDownloadDialog(it) }
-        } else if (isMyCourseLib && courseLib == null && !isSurvey) {
-            viewLifecycleOwner.lifecycleScope.launch {
-                showDownloadDialog(getLibraryList(mRealm))
-            }
-        }
         return v
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        postponeEnterTransition()
+        viewLifecycleOwner.lifecycleScope.launch {
+            mRealm = databaseService.realmInstance
+            model = profileDbHandler.userModel
+            val adapter = getAdapter()
+            recyclerView.adapter = adapter
+            if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {
+                resources?.let { showDownloadDialog(it) }
+            } else if (isMyCourseLib && courseLib == null && !isSurvey) {
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val userId = settings.getString("userId", "--")
+                    val libraryList = resourcesRepository.getLibraryListForUser(userId)
+                    showDownloadDialog(libraryList)
+                }
+            }
+            startPostponedEnterTransition()
+            requireActivity().reportFullyDrawn()
+        }
     }
 
     private fun initDeleteButton() {
@@ -112,42 +118,77 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     fun addToMyList() {
-        if (!isRealmInitialized()) return
-        
-        selectedItems?.forEach { item ->
-            try {
-                if (!mRealm.isInTransaction) {
-                    mRealm.beginTransaction()
-                }
-                
-                val `object` = item as RealmObject
-                if (`object` is RealmMyLibrary) {
-                    val myObject = mRealm.where(RealmMyLibrary::class.java)
-                        .equalTo("resourceId", `object`.resourceId).findFirst()
-                    createFromResource(myObject, mRealm, model?.id)
-                    val userId = profileDbHandler?.userModel?.id
-                    onAdd(mRealm, "resources", userId, myObject?.resourceId)
-                    toast(activity, getString(R.string.added_to_my_library))
-                } else {
-                    val myObject = getMyCourse(mRealm, (`object` as RealmMyCourse).courseId)
-                    createMyCourse(myObject, mRealm, model?.id)
-                    val userId = profileDbHandler?.userModel?.id
-                    onAdd(mRealm, "courses", userId, myObject?.courseId)
-                    toast(activity, getString(R.string.added_to_my_courses))
-                }
-                
-                if (mRealm.isInTransaction) {
-                    mRealm.commitTransaction()
-                }
-            } catch (e: Exception) {
-                if (mRealm.isInTransaction) {
-                    mRealm.cancelTransaction()
-                }
-                throw e
+        if (!isRealmInitialized() || isAddInProgress) return
+
+        val itemsToAdd = selectedItems?.toList() ?: emptyList()
+        if (itemsToAdd.isEmpty()) return
+
+        val resourceIds = mutableSetOf<String>()
+        val courseIds = mutableSetOf<String>()
+
+        itemsToAdd.forEach { item ->
+            val realmObject = item as? RealmObject ?: return@forEach
+            when (realmObject) {
+                is RealmMyLibrary -> realmObject.resourceId?.let(resourceIds::add)
+                is RealmMyCourse -> realmObject.courseId?.let(courseIds::add)
             }
         }
-        recyclerView.adapter = getAdapter()
-        showNoData(tvMessage, getAdapter().itemCount, "")
+
+        if (resourceIds.isEmpty() && courseIds.isEmpty()) {
+            return
+        }
+
+        isAddInProgress = true
+        setJoinInProgress(true)
+
+        val userId = profileDbHandler.userModel?.id
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            var libraryAdded = false
+            var courseAdded = false
+            val result = runCatching {
+                resourceIds.forEach { resourceId ->
+                    if (!userId.isNullOrBlank()) {
+                        resourcesRepository.updateUserLibrary(resourceId, userId, isAdd = true)
+                        libraryAdded = true
+                    }
+                }
+
+                courseIds.forEach { courseId ->
+                    if (courseId.isNotBlank()) {
+                        val added = coursesRepository.markCourseAdded(courseId, userId)
+                        courseAdded = courseAdded || added
+                    }
+                }
+            }
+
+            isAddInProgress = false
+            setJoinInProgress(false)
+            recyclerView.adapter = getAdapter()
+            showNoData(tvMessage, getAdapter().itemCount, "")
+
+            result.exceptionOrNull()?.let { throw it }
+
+            if (libraryAdded) {
+                toast(activity, getString(R.string.added_to_my_library))
+            }
+            if (courseAdded) {
+                toast(activity, getString(R.string.added_to_my_courses))
+            }
+        }
+    }
+
+    private fun setJoinInProgress(inProgress: Boolean) {
+        recyclerView.isEnabled = !inProgress
+        recyclerView.alpha = if (inProgress) 0.6f else 1f
+        view?.findViewById<View>(R.id.tv_add)?.let { addButton ->
+            addButton.isEnabled = if (inProgress) {
+                false
+            } else {
+                !(selectedItems.isNullOrEmpty())
+            }
+            addButton.alpha = if (inProgress) 0.5f else 1f
+        }
     }
 
     fun deleteSelected(deleteProgress: Boolean) {
@@ -203,6 +244,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         if (s.isEmpty()) return mRealm.where(c).findAll()
 
         val queryParts = s.split(" ").filterNot { it.isEmpty() }
+        val normalizedQueryParts = queryParts.map { normalizeText(it) }
         val data: RealmResults<LI> = mRealm.where(c).findAll()
         val normalizedQuery = normalizeText(s)
         val startsWithQuery = mutableListOf<LI>()
@@ -213,7 +255,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
             if (title.startsWith(normalizedQuery, ignoreCase = true)) {
                 startsWithQuery.add(item)
-            } else if (queryParts.all { title.contains(normalizeText(it), ignoreCase = true) }) {
+            } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
                 containsQuery.add(item)
             }
         }
@@ -271,7 +313,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         list.forEach { course ->
             checkAndAddToList(course, courses, tags)
         }
-        return applyCourseFilter(list)
+        return applyCourseFilter(courses)
     }
 
     private fun filterRealmMyCourseList(items: List<Any?>): List<RealmMyCourse> {

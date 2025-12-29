@@ -8,10 +8,7 @@ import android.text.TextUtils
 import android.text.TextWatcher
 import android.view.Gravity
 import android.view.View
-import android.widget.CheckBox
-import android.widget.CompoundButton
 import android.widget.EditText
-import android.widget.RadioButton
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -31,7 +28,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
@@ -40,6 +37,7 @@ import org.ole.planet.myplanet.model.RealmSubmitPhotos
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.survey.SurveyFragment
+import org.ole.planet.myplanet.utilities.CameraUtils
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.NetworkUtils.getUniqueIdentifier
 import org.ole.planet.myplanet.utilities.Utilities
@@ -67,6 +65,8 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     var submitId = ""
     var isTeam: Boolean = false
     var teamId: String? = null
+    internal var answerTextWatcher: TextWatcher? = null
+    private var currentAnswerEditText: EditText? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -164,7 +164,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
 
     private fun showUserInfoDialog() {
         if (!isMySurvey && exam?.isFromNation != true) {
-            UserInformationFragment.getInstance(sub?.id, teamId, !isMySurvey && exam?.isFromNation != true).show(childFragmentManager, "")
+            UserInformationFragment.getInstance(sub?.id, teamId, exam?.isFromNation != true).show(childFragmentManager, "")
         } else {
             if (!mRealm.isInTransaction) mRealm.beginTransaction()
             sub?.status = "complete"
@@ -184,18 +184,6 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
             )
         }
     }
-
-    fun addAnswer(compoundButton: CompoundButton) {
-        val btnText = compoundButton.text.toString()
-        val btnId = compoundButton.tag?.toString() ?: ""
-
-        if (compoundButton is RadioButton) {
-            ans = btnId
-        } else if (compoundButton is CheckBox) {
-            listAns?.put(btnText, btnId)
-        }
-    }
-
     abstract fun startExam(question: RealmExamQuestion?)
     private fun insertIntoSubmitPhotos(submitId: String?) {
         mRealm.beginTransaction()
@@ -217,25 +205,35 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     }
 
     fun setMarkdownViewAndShowInput(etAnswer: EditText, type: String, oldAnswer: String?) {
+        currentAnswerEditText?.removeTextChangedListener(answerTextWatcher)
+        currentAnswerEditText = etAnswer
         etAnswer.visibility = View.VISIBLE
         val markwon = Markwon.create(requireActivity())
         val editor = MarkwonEditor.create(markwon)
         if (type.equals("textarea", ignoreCase = true)) {
-            etAnswer.addTextChangedListener(MarkwonEditorTextWatcher.withProcess(editor))
+            answerTextWatcher = MarkwonEditorTextWatcher.withProcess(editor)
+            etAnswer.addTextChangedListener(answerTextWatcher)
         } else {
-            etAnswer.addTextChangedListener(object : TextWatcher {
+            answerTextWatcher = object : TextWatcher {
                 override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
                 override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
                 override fun afterTextChanged(editable: Editable) {}
-            })
+            }
+            etAnswer.addTextChangedListener(answerTextWatcher)
         }
         etAnswer.setText(oldAnswer)
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        currentAnswerEditText?.removeTextChangedListener(answerTextWatcher)
     }
 
     override fun onDestroy() {
         if (::mRealm.isInitialized && !mRealm.isClosed) {
             mRealm.close()
         }
+        CameraUtils.release()
         super.onDestroy()
     }
 }

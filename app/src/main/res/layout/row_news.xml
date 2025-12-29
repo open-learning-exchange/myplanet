@@ -100,20 +100,31 @@
             <LinearLayout
                 android:id="@+id/linearLayout51"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
 
+                <com.google.android.flexbox.FlexboxLayout
+                    android:id="@+id/ll_news_images"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="@dimen/padding_small"
+                    android:visibility="gone"
+                    app:flexWrap="wrap"
+                    app:alignItems="flex_start"
+                    app:alignContent="flex_start"
+                    app:justifyContent="flex_start" />
                 <ImageView
                     android:id="@+id/img_news"
                     android:layout_width="120dp"
                     android:layout_height="120dp"
                     android:layout_gravity="center"
-                    android:padding="@dimen/padding_small" />
+                    android:padding="@dimen/padding_small"
+                    android:visibility="gone" />
                 <TextView
                     android:id="@+id/tv_message"
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
-                    android:layout_weight="3"
                     android:ellipsize="end"
                     android:maxLines="6"
                     android:padding="@dimen/padding_normal"
@@ -173,7 +184,6 @@
                 app:layout_constraintEnd_toStartOf="@+id/btn_share"
                 app:layout_constraintStart_toEndOf="@+id/btn_show_reply"
                 app:layout_constraintTop_toTopOf="parent" />
-
             <ImageButton
                 android:id="@+id/btn_share"
                 android:layout_width="0dp"
@@ -188,7 +198,6 @@
                 app:layout_constraintStart_toEndOf="@+id/btn_add_label"
                 app:layout_constraintTop_toTopOf="parent"
                 app:tint="@color/daynight_textColor" />
-
             <LinearLayout
                 android:id="@+id/ll_edit_delete"
                 android:layout_width="wrap_content"

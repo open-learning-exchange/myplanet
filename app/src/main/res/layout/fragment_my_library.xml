@@ -250,7 +250,7 @@
         android:layout_gravity="bottom|end"
         android:layout_margin="@dimen/padding_large"
         android:contentDescription="@string/add_res"
-        android:src="@drawable/ic_add"
+        android:src="@drawable/ic_add_white"
         android:tint="@color/md_white_1000"
         app:fab_label="@string/add_res" />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

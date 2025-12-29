@@ -7,10 +7,15 @@ import android.text.style.ForegroundColorSpan
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import com.opencsv.CSVParserBuilder
 import com.opencsv.CSVReaderBuilder
 import java.io.File
 import java.io.FileReader
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.yield
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityCsvviewerBinding
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
@@ -37,31 +42,70 @@ class CSVViewerActivity : AppCompatActivity() {
             binding.csvFileName.visibility = View.VISIBLE
         }
 
-        try {
-            val csvFile: File = if (fileName?.startsWith("/") == true) {
-                File(fileName)
-            } else {
-                val basePath = getExternalFilesDir(null)
-                File(basePath, "ole/$fileName")
-            }
-            val reader = CSVReaderBuilder(FileReader(csvFile))
-                .withCSVParser(CSVParserBuilder().withSeparator(',').withQuoteChar('"').build())
-                .build()
+        binding.csvProgressBar.visibility = View.VISIBLE
+        binding.csvFileContent.text = ""
 
-            val allRows = reader.readAll()
-            val spannableContent = SpannableStringBuilder()
-            for (row in allRows) {
-                val rowText = row.contentToString() + "\n"
-                val start = spannableContent.length
-                spannableContent.append(rowText)
-                spannableContent.setSpan(
-                    ForegroundColorSpan(ContextCompat.getColor(this, R.color.daynight_textColor)),
-                    start, spannableContent.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-                )
+        lifecycleScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    val csvFile: File = if (fileName?.startsWith("/") == true) {
+                        File(fileName)
+                    } else {
+                        val basePath = getExternalFilesDir(null)
+                        File(basePath, "ole/$fileName")
+                    }
+                    val reader = CSVReaderBuilder(FileReader(csvFile))
+                        .withCSVParser(CSVParserBuilder().withSeparator(',').withQuoteChar('"').build())
+                        .build()
+
+                    val chunkSize = 100
+                    val chunk = mutableListOf<Array<String>>()
+
+                    reader.use { csvReader ->
+                        for (row in csvReader) {
+                            chunk.add(row)
+                            if (chunk.size >= chunkSize) {
+                                val spannableChunk = buildSpannableForChunk(chunk)
+                                withContext(Dispatchers.Main) {
+                                    binding.csvFileContent.append(spannableChunk)
+                                }
+                                chunk.clear()
+                                yield()
+                            }
+                        }
+
+                        if (chunk.isNotEmpty()) {
+                            val spannableChunk = buildSpannableForChunk(chunk)
+                            withContext(Dispatchers.Main) {
+                                binding.csvFileContent.append(spannableChunk)
+                            }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    binding.csvFileContent.text = "Error reading file: ${e.message}"
+                }
+            } finally {
+                withContext(Dispatchers.Main) {
+                    binding.csvProgressBar.visibility = View.GONE
+                }
             }
-            binding.csvFileContent.text = spannableContent
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
+    }
+
+    private fun buildSpannableForChunk(chunk: List<Array<String>>): SpannableStringBuilder {
+        val spannableContent = SpannableStringBuilder()
+        for (row in chunk) {
+            val rowText = row.contentToString() + "\n"
+            val start = spannableContent.length
+            spannableContent.append(rowText)
+            spannableContent.setSpan(
+                ForegroundColorSpan(ContextCompat.getColor(this, R.color.daynight_textColor)),
+                start, spannableContent.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+            )
+        }
+        return spannableContent
     }
 }

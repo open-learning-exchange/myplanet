@@ -7,7 +7,6 @@ import android.net.NetworkCapabilities
 import android.os.Build
 import kotlin.math.max
 import kotlin.math.min
-import kotlinx.coroutines.sync.Semaphore
 
 data class SystemCapabilities(
     val availableMemoryMB: Long,
@@ -157,20 +156,4 @@ class AdaptiveBatchProcessor(private val context: Context) {
         }
     }
     
-    fun createSemaphore(config: SyncConfig): Semaphore {
-        return Semaphore(config.concurrencyLevel)
-    }
-    
-    fun adjustConfigForRetry(config: SyncConfig, attemptNumber: Int): SyncConfig {
-        val backoffFactor = 1.5
-        val adjustedBatchSize = max(10, (config.batchSize / (backoffFactor * attemptNumber)).toInt())
-        val adjustedConcurrency = max(1, config.concurrencyLevel - attemptNumber + 1)
-        val adjustedTimeout = (config.timeoutMs * (1 + attemptNumber * 0.5)).toLong()
-        
-        return config.copy(
-            batchSize = adjustedBatchSize,
-            concurrencyLevel = adjustedConcurrency,
-            timeoutMs = adjustedTimeout
-        )
-    }
 }

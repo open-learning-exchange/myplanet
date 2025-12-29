@@ -16,13 +16,11 @@
             android:layout_height="wrap_content"
             android:padding="@dimen/padding_normal"
             android:text="@string/send_survey_to" />
-
-        <org.ole.planet.myplanet.utilities.CheckboxListView
+        <org.ole.planet.myplanet.ui.widgets.CheckboxListView
             android:id="@+id/list_users"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:padding="@dimen/padding_normal" />
-
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -35,9 +33,8 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:gravity="center"
-                android:text="@string/btn_sync_cancel"
+                android:text="@string/txt_cancel"
                 android:theme="@style/PrimaryButton" />
-
             <Button
                 android:id="@+id/send_survey"
                 android:layout_width="wrap_content"
@@ -47,7 +44,5 @@
                 android:text="@string/send_survey"
                 android:theme="@style/PrimaryButton" />
         </LinearLayout>
-
     </LinearLayout>
-
 </FrameLayout>

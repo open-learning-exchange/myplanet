@@ -16,6 +16,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.graphics.drawable.toDrawable
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.github.chrisbanes.photoview.PhotoView
 import io.noties.markwon.AbstractMarkwonPlugin
 import io.noties.markwon.Markwon
@@ -34,15 +35,18 @@ import io.noties.markwon.image.file.FileSchemeHandler
 import io.noties.markwon.image.network.NetworkSchemeHandler
 import io.noties.markwon.image.network.OkHttpNetworkSchemeHandler
 import io.noties.markwon.movement.MovementMethodPlugin
+import java.util.WeakHashMap
 import java.util.regex.Pattern
 import org.commonmark.node.Image
 import org.ole.planet.myplanet.R
 
 object Markdown {
     private var currentZoomDialog: Dialog? = null
+    private val markwonCache = WeakHashMap<Context, Markwon>()
 
     fun create(context: Context): Markwon {
-        return Markwon.builder(context)
+        return markwonCache.getOrPut(context) {
+            Markwon.builder(context)
             .usePlugin(HtmlPlugin.create())
             .usePlugin(ImagesPlugin.create())
             .usePlugin(MovementMethodPlugin.create(LinkMovementMethod.getInstance()))
@@ -64,6 +68,7 @@ object Markdown {
                     }
                 }
             }).build()
+        }
     }
 
     fun setMarkdownText(textView: TextView, markdown: String) {
@@ -97,6 +102,8 @@ object Markdown {
 
         Glide.with(photoView.context)
             .load(imageUrl)
+            .diskCacheStrategy(DiskCacheStrategy.ALL)
+            .fitCenter()
             .error(R.drawable.ic_loading)
             .into(photoView)
 

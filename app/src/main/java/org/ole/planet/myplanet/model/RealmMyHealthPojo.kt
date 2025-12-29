@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.model
 
 import android.text.TextUtils
-import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmObject
@@ -35,7 +34,7 @@ open class RealmMyHealthPojo : RealmObject() {
     var gender: String? = null
     var age = 0
     fun getEncryptedDataAsJson(model: RealmUserModel): JsonObject {
-        return if (!TextUtils.isEmpty(data)) Gson().fromJson(
+        return if (!TextUtils.isEmpty(data)) JsonUtils.gson.fromJson(
             AndroidDecrypter.decrypt(data, model.key, model.iv), JsonObject::class.java
         ) else JsonObject()
     }
@@ -75,7 +74,7 @@ open class RealmMyHealthPojo : RealmObject() {
             myHealth?.age = JsonUtils.getInt("age", act)
             myHealth?.gender = JsonUtils.getString("gender", act)
             myHealth?.planetCode = JsonUtils.getString("planetCode", act)
-            myHealth?.conditions = Gson().toJson(JsonUtils.getJsonObject("conditions", act))
+            myHealth?.conditions = JsonUtils.gson.toJson(JsonUtils.getJsonObject("conditions", act))
         }
 
         @JvmStatic
@@ -99,7 +98,7 @@ open class RealmMyHealthPojo : RealmObject() {
             JsonUtils.addString(`object`, "creatorId", health.profileId)
             JsonUtils.addString(`object`, "gender", health.gender)
             `object`.addProperty("age", health.age)
-            JsonUtils.addJson(`object`, "conditions", Gson().fromJson(health.conditions, JsonObject::class.java)
+            JsonUtils.addJson(`object`, "conditions", JsonUtils.gson.fromJson(health.conditions, JsonObject::class.java)
             )
             return `object`
         }

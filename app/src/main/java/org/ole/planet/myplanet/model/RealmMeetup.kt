@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.model
 
 import android.text.TextUtils
-import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Case
@@ -109,16 +108,6 @@ open class RealmMeetup : RealmObject() {
             return map
         }
 
-        @JvmStatic
-        fun getJoinedUserIds(mRealm: Realm): Array<String?> {
-            val list: List<RealmMeetup> = mRealm.where(RealmMeetup::class.java).isNotEmpty("userId").findAll()
-            val myIds = arrayOfNulls<String>(list.size)
-            for (i in list.indices) {
-                myIds[i] = list[i].userId
-            }
-            return myIds
-        }
-
         private fun checkNull(s: String?): String {
             return if (TextUtils.isEmpty(s)) "" else s!!
         }
@@ -146,7 +135,7 @@ open class RealmMeetup : RealmObject() {
             `object`.addProperty("sync", meetup.sync)
 
             if (!meetup.link.isNullOrEmpty()) {
-                val linksJson = Gson().fromJson(meetup.link, JsonObject::class.java)
+                val linksJson = JsonUtils.gson.fromJson(meetup.link, JsonObject::class.java)
                 `object`.add("link", linksJson)
             }
 

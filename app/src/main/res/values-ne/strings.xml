@@ -17,19 +17,16 @@
     <string name="app_project_name">myPlanet</string>
     <string name="action_settings">सेटिङ्स</string>
     <string name="hint_name">प्रयोगकर्तानाम</string>
-    <string name="hint_password">पासवर्ड</string>
     <string name="btn_back">पछाडी जाउ</string>
     <string name="btn_sign_in">साइन इन गर्नुहोस्</string>
-    <string name="btn_sync">सिङ्क</string>
+    <string name="loading">लोड हुँदैछ...</string>
     <string name="select_team">टोली चयन गर्नुहोस्</string>
     <string name="btn_sync_save">सुरक्षित गर्नुहोस्</string>
-    <string name="btn_sync_cancel">रद्द गर्नुहोस्</string>
     <string name="err_msg_name">तपाईंको प्रयोगकर्तानाम लेख्नुहोस्</string>
     <string name="err_msg_password">पासवर्ड लेख्नुहोस्</string>
     <string name="err_msg_login">प्रयोगकर्तानाम र/वा पासवर्ड मेल खान्छैन</string>
     <string name="hint_serverURL">planet आईपि</string>
     <string name="hint_serverPin">सर्भर पिन</string>
-    <string name="radio_protocol">प्रोटोकल:</string>
     <string name="radio_http">http</string>
     <string name="radio_https">https</string>
     <string name="title_activity_dashboard">ड्यासबोर्ड</string>
@@ -51,8 +48,6 @@
     <string name="download_selected">चयनित डाउनलोड गर्नुहोस्</string>
     <string name="txt_cancel">रद्द गर्नुहोस्</string>
     <string name="download_all">सबै डाउनलोड गर्नुहोस्</string>
-    <string name="hello_blank_fragment">नमस्ते रिक्त फ्रेमेन्ट</string>
-    <string name="add_to_mycourse">मेरो पाठ्यक्रममा थप्नुहोस्</string>
     <string name="join_selected">चयनितमा\nसामेल हुनुहोस्</string>
     <string name="join">सामेल हुनुहोस्</string>
     <string name="add_to_mylib">मेरो पुस्तकालयमा थप्नुहोस्</string>
@@ -86,7 +81,6 @@
     <string name="middle_name">विचारको नाम</string>
     <string name="first_name">नाम</string>
     <string name="search_dots">खोज्नुहोस्…</string>
-    <string name="btn_remove_lib">हटाउनुहोस्</string>
     <string name="download">डाउनलोड गर्नुहोस्</string>
     <string name="published_by">प्रकाशित गर्ने:</string>
     <string name="author">लेखक:</string>
@@ -96,22 +90,18 @@
     <string name="type">प्रकार:</string>
     <string name="resource_colon">स्रोत:</string>
     <string name="your_rating">तपाईंको मत *</string>
+    <string name="loading_user_profile">तपाईंको प्रोफाइल तयार गर्दै…</string>
     <string name="your_comment">तपाईंको टिप्पणी छोड्नुहोस्</string>
-    <string name="show_top_nav">ड्यासबोर्डमा शीर्ष नेभिगेशन पट्ट देखाउनुहोस्</string>
     <string name="sync_now">अहिले सिङ्क गर्नुहोस्</string>
     <string name="logout">लगआउट</string>
     <string name="settings">सेटिङ्स</string>
-    <string name="change_password">पासवर्ड परिवर्तन गर्नुहोस्</string>
     <string name="edit_profile">प्रोफाइल सम्पादन गर्नुहोस्</string>
-    <string name="view_profile">प्रोफाइल हेर्नुहोस्</string>
-    <string name="alerts">चेतावनीहरू</string>
     <string name="profile">प्रोफाइल</string>
     <string name="user">प्रयोगकर्ता</string>
     <string name="remove_selected">चयनित\nहटाउनुहोस्</string>
     <string name="stop_download">डाउनलोड रोक्नुहोस्</string>
     <string name="downloading_file">फाइल डाउनलोड गर्दै…</string>
     <string name="cancel">रद्द गर्नुहोस्</string>
-    <string name="add_to_mycourses">मेरो पाठ्यक्रममा थप्नुहोस्</string>
     <string name="added_to">थपिएको</string>
     <string name="removed_from">हटाइएको</string>
     <string name="my_courses">मेरो पाठ्यक्रमहरू</string>
@@ -121,8 +111,6 @@
     <string name="filter_by_category">श्रेणीद्वारा छान्नुहोस्</string>
     <string name="ok">ठिक छ</string>
     <string name="inactive_message">प्रयोगकर्ता सक्रिय गरिएको छैन, कृपया प्रशासक वा प्रबन्धकलाई सम्पर्क गर्नुहोस् तपाईंको खाता सक्रिय गर्नको लागि।</string>
-    <string name="archive_mycourse">मेरो पाठ्यक्रम आर्काइभ गर्नुहोस्</string>
-    <string name="menu_achievement">साधारणता</string>
     <string name="edit_achievement">उपलब्धिहरू सम्पादन गर्नुहोस्</string>
     <string name="add_resources">स्रोतहरू थप्नुहोस्</string>
     <string name="description">वर्णन *</string>
@@ -134,36 +122,22 @@
     <string name="clear_tags">स्पष्ट गर्नुहोस्</string>
     <string name="add_an_achievement">साधारणता थप्नुहोस्</string>
     <string name="add_a_reference">सन्दर्भ थप्नुहोस्</string>
-    <string name="learner">शिक्षार्थी</string>
-    <string name="show_filter">फिल्टर देखाउनुहोस्</string>
     <string name="subjects">विषयहरू</string>
     <string name="mediums">माध्यमहरू</string>
     <string name="levels">स्तरहरू*</string>
     <string name="languages">भाषाहरू</string>
     <string name="txt_myLife">मेरो जीवन</string>
     <string name="achievements">मेरो साधारणता</string>
-    <string name="messeges">मेरा सन्देशहरू</string>
-    <string name="contacts">सम्पर्कहरू</string>
-    <string name="news">समाचार</string>
     <string name="references">सन्दर्भहरू</string>
     <string name="maps">नक्सा</string>
-    <string name="help_wanted">सहयोग चाहियो</string>
     <string name="btn_guest_login">मेहमानको रूपमा लगइन गर्नुहोस्</string>
     <string name="enter_username">प्रयोगकर्तानाम प्रविष्ट गर्नुहोस्</string>
     <string name="login">लगइन</string>
-    <string name="child_mode">सजिलो मोड</string>
-    <string name="joined_members">सामेल हुने सदस्यहरू</string>
-    <string name="requested_member">अनुरोधित सदस्य</string>
     <string name="courses">पाठ्यक्रमहरू</string>
-    <string name="enter_message_here">यहाँ सन्देश प्रविष्ट गर्नुहोस्</string>
     <string name="what_would">तपाईंलाई के साझा गर्न चाहनुहुन्छ?</string>
-    <string name="our_news">हाम्रा समाचारहरू</string>
     <string name="delete_record">के तपाईं यो हटाउन चाहनुहुन्छ?</string>
     <string name="edit_post">पोस्ट सम्पादन गर्नुहोस्</string>
-    <string name="search_user">प्रयोगकर्ता खोज्नुहोस्</string>
     <string name="get_started">सुरु गर्नुहोस्</string>
-    <string name="enter_password">पासवर्ड प्रविष्ट गर्नुहोस्</string>
-    <string name="managerial_login">प्रबन्धक लगइन</string>
     <string name="year">वर्ष</string>
     <string name="publisher">प्रकाशक</string>
     <string name="link_to_license">लाइसेन्समा लिङ्क</string>
@@ -175,22 +149,19 @@
     <string name="priority">प्राथमिकता</string>
     <string name="status">स्थिति</string>
     <string name="title_not_compulsary">शीर्षक</string>
-    <string name="discussion">छलफल</string>
     <string name="add_message">सन्देश थप्नुहोस्</string>
-    <string name="enter_message">तपाईंको सन्देश यहाँ प्रविष्ट गर्नुहोस्…</string>
     <string name="added_by">थपिएको</string>
     <string name="record_audio">आवाज रेकर्ड गर्नुहोस्</string>
     <string name="record_video">भिडियो रेकर्ड गर्नुहोस्</string>
     <string name="select_gallery">ग्यालरीबाट छान्नुहोस्</string>
     <string name="add_resource">स्रोत थप्नुहोस्:</string>
     <string name="reply">उत्तर दिनुहोस्</string>
-    <string name="show_reply">उत्तरहरू देखाउनुहोस्</string>
-    <string name="show_main_conversation">मुख्य बातचीत देखाउनुहोस्</string>
     <string name="https_protocol">https://</string>
     <string name="http_protocol">http://</string>
     <string name="showing_reply_of">उत्तर देखाउँदै:</string>
     <string name="open_date">खोल्ने मिति</string>
     <string name="my_survey">mySurveys</string>
+    <string name="failed_to_load_course">पाठ्यक्रम लोड गर्न असफल भयो</string>
     <string name="cannot_remove_user">प्रयोगकर्ता हटाउन सकिएन</string>
     <string name="no_members_task">कार्य सौंपन टोली सदस्यहरू उपस्थित छैनन्</string>
     <string name="no_member_selected">कुनै सदस्य चयन गरिएको छैन। कृपया फेरि प्रयास गर्नुहोस्</string>
@@ -217,25 +188,6 @@
     <string name="nepali">नेपाली</string>
     <string name="arabic">عربى</string>
     <string name="french">français</string>
-
-    <string-array name="language_keys">
-        <item>en</item>
-        <item>ne</item>
-        <item>fr</item>
-        <item>es</item>
-        <item>ar</item>
-        <item>so</item>
-    </string-array>
-
-    <string-array name="info_type">
-        <item>भाषाहरू</item>
-        <item>शिक्षा</item>
-        <item>रोजगार इतिहास</item>
-        <item>बैजहरू</item>
-        <item>प्रमाणपत्रहरू</item>
-        <item>इन्टर्नशिपहरू</item>
-        <item>पुरस्कारहरू</item>
-    </string-array>
 
     <string-array name="open_With">
         <item>HTML</item>
@@ -300,35 +252,19 @@
         <item>नपढिएको</item>
     </string-array>
 
-    <string name="dictionaries">शब्दकोशहरू</string>
-    <string name="bible">बाइबलहरू</string>
-    <string name="feature_not">सुविधा उपलब्ध छैन</string>
     <string name="myhealth">मेरो स्वास्थ्य</string>
-    <string name="type_name_to_search">खोजी गर्नका लागि नाम प्रविष्ट गर्नुहोस्</string>
     <string name="action">कार्य</string>
     <string name="created_on">मा सिर्जना गरिएको</string>
-    <string name="name_normal">नाम</string>
     <string name="mypersonals">मेरो व्यक्तिगत</string>
     <string name="capture_image">तस्वीर कप्चर गर्नुहोस्</string>
-    <string name="team_name">टिम नाम प्रविष्ट गर्नुहोस्</string>
     <string name="resources">स्रोतहरू</string>
     <string name="button_reject">अस्वीकार गर्नुहोस्</string>
     <string name="button_accept">स्वीकार गर्नुहोस्</string>
     <string name="plan">योजना</string>
     <string name="body_temperature">शरीर तापमान (°C)</string>
-    <string name="rectally">गुदामा</string>
-    <string name="axillary">किचकिचमा</string>
-    <string name="by_ear">कान बाट</string>
-    <string name="by_skin">त्वचाबाट</string>
-    <string name="temperature_taken">तापमान लिईएको:</string>
     <string name="pulse_rate">नाडी दर (bpm)</string>
-    <string name="respiration_rate">सास्ने दर</string>
-    <string name="systolic">सिस्टोलिक</string>
-    <string name="diastolic">डायास्टोलिक</string>
     <string name="blood_pressure">रक्त चाप (सिस्टोलिक / डायास्टोलिक)</string>
-    <string name="orally">मुखबाट</string>
     <string name="save">सुरक्षित गर्नुहोस्</string>
-    <string name="vital_signs">महत्वपूर्ण चिन्हहरू दर्ता</string>
     <string name="task">कार्य (आवश्यक)</string>
     <string name="deadline_required">समयसीमा (आवश्यक)</string>
     <string name="click_here_to_pick_date">मिति चयन गर्न क्लिक गर्नुहोस्</string>
@@ -336,15 +272,12 @@
     <string name="select_member">टिम सदस्य छान्नुहोस्</string>
     <string name="assign_task_to">कार्य खाँचो दिइएको</string>
     <string name="leader_selected">नेता चयन गरिएको</string>
-    <string name="user_removed_from_team">टिमबाट प्रयोगकर्ता हटाइयो</string>
     <string name="remove">हटाउनुहोस्</string>
     <string name="make_leader">नेता बनाउनुहोस्</string>
     <string name="mission"><![CDATA[मिशन र सेवाहरू]]></string>
     <string name="team">टटिमहरू</string>
     <string name="applicants">आवेदकहरू</string>
     <string name="finances">वित्त</string>
-    <string name="messages">सन्देशहरू</string>
-    <string name="nodata">कुनै डाटा उपलब्ध छैन</string>
     <string name="note">नोट *</string>
     <string name="amount">रकम</string>
     <string name="debit">नेलो</string>
@@ -361,7 +294,6 @@
     <string name="daily">दैनिक</string>
     <string name="weekly">साप्ताहिक</string>
     <string name="recurring_frequency">आवर्तीता आवद्धता</string>
-    <string name="filter_by_date">मिति फिल्टर</string>
     <string name="date_reset">मिति रिसेट गर्नुहोस्</string>
     <string name="emergency_contact">आपतकालीन सम्पर्क</string>
     <string name="emergency_contact_details">नाम: %1$s प्रकार: %2$s सम्पर्क: %3$s</string>
@@ -369,12 +301,8 @@
     <string name="special_needs">विशेष आवश्यकता</string>
     <string name="other_need">अन्य आवश्यकता</string>
     <string name="update_health_record">स्वास्थ्य रेकर्ड अद्यावधिक गर्नुहोस्</string>
-    <string name="vital_sign">महत्वपूर्ण चिन्ह</string>
-    <string name="examination">परिक्षा</string>
     <string name="add_examination">परिक्षा थप्नुहोस्</string>
-    <string name="new_patient">अर्को सदस्य</string>
     <string name="height">उचाई (सेमि)</string>
-    <string name="width">चौडाई</string>
     <string name="vision">दृष्टि</string>
     <string name="hearing">श्रवण</string>
     <string name="vitals">महत्वपूर्ण चिन्हहरू</string>
@@ -390,17 +318,12 @@
     <string name="referrals">रेफरल</string>
     <string name="full_name">पुरा नाम</string>
     <string name="weight">वजन (केजी)</string>
-    <string name="no_records">कुनै रेकर्ड भेटिएन</string>
-    <string name="chats">च्याटहरू</string>
     <string name="select_health_member">सदस्य छान्नुहोस्</string>
-    <string name="notifications">सूचनाहरू</string>
     <string name="incorrect_ans">तपाईंले गलत उत्तर दिएका छन्, कृपया पुन: प्रयास गर्नुहोस्</string>
     <string name="diagnosis_note">निदान नोट</string>
     <string name="menu_community">समुदाय</string>
     <string name="library">पुस्तकालय</string>
     <string name="device_name">उपकरणको नाम</string>
-    <string name="enter_title">शीर्षक प्रविष्ट गर्नुहोस्</string>
-    <string name="add_link">लिङ्क थप्नुहोस्</string>
     <string name="chat">च्याट</string>
     <string name="members">सदस्यहरू</string>
     <string name="tasks">कार्यहरू</string>
@@ -411,7 +334,7 @@
     <string name="freeup_space">डिस्क स्थान खाली पार्नुहोस्</string>
     <string name="action_disclaimer">अस्वीकरण</string>
     <string name="action_about">बारेमा</string>
-    <string name="engilsh_dictionary">अंग्रेजी शब्दकोश</string>
+    <string name="english_dictionary">अंग्रेजी शब्दकोश</string>
 
     <string-array name="team_type">
         <item>स्थानीय टिम</item>
@@ -421,11 +344,6 @@
     <string-array name="contact_type">
         <item>फोन</item>
         <item>इमेल</item>
-    </string-array>
-
-    <string-array name="add_link_options">
-        <item>टिमहरू</item>
-        <item>उद्यमहरू</item>
     </string-array>
 
     <string-array name="transaction_type">
@@ -543,8 +461,6 @@
         <item>जिका</item>
     </string-array>
 
-    <string name="add_story">गप्तप्रतिनिधि थप्नुहोस्</string>
-    <string name="txt_myprogress">मेरो प्रगति</string>
     <string name="more_action">फिल्टर</string>
     <string name="my_progress">मेरो प्रगति</string>
     <string name="my_activity">मेरो क्रियाकलाप</string>
@@ -558,7 +474,6 @@
     <string name="use_phone_number_as_password">फोन नम्बरलाई पासवर्डको रूपमा प्रयोग गर्नुहोस्</string>
     <string name="feedback">प्रतिक्रिया</string>
     <string name="add_member">सदस्य थप्नुहोस्</string>
-    <string name="exit">"निकास पुष्टि गर्नुहोस्"</string>
     <string name="confirm_exit">के तपाईं यस टिमबाट बाहिर निस्कन चाहानुहुन्छ?</string>
     <string name="update_profile_alert">कृपया पूर्ण फिचर प्रयोग गर्नका लागि तपाईंको प्रोफाइल पूरा गर्नुहोस्</string>
     <string name="other_notes">अन्य नोट</string>
@@ -571,24 +486,16 @@
     <string name="our_courses">हाम्रा कोर्सहरू</string>
     <string name="file">फाइल: %s</string>
     <string name="recording_audio">आवाज रेकर्ड गर्दै......</string>
-    <string name="show_replies">"जवाफहरू देखाउनुहोस् "</string>
     <string name="selected">"छानिएको: "</string>
     <string name="last_sync">सर्भरसँग अन्तिम समिकरण: %s</string>
     <string name="last_syncs">अन्तिमसर्वरसिङ्क</string>
-    <string name="login_user">लगइनप्रयोगकर्तानाम</string>
-    <string name="login_password">लगइनप्रयोगकर्तापासवर्ड</string>
     <string name="no_team_available">कुनै टिम/एन्टरप्राइज उपलब्ध छैन</string>
     <string name="last_sync_date">अन्तिम सिङ्क मिति: %s</string>
     <string name="no_assignee">कुनै निर्धारित व्यक्ति छैन</string>
     <string name="note_">नोटहरू</string>
-    <string name="diagno">निदान</string>
-    <string name="treat">उपचारहरू</string>
-    <string name="medicay">औषधि</string>
     <string name="immunizations">प्रतिरक्षात्मक टिकाकरण</string>
-    <string name="allergy">एलर्जीहरू</string>
     <string name="xrays">एक्स-रे</string>
     <string name="tests">परीक्षाहरू</string>
-    <string name="referral">रेफरलहरू</string>
     <string name="other_diagnosis">अन्य निदानहरू</string>
     <string name="close">बन्द गर्नुहोस्</string>
     <string name="negative_balance">हालको शेष श्रेणी नकारात्मक छ!</string>
@@ -606,22 +513,14 @@
     <string name="csv_filename">CSV फाईलको नाम</string>
     <string name="please_enter_reply">कृपया जवाफ टाइप गर्नुहोस्</string>
     <string name="image_filename">तस्बिर फाईलको नाम</string>
-    <string name="markdown_filename">मार्कडाउन फाईलको नाम</string>
-    <string name="select_login_mode">लगइन मोड छान्नुहोस्:</string>
-    <string name="normal_mode">साधारण मोड</string>
     <string name="select_date">मिति छान्नुहोस्</string>
     <string name="public_public">सार्वजनिक</string>
-    <string name="type_asterisk">टाइप गर्नुहोस्*</string>
     <string name="joined_members_colon">संलग्न गरिएका सदस्यहरू:</string>
-    <string name="requested_members_colon">अनुरोध गरिएका सदस्यहरू:</string>
-    <string name="courses_colon">कोर्सहरू:</string>
     <string name="title">शीर्षक</string>
     <string name="source">स्रोत</string>
     <string name="cloud_url">बादल</string>
     <string name="interval">अन्तराल</string>
     <string name="autosync">अटोसिङ्क</string>
-    <string name="autosync_off">अटोसिङ्क बन्द छ!</string>
-    <string name="autosync_on">अटोसिङ्क चालू छ</string>
     <string name="attached_resources">संलग्न गरिएका संसाधनहरू:</string>
     <string name="edit">सम्पादन गर्नुहोस्</string>
     <string name="my_achievements">मेरा सफलताहरू</string>
@@ -640,9 +539,6 @@
     <string name="download_resources">संसाधनहरू डाउनलोड गर्नुहोस्</string>
     <string name="take_test">परीक्षा दिनुहोस् [%d]</string>
     <string name="search">खोज्नुहोस्</string>
-    <string name="for_ambulance">प्रहरी</string>
-    <string name="for_police">पुलिस</string>
-    <string name="for_emergency">आपतकालीन</string>
     <string name="submit_feedback">प्रतिक्रिया पेश गर्नुहोस्</string>
     <string name="media">मिडिया:</string>
     <string name="filter">फिल्टर</string>
@@ -650,7 +546,6 @@
     <string name="subject_level">विषय स्तर</string>
     <string name="order_by_date">मिति अनुसार आदेश गर्नुहोस्</string>
     <string name="order_by_title">शीर्षक अनुसार आदेश गर्नुहोस्</string>
-    <string name="vital_signs_record">जीवनमौली चिन्हहरू रेकर्ड</string>
     <string name="exams">परीक्षाहरू</string>
     <string name="survey">सर्वेक्षण</string>
     <string name="submitted_by">पेश गर्ने:</string>
@@ -664,7 +559,6 @@
     <string name="all_task">सबै कार्यहरू</string>
     <string name="my_task">मेरो कार्य</string>
     <string name="completed">सम्पन्न भएको</string>
-    <string name="add_profile_picture">प्रोफाइल तस्बिर थप्नुहोस्</string>
     <string name="two_dash">--</string>
     <string name="n_a">N/A</string>
     <string name="request_to_join">सामेल हुनका लागि अनुरोध गर्नुहोस्</string>
@@ -673,9 +567,6 @@
     <string name="mistakes">गल्तीहरू</string>
     <string name="take_survey">सर्वेक्षण लिनुहोस्</string>
     <string name="checkbox">चेक बक्सा</string>
-    <string name="offer">प्रस्ताव</string>
-    <string name="request_for_advice">सल्लाहका लागि अनुरोध गर्नुहोस्</string>
-    <string name="no_images_to_download">डाउनलोड गर्नका लागि तस्वीरहरू छैनन्।</string>
     <string name="this_file_type_is_currently_unsupported">यो फाइल प्रकार हालसम्म समर्थित छैन</string>
     <string name="unable_to_open_resource">स्रोत खोल्न सकिएन</string>
     <string name="select_resource_to_open">"खोल्नका लागि स्रोत छनौट गर्नुहोस्: "</string>
@@ -691,10 +582,6 @@
     <string name="removed_from_mylibrary">मेरो पुस्तकालयबाट हटाइयो</string>
     <string name="removed_from_mycourse">मेरो पाठ्यक्रमबाट हटाइयो</string>
     <string name="please_allow_usages_permission_to_myplanet_app">कृपया myPlanet अनुप्रयोगमा प्रयोगको अनुमति दिनुहोस्।</string>
-    <string name="permissions_granted">अनुमतिहरू प्रदान गरिएको</string>
-    <string name="permissions_denied">अनुमतिहरू निषेध गरिएको</string>
-    <string name="unable_to_upload_resource">स्रोत अपलोड गर्न सकिएन</string>
-    <string name="please_select_link_item_from_list">कृपया सूचीबाट लिंक वस्तु छनौट गर्नुहोस्</string>
     <string name="title_is_required">शीर्षक आवश्यक छ</string>
     <string name="no_data_available">कुनै डाटा उपलब्ध छैन</string>
     <string name="are_you_sure_you_want_to_leave_these_courses">के तपाइँ निश्चित हुनुहुन्छ तपाइँ यी पाठ्यक्रमहरू हटाउन चाहनुहुन्छ?</string>
@@ -707,48 +594,20 @@
     <string name="retake_test">पुन: टेस्ट दिनुहोस् [%d]</string>
     <string name="do_you_want_to_join_this_course">के तपाइँ यो पाठ्यक्रममा सामिल हुन चाहनुहुन्छ?</string>
     <string name="join_this_course">यो पाठ्यक्रममा सामिल होइनुहोस्</string>
-    <string name="download_dictionary">डिक्शनरी डाउनलोड गर्नुहोस्।</string>
-    <string name="resource_not_downloaded">स्रोत डाउनलोड गरिएन।</string>
-    <string name="bulk_resource_download">बल्क स्रोत डाउनलोड।</string>
-    <string name="pending_survey">पेन्डिङ सर्वेक्षण।</string>
-    <string name="download_news_images">समाचार तस्वीरहरू डाउनलोड गर्नुहोस्।</string>
-    <string name="tasks_due">नियत कार्यहरू</string>
-    <string name="storage_critically_low">"स्टोरेज गम्भीर रूपमा कम: "</string>
-    <string name="available_please_free_up_space">उपलब्ध। कृपया ठाउँ खाली पार्नुहोस्।</string>
     <string name="storage_running_low">"स्टोरेज गम्भीर रूपमा कम: "</string>
-    <string name="available">उपलब्ध।</string>
     <string name="storage_available">"स्टोरेज उपलब्ध: "</string>
-    <string name="health_record_not_available_click_to_sync">स्वास्थ्य रेकर्ड उपलब्ध छैन। क्लिक गरेर सिंक गर्नुहोस्।</string>
-    <string name="visits">भ्रमणहरू</string>
     <string name="please_select_starting_date">"कृपया सुरु मिति छनौट गर्नुहोस्: "</string>
     <string name="read_offline_news_from">"अफलाइन समाचार पढ्नुहोस्: "</string>
     <string name="downloading_started_please_check_notification">डाउनलोड सुरु भयो, कृपया सूचना जाँच गर्नुहोस्…</string>
     <string name="file_already_exists">फाइल पहिले नै अवस्थित छ…</string>
-    <string name="syncing_health_please_wait">स्वास्थ्य सिंक गर्दै, कृपया प्रतीक्षा गर्नुहोस्…</string>
-    <string name="myhealth_synced_successfully">मेरो स्वास्थ्य सफलतापूर्वक सिंक गरियो</string>
-    <string name="myhealth_synced_failed">मेरो स्वास्थ्य सिंक असफल भयो</string>
-    <string name="no_due_tasks">कुनै नियत कार्यहरू छैनन्</string>
-    <string name="due_tasks">नियत कार्यहरू</string>
-    <string name="feature_not_available_for_guest_user">अतिथि प्रयोगकर्ता को लागि विशेषता उपलब्ध छैन</string>
     <string name="feature_not_available">विशेषता उपलब्ध छैन</string>
-    <string name="health_record_not_available_sync_health_data">स्वास्थ्य रेकर्ड उपलब्ध छैन, स्वास्थ्य डाटा सिंक गर्नुहोस्?</string>
     <string name="sync">सिंक</string>
-    <string name="got_it">सम्म सम्म</string>
-    <string name="please_make_sure_your_device_is_horizontal">कृपया आफ्नो उपकरण अनुसार दायाँ तल गर्नुहोस्</string>
-    <string name="click_on_the_logo_to_get_the_full_menu_of_your_planet_home_mylibrary_mycourses_library_courses_community_enterprises_and_surveys">तपाईंको प्लानेटको पूर्ण मेनु प्राप्त गर्नका लागि लोगोमा क्लिक गर्नुहोस्: होम, मेरो पुस्तकालय, मेरो पाठ्यक्रमहरू, पुस्तकालय, पाठ्यक्रमहरू, समुदाय, उद्यमहरू, र सर्वेक्षणहरू</string>
-    <string name="navigate_to_the_home_tab_to_access_your_dashboard_with_your_library_courses_and_teams">आफ्नो ड्यासबोर्डमा पहुँच गर्नका लागि गृह ट्याबमा जानुहोस् जहाँ तपाइँको पुस्तकालय, पाठ्यक्रमहरू, र टिमहरू छन्</string>
-    <string name="navigate_to_the_library_tab_to_access_resources_in_your_community">तपाईंको समुदायमा स्रोतहरूमा पहुँच गर्नका लागि पुस्तकालय ट्याबमा जानुहोस्</string>
-    <string name="navigate_to_the_courses_tab_to_access_the_courses_exams_questions_lessons_within_your_community">तपाईंको समुदायभित्रका पाठ्यक्रमहरू (परीक्षाहरू, प्रश्नहरू, सिकाइहरू) मा पहुँच गर्नका लागि पाठ्यक्रमहरू ट्याबमा जानुहोस्</string>
-    <string name="navigate_to_the_teams_tab_to_join_request_and_check_up_on_your_teams">तपाईंको टिमहरूसँग सामिल हुन, अनुरोध गर्न र जाँच गर्नका लागि टिमहरू ट्याबमा जानुहोस्</string>
-    <string name="navigate_to_the_enterprises_tab_to_search_through_a_list_of_enterprises_within_your_community">तपाईंको समुदायभित्रका उद्यमहरूको सूची खोज्नका लागि उद्यमहरू ट्याबमा जानुहोस्</string>
-    <string name="navigate_to_the_community_tab_to_access_the_news_community_leaders_calendar_services_and_finances_involved_within_your_community">तपाईंको समुदायभित्रका समाचार, समुदायका नेता, पात्रो, सेवा र वित्तसम्बन्धी प्रवद्र्धनमा पहुँच गर्नका लागि समुदाय ट्याबमा जानुहोस्</string>
     <string name="session_expired">सत्र समाप्त भयो।</string>
     <string name="downloading_started_please_check_notificati">डाउनलोड सुरु भयो, कृपया सूचना जाँच गर्नुहोस्…</string>
     <string name="dictionary">शब्दकोश</string>
     <string name="list_size">सूची आकार %d</string>
     <string name="word_not_available_in_our_database">शब्द हाम्रो डाटाबेसमा उपलब्ध छैन।</string>
     <string name="description_is_required">विवरण आवश्यक छ</string>
-    <string name="start_time_is_required">समय आवश्यक छ</string>
     <string name="meetup_added">मिलन सम्मेलन थपियो</string>
     <string name="meetup_not_added">मिलन सम्मेलन होइन थपियो</string>
     <string name="add_transaction">लेखा थप्नुहोस्</string>
@@ -762,20 +621,14 @@
     <string name="complete">समाप्त</string>
     <string name="no_questions_available">कुनै प्रश्नहरू उपलब्ध छैन</string>
     <string name="please_select_write_your_answer_to_continue">कृपया जारी राख्नका लागि आफ्नो उत्तर चयन गर्नुहोस् / लेख्नुहोस्</string>
-    <string name="graded">ग्रेड गरिएको</string>
-    <string name="pending">पेन्डिङ</string>
     <string name="user_profile_updated">प्रयोगकर्ता प्रोफाइल अद्यावधिक गरियो</string>
     <string name="unable_to_update_user">प्रयोगकर्ता अपडेट गर्न सकिएन</string>
-    <string name="date_n_a">मिति: N/A</string>
     <string name="please_enter_feedback">कृपया प्रतिक्रिया दिनुहोस्।</string>
     <string name="feedback_priority_is_required">प्रतिक्रिया प्राथमिकता आवश्यक छ।</string>
     <string name="feedback_type_is_required">प्रतिक्रिया प्रकार आवश्यक छ।</string>
     <string name="thank_you_your_feedback_has_been_submitted">धन्यवाद, तपाईंको प्रतिक्रिया सबमिट गरिएको छ</string>
     <string name="feedback_saved">प्रतिक्रिया सुरक्षित गरियो…</string>
-    <string name="name_colon">"नाम: "</string>
     <string name="email_colon">"इमेल: "</string>
-    <string name="phone_number_colon">"फोन नंबर: "</string>
-    <string name="resource_saved_successfully">स्रोत सफलतापूर्वक सुरक्षित गरियो</string>
     <string name="level_is_required">स्तर आवश्यक छ</string>
     <string name="subject_is_required">विषय आवश्यक छ</string>
     <string name="enter_resource_detail">स्रोत विवरण राख्नुहोस्</string>
@@ -791,33 +644,29 @@
     <string name="pending_survey_notification">तपाईंको एउटा पेंडिङ सर्वेक्षण छ:</string>
     <string name="task_notification">%1$s %2$s मा समाप्त हुन्छ</string>
     <string name="resource_notification">तपाईंसँग %1$d स्रोतहरू डाउनलोड गरिएको छैन</string>
+
     <string name="vitals_format">
-    तापमान: %1$s\n
-    नाडी: %2$s\n
-    रक्तचाप: %3$s\n
-    उचाइ: %4$s\n
-    वजन: %5$s\n
-    दृष्टि: %6$s\n
-    सुन्ने क्षमता: %7$s\n
-</string>
+        तापमान: %1$s\n
+        नाडी: %2$s\n
+        रक्तचाप: %3$s\n
+        उचाइ: %4$s\n
+        वजन: %5$s\n
+        दृष्टि: %6$s\n
+        सुन्ने क्षमता: %7$s\n
+    </string>
 
     <string name="observations_notes_colon">
-    अवलोकन र विश्लेषण: %1$s\n
-    %2$s\n
-    %3$s\n
-    %4$s\n
-    %5$s\n
-    एलर्जी: %6$s\n
-    एक्स-रे: %7$s\n
-    प्रयोगशाला परीक्षण: %8$s\n
-    अध्ययनहरू: %9$s\n
-</string>
+        अवलोकन र विश्लेषण: %1$s\n
+        %2$s\n
+        %3$s\n
+        %4$s\n
+        %5$s\n
+        एलर्जी: %6$s\n
+        एक्स-रे: %7$s\n
+        प्रयोगशाला परीक्षण: %8$s\n
+        अध्ययनहरू: %9$s\n
+    </string>
 
-    <string name="diagnosis_colon">"निदान : "</string>
-    <string name="treatments_colon">"उपचारहरू: "</string>
-    <string name="medications_colon">"औषधि: "</string>
-    <string name="immunizations_colon">"प्रतिरक्षा टिका: "</string>
-    <string name="invalid_input">अमान्य इनपुट</string>
     <string name="blood_pressure_should_be_numeric_systolic_diastolic">रक्तचाप अंशांकीय हुनुपर्छ सिस्टोलिक/डायस्टोलिक</string>
     <string name="blood_pressure_should_be_systolic_diastolic">रक्तचाप सिस्टोलिक/डायस्टोलिक हुनुपर्छ</string>
     <string name="bp_must_be_between_60_40_and_300_200">रक्तचाप ६०/४० र ३००/२०० को बीचमा हुनुपर्छ</string>
@@ -841,25 +690,18 @@
     <string name="no_data_available_please_click_button_to_add_new_resource_in_mypersonal">कुनै डाटा उपलब्ध छैन, कृपया मेरो व्यक्तिगतमा नयाँ स्रोत थप्नका लागि + बटनमा क्लिक गर्नुहोस्।</string>
     <string name="label_added">लेबल थपियो।</string>
     <string name="please_enter_message">कृपया सन्देश लेख्नुहोस्</string>
-    <string name="new_not_available">नयाँ उपलब्ध छैन</string>
-    <string name="hide_add_story">कथा थप्नुहोस् लुकाउनुहोस्</string>
-    <string name="no_items">कुनै वस्तुहरू छैनन्</string>
     <string name="record_survey">सर्वेक्षण रेकर्ड गर्नुहोस्</string>
     <string name="survey_sent_to_users">सर्वेक्षण सदस्यहरूलाई पठाइयो</string>
     <string name="wifi_is_turned_off_saving_battery_power">वाईफाई बन्द गरिएको छ। बैट्री शक्ति बचाउँदै</string>
     <string name="turning_on_wifi_please_wait">वाईफाई चालू गर्दैछ। कृपया प्रतीक्षा गर्नुहोस्…</string>
-    <string name="unable_to_connect_to_planet_wifi">प्लानेट वाईफाईसँग सम्बन्ध स्थापित गर्न सकिएन।</string>
     <string name="you_are_now_connected">"तपाईं अब सम्बन्धित छन् "</string>
     <string name="press_back_again_to_exit">बाहिर निस्कनको लागि पुन: प्रेस गर्नुहोस्</string>
-    <string name="press_the_sync_button_to_sync_your_planet_account_data_with_your_myplanet_application_data">Press the Sync Button to Sync your Planet account data with your myPlanet application data</string>
-    <string name="press_the_settings_button_to_access_your_myplanet_planet_account_server_settings_to_properly_set_up_your_syncing_process">Press the Settings Button to access your myPlanet/Planet account server settings to properly set up your syncing process.</string>
     <string name="it_has_been_more_than">"यो भन्दा बढी समय भएको छ "</string>
     <string name="days_since_you_last_synced_this_device">" दिन भएको छ जब तपाईंले यो डिभाइस सिंक गरें।"</string>
     <string name="connect_it_to_the_server_over_wifi_and_sync_it_to_reactivate_this_tablet">\n यसलाई WiFi मार्फत सर्भरसँग कनेक्ट गरी सिंक गर्नुहोस् यो ट्याबलेट पुन: सक्रिय गर्नका लागि</string>
     <string name="okay">ठिक छ</string>
     <string name="connect_to_the_server_over_wifi_and_sync_your_device_to_continue">जारी राख्नका लागि WiFi मार्फत सर्भरसँग कनेक्ट गर्नुहोस् र आफ्नो डिभाइस सिंक गर्नुहोस्</string>
     <string name="please_enter_server_url_first">कृपया पहिलोमा सर्भर URL लेख्नुहोस्।</string>
-    <string name="this_device_not_configured_properly_please_check_and_sync">यो डिभाइस सही ढंगले कन्फिगर गरिएको छैन। कृपया जाँच गर्नुहोस् र सिंक गर्नुहोस्।</string>
     <string name="username_cannot_be_empty">प्रयोगकर्ता नाम खाली हुनसक्दैन</string>
     <string name="unable_to_login">लगइन गर्न सकिएन</string>
     <string name="planet_server_not_reachable">प्लानेट सर्भर सम्पर्क गर्न सकिएन।</string>
@@ -868,14 +710,11 @@
     <string name="please_wait">कृपया प्रतीक्षा गर्नुहोस्…</string>
     <string name="update_later">पछील्लो अद्यावधिक गर्नुहोस्</string>
     <string name="checking_version">संस्करण जाँच गर्दै…</string>
-    <string name="please_enter_your_password">कृपया आफ्नो पासवर्ड लेख्नुहोस्</string>
     <string name="downloading">"डाउनलोड गर्दै… "</string>
     <string name="pin_is_required">पिन आवश्यक छ।</string>
     <string name="invalid_url">अमान्य URL</string>
     <string name="please_enter_valid_url_to_continue">कृपया जारी राख्नका लागि वैध URL लेख्नुहोस्।</string>
     <string name="uploading_data_to_server_please_wait">सर्भरमा डाटा अपलोड गर्दै, कृपया प्रतीक्षा गर्नुहोस्…</string>
-    <string name="uploading_activities_to_server_please_wait">सर्भरमा गतिविधिहरू अपलोड गर्दै, कृपया प्रतीक्षा गर्नुहोस्…</string>
-    <string name="connecting_to_server">सर्भरसँग कनेक्ट गर्दै…</string>
     <string name="check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server">कृपया पुन: सर्भर ठेगाना जाँच गर्नुहोस्। म जुन सर्भरसँग कनेक्ट गरें भनेर थिएन त्यो प्लानेट सर्भर थिएन</string>
     <string name="device_couldn_t_reach_local_server">डिभाइसले सर्भरसम्म पुग्न सकेन। स्थानीय सर्भर (समुदाय) को लागि तपाईं सही Wi-Fi नेटवर्कमा जडित हुनुहुन्छ कि छैन जाँच गर्नुहोस्।</string>
     <string name="device_couldn_t_reach_nation_server">डिभाइसले सर्भरसम्म पुग्न सकेन। इन्टरनेटमा जडित हुनुहुन्छ कि छैन जाँच गर्नुहोस् र पुन: प्रयास गर्नुहोस्।</string>
@@ -883,7 +722,6 @@
     <string name="syncing_data_please_wait">डाटा सिंक गरिंदै, कृपया प्रतीक्षा गर्नुहोस्…</string>
     <string name="sync_failed">सिंक असफल भयो</string>
     <string name="sync_completed">सिंक सम्पन्न भयो</string>
-    <string name="message_is_required">सन्देश आवश्यक छ</string>
     <string name="team_leader">टिम नेता</string>
     <string name="select_resource">"स्रोत छान्नुहोस्: "</string>
     <string name="add">थप्नुहोस्</string>
@@ -898,7 +736,6 @@
     <string name="task_s_successfully">काम %s सफलतापूर्वक</string>
     <string name="task_deleted_successfully">काम सफलतापूर्वक हटाइयो</string>
     <string name="requested">अनुरोध गरियो</string>
-    <string name="resources_colon">"स्रोतहरू: "</string>
     <string name="left_team">टोलीबाट बाहिर गएको</string>
     <string name="enter_enterprise_s_name">उद्यमको नाम लेख्नुहोस्</string>
     <string name="what_is_your_team_s_plan">तपाईंको टोलीको योजना के हो?</string>
@@ -909,7 +746,6 @@
     <string name="name_is_required">नाम आवश्यक छ</string>
     <string name="team_created">टोली सिर्जना गरियो</string>
     <string name="please_select_gender">कृपया लिङ्ग चयन गर्नुहोस्</string>
-    <string name="please_enter_a_username">कृपया प्रयोगकर्ता नाम लेख्नुहोस्</string>
     <string name="invalid_username">अमान्य प्रयोगकर्ता नाम</string>
     <string name="please_enter_a_password">कृपया पासवर्ड लेख्नुहोस्</string>
     <string name="password_doesn_t_match">पासवर्ड मेल खाँदैन</string>
@@ -918,9 +754,7 @@
     <string name="add_reference">संदर्भ थप्नुहोस्</string>
     <string name="add_achievement">साफल्य थप्नुहोस्</string>
     <string name="select_resources">"स्रोतहरू छान्नुहोस्: "</string>
-    <string name="user_not_available_in_our_database">हाम्रो डाटाबेसमा प्रयोगकर्ता उपलब्ध छैन</string>
     <string name="date_of_birth">"जन्म मिति: "</string>
-    <string name="unable_to_play_audio">अडियो प्ले गर्न सकिएन।</string>
     <string name="unable_to_load">"लोड गर्न सकिएन "</string>
     <string name="recording_started">रेकर्डिंग सुरु भयो....</string>
     <string name="ole_is_recording_audio">ओले अडियो रेकर्ड गर्दैछ</string>
@@ -1024,38 +858,30 @@
     <string name="force_monthly_sync">मासिक सिङ्क बलवान्त गर्नुहोस्</string>
     <string name="beta_function_for_wifi_switch">वाईफाई स्विचका लागि बीटा कार्य</string>
     <string name="upgrade_application">अनुप्रयोग अपग्रेड गर्नुहोस्</string>
-    <string name="auto_upgrade">स्वतः अपग्रेड</string>
     <string name="always_move_to_maximum_version">सधैं महत्तम संस्करणमा जानुहोस्</string>
     <string name="all_beta_functions">सबै बीटा कार्यहरू</string>
     <string name="auto_sync_device">स्वचालित सिङ्क यन्त्र</string>
     <string name="beta_functionality">बीटा कार्यक्षमता</string>
     <string name="main_controls">मुख्य नियन्त्रणहरू</string>
-    <string name ="select_user_to_login"> लगइन गर्न प्रयोगकर्ता चयन गर्नुहोस्</string>
     <string name ="dismiss"> खारेज गर्नुहोस्</string>
-    <string name="gps_is_settings">GPS सेटिङहरू हो</string>
-    <string name="gps_is_not_enabled_do_you_want_to_go_to_settings_menu">GPS सक्षम गरिएको छैन। के तपाईँ सेटिङ मेनुमा जान चाहनुहुन्छ?</string>
     <string name="available_space_colon">उपलब्ध ठाउँ: </string>
     <string name="community_leaders">सामुदायिक नेताहरू</string>
     <string name="services">सेवाहरू</string>
-    <string name="survey_taken">सर्वेक्षण लिइएको</string>
+
     <plurals name="survey_taken_count">
         <item quantity="one">सर्वेक्षण %d पटक लिइयो</item>
         <item quantity="other">सर्वेक्षण %d पटक लिइयो</item>
     </plurals>
-    <string name="times">पल्टीहरू</string>
-    <string name="time">समय</string>
+
     <string name="ai_chat">AI Chat</string>
     <string name="kindly_give_a_rating">कृपया मूल्याङ्कन दिनुहोस्</string>
     <string name="must_start_with_letter_or_number">पात्र वा नम्बरसँग सुरु गर्नु पर्दछ</string>
     <string name="only_letters_numbers_and_are_allowed">केवल अक्षरहरू a- z, नम्बर र "_" , "." , "-" पार्स्याद छ</string>
-    <string name="config_not_available">कन्फिगरेसन उपलब्ध छैन।</string>
     <string name="unselect_all">सबै चयन गर्दिन</string>
     <string name="select_all">सबै चयन गर्नुहोस्</string>
     <string name="request_failed_please_retry">अनुरोध असफल भयो, कृपया पुन: प्रयास गर्नुहोस्</string>
     <string name="confirm_removal">हटाउनु हेरदैछ</string>
-    <string name="returning_user">पुनराबृत्ति गर्ने प्रयोगकर्ता</string>
     <string name="send_to_nation">तपाइको उपलब्धिहरूलाई देशसँग साझा गर्न अनुमति दिनुहोस्</string>
-    <string name="jcplayer_description">आडियो प्लेयर</string>
     <string name="image_resource">तस्वीर स्रोत</string>
     <string name="play_audio">आडियो प्ले गर्नुहोस्</string>
     <string name="video_player">भिडियो प्लेयर</string>
@@ -1089,18 +915,13 @@
     <string name="trial_period_ended">अनुमति अवधि समाप्त भयो! निरन्तरताको लागि दर्ता पूरा गर्नुहोस्</string>
     <string name="drag">%1$s तान्नुहोस्</string>
     <string name="visibility_of">%1$s को दृश्यता टगल गर्नुहोस्</string>
-    <string name="actions_menu">क्रियाहरूको मेनु</string>
     <string name="icon">%1$s आइकन</string>
     <string name="select_res_course">%1$s चयन गर्नुहोस्</string>
-    <string name="perplexity">perplexity</string>
-    <string name="openai">openai</string>
-    <string name="gemini">gemini</string>
     <string name="kindly_enter_message">कृपया सन्देश प्रविष्ट गर्नुहोस्</string>
     <string name="virtual_assistant_currently_not_available">भर्चुअल सहायक हाललाई उपलब्ध छैन</string>
     <string name="no_courses">कुनै पाठ्यक्रम उपलब्ध छैन</string>
     <string name="no_resources">कुनै स्रोतहरू उपलब्ध छैनन्</string>
     <string name="no_finance_record">वित्तीय रेकर्ड उपलब्ध छैन</string>
-    <string name="no_stories">कुनै कथाहरू उपलब्ध छैनन्</string>
     <string name="no_team_courses">कुनै टिम पाठ्यक्रमहरू उपलब्ध छैनन्</string>
     <string name="no_team_resources">कुनै टिम स्रोतहरू उपलब्ध छैनन्</string>
     <string name="no_tasks">कुनै कामहरू उपलब्ध छैनन्</string>
@@ -1109,7 +930,6 @@
     <string name="no_links_available">लिङ्कहरू उपलब्ध छैनन्</string>
     <string name="user_requested_to_join_team">%1$s ले %2$s मा सामेल हुन अनुरोध गरेको छ</string>
     <string name="join_request_prefix">सामेल हुने अनुरोध:</string>
-    <string name="new_request_to_join">%s मा सामेल हुने नयाँ अनुरोध</string>
     <string name="no_news">समाचार उपलब्ध छैन</string>
     <string name="no_surveys">सर्वेक्षण उपलब्ध छैन</string>
     <string name="edit_image">प्रोफाइल तस्वीर सम्पादन गर्नुहोस्</string>
@@ -1125,21 +945,17 @@
     <string name="location_colon">स्थान:&#160;</string>
     <string name="recurring_colon">आवर्तमान:&#160;</string>
     <string name="created_by_colon">बनाएको:&#160;</string>
-    <string name="failed_to_get_configuration_id">बनावट आईडी प्राप्त गर्न असफल भयो। कृपया व्यवस्थापकसँग सम्पर्क गर्नुहोस्।</string>
     <string name="you_want_to_connect_to_a_different_server">तपाईं अर्को सर्भरमा जडान गर्न चाहनुहुन्छ। अगाडि बढ्नका लागि एपको डेटा मेटाउनुहोस्</string>
     <string name="are_you_sure_you_want_to_clear_data">के तपाईं सबै डाटा हटाउन निश्चित हुनुहुन्छ?</string>
     <string name="feedback_list">प्रतिक्रिया सूची</string>
     <string name="enterprise_list">उद्यम सूची</string>
     <string name="list_of_teams">टोलीहरूको सूची</string>
-    <string name="sign_up_to_chat">कृपया एआई च्याटमा पहुँच गर्न साइन अप गर्नुहोस्।</string>
     <string name="share_chat">च्याट साझेदारी गर्नुहोस्</string>
     <string name="shared_chat">साझेदारी गरिएको कुराकानी</string>
     <string name="check_apk_version">एप संस्करण जाँच गर्दै</string>
     <string name="checking_server">सर्भर जाँच गर्दै</string>
-    <string name="below_min_apk">एप संस्करण अनुमत संस्करणभन्दा कम छ। कृपया अनुप्रयोगलाई नवीनतम संस्करणमा अद्यावधिक गर्नुहोस्।</string>
     <string name="add_note">नोट थप्नुहोस् (वैकल्पिक)</string>
     <string name="no_teams">टोलीहरू उपलब्ध छैनन्</string>
-    <string name="planet_name">%s ग्रह</string>
     <string name="no_chats">अघिल्ला कुराकानीहरू छैनन्</string>
     <string name="no_feedback">कुनै प्रतिक्रिया उपलब्ध छैन</string>
     <string name="empty_text" />
@@ -1147,7 +963,6 @@
     <string name="reports">रिपोर्टहरू</string>
     <string name="number_placeholder">%d</string>
     <string name="float_placeholder">%.1f</string>
-    <string name="date_range">%1$s देखि %2$s</string>
     <string name="string_range">%1$s - %2$s</string>
     <string name="team_financial_report">%s वित्तीय रिपोर्ट</string>
     <string name="report_date_details">%1$s मा बनाइएको रिपोर्ट | %2$s मा अद्यावधिक गरिएको</string>
@@ -1162,7 +977,6 @@
     <string name="resources_size">स्रोतहरू [%d]</string>
     <string name="user_role">- %s</string>
     <string name="user_name">%1$s (%2$s)</string>
-    <string name="visit_count">%1$s (%2$d %3$s)</string>
     <string name="two_strings">%1$s %2$s</string>
     <string name="three_strings">%1$s %2$s %3$s</string>
     <string name="member_description">%1$s (%2$d भ्रमण)</string>
@@ -1172,11 +986,6 @@
     <string name="dark_mode_off">बन्द</string>
     <string name="dark_mode_on">खुला</string>
     <string name="dark_mode_follow_system">प्रणालीको पालना गर्नुहोस्</string>
-    <string-array name="dark_mode_options">
-        <item>@string/dark_mode_off</item>
-        <item>@string/dark_mode_on</item>
-        <item>@string/dark_mode_follow_system</item>
-    </string-array>
     <string name="are_you_sure_you_want_to_archive_these_courses">के तपाइँ यी पाठ्यक्रमहरू संग्रह गर्न निश्चित हुनुहुन्छ?</string>
     <string name="are_you_sure_you_want_to_archive_this_course">के तपाइँ निश्चित हुनुहुन्छ कि तपाइँ यो पाठ्यक्रम संग्रह गर्न चाहनुहुन्छ?</string>
     <string name="manual">हस्तपुस्तिका</string>
@@ -1192,12 +1001,10 @@
     <string name="sync_ruiru">🇰🇪 planet ruiru</string>
     <string name="sync_embakasi">🇰🇪 planet embakasi</string>
     <string name="sync_cambridge">🇺🇸 planet cambridge</string>
-    <string name="sync_egdirbmac">🇺🇸 planet egdirbmac</string>
     <string name="surveys_to_complete">तपाईंको %1$d %2$s पूरा गर्न बाँकी छ</string>
     <string name="show_less">कम देखाउनुहोस्</string>
     <string name="show_more">थप देखाउनुहोस्</string>
     <string name="server_address_content_description">सर्भर ठेगाना: %1$s</string>
-    <string name="member_only_allowed">यो सुविधा प्रयोग गर्न सदस्यको रूपमा सामेल हुनुहोस्</string>
     <string name="select_theme_mode">थिम मोड चयन गर्नुहोस्</string>
     <string name="beta_resources_auto_download">बीटा स्रोतहरू स्वत: डाउनलोड</string>
     <string name="course_steps">पाठ्यक्रम चरणहरू</string>
@@ -1221,30 +1028,6 @@
     <string name="chat_enter_message">सन्देश प्रविष्ट गर्नुहोस्</string>
     <string name="hour">घण्टा</string>
     <string name="hours">घण्टा</string>
-    <string name="material_calendar_monday">सो</string>
-    <string name="material_calendar_tuesday">मं</string>
-    <string name="material_calendar_wednesday">बु</string>
-    <string name="material_calendar_thursday">बि</string>
-    <string name="material_calendar_friday">शु</string>
-    <string name="material_calendar_saturday">श</string>
-    <string name="material_calendar_sunday">आ</string>
-    <array name="material_calendar_months_array">
-        <item>जनवरी</item>
-        <item>फेब्रुअरी</item>
-        <item>मार्च</item>
-        <item>अप्रिल</item>
-        <item>मई</item>
-        <item>जुन</item>
-        <item>जुलाई</item>
-        <item>अगस्ट</item>
-        <item>सेप्टेम्बर</item>
-        <item>अक्टोबर</item>
-        <item>नोभेम्बर</item>
-        <item>डिसेम्बर</item>
-    </array>
-    <string name="material_calendar_today_button">आज</string>
-    <string name="material_calendar_positive_button">ठीक छ</string>
-    <string name="material_calendar_negative_button">रद्द गर्नुहोस्</string>
     <string name="switching_off_manual_configuration_to_clear_data">म्यानुअल कन्फिगरेसन बन्द गर्दा सबै डाटा मेटिनेछ, के तपाईं निश्चित रूपमा जारी राख्न चाहनुहुन्छ?</string>
     <string name="switching_on_manual_configuration_to_clear_data">म्यानुअल कन्फिगरेसन सुरु गर्दा सबै डाटा मेटिनेछ, के तपाईं निश्चित रूपमा जारी राख्न चाहनुहुन्छ?</string>
     <string name="chart_description">लगइन गतिविधि चार्ट</string>
@@ -1267,7 +1050,6 @@
     <string name="total_visits_overall">कुल भ्रमण : </string>
     <string name="most_opened_resource">सबैभन्दा धेरै खोलेको स्रोत : </string>
     <string name="number_of_resources_opened">खोलिएका स्रोतहरूको संख्या : </string>
-    <string name="number_of_visits">भ्रमणहरूको संख्या</string>
     <string name="kindly_enter_reply_message">कृपया प्रतिक्रिया सन्देश प्रवेश गर्नुहोस्</string>
     <string name="start">सुरु गर्नुहोस्</string>
     <string name="continuation">जारी राख्नुहोस्</string>
@@ -1287,20 +1069,17 @@
     <string name="adopt_survey">सर्वेक्षण अपनाउनुहोस्</string>
     <string name="survey_adopted_successfully">सर्वेक्षण सफलतापूर्वक अपनाइयो!</string>
     <string name="beta_fast_sync">बेटा फास्ट सिंक</string>
+    <string name="beta_improved_sync">beta improved sync</string>
+    <string name="beta_improved_sync_summary">Run the experimental sync manager during manual and auto syncs.</string>
     <string name="user_verification_in_progress">प्रयोगकर्ता प्रमाणीकरण प्रक्रिया भइरहेको छ। कृपया डेटा प्रशोधन भइरहेसम्म प्रतीक्षा गर्नुहोस्।</string>
     <string name="go_to_mylibrary">मेरो पुस्तकालयमा जानुहोस्</string>
     <string name="choose_an_option">एउटा विकल्प छान्नुहोस्</string>
-    <string name="welcome_back">स्वागतम् %1$s</string>
     <string name="welcome">स्वागतम् %1$s</string>
     <string name="edit_plan">योजना सम्पादन गर्नुहोस्</string>
     <string name="show_additional_fields">थप क्षेत्रहरू देखाउनुहोस्</string>
     <string name="hide_additional_fields">थप क्षेत्रहरू लुकाउनुहोस्</string>
-    <string name="age">उमेर</string>
     <string name="preparing_download">डाउनलोडको तयारी गर्दै…</string>
     <string name="downloading_files">फाइलहरू डाउनलोड हुँदैछन्</string>
-    <string name="age_must_be_100_or_below">उमेर १०० वा कम हुनुपर्छ</string>
-    <string name="please_enter_a_valid_age">कृपया एक वैध उमेर प्रविष्ट गर्नुहोस्</string>
-    <string name="member_of_planet">planet को सदस्य</string>
     <string name="edit_mission_and_services">मिशन र सेवाहरू सम्पादन गर्नुहोस्</string>
     <string name="this_team_has_no_description_defined">यस टिमको कुनै विवरण परिभाषित गरिएको छैन</string>
     <string name="contact_preference">contact preference</string>
@@ -1314,7 +1093,6 @@
     <string name="unable_to_save_user_please_sync">प्रयोगकर्ता बचत गर्न सकिएन, कृपया सिंक गर्नुहोस्।</string>
     <string name="server_sync_successfully">सर्भर सफलतापूर्वक समिकरण गरियो।</string>
     <string name="server_sync_has_failed">सर्भर समिकरण असफल भयो।</string>
-    <string name="no_resources_to_download">डाउनलोड गर्न कुनै स्रोत छैन</string>
     <string name="response">उत्तर</string>
     <string name="full_conversation_response">पूर्ण वार्तालाप उत्तर</string>
     <string name="add_new_event">+ नयाँ कार्यक्रम</string>
@@ -1325,7 +1103,6 @@
     <string name="minutes">Daqiiqado</string>
     <string name="days">Maalmaha</string>
     <string name="set_reminder">Deji xasuusin</string>
-    <string name="reminder_set_for">Xasuusin ayaa loo dejiyay %1$s laga bilaabo hadda</string>
     <string name="reminder_surveys_to_complete">Xasuusin: Waxaad haysataa %1$d %2$s oo la buuxinayo</string>
 
     <plurals name="minutes">
@@ -1374,8 +1151,6 @@
     <string name="syncing_achievements">उपलब्धिहरू समिकरण गर्दै…</string>
     <string name="nation_leaders">राष्ट्रका नेता</string>
     <string name="filter_by_label">लेबलद्वारा फिल्टर गर्नुहोस्</string>
-    <string name="community_board">समुदाय बोर्ड</string>
-    <string name="nation_board">राष्ट्रिय बोर्ड</string>
     <string name="is_available">%1$s उपलब्ध छ। सिकाइ जारी राख्न ट्याप गर्नुहोस्।</string>
     <string name="failed_to_add_please_retry">थप गर्न असफल भयो। कृपया फेरि प्रयास गर्नुहोस्</string>
     <string name="failed_to_mark_as_read">पढिएको रूपमा चिन्ह लगाउन असफल भयो। कृपया फेरि प्रयास गर्नुहोस्</string>
@@ -1384,7 +1159,27 @@
     <string name="failed_to_save_chat">कुराकानी सुरक्षित गर्न असफल भयो। कृपया फेरि प्रयास गर्नुहोस्।</string>
     <string name="failed_to_delete_report">प्रतिवेदन मेटाउन असफल भयो। कृपया फेरि प्रयास गर्नुहोस्</string>
     <string name="delete_report">प्रतिवेदन मेटाउनुहोस्</string>
-    <string name="checking_server_availability">सर्भर उपलब्धता जाँच गर्दै…</string>
     <string name="loading_courses">पाठ्यक्रमहरू लोड हुँदैछन्…</string>
+    <string name="loading_teams">टीमहरू लोड गर्दै…</string>
+    <string name="year_of_birth">जन्म वर्ष</string>
+    <string name="year_of_birth_cannot_be_empty">जन्म वर्ष खाली हुन सक्दैन</string>
+    <string name="please_enter_a_valid_year_of_birth">कृपया मान्य जन्म वर्ष प्रविष्ट गर्नुहोस्</string>
+    <string name="please_enter_a_valid_year_between_1900_and">कृपया 1900 र %1$d बीचको मान्य वर्ष प्रविष्ट गर्नुहोस्</string>
+    <string name="redo_survey">सर्वे पुनः गर्नुहोस्</string>
+    <string name="resource_not_found_in_database">डाटाबेसमा स्रोत फेला परेन</string>
+    <string name="resource_has_no_attachments">स्रोतसँग कुनै डाउनलोड योग्य फाइलहरू छैनन्</string>
+    <string name="unable_to_download_resource">स्रोत डाउनलोड गर्न असमर्थ</string>
+    <string name="hide_new_message">नयाँ सन्देश लुकाउनुहोस्</string>
+    <string name="cannot_assign_completed_task">पूरा भएको कार्य सौंप्न सकिँदैन</string>
+    <string name="assign_to">सौंप्नुहोस् (वैकल्पिक)</string>
+    <string name="click_to_assign_member">टोली सदस्य सौंप्न क्लिक गर्नुहोस्</string>
+    <string name="saving">सुरक्षित गरिदै…</string>
+    <string name="achievement_saved">उपलब्धि अद्यावधिक गरियो</string>
+    <string name="team_name_already_exists">यो नामको टोली पहिले नै अवस्थित छ</string>
+    <string name="enterprise_name_already_exists">यो नामको उद्यम पहिले नै अवस्थित छ</string>
+    <string name="downloading_images_please_check_notification">तस्बिरहरू डाउनलोड हुँदैछ, कृपया सूचना जाँच गर्नुहोस्…</string>
+    <string name="no_images_to_download">डाउनलोड गर्नका लागि कुनै तस्बिरहरू छैनन्</string>
+    <string name="app_theme">एप थिम</string>
+    <string name="team_surveys">टोली सर्वेक्षणहरू</string>
 
 </resources>

@@ -10,12 +10,14 @@ import android.view.LayoutInflater
 import android.view.View
 import androidx.appcompat.app.AlertDialog
 import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.data.Service
 import org.ole.planet.myplanet.databinding.DialogProgressBinding
-import org.ole.planet.myplanet.datamanager.MyDownloadService
-import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.model.MyPlanet
+import org.ole.planet.myplanet.service.MyDownloadService
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
@@ -33,8 +35,7 @@ object DialogUtils {
         return prgDialog
     }
 
-    fun guestDialog(context: Context) {
-        val profileDbHandler = UserProfileDbHandler(context)
+    fun guestDialog(context: Context, profileDbHandler: UserProfileDbHandler) {
         val builder = android.app.AlertDialog.Builder(context, R.style.CustomAlertDialog)
         builder.setTitle(context.getString(R.string.become_a_member))
         builder.setMessage(context.getString(R.string.to_access_this_feature_become_a_member))
@@ -138,15 +139,6 @@ object DialogUtils {
     }
 
     @JvmStatic
-    fun showCloseAlert(context: Context, title: String?, message: String) {
-        AlertDialog.Builder(context, R.style.CustomAlertDialog)
-            .setTitle(title)
-            .setMessage(message)
-            .setPositiveButton(R.string.close, null)
-            .show()
-    }
-
-    @JvmStatic
     fun getDialog(context: Context, title: String, v: View): AlertDialog {
         return AlertDialog.Builder(ContextThemeWrapper(context, R.style.CustomAlertDialog))
             .setTitle(title)
@@ -158,27 +150,38 @@ object DialogUtils {
     }
 
     @JvmStatic
-    fun getUpdateDialog(context: Context, info: MyPlanet?, progressDialog: CustomProgressDialog?): AlertDialog.Builder {
+    fun getUpdateDialog(
+        context: Context,
+        info: MyPlanet?,
+        progressDialog: CustomProgressDialog?,
+        scope: CoroutineScope
+    ): AlertDialog.Builder {
         return AlertDialog.Builder(context, R.style.CustomAlertDialog)
             .setTitle(R.string.new_version_of_my_planet_available)
             .setMessage(R.string.download_first_to_continue)
             .setNeutralButton(R.string.upgrade_local) { _, _ ->
-                startDownloadUpdate(context, UrlUtils.getApkUpdateUrl(info?.localapkpath), progressDialog)
+                startDownloadUpdate(context, UrlUtils.getApkUpdateUrl(info?.localapkpath), progressDialog, scope)
             }
             .setPositiveButton(R.string.upgrade) { _, _ ->
-                info?.apkpath?.let { startDownloadUpdate(context, it, progressDialog) }
+                info?.apkpath?.let { path ->
+                    startDownloadUpdate(context, path, progressDialog, scope)
+                }
             }
     }
 
     @JvmStatic
-    fun startDownloadUpdate(context: Context, path: String, progressDialog: CustomProgressDialog?) {
-        Service(context.applicationContext).checkCheckSum(object : Service.ChecksumCallback {
-            override fun onMatch() {
+    fun startDownloadUpdate(
+        context: Context,
+        path: String,
+        progressDialog: CustomProgressDialog?,
+        scope: CoroutineScope
+    ) {
+        scope.launch {
+            val checksumMatch = Service(context.applicationContext).checkCheckSum(path)
+            if (checksumMatch) {
                 Utilities.toast(context, context.getString(R.string.apk_already_exists))
                 FileUtils.installApk(context, path)
-            }
-
-            override fun onFail() {
+            } else {
                 val urls = arrayListOf(path)
                 if (progressDialog != null) {
                     progressDialog.setText(context.getString(R.string.downloading_file))
@@ -187,7 +190,7 @@ object DialogUtils {
                 }
                 MyDownloadService.startService(context, "$urls", false)
             }
-        }, path)
+        }
     }
 
     @JvmStatic

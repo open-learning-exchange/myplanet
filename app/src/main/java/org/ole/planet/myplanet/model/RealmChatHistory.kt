@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.model
 
-import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Realm
@@ -43,7 +42,7 @@ open class RealmChatHistory : RealmObject() {
         private fun parseConversations(realm: Realm, jsonArray: JsonArray): RealmList<Conversation> {
             val conversations = RealmList<Conversation>()
             for (element in jsonArray) {
-                val conversation = Gson().fromJson(element, Conversation::class.java)
+                val conversation = JsonUtils.gson.fromJson(element, Conversation::class.java)
                 val realmConversation = realm.copyToRealm(conversation)
                 conversations.add(realmConversation)
             }
@@ -53,25 +52,16 @@ open class RealmChatHistory : RealmObject() {
         fun addConversationToChatHistory(mRealm: Realm, chatHistoryId: String?, query: String?, response: String?, newRev: String?) {
             val chatHistory = mRealm.where(RealmChatHistory::class.java).equalTo("_id", chatHistoryId).findFirst()
             if (chatHistory != null) {
-                if (!mRealm.isInTransaction) {
-                    mRealm.beginTransaction()
+                if (chatHistory.conversations == null) {
+                    chatHistory.conversations = RealmList()
                 }
-                try {
-                    val conversation = Conversation()
-                    conversation.query = query
-                    conversation.response = response
-                    if (chatHistory.conversations == null) {
-                        chatHistory.conversations = RealmList()
-                    }
-                    chatHistory.conversations?.add(conversation)
-                    chatHistory.lastUsed = Date().time
-                    if (!newRev.isNullOrEmpty()) {
-                        chatHistory._rev = newRev
-                    }
-                    mRealm.copyToRealmOrUpdate(chatHistory)
-                } catch (e: Exception) {
-                    mRealm.cancelTransaction()
-                    e.printStackTrace()
+                val conversation = mRealm.createObject(Conversation::class.java)
+                conversation.query = query
+                conversation.response = response
+                chatHistory.conversations?.add(conversation)
+                chatHistory.lastUsed = Date().time
+                if (!newRev.isNullOrEmpty()) {
+                    chatHistory._rev = newRev
                 }
             }
         }

@@ -16,7 +16,6 @@ import androidx.core.net.toUri
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
-import java.io.InputStream
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import java.util.UUID
@@ -191,12 +190,6 @@ object FileUtils {
 
     @JvmStatic
     @Throws(Exception::class)
-    fun convertStreamToString(`is`: InputStream?): String {
-        return `is`?.bufferedReader()?.use { it.readText() } ?: ""
-    }
-
-    @JvmStatic
-    @Throws(Exception::class)
     fun getStringFromFile(fl: File?): String {
         return fl?.inputStream()?.bufferedReader()?.use { it.readText() } ?: ""
     }
@@ -206,6 +199,7 @@ object FileUtils {
         val intent = Intent(Intent.ACTION_GET_CONTENT)
         val uri = getOlePath(context).toUri()
         intent.setDataAndType(uri, "*/*")
+        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
         return Intent.createChooser(intent, "Open folder")
     }
 
@@ -312,11 +306,7 @@ object FileUtils {
 
         return Pair(totalBytes, availableBytes)
     }
-    private fun extractFileName(filePath: String?): String? {
-        return filePath?.let { File(it).name.takeIf { name -> name.isNotEmpty() } }
-    }
-
     fun nameWithoutExtension(fileName: String?): String? {
-        return extractFileName(fileName)?.substringBeforeLast('.')
+        return fileName?.let { File(it).name.takeIf { name -> name.isNotEmpty() } }?.substringBeforeLast('.')
     }
 }

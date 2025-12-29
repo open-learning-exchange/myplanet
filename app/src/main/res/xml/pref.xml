@@ -38,6 +38,11 @@
             android:title="@string/beta_fast_sync" />
         <SwitchPreference
             android:defaultValue="false"
+            android:key="beta_improved_sync"
+            android:summary="@string/beta_improved_sync_summary"
+            android:title="@string/beta_improved_sync" />
+        <SwitchPreference
+            android:defaultValue="false"
             android:key="beta_wifi_switch"
             android:title="@string/beta_function_for_wifi_switch" />
         <SwitchPreference
@@ -58,11 +63,6 @@
         android:dependency="beta_function"
         android:title="@string/upgrade_application">
 
-        <SwitchPreference
-            android:defaultValue="true"
-            android:visibility="gone"
-            android:key="beta_auto_upgrade"
-            android:title="@string/auto_upgrade" />
         <SwitchPreference
             android:key="beta_upgrade_max"
             android:title="@string/always_move_to_maximum_version" />

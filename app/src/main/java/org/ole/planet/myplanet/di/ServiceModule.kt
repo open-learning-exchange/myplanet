@@ -2,6 +2,8 @@ package org.ole.planet.myplanet.di
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.google.gson.Gson
+import dagger.Lazy
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -12,9 +14,12 @@ import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import org.ole.planet.myplanet.datamanager.ApiInterface
-import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.data.ApiInterface
+import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.repository.SubmissionRepository
+import org.ole.planet.myplanet.service.ImprovedSyncManager
 import org.ole.planet.myplanet.service.SyncManager
+import org.ole.planet.myplanet.service.TransactionSyncManager
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UploadToShelfService
 
@@ -39,9 +44,12 @@ object ServiceModule {
         @ApplicationContext context: Context,
         databaseService: DatabaseService,
         @AppPreferences preferences: SharedPreferences,
-        apiInterface: ApiInterface
+        apiInterface: ApiInterface,
+        improvedSyncManager: Lazy<ImprovedSyncManager>,
+        transactionSyncManager: TransactionSyncManager,
+        @ApplicationScope scope: CoroutineScope
     ): SyncManager {
-        return SyncManager(context, databaseService, preferences, apiInterface)
+        return SyncManager(context, databaseService, preferences, apiInterface, improvedSyncManager, transactionSyncManager, scope)
     }
 
     @Provides
@@ -49,9 +57,11 @@ object ServiceModule {
     fun provideUploadManager(
         @ApplicationContext context: Context,
         databaseService: DatabaseService,
-        @AppPreferences preferences: SharedPreferences
+        submissionRepository: SubmissionRepository,
+        @AppPreferences preferences: SharedPreferences,
+        gson: Gson
     ): UploadManager {
-        return UploadManager(context, databaseService, preferences)
+        return UploadManager(context, databaseService, submissionRepository, preferences, gson)
     }
 
     @Provides
@@ -62,5 +72,16 @@ object ServiceModule {
         @AppPreferences preferences: SharedPreferences
     ): UploadToShelfService {
         return UploadToShelfService(context, databaseService, preferences)
+    }
+
+    @Provides
+    @Singleton
+    fun provideTransactionSyncManager(
+        apiInterface: ApiInterface,
+        databaseService: DatabaseService,
+        @ApplicationContext context: Context,
+        @ApplicationScope scope: CoroutineScope
+    ): TransactionSyncManager {
+        return TransactionSyncManager(apiInterface, databaseService, context, scope)
     }
 }

@@ -23,17 +23,20 @@ import org.ole.planet.myplanet.repository.TagRepository
 import org.ole.planet.myplanet.utilities.KeyboardUtils
 
 @AndroidEntryPoint
-class CollectionsFragment : DialogFragment(), TagExpandableAdapter.OnClickTagItem, CompoundButton.OnCheckedChangeListener {
+class CollectionsFragment : DialogFragment(), TagAdapter.OnTagClickListener, CompoundButton.OnCheckedChangeListener {
     private var _binding: FragmentCollectionsBinding? = null
     private val binding get() = _binding!!
     @Inject
     lateinit var tagRepository: TagRepository
     private lateinit var list: List<RealmTag>
+    private lateinit var childMap: HashMap<String, List<RealmTag>>
     private var filteredList: ArrayList<RealmTag> = ArrayList()
-    private lateinit var adapter: TagExpandableAdapter
+    private lateinit var adapter: TagAdapter
     private var dbType: String? = null
     private var listener: TagClickListener? = null
     private var selectedItemsList: ArrayList<RealmTag> = ArrayList()
+    private var textWatcher: TextWatcher? = null
+    private var currentTagDataList = mutableListOf<TagData>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,46 +61,70 @@ class CollectionsFragment : DialogFragment(), TagExpandableAdapter.OnClickTagIte
             listener?.onOkClicked(selectedItemsList)
             dismiss()
         }
-        binding.etFilter.addTextChangedListener(object : TextWatcher {
+        textWatcher = object : TextWatcher {
             override fun beforeTextChanged(charSequence: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(charSequence: CharSequence?, start: Int, before: Int, count: Int) {
                 charSequence?.let { filterTags(it.toString()) }
             }
             override fun afterTextChanged(editable: Editable?) {}
-        })
+        }
+        binding.etFilter.addTextChangedListener(textWatcher)
     }
 
     private fun filterTags(charSequence: String) {
-        filteredList.clear()
-        if (charSequence.isEmpty()) {
-            adapter.setTagList(list)
-            return
-        }
-        list.forEach { t ->
-            if (t.name?.lowercase(Locale.ROOT)?.contains(charSequence.lowercase(Locale.ROOT)) == true) {
-                filteredList.add(t)
+        val filteredParentList = if (charSequence.isEmpty()) {
+            list
+        } else {
+            list.filter {
+                it.name?.lowercase(Locale.ROOT)?.contains(charSequence.lowercase(Locale.ROOT)) == true
             }
         }
-        adapter.setTagList(filteredList)
+        currentTagDataList = buildTagDataList(filteredParentList).toMutableList()
+        adapter.submitList(currentTagDataList)
     }
 
     private fun setListAdapter() {
         viewLifecycleOwner.lifecycleScope.launch {
             list = tagRepository.getTags(dbType)
             selectedItemsList = ArrayList(recentList)
-            val childMap = tagRepository.buildChildMap()
-            binding.listTags.setGroupIndicator(null)
-            adapter = TagExpandableAdapter(list, childMap, selectedItemsList)
-            adapter.setSelectMultiple(true)
-            adapter.setClickListener(this@CollectionsFragment)
-            binding.listTags.setAdapter(adapter)
+            childMap = tagRepository.buildChildMap()
+            adapter = TagAdapter(this@CollectionsFragment)
+            binding.listTags.adapter = adapter
+            currentTagDataList = buildTagDataList(list).toMutableList()
+            adapter.submitList(currentTagDataList)
             binding.btnOk.visibility = View.VISIBLE
         }
+    }
+
+    private fun buildTagDataList(parents: List<RealmTag>): List<TagData> {
+        val tagDataList = mutableListOf<TagData>()
+        val isSelectMultiple = MainApplication.isCollectionSwitchOn
+        for (parentTag in parents) {
+            val isSelected = selectedItemsList.any { it.id == parentTag.id }
+            val parent = (currentTagDataList.find { it is TagData.Parent && it.tag.id == parentTag.id } as? TagData.Parent)
+                ?: TagData.Parent(parentTag, false, isSelected, isSelectMultiple)
+
+            tagDataList.add(parent.copy(isSelected = isSelected, isSelectMultiple = isSelectMultiple))
+
+            if (parent.isExpanded) {
+                childMap[parent.tag.id]?.forEach { childTag ->
+                    val isChildSelected = selectedItemsList.any { it.id == childTag.id }
+                    tagDataList.add(TagData.Child(childTag, isChildSelected, isSelectMultiple))
+                }
+            }
+        }
+        return tagDataList
     }
 
     override fun onTagClicked(tag: RealmTag) {
         listener?.onTagSelected(tag)
         dismiss()
+    }
+
+    override fun onParentTagClicked(parent: TagData.Parent) {
+        parent.isExpanded = !parent.isExpanded
+        currentTagDataList = buildTagDataList(list).toMutableList()
+        adapter.submitList(currentTagDataList.toList())
     }
 
     override fun onCheckboxTagSelected(tags: RealmTag) {
@@ -106,18 +133,25 @@ class CollectionsFragment : DialogFragment(), TagExpandableAdapter.OnClickTagIte
         } else {
             selectedItemsList.add(tags)
         }
+        currentTagDataList = buildTagDataList(list).toMutableList()
+        adapter.submitList(currentTagDataList)
+    }
+
+    override fun hasChildren(tagId: String?): Boolean {
+        return childMap.containsKey(tagId)
     }
 
     override fun onCheckedChanged(compoundButton: CompoundButton, b: Boolean) {
         MainApplication.isCollectionSwitchOn = b
-        adapter.setSelectMultiple(b)
-        adapter.setTagList(list)
-        binding.listTags.setAdapter(adapter)
+        currentTagDataList = buildTagDataList(list).toMutableList()
+        adapter.submitList(currentTagDataList)
         binding.btnOk.visibility = if (b) View.VISIBLE else View.GONE
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
+        _binding?.etFilter?.removeTextChangedListener(textWatcher)
+        textWatcher = null
         _binding = null
     }
 
@@ -137,5 +171,4 @@ class CollectionsFragment : DialogFragment(), TagExpandableAdapter.OnClickTagIte
     fun setListener(listener: TagClickListener) {
         this.listener = listener
     }
-
 }

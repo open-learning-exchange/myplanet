@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.model
 
-import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Realm
@@ -16,7 +15,7 @@ open class RealmCertification : RealmObject() {
     private var courseIds: String? = null
 
     fun setCourseIds(courseIds: JsonArray?) {
-        this.courseIds = Gson().toJson(courseIds)
+        this.courseIds = JsonUtils.gson.toJson(courseIds)
     }
 
     companion object {
@@ -33,8 +32,10 @@ open class RealmCertification : RealmObject() {
 
         @JvmStatic
         fun isCourseCertified(realm: Realm, courseId: String?): Boolean {
-            // FIXME
             if (courseId == null) {
+                return false
+            }
+            if (realm.isClosed) {
                 return false
             }
             val c =

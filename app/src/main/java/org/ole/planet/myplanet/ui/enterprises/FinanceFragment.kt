@@ -1,4 +1,3 @@
-
 package org.ole.planet.myplanet.ui.enterprises
 
 import android.content.DialogInterface
@@ -10,20 +9,18 @@ import android.widget.DatePicker
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import io.realm.Realm
-import io.realm.RealmResults
-import io.realm.Sort
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
-import java.util.UUID
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AddTransactionBinding
 import org.ole.planet.myplanet.databinding.FragmentFinanceBinding
-import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.TransactionData
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDateTZ
 import org.ole.planet.myplanet.utilities.Utilities
@@ -32,10 +29,13 @@ class FinanceFragment : BaseTeamFragment() {
     private var _binding: FragmentFinanceBinding? = null
     private val binding get() = _binding!!
     private lateinit var addTransactionBinding: AddTransactionBinding
-    private var adapterFinance: AdapterFinance? = null
+    private lateinit var financeAdapter: FinanceAdapter
     var date: Calendar? = null
-    var list: RealmResults<RealmMyTeam>? = null
+    private var transactions: List<TransactionData> = emptyList()
     private var isAsc = false
+    private var transactionsJob: Job? = null
+    private var currentStartDate: Long? = null
+    private var currentEndDate: Long? = null
 
     var listener =
         android.app.DatePickerDialog.OnDateSetListener { _: DatePicker?, year: Int, monthOfYear: Int, dayOfMonth: Int ->
@@ -73,29 +73,21 @@ class FinanceFragment : BaseTeamFragment() {
         }
 
 
-        list = mRealm.where(RealmMyTeam::class.java).notEqualTo("status", "archived")
-            .equalTo("teamId", teamId).equalTo("docType", "transaction")
-            .sort("date", Sort.DESCENDING).findAllAsync()
-        list?.addChangeListener { results ->
-            updatedFinanceList(results)
-        }
-
         binding.llDate.setOnClickListener {
             binding.imgDate.rotation += 180
-            val sortOrder = if (isAsc) Sort.DESCENDING else Sort.ASCENDING
-            val sortedResults: RealmResults<RealmMyTeam> = list!!.sort("date", sortOrder)
-            updatedFinanceList(sortedResults)
-            isAsc = !isAsc
+            val newSort = !isAsc
+            isAsc = newSort
+            observeTransactions(sortAscending = newSort)
         }
         binding.btnReset.setOnClickListener {
             binding.tvFromDateCalendar.setText("")
             binding.etToDate.setText("")
             updateToDateState(false)
-            list = mRealm.where(RealmMyTeam::class.java).notEqualTo("status", "archived")
-                .equalTo("teamId", teamId).equalTo("docType", "transaction")
-                .sort("date", Sort.DESCENDING).findAll()
-            updatedFinanceList(list as RealmResults<RealmMyTeam>)
-            showNoData(binding.tvNodata, adapterFinance?.itemCount, "finances")
+            currentStartDate = null
+            currentEndDate = null
+            isAsc = false
+            binding.imgDate.rotation = 0f
+            observeTransactions(sortAscending = isAsc, startDate = null, endDate = null)
         }
         return binding.root
     }
@@ -194,15 +186,9 @@ class FinanceFragment : BaseTeamFragment() {
 
             val start = dateFormat.parse(fromDate)?.time ?: throw IllegalArgumentException("Invalid fromDate format")
             val end = dateFormat.parse(toDate)?.time ?: throw IllegalArgumentException("Invalid toDate format")
-
-            list = mRealm.where(RealmMyTeam::class.java)
-                .equalTo("teamId", teamId)
-                .equalTo("docType", "transaction")
-                .between("date", start, end)
-                .sort("date", if (isAsc) Sort.ASCENDING else Sort.DESCENDING)
-                .findAll()
-
-            updatedFinanceList(list!!)
+            currentStartDate = start
+            currentEndDate = end
+            observeTransactions()
 
         } catch (e: ParseException) {
             e.printStackTrace()
@@ -220,11 +206,10 @@ class FinanceFragment : BaseTeamFragment() {
             binding.addTransaction.visibility = View.GONE
         }
         binding.addTransaction.setOnClickListener { addTransaction() }
-        list = mRealm.where(RealmMyTeam::class.java).notEqualTo("status", "archived")
-            .equalTo("teamId", teamId).equalTo("docType", "transaction")
-            .sort("date", Sort.DESCENDING).findAll()
-        updatedFinanceList(list as RealmResults<RealmMyTeam>)
-        showNoData(binding.tvNodata, list?.size, "finances")
+        financeAdapter = FinanceAdapter(requireActivity())
+        binding.rvFinance.layoutManager = LinearLayoutManager(activity)
+        binding.rvFinance.adapter = financeAdapter
+        observeTransactions()
     }
 
     override fun onNewsItemClick(news: RealmNews?) {}
@@ -233,10 +218,10 @@ class FinanceFragment : BaseTeamFragment() {
         llImage?.removeAllViews()
     }
 
-    private fun calculateTotal(list: List<RealmMyTeam>?) {
+    private fun calculateTotal(list: List<TransactionData>) {
         var debit = 0
         var credit = 0
-        for (team in list ?: emptyList()) {
+        for (team in list) {
             if ("credit".equals(team.type?.lowercase(Locale.getDefault()), ignoreCase = true)) {
                 credit += team.amount
             } else {
@@ -263,35 +248,31 @@ class FinanceFragment : BaseTeamFragment() {
                 } else if (date == null) {
                     Utilities.toast(activity, getString(R.string.date_is_required))
                 } else {
-                    mRealm.executeTransactionAsync(Realm.Transaction { realm: Realm ->
-                        createTransactionObject(realm, type, note, amount, date)
-                    }, Realm.Transaction.OnSuccess {
-                        Utilities.toast(activity, getString(R.string.transaction_added))
-                        adapterFinance?.notifyDataSetChanged()
-                        showNoData(binding.tvNodata, adapterFinance?.itemCount, "finances")
-                    })
+                    val amountValue = amount.toIntOrNull()
+                    if (amountValue == null) {
+                        Utilities.toast(activity, getString(R.string.amount_is_required))
+                        return@setPositiveButton
+                    }
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        val result = teamsRepository.createTransaction(
+                            teamId = teamId,
+                            type = type,
+                            note = note,
+                            amount = amountValue,
+                            date = date!!.timeInMillis,
+                            parentCode = user?.parentCode,
+                            planetCode = user?.planetCode,
+                        )
+                        if (result.isSuccess) {
+                            Utilities.toast(activity, getString(R.string.transaction_added))
+                        } else {
+                            val errorMessage = result.exceptionOrNull()?.localizedMessage
+                                ?: getString(R.string.no_data_available_please_check_and_try_again)
+                            Utilities.toast(activity, errorMessage)
+                        }
+                    }
                 }
             }.setNegativeButton("Cancel", null).show()
-    }
-
-    private fun createTransactionObject(realm: Realm, type: String?, note: String, amount: String, date: Calendar?) {
-        val team = realm.createObject(RealmMyTeam::class.java, UUID.randomUUID().toString())
-        team.status = "active"
-        if (date != null) {
-            team.date = date.timeInMillis
-        }
-        if (type != null) {
-            team.teamType = type
-        }
-        team.type = type
-        team.description = note
-        team.teamId = teamId
-        team.amount = amount.toInt()
-        team.parentCode = user?.parentCode
-        team.teamPlanetCode = user?.planetCode
-        team.teamType = "sync"
-        team.docType = "transaction"
-        team.updated = true
     }
 
     private fun setUpAlertUi(): View {
@@ -302,36 +283,52 @@ class FinanceFragment : BaseTeamFragment() {
         return addTransactionBinding.root
     }
 
-    private fun updatedFinanceList(results: RealmResults<RealmMyTeam>) {
+    private fun updatedFinanceList(results: List<TransactionData>) {
         if (view == null) return
-        viewLifecycleOwner.lifecycleScope.launch {
-            if (!results.isEmpty()) {
-                adapterFinance = AdapterFinance(requireActivity(), results)
-                binding.rvFinance.layoutManager = LinearLayoutManager(activity)
-                binding.rvFinance.adapter = adapterFinance
-                adapterFinance?.notifyDataSetChanged()
-                calculateTotal(results)
-            } else if (binding.tvFromDateCalendar.text.isNullOrEmpty()
-                && binding.etToDate.text.isNullOrEmpty()) {
-                binding.rvFinance.adapter = null
-                binding.dataLayout.visibility = View.GONE
-                binding.tvNodata.visibility = View.VISIBLE
-            } else {
-                calculateTotal(results)
-                binding.dataLayout.visibility = View.VISIBLE
-                binding.tvNodata.visibility = View.VISIBLE
-                binding.rvFinance.adapter = null
-            }
+
+        financeAdapter.submitList(results)
+        calculateTotal(results)
+
+        if (results.isNotEmpty()) {
+            binding.dataLayout.visibility = View.VISIBLE
+            binding.tvNodata.visibility = View.GONE
+            binding.rvFinance.visibility = View.VISIBLE
+        } else if (binding.tvFromDateCalendar.text.isNullOrEmpty() && binding.etToDate.text.isNullOrEmpty()) {
+            binding.dataLayout.visibility = View.GONE
+            binding.tvNodata.visibility = View.VISIBLE
+            binding.rvFinance.visibility = View.GONE
+        } else {
+            binding.dataLayout.visibility = View.VISIBLE
+            binding.tvNodata.visibility = View.VISIBLE
+            binding.rvFinance.visibility = View.GONE
         }
     }
 
     override fun onDestroyView() {
-        list?.removeAllChangeListeners()
-        list = null
-        if (isRealmInitialized()) {
-            mRealm.close()
-        }
+        transactionsJob?.cancel()
+        transactionsJob = null
+        transactions = emptyList()
         _binding = null
         super.onDestroyView()
+    }
+
+    private fun observeTransactions(
+        sortAscending: Boolean = isAsc,
+        startDate: Long? = currentStartDate,
+        endDate: Long? = currentEndDate,
+    ) {
+        transactionsJob?.cancel()
+        transactionsJob = viewLifecycleOwner.lifecycleScope.launch {
+            teamsRepository.getTeamTransactionsWithBalance(
+                teamId = teamId,
+                startDate = startDate,
+                endDate = endDate,
+                sortAscending = sortAscending,
+            ).collectLatest { results ->
+                transactions = results
+                updatedFinanceList(results)
+                showNoData(binding.tvNodata, transactions.size, "finances")
+            }
+        }
     }
 }

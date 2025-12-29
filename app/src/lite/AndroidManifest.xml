@@ -57,7 +57,7 @@
         android:networkSecurityConfig="@xml/network_security_config"
         tools:replace="android:label">
         <activity
-            android:name=".ui.onBoarding.OnBoardingActivity"
+            android:name=".ui.onboarding.OnBoardingActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -130,7 +130,7 @@
                 android:resource="@xml/file_paths" />
         </provider>
         <service
-            android:name=".datamanager.MyDownloadService"
+            android:name=".service.MyDownloadService"
             android:foregroundServiceType="dataSync"
             android:enabled="true"
             android:permission="android.permission.FOREGROUND_SERVICE"

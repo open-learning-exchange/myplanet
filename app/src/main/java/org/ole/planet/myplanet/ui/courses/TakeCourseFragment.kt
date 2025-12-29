@@ -13,6 +13,7 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.viewpager.widget.ViewPager
+import androidx.viewpager2.widget.ViewPager2
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import java.util.Locale
@@ -23,22 +24,21 @@ import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.databinding.FragmentTakeCourseBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmCourseActivity.Companion.createActivity
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseProgress.Companion.getCurrentProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getCourseStepIds
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getCourseSteps
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onAdd
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onRemove
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.isStepCompleted
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.DialogUtils.getDialog
@@ -50,11 +50,17 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     private val binding get() = _binding!!
     @Inject
     lateinit var databaseService: DatabaseService
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
+    @Inject
+    lateinit var coursesRepository: CoursesRepository
     lateinit var mRealm: Realm
     private var currentCourse: RealmMyCourse? = null
     lateinit var steps: List<RealmCourseStep?>
     var position = 0
     private var currentStep = 0
+    private var cachedCourseProgress: Int? = null
+    private val isFetchingProgress = java.util.concurrent.atomic.AtomicBoolean(false)
     private var joinDialog: AlertDialog? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -70,49 +76,91 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTakeCourseBinding.inflate(inflater, container, false)
         mRealm = databaseService.realmInstance
-        userModel = UserProfileDbHandler(requireContext()).userModel
-        currentCourse = mRealm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
+        userModel = userProfileDbHandler.userModel
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        binding.tvCourseTitle.text = currentCourse?.courseTitle
-        steps = getCourseSteps(mRealm, courseId)
-        if (steps.isEmpty()) {
-            binding.nextStep.visibility = View.GONE
-            binding.previousStep.visibility = View.GONE
-        }
+        binding.loadingIndicator.visibility = View.VISIBLE
+        binding.contentLayout.visibility = View.GONE
 
-        currentStep = getCourseProgress()
-        position = if (currentStep > 0) currentStep  else 0
-        setNavigationButtons()
-        binding.viewPager2.adapter =
-            CoursesPagerAdapter(
-                this@TakeCourseFragment,
-                courseId,
-                getCourseStepIds(mRealm, courseId)
-            )
+        viewLifecycleOwner.lifecycleScope.launch {
+            val course: RealmMyCourse? = coursesRepository.getDetachedCourseById(courseId)
+            binding.loadingIndicator.visibility = View.GONE
+            if (course == null) {
+                Toast.makeText(requireContext(), getString(R.string.failed_to_load_course), Toast.LENGTH_LONG).show()
+                requireActivity().supportFragmentManager.popBackStack()
+                return@launch
+            }
+            binding.contentLayout.visibility = View.VISIBLE
+            currentCourse = course
+            binding.tvCourseTitle.text = currentCourse?.courseTitle
 
-        binding.viewPager2.isUserInputEnabled = false
-        binding.viewPager2.setCurrentItem(position, false)
+            withContext(Dispatchers.IO) {
+                steps = coursesRepository.getCourseSteps(courseId)
 
-        updateStepDisplay(position)
+                if (cachedCourseProgress == null && isFetchingProgress.compareAndSet(false, true)) {
+                    try {
+                        cachedCourseProgress = getCourseProgress()
+                    } finally {
+                        isFetchingProgress.set(false)
+                    }
+                }
+            }
 
-        if (position == 0) {
-            binding.previousStep.visibility = View.GONE
-        }
-        setCourseData()
-        setListeners()
-        checkSurveyCompletion()
-        binding.backButton.setOnClickListener {
-            NavigationHelper.popBackStack(requireActivity().supportFragmentManager)
+            currentStep = cachedCourseProgress ?: 0
+
+            if (steps.isEmpty()) {
+                binding.nextStep.visibility = View.GONE
+                binding.previousStep.visibility = View.GONE
+            }
+
+            position = if (currentStep > 0) currentStep else 0
+            setNavigationButtons()
+            binding.viewPager2.adapter =
+                CoursesPagerAdapter(
+                    this@TakeCourseFragment,
+                    courseId,
+                    steps.mapNotNull { it?.id }.toTypedArray()
+                )
+            binding.viewPager2.isUserInputEnabled = false
+            binding.viewPager2.setCurrentItem(position, false)
+            binding.viewPager2.registerOnPageChangeCallback(object :
+                ViewPager2.OnPageChangeCallback() {
+                override fun onPageSelected(position: Int) {
+                    super.onPageSelected(position)
+                    this@TakeCourseFragment.onPageSelected(position)
+                }
+            })
+            updateStepDisplay(position)
+            if (position == 0) {
+                binding.previousStep.visibility = View.GONE
+            }
+            setCourseData()
+            setListeners()
+            checkSurveyCompletion()
+            binding.backButton.setOnClickListener {
+                NavigationHelper.popBackStack(requireActivity().supportFragmentManager)
+            }
         }
     }
 
     override fun onResume() {
         super.onResume()
-        updateStepDisplay(binding.viewPager2.currentItem)
+        if (this::steps.isInitialized) {
+            val currentPosition = binding.viewPager2.currentItem
+            updateStepDisplay(currentPosition)
+
+            // Update Next/Finish button visibility when returning from exam
+            if (currentPosition >= steps.size) {
+                binding.nextStep.visibility = View.GONE
+                binding.finishStep.visibility = View.VISIBLE
+            } else {
+                binding.nextStep.visibility = View.VISIBLE
+                binding.finishStep.visibility = View.GONE
+            }
+        }
     }
 
     private fun setListeners() {
@@ -134,8 +182,12 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private fun updateStepDisplay(position: Int) {
-        val currentPosition = position
-        binding.tvStep.text = String.format(getString(R.string.step) + " %d/%d", currentPosition, steps.size)
+        if (position == 0) {
+            binding.tvStep.text = "Course Details"
+        } else {
+            val stepNumber = position
+            binding.tvStep.text = String.format(getString(R.string.step) + " %d/%d", stepNumber, steps.size)
+        }
 
         val currentProgress = getCurrentProgress(steps, mRealm, userModel?.id, courseId)
         if (currentProgress < steps.size) {
@@ -148,7 +200,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         val isGuest = userModel?.isGuest() == true
         val containsUserId = currentCourse?.userId?.contains(userModel?.id) == true
         val stepsSize = steps.size
-        val currentItem = binding.viewPager2.currentItem
 
         lifecycleScope.launch {
             withContext(Dispatchers.Main) {
@@ -167,9 +218,9 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                     binding.btnRemove.visibility = View.GONE
                 }
             }
-            
-            val detachedUserModel = userModel?.let { mRealm.copyFromRealm(it) }
-            val detachedCurrentCourse = currentCourse?.let { mRealm.copyFromRealm(it) }
+
+            val detachedUserModel = userModel
+            val detachedCurrentCourse = currentCourse
 
             withContext(Dispatchers.IO) {
                 val backgroundRealm = databaseService.realmInstance
@@ -186,7 +237,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                 binding.courseProgress.max = stepsSize
 
                 if (containsUserId) {
-                    if(position != currentCourse?.courseSteps?.size){
+                    if(position < steps.size - 1){
                         binding.nextStep.visibility = View.VISIBLE
                     }
                     binding.courseProgress.visibility = View.VISIBLE
@@ -214,33 +265,37 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private fun changeNextButtonState(position: Int) {
-        if (isStepCompleted(mRealm, steps[position - 1]?.id, userModel?.id)) {
+        if (courseId == "4e6b78800b6ad18b4e8b0e1e38a98cac") {
+            if (isStepCompleted(mRealm, steps[position - 1]?.id, userModel?.id)) {
+                binding.nextStep.isClickable = true
+                binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
+            } else {
+                binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_grey_500))
+                binding.nextStep.isClickable = false
+            }
+        } else {
             binding.nextStep.isClickable = true
             binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
-        } else {
-            binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_grey_500))
-            binding.nextStep.isClickable = false
         }
     }
 
     override fun onPageScrollStateChanged(state: Int) {}
 
     private fun onClickNext() {
-        binding.tvStep.text = String.format(Locale.getDefault(), "${getString(R.string.step)} %d/%d", binding.viewPager2.currentItem, currentCourse?.courseSteps?.size)
-        if (binding.viewPager2.currentItem == currentCourse?.courseSteps?.size) {
+        binding.tvStep.text = String.format(Locale.getDefault(), "${getString(R.string.step)} %d/%d", binding.viewPager2.currentItem, steps.size)
+        if (binding.viewPager2.currentItem >= steps.size) {
             binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_grey_500))
             binding.nextStep.visibility = View.GONE
             binding.finishStep.visibility = View.VISIBLE
-        }else{
+        } else {
             binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
             binding.nextStep.visibility = View.VISIBLE
             binding.finishStep.visibility = View.GONE
-
         }
     }
 
     private fun onClickPrevious() {
-        binding.tvStep.text = String.format(Locale.getDefault(), "${getString(R.string.step)} %d/%d", binding.viewPager2.currentItem - 1, currentCourse?.courseSteps?.size)
+        binding.tvStep.text = String.format(Locale.getDefault(), "${getString(R.string.step)} %d/%d", binding.viewPager2.currentItem - 1, steps.size)
         if (binding.viewPager2.currentItem - 1 == 0) {
             binding.previousStep.visibility = View.GONE
             binding.nextStep.visibility = View.VISIBLE
@@ -275,27 +330,77 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private fun addRemoveCourse() {
-        if (!mRealm.isInTransaction) mRealm.beginTransaction()
-        if (currentCourse?.userId?.contains(userModel?.id) == true) {
-            currentCourse?.removeUserId(userModel?.id)
-            onRemove(mRealm, "courses", userModel?.id, courseId)
-        } else {
-            currentCourse?.setUserId(userModel?.id)
-            onAdd(mRealm, "courses", userModel?.id, courseId)
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val isCurrentlyJoined = withContext(Dispatchers.IO) {
+                    databaseService.withRealm { realm ->
+                        val course = realm.where(RealmMyCourse::class.java)
+                            .equalTo("courseId", courseId)
+                            .findFirst()
+                        course?.userId?.contains(userModel?.id) == true
+                    }
+                }
+
+                withContext(Dispatchers.IO) {
+                    val backgroundRealm = databaseService.realmInstance
+                    try {
+                        backgroundRealm.executeTransaction { realm ->
+                            val course = realm.where(RealmMyCourse::class.java)
+                                .equalTo("courseId", courseId)
+                                .findFirst()
+
+                            if (course != null) {
+                                if (isCurrentlyJoined) {
+                                    course.removeUserId(userModel?.id)
+                                } else {
+                                    course.setUserId(userModel?.id)
+                                }
+                            }
+                        }
+
+                        if (isCurrentlyJoined) {
+                            onRemove(backgroundRealm, "courses", userModel?.id, courseId)
+                        } else {
+                            onAdd(backgroundRealm, "courses", userModel?.id, courseId)
+                        }
+                    } finally {
+                        backgroundRealm.close()
+                    }
+                }
+
+                withContext(Dispatchers.Main) {
+                    val updatedCourse = mRealm.where(RealmMyCourse::class.java)
+                        .equalTo("courseId", courseId)
+                        .findFirst()
+                    if (updatedCourse != null) {
+                        currentCourse = mRealm.copyFromRealm(updatedCourse)
+                    }
+
+                    val statusMessage = if (isCurrentlyJoined) {
+                        getString(R.string.removed_from)
+                    } else {
+                        getString(R.string.added_to)
+                    }
+
+                    Utilities.toast(activity, "course $statusMessage ${getString(R.string.my_courses)}")
+                    setCourseData()
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    e.printStackTrace()
+                    Utilities.toast(activity, "Failed to update course: ${e.message}")
+                }
+            }
         }
-        Utilities.toast(activity, "course ${(if (currentCourse?.userId?.contains(userModel?.id) == true) {
-            getString(R.string.added_to)
-        } else {
-            getString(R.string.removed_from)
-        })} ${getString(R.string.my_courses)}")
-        setCourseData()
     }
 
-    private fun getCourseProgress(): Int {
-        return databaseService.withRealm { realm ->
-            val user = UserProfileDbHandler(requireActivity()).userModel
-            val courseProgressMap = RealmCourseProgress.getCourseProgress(realm, user?.id)
-            courseProgressMap[courseId]?.asJsonObject?.get("current")?.asInt ?: 0
+    private suspend fun getCourseProgress(): Int {
+        return withContext(Dispatchers.IO) {
+            databaseService.withRealm { realm ->
+                val user = userProfileDbHandler.userModel
+                val courseProgressMap = RealmCourseProgress.getCourseProgress(realm, user?.id)
+                courseProgressMap[courseId]?.asJsonObject?.get("current")?.asInt ?: 0
+            }
         }
     }
 
@@ -321,7 +426,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private fun setNavigationButtons(){
-        if(position == currentCourse?.courseSteps?.size){
+        if(position >= steps.size - 1){
             binding.nextStep.visibility = View.GONE
             binding.finishStep.visibility = View.VISIBLE
         } else {

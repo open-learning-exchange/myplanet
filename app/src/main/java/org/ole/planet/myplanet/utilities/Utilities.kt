@@ -1,8 +1,9 @@
 package org.ole.planet.myplanet.utilities
 
+import android.app.Activity
 import android.content.Context
+import android.content.ContextWrapper
 import android.content.SharedPreferences
-import android.util.Log
 import android.util.Patterns
 import android.webkit.MimeTypeMap
 import android.widget.Toast
@@ -12,25 +13,36 @@ import java.math.BigInteger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.MainApplication.Companion.context
 
 object Utilities {
-
-    // only for DEBUG ... not #deadcode
-    @JvmStatic
-    fun log(message: String) {
-        Log.d("OLE ", "log: $message")
-    }
-
     fun isValidEmail(target: CharSequence): Boolean {
-        return !target.isNullOrEmpty() && Patterns.EMAIL_ADDRESS.matcher(target).matches()
+        return target.isNotEmpty() && Patterns.EMAIL_ADDRESS.matcher(target).matches()
+    }
+
+    private fun getActivityFromContext(context: Context?): Activity? {
+        var ctx = context
+        while (ctx is ContextWrapper) {
+            if (ctx is Activity) {
+                return ctx
+            }
+            ctx = ctx.baseContext
+        }
+        return null
     }
 
     @JvmStatic
-    fun toast(context: Context?, s: String?, duration: Int = Toast.LENGTH_LONG) {
+    fun toast(context: Context?, message: CharSequence?, duration: Int = Toast.LENGTH_LONG) {
         context ?: return
         MainApplication.applicationScope.launch(Dispatchers.Main) {
-            Toast.makeText(context, s, duration).show()
+            val visualContext = getActivityFromContext(context)
+
+            if (visualContext != null) {
+                try {
+                    Toast.makeText(visualContext, message, duration).show()
+                } catch (e: IllegalAccessException) {
+                    e.printStackTrace()
+                }
+            }
         }
     }
 

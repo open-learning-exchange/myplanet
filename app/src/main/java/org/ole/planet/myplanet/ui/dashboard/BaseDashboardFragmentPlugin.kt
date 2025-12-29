@@ -16,28 +16,40 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
-import org.ole.planet.myplanet.ui.helpwanted.HelpWantedFragment
-import org.ole.planet.myplanet.ui.myPersonals.MyPersonalsFragment
+import org.ole.planet.myplanet.ui.events.EventsDetailFragment
 import org.ole.planet.myplanet.ui.myhealth.MyHealthFragment
-import org.ole.planet.myplanet.ui.mymeetup.MyMeetupDetailFragment
-import org.ole.planet.myplanet.ui.news.NewsFragment
+import org.ole.planet.myplanet.ui.personals.PersonalsFragment
 import org.ole.planet.myplanet.ui.references.ReferenceFragment
-import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
+import org.ole.planet.myplanet.ui.submission.SubmissionsFragment
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utilities.Utilities
 
 open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
+
+    private val imageResourceMap by lazy {
+        mapOf(
+            "ic_myhealth" to R.drawable.ic_myhealth,
+            "my_achievement" to R.drawable.my_achievement,
+            "ic_submissions" to R.drawable.ic_submissions,
+            "ic_my_survey" to R.drawable.ic_my_survey,
+            "ic_references" to R.drawable.ic_references,
+            "ic_calendar" to R.drawable.ic_calendar,
+            "ic_mypersonals" to R.drawable.ic_mypersonals
+        )
+    }
+
     fun handleClick(id: String?, title: String?, f: Fragment, v: TextView) {
         v.text = title
         v.setOnClickListener {
             if (homeItemClickListener != null) {
                 if (f is TeamDetailFragment) {
+                    if (!isRealmInitialized()) {
+                        return@setOnClickListener
+                    }
                     val teamObject = mRealm.where(RealmMyTeam::class.java)?.equalTo("_id", id)?.findFirst()
                     val optimizedFragment = TeamDetailFragment.newInstance(
                         teamId = id ?: "",
@@ -62,14 +74,12 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         v.setOnClickListener {
             homeItemClickListener?.let { listener ->
                 when (title) {
-                    "mySubmissions" -> openIfLoggedIn { listener.openCallFragment(MySubmissionFragment()) }
-                    "Our News" -> listener.openCallFragment(NewsFragment())
+                    "mySubmissions" -> openIfLoggedIn { listener.openCallFragment(SubmissionsFragment()) }
                     "References" -> listener.openCallFragment(ReferenceFragment())
                     "Calendar" -> listener.openCallFragment(CalendarFragment())
-                    "mySurveys" -> openIfLoggedIn { listener.openCallFragment(MySubmissionFragment.newInstance("survey")) }
+                    "mySurveys" -> openIfLoggedIn { listener.openCallFragment(SubmissionsFragment.newInstance("survey")) }
                     "myAchievements" -> openIfLoggedIn { listener.openCallFragment(AchievementFragment()) }
-                    "myPersonals" -> openIfLoggedIn { listener.openCallFragment(MyPersonalsFragment()) }
-                    "Help Wanted" -> listener.openCallFragment(HelpWantedFragment())
+                    "myPersonals" -> openIfLoggedIn { listener.openCallFragment(PersonalsFragment()) }
                     "myHealth" -> openIfLoggedIn { listener.openCallFragment(MyHealthFragment()) }
                     else -> Utilities.toast(activity, getString(R.string.feature_not_available))
                 }
@@ -81,7 +91,7 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         if (model?.id?.startsWith("guest") == false) {
             action()
         } else {
-            guestDialog(requireContext())
+            guestDialog(requireContext(), profileDbHandler)
         }
     }
 
@@ -101,7 +111,7 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
             }
             is RealmMeetup -> {
                 textViewArray[itemCnt]?.let {
-                    handleClick(obj.meetupId, obj.title, MyMeetupDetailFragment(), it)
+                    handleClick(obj.meetupId, obj.title, EventsDetailFragment(), it)
                 }
             }
         }
@@ -112,20 +122,19 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         setBackgroundColor(textView, itemCnt)
     }
 
-    fun getLayout(itemCnt: Int, obj: RealmObject): View {
+    fun getLayout(itemCnt: Int, obj: RealmObject, surveyCount: Int? = null): View {
         val itemMyLifeBinding = ItemMyLifeBinding.inflate(LayoutInflater.from(activity))
         val v = itemMyLifeBinding.root
         setBackgroundColor(v, itemCnt)
 
         val title = (obj as RealmMyLife).title
-        val user = UserProfileDbHandler(requireContext()).userModel
-        itemMyLifeBinding.img.setImageResource(resources.getIdentifier(obj.imageId, "drawable", requireActivity().packageName))
+        val imageResId = imageResourceMap[obj.imageId] ?: R.drawable.ic_myhealth
+        itemMyLifeBinding.img.setImageResource(imageResId)
         itemMyLifeBinding.tvName.text = title
 
         if (title == getString(R.string.my_survey)) {
             itemMyLifeBinding.tvCount.visibility = View.VISIBLE
-            val noOfSurvey = RealmSubmission.getNoOfSurveySubmissionByUser(user?.id, mRealm)
-            itemMyLifeBinding.tvCount.text = noOfSurvey.toString()
+            itemMyLifeBinding.tvCount.text = surveyCount?.toString() ?: "0"
         } else {
             itemMyLifeBinding.tvCount.visibility = View.GONE
         }
@@ -139,14 +148,11 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
     fun getMyLifeListBase(userId: String?): List<RealmMyLife> {
         val myLifeList: MutableList<RealmMyLife> = ArrayList()
         myLifeList.add(RealmMyLife("ic_myhealth", userId, getString(R.string.myhealth)))
-        myLifeList.add(RealmMyLife("ic_messages", userId, getString(R.string.messeges)))
         myLifeList.add(RealmMyLife("my_achievement", userId, getString(R.string.achievements)))
         myLifeList.add(RealmMyLife("ic_submissions", userId, getString(R.string.submission)))
         myLifeList.add(RealmMyLife("ic_my_survey", userId, getString(R.string.my_survey)))
         myLifeList.add(RealmMyLife("ic_references", userId, getString(R.string.references)))
-        myLifeList.add(RealmMyLife("ic_help_wanted", userId, getString(R.string.help_wanted)))
         myLifeList.add(RealmMyLife("ic_calendar", userId, getString(R.string.calendar)))
-        myLifeList.add(RealmMyLife("ic_contacts", userId, getString(R.string.contacts)))
         myLifeList.add(RealmMyLife("ic_mypersonals", userId, getString(R.string.mypersonals)))
         return myLifeList
     }

@@ -17,26 +17,13 @@
     <color name="light_dark">#FFFFFF</color>
     <color name="mainColor">@color/colorPrimary</color>
     <color name="mainColorLight">@color/colorPrimaryLight</color>
-    <color name="dashboard_item">@color/md_white_1000</color>
     <color name="dashboard_item_alternative">@color/md_grey_300</color>
     <color name="total_color">@color/md_blue_900</color>
 
     <color name="black_overlay">#66000000</color>
     <color name="bg_white">#FFFFFF</color>
-    <color name="red">#66ff0000</color>
     <color name="green">#C304E019</color>
 
-    <color name="dialog_sync_labels">#000000</color>
-
-    <color name="material_drawer_selected_text">@color/colorPrimary</color>
-    <color name="material_drawer_dark_selected_text">@color/colorPrimary</color>
-    <color name="offwhite">#fafafa</color>
-    <color name="pref_box_color">#F1F1F1</color>
-    <color name="preference_title">@color/md_grey_900</color>
-
-    <!-- changes logout button area background from white to whatever the background color for the drawer is.
-    Without it, the drawer and logout button area are different colors -->
-    <color name="material_drawer_background">@color/colorPrimary</color>
     <color name="selected_color">#80B0E0E6</color>
     <color name="empty_rating">@color/md_grey_500</color>
     <color name="ic_download">#000000</color>

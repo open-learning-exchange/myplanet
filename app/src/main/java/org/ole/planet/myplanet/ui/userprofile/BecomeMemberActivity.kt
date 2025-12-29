@@ -6,21 +6,22 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.widget.ArrayAdapter
+import androidx.lifecycle.lifecycleScope
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
 import java.util.Calendar
 import java.util.Locale
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
-import org.ole.planet.myplanet.callback.SecurityDataCallback
+import org.ole.planet.myplanet.callback.SecurityDataListener
+import org.ole.planet.myplanet.data.Service
 import org.ole.planet.myplanet.databinding.ActivityBecomeMemberBinding
-import org.ole.planet.myplanet.datamanager.Service
-import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.sync.LoginActivity
-import org.ole.planet.myplanet.utilities.AuthHelper
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils.CustomProgressDialog
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
@@ -33,6 +34,8 @@ class BecomeMemberActivity : BaseActivity() {
     private lateinit var activityBecomeMemberBinding: ActivityBecomeMemberBinding
     var dob: String = ""
     var guest: Boolean = false
+    private var usernameWatcher: TextWatcher? = null
+    private var passwordWatcher: TextWatcher? = null
     
     private data class MemberInfo(
         val username: String,
@@ -48,10 +51,6 @@ class BecomeMemberActivity : BaseActivity() {
         val birthDate: String,
         val gender: String?
     )
-
-    private fun usernameValidationError(username: String, realm: Realm? = null): String? {
-        return AuthHelper.validateUsername(this, username, realm)
-    }
 
     private fun selectedGender(): String? = when {
         activityBecomeMemberBinding.male.isChecked -> "male"
@@ -87,12 +86,7 @@ class BecomeMemberActivity : BaseActivity() {
         selectedGender()
     )
 
-    private fun validateMemberInfo(info: MemberInfo, realm: Realm): Boolean {
-        usernameValidationError(info.username, realm)?.let {
-            activityBecomeMemberBinding.etUsername.error = it
-            return false
-        }
-
+    private fun validateMemberInfo(info: MemberInfo): Boolean {
         return when {
             info.password.isEmpty() -> {
                 activityBecomeMemberBinding.etPassword.error = getString(R.string.please_enter_a_password)
@@ -139,18 +133,18 @@ class BecomeMemberActivity : BaseActivity() {
         add("roles", roles)
     }
 
-    private fun addMember(info: MemberInfo, realm: Realm) {
+    private fun addMember(info: MemberInfo) {
         val obj = buildMemberJson(info)
         val customProgressDialog = CustomProgressDialog(this).apply {
             setText(getString(R.string.creating_member_account))
             show()
         }
 
-        Service(this).becomeMember(realm, obj, object : Service.CreateUserCallback {
+        Service(this).becomeMember(obj, object : Service.CreateUserCallback {
             override fun onSuccess(success: String) {
                 runOnUiThread { Utilities.toast(this@BecomeMemberActivity, success) }
             }
-        }, object : SecurityDataCallback {
+        }, object : SecurityDataListener {
             override fun onSecurityDataUpdated() {
                 runOnUiThread {
                     customProgressDialog.dismiss()
@@ -181,7 +175,7 @@ class BecomeMemberActivity : BaseActivity() {
         guest = intent.getBooleanExtra("guest", false)
 
         settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        setupTextWatchers(mRealm)
+        setupTextWatchers()
 
         if (guest) {
             activityBecomeMemberBinding.etUsername.setText(username)
@@ -195,25 +189,31 @@ class BecomeMemberActivity : BaseActivity() {
 
         activityBecomeMemberBinding.btnSubmit.setOnClickListener {
             val info = collectMemberInfo()
-            if (validateMemberInfo(info, mRealm)) {
-                addMember(info, mRealm)
+            lifecycleScope.launch {
+                val error = userRepository.validateUsername(info.username)
+                withContext(Dispatchers.Main) {
+                    if (error != null) {
+                        activityBecomeMemberBinding.etUsername.error = error
+                    } else if (validateMemberInfo(info)) {
+                        addMember(info)
+                    }
+                }
             }
         }
     }
 
     override fun onDestroy() {
-        if (!mRealm.isClosed) {
-            mRealm.close()
-        }
+        activityBecomeMemberBinding.etUsername.removeTextChangedListener(usernameWatcher)
+        activityBecomeMemberBinding.etPassword.removeTextChangedListener(passwordWatcher)
+        usernameWatcher = null
+        passwordWatcher = null
         super.onDestroy()
     }
 
     private fun autoLoginNewMember(username: String, password: String) {
-        val mRealm = databaseService.realmInstance
-        RealmUserModel.cleanupDuplicateUsers(mRealm) {
-            mRealm.close()
-
-            val intent = Intent(this, LoginActivity::class.java)
+        lifecycleScope.launch {
+            userRepository.cleanupDuplicateUsers()
+            val intent = Intent(this@BecomeMemberActivity, LoginActivity::class.java)
             intent.putExtra("username", username)
             intent.putExtra("password", password)
             intent.putExtra("auto_login", true)
@@ -226,29 +226,34 @@ class BecomeMemberActivity : BaseActivity() {
         }
     }
 
-    private fun setupTextWatchers(mRealm: Realm) {
-        activityBecomeMemberBinding.etUsername.addTextChangedListener(object : TextWatcher {
+    private fun setupTextWatchers() {
+        usernameWatcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
 
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
 
             override fun afterTextChanged(s: Editable?) {
                 val input = s?.toString() ?: ""
-                val error = usernameValidationError(input, mRealm)
-                if (error != null) {
-                    activityBecomeMemberBinding.etUsername.error = error
-                } else {
-                    val lowercase = input.lowercase()
-                    if (input != lowercase) {
-                        activityBecomeMemberBinding.etUsername.setText(lowercase)
-                        activityBecomeMemberBinding.etUsername.setSelection(lowercase.length)
+                lifecycleScope.launch {
+                    val error = userRepository.validateUsername(input)
+                    withContext(Dispatchers.Main) {
+                        if (error != null) {
+                            activityBecomeMemberBinding.etUsername.error = error
+                        } else {
+                            val lowercase = input.lowercase()
+                            if (input != lowercase) {
+                                activityBecomeMemberBinding.etUsername.setText(lowercase)
+                                activityBecomeMemberBinding.etUsername.setSelection(lowercase.length)
+                            }
+                            activityBecomeMemberBinding.etUsername.error = null
+                        }
                     }
-                    activityBecomeMemberBinding.etUsername.error = null
                 }
             }
-        })
+        }
+        activityBecomeMemberBinding.etUsername.addTextChangedListener(usernameWatcher)
 
-        activityBecomeMemberBinding.etPassword.addTextChangedListener(object : TextWatcher {
+        passwordWatcher = object : TextWatcher {
             override fun afterTextChanged(s: Editable) {
                 if (activityBecomeMemberBinding.etPassword.text.toString().isEmpty()) {
                     activityBecomeMemberBinding.etRePassword.setText("")
@@ -258,6 +263,7 @@ class BecomeMemberActivity : BaseActivity() {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
 
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {}
-        })
+        }
+        activityBecomeMemberBinding.etPassword.addTextChangedListener(passwordWatcher)
     }
 }

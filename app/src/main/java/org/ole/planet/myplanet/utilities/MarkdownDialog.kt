@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.DashboardElementActivity
+import org.ole.planet.myplanet.ui.widgets.CustomClickableSpan
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 
 class MarkdownDialog : DialogFragment() {
@@ -104,11 +105,15 @@ class MarkdownDialog : DialogFragment() {
 
     private fun setupCourseButton(drawer: Drawer?) {
         dialogCampaignChallengeBinding.btnStart.apply {
-            val isCompleted = courseStatus.contains("terminado") && voiceCount >= 5 && (activity as? DashboardActivity)?.mRealm?.let { realm ->
-                realm.where(RealmUserChallengeActions::class.java)
-                    .equalTo("userId", (activity as? DashboardActivity)?.user?.id)
-                    .equalTo("actionType", "sync").count() > 0
-            } == true
+            val dashboardActivity = activity as? DashboardActivity
+            val hasSyncAction = dashboardActivity?.let { dashboard ->
+                dashboard.databaseService.withRealm { realm ->
+                    realm.where(RealmUserChallengeActions::class.java)
+                        .equalTo("userId", dashboard.user?.id)
+                        .equalTo("actionType", "sync").count() > 0
+                }
+            } ?: false
+            val isCompleted = courseStatus.contains("terminado") && voiceCount >= 5 && hasSyncAction
 
             visibility = if (isCompleted) View.GONE else View.VISIBLE
 
