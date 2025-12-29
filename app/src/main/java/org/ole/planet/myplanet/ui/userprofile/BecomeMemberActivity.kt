@@ -18,7 +18,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
-import org.ole.planet.myplanet.callback.SecurityDataCallback
+import org.ole.planet.myplanet.callback.SecurityDataListener
 import org.ole.planet.myplanet.data.Service
 import org.ole.planet.myplanet.databinding.ActivityBecomeMemberBinding
 import org.ole.planet.myplanet.ui.sync.LoginActivity
@@ -144,7 +144,7 @@ class BecomeMemberActivity : BaseActivity() {
             override fun onSuccess(success: String) {
                 runOnUiThread { Utilities.toast(this@BecomeMemberActivity, success) }
             }
-        }, object : SecurityDataCallback {
+        }, object : SecurityDataListener {
             override fun onSecurityDataUpdated() {
                 runOnUiThread {
                     customProgressDialog.dismiss()

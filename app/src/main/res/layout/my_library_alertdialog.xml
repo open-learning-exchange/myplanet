@@ -16,7 +16,7 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent">
 
-        <org.ole.planet.myplanet.utilities.CheckboxListView
+        <org.ole.planet.myplanet.ui.widgets.CheckboxListView
             android:id="@+id/alertDialog_listView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

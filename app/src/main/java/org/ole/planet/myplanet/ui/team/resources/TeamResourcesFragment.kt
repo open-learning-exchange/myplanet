@@ -26,7 +26,7 @@ import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
-import org.ole.planet.myplanet.utilities.CheckboxListView
+import org.ole.planet.myplanet.ui.widgets.CheckboxListView
 
 @AndroidEntryPoint
 class TeamResourcesFragment : BaseTeamFragment(), TeamPageListener, ResourcesUpdateListner {

@@ -21,7 +21,7 @@ import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.DialogUtils.CustomProgressDialog
 import org.ole.planet.myplanet.utilities.IntentUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.LocaleHelper
+import org.ole.planet.myplanet.utilities.LocaleUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils.extractProtocol
 import org.ole.planet.myplanet.utilities.UrlUtils
 
@@ -165,7 +165,7 @@ class ConfigurationManager(
             val languageCode = getLanguageCodeFromName(preferredLang)
             if (languageCode != null) {
                 withContext(Dispatchers.IO) {
-                    LocaleHelper.setLocale(context, languageCode)
+                    LocaleUtils.setLocale(context, languageCode)
                     preferences.edit { putString("pendingLanguageChange", languageCode) }
                 }
             }
