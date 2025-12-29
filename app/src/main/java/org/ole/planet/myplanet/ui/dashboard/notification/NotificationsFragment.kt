@@ -22,6 +22,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.R.array.status_options
+import org.ole.planet.myplanet.callback.NotificationsListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentNotificationsBinding
 import org.ole.planet.myplanet.model.RealmNotification
@@ -42,7 +43,7 @@ class NotificationsFragment : Fragment() {
     lateinit var notificationsRepository: NotificationsRepository
     private lateinit var adapter: AdapterNotification
     private lateinit var userId: String
-    private var notificationUpdateListener: NotificationListener? = null
+    private var notificationUpdateListener: NotificationsListener? = null
     private lateinit var dashboardActivity: DashboardActivity
     private var unreadCountCache: Int = 0
 
@@ -53,7 +54,7 @@ class NotificationsFragment : Fragment() {
         }
     }
 
-    fun setNotificationUpdateListener(listener: NotificationListener) {
+    fun setNotificationUpdateListener(listener: NotificationsListener) {
         this.notificationUpdateListener = listener
     }
 
