@@ -328,7 +328,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             requireView().findViewById<View>(R.id.fabMyProgress).apply {
                 visibility = View.VISIBLE
                 setOnClickListener {
-                    val myProgressFragment = MyProgressFragment().apply {
+                    val progressFragment = ProgressFragment().apply {
                         arguments = Bundle().apply {
                             putBoolean("isMyCourseLib", true)
                         }
@@ -337,7 +337,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     NavigationHelper.replaceFragment(
                         parentFragmentManager,
                         R.id.fragment_container,
-                        myProgressFragment,
+                        progressFragment,
                         addToBackStack = true
                     )
                 }
