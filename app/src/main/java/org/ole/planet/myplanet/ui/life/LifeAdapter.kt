@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.mylife
+package org.ole.planet.myplanet.ui.life
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -23,10 +23,10 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.repository.LifeRepository
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment
+import org.ole.planet.myplanet.ui.life.helper.ItemTouchHelperAdapter
+import org.ole.planet.myplanet.ui.life.helper.ItemTouchHelperViewHolder
+import org.ole.planet.myplanet.ui.life.helper.OnStartDragListener
 import org.ole.planet.myplanet.ui.myhealth.MyHealthFragment
-import org.ole.planet.myplanet.ui.mylife.helper.ItemTouchHelperAdapter
-import org.ole.planet.myplanet.ui.mylife.helper.ItemTouchHelperViewHolder
-import org.ole.planet.myplanet.ui.mylife.helper.OnStartDragListener
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.personals.PersonalsFragment
 import org.ole.planet.myplanet.ui.references.ReferenceFragment

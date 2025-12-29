@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.mylife
+package org.ole.planet.myplanet.ui.life
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -15,8 +15,8 @@ import org.ole.planet.myplanet.databinding.FragmentLifeBinding
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyLife.Companion.getMyLifeByUserId
 import org.ole.planet.myplanet.repository.LifeRepository
-import org.ole.planet.myplanet.ui.mylife.helper.OnStartDragListener
-import org.ole.planet.myplanet.ui.mylife.helper.SimpleItemTouchHelperCallback
+import org.ole.planet.myplanet.ui.life.helper.OnStartDragListener
+import org.ole.planet.myplanet.ui.life.helper.SimpleItemTouchHelperCallback
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 
 @AndroidEntryPoint
