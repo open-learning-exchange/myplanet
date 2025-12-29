@@ -11,7 +11,7 @@ import org.ole.planet.myplanet.ui.team.discussion.DiscussionListFragment
 import org.ole.planet.myplanet.ui.team.member.MemberFragment
 import org.ole.planet.myplanet.ui.team.member.MembersFragment
 import org.ole.planet.myplanet.ui.team.resources.TeamResourcesFragment
-import org.ole.planet.myplanet.ui.team.task.TeamTaskFragment
+import org.ole.planet.myplanet.ui.team.tasks.TeamTaskFragment
 
 sealed class TeamPageConfig(val id: String, @StringRes val titleRes: Int) {
     abstract fun createFragment(): Fragment
