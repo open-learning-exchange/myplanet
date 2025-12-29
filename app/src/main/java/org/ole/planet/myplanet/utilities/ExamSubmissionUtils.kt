@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.exam
+package org.ole.planet.myplanet.utilities
 
 import io.realm.Realm
 import io.realm.RealmList
