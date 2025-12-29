@@ -45,10 +45,10 @@ import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.ui.userprofile.ProfileAdapter
-import org.ole.planet.myplanet.utilities.AuthHelper
+import org.ole.planet.myplanet.utilities.AuthUtils
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils
-import org.ole.planet.myplanet.utilities.LocaleHelper
+import org.ole.planet.myplanet.utilities.LocaleUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.ThemeManager
 import org.ole.planet.myplanet.utilities.UrlUtils.getUrl
@@ -403,12 +403,12 @@ class LoginActivity : SyncActivity(), ProfileAdapter.OnItemClickListener {
     }
 
     private fun updateLanguageButtonText() {
-        val currentLanguage = LocaleHelper.getLanguage(this)
+        val currentLanguage = LocaleUtils.getLanguage(this)
         binding.btnLang.text = getLanguageString(currentLanguage)
     }
 
     private fun showLanguageSelectionDialog() {
-        val currentLanguage = LocaleHelper.getLanguage(this)
+        val currentLanguage = LocaleUtils.getLanguage(this)
         val options = arrayOf(
             getString(R.string.english),
             getString(R.string.spanish),
@@ -428,7 +428,7 @@ class LoginActivity : SyncActivity(), ProfileAdapter.OnItemClickListener {
             ) { dialog, which ->
                 val selectedLanguage = languageCodes[which]
                 if (selectedLanguage != currentLanguage) {
-                    LocaleHelper.setLocale(this, selectedLanguage)
+                    LocaleUtils.setLocale(this, selectedLanguage)
                     recreate()
                     dialog.dismiss()
                 } else {
@@ -448,7 +448,7 @@ class LoginActivity : SyncActivity(), ProfileAdapter.OnItemClickListener {
     }
 
     override fun attachBaseContext(newBase: Context) {
-        super.attachBaseContext(LocaleHelper.onAttach(newBase))
+        super.attachBaseContext(LocaleUtils.onAttach(newBase))
     }
 
     private fun declareHideKeyboardElements() {
@@ -520,7 +520,7 @@ class LoginActivity : SyncActivity(), ProfileAdapter.OnItemClickListener {
     }
 
     private fun submitForm(name: String?, password: String?) {
-        AuthHelper.login(this, name, password)
+        AuthUtils.login(this, name, password)
     }
 
     internal fun showGuestDialog(username: String) {

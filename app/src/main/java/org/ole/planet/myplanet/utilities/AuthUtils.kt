@@ -11,7 +11,7 @@ import org.ole.planet.myplanet.data.ManagerSync
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 
-object AuthHelper {
+object AuthUtils {
     private val specialCharPattern = Pattern.compile(
         ".*[ßäöüéèêæÆœøØ¿àìòùÀÈÌÒÙáíóúýÁÉÍÓÚÝâîôûÂÊÎÔÛãñõÃÑÕëïÿÄËÏÖÜŸåÅŒçÇðÐ].*"
     )
