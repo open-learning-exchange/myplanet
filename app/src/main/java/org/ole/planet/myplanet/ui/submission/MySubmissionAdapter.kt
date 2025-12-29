@@ -16,9 +16,9 @@ import org.ole.planet.myplanet.ui.exam.TakeExamFragment
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
 
-class AdapterMySubmission(
+class MySubmissionAdapter(
     private val context: Context,
-) : ListAdapter<RealmSubmission, AdapterMySubmission.ViewHolderMySurvey>(
+) : ListAdapter<RealmSubmission, MySubmissionAdapter.ViewHolderMySurvey>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem ->
             oldItem.id == newItem.id

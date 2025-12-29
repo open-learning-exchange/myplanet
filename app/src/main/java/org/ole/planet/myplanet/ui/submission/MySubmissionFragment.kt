@@ -31,7 +31,7 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
     lateinit var userProfileDbHandler: UserProfileDbHandler
 
     private lateinit var textWatcher: TextWatcher
-    private lateinit var adapter: AdapterMySubmission
+    private lateinit var adapter: MySubmissionAdapter
     var type: String? = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -51,7 +51,7 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
             DividerItemDecoration(activity, DividerItemDecoration.VERTICAL)
         )
 
-        adapter = AdapterMySubmission(requireActivity())
+        adapter = MySubmissionAdapter(requireActivity())
         adapter.setType(type)
         binding.rvMysurvey.adapter = adapter
 
