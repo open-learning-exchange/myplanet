@@ -571,7 +571,7 @@ class ChatDetailFragment : Fragment() {
             try {
                 chatRepository.saveNewChat(jsonObject)
                 if (isAdded && activity is DashboardActivity) {
-                    (activity as DashboardActivity).refreshChatHistoryList()
+                    (activity as DashboardActivity).refreshChatHistory()
                 }
             } catch (e: Exception) {
                 if (isAdded) {
@@ -623,7 +623,7 @@ class ChatDetailFragment : Fragment() {
                 chatRepository.continueConversation(realmChatId, query, chatResponse, _rev)
                 withContext(Dispatchers.Main) {
                     if (isAdded && activity is DashboardActivity) {
-                        (activity as DashboardActivity).refreshChatHistoryList()
+                        (activity as DashboardActivity).refreshChatHistory()
                     }
                 }
             } catch (e: Exception) {

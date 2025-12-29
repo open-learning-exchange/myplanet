@@ -28,7 +28,7 @@ import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.callback.BaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.callback.TableDataUpdate
-import org.ole.planet.myplanet.databinding.FragmentChatHistoryListBinding
+import org.ole.planet.myplanet.databinding.FragmentChatHistoryBinding
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.RealmChatHistory
@@ -49,8 +49,8 @@ private data class Quartet<A, B, C, D>(val first: A, val second: B, val third: C
 
 
 @AndroidEntryPoint
-class ChatHistoryListFragment : Fragment() {
-    private var _binding: FragmentChatHistoryListBinding? = null
+class ChatHistoryFragment : Fragment() {
+    private var _binding: FragmentChatHistoryBinding? = null
     private val binding get() = _binding!!
     private lateinit var sharedViewModel: ChatViewModel
     var user: RealmUserModel? = null
@@ -92,7 +92,7 @@ class ChatHistoryListFragment : Fragment() {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentChatHistoryListBinding.inflate(inflater, container, false)
+        _binding = FragmentChatHistoryBinding.inflate(inflater, container, false)
         return binding.root
     }
 
@@ -100,7 +100,7 @@ class ChatHistoryListFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         val slidingPaneLayout = binding.slidingPaneLayout
         slidingPaneLayout.lockMode = SlidingPaneLayout.LOCK_MODE_LOCKED
-        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, ChatHistoryListOnBackPressedCallback(slidingPaneLayout))
+        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, ChatHistoryOnBackPressedCallback(slidingPaneLayout))
 
         setupRealtimeSync()
         checkAiProvidersIfNeeded()
@@ -108,13 +108,13 @@ class ChatHistoryListFragment : Fragment() {
         binding.newChat.setOnClickListener {
             sharedViewModel.clearChatState()
             if (resources.getBoolean(R.bool.isLargeScreen)) {
-                val chatHistoryListFragment = ChatHistoryListFragment()
+                val chatHistoryFragment = ChatHistoryFragment()
                 NavigationHelper.replaceFragment(
                     parentFragmentManager,
                     R.id.fragment_container,
-                    chatHistoryListFragment,
+                    chatHistoryFragment,
                     addToBackStack = true,
-                    tag = "ChatHistoryList"
+                    tag = "ChatHistory"
                 )
             } else {
                 val chatDetailFragment = ChatDetailFragment()
@@ -128,7 +128,7 @@ class ChatHistoryListFragment : Fragment() {
             }
         }
 
-        refreshChatHistoryList()
+        refreshChatHistory()
 
         searchBarWatcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -182,7 +182,7 @@ class ChatHistoryListFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        refreshChatHistoryList()
+        refreshChatHistory()
     }
 
     private fun startChatHistorySync() {
@@ -225,7 +225,7 @@ class ChatHistoryListFragment : Fragment() {
                             customProgressDialog = null
                             prefManager.setChatHistorySynced(true)
 
-                            refreshChatHistoryList()
+                            refreshChatHistory()
                         }
                     }
                 }
@@ -237,7 +237,7 @@ class ChatHistoryListFragment : Fragment() {
                         if (isAdded) {
                             customProgressDialog?.dismiss()
                             customProgressDialog = null
-                            refreshChatHistoryList()
+                            refreshChatHistory()
 
                             Snackbar.make(binding.root, "Sync failed: ${msg ?: "Unknown error"}", Snackbar.LENGTH_LONG)
                                 .setAction("Retry") { startChatHistorySync() }.show()
@@ -253,7 +253,7 @@ class ChatHistoryListFragment : Fragment() {
         }
     }
 
-    fun refreshChatHistoryList() {
+    fun refreshChatHistory() {
         viewLifecycleOwner.lifecycleScope.launch {
             val cachedUser = user
             val cachedTargets = memoizedShareTargets
@@ -376,7 +376,7 @@ class ChatHistoryListFragment : Fragment() {
             override fun onTableDataUpdated(update: TableDataUpdate) {
                 if (update.table == "chats" && update.shouldRefreshUI) {
                     viewLifecycleOwner.lifecycleScope.launch {
-                        refreshChatHistoryList()
+                        refreshChatHistory()
                     }
                 }
             }
@@ -400,7 +400,7 @@ class ChatHistoryListFragment : Fragment() {
     }
 }
 
-class ChatHistoryListOnBackPressedCallback(private val slidingPaneLayout: SlidingPaneLayout) :
+class ChatHistoryOnBackPressedCallback(private val slidingPaneLayout: SlidingPaneLayout) :
     OnBackPressedCallback(slidingPaneLayout.isSlideable && slidingPaneLayout.isOpen),
     SlidingPaneLayout.PanelSlideListener {
     init {
