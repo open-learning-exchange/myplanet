@@ -1,6 +1,6 @@
 package org.ole.planet.myplanet.callback
 
-interface NotificationListener {
+interface DashboardActionListener {
     fun showPendingSurveyDialog()
     fun showUserResourceDialog()
     fun showResourceDownloadDialog()
