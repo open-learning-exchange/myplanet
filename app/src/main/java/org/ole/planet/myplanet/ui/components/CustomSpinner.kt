@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.widgets
+package org.ole.planet.myplanet.ui.components
 
 import android.content.Context
 import android.util.AttributeSet
