@@ -71,7 +71,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatHistoryListFragment
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
-import org.ole.planet.myplanet.ui.dashboard.notification.NotificationListener
+import org.ole.planet.myplanet.callback.NotificationsListener
 import org.ole.planet.myplanet.ui.dashboard.notification.NotificationsFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
@@ -98,7 +98,7 @@ import org.ole.planet.myplanet.utilities.ThemeManager
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
 @AndroidEntryPoint  
-class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener, NotificationListener {
+class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener, NotificationsListener {
 
     private lateinit var binding: ActivityDashboardBinding
     private var headerResult: AccountHeader? = null
