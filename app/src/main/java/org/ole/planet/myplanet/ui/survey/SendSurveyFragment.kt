@@ -17,7 +17,7 @@ import org.ole.planet.myplanet.databinding.FragmentSendSurveyBinding
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.ui.widgets.CheckboxListView
+import org.ole.planet.myplanet.ui.components.CheckboxListView
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint

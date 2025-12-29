@@ -57,7 +57,7 @@
             android:background="@color/secondary_bg"
             android:weightSum="1">
 
-            <org.ole.planet.myplanet.ui.widgets.CustomSpinner
+            <org.ole.planet.myplanet.ui.components.CustomSpinner
                 android:id="@+id/spn_sort"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"

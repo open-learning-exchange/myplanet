@@ -33,14 +33,14 @@ data class ChatShareTargets(
     val enterprises: List<RealmMyTeam>,
 )
 
-class ChatHistoryListAdapter(
+class ChatHistoryAdapter(
     private val context: Context,
     private var chatHistory: List<RealmChatHistory>,
     private var currentUser: RealmUserModel?,
     private var newsList: List<RealmNews>,
     private var shareTargets: ChatShareTargets,
     private val onShareChat: (HashMap<String?, String>, RealmChatHistory) -> Unit,
-) : ListAdapter<RealmChatHistory, ChatHistoryListAdapter.ViewHolderChat>(
+) : ListAdapter<RealmChatHistory, ChatHistoryAdapter.ViewHolderChat>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem ->
             val oldId = oldItem._id
