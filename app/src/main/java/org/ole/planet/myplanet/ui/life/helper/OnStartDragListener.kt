@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.mylife.helper
+package org.ole.planet.myplanet.ui.life.helper
 
 import androidx.recyclerview.widget.RecyclerView
 
