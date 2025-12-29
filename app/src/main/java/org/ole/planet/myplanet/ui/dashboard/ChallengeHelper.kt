@@ -21,7 +21,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.ProgressRepository
-import org.ole.planet.myplanet.ui.courses.MyProgressFragment
+import org.ole.planet.myplanet.ui.courses.ProgressFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.utilities.MarkdownDialog
 
@@ -48,7 +48,7 @@ class ChallengeHelper(
                     val allUniqueDates = fetchVoiceDates(realm, startTime, endTime, null)
 
                     val courseData = progressRepository.fetchCourseData(user?.id)
-                    val progress = MyProgressFragment.getCourseProgress(courseData, courseId)
+                    val progress = ProgressFragment.getCourseProgress(courseData, courseId)
                     val courseName = realm.where(RealmMyCourse::class.java)
                         .equalTo("courseId", courseId)
                         .findFirst()?.courseTitle

@@ -50,7 +50,7 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.MyDownloadService
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
+import org.ole.planet.myplanet.ui.submission.SubmissionsAdapter
 import org.ole.planet.myplanet.utilities.CheckboxListView
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DialogUtils.getProgressDialog
@@ -254,7 +254,7 @@ abstract class BaseResourceFragment : Fragment() {
             pendingSurveyDialog?.dismiss()
             pendingSurveyDialog = AlertDialog.Builder(requireActivity()).setTitle("Pending Surveys")
                 .setAdapter(arrayAdapter) { _: DialogInterface?, i: Int ->
-                    AdapterMySubmission.openSurvey(homeItemClickListener, list[i].id, true, false, "")
+                    SubmissionsAdapter.openSurvey(homeItemClickListener, list[i].id, true, false, "")
                 }.setPositiveButton(R.string.dismiss, null).create()
             pendingSurveyDialog?.setOnDismissListener {
                 pendingSurveyDialog = null

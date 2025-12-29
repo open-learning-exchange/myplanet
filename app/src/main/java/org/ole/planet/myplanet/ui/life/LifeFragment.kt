@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.mylife
+package org.ole.planet.myplanet.ui.life
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -15,13 +15,13 @@ import org.ole.planet.myplanet.databinding.FragmentLifeBinding
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyLife.Companion.getMyLifeByUserId
 import org.ole.planet.myplanet.repository.LifeRepository
-import org.ole.planet.myplanet.ui.mylife.helper.OnStartDragListener
-import org.ole.planet.myplanet.ui.mylife.helper.SimpleItemTouchHelperCallback
+import org.ole.planet.myplanet.ui.life.helper.OnStartDragListener
+import org.ole.planet.myplanet.ui.life.helper.SimpleItemTouchHelperCallback
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 
 @AndroidEntryPoint
 class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
-    private lateinit var adapterMyLife: AdapterMyLife
+    private lateinit var lifeAdapter: LifeAdapter
     private var mItemTouchHelper: ItemTouchHelper? = null
     @Inject
     lateinit var lifeRepository: LifeRepository
@@ -42,17 +42,17 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
-        adapterMyLife = AdapterMyLife(requireContext(), this, lifeRepository)
-        return adapterMyLife
+        lifeAdapter = LifeAdapter(requireContext(), this, lifeRepository)
+        return lifeAdapter
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val myLifeList = getMyLifeByUserId(mRealm, model?.id)
-        adapterMyLife.submitList(mRealm.copyFromRealm(myLifeList))
+        lifeAdapter.submitList(mRealm.copyFromRealm(myLifeList))
         recyclerView.setHasFixedSize(true)
         setupUI(binding.myLifeParentLayout, requireActivity())
-        val callback: ItemTouchHelper.Callback = SimpleItemTouchHelperCallback(adapterMyLife)
+        val callback: ItemTouchHelper.Callback = SimpleItemTouchHelperCallback(lifeAdapter)
         mItemTouchHelper = ItemTouchHelper(callback)
         mItemTouchHelper?.attachToRecyclerView(recyclerView)
         val dividerItemDecoration = DividerItemDecoration(recyclerView.context, RecyclerView.VERTICAL)

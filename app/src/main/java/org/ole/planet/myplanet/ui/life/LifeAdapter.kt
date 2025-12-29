@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.mylife
+package org.ole.planet.myplanet.ui.life
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -23,20 +23,20 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.repository.LifeRepository
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment
+import org.ole.planet.myplanet.ui.life.helper.ItemTouchHelperAdapter
+import org.ole.planet.myplanet.ui.life.helper.ItemTouchHelperViewHolder
+import org.ole.planet.myplanet.ui.life.helper.OnStartDragListener
 import org.ole.planet.myplanet.ui.myhealth.MyHealthFragment
-import org.ole.planet.myplanet.ui.mylife.helper.ItemTouchHelperAdapter
-import org.ole.planet.myplanet.ui.mylife.helper.ItemTouchHelperViewHolder
-import org.ole.planet.myplanet.ui.mylife.helper.OnStartDragListener
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.personals.PersonalsFragment
 import org.ole.planet.myplanet.ui.references.ReferenceFragment
-import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
-import org.ole.planet.myplanet.ui.submission.MySubmissionFragment.Companion.newInstance
+import org.ole.planet.myplanet.ui.submission.SubmissionsFragment
+import org.ole.planet.myplanet.ui.submission.SubmissionsFragment.Companion.newInstance
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
-class AdapterMyLife(
+class LifeAdapter(
     private val context: Context,
     private val mDragStartListener: OnStartDragListener,
     private val lifeRepository: LifeRepository
@@ -45,13 +45,13 @@ class AdapterMyLife(
     private val show = 1f
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val v = LayoutInflater.from(context).inflate(R.layout.row_life, parent, false)
-        return ViewHolderMyLife(v)
+        return ViewHolderLife(v)
     }
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val myLife = getItem(position)
-        if (holder is ViewHolderMyLife) {
+        if (holder is ViewHolderLife) {
             holder.title.text = myLife.title
             holder.imageView.setImageResource(context.resources.getIdentifier(myLife.imageId, "drawable", context.packageName))
             holder.imageView.contentDescription = context.getString(R.string.icon, myLife.title)
@@ -105,7 +105,7 @@ class AdapterMyLife(
     }
 
     private fun changeVisibility(holder: RecyclerView.ViewHolder, imageId: Int, alpha: Float) {
-        (holder as ViewHolderMyLife).visibility.setImageResource(imageId)
+        (holder as ViewHolderLife).visibility.setImageResource(imageId)
         holder.rvItemContainer.alpha = alpha
     }
 
@@ -120,7 +120,7 @@ class AdapterMyLife(
         return true
     }
 
-    internal inner class ViewHolderMyLife(itemView: View) : RecyclerView.ViewHolder(itemView),
+    internal inner class ViewHolderLife(itemView: View) : RecyclerView.ViewHolder(itemView),
         ItemTouchHelperViewHolder {
         var title: TextView = itemView.findViewById(R.id.titleTextView)
         var imageView: ImageView = itemView.findViewById(R.id.itemImageView)
@@ -137,7 +137,7 @@ class AdapterMyLife(
             if (viewHolder != null) {
                 val myLife = getItem(viewHolder.bindingAdapterPosition)
                 if (!myLife.isVisible) {
-                    (viewHolder as ViewHolderMyLife?)?.rvItemContainer?.alpha = hide
+                    (viewHolder as ViewHolderLife?)?.rvItemContainer?.alpha = hide
                 }
             }
         }
@@ -151,7 +151,7 @@ class AdapterMyLife(
         fun findFragment(frag: String?): Fragment? {
             when (frag) {
                 "ic_mypersonals" -> return PersonalsFragment()
-                "ic_submissions" -> return MySubmissionFragment()
+                "ic_submissions" -> return SubmissionsFragment()
                 "ic_my_survey" -> return newInstance("survey")
                 "ic_myhealth" -> return MyHealthFragment()
                 "ic_calendar" -> return CalendarFragment()

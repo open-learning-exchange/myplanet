@@ -64,7 +64,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private lateinit var tvAddToLib: TextView
     private lateinit var tvSelected: TextView
     private lateinit var etSearch: EditText
-    private lateinit var adapterCourses: AdapterCourses
+    private lateinit var adapterCourses: CoursesAdapter
     private lateinit var btnRemove: Button
     private lateinit var btnArchive: Button
     private lateinit var orderByDate: Button
@@ -201,7 +201,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 }
 
                 recyclerView.adapter = null
-                adapterCourses = AdapterCourses(
+                adapterCourses = CoursesAdapter(
                     requireActivity(),
                     sortedCourseList,
                     map,
@@ -222,7 +222,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
-        adapterCourses = AdapterCourses(
+        adapterCourses = CoursesAdapter(
             requireActivity(),
             emptyList(),
             HashMap<String?, JsonObject>(),
@@ -328,7 +328,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             requireView().findViewById<View>(R.id.fabMyProgress).apply {
                 visibility = View.VISIBLE
                 setOnClickListener {
-                    val myProgressFragment = MyProgressFragment().apply {
+                    val progressFragment = ProgressFragment().apply {
                         arguments = Bundle().apply {
                             putBoolean("isMyCourseLib", true)
                         }
@@ -337,7 +337,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     NavigationHelper.replaceFragment(
                         parentFragmentManager,
                         R.id.fragment_container,
-                        myProgressFragment,
+                        progressFragment,
                         addToBackStack = true
                     )
                 }

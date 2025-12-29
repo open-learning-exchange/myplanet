@@ -22,7 +22,7 @@ import org.ole.planet.myplanet.databinding.FragmentMySubmissionBinding
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 
 @AndroidEntryPoint
-class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
+class SubmissionsFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
     private var _binding: FragmentMySubmissionBinding? = null
     private val binding get() = _binding!!
     private val viewModel: SubmissionViewModel by viewModels()
@@ -31,7 +31,7 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
     lateinit var userProfileDbHandler: UserProfileDbHandler
 
     private lateinit var textWatcher: TextWatcher
-    private lateinit var adapter: AdapterMySubmission
+    private lateinit var adapter: SubmissionsAdapter
     var type: String? = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -51,7 +51,7 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
             DividerItemDecoration(activity, DividerItemDecoration.VERTICAL)
         )
 
-        adapter = AdapterMySubmission(requireActivity())
+        adapter = SubmissionsAdapter(requireActivity())
         adapter.setType(type)
         binding.rvMysurvey.adapter = adapter
 
@@ -148,7 +148,7 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
     companion object {
         @JvmStatic
         fun newInstance(type: String?): Fragment {
-            val fragment = MySubmissionFragment()
+            val fragment = SubmissionsFragment()
             val b = Bundle()
             b.putString("type", type)
             fragment.arguments = b

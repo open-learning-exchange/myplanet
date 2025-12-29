@@ -38,7 +38,7 @@ import org.ole.planet.myplanet.utilities.SelectionUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 
-class AdapterCourses(
+class CoursesAdapter(
     private val context: Context,
     private var courseList: List<RealmMyCourse?>,
     private val map: HashMap<String?, JsonObject>,

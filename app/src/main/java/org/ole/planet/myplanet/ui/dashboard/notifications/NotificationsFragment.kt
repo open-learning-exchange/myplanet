@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.dashboard.notification
+package org.ole.planet.myplanet.ui.dashboard.notifications
 
 import android.content.Context
 import android.content.Intent
@@ -22,13 +22,14 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.R.array.status_options
+import org.ole.planet.myplanet.callback.NotificationsListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentNotificationsBinding
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
-import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
+import org.ole.planet.myplanet.ui.submission.SubmissionsAdapter
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.JoinRequestsPage
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.TasksPage
@@ -40,9 +41,9 @@ class NotificationsFragment : Fragment() {
     private val binding get() = _binding!!
     @Inject
     lateinit var notificationsRepository: NotificationsRepository
-    private lateinit var adapter: AdapterNotification
+    private lateinit var adapter: NotificationsAdapter
     private lateinit var userId: String
-    private var notificationUpdateListener: NotificationListener? = null
+    private var notificationUpdateListener: NotificationsListener? = null
     private lateinit var dashboardActivity: DashboardActivity
     private var unreadCountCache: Int = 0
 
@@ -53,14 +54,14 @@ class NotificationsFragment : Fragment() {
         }
     }
 
-    fun setNotificationUpdateListener(listener: NotificationListener) {
+    fun setNotificationUpdateListener(listener: NotificationsListener) {
         this.notificationUpdateListener = listener
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentNotificationsBinding.inflate(inflater, container, false)
         userId = arguments?.getString("userId") ?: ""
-        adapter = AdapterNotification(
+        adapter = NotificationsAdapter(
             notificationsRepository,
             emptyList(),
             onMarkAsReadClick = { notificationId ->
@@ -112,7 +113,7 @@ class NotificationsFragment : Fragment() {
                 "survey" -> {
                     val examId = result as? String
                     if (examId != null && activity is OnHomeItemClickListener) {
-                        AdapterMySubmission.openSurvey(
+                        SubmissionsAdapter.openSurvey(
                             activity as OnHomeItemClickListener,
                             examId,
                             false,

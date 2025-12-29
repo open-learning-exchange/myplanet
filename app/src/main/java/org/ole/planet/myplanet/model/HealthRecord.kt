@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.myhealth
+package org.ole.planet.myplanet.model
 
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmMyHealthPojo
