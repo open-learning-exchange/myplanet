@@ -1,5 +1,5 @@
 package org.ole.planet.myplanet.callback
 
-interface NotificationListener {
+interface NotificationsListener {
     fun onNotificationCountUpdated(unreadCount: Int)
 }

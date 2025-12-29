@@ -1,7 +1,7 @@
 package org.ole.planet.myplanet.ui.dashboard.notification
 
+import org.ole.planet.myplanet.callback.NotificationsListener
 import android.content.Context
-import org.ole.planet.myplanet.callback.NotificationListener
 import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings.ACTION_INTERNAL_STORAGE_SETTINGS
@@ -43,7 +43,7 @@ class NotificationsFragment : Fragment() {
     lateinit var notificationsRepository: NotificationsRepository
     private lateinit var adapter: AdapterNotification
     private lateinit var userId: String
-    private var notificationUpdateListener: NotificationListener? = null
+    private var notificationUpdateListener: NotificationsListener? = null
     private lateinit var dashboardActivity: DashboardActivity
     private var unreadCountCache: Int = 0
 
@@ -54,7 +54,7 @@ class NotificationsFragment : Fragment() {
         }
     }
 
-    fun setNotificationUpdateListener(listener: NotificationListener) {
+    fun setNotificationUpdateListener(listener: NotificationsListener) {
         this.notificationUpdateListener = listener
     }
 
