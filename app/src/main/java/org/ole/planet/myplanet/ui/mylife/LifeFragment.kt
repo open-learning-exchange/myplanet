@@ -21,7 +21,7 @@ import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 
 @AndroidEntryPoint
 class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
-    private lateinit var adapterMyLife: AdapterMyLife
+    private lateinit var myLifeAdapter: MyLifeAdapter
     private var mItemTouchHelper: ItemTouchHelper? = null
     @Inject
     lateinit var lifeRepository: LifeRepository
@@ -42,17 +42,17 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
-        adapterMyLife = AdapterMyLife(requireContext(), this, lifeRepository)
-        return adapterMyLife
+        myLifeAdapter = MyLifeAdapter(requireContext(), this, lifeRepository)
+        return myLifeAdapter
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val myLifeList = getMyLifeByUserId(mRealm, model?.id)
-        adapterMyLife.submitList(mRealm.copyFromRealm(myLifeList))
+        myLifeAdapter.submitList(mRealm.copyFromRealm(myLifeList))
         recyclerView.setHasFixedSize(true)
         setupUI(binding.myLifeParentLayout, requireActivity())
-        val callback: ItemTouchHelper.Callback = SimpleItemTouchHelperCallback(adapterMyLife)
+        val callback: ItemTouchHelper.Callback = SimpleItemTouchHelperCallback(myLifeAdapter)
         mItemTouchHelper = ItemTouchHelper(callback)
         mItemTouchHelper?.attachToRecyclerView(recyclerView)
         val dividerItemDecoration = DividerItemDecoration(recyclerView.context, RecyclerView.VERTICAL)
