@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.rating
+package org.ole.planet.myplanet.ui.ratings
 
 import android.content.Context
 import android.content.SharedPreferences

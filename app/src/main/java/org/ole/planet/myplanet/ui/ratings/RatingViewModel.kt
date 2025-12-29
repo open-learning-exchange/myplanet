@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.rating
+package org.ole.planet.myplanet.ui.ratings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
