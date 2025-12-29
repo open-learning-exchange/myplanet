@@ -321,7 +321,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
             .setNegativeButton(getString(R.string.cancel)) { dialog, _ -> dialog.dismiss() }
             .create()
 
-        val adapter = SurveyAdapter({ position ->
+        val adapter = DashboardSurveyAdapter({ position ->
             val selectedSurvey = pendingSurveys[position].id
             SubmissionsAdapter.openSurvey(homeItemClickListener, selectedSurvey, true, false, "")
         }, surveyListDialog!!)
