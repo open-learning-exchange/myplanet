@@ -9,7 +9,7 @@ import android.widget.TextView
 import androidx.viewpager.widget.PagerAdapter
 import org.ole.planet.myplanet.R
 
-class OnBoardingAdapter(private val mContext: Context, private val onBoardItems: ArrayList<OnBoardItem>) : PagerAdapter() {
+class OnboardingAdapter(private val mContext: Context, private val onBoardItems: ArrayList<OnboardingItem>) : PagerAdapter() {
 
     override fun getCount(): Int {
         return onBoardItems.size
@@ -20,7 +20,7 @@ class OnBoardingAdapter(private val mContext: Context, private val onBoardItems:
     }
 
     override fun instantiateItem(container: ViewGroup, position: Int): Any {
-        val itemView = LayoutInflater.from(mContext).inflate(R.layout.onboard_item, container, false)
+        val itemView = LayoutInflater.from(mContext).inflate(R.layout.onboarding_item, container, false)
 
         val item = onBoardItems[position]
         val imageView = itemView.findViewById<ImageView>(R.id.iv_onboard)
