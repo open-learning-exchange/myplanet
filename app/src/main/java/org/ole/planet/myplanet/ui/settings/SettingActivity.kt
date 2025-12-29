@@ -54,7 +54,7 @@ import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils
-import org.ole.planet.myplanet.utilities.LocaleHelper
+import org.ole.planet.myplanet.utilities.LocaleUtils
 import org.ole.planet.myplanet.utilities.ThemeManager
 import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
@@ -74,7 +74,7 @@ class SettingActivity : AppCompatActivity() {
     lateinit var defaultPreferences: SharedPreferences
 
     override fun attachBaseContext(base: Context) {
-        super.attachBaseContext(LocaleHelper.onAttach(base))
+        super.attachBaseContext(LocaleUtils.onAttach(base))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -313,7 +313,7 @@ class SettingActivity : AppCompatActivity() {
                     context.getString(R.string.arabic),
                     context.getString(R.string.french)
                 )
-                val currentLanguage = LocaleHelper.getLanguage(context)
+                val currentLanguage = LocaleUtils.getLanguage(context)
                 val checkedItem = when (currentLanguage) {
                     "en" -> 0
                     "es" -> 1
@@ -336,7 +336,7 @@ class SettingActivity : AppCompatActivity() {
                             5 -> "fr"
                             else -> "en"
                         }
-                        LocaleHelper.setLocale(context, selectedLanguage)
+                        LocaleUtils.setLocale(context, selectedLanguage)
                         (context as Activity).recreate()
                         dialog.dismiss()
                     }

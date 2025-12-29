@@ -48,7 +48,7 @@ import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.ANRWatchdog
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
-import org.ole.planet.myplanet.utilities.LocaleHelper
+import org.ole.planet.myplanet.utilities.LocaleUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utilities.NetworkUtils.startListenNetworkState
 import org.ole.planet.myplanet.utilities.NetworkUtils.stopListenNetworkState
@@ -352,7 +352,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     }
 
     override fun attachBaseContext(base: Context) {
-        super.attachBaseContext(LocaleHelper.onAttach(base))
+        super.attachBaseContext(LocaleUtils.onAttach(base))
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {

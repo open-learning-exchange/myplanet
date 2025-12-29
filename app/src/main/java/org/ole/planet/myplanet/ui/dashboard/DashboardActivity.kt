@@ -92,7 +92,7 @@ import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
-import org.ole.planet.myplanet.utilities.LocaleHelper
+import org.ole.planet.myplanet.utilities.LocaleUtils
 import org.ole.planet.myplanet.utilities.NotificationUtils
 import org.ole.planet.myplanet.utilities.ThemeManager
 import org.ole.planet.myplanet.utilities.Utilities.toast
@@ -131,7 +131,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private var onGlobalLayoutListener: android.view.ViewTreeObserver.OnGlobalLayoutListener? = null
 
     override fun attachBaseContext(base: Context) {
-        super.attachBaseContext(LocaleHelper.onAttach(base))
+        super.attachBaseContext(LocaleUtils.onAttach(base))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

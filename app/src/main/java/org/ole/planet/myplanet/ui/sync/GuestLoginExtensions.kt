@@ -9,7 +9,7 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertGuestLoginBinding
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.utilities.AuthHelper
+import org.ole.planet.myplanet.utilities.AuthUtils
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
 fun LoginActivity.showGuestLoginDialog() {
@@ -23,7 +23,7 @@ fun LoginActivity.showGuestLoginDialog() {
 
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
                 val input = s.toString()
-                val error = AuthHelper.validateUsername(this@showGuestLoginDialog, input)
+                val error = AuthUtils.validateUsername(this@showGuestLoginDialog, input)
                 if (error != null) {
                     binding.etUserName.error = error
                 } else {
@@ -50,7 +50,7 @@ fun LoginActivity.showGuestLoginDialog() {
         login.setOnClickListener {
             databaseService.withRealm { loginRealm ->
                 val username = binding.etUserName.text.toString().trim { it <= ' ' }
-                val error = AuthHelper.validateUsername(this@showGuestLoginDialog, username)
+                val error = AuthUtils.validateUsername(this@showGuestLoginDialog, username)
                 if (error == null) {
                     val existingUser = loginRealm.where(RealmUserModel::class.java).equalTo("name", username).findFirst()
                     dialog.dismiss()
