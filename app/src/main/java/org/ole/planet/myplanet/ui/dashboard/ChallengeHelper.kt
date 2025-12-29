@@ -23,7 +23,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.ui.courses.ProgressFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
-import org.ole.planet.myplanet.utilities.MarkdownDialog
+import org.ole.planet.myplanet.ui.dialogs.MarkdownDialog
 
 class ChallengeHelper(
     private val activity: DashboardActivity,
