@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.dashboard
+package org.ole.planet.myplanet.ui.survey
 
 import android.view.LayoutInflater
 import android.view.View
@@ -11,10 +11,10 @@ import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.utilities.DiffUtils
 
-class SurveyAdapter(
+class SurveyTitlesAdapter(
     private val onItemClick: (Int) -> Unit,
     private val dialog: AlertDialog
-) : ListAdapter<String, SurveyAdapter.SurveyViewHolder>(DIFF_CALLBACK) {
+) : ListAdapter<String, SurveyTitlesAdapter.SurveyViewHolder>(DIFF_CALLBACK) {
 
     inner class SurveyViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val textView: TextView = itemView.findViewById(android.R.id.text1)

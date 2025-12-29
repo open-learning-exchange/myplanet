@@ -36,6 +36,7 @@ import org.ole.planet.myplanet.ui.mylife.LifeFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
+import org.ole.planet.myplanet.ui.survey.SurveyTitlesAdapter
 import org.ole.planet.myplanet.ui.team.TeamFragment
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 
@@ -321,7 +322,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
             .setNegativeButton(getString(R.string.cancel)) { dialog, _ -> dialog.dismiss() }
             .create()
 
-        val adapter = SurveyAdapter({ position ->
+        val adapter = SurveyTitlesAdapter({ position ->
             val selectedSurvey = pendingSurveys[position].id
             AdapterMySubmission.openSurvey(homeItemClickListener, selectedSurvey, true, false, "")
         }, surveyListDialog!!)
