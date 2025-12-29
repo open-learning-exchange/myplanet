@@ -1,10 +1,11 @@
-package org.ole.planet.myplanet.utilities
+package org.ole.planet.myplanet.ui.dialogs
 
 import android.content.Context
 import android.content.Intent
 import android.text.style.ClickableSpan
 import android.view.View
 import org.ole.planet.myplanet.ui.viewer.WebViewActivity
+import org.ole.planet.myplanet.utilities.Utilities
 
 class CustomClickableSpan(private val url: String, private val title: String, private val context: Context) : ClickableSpan() {
     override fun onClick(widget: View) {

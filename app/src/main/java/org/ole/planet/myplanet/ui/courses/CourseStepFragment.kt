@@ -30,7 +30,7 @@ import org.ole.planet.myplanet.ui.submission.SubmissionsAdapter
 import org.ole.planet.myplanet.utilities.CameraUtils
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
-import org.ole.planet.myplanet.utilities.CustomClickableSpan
+import org.ole.planet.myplanet.ui.dialogs.CustomClickableSpan
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 
