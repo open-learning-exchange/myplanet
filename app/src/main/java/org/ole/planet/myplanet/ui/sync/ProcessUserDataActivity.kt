@@ -31,7 +31,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.PermissionActivity
-import org.ole.planet.myplanet.callback.SecurityDataCallback
+import org.ole.planet.myplanet.callback.SecurityDataListener
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.data.ApiClient.client
 import org.ole.planet.myplanet.data.ApiInterface
@@ -180,7 +180,7 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         return true
     }
 
-    fun startUpload(source: String, userName: String? = null, securityCallback: SecurityDataCallback? = null) {
+    fun startUpload(source: String, userName: String? = null, securityCallback: SecurityDataListener? = null) {
         if (source == "becomeMember") {
             uploadToShelfService.uploadSingleUserData(userName, object : SuccessListener {
                 override fun onSuccess(success: String?) {
@@ -326,7 +326,7 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         editor.putString("couchdbURL", couchdbURL)
     }
 
-    fun fetchAndLogUserSecurityData(name: String, securityCallback: SecurityDataCallback? = null) {
+    fun fetchAndLogUserSecurityData(name: String, securityCallback: SecurityDataListener? = null) {
         lifecycleScope.launch {
             try {
                 val apiInterface = client?.create(ApiInterface::class.java)
@@ -366,7 +366,7 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         salt: String?,
         passwordScheme: String?,
         iterations: String?,
-        securityCallback: SecurityDataCallback? = null,
+        securityCallback: SecurityDataListener? = null,
     ) {
         try {
             userRepository.updateSecurityData(name, userId, rev, derivedKey, salt, passwordScheme, iterations)
