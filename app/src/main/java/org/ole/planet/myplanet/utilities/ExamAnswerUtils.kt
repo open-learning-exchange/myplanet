@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.exam
+package org.ole.planet.myplanet.utilities
 
 import java.util.Arrays
 import java.util.Locale
