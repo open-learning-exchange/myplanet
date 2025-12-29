@@ -14,7 +14,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.TimeUtils
 
-class UserListArrayAdapter(activity: Activity, val view: Int, var list: List<RealmUserModel>) : ArrayAdapter<RealmUserModel>(activity, view, list) {
+class UserListAdapter(activity: Activity, val view: Int, var list: List<RealmUserModel>) : ArrayAdapter<RealmUserModel>(activity, view, list) {
     private class ViewHolder {
         var tvName: TextView? = null
         var joined: TextView? = null

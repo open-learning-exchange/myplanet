@@ -10,7 +10,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.viewpager.widget.ViewPager
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.databinding.ActivityOnBoardingBinding
+import org.ole.planet.myplanet.databinding.ActivityOnboardingBinding
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utilities.Constants
@@ -20,17 +20,17 @@ import org.ole.planet.myplanet.utilities.MapTileUtils.copyAssets
 import org.ole.planet.myplanet.utilities.SecurePrefs
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 
-class OnBoardingActivity : AppCompatActivity() {
-    private lateinit var binding: ActivityOnBoardingBinding
-    private lateinit var mAdapter: OnBoardingAdapter
-    private val onBoardItems = ArrayList<OnBoardItem>()
+class OnboardingActivity : AppCompatActivity() {
+    private lateinit var binding: ActivityOnboardingBinding
+    private lateinit var mAdapter: OnboardingAdapter
+    private val onBoardItems = ArrayList<OnboardingItem>()
     private var dotsCount = 0
     private lateinit var dots: Array<ImageView?>
     lateinit var prefData: SharedPrefManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityOnBoardingBinding.inflate(layoutInflater)
+        binding = ActivityOnboardingBinding.inflate(layoutInflater)
         setContentView(binding.root)
         EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
         prefData = SharedPrefManager(this)
@@ -57,7 +57,7 @@ class OnBoardingActivity : AppCompatActivity() {
         }
 
         loadData()
-        mAdapter = OnBoardingAdapter(this, onBoardItems)
+        mAdapter = OnboardingAdapter(this, onBoardItems)
         binding.pagerIntroduction.adapter = mAdapter
         binding.pagerIntroduction.currentItem = 0
         binding.pagerIntroduction.addOnPageChangeListener(object : ViewPager.OnPageChangeListener {
@@ -65,9 +65,9 @@ class OnBoardingActivity : AppCompatActivity() {
 
             override fun onPageSelected(position: Int) {
                 for (i in 0 until dotsCount) {
-                    dots[i]?.setImageDrawable(ContextCompat.getDrawable(this@OnBoardingActivity, R.drawable.non_selected_item_dot))
+                    dots[i]?.setImageDrawable(ContextCompat.getDrawable(this@OnboardingActivity, R.drawable.non_selected_item_dot))
                 }
-                dots[position]?.setImageDrawable(ContextCompat.getDrawable(this@OnBoardingActivity, R.drawable.selected_item_dot))
+                dots[position]?.setImageDrawable(ContextCompat.getDrawable(this@OnboardingActivity, R.drawable.selected_item_dot))
 
                 if (position == mAdapter.count - 1) {
                     binding.skip.visibility = View.GONE
@@ -119,7 +119,7 @@ class OnBoardingActivity : AppCompatActivity() {
                 .joinToString(separator = "\n")
                 .let { if (it.isEmpty()) it else "$it\n" }
 
-            OnBoardItem().apply {
+            OnboardingItem().apply {
                 imageID = imageRes
                 title = getString(headerRes)
                 this.description = description
