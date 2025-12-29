@@ -17,7 +17,7 @@ import okhttp3.ResponseBody
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.SecurityDataCallback
+import org.ole.planet.myplanet.callback.SecurityDataListener
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.di.ApiInterfaceEntryPoint
 import org.ole.planet.myplanet.di.ApplicationScope
@@ -270,7 +270,7 @@ class Service @Inject constructor(
         }
     }
 
-    fun becomeMember(obj: JsonObject, callback: CreateUserCallback, securityCallback: SecurityDataCallback? = null) {
+    fun becomeMember(obj: JsonObject, callback: CreateUserCallback, securityCallback: SecurityDataListener? = null) {
         serviceScope.launch {
             val result = userRepository.becomeMember(obj)
             withContext(Dispatchers.Main) {
