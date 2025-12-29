@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.submission
+package org.ole.planet.myplanet.utilities
 
 import android.content.Context
 import android.graphics.Canvas
@@ -16,9 +16,8 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.utilities.TimeUtils
 
-object SubmissionPdfExport {
+object SubmissionPdfUtils {
 
     private const val PAGE_WIDTH = 595
     private const val PAGE_HEIGHT = 842
