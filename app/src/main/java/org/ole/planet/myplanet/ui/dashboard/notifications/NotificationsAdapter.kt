@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.dashboard.notification
+package org.ole.planet.myplanet.ui.dashboard.notifications
 
 import android.content.Context
 import android.text.Html
