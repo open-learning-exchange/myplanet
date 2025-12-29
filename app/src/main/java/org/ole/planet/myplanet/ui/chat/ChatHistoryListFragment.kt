@@ -134,7 +134,7 @@ class ChatHistoryListFragment : Fragment() {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
 
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                (binding.recyclerView.adapter as? ChatHistoryListAdapter)?.search(s.toString(), isFullSearch, isQuestion)
+                (binding.recyclerView.adapter as? ChatHistoryAdapter)?.search(s.toString(), isFullSearch, isQuestion)
             }
 
             override fun afterTextChanged(s: Editable?) {}
@@ -273,9 +273,9 @@ class ChatHistoryListFragment : Fragment() {
             shareTargets = targets
             memoizedShareTargets = targets
 
-            val adapter = binding.recyclerView.adapter as? ChatHistoryListAdapter
+            val adapter = binding.recyclerView.adapter as? ChatHistoryAdapter
             if (adapter == null) {
-                val newAdapter = ChatHistoryListAdapter(
+                val newAdapter = ChatHistoryAdapter(
                     requireContext(),
                     chatHistory,
                     currentUser,
@@ -283,7 +283,7 @@ class ChatHistoryListFragment : Fragment() {
                     shareTargets,
                     ::shareChat,
                 )
-                newAdapter.setChatHistoryItemClickListener(object : ChatHistoryListAdapter.ChatHistoryItemClickListener {
+                newAdapter.setChatHistoryItemClickListener(object : ChatHistoryAdapter.ChatHistoryItemClickListener {
                     override fun onChatHistoryItemClicked(conversations: List<Conversation>?, id: String, rev: String?, aiProvider: String?) {
                         conversations?.let { sharedViewModel.setSelectedChatHistory(it) }
                         sharedViewModel.setSelectedId(id)
@@ -338,7 +338,7 @@ class ChatHistoryListFragment : Fragment() {
             if (currentUser?.planetCode != null) {
                 sharedNewsMessages = sharedNewsMessages + createdNews
             }
-            (binding.recyclerView.adapter as? ChatHistoryListAdapter)?.let { adapter ->
+            (binding.recyclerView.adapter as? ChatHistoryAdapter)?.let { adapter ->
                 adapter.updateCachedData(currentUser, sharedNewsMessages)
                 adapter.notifyChatShared(chatHistory._id)
             }
