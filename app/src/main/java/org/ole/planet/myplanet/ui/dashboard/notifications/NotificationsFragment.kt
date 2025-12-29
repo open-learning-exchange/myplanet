@@ -29,7 +29,7 @@ import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
-import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
+import org.ole.planet.myplanet.ui.submission.SubmissionsAdapter
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.JoinRequestsPage
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.TasksPage
@@ -113,7 +113,7 @@ class NotificationsFragment : Fragment() {
                 "survey" -> {
                     val examId = result as? String
                     if (examId != null && activity is OnHomeItemClickListener) {
-                        AdapterMySubmission.openSurvey(
+                        SubmissionsAdapter.openSurvey(
                             activity as OnHomeItemClickListener,
                             examId,
                             false,

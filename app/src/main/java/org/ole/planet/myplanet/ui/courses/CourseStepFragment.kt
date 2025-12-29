@@ -26,7 +26,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.exam.TakeExamFragment
-import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
+import org.ole.planet.myplanet.ui.submission.SubmissionsAdapter
 import org.ole.planet.myplanet.utilities.CameraUtils
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
@@ -251,7 +251,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
 
         fragmentCourseStepBinding.btnTakeSurvey.setOnClickListener {
             if (stepSurvey.isNotEmpty()) {
-                AdapterMySubmission.openSurvey(homeItemClickListener, stepSurvey[0].id, false, false, "")
+                SubmissionsAdapter.openSurvey(homeItemClickListener, stepSurvey[0].id, false, false, "")
             }
         }
         fragmentCourseStepBinding.btnResources.visibility = View.GONE
