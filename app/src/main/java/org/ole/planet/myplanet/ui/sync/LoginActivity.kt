@@ -45,7 +45,7 @@ import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.ui.userprofile.ProfileAdapter
-import org.ole.planet.myplanet.utilities.AuthHelper
+import org.ole.planet.myplanet.utilities.AuthUtils
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.LocaleHelper
@@ -520,7 +520,7 @@ class LoginActivity : SyncActivity(), ProfileAdapter.OnItemClickListener {
     }
 
     private fun submitForm(name: String?, password: String?) {
-        AuthHelper.login(this, name, password)
+        AuthUtils.login(this, name, password)
     }
 
     internal fun showGuestDialog(username: String) {
