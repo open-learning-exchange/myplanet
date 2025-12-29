@@ -19,19 +19,19 @@ import org.ole.planet.myplanet.databinding.AlertExaminationBinding
 import org.ole.planet.myplanet.databinding.RowExaminationBinding
 import org.ole.planet.myplanet.model.RealmMyHealthPojo
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.ui.myhealth.AdapterHealthExamination.ViewHolderMyHealthExamination
+import org.ole.planet.myplanet.ui.myhealth.HealthExaminationAdapter.ViewHolderHealthExamination
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 
-class AdapterHealthExamination(
+class HealthExaminationAdapter(
     private val context: Context,
     private var mh: RealmMyHealthPojo,
     private var userModel: RealmUserModel?,
     private var userMap: Map<String, RealmUserModel>
-) : ListAdapter<RealmMyHealthPojo, ViewHolderMyHealthExamination>(diffCallback) {
+) : ListAdapter<RealmMyHealthPojo, ViewHolderHealthExamination>(diffCallback) {
     private val displayNameCache = mutableMapOf<String, String>()
 
     fun updateData(mh: RealmMyHealthPojo, userModel: RealmUserModel?, userMap: Map<String, RealmUserModel>) {
@@ -40,14 +40,14 @@ class AdapterHealthExamination(
         this.userMap = userMap
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderMyHealthExamination {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderHealthExamination {
         val rowExaminationBinding = RowExaminationBinding.inflate(
             LayoutInflater.from(context), parent, false
         )
-        return ViewHolderMyHealthExamination(rowExaminationBinding)
+        return ViewHolderHealthExamination(rowExaminationBinding)
     }
 
-    override fun onBindViewHolder(holder: ViewHolderMyHealthExamination, position: Int) {
+    override fun onBindViewHolder(holder: ViewHolderHealthExamination, position: Int) {
         val binding = holder.binding
         val item = getItem(position)
         binding.txtTemp.text = item.let { checkEmpty(it.temperature) }
@@ -138,7 +138,7 @@ class AdapterHealthExamination(
             Utilities.checkNA(getString("tests", encrypted)), Utilities.checkNA(getString("referrals", encrypted)))
     }
 
-    class ViewHolderMyHealthExamination(val binding: RowExaminationBinding) : RecyclerView.ViewHolder(binding.root)
+    class ViewHolderHealthExamination(val binding: RowExaminationBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {
         private val colonRegex by lazy { ":".toRegex() }
