@@ -17,7 +17,7 @@ import org.ole.planet.myplanet.databinding.RowStepsBinding
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.utilities.DiffUtils
 
-class AdapterSteps(private val context: Context, private val submissionRepository: SubmissionRepository, private val lifecycleOwner: LifecycleOwner) : ListAdapter<StepItem, AdapterSteps.ViewHolder>(STEP_ITEM_COMPARATOR) {
+class StepsAdapter(private val context: Context, private val submissionRepository: SubmissionRepository, private val lifecycleOwner: LifecycleOwner) : ListAdapter<StepItem, StepsAdapter.ViewHolder>(STEP_ITEM_COMPARATOR) {
     private val descriptionVisibilityMap = mutableMapOf<String, Boolean>()
     private var currentlyVisibleStepId: String? = null
     private val examQuestionCountCache = mutableMapOf<String, Int>()
