@@ -27,7 +27,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.NotificationCallback
+import org.ole.planet.myplanet.callback.NotificationListener
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.ItemLibraryHomeBinding
@@ -51,7 +51,7 @@ import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
-open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCallback,
+open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationListener,
     SyncListener {
     private val viewModel: DashboardViewModel by viewModels()
     private val newsViewModel: NewsViewModel by viewModels()
