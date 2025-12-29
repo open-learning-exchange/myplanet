@@ -40,7 +40,7 @@ class NotificationsFragment : Fragment() {
     private val binding get() = _binding!!
     @Inject
     lateinit var notificationsRepository: NotificationsRepository
-    private lateinit var adapter: AdapterNotification
+    private lateinit var adapter: NotificationAdapter
     private lateinit var userId: String
     private var notificationUpdateListener: NotificationListener? = null
     private lateinit var dashboardActivity: DashboardActivity
@@ -60,7 +60,7 @@ class NotificationsFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentNotificationsBinding.inflate(inflater, container, false)
         userId = arguments?.getString("userId") ?: ""
-        adapter = AdapterNotification(
+        adapter = NotificationAdapter(
             notificationsRepository,
             emptyList(),
             onMarkAsReadClick = { notificationId ->
