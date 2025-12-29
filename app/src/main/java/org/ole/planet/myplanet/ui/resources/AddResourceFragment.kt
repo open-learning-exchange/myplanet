@@ -40,7 +40,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertSoundRecorderBinding
 import org.ole.planet.myplanet.databinding.FragmentAddResourceBinding
-import org.ole.planet.myplanet.repository.PersonalRepository
+import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.service.AudioRecorderService
 import org.ole.planet.myplanet.service.AudioRecorderService.AudioRecordListener
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -62,7 +62,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
     private lateinit var requestCameraLauncher: ActivityResultLauncher<String>
     private var type: Int = 0
     @Inject
-    lateinit var personalRepository: PersonalRepository
+    lateinit var personalsRepository: PersonalsRepository
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -263,7 +263,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
             startActivity(Intent(activity, AddResourceActivity::class.java).putExtra("resource_local_url", path))
         } else {
             val userModel = userProfileDbHandler.userModel ?: return
-            showAlert(requireContext(), path, personalRepository, userModel.id, userModel.name, viewLifecycleOwner.lifecycleScope) {
+            showAlert(requireContext(), path, personalsRepository, userModel.id, userModel.name, viewLifecycleOwner.lifecycleScope) {
                 dismiss()
             }
         }
@@ -276,7 +276,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
         fun showAlert(
             context: Context,
             path: String?,
-            repository: PersonalRepository,
+            repository: PersonalsRepository,
             userId: String?,
             userName: String?,
             scope: CoroutineScope,
