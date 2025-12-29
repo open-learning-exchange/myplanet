@@ -245,9 +245,9 @@ class VoicesAdapter(var context: Context, private var currentUser: RealmUserMode
             imgEdit.visibility = View.GONE
             imgDelete.visibility = View.GONE
             btnReply.visibility = View.GONE
-            imgNews.visibility = View.GONE
-            llNewsImages.visibility = View.GONE
-            llNewsImages.removeAllViews()
+            imgVoice.visibility = View.GONE
+            llVoicesImages.visibility = View.GONE
+            llVoicesImages.removeAllViews()
             recyclerGchat.visibility = View.GONE
             sharedChat.visibility = View.GONE
         }
@@ -638,7 +638,7 @@ class VoicesAdapter(var context: Context, private var currentUser: RealmUserMode
                     val path = JsonUtils.getString("imageUrl", imgObject)
                     loadSingleImage(binding, path)
                 } else {
-                    binding.llNewsImages.visibility = View.VISIBLE
+                    binding.llVoicesImages.visibility = View.VISIBLE
                     for (imageUrl in imageUrls) {
                         val imgObject = JsonUtils.gson.fromJson(imageUrl, JsonObject::class.java)
                         val path = JsonUtils.getString("imageUrl", imgObject)
@@ -657,7 +657,7 @@ class VoicesAdapter(var context: Context, private var currentUser: RealmUserMode
                     val resourceId = JsonUtils.getString("resourceId", ob)
                     loadLibraryImage(binding, resourceId)
                 } else {
-                    binding.llNewsImages.visibility = View.VISIBLE
+                    binding.llVoicesImages.visibility = View.VISIBLE
                     for (i in 0 until imagesArray.size()) {
                         val ob = imagesArray[i]?.asJsonObject
                         val resourceId = JsonUtils.getString("resourceId", ob)

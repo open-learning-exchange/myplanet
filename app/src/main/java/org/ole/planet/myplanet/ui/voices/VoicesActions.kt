@@ -45,7 +45,7 @@ object VoicesActions {
         val tlInput = v.findViewById<TextInputLayout>(R.id.tl_input)
         val et = v.findViewById<EditText>(R.id.et_input)
         val llImage = v.findViewById<ViewGroup>(R.id.ll_alert_image)
-        v.findViewById<View>(R.id.add_news_image).setOnClickListener { listener?.addImage(llImage) }
+        v.findViewById<View>(R.id.add_voice_image).setOnClickListener { listener?.addImage(llImage) }
         return EditDialogComponents(v, et, tlInput, llImage)
     }
 

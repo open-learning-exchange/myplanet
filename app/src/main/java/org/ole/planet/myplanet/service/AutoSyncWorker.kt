@@ -91,7 +91,7 @@ class AutoSyncWorker(
                     uploadManager.uploadSearchActivity()
                     uploadManager.uploadRating()
                     uploadManager.uploadResource(this@AutoSyncWorker)
-                    uploadManager.uploadNews()
+                    uploadManager.uploadVoices()
                     uploadManager.uploadTeams()
                     uploadManager.uploadTeamTask()
                     uploadManager.uploadMeetups()

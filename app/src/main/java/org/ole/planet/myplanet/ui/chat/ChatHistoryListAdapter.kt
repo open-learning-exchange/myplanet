@@ -21,7 +21,6 @@ import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.model.RealmVoices
 import org.ole.planet.myplanet.ui.team.TeamSelectionAdapter
 import org.ole.planet.myplanet.ui.voices.ExpandableListAdapter
 import org.ole.planet.myplanet.utilities.DiffUtils

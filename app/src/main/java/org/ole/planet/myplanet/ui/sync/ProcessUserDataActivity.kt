@@ -221,7 +221,7 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
             }
 
             uploadManager.uploadAchievement()
-            uploadManager.uploadNews()
+            uploadManager.uploadVoices()
             uploadManager.uploadResourceActivities("")
             uploadManager.uploadCourseActivities()
             uploadManager.uploadSearchActivity()
