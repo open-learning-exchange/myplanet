@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.dashboard.notification
+package org.ole.planet.myplanet.ui.dashboard.notifications
 
 import android.content.Context
 import android.text.Html
@@ -14,12 +14,12 @@ import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.utilities.DiffUtils as DiffUtilExtensions
 
-class AdapterNotification(
+class NotificationsAdapter(
     private val notificationsRepository: NotificationsRepository,
     notifications: List<RealmNotification>,
     private val onMarkAsReadClick: (String) -> Unit,
     private val onNotificationClick: (RealmNotification) -> Unit
-) : ListAdapter<RealmNotification, AdapterNotification.ViewHolderNotifications>(
+) : ListAdapter<RealmNotification, NotificationsAdapter.ViewHolderNotifications>(
     DiffUtilExtensions.itemCallback(
         areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id },
         areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
