@@ -37,8 +37,8 @@ import org.ole.planet.myplanet.databinding.AddMeetupBinding
 import org.ole.planet.myplanet.databinding.FragmentEnterpriseCalendarBinding
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.repository.MeetupRepository
-import org.ole.planet.myplanet.ui.mymeetup.AdapterMeetup
+import org.ole.planet.myplanet.repository.EventsRepository
+import org.ole.planet.myplanet.ui.events.EventsAdapter
 import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -57,9 +57,9 @@ class TeamCalendarFragment : BaseTeamFragment() {
     private val eventDates: MutableList<Calendar> = mutableListOf()
     private var addMeetupDialog: AlertDialog? = null
     private var meetupDialog: AlertDialog? = null
-    private var meetupAdapter: AdapterMeetup? = null
+    private var meetupAdapter: EventsAdapter? = null
     @Inject
-    lateinit var meetupRepository: MeetupRepository
+    lateinit var eventsRepository: EventsRepository
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentEnterpriseCalendarBinding.inflate(inflater, container, false)
@@ -150,7 +150,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
                         this.link = Gson().toJson(ob)
                         this.teamId = currentTeamId
                     }
-                    val success = meetupRepository.createMeetup(meetup)
+                    val success = eventsRepository.createMeetup(meetup)
                     if (success) {
                         Utilities.toast(activity, getString(R.string.meetup_added))
                         addMeetupDialog?.dismiss()
@@ -227,7 +227,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
         binding.calendarView.setOnCalendarDayClickListener(object : OnCalendarDayClickListener {
             override fun onClick(calendarDay: CalendarDay) {
                 lifecycleScope.launch {
-                    meetupList = meetupRepository.getMeetupsForTeam(teamId)
+                    meetupList = eventsRepository.getMeetupsForTeam(teamId)
                     clickedCalendar = calendarDay.calendar
                     val clickedDateInMillis = clickedCalendar.timeInMillis
                     val clickedDate = Instant.ofEpochMilli(clickedDateInMillis)
@@ -291,7 +291,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
         recyclerView.layoutParams.height = cardHeight + extraHeight
         recyclerView.requestLayout()
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
-        meetupAdapter = AdapterMeetup()
+        meetupAdapter = EventsAdapter()
         recyclerView.adapter = meetupAdapter
         meetupAdapter?.submitList(meetupList)
 
@@ -332,7 +332,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
             return
         }
         viewLifecycleOwner.lifecycleScope.launch {
-            val newDates = meetupRepository.getMeetupsForTeam(teamId).mapTo(mutableListOf()) { meetup ->
+            val newDates = eventsRepository.getMeetupsForTeam(teamId).mapTo(mutableListOf()) { meetup ->
                 val calendarInstance = Calendar.getInstance()
                 calendarInstance.timeInMillis = meetup.startDate
                 calendarInstance
@@ -351,7 +351,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
             return
         }
         viewLifecycleOwner.lifecycleScope.launch {
-            val updatedMeetupList = meetupRepository.getMeetupsForTeam(teamId)
+            val updatedMeetupList = eventsRepository.getMeetupsForTeam(teamId)
             val clickedDateInMillis = clickedCalendar.timeInMillis
             val clickedDate = Instant.ofEpochMilli(clickedDateInMillis)
                 .atZone(ZoneId.systemDefault())

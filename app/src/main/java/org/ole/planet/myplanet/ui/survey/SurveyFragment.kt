@@ -26,20 +26,20 @@ import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.callback.TableDataUpdate
 import org.ole.planet.myplanet.databinding.FragmentSurveyBinding
 import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.SurveyBindingData
 import org.ole.planet.myplanet.repository.SurveyRepository
 import org.ole.planet.myplanet.service.SyncManager
+import org.ole.planet.myplanet.service.sync.ServerUrlMapper
+import org.ole.planet.myplanet.ui.survey.SurveyBindingData
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utilities.DialogUtils
-import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 
 @AndroidEntryPoint
 class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListener, RealtimeSyncMixin {
     private var _binding: FragmentSurveyBinding? = null
     private val binding get() = _binding!!
-    private lateinit var adapter: AdapterSurvey
+    private lateinit var adapter: SurveyAdapter
     private var isTeam: Boolean = false
     private var teamId: String? = null
     private var currentIsTeamShareAllowed: Boolean = false
@@ -77,7 +77,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         isTeam = arguments?.getBoolean("isTeam", false) == true
         teamId = arguments?.getString("teamId", null)
         val userProfileModel = profileDbHandler.userModel
-        adapter = AdapterSurvey(
+        adapter = SurveyAdapter(
             requireActivity(),
             mRealm,
             userProfileModel?.id,

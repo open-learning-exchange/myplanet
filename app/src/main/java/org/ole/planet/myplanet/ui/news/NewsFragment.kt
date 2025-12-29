@@ -28,14 +28,14 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.NewsRepository
-import org.ole.planet.myplanet.repository.TeamRepository
+import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.FileUtils
-import org.ole.planet.myplanet.utilities.GsonUtils
+import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.SharedPrefManager
@@ -50,9 +50,9 @@ class NewsFragment : BaseNewsFragment() {
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     @Inject
-    lateinit var newsRepository: NewsRepository
+    lateinit var voicesRepository: VoicesRepository
     @Inject
-    lateinit var teamRepository: TeamRepository
+    lateinit var teamsRepository: TeamsRepository
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
     private var filteredNewsList: List<RealmNews?> = listOf()
@@ -109,7 +109,7 @@ class NewsFragment : BaseNewsFragment() {
         super.onViewCreated(view, savedInstanceState)
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                newsRepository.getCommunityNews(getUserIdentifier()).collect { news ->
+                voicesRepository.getCommunityNews(getUserIdentifier()).collect { news ->
                     kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
                         val filtered = news.map { it as RealmNews? }
                         val labels = collectAllLabels(filtered)
@@ -185,7 +185,7 @@ class NewsFragment : BaseNewsFragment() {
             }
             viewLifecycleOwner.lifecycleScope.launch {
                 if (resourceIds.isNotEmpty()) {
-                    val libraries = libraryRepository.getLibraryItemsByIds(resourceIds)
+                    val libraries = resourcesRepository.getLibraryItemsByIds(resourceIds)
                     getUrlsAndStartDownload(
                         libraries.map<RealmMyLibrary, RealmMyLibrary?> { it },
                         arrayListOf()
@@ -201,7 +201,7 @@ class NewsFragment : BaseNewsFragment() {
             } finally {
                 Trace.endSection()
             }
-            adapterNews = AdapterNews(requireActivity(), user, null, "", null, userProfileDbHandler, viewLifecycleOwner.lifecycleScope, userRepository, newsRepository, teamRepository)
+            adapterNews = NewsAdapter(requireActivity(), user, null, "", null, userProfileDbHandler, viewLifecycleOwner.lifecycleScope, userRepository, voicesRepository, teamsRepository)
             adapterNews?.sharedPrefManager = sharedPrefManager
             adapterNews?.setmRealm(mRealm)
             adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
@@ -210,7 +210,7 @@ class NewsFragment : BaseNewsFragment() {
             adapterNews?.updateList(sortedList)
             binding.rvNews.adapter = adapterNews
         } else {
-            (binding.rvNews.adapter as? AdapterNews)?.updateList(list)
+            (binding.rvNews.adapter as? NewsAdapter)?.updateList(list)
         }
         adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, "news") }
         binding.llAddNews.visibility = View.GONE
@@ -344,7 +344,7 @@ class NewsFragment : BaseNewsFragment() {
         list.forEach { news ->
             if (!news?.viewIn.isNullOrEmpty()) {
                 try {
-                    val ar = GsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
+                    val ar = JsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
                     if (ar.size() > 1) {
                         val ob = ar[0].asJsonObject
                         if (ob.has("name") && !ob.get("name").isJsonNull) {
@@ -394,7 +394,7 @@ class NewsFragment : BaseNewsFragment() {
     private fun extractSharedTeamName(news: RealmNews?): String {
         if (!news?.viewIn.isNullOrEmpty()) {
             try {
-                val ar = GsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
+                val ar = JsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
                 if (ar.size() > 1) {
                     val ob = ar[0].asJsonObject
                     if (ob.has("name") && !ob.get("name").isJsonNull) {

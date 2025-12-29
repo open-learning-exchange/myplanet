@@ -48,10 +48,10 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
+import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
-import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
 import org.ole.planet.myplanet.utilities.Utilities
@@ -76,7 +76,7 @@ class MyHealthFragment : Fragment() {
     var userModel: RealmUserModel? = null
     lateinit var userModelList: List<RealmUserModel>
     lateinit var adapter: UserListArrayAdapter
-    private lateinit var healthAdapter: AdapterHealthExamination
+    private lateinit var healthAdapter: HealthExaminationAdapter
     var dialog: AlertDialog? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     lateinit var prefManager: SharedPrefManager
@@ -420,7 +420,7 @@ class MyHealthFragment : Fragment() {
                     binding.tvDataPlaceholder.visibility = View.VISIBLE
 
                     if (!::healthAdapter.isInitialized) {
-                        healthAdapter = AdapterHealthExamination(requireActivity(), mh, currentUser, userMap)
+                        healthAdapter = HealthExaminationAdapter(requireActivity(), mh, currentUser, userMap)
                     } else {
                         healthAdapter.updateData(mh, currentUser, userMap)
                     }

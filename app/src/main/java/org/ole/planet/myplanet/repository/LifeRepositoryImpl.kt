@@ -1,7 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import javax.inject.Inject
-import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLife
 
 class LifeRepositoryImpl @Inject constructor(private val databaseService: DatabaseService) : LifeRepository {

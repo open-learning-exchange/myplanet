@@ -19,7 +19,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentSubmissionListBinding
 import org.ole.planet.myplanet.repository.SubmissionRepository
-import org.ole.planet.myplanet.utilities.SubmissionPdfGenerator
+import org.ole.planet.myplanet.utilities.SubmissionPdfUtils
 
 @AndroidEntryPoint
 class SubmissionListFragment : Fragment() {
@@ -99,7 +99,7 @@ class SubmissionListFragment : Fragment() {
     private fun generateSubmissionPdf(submissionId: String) {
         viewLifecycleOwner.lifecycleScope.launch {
             binding.progressBar.visibility = View.VISIBLE
-            val file = SubmissionPdfGenerator.generateSubmissionPdf(requireContext(), submissionId)
+            val file = SubmissionPdfUtils.generateSubmissionPdf(requireContext(), submissionId)
             binding.progressBar.visibility = View.GONE
 
             if (file != null) {
@@ -114,7 +114,7 @@ class SubmissionListFragment : Fragment() {
     private fun generateReport(submissionIds: List<String>) {
         viewLifecycleOwner.lifecycleScope.launch {
             binding.progressBar.visibility = View.VISIBLE
-            val file = SubmissionPdfGenerator.generateMultipleSubmissionsPdf(
+            val file = SubmissionPdfUtils.generateMultipleSubmissionsPdf(
                 requireContext(),
                 submissionIds,
                 examTitle ?: "Submissions"

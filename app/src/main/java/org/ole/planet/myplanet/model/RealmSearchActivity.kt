@@ -4,7 +4,7 @@ import com.google.gson.JsonObject
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.utilities.GsonUtils
+import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.VersionUtils
 
@@ -34,7 +34,7 @@ open class RealmSearchActivity(
         obj.addProperty("deviceName", NetworkUtils.getDeviceName())
         obj.addProperty("createdOn", createdOn)
         obj.addProperty("parentCode", parentCode)
-        obj.add("filter", GsonUtils.gson.fromJson(filter, JsonObject::class.java))
+        obj.add("filter", JsonUtils.gson.fromJson(filter, JsonObject::class.java))
         return obj
     }
 

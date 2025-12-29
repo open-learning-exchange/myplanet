@@ -14,15 +14,15 @@ import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SuccessListener
-import org.ole.planet.myplanet.datamanager.ApiClient
-import org.ole.planet.myplanet.datamanager.ApiInterface
-import org.ole.planet.myplanet.datamanager.NetworkResult
+import org.ole.planet.myplanet.data.ApiClient
+import org.ole.planet.myplanet.data.ApiInterface
+import org.ole.planet.myplanet.data.NetworkResult
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyPlanet
+import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.Constants
-import org.ole.planet.myplanet.utilities.GsonUtils
+import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
-import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.VersionUtils
 import retrofit2.Call
@@ -105,11 +105,11 @@ class ConfigurationRepositoryImpl @Inject constructor(
                 preferences.edit {
                     putLong("last_version_check_timestamp", System.currentTimeMillis())
                     putInt("LastWifiID", NetworkUtils.getCurrentNetworkId(context))
-                    putString("versionDetail", GsonUtils.gson.toJson(planetInfo))
+                    putString("versionDetail", JsonUtils.gson.toJson(planetInfo))
                 }
 
                 val rawApkVersion = fetchApkVersionString(settings)
-                val versionStr = GsonUtils.gson.fromJson(rawApkVersion, String::class.java)
+                val versionStr = JsonUtils.gson.fromJson(rawApkVersion, String::class.java)
                 if (versionStr.isNullOrEmpty()) {
                     withContext(Dispatchers.Main) {
                         callback.onError(context.getString(R.string.planet_is_up_to_date), false)

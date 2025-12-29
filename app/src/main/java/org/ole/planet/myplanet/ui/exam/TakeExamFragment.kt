@@ -37,10 +37,11 @@ import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
-import org.ole.planet.myplanet.utilities.GsonUtils
+import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.JsonUtils.getStringAsJsonArray
 import org.ole.planet.myplanet.utilities.KeyboardUtils.hideSoftKeyboard
+import org.ole.planet.myplanet.utilities.ExamSubmissionUtils
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
@@ -482,7 +483,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         }
 
         if (question?.hasOtherOption == true) {
-            val otherChoice = GsonUtils.gson.fromJson("""{"text":"Other","id":"other"}""", JsonObject::class.java)
+            val otherChoice = JsonUtils.gson.fromJson("""{"text":"Other","id":"other"}""", JsonObject::class.java)
 
             addCompoundButton(otherChoice, false, oldAnswer)
         }
@@ -502,7 +503,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
         if (question?.hasOtherOption == true) {
             if (choices.size() > 0 && choices[0].isJsonObject) {
-                val otherChoice = GsonUtils.gson.fromJson("""{"text":"Other","id":"other"}""", JsonObject::class.java)
+                val otherChoice = JsonUtils.gson.fromJson("""{"text":"Other","id":"other"}""", JsonObject::class.java)
 
                 addCompoundButton(otherChoice, isRadio, oldAnswer)
             } else {

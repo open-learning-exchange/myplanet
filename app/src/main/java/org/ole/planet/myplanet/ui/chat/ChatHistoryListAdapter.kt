@@ -23,9 +23,9 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.news.ExpandableListAdapter
-import org.ole.planet.myplanet.ui.news.GrandChildAdapter
+import org.ole.planet.myplanet.ui.team.TeamSelectionAdapter
 import org.ole.planet.myplanet.utilities.DiffUtils
-import org.ole.planet.myplanet.utilities.GsonUtils
+import org.ole.planet.myplanet.utilities.JsonUtils
 
 data class ChatShareTargets(
     val community: RealmMyTeam?,
@@ -260,13 +260,13 @@ class ChatHistoryListAdapter(
             context.getString(R.string.enterprises)
         }
 
-        val grandChildAdapter = GrandChildAdapter(section) { selectedItem ->
+        val teamSelectionAdapter = TeamSelectionAdapter(section) { selectedItem ->
             showEditTextAndShareButton(selectedItem, section, realmChatHistory)
             dialog?.dismiss()
         }
         grandChildDialogBinding.recyclerView.layoutManager = LinearLayoutManager(context)
-        grandChildDialogBinding.recyclerView.adapter = grandChildAdapter
-        grandChildAdapter.submitList(items)
+        grandChildDialogBinding.recyclerView.adapter = teamSelectionAdapter
+        teamSelectionAdapter.submitList(items)
 
         val builder = AlertDialog.Builder(context, R.style.CustomAlertDialog)
         builder.setView(grandChildDialogBinding.root)
@@ -293,7 +293,7 @@ class ChatHistoryListAdapter(
             serializedMap["aiProvider"] = chatHistory.aiProvider ?: ""
             serializedMap["createdDate"] = "${Date().time}"
             serializedMap["updatedDate"] = "${Date().time}"
-            serializedMap["conversations"] = GsonUtils.gson.toJson(serializedConversations)
+            serializedMap["conversations"] = JsonUtils.gson.toJson(serializedConversations)
 
             val map = HashMap<String?, String>()
             map["message"] = "${addNoteDialogBinding.editText.text}"
@@ -302,7 +302,7 @@ class ChatHistoryListAdapter(
             map["messageType"] = team?.teamType ?: ""
             map["messagePlanetCode"] = team?.teamPlanetCode ?: ""
             map["chat"] = "true"
-            map["news"] = GsonUtils.gson.toJson(serializedMap)
+            map["news"] = JsonUtils.gson.toJson(serializedMap)
 
             onShareChat(map, chatHistory)
             dialog.dismiss()

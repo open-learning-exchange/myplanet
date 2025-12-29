@@ -7,7 +7,7 @@ import io.realm.Sort
 import java.util.Date
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
-import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission

@@ -39,7 +39,7 @@ class ReportsFragment : BaseTeamFragment() {
     private var _binding: FragmentReportsBinding? = null
     private val binding get() = _binding!!
     private var reports: List<RealmMyTeam> = emptyList()
-    private lateinit var adapterReports: AdapterReports
+    private lateinit var reportsAdapter: ReportsAdapter
     private var startTimeStamp: String? = null
     private var endTimeStamp: String? = null
     lateinit var teamType: String
@@ -145,7 +145,7 @@ class ReportsFragment : BaseTeamFragment() {
                         addProperty("updated", true)
                     }
                     viewLifecycleOwner.lifecycleScope.launch {
-                        teamRepository.addReport(doc)
+                        teamsRepository.addReport(doc)
                     }
                     dialog.dismiss()
                 }
@@ -173,7 +173,7 @@ class ReportsFragment : BaseTeamFragment() {
                 result.data?.data?.let { uri ->
                     viewLifecycleOwner.lifecycleScope.launch {
                         try {
-                            val csvContent = teamRepository.exportReportsAsCsv(reports, prefData.getTeamName() ?: "")
+                            val csvContent = teamsRepository.exportReportsAsCsv(reports, prefData.getTeamName() ?: "")
                             requireContext().contentResolver.openOutputStream(uri)?.use { outputStream ->
                                 outputStream.write(csvContent.toByteArray())
                             }
@@ -191,8 +191,8 @@ class ReportsFragment : BaseTeamFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        adapterReports = AdapterReports(requireContext(), teamRepository, viewLifecycleOwner.lifecycleScope, prefData)
-        binding.rvReports.adapter = adapterReports
+        reportsAdapter = ReportsAdapter(requireContext(), teamsRepository, viewLifecycleOwner.lifecycleScope, prefData)
+        binding.rvReports.adapter = reportsAdapter
         binding.rvReports.layoutManager = LinearLayoutManager(activity)
 
         viewLifecycleOwner.lifecycleScope.launch {
@@ -200,11 +200,11 @@ class ReportsFragment : BaseTeamFragment() {
                 launch {
                     isMemberFlow.collectLatest { isMember ->
                         binding.addReports.isVisible = isMember
-                        adapterReports.setNonTeamMember(!isMember)
+                        reportsAdapter.setNonTeamMember(!isMember)
                     }
                 }
                 launch {
-                    teamRepository.getReportsFlow(teamId).collectLatest { reportList ->
+                    teamsRepository.getReportsFlow(teamId).collectLatest { reportList ->
                         updatedReportsList(reportList)
                     }
                 }
@@ -222,7 +222,7 @@ class ReportsFragment : BaseTeamFragment() {
     private fun updatedReportsList(results: List<RealmMyTeam>) {
         if (_binding == null) return
         reports = results
-        adapterReports.submitList(reports)
+        reportsAdapter.submitList(reports)
         BaseRecyclerFragment.showNoData(binding.tvMessage, reports.size, "reports")
         binding.exportCSV.visibility = if (reports.isEmpty()) View.GONE else View.VISIBLE
     }

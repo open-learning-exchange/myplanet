@@ -29,9 +29,9 @@ import org.ole.planet.myplanet.repository.FeedbackRepository
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
+import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment.OnFeedbackSubmittedListener
 import org.ole.planet.myplanet.utilities.DialogUtils
-import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 
 @AndroidEntryPoint
@@ -58,7 +58,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     
     private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
     private lateinit var realtimeSyncListener: BaseRealtimeSyncListener
-    private lateinit var adapterFeedback: AdapterFeedback
+    private lateinit var feedbackAdapter: FeedbackAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -168,9 +168,9 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        adapterFeedback = AdapterFeedback()
+        feedbackAdapter = FeedbackAdapter()
         binding.rvFeedback.layoutManager = LinearLayoutManager(activity)
-        binding.rvFeedback.adapter = adapterFeedback
+        binding.rvFeedback.adapter = feedbackAdapter
         onFeedbackSubmitted()
     }
 
@@ -198,7 +198,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
 
     private fun updatedFeedbackList(updatedList: List<RealmFeedback>?) {
         if (_binding == null) return
-        adapterFeedback.submitList(updatedList)
+        feedbackAdapter.submitList(updatedList)
         val itemCount = updatedList?.size ?: 0
         showNoData(binding.tvMessage, itemCount, "feedback")
         updateTextViewsVisibility(itemCount)

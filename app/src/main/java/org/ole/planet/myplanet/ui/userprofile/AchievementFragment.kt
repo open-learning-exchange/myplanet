@@ -31,10 +31,10 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
+import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.DialogUtils
-import org.ole.planet.myplanet.utilities.GsonUtils
+import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
-import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.UrlUtils
 
@@ -176,7 +176,7 @@ class AchievementFragment : BaseContainerFragment() {
             if (achievement != null) {
                 val achievementCopy = realm.copyFromRealm(achievement)
                 val resourceIds = achievementCopy.achievements?.mapNotNull { json ->
-                    GsonUtils.gson.fromJson(json, JsonObject::class.java)
+                    JsonUtils.gson.fromJson(json, JsonObject::class.java)
                         ?.getAsJsonArray("resources")
                         ?.mapNotNull { it.asJsonObject?.get("_id")?.asString }
                 }?.flatten()?.distinct()?.toTypedArray() ?: emptyArray()
@@ -259,7 +259,7 @@ class AchievementFragment : BaseContainerFragment() {
             resource.id?.let { id -> id to resource }
         }.toMap()
         data.achievements.forEach { json ->
-            val element = GsonUtils.gson.fromJson(json, JsonElement::class.java)
+            val element = JsonUtils.gson.fromJson(json, JsonElement::class.java)
             val view = if (element is JsonObject) createAchievementView(element, resourcesMap) else null
             view?.let {
                 if (it.parent != null) {
@@ -325,9 +325,9 @@ class AchievementFragment : BaseContainerFragment() {
     private fun setupReferences(data: AchievementData) {
         binding.rvOtherInfo.layoutManager = LinearLayoutManager(requireContext())
         if (binding.rvOtherInfo.adapter == null) {
-            binding.rvOtherInfo.adapter = AdapterOtherInfo(requireContext(), data.references)
+            binding.rvOtherInfo.adapter = OtherAdapter(requireContext(), data.references)
         } else {
-            (binding.rvOtherInfo.adapter as AdapterOtherInfo).submitList(data.references)
+            (binding.rvOtherInfo.adapter as OtherAdapter).submitList(data.references)
         }
     }
 

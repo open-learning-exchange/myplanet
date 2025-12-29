@@ -25,21 +25,21 @@ import java.io.File
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.databinding.ActivityReplyBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.NewsRepository
-import org.ole.planet.myplanet.repository.TeamRepository
+import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
-import org.ole.planet.myplanet.ui.news.AdapterNews.OnNewsItemClickListener
 import org.ole.planet.myplanet.ui.news.NewsActions
+import org.ole.planet.myplanet.ui.news.NewsAdapter.OnNewsItemClickListener
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getImagePath
 import org.ole.planet.myplanet.utilities.FileUtils.getRealPathFromURI
-import org.ole.planet.myplanet.utilities.GsonUtils
+import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 
@@ -49,7 +49,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     @Inject
     lateinit var databaseService: DatabaseService
     var id: String? = null
-    private lateinit var newsAdapter: AdapterNews
+    private lateinit var newsAdapter: NewsAdapter
     var user: RealmUserModel? = null
 
     private val viewModel: ReplyViewModel by viewModels()
@@ -61,9 +61,9 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
     @Inject
-    lateinit var newsRepository: NewsRepository
+    lateinit var voicesRepository: VoicesRepository
     @Inject
-    lateinit var teamRepository: TeamRepository
+    lateinit var teamsRepository: TeamsRepository
 
     private lateinit var imageList: RealmList<String>
     private var llImage: ViewGroup? = null
@@ -98,7 +98,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         lifecycleScope.launch {
             val (news, list) = viewModel.getNewsWithReplies(id)
             databaseService.withRealm { realm ->
-                newsAdapter = AdapterNews(this@ReplyActivity, user, news, "", null, userProfileDbHandler, lifecycleScope, userRepository, newsRepository, teamRepository)
+                newsAdapter = NewsAdapter(this@ReplyActivity, user, news, "", null, userProfileDbHandler, lifecycleScope, userRepository, voicesRepository, teamsRepository)
                 newsAdapter.sharedPrefManager = sharedPrefManager
                 newsAdapter.setListener(this@ReplyActivity)
                 newsAdapter.setmRealm(realm)
@@ -173,7 +173,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         val jsonObject = JsonObject()
         jsonObject.addProperty("imageUrl", path)
         jsonObject.addProperty("fileName", getFileNameFromUrl(path))
-        imageList.add(GsonUtils.gson.toJson(jsonObject))
+        imageList.add(JsonUtils.gson.toJson(jsonObject))
 
         try {
             showSelectedImages()
@@ -186,7 +186,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         llImage?.removeAllViews()
         llImage?.visibility = View.VISIBLE
         for (img in imageList) {
-            val ob = GsonUtils.gson.fromJson(img, JsonObject::class.java)
+            val ob = JsonUtils.gson.fromJson(img, JsonObject::class.java)
             val inflater = LayoutInflater.from(this).inflate(R.layout.image_thumb, llImage, false)
             val imgView = inflater.findViewById<ImageView>(R.id.thumb)
             Glide.with(this)

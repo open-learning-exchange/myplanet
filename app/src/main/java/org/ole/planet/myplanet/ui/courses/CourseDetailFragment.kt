@@ -18,7 +18,7 @@ import org.ole.planet.myplanet.databinding.FragmentCourseDetailBinding
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.RatingRepository
+import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 
@@ -30,7 +30,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     var user: RealmUserModel? = null
     var id: String? = null
     @Inject
-    lateinit var ratingRepository: RatingRepository
+    lateinit var ratingsRepository: RatingsRepository
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) {
@@ -47,7 +47,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         viewLifecycleOwner.lifecycleScope.launch {
-            courses = id?.takeIf { it.isNotBlank() }?.let { courseRepository.getCourseByCourseId(it) }
+            courses = id?.takeIf { it.isNotBlank() }?.let { coursesRepository.getCourseByCourseId(it) }
             initRatingView("course", id ?: courses?.courseId, courses?.courseTitle, this@CourseDetailFragment)
             courses?.let { bindCourseData(it) }
         }
@@ -66,16 +66,16 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         )
         setMarkdownText(binding.description, markdownContentWithLocalPaths)
         val courseId = course.courseId
-        val examCount = courseRepository.getCourseExamCount(courseId)
+        val examCount = coursesRepository.getCourseExamCount(courseId)
         binding.noOfExams.text = context?.getString(
             R.string.number_placeholder,
             examCount
         )
-        val resources = courseRepository.getCourseOnlineResources(courseId)
+        val resources = coursesRepository.getCourseOnlineResources(courseId)
         setResourceButton(resources, binding.btnResources)
-        val downloadedResources = courseRepository.getCourseOfflineResources(courseId)
+        val downloadedResources = coursesRepository.getCourseOfflineResources(courseId)
         setOpenResourceButton(downloadedResources, binding.btnOpen)
-        val steps = courseRepository.getCourseSteps(courseId)
+        val steps = coursesRepository.getCourseSteps(courseId)
         setStepsList(steps)
         refreshRatings()
     }
@@ -90,7 +90,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
 
     private fun setStepsList(steps: List<RealmCourseStep>) {
         binding.stepsList.layoutManager = LinearLayoutManager(activity)
-        val adapter = AdapterSteps(requireActivity(), submissionRepository, viewLifecycleOwner)
+        val adapter = StepsAdapter(requireActivity(), submissionRepository, viewLifecycleOwner)
         binding.stepsList.adapter = adapter
         adapter.submitList(steps.map { step ->
             StepItem(
@@ -110,7 +110,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         val courseId = courses?.courseId
         val userId = user?.id
         if (courseId != null && userId != null) {
-            val ratingSummary = ratingRepository.getRatingSummary("course", courseId, userId)
+            val ratingSummary = ratingsRepository.getRatingSummary("course", courseId, userId)
             val jsonObject = com.google.gson.JsonObject().apply {
                 addProperty("averageRating", ratingSummary.averageRating)
                 addProperty("total", ratingSummary.totalRatings)
@@ -125,7 +125,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     override fun onDownloadComplete() {
         super.onDownloadComplete()
         viewLifecycleOwner.lifecycleScope.launch {
-            courses = id?.takeIf { it.isNotBlank() }?.let { courseRepository.getCourseByCourseId(it) } ?: courses
+            courses = id?.takeIf { it.isNotBlank() }?.let { coursesRepository.getCourseByCourseId(it) } ?: courses
             courses?.let { bindCourseData(it) }
         }
     }

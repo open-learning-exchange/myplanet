@@ -18,11 +18,11 @@ import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
+import org.ole.planet.myplanet.ui.events.EventsDetailFragment
 import org.ole.planet.myplanet.ui.myhealth.MyHealthFragment
-import org.ole.planet.myplanet.ui.mymeetup.MyMeetupDetailFragment
-import org.ole.planet.myplanet.ui.mypersonals.MyPersonalsFragment
+import org.ole.planet.myplanet.ui.personals.PersonalsFragment
 import org.ole.planet.myplanet.ui.references.ReferenceFragment
-import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
+import org.ole.planet.myplanet.ui.submission.SubmissionsFragment
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
@@ -74,12 +74,12 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         v.setOnClickListener {
             homeItemClickListener?.let { listener ->
                 when (title) {
-                    "mySubmissions" -> openIfLoggedIn { listener.openCallFragment(MySubmissionFragment()) }
+                    "mySubmissions" -> openIfLoggedIn { listener.openCallFragment(SubmissionsFragment()) }
                     "References" -> listener.openCallFragment(ReferenceFragment())
                     "Calendar" -> listener.openCallFragment(CalendarFragment())
-                    "mySurveys" -> openIfLoggedIn { listener.openCallFragment(MySubmissionFragment.newInstance("survey")) }
+                    "mySurveys" -> openIfLoggedIn { listener.openCallFragment(SubmissionsFragment.newInstance("survey")) }
                     "myAchievements" -> openIfLoggedIn { listener.openCallFragment(AchievementFragment()) }
-                    "myPersonals" -> openIfLoggedIn { listener.openCallFragment(MyPersonalsFragment()) }
+                    "myPersonals" -> openIfLoggedIn { listener.openCallFragment(PersonalsFragment()) }
                     "myHealth" -> openIfLoggedIn { listener.openCallFragment(MyHealthFragment()) }
                     else -> Utilities.toast(activity, getString(R.string.feature_not_available))
                 }
@@ -111,7 +111,7 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
             }
             is RealmMeetup -> {
                 textViewArray[itemCnt]?.let {
-                    handleClick(obj.meetupId, obj.title, MyMeetupDetailFragment(), it)
+                    handleClick(obj.meetupId, obj.title, EventsDetailFragment(), it)
                 }
             }
         }

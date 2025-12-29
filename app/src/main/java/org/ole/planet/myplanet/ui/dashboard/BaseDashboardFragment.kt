@@ -27,7 +27,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.NotificationCallback
+import org.ole.planet.myplanet.callback.DashboardActionListener
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.ItemLibraryHomeBinding
@@ -40,6 +40,7 @@ import org.ole.planet.myplanet.model.TeamNotificationInfo
 import org.ole.planet.myplanet.service.TransactionSyncManager
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
 import org.ole.planet.myplanet.ui.myhealth.UserListArrayAdapter
+import org.ole.planet.myplanet.ui.news.NewsViewModel
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.ui.userprofile.UserProfileFragment
@@ -50,7 +51,7 @@ import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
-open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCallback,
+open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), DashboardActionListener,
     SyncListener {
     private val viewModel: DashboardViewModel by viewModels()
     private val newsViewModel: NewsViewModel by viewModels()
@@ -377,7 +378,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     override fun showResourceDownloadDialog() {
         viewLifecycleOwner.lifecycleScope.launch {
             val userId = settings?.getString("userId", "--")
-            val libraryList = libraryRepository.getLibraryListForUser(userId)
+            val libraryList = resourcesRepository.getLibraryListForUser(userId)
             showDownloadDialog(libraryList)
         }
     }

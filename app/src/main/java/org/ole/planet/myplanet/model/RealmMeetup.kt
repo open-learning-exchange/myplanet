@@ -8,7 +8,6 @@ import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import org.json.JSONArray
-import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.TimeUtils
 
@@ -136,7 +135,7 @@ open class RealmMeetup : RealmObject() {
             `object`.addProperty("sync", meetup.sync)
 
             if (!meetup.link.isNullOrEmpty()) {
-                val linksJson = GsonUtils.gson.fromJson(meetup.link, JsonObject::class.java)
+                val linksJson = JsonUtils.gson.fromJson(meetup.link, JsonObject::class.java)
                 `object`.add("link", linksJson)
             }
 

@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.widget.ArrayAdapter
+import androidx.lifecycle.lifecycleScope
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
@@ -13,20 +14,17 @@ import java.util.Calendar
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
-import org.ole.planet.myplanet.callback.SecurityDataCallback
+import org.ole.planet.myplanet.callback.SecurityDataListener
+import org.ole.planet.myplanet.data.Service
 import org.ole.planet.myplanet.databinding.ActivityBecomeMemberBinding
-import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils.CustomProgressDialog
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
-import javax.inject.Inject
-import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils
@@ -146,7 +144,7 @@ class BecomeMemberActivity : BaseActivity() {
             override fun onSuccess(success: String) {
                 runOnUiThread { Utilities.toast(this@BecomeMemberActivity, success) }
             }
-        }, object : SecurityDataCallback {
+        }, object : SecurityDataListener {
             override fun onSecurityDataUpdated() {
                 runOnUiThread {
                     customProgressDialog.dismiss()

@@ -48,14 +48,14 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TagRepository
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.resources.CollectionsFragment
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utilities.DialogUtils
-import org.ole.planet.myplanet.utilities.GsonUtils
+import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
-import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 
 @AndroidEntryPoint
@@ -64,7 +64,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private lateinit var tvAddToLib: TextView
     private lateinit var tvSelected: TextView
     private lateinit var etSearch: EditText
-    private lateinit var adapterCourses: AdapterCourses
+    private lateinit var adapterCourses: CoursesAdapter
     private lateinit var btnRemove: Button
     private lateinit var btnArchive: Button
     private lateinit var orderByDate: Button
@@ -196,12 +196,12 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
                 if (isMyCourseLib) {
                     val courseIds = courseList.mapNotNull { it?.id }
-                    resources = courseRepository.getCourseOfflineResources(courseIds)
+                    resources = coursesRepository.getCourseOfflineResources(courseIds)
                     courseLib = "courses"
                 }
 
                 recyclerView.adapter = null
-                adapterCourses = AdapterCourses(
+                adapterCourses = CoursesAdapter(
                     requireActivity(),
                     sortedCourseList,
                     map,
@@ -222,7 +222,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
-        adapterCourses = AdapterCourses(
+        adapterCourses = CoursesAdapter(
             requireActivity(),
             emptyList(),
             HashMap<String?, JsonObject>(),
@@ -328,7 +328,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             requireView().findViewById<View>(R.id.fabMyProgress).apply {
                 visibility = View.VISIBLE
                 setOnClickListener {
-                    val myProgressFragment = MyProgressFragment().apply {
+                    val progressFragment = ProgressFragment().apply {
                         arguments = Bundle().apply {
                             putBoolean("isMyCourseLib", true)
                         }
@@ -337,7 +337,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     NavigationHelper.replaceFragment(
                         parentFragmentManager,
                         R.id.fragment_container,
-                        myProgressFragment,
+                        progressFragment,
                         addToBackStack = true
                     )
                 }
@@ -504,7 +504,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
         lifecycleScope.launch {
             val (filteredCourses, map, progressMap) = withContext(Dispatchers.IO) {
-                val courses = courseRepository.filterCourses(searchText, selectedGrade, selectedSubject, tagNames)
+                val courses = coursesRepository.filterCourses(searchText, selectedGrade, selectedSubject, tagNames)
                 val ratings = databaseService.withRealm { realm -> getRatings(realm, "course", model?.id) }
                 val progress = databaseService.withRealm { realm -> getCourseProgress(realm, model?.id) }
                 Triple(courses, ratings, progress)
@@ -643,7 +643,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     filter.add("tags", getTagsArray(tags))
                     filter.addProperty("doc.gradeLevel", grade)
                     filter.addProperty("doc.subjectLevel", subject)
-                    activity.filter = GsonUtils.gson.toJson(filter)
+                    activity.filter = JsonUtils.gson.toJson(filter)
                 }
             }
         }

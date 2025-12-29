@@ -34,9 +34,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.data.Service
 import org.ole.planet.myplanet.databinding.ActivityLoginBinding
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
-import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -44,25 +44,25 @@ import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
-import org.ole.planet.myplanet.ui.userprofile.TeamListAdapter
-import org.ole.planet.myplanet.utilities.AuthHelper
+import org.ole.planet.myplanet.ui.userprofile.ProfileAdapter
+import org.ole.planet.myplanet.utilities.AuthUtils
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils
-import org.ole.planet.myplanet.utilities.LocaleHelper
+import org.ole.planet.myplanet.utilities.LocaleUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.ThemeManager
 import org.ole.planet.myplanet.utilities.UrlUtils.getUrl
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
 @AndroidEntryPoint
-class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
+class LoginActivity : SyncActivity(), ProfileAdapter.OnItemClickListener {
     private lateinit var binding: ActivityLoginBinding
     private lateinit var nameWatcher1: TextWatcher
     private lateinit var nameWatcher2: TextWatcher
     private lateinit var passwordWatcher: TextWatcher
     private var guest = false
     var users: List<RealmUserModel>? = null
-    private var mAdapter: TeamListAdapter? = null
+    private var mAdapter: ProfileAdapter? = null
     private var backPressedTime: Long = 0
     private val backPressedInterval: Long = 2000
     private var teamList = java.util.ArrayList<String?>()
@@ -403,12 +403,12 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     }
 
     private fun updateLanguageButtonText() {
-        val currentLanguage = LocaleHelper.getLanguage(this)
+        val currentLanguage = LocaleUtils.getLanguage(this)
         binding.btnLang.text = getLanguageString(currentLanguage)
     }
 
     private fun showLanguageSelectionDialog() {
-        val currentLanguage = LocaleHelper.getLanguage(this)
+        val currentLanguage = LocaleUtils.getLanguage(this)
         val options = arrayOf(
             getString(R.string.english),
             getString(R.string.spanish),
@@ -428,7 +428,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             ) { dialog, which ->
                 val selectedLanguage = languageCodes[which]
                 if (selectedLanguage != currentLanguage) {
-                    LocaleHelper.setLocale(this, selectedLanguage)
+                    LocaleUtils.setLocale(this, selectedLanguage)
                     recreate()
                     dialog.dismiss()
                 } else {
@@ -448,7 +448,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     }
 
     override fun attachBaseContext(newBase: Context) {
-        super.attachBaseContext(LocaleHelper.onAttach(newBase))
+        super.attachBaseContext(LocaleUtils.onAttach(newBase))
     }
 
     private fun declareHideKeyboardElements() {
@@ -482,7 +482,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         }
 
         if (mAdapter == null) {
-            mAdapter = TeamListAdapter(this)
+        mAdapter = ProfileAdapter(this)
             binding.recyclerView.layoutManager = LinearLayoutManager(this)
             binding.recyclerView.adapter = mAdapter
         }
@@ -520,7 +520,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     }
 
     private fun submitForm(name: String?, password: String?) {
-        AuthHelper.login(this, name, password)
+        AuthUtils.login(this, name, password)
     }
 
     internal fun showGuestDialog(username: String) {

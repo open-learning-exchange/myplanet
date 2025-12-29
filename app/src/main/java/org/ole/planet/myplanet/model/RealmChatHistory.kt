@@ -7,7 +7,6 @@ import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import java.util.Date
-import org.ole.planet.myplanet.utilities.GsonUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 
 open class RealmChatHistory : RealmObject() {
@@ -43,7 +42,7 @@ open class RealmChatHistory : RealmObject() {
         private fun parseConversations(realm: Realm, jsonArray: JsonArray): RealmList<Conversation> {
             val conversations = RealmList<Conversation>()
             for (element in jsonArray) {
-                val conversation = GsonUtils.gson.fromJson(element, Conversation::class.java)
+                val conversation = JsonUtils.gson.fromJson(element, Conversation::class.java)
                 val realmConversation = realm.copyToRealm(conversation)
                 conversations.add(realmConversation)
             }

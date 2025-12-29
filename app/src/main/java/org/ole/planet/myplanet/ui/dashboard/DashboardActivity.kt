@@ -53,32 +53,32 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
+import org.ole.planet.myplanet.data.Service
 import org.ole.planet.myplanet.databinding.ActivityDashboardBinding
 import org.ole.planet.myplanet.databinding.CustomTabBinding
-import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.JoinRequestNotification
-import org.ole.planet.myplanet.repository.LibraryRepository
-import org.ole.planet.myplanet.repository.NotificationRepository
+import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
+import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionRepository
-import org.ole.planet.myplanet.repository.TeamRepository
+import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.chat.ChatHistoryListFragment
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
-import org.ole.planet.myplanet.ui.dashboard.notification.NotificationListener
-import org.ole.planet.myplanet.ui.dashboard.notification.NotificationsFragment
+import org.ole.planet.myplanet.callback.NotificationsListener
+import org.ole.planet.myplanet.ui.dashboard.notifications.NotificationsFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.resources.ResourceDetailFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
-import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
+import org.ole.planet.myplanet.ui.settings.SettingActivity
+import org.ole.planet.myplanet.ui.submission.SubmissionsAdapter
 import org.ole.planet.myplanet.ui.survey.SendSurveyFragment
 import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.ui.sync.DashboardElementActivity
@@ -91,14 +91,14 @@ import org.ole.planet.myplanet.utilities.Constants.isBetaWifiFeatureEnabled
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils
-import org.ole.planet.myplanet.utilities.ThemeManager
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
-import org.ole.planet.myplanet.utilities.LocaleHelper
+import org.ole.planet.myplanet.utilities.LocaleUtils
 import org.ole.planet.myplanet.utilities.NotificationUtils
+import org.ole.planet.myplanet.utilities.ThemeManager
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
 @AndroidEntryPoint  
-class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener, NotificationListener {
+class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener, NotificationsListener {
 
     private lateinit var binding: ActivityDashboardBinding
     private var headerResult: AccountHeader? = null
@@ -111,15 +111,15 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     @Inject
-    lateinit var teamRepository: TeamRepository
+    lateinit var teamsRepository: TeamsRepository
     @Inject
     lateinit var progressRepository: ProgressRepository
     @Inject
-    lateinit var libraryRepository: LibraryRepository
+    lateinit var resourcesRepository: ResourcesRepository
     @Inject
     lateinit var submissionRepository: SubmissionRepository
     @Inject
-    lateinit var notificationRepository: NotificationRepository
+    lateinit var notificationsRepository: NotificationsRepository
     private val challengeHelper: ChallengeHelper by lazy {
         ChallengeHelper(this, user, settings, editor, dashboardViewModel, progressRepository)
     }
@@ -131,7 +131,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private var onGlobalLayoutListener: android.view.ViewTreeObserver.OnGlobalLayoutListener? = null
 
     override fun attachBaseContext(base: Context) {
-        super.attachBaseContext(LocaleHelper.onAttach(base))
+        super.attachBaseContext(LocaleUtils.onAttach(base))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -510,14 +510,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         realm.copyFromRealm(it)
                     }
             }
-            AdapterMySubmission.openSurvey(this, currentStepExam?.id, false, false, "")
+            SubmissionsAdapter.openSurvey(this, currentStepExam?.id, false, false, "")
         }
     }
     
     private suspend fun handleTaskNavigation(taskId: String?) {
         if (taskId == null) return
 
-        val teamData = teamRepository.getTaskTeamInfo(taskId)
+        val teamData = teamsRepository.getTaskTeamInfo(taskId)
 
         teamData?.let { (teamId, teamName, teamType) ->
             val f = TeamDetailFragment.newInstance(
@@ -539,7 +539,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 requestId
             }
 
-            val teamId = teamRepository.getJoinRequestTeamId(actualJoinRequestId)
+            val teamId = teamsRepository.getJoinRequestTeamId(actualJoinRequestId)
 
             if (teamId?.isNotEmpty() == true) {
                 val f = TeamDetailFragment()
@@ -554,16 +554,16 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
     private fun setupRealmListeners() {
         lifecycleScope.launch {
-            libraryRepository.getRecentResources(user?.id ?: "").collect { onRealmDataChange() }
+            resourcesRepository.getRecentResources(user?.id ?: "").collect { onRealmDataChange() }
         }
         lifecycleScope.launch {
-            libraryRepository.getPendingDownloads(user?.id ?: "").collect { onRealmDataChange() }
+            resourcesRepository.getPendingDownloads(user?.id ?: "").collect { onRealmDataChange() }
         }
         lifecycleScope.launch {
             submissionRepository.getPendingSurveysFlow(user?.id).collect { onRealmDataChange() }
         }
         lifecycleScope.launch {
-            teamRepository.getTasksFlow(user?.id).collect { onRealmDataChange() }
+            teamsRepository.getTasksFlow(user?.id).collect { onRealmDataChange() }
         }
     }
 
@@ -598,7 +598,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                                         withContext(Dispatchers.IO) {
                                             delay(300)
                                             try {
-                                                 notificationRepository.refresh()
+                                                 notificationsRepository.refresh()
                                                 val unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
                                                 withContext(Dispatchers.Main) {
                                                     onNotificationCountUpdated(unreadCount)
@@ -607,7 +607,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                                                 e.printStackTrace()
                                                 delay(300)
                                                 try {
-                                                     notificationRepository.refresh()
+                                                     notificationsRepository.refresh()
                                                     val unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
                                                     withContext(Dispatchers.Main) {
                                                         onNotificationCountUpdated(unreadCount)
@@ -660,8 +660,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             try {
                 dashboardViewModel.updateResourceNotification(userId)
 
-                val taskData = teamRepository.getTaskNotifications(userId)
-                val joinRequestData = teamRepository.getJoinRequestNotifications(userId)
+                val taskData = teamsRepository.getTaskNotifications(userId)
+                val joinRequestData = teamsRepository.getJoinRequestNotifications(userId)
 
                 databaseService.realmInstance.use { backgroundRealm ->
                     val createdNotifications = createNotifications(backgroundRealm, userId, taskData, joinRequestData)
@@ -701,7 +701,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun markDatabaseNotificationAsRead(notificationId: String) {
         lifecycleScope.launch {
             try {
-                notificationRepository.markNotificationAsRead(notificationId, user?.id)
+                notificationsRepository.markNotificationAsRead(notificationId, user?.id)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -1244,7 +1244,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 lifecycleScope.launch {
                     delay(100)
                     try {
-                          notificationRepository.refresh()
+                          notificationsRepository.refresh()
                         val unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
                         onNotificationCountUpdated(unreadCount)
                     } catch (e: Exception) {

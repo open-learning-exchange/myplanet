@@ -47,12 +47,12 @@ import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
+import org.ole.planet.myplanet.data.ApiClient
+import org.ole.planet.myplanet.data.ApiClient.client
+import org.ole.planet.myplanet.data.ApiInterface
+import org.ole.planet.myplanet.data.Service
+import org.ole.planet.myplanet.data.Service.ConfigurationIdListener
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
-import org.ole.planet.myplanet.datamanager.ApiClient
-import org.ole.planet.myplanet.datamanager.ApiClient.client
-import org.ole.planet.myplanet.datamanager.ApiInterface
-import org.ole.planet.myplanet.datamanager.Service
-import org.ole.planet.myplanet.datamanager.Service.ConfigurationIdListener
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.ServerAddressesModel
@@ -72,7 +72,7 @@ import org.ole.planet.myplanet.utilities.DialogUtils.showWifiSettingDialog
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utilities.DownloadUtils.openDownloadService
 import org.ole.planet.myplanet.utilities.FileUtils
-import org.ole.planet.myplanet.utilities.LocaleHelper
+import org.ole.planet.myplanet.utilities.LocaleUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils.extractProtocol
 import org.ole.planet.myplanet.utilities.NetworkUtils.getCustomDeviceName
 import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
@@ -536,7 +536,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
                             withContext(Dispatchers.Main) {
                                 editor.remove("pendingLanguageChange").apply()
 
-                                LocaleHelper.setLocale(this@SyncActivity, pendingLanguage)
+                                LocaleUtils.setLocale(this@SyncActivity, pendingLanguage)
                                 updateUIWithNewLanguage()
                             }
                         }
@@ -597,7 +597,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
             becomeMember.text = getString(R.string.become_a_member)
             btnFeedback.text = getString(R.string.feedback)
             openCommunity.text = getString(R.string.open_community)
-            val currentLanguage = LocaleHelper.getLanguage(this)
+            val currentLanguage = LocaleUtils.getLanguage(this)
             btnLang.text = getLanguageString(currentLanguage)
             invalidateOptionsMenu()
         } catch (e: Exception) {

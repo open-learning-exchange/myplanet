@@ -35,14 +35,14 @@ import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.ChatRepository
-import org.ole.planet.myplanet.repository.NewsRepository
-import org.ole.planet.myplanet.repository.TeamRepository
+import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
+import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.DialogUtils
-import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 
 private data class Quartet<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
@@ -74,9 +74,9 @@ class ChatHistoryListFragment : Fragment() {
     @Inject
     lateinit var userRepository: UserRepository
     @Inject
-    lateinit var teamRepository: TeamRepository
+    lateinit var teamsRepository: TeamsRepository
     @Inject
-    lateinit var newsRepository: NewsRepository
+    lateinit var voicesRepository: VoicesRepository
     @Inject
     lateinit var chatApiHelper: ChatApiHelper
     private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
@@ -317,14 +317,14 @@ class ChatHistoryListFragment : Fragment() {
     }
 
     private suspend fun loadShareTargets(parentCode: String?, communityName: String?): ChatShareTargets {
-        val teams = teamRepository.getShareableTeams()
-        val enterprises = teamRepository.getShareableEnterprises()
+        val teams = teamsRepository.getShareableTeams()
+        val enterprises = teamsRepository.getShareableEnterprises()
         val communityId = if (!communityName.isNullOrBlank() && !parentCode.isNullOrBlank()) {
             "$communityName@$parentCode"
         } else {
             null
         }
-        val community = communityId?.let { teamRepository.getTeamById(it) }
+        val community = communityId?.let { teamsRepository.getTeamById(it) }
         return ChatShareTargets(community, teams, enterprises)
     }
 
@@ -334,7 +334,7 @@ class ChatHistoryListFragment : Fragment() {
         }
         viewLifecycleOwner.lifecycleScope.launch {
             val currentUser = user
-            val createdNews = newsRepository.createNews(map, currentUser)
+            val createdNews = voicesRepository.createNews(map, currentUser)
             if (currentUser?.planetCode != null) {
                 sharedNewsMessages = sharedNewsMessages + createdNews
             }

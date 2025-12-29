@@ -26,11 +26,11 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.exam.TakeExamFragment
-import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
+import org.ole.planet.myplanet.ui.submission.SubmissionsAdapter
 import org.ole.planet.myplanet.utilities.CameraUtils
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
-import org.ole.planet.myplanet.utilities.CustomClickableSpan
+import org.ole.planet.myplanet.ui.widgets.CustomClickableSpan
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 
@@ -232,9 +232,9 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
 
     private fun setListeners() {
         viewLifecycleOwner.lifecycleScope.launch {
-            val notDownloadedResources = libraryRepository.getStepResources(stepId, resourceOffline = false)
+            val notDownloadedResources = resourcesRepository.getStepResources(stepId, resourceOffline = false)
             setResourceButton(notDownloadedResources, fragmentCourseStepBinding.btnResources)
-            val downloadedResources = libraryRepository.getStepResources(stepId, resourceOffline = true)
+            val downloadedResources = resourcesRepository.getStepResources(stepId, resourceOffline = true)
             setOpenResourceButton(downloadedResources, fragmentCourseStepBinding.btnOpen)
         }
         fragmentCourseStepBinding.btnTakeTest.setOnClickListener {
@@ -251,7 +251,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
 
         fragmentCourseStepBinding.btnTakeSurvey.setOnClickListener {
             if (stepSurvey.isNotEmpty()) {
-                AdapterMySubmission.openSurvey(homeItemClickListener, stepSurvey[0].id, false, false, "")
+                SubmissionsAdapter.openSurvey(homeItemClickListener, stepSurvey[0].id, false, false, "")
             }
         }
         fragmentCourseStepBinding.btnResources.visibility = View.GONE
