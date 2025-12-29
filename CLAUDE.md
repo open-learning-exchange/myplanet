@@ -52,7 +52,7 @@ myplanet/
 │   │   │   │   ├── MainApplication.kt       # App entry point with Hilt
 │   │   │   │   ├── base/                    # Base classes for activities/fragments
 │   │   │   │   ├── callback/                # Event listeners and interfaces
-│   │   │   │   ├── datamanager/             # Data services and API
+│   │   │   │   ├── data/                    # Data services and API
 │   │   │   │   ├── di/                      # Dependency injection modules
 │   │   │   │   ├── model/                   # Realm data models (37+ classes)
 │   │   │   │   ├── repository/              # Repository pattern implementations
@@ -83,7 +83,7 @@ myplanet/
 |---------|---------|-----------|
 | `base/` | Base classes for common functionality | BaseActivity, BaseRecyclerFragment, PermissionActivity |
 | `callback/` | Event listeners and interfaces | OnLibraryItemSelected, SyncListener, TeamUpdateListener |
-| `datamanager/` | Data access and API services | Service.kt (23.8 KB), ApiInterface, ManagerSync |
+| `data/` | Data access and API services | Service.kt (23.8 KB), ApiInterface, ManagerSync |
 | `di/` | Hilt dependency injection | NetworkModule, DatabaseModule, RepositoryModule |
 | `model/` | Realm database models | 37+ models including RealmMyTeam, RealmMyCourse, RealmMyLibrary |
 | `repository/` | Repository pattern implementations | 15 repositories with Interface + Impl pairs |
@@ -102,7 +102,7 @@ myplanet/
 
 2. **`Service.kt`** (23.8 KB)
    - Main data service for local database operations
-   - Location: `app/src/main/java/org/ole/planet/myplanet/datamanager/Service.kt`
+   - Location: `app/src/main/java/org/ole/planet/myplanet/data/Service.kt`
 
 3. **`SyncManager.kt`** (36.1 KB)
    - Orchestrates data synchronization with server
@@ -336,7 +336,7 @@ git push -u origin claude/feature-name-sessionid
    - UI change? → `ui/` package
    - Data model? → `model/` package
    - Business logic? → `repository/` or `service/`
-   - Network API? → `datamanager/ApiInterface.kt`
+   - Network API? → `data/ApiInterface.kt`
 
 2. **Create Necessary Components**
    - Model class (Realm if persistent)
@@ -670,7 +670,7 @@ val color = ContextCompat.getColor(context, R.color.primary)
 
 2. **Update API Interface**
    ```kotlin
-   // app/src/main/java/org/ole/planet/myplanet/datamanager/ApiInterface.kt
+   // app/src/main/java/org/ole/planet/myplanet/data/ApiInterface.kt
    @GET("myendpoint")
    suspend fun getMyNewModels(): Response<List<JsonObject>>
    ```
@@ -765,7 +765,7 @@ val color = ContextCompat.getColor(context, R.color.primary)
 
 1. **Update ApiInterface**
    ```kotlin
-   // app/src/main/java/org/ole/planet/myplanet/datamanager/ApiInterface.kt
+   // app/src/main/java/org/ole/planet/myplanet/data/ApiInterface.kt
    @POST("api/endpoint")
    suspend fun postData(
        @Body data: JsonObject,
@@ -1143,7 +1143,7 @@ git rebase --continue
 | Purpose | File Path | Line Count |
 |---------|-----------|------------|
 | Main entry point | `app/src/main/java/org/ole/planet/myplanet/MainApplication.kt` | ~420 |
-| Core data service | `app/src/main/java/org/ole/planet/myplanet/datamanager/Service.kt` | ~650 |
+| Core data service | `app/src/main/java/org/ole/planet/myplanet/data/Service.kt` | ~650 |
 | Sync orchestration | `app/src/main/java/org/ole/planet/myplanet/service/SyncManager.kt` | ~1000 |
 | Upload handling | `app/src/main/java/org/ole/planet/myplanet/service/UploadManager.kt` | ~1200 |
 | Team management | `app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt` | ~650 |
