@@ -30,7 +30,7 @@ import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.callback.TableDataUpdate
 import org.ole.planet.myplanet.databinding.FragmentChatHistoryBinding
 import org.ole.planet.myplanet.di.AppPreferences
-import org.ole.planet.myplanet.model.Conversation
+import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -78,7 +78,7 @@ class ChatHistoryFragment : Fragment() {
     @Inject
     lateinit var voicesRepository: VoicesRepository
     @Inject
-    lateinit var chatApiHelper: ChatApiHelper
+    lateinit var chatApiService: ChatApiService
     private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
     private lateinit var realtimeSyncListener: BaseRealtimeSyncListener
     private val serverUrl: String
@@ -284,7 +284,7 @@ class ChatHistoryFragment : Fragment() {
                     ::shareChat,
                 )
                 newAdapter.setChatHistoryItemClickListener(object : ChatHistoryAdapter.ChatHistoryItemClickListener {
-                    override fun onChatHistoryItemClicked(conversations: List<Conversation>?, id: String, rev: String?, aiProvider: String?) {
+                    override fun onChatHistoryItemClicked(conversations: List<RealmConversation>?, id: String, rev: String?, aiProvider: String?) {
                         conversations?.let { sharedViewModel.setSelectedChatHistory(it) }
                         sharedViewModel.setSelectedId(id)
                         rev?.let { sharedViewModel.setSelectedRev(it) }
@@ -358,7 +358,7 @@ class ChatHistoryFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             updateServerIfNecessary(mapping)
             withContext(Dispatchers.Main) {
-                chatApiHelper.fetchAiProviders { providers ->
+                chatApiService.fetchAiProviders { providers ->
                     sharedViewModel.setAiProvidersLoading(false)
                     if (providers == null || providers.values.all { !it }) {
                         sharedViewModel.setAiProvidersError(true)

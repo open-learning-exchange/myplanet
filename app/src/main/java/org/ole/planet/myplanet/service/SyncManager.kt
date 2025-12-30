@@ -39,7 +39,7 @@ import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.data.ApiClient
 import org.ole.planet.myplanet.data.ApiInterface
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.data.ManagerSync
+import org.ole.planet.myplanet.data.LoginSyncManager
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.insert
@@ -304,7 +304,7 @@ class SyncManager constructor(
 
             // Phase 5: Admin and finalization
             logger.startProcess("admin_sync")
-            ManagerSync.instance.syncAdmin()
+            LoginSyncManager.instance.syncAdmin()
             logger.endProcess("admin_sync")
 
             databaseService.withRealm { realm ->
@@ -518,7 +518,7 @@ class SyncManager constructor(
             }
 
             logger.startProcess("admin_sync")
-            ManagerSync.instance.syncAdmin()
+            LoginSyncManager.instance.syncAdmin()
             logger.endProcess("admin_sync")
 
             databaseService.withRealm { realm ->

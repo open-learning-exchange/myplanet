@@ -15,7 +15,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseDialogFragment
 import org.ole.planet.myplanet.databinding.FragmentSendSurveyBinding
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.SubmissionRepository
+import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.ui.components.CheckboxListView
 import org.ole.planet.myplanet.utilities.Utilities
@@ -25,7 +25,7 @@ class SendSurveyFragment : BaseDialogFragment() {
     private lateinit var fragmentSendSurveyBinding: FragmentSendSurveyBinding
     private var users: List<RealmUserModel> = emptyList()
     @Inject
-    lateinit var submissionRepository: SubmissionRepository
+    lateinit var submissionsRepository: SubmissionsRepository
     @Inject
     lateinit var userRepository: UserRepository
     override val key: String
@@ -51,7 +51,7 @@ class SendSurveyFragment : BaseDialogFragment() {
             viewLifecycleOwner.lifecycleScope.launch {
                 for (i in fragmentSendSurveyBinding.listUsers.selectedItemsList.indices) {
                     val u = users[i]
-                    submissionRepository.createSurveySubmission(id!!, u.id)
+                    submissionsRepository.createSurveySubmission(id!!, u.id)
                 }
                 Utilities.toast(activity, getString(R.string.survey_sent_to_users))
                 dismiss()
