@@ -15,7 +15,7 @@ import org.ole.planet.myplanet.databinding.FragmentLifeBinding
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyLife.Companion.getMyLifeByUserId
 import org.ole.planet.myplanet.repository.LifeRepository
-import org.ole.planet.myplanet.ui.life.helper.OnStartDragListener
+import org.ole.planet.myplanet.callback.OnStartDragListener
 import org.ole.planet.myplanet.ui.life.helper.SimpleItemTouchHelperCallback
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 
