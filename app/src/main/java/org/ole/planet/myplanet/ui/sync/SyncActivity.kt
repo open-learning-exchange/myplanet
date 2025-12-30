@@ -55,7 +55,7 @@ import org.ole.planet.myplanet.data.Service.ConfigurationIdListener
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.model.ServerAddressesModel
+import org.ole.planet.myplanet.model.ServerAddress
 import org.ole.planet.myplanet.repository.ConfigurationRepository
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.TransactionSyncManager
@@ -135,7 +135,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
     var serverCheck = true
     var showAdditionalServers = false
     var serverAddressAdapter: ServerAddressAdapter? = null
-    var serverListAddresses: List<ServerAddressesModel> = emptyList()
+    var serverListAddresses: List<ServerAddress> = emptyList()
     private var isProgressDialogShowing = false
     @Inject
     lateinit var configurationRepository: ConfigurationRepository

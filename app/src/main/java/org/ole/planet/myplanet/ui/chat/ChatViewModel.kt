@@ -4,11 +4,11 @@ import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import org.ole.planet.myplanet.model.Conversation
+import org.ole.planet.myplanet.model.RealmConversation
 
 class ChatViewModel : ViewModel() {
-    private val _selectedChatHistory = MutableStateFlow<List<Conversation>?>(null)
-    val selectedChatHistory: StateFlow<List<Conversation>?> = _selectedChatHistory.asStateFlow()
+    private val _selectedChatHistory = MutableStateFlow<List<RealmConversation>?>(null)
+    val selectedChatHistory: StateFlow<List<RealmConversation>?> = _selectedChatHistory.asStateFlow()
 
     private val _selectedId = MutableStateFlow("")
     val selectedId: StateFlow<String> = _selectedId.asStateFlow()
@@ -28,7 +28,7 @@ class ChatViewModel : ViewModel() {
     private val _aiProvidersError = MutableStateFlow(false)
     val aiProvidersError: StateFlow<Boolean> = _aiProvidersError.asStateFlow()
 
-    fun setSelectedChatHistory(conversations: List<Conversation>) {
+    fun setSelectedChatHistory(conversations: List<RealmConversation>) {
         _selectedChatHistory.value = conversations
     }
 
