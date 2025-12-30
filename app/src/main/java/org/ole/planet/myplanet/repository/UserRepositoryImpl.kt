@@ -343,9 +343,9 @@ class UserRepositoryImpl @Inject constructor(
         userId: String,
         currentUser: RealmUserModel
     ): HealthRecord? = withRealm { realm ->
-        var mh = realm.where(org.ole.planet.myplanet.model.RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
+        var mh = realm.where(org.ole.planet.myplanet.model.RealmHealthExamination::class.java).equalTo("_id", userId).findFirst()
         if (mh == null) {
-            mh = realm.where(org.ole.planet.myplanet.model.RealmMyHealthPojo::class.java).equalTo("userId", userId).findFirst()
+            mh = realm.where(org.ole.planet.myplanet.model.RealmHealthExamination::class.java).equalTo("userId", userId).findFirst()
         }
         if (mh == null) return@withRealm null
 
@@ -362,7 +362,7 @@ class UserRepositoryImpl @Inject constructor(
         }
         if (mm == null) return@withRealm null
 
-        val healths = realm.where(org.ole.planet.myplanet.model.RealmMyHealthPojo::class.java).equalTo("profileId", mm.userKey).findAll()
+        val healths = realm.where(org.ole.planet.myplanet.model.RealmHealthExamination::class.java).equalTo("profileId", mm.userKey).findAll()
         val list = realm.copyFromRealm(healths)
         if (list.isEmpty()) {
             return@withRealm HealthRecord(mh, mm, emptyList(), emptyMap())

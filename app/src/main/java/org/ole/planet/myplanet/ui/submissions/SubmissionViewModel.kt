@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.submission
+package org.ole.planet.myplanet.ui.submissions
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
