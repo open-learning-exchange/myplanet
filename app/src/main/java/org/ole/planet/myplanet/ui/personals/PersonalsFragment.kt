@@ -17,7 +17,7 @@ import org.ole.planet.myplanet.callback.OnSelectedMyPersonal
 import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
 import org.ole.planet.myplanet.databinding.FragmentMyPersonalsBinding
 import org.ole.planet.myplanet.model.RealmMyPersonal
-import org.ole.planet.myplanet.repository.PersonalRepository
+import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.resources.AddResourceFragment
@@ -35,7 +35,7 @@ class PersonalsFragment : Fragment(), OnSelectedMyPersonal {
     @Inject
     lateinit var uploadManager: UploadManager
     @Inject
-    lateinit var personalRepository: PersonalRepository
+    lateinit var personalsRepository: PersonalsRepository
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -63,7 +63,7 @@ class PersonalsFragment : Fragment(), OnSelectedMyPersonal {
         personalAdapter?.setListener(this)
         binding.rvMypersonal.adapter = personalAdapter
         viewLifecycleOwner.lifecycleScope.launch {
-            personalRepository.getPersonalResources(model?.id).collectLatest { realmMyPersonals ->
+            personalsRepository.getPersonalResources(model?.id).collectLatest { realmMyPersonals ->
                 personalAdapter?.submitList(realmMyPersonals)
                 showNodata()
             }
@@ -124,7 +124,7 @@ class PersonalsFragment : Fragment(), OnSelectedMyPersonal {
                 val id = personal.id ?: personal._id
                 if (id != null) {
                     viewLifecycleOwner.lifecycleScope.launch {
-                        personalRepository.updatePersonalResource(id) { realmPersonal ->
+                        personalsRepository.updatePersonalResource(id) { realmPersonal ->
                             realmPersonal.description = desc
                             realmPersonal.title = title
                         }
@@ -142,7 +142,7 @@ class PersonalsFragment : Fragment(), OnSelectedMyPersonal {
                 val id = personal.id ?: personal._id
                 if (id != null) {
                     viewLifecycleOwner.lifecycleScope.launch {
-                        personalRepository.deletePersonalResource(id)
+                        personalsRepository.deletePersonalResource(id)
                     }
                 }
             }

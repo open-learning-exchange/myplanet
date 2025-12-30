@@ -8,9 +8,9 @@ import kotlinx.coroutines.flow.flowOf
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyPersonal
 
-class PersonalRepositoryImpl @Inject constructor(
+class PersonalsRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
-) : RealmRepository(databaseService), PersonalRepository {
+) : RealmRepository(databaseService), PersonalsRepository {
 
     override suspend fun savePersonalResource(
         title: String,

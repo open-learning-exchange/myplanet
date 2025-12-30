@@ -68,7 +68,7 @@ import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.ui.chat.ChatHistoryListFragment
+import org.ole.planet.myplanet.ui.chat.ChatHistoryFragment
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.callback.NotificationsListener
@@ -356,8 +356,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             R.id.action_chat -> {
                 if (user?.id?.startsWith("guest") == false) {
                     openCallFragment(
-                        ChatHistoryListFragment(),
-                        ChatHistoryListFragment::class.java.simpleName
+                        ChatHistoryFragment(),
+                        ChatHistoryFragment::class.java.simpleName
                     )
                 } else {
                     guestDialog(this, userProfileDbHandler)
@@ -875,10 +875,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         actionView.setOnClickListener(onClickListener)
     }
 
-    fun refreshChatHistoryList() {
+    fun refreshChatHistory() {
         val fragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
-        if (fragment is ChatHistoryListFragment) {
-            fragment.refreshChatHistoryList()
+        if (fragment is ChatHistoryFragment) {
+            fragment.refreshChatHistory()
         }
     }
 
