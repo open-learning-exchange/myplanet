@@ -23,7 +23,7 @@ import org.ole.planet.myplanet.databinding.ActivityAddResourceBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserProfileHandler
 import org.ole.planet.myplanet.ui.components.CheckboxListView
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.LocaleUtils
@@ -32,7 +32,7 @@ import org.ole.planet.myplanet.utilities.Utilities.toast
 @AndroidEntryPoint
 class AddResourceActivity : AppCompatActivity() {
     @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
+    lateinit var userProfileDbHandler: UserProfileHandler
     @Inject
     lateinit var resourcesRepository: ResourcesRepository
     private lateinit var binding: ActivityAddResourceBinding

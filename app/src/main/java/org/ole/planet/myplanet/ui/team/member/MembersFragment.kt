@@ -16,13 +16,13 @@ import org.ole.planet.myplanet.base.BaseMemberFragment
 import org.ole.planet.myplanet.callback.MemberChangeListener
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserProfileHandler
 
 @AndroidEntryPoint
 class MembersFragment : BaseMemberFragment() {
 
     @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
+    lateinit var userProfileDbHandler: UserProfileHandler
 
     private val viewModel: MembersViewModel by viewModels()
     private lateinit var currentUser: RealmUserModel

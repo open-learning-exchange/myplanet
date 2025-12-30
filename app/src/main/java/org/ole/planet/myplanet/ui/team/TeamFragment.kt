@@ -24,7 +24,7 @@ import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TeamsRepository
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserProfileHandler
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -37,7 +37,7 @@ class TeamFragment : Fragment(), TeamListAdapter.OnClickTeamItem, TeamListAdapte
     @Inject
     lateinit var teamsRepository: TeamsRepository
     @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
+    lateinit var userProfileDbHandler: UserProfileHandler
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
     @Inject

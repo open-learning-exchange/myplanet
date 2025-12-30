@@ -48,7 +48,7 @@ import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.MyDownloadService
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserProfileHandler
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.submission.SubmissionsAdapter
 import org.ole.planet.myplanet.ui.components.CheckboxListView
@@ -80,7 +80,7 @@ abstract class BaseResourceFragment : Fragment() {
     @Inject
     lateinit var databaseService: DatabaseService
     @Inject
-    lateinit var profileDbHandler: UserProfileDbHandler
+    lateinit var profileDbHandler: UserProfileHandler
     @Inject
     @AppPreferences
     lateinit var settings: SharedPreferences

@@ -43,7 +43,7 @@ import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserProfileHandler
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.clearRealmDb
@@ -106,7 +106,7 @@ class SettingActivity : AppCompatActivity() {
     @AndroidEntryPoint
     class SettingFragment : PreferenceFragmentCompat() {
         @Inject
-        lateinit var profileDbHandler: UserProfileDbHandler
+        lateinit var profileDbHandler: UserProfileHandler
         @Inject
         lateinit var databaseService: DatabaseService
     @Inject

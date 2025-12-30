@@ -28,7 +28,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMemberCount
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserProfileHandler
 import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.ApplicantsPage
@@ -54,7 +54,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateListener {
     
     @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
+    lateinit var userProfileDbHandler: UserProfileHandler
     
     @Inject
     lateinit var syncManager: SyncManager

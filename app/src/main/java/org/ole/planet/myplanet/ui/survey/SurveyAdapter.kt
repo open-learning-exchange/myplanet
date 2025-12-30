@@ -21,7 +21,7 @@ import org.ole.planet.myplanet.model.RealmMembershipDoc
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserProfileHandler
 import org.ole.planet.myplanet.ui.submission.SubmissionsAdapter
 import org.ole.planet.myplanet.ui.survey.SurveyBindingData
 
@@ -33,7 +33,7 @@ class SurveyAdapter(
     val teamId: String?,
     private val surveyAdoptListener: SurveyAdoptListener,
     private val settings: SharedPreferences,
-    private val userProfileDbHandler: UserProfileDbHandler,
+    private val userProfileDbHandler: UserProfileHandler,
     private val surveyInfoMap: Map<String, SurveyInfo>,
     private val bindingDataMap: Map<String, SurveyBindingData>
 ) : ListAdapter<RealmStepExam, SurveyAdapter.ViewHolderSurvey>(SurveyDiffCallback()) {

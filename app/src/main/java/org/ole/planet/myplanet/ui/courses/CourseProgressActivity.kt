@@ -22,14 +22,14 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserProfileHandler
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 
 @AndroidEntryPoint
 class CourseProgressActivity : BaseActivity() {
     private lateinit var binding: ActivityCourseProgressBinding
     @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
+    lateinit var userProfileDbHandler: UserProfileHandler
     var user: RealmUserModel? = null
     lateinit var courseId: String
 

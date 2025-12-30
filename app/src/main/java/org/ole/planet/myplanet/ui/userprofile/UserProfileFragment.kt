@@ -61,7 +61,7 @@ import org.ole.planet.myplanet.databinding.EditProfileDialogBinding
 import org.ole.planet.myplanet.databinding.FragmentUserProfileBinding
 import org.ole.planet.myplanet.databinding.RowStatBinding
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserProfileHandler
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
@@ -74,7 +74,7 @@ class UserProfileFragment : Fragment() {
     private lateinit var rowStatBinding: RowStatBinding
     private lateinit var settings: SharedPreferences
     @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
+    lateinit var userProfileDbHandler: UserProfileHandler
     private var model: RealmUserModel? = null
     private var editProfileDialog: Dialog? = null
     private lateinit var pickImageLauncher: ActivityResultLauncher<Intent>

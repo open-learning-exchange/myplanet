@@ -59,7 +59,7 @@ import org.ole.planet.myplanet.model.ServerAddressesModel
 import org.ole.planet.myplanet.repository.ConfigurationRepository
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.TransactionSyncManager
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserProfileHandler
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.androidDecrypter
 import org.ole.planet.myplanet.utilities.Constants
@@ -114,7 +114,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
     lateinit var syncIconDrawable: AnimationDrawable
     lateinit var prefData: SharedPrefManager
     @Inject
-    lateinit var profileDbHandler: UserProfileDbHandler
+    lateinit var profileDbHandler: UserProfileHandler
     lateinit var spnCloud: Spinner
     lateinit var protocolCheckIn: RadioGroup
     lateinit var serverUrl: EditText
