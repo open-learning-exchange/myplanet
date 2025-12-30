@@ -52,7 +52,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam.Companion.insertMyTeams
 import org.ole.planet.myplanet.model.RealmResourceActivity.Companion.onSynced
 import org.ole.planet.myplanet.model.Rows
 import org.ole.planet.myplanet.service.sync.SyncMode
-import org.ole.planet.myplanet.service.sync.ThreadSafeRealmHelper
+import org.ole.planet.myplanet.service.sync.ThreadSafeRealmManager
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.JsonUtils.getJsonArray
@@ -142,7 +142,7 @@ class SyncManager constructor(
     private fun destroy() {
         if (betaSync) {
             syncScope.cancel()
-            ThreadSafeRealmHelper.closeThreadRealm()
+            ThreadSafeRealmManager.closeThreadRealm()
         }
         cancelBackgroundSync()
         cancel(context, 111)
@@ -1076,7 +1076,7 @@ class SyncManager constructor(
     }
 
     private fun <T> safeRealmOperation(operation: (Realm) -> T): T? {
-        return ThreadSafeRealmHelper.withRealm(databaseService, operation)
+        return ThreadSafeRealmManager.withRealm(databaseService, operation)
     }
 
 }
