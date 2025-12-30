@@ -34,14 +34,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.afollestad.materialdialogs.DialogAction
 import com.afollestad.materialdialogs.MaterialDialog
 import dagger.hilt.android.AndroidEntryPoint
-import java.io.File
-import java.util.ArrayList
-import java.util.Calendar
-import java.util.Date
-import java.util.HashMap
-import java.util.Locale
-import java.util.concurrent.TimeUnit
-import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.launchIn
@@ -59,9 +51,7 @@ import org.ole.planet.myplanet.data.ApiClient
 import org.ole.planet.myplanet.data.ApiClient.client
 import org.ole.planet.myplanet.data.ApiInterface
 import org.ole.planet.myplanet.data.Service
-import org.ole.planet.myplanet.data.Service.CheckVersionCallback
 import org.ole.planet.myplanet.data.Service.ConfigurationIdListener
-import org.ole.planet.myplanet.data.Service.PlanetAvailableListener
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -92,6 +82,12 @@ import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.Utilities
+import java.io.File
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
+import java.util.concurrent.TimeUnit
+import javax.inject.Inject
 
 @AndroidEntryPoint
 abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository.CheckVersionCallback,
@@ -297,7 +293,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
 
     suspend fun isServerReachable(processedUrl: String?, type: String): Boolean {
         ApiClient.ensureInitialized()
-        val apiInterface = client?.create(ApiInterface::class.java)
+        val apiInterface = client.create(ApiInterface::class.java)
         try {
             val url = if (settings.getBoolean("isAlternativeUrl", false)) {
                 if (processedUrl?.contains("/db") == true) {
@@ -308,9 +304,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
             } else {
                 "$processedUrl/_all_dbs"
             }
-            val response = apiInterface?.isPlanetAvailableSuspend(url)
+            val response = apiInterface.isPlanetAvailableSuspend(url)
 
-            if (response?.isSuccessful == true) {
+            if (response.isSuccessful) {
                 val ss = response.body()?.string()
                 val myList = ss?.split(",")?.dropLastWhile { it.isEmpty() }
 
@@ -454,7 +450,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
         }
 
         val couchdbURL = ServerConfigUtils.saveAlternativeUrl(url, password, settings, editor)
-        if (isUrlValid(url)) setUrlParts(defaultUrl, password) else ""
+        if (isUrlValid(url)) setUrlParts(defaultUrl, password)
         return couchdbURL
     }
 
@@ -698,7 +694,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
                 val serverUrl = settings.getString("serverURL", "")
                 if (!serverUrl.isNullOrEmpty()) {
                     MainApplication.applicationScope.launch {
-                        val canReachServer = MainApplication.Companion.isServerReachable(serverUrl)
+                        val canReachServer = MainApplication.isServerReachable(serverUrl)
                         if (canReachServer) {
                             withContext(Dispatchers.Main) {
                                 startUpload("login")
@@ -750,24 +746,35 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
         }
     }
     fun continueSync(dialog: MaterialDialog, url: String, isAlternativeUrl: Boolean, defaultUrl: String) {
-        val binding = serverDialogBinding ?: return
-        processedUrl = saveConfigAndContinue(dialog, binding, url, isAlternativeUrl, defaultUrl)
-        if (TextUtils.isEmpty(processedUrl)) return
-        isSync = true
-        if (checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) && settings.getBoolean("firstRun", true)) {
-            clearInternalStorage()
+        runOnUiThread {
+            dialog.dismiss()
+
+            processedUrl = if (isAlternativeUrl) {
+                val password = settings.getString("serverPin", "") ?: ""
+                val couchdbURL = ServerConfigUtils.saveAlternativeUrl(url, password, settings, editor)
+                if (isUrlValid(url)) setUrlParts(defaultUrl, password)
+                couchdbURL
+            } else {
+                val protocol = settings.getString("serverProtocol", "")
+                val savedUrl = settings.getString("serverURL", "") ?: ""
+                val pin = settings.getString("serverPin", "") ?: ""
+                val fullUrl = protocol + savedUrl
+                if (isUrlValid(fullUrl)) setUrlParts(fullUrl, pin) else ""
+            }
+
+            if (TextUtils.isEmpty(processedUrl)) {
+                return@runOnUiThread
+            }
+
+            isSync = true
+            if (checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) && settings.getBoolean("firstRun", true)) {
+                clearInternalStorage()
+            }
+
+            lifecycleScope.launch {
+                isServerReachable(processedUrl, "sync")
+            }
         }
-        configurationRepository.checkServerAvailability(object : ConfigurationRepository.PlanetAvailableListener {
-            override fun isAvailable() {
-                configurationRepository.checkVersion(this@SyncActivity, settings)
-            }
-            override fun notAvailable() {
-                if (!isFinishing) {
-                    syncFailed = true
-                    showAlert(context, "Error", getString(R.string.planet_server_not_reachable))
-                }
-            }
-        })
     }
 
     override fun onSuccess(success: String?) {
@@ -828,7 +835,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
             settingDialog()
         }
         customProgressDialog.dismiss()
-        if (!blockSync) continueSyncProcess() else {
+        if (!blockSync) {
+            continueSyncProcess()
+        } else {
             syncIconDrawable.stop()
             syncIconDrawable.selectDrawable(0)
         }

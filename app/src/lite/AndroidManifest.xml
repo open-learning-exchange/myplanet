@@ -57,7 +57,7 @@
         android:networkSecurityConfig="@xml/network_security_config"
         tools:replace="android:label">
         <activity
-            android:name=".ui.onboarding.OnBoardingActivity"
+            android:name=".ui.onboarding.OnboardingActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

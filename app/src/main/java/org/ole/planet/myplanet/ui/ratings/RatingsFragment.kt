@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.rating
+package org.ole.planet.myplanet.ui.ratings
 
 import android.content.Context
 import android.content.SharedPreferences
@@ -23,18 +23,18 @@ import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
-class RatingFragment : DialogFragment() {
+class RatingsFragment : DialogFragment() {
     private var _binding: FragmentRatingBinding? = null
     private val binding get() = _binding!!
     @Inject
-    lateinit var viewModel: RatingViewModel
+    lateinit var viewModel: RatingsViewModel
     var id: String? = ""
     var type: String? = ""
     var title: String? = ""
     lateinit var settings: SharedPreferences
     private var ratingListener: OnRatingChangeListener? = null
     private var isUserReady = false
-    private var currentSubmitState: RatingViewModel.SubmitState = RatingViewModel.SubmitState.Idle
+    private var currentSubmitState: RatingsViewModel.SubmitState = RatingsViewModel.SubmitState.Idle
     fun setListener(listener: OnRatingChangeListener?) {
         this.ratingListener = listener
     }
@@ -88,14 +88,14 @@ class RatingFragment : DialogFragment() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.ratingState.collect { state ->
                     when (state) {
-                        is RatingViewModel.RatingUiState.Loading -> {}
-                        is RatingViewModel.RatingUiState.Success -> {
+                        is RatingsViewModel.RatingUiState.Loading -> {}
+                        is RatingsViewModel.RatingUiState.Success -> {
                             state.existingRating?.let { rating ->
                                 binding.ratingBar.rating = rating.rate.toFloat()
                                 binding.etComment.setText(rating.comment)
                             }
                         }
-                        is RatingViewModel.RatingUiState.Error -> {
+                        is RatingsViewModel.RatingUiState.Error -> {
                             Utilities.toast(activity, state.message)
                         }
                     }
@@ -118,16 +118,16 @@ class RatingFragment : DialogFragment() {
                 viewModel.submitState.collect { state ->
                     currentSubmitState = state
                     when (state) {
-                        is RatingViewModel.SubmitState.Success -> {
+                        is RatingsViewModel.SubmitState.Success -> {
                             Utilities.toast(activity, "Thank you, your rating is submitted.")
                             ratingListener?.onRatingChanged()
                             dismiss()
                         }
-                        is RatingViewModel.SubmitState.Error -> {
+                        is RatingsViewModel.SubmitState.Error -> {
                             Utilities.toast(activity, state.message)
                         }
-                        RatingViewModel.SubmitState.Submitting,
-                        RatingViewModel.SubmitState.Idle -> Unit
+                        RatingsViewModel.SubmitState.Submitting,
+                        RatingsViewModel.SubmitState.Idle -> Unit
                     }
                     updateSubmitButtonState()
                 }
@@ -165,15 +165,15 @@ class RatingFragment : DialogFragment() {
     }
 
     private fun updateSubmitButtonState() {
-        val isSubmitting = currentSubmitState is RatingViewModel.SubmitState.Submitting
+        val isSubmitting = currentSubmitState is RatingsViewModel.SubmitState.Submitting
         binding.btnSubmit.isEnabled = isUserReady && !isSubmitting
         binding.submitProgress.isVisible = isSubmitting
     }
 
     companion object {
         @JvmStatic
-        fun newInstance(type: String?, id: String?, title: String?): RatingFragment {
-            val fragment = RatingFragment()
+        fun newInstance(type: String?, id: String?, title: String?): RatingsFragment {
+            val fragment = RatingsFragment()
             val b = Bundle()
             b.putString("id", id)
             b.putString("title", title)

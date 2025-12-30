@@ -16,7 +16,7 @@
             android:layout_height="wrap_content"
             android:padding="@dimen/padding_normal"
             android:text="@string/send_survey_to" />
-        <org.ole.planet.myplanet.ui.widgets.CheckboxListView
+        <org.ole.planet.myplanet.ui.components.CheckboxListView
             android:id="@+id/list_users"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
