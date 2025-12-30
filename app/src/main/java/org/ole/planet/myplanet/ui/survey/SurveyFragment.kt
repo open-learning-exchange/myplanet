@@ -26,7 +26,7 @@ import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.callback.TableDataUpdate
 import org.ole.planet.myplanet.databinding.FragmentSurveyBinding
 import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.repository.SurveyRepository
+import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.survey.SurveyBindingData
@@ -54,7 +54,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
     @Inject
     lateinit var syncManager: SyncManager
     @Inject
-    lateinit var surveyRepository: SurveyRepository
+    lateinit var surveysRepository: SurveysRepository
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
@@ -281,17 +281,17 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
             try {
                 val (surveys, infos, data) = withContext(Dispatchers.IO) {
                     val currentSurveys = when {
-                        isTeam && useTeamShareAllowed -> surveyRepository.getAdoptableTeamSurveys(teamId)
-                        isTeam -> surveyRepository.getTeamOwnedSurveys(teamId)
-                        else -> surveyRepository.getIndividualSurveys()
+                        isTeam && useTeamShareAllowed -> surveysRepository.getAdoptableTeamSurveys(teamId)
+                        isTeam -> surveysRepository.getTeamOwnedSurveys(teamId)
+                        else -> surveysRepository.getIndividualSurveys()
                     }
-                    val surveyInfos = surveyRepository.getSurveyInfos(
+                    val surveyInfos = surveysRepository.getSurveyInfos(
                         isTeam,
                         teamId,
                         userProfileModel?.id,
                         currentSurveys
                     )
-                    val bindingData = surveyRepository.getSurveyBindingData(currentSurveys, teamId)
+                    val bindingData = surveysRepository.getSurveyBindingData(currentSurveys, teamId)
                     Triple(currentSurveys, surveyInfos, bindingData)
                 }
                 currentSurveys = surveys.sortedByDescending { survey ->
