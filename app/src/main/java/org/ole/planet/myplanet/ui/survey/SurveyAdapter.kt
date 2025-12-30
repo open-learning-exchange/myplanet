@@ -23,7 +23,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.submission.SubmissionsAdapter
-import org.ole.planet.myplanet.ui.survey.SurveyBindingData
+import org.ole.planet.myplanet.ui.survey.SurveyFormState
 
 class SurveyAdapter(
     private val context: Context,
@@ -35,7 +35,7 @@ class SurveyAdapter(
     private val settings: SharedPreferences,
     private val userProfileDbHandler: UserProfileDbHandler,
     private val surveyInfoMap: Map<String, SurveyInfo>,
-    private val bindingDataMap: Map<String, SurveyBindingData>
+    private val bindingDataMap: Map<String, SurveyFormState>
 ) : ListAdapter<RealmStepExam, SurveyAdapter.ViewHolderSurvey>(SurveyDiffCallback()) {
     private var listener: OnHomeItemClickListener? = null
     private val adoptedSurveyIds = mutableSetOf<String>()

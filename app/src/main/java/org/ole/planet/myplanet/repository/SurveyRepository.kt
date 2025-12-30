@@ -1,7 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.ui.survey.SurveyBindingData
+import org.ole.planet.myplanet.ui.survey.SurveyFormState
 import org.ole.planet.myplanet.ui.survey.SurveyInfo
 
 interface SurveyRepository {
@@ -16,8 +16,8 @@ interface SurveyRepository {
         surveys: List<RealmStepExam>
     ): Map<String, SurveyInfo>
 
-    suspend fun getSurveyBindingData(
+    suspend fun getSurveyFormState(
         surveys: List<RealmStepExam>,
         teamId: String?
-    ): Map<String, SurveyBindingData>
+    ): Map<String, SurveyFormState>
 }

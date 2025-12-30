@@ -29,7 +29,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.repository.SurveyRepository
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
-import org.ole.planet.myplanet.ui.survey.SurveyBindingData
+import org.ole.planet.myplanet.ui.survey.SurveyFormState
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utilities.DialogUtils
@@ -48,7 +48,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
     private var loadSurveysJob: Job? = null
     private var currentSurveys: List<RealmStepExam> = emptyList()
     private val surveyInfoMap = mutableMapOf<String, SurveyInfo>()
-    private val bindingDataMap = mutableMapOf<String, SurveyBindingData>()
+    private val bindingDataMap = mutableMapOf<String, SurveyFormState>()
     private var textWatcher: TextWatcher? = null
 
     @Inject
@@ -291,7 +291,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
                         userProfileModel?.id,
                         currentSurveys
                     )
-                    val bindingData = surveyRepository.getSurveyBindingData(currentSurveys, teamId)
+                    val bindingData = surveyRepository.getSurveyFormState(currentSurveys, teamId)
                     Triple(currentSurveys, surveyInfos, bindingData)
                 }
                 currentSurveys = surveys.sortedByDescending { survey ->
