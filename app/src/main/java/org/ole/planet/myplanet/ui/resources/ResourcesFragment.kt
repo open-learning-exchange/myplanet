@@ -46,7 +46,7 @@ import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmTag.Companion.getTagsArray
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.TagRepository
+import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
@@ -88,7 +88,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     lateinit var syncManager: SyncManager
 
     @Inject
-    lateinit var tagRepository: TagRepository
+    lateinit var tagRepository: TagsRepository
 
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper

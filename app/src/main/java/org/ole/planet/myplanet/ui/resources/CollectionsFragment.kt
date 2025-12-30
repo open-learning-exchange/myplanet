@@ -19,7 +19,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.TagClickListener
 import org.ole.planet.myplanet.databinding.FragmentCollectionsBinding
 import org.ole.planet.myplanet.model.RealmTag
-import org.ole.planet.myplanet.repository.TagRepository
+import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.utilities.KeyboardUtils
 
 @AndroidEntryPoint
@@ -27,7 +27,7 @@ class CollectionsFragment : DialogFragment(), TagAdapter.OnTagClickListener, Com
     private var _binding: FragmentCollectionsBinding? = null
     private val binding get() = _binding!!
     @Inject
-    lateinit var tagRepository: TagRepository
+    lateinit var tagRepository: TagsRepository
     private lateinit var list: List<RealmTag>
     private lateinit var childMap: HashMap<String, List<RealmTag>>
     private var filteredList: ArrayList<RealmTag> = ArrayList()

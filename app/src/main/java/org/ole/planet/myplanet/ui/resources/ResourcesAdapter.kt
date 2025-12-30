@@ -29,7 +29,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.repository.TagRepository
+import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.ui.sync.DiffRefreshableAdapter
 import org.ole.planet.myplanet.utilities.CourseRatingUtils
 import org.ole.planet.myplanet.utilities.DiffUtils
@@ -42,7 +42,7 @@ class ResourcesAdapter(
     private var libraryList: List<RealmMyLibrary?>,
     private var ratingMap: HashMap<String?, JsonObject>,
     private val resourcesRepository: ResourcesRepository,
-    private val tagRepository: TagRepository,
+    private val tagRepository: TagsRepository,
     private val userModel: RealmUserModel?
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>(), DiffRefreshableAdapter {
     private var diffJob: Job? = null
