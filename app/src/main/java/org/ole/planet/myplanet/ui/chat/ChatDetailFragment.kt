@@ -46,7 +46,7 @@ import org.ole.planet.myplanet.model.ChatModel
 import org.ole.planet.myplanet.model.ChatRequestModel
 import org.ole.planet.myplanet.model.ContentData
 import org.ole.planet.myplanet.model.ContinueChatModel
-import org.ole.planet.myplanet.model.Conversation
+import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.Data
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.ChatRepository
@@ -208,7 +208,7 @@ class ChatDetailFragment : Fragment() {
             customProgressDialog.show()
             try {
                 val messages = withContext(Dispatchers.Default) {
-                    val conversations = JsonUtils.gson.fromJson(newsConversations, Array<Conversation>::class.java).toList()
+                    val conversations = JsonUtils.gson.fromJson(newsConversations, Array<RealmConversation>::class.java).toList()
                     val list = mutableListOf<ChatMessage>()
                     val limit = 20
                     val limitedConversations = if (conversations.size > limit) conversations.takeLast(limit) else conversations
