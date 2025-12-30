@@ -42,7 +42,7 @@ class ResourcesAdapter(
     private var libraryList: List<RealmMyLibrary?>,
     private var ratingMap: HashMap<String?, JsonObject>,
     private val resourcesRepository: ResourcesRepository,
-    private val tagRepository: TagsRepository,
+    private val tagsRepository: TagsRepository,
     private val userModel: RealmUserModel?
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>(), DiffRefreshableAdapter {
     private var diffJob: Job? = null
@@ -237,7 +237,7 @@ class ResourcesAdapter(
         lifecycleOwner.lifecycleScope.launch {
             try {
                 val tags = withContext(Dispatchers.IO) {
-                    tagRepository.getTagsForResource(resourceId)
+                    tagsRepository.getTagsForResource(resourceId)
                 }
                 tagCache[resourceId] = tags
 

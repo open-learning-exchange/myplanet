@@ -43,7 +43,7 @@ class CoursesAdapter(
     private var courseList: List<RealmMyCourse?>,
     private val map: HashMap<String?, JsonObject>,
     private var userModel: RealmUserModel?,
-    private val tagRepository: TagsRepository
+    private val tagsRepository: TagsRepository
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private val selectedItems: MutableList<RealmMyCourse?> = ArrayList()
     private var listener: OnCourseItemSelected? = null
@@ -403,7 +403,7 @@ class CoursesAdapter(
 
         holder.itemView.findViewTreeLifecycleOwner()?.lifecycleScope?.launch {
             try {
-                val tags = tagRepository.getTagsForCourse(courseId)
+                val tags = tagsRepository.getTagsForCourse(courseId)
                 tagCache[courseId] = tags
                 val adapterPosition = holder.bindingAdapterPosition
                 if (adapterPosition != RecyclerView.NO_POSITION) {

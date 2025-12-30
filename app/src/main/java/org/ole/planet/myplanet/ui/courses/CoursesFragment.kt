@@ -93,7 +93,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     lateinit var userProfileDbHandler: UserProfileDbHandler
 
     @Inject
-    lateinit var tagRepository: TagsRepository
+    lateinit var tagsRepository: TagsRepository
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
 
@@ -206,7 +206,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     sortedCourseList,
                     map,
                     userModel,
-                    tagRepository
+                    tagsRepository
                 )
                 adapterCourses.setProgressMap(progressMap)
                 adapterCourses.setListener(this@CoursesFragment)
@@ -227,7 +227,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             emptyList(),
             HashMap<String?, JsonObject>(),
             userModel,
-            tagRepository
+            tagsRepository
         )
         adapterCourses.setProgressMap(HashMap<String?, JsonObject>())
         adapterCourses.setListener(this@CoursesFragment)

@@ -27,7 +27,7 @@ class CollectionsFragment : DialogFragment(), TagAdapter.OnTagClickListener, Com
     private var _binding: FragmentCollectionsBinding? = null
     private val binding get() = _binding!!
     @Inject
-    lateinit var tagRepository: TagsRepository
+    lateinit var tagsRepository: TagsRepository
     private lateinit var list: List<RealmTag>
     private lateinit var childMap: HashMap<String, List<RealmTag>>
     private var filteredList: ArrayList<RealmTag> = ArrayList()
@@ -85,9 +85,9 @@ class CollectionsFragment : DialogFragment(), TagAdapter.OnTagClickListener, Com
 
     private fun setListAdapter() {
         viewLifecycleOwner.lifecycleScope.launch {
-            list = tagRepository.getTags(dbType)
+            list = tagsRepository.getTags(dbType)
             selectedItemsList = ArrayList(recentList)
-            childMap = tagRepository.buildChildMap()
+            childMap = tagsRepository.buildChildMap()
             adapter = TagAdapter(this@CollectionsFragment)
             binding.listTags.adapter = adapter
             currentTagDataList = buildTagDataList(list).toMutableList()
