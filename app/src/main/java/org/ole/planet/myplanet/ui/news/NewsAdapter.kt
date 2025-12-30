@@ -41,7 +41,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNewsBinding
 import org.ole.planet.myplanet.model.ChatMessage
-import org.ole.planet.myplanet.model.Conversation
+import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TeamsRepository
@@ -360,7 +360,7 @@ class NewsAdapter(var context: Context, private var currentUser: RealmUserModel?
 
     private fun handleChat(holder: ViewHolderNews, news: RealmNews) {
         if (news.newsId?.isNotEmpty() == true) {
-            val conversations = JsonUtils.gson.fromJson(news.conversations, Array<Conversation>::class.java).toList()
+            val conversations = JsonUtils.gson.fromJson(news.conversations, Array<RealmConversation>::class.java).toList()
             val chatAdapter = ChatAdapter(context, holder.binding.recyclerGchat, holder.itemView.findViewTreeLifecycleOwner()?.lifecycleScope)
 
             if (user?.id?.startsWith("guest") == false) {
