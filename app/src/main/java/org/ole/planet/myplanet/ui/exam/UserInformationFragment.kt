@@ -33,7 +33,7 @@ import org.ole.planet.myplanet.base.BaseDialogFragment
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.databinding.FragmentUserInformationBinding
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.SubmissionRepository
+import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -48,7 +48,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     private lateinit var fragmentUserInformationBinding: FragmentUserInformationBinding
     var dob: String? = ""
     @Inject
-    lateinit var submissionRepository: SubmissionRepository
+    lateinit var submissionsRepository: SubmissionsRepository
     @Inject
     lateinit var userRepository: UserRepository
     @Inject
@@ -264,7 +264,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
                 }
 
                 Log.d("UserInformationFragment", "Marking submission complete for ID: $submissionId")
-                submissionRepository.markSubmissionComplete(submissionId, user)
+                submissionsRepository.markSubmissionComplete(submissionId, user)
                 Log.d("UserInformationFragment", "Submission marked complete, about to dismiss dialog")
 
                 withContext(Dispatchers.Main) {

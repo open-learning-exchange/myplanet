@@ -4,7 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 
-interface SubmissionRepository {
+interface SubmissionsRepository {
     suspend fun getPendingSurveysFlow(userId: String?): Flow<List<RealmSubmission>>
     suspend fun getSubmissionsFlow(userId: String): Flow<List<RealmSubmission>>
     suspend fun getPendingSurveys(userId: String?): List<RealmSubmission>
