@@ -25,7 +25,7 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.databinding.ActivityAddExaminationBinding
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmMyHealth.RealmMyHealthProfile
-import org.ole.planet.myplanet.model.RealmMyHealthPojo
+import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.model.RealmExamination
@@ -53,13 +53,13 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
     var userId: String? = null
     var user: RealmUserModel? = null
     private var currentUser: RealmUserModel? = null
-    private var pojo: RealmMyHealthPojo? = null
+    private var pojo: RealmHealthExamination? = null
     var health: RealmMyHealth? = null
     private var customDiag: MutableSet<String?>? = null
     private var mapConditions: HashMap<String?, Boolean>? = null
     var allowSubmission = true
     private lateinit var config: ChipCloudConfig
-    private var examination: RealmMyHealthPojo? = null
+    private var examination: RealmHealthExamination? = null
     private var textWatcher: TextWatcher? = null
     private fun initViews() {
         config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.close)
@@ -83,9 +83,9 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         mapConditions = HashMap()
         mRealm = databaseService.realmInstance
         userId = intent.getStringExtra("userId")
-        pojo = mRealm.where(RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
+        pojo = mRealm.where(RealmHealthExamination::class.java).equalTo("_id", userId).findFirst()
         if (pojo == null) {
-            pojo = mRealm.where(RealmMyHealthPojo::class.java).equalTo("userId", userId).findFirst()
+            pojo = mRealm.where(RealmHealthExamination::class.java).equalTo("userId", userId).findFirst()
         }
         user = mRealm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
         if (user != null && (user?.key == null || user?.iv == null)) {
@@ -115,7 +115,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
 
     private fun initExamination() {
         if (intent.hasExtra("id")) {
-            examination = mRealm.where(RealmMyHealthPojo::class.java).equalTo("_id", intent.getStringExtra("id")).findFirst()!!
+            examination = mRealm.where(RealmHealthExamination::class.java).equalTo("_id", intent.getStringExtra("id")).findFirst()!!
             binding.etTemperature.setText(getString(R.string.float_placeholder, examination?.temperature))
             binding.etPulseRate.setText(getString(R.string.number_placeholder, examination?.pulse))
             binding.etBloodpressure.setText(getString(R.string.message_placeholder, examination?.bp))
@@ -206,7 +206,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         }
     }
 
-    private fun showCheckbox(examination: RealmMyHealthPojo?) {
+    private fun showCheckbox(examination: RealmHealthExamination?) {
         val arr = resources.getStringArray(R.array.diagnosis_list)
         binding.containerCheckbox.removeAllViews()
         for (s in arr) {
@@ -248,7 +248,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         createPojo()
         if (examination == null) {
             val userId = generateIv()
-            examination = mRealm.createObject(RealmMyHealthPojo::class.java, userId)
+            examination = mRealm.createObject(RealmHealthExamination::class.java, userId)
             examination?.userId = userId
         }
         examination?.profileId = health?.userKey
@@ -371,7 +371,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
     private fun createPojo() {
         try {
             if (pojo == null) {
-                pojo = mRealm.createObject(RealmMyHealthPojo::class.java, userId)
+                pojo = mRealm.createObject(RealmHealthExamination::class.java, userId)
                 pojo?.userId = user?._id
             }
             health?.lastExamination = Date().time

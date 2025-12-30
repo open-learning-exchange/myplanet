@@ -1,6 +1,6 @@
 package org.ole.planet.myplanet.model
 
-data class TransactionData(
+data class Transaction(
     val id: String,
     val date: Long?,
     val description: String?,

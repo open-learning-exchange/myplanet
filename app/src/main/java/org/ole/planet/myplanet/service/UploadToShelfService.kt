@@ -24,8 +24,8 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.getMyMeetUpIds
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourseIds
-import org.ole.planet.myplanet.model.RealmMyHealthPojo
-import org.ole.planet.myplanet.model.RealmMyHealthPojo.Companion.serialize
+import org.ole.planet.myplanet.model.RealmHealthExamination
+import org.ole.planet.myplanet.model.RealmHealthExamination.Companion.serialize
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getMyLibIds
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.removedIds
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -207,7 +207,7 @@ class UploadToShelfService @Inject constructor(
     }
 
     private fun updateHealthData(realm: Realm, model: RealmUserModel) {
-        val list: List<RealmMyHealthPojo> = realm.where(RealmMyHealthPojo::class.java).equalTo("_id", model.id).findAll()
+        val list: List<RealmHealthExamination> = realm.where(RealmHealthExamination::class.java).equalTo("_id", model.id).findAll()
         for (p in list) {
             p.userId = model._id
         }
@@ -259,7 +259,7 @@ class UploadToShelfService @Inject constructor(
         mRealm = dbService.realmInstance
 
         mRealm.executeTransactionAsync({ realm: Realm ->
-            val myHealths: List<RealmMyHealthPojo> = realm.where(RealmMyHealthPojo::class.java).equalTo("isUpdated", true).notEqualTo("userId", "").findAll()
+            val myHealths: List<RealmHealthExamination> = realm.where(RealmHealthExamination::class.java).equalTo("isUpdated", true).notEqualTo("userId", "").findAll()
             myHealths.forEachIndexed { index, pojo ->
                 try {
                     val res = apiInterface?.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/health", serialize(pojo))?.execute()
@@ -288,7 +288,7 @@ class UploadToShelfService @Inject constructor(
                 return@executeTransactionAsync
             }
 
-            val myHealths: List<RealmMyHealthPojo> = realm.where(RealmMyHealthPojo::class.java)
+            val myHealths: List<RealmHealthExamination> = realm.where(RealmHealthExamination::class.java)
                 .equalTo("isUpdated", true)
                 .equalTo("userId", userId)
                 .findAll()
