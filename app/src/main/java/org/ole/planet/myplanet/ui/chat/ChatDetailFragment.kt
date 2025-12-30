@@ -83,7 +83,7 @@ class ChatDetailFragment : Fragment() {
     @Inject
     lateinit var chatRepository: ChatRepository
     @Inject
-    lateinit var chatApiHelper: ChatApiHelper
+    lateinit var chatApiService: ChatApiService
     @Inject
     lateinit var userRepository: UserRepository
     private val serverUrlMapper = ServerUrlMapper()
@@ -330,7 +330,7 @@ class ChatDetailFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             updateServerIfNecessary(mapping)
             withContext(Dispatchers.Main) {
-                chatApiHelper.fetchAiProviders { providers ->
+                chatApiService.fetchAiProviders { providers ->
                     sharedViewModel.setAiProvidersLoading(false)
                     if (providers == null || providers.values.all { !it }) {
                         sharedViewModel.setAiProvidersError(true)
@@ -517,7 +517,7 @@ class ChatDetailFragment : Fragment() {
 
     private fun sendChatRequest(content: RequestBody, query: String, id: String?, newChat: Boolean) {
         viewLifecycleOwner.lifecycleScope.launch {
-            chatApiHelper.sendChatRequest(content, object : Callback<ChatModel> {
+            chatApiService.sendChatRequest(content, object : Callback<ChatModel> {
                 override fun onResponse(call: Call<ChatModel>, response: Response<ChatModel>) {
                     handleResponse(response, query, id)
                 }

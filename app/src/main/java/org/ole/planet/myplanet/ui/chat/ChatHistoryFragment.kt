@@ -78,7 +78,7 @@ class ChatHistoryFragment : Fragment() {
     @Inject
     lateinit var voicesRepository: VoicesRepository
     @Inject
-    lateinit var chatApiHelper: ChatApiHelper
+    lateinit var chatApiService: ChatApiService
     private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
     private lateinit var realtimeSyncListener: BaseRealtimeSyncListener
     private val serverUrl: String
@@ -358,7 +358,7 @@ class ChatHistoryFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             updateServerIfNecessary(mapping)
             withContext(Dispatchers.Main) {
-                chatApiHelper.fetchAiProviders { providers ->
+                chatApiService.fetchAiProviders { providers ->
                     sharedViewModel.setAiProvidersLoading(false)
                     if (providers == null || providers.values.all { !it }) {
                         sharedViewModel.setAiProvidersError(true)

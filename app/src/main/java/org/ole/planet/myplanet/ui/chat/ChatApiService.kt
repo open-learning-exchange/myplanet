@@ -16,7 +16,7 @@ import retrofit2.Callback
 import retrofit2.Response
 
 @Singleton
-class ChatApiHelper @Inject constructor(
+class ChatApiService @Inject constructor(
     private val apiInterface: ApiInterface,
     @ApplicationContext private val context: Context
 ) {
