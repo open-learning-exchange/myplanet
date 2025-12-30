@@ -483,7 +483,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
             override fun onTableDataUpdated(update: TableDataUpdate) {
                 if (update.table == "teams" && update.shouldRefreshUI) {
                     viewLifecycleOwner.lifecycleScope.launch {
-                        refreshTeamData()
+                        refreshTeamDetails()
                     }
                 }
             }
