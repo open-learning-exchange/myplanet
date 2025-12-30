@@ -46,7 +46,7 @@ import org.ole.planet.myplanet.model.RealmSubmitPhotos
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.SubmissionRepository
+import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.NetworkUtils
@@ -70,7 +70,7 @@ private inline fun <T> Iterable<T>.processInBatches(action: (T) -> Unit) {
 class UploadManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val databaseService: DatabaseService,
-    private val submissionRepository: SubmissionRepository,
+    private val submissionRepository: SubmissionsRepository,
     @AppPreferences private val pref: SharedPreferences,
     private val gson: Gson
 ) : FileUploadService() {

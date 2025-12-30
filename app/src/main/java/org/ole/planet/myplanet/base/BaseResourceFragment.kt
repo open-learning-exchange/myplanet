@@ -45,7 +45,7 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.repository.SubmissionRepository
+import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.MyDownloadService
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -76,7 +76,7 @@ abstract class BaseResourceFragment : Fragment() {
     @Inject
     lateinit var coursesRepository: CoursesRepository
     @Inject
-    lateinit var submissionRepository: SubmissionRepository
+    lateinit var submissionRepository: SubmissionsRepository
     @Inject
     lateinit var databaseService: DatabaseService
     @Inject

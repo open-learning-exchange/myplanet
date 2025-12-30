@@ -18,12 +18,12 @@ import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.repository.SubmissionRepository
+import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 
 @HiltViewModel
 class SubmissionViewModel @Inject constructor(
-    private val submissionRepository: SubmissionRepository,
+    private val submissionRepository: SubmissionsRepository,
     private val userRepository: UserRepository,
 ) : ViewModel() {
 

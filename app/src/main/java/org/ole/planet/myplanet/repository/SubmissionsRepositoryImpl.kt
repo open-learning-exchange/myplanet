@@ -16,9 +16,9 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.submission.QuestionAnswer
 import org.ole.planet.myplanet.ui.submission.SubmissionDetail
 
-class SubmissionRepositoryImpl @Inject constructor(
+class SubmissionsRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
-) : RealmRepository(databaseService), SubmissionRepository {
+) : RealmRepository(databaseService), SubmissionsRepository {
 
     private fun RealmSubmission.examIdFromParentId(): String? {
         return parentId?.substringBefore("@")
@@ -232,12 +232,12 @@ class SubmissionRepositoryImpl @Inject constructor(
     }
 
     override suspend fun markSubmissionComplete(id: String, payload: com.google.gson.JsonObject) {
-        Log.d("SubmissionRepository", "markSubmissionComplete called for ID: $id")
+        Log.d("SubmissionsRepository", "markSubmissionComplete called for ID: $id")
         update(RealmSubmission::class.java, "id", id) { sub ->
             sub.user = payload.toString()
             sub.status = "complete"
             sub.isUpdated = true  // Mark for upload
-            Log.d("SubmissionRepository", "Submission marked: status=complete, isUpdated=true, _id=${sub._id}")
+            Log.d("SubmissionsRepository", "Submission marked: status=complete, isUpdated=true, _id=${sub._id}")
         }
     }
 
