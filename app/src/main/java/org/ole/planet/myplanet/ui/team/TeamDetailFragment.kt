@@ -227,7 +227,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
                     if (isAdded) {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
-                        refreshTeamData()
+                        refreshTeamDetails()
                         prefManager.setTeamsSynced(true)
                     }
                 }
@@ -382,7 +382,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
         }
     }
 
-    private suspend fun refreshTeamData() {
+    private suspend fun refreshTeamDetails() {
         if (!isAdded || requireActivity().isFinishing) return
 
         try {
@@ -441,7 +441,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
 
     override fun onTeamDetailsUpdated() {
         viewLifecycleOwner.lifecycleScope.launch {
-            refreshTeamData()
+            refreshTeamDetails()
         }
     }
 

@@ -44,7 +44,7 @@ class PlanFragment : BaseTeamFragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 teamFlow.collect { updatedTeam ->
                     if (updatedTeam != null) {
-                        updateUIWithTeamData(updatedTeam)
+                        updateUIWithTeamDetails(updatedTeam)
                         updateButtonVisibility(updatedTeam)
                     }
                 }
@@ -52,7 +52,7 @@ class PlanFragment : BaseTeamFragment() {
         }
         
         if (team != null) {
-            updateUIWithTeamData(team)
+            updateUIWithTeamDetails(team)
             updateButtonVisibility(team!!)
         }
     }
@@ -205,7 +205,7 @@ class PlanFragment : BaseTeamFragment() {
                     }
 
                     this@PlanFragment.team = refreshedTeam
-                    updateUIWithTeamData(refreshedTeam)
+                    updateUIWithTeamDetails(refreshedTeam)
                     teamUpdateListener?.onTeamDetailsUpdated()
                     Utilities.toast(requireContext(), context.getString(R.string.added_successfully))
                     dialog.dismiss()
@@ -218,7 +218,7 @@ class PlanFragment : BaseTeamFragment() {
         }
     }
 
-    private fun updateUIWithTeamData(updatedTeam: RealmMyTeam?) {
+    private fun updateUIWithTeamDetails(updatedTeam: RealmMyTeam?) {
         if (updatedTeam == null) return
         isEnterprise = updatedTeam.type?.equals("enterprise", ignoreCase = true) == true
 
