@@ -18,12 +18,12 @@ import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.repository.SubmissionRepository
+import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 
 @HiltViewModel
 class SubmissionViewModel @Inject constructor(
-    private val submissionRepository: SubmissionRepository,
+    private val submissionsRepository: SubmissionsRepository,
     private val userRepository: UserRepository,
 ) : ViewModel() {
 
@@ -38,11 +38,11 @@ class SubmissionViewModel @Inject constructor(
     private val userId by lazy { userRepository.getActiveUserId() }
 
     private val allSubmissionsFlow = flow {
-        emitAll(submissionRepository.getSubmissionsFlow(userId))
+        emitAll(submissionsRepository.getSubmissionsFlow(userId))
     }.shareIn(viewModelScope, SharingStarted.Lazily, 1)
 
     val exams: StateFlow<HashMap<String?, RealmStepExam>> = allSubmissionsFlow.mapLatest { subs ->
-        HashMap(submissionRepository.getExamMapForSubmissions(subs))
+        HashMap(submissionsRepository.getExamMapForSubmissions(subs))
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), hashMapOf())
 
     private val filteredSubmissionsRaw = combine(allSubmissionsFlow, _type, _query, exams) { subs, type, query, examMap ->
@@ -68,7 +68,7 @@ class SubmissionViewModel @Inject constructor(
             .values
             .filterNotNull()
             .map { sub ->
-                val name = submissionRepository.getNormalizedSubmitterName(sub)
+                val name = submissionsRepository.getNormalizedSubmitterName(sub)
                 val fallback = sub.userId?.let { userRepository.getUserById(it)?.name }
                 SubmissionViewData(sub, name ?: fallback ?: "")
             }

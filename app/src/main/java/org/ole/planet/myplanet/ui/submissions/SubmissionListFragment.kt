@@ -18,7 +18,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentSubmissionListBinding
-import org.ole.planet.myplanet.repository.SubmissionRepository
+import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.utilities.SubmissionPdfUtils
 
 @AndroidEntryPoint
@@ -26,7 +26,7 @@ class SubmissionListFragment : Fragment() {
     private var _binding: FragmentSubmissionListBinding? = null
     private val binding get() = _binding!!
     @Inject
-    lateinit var submissionRepository: SubmissionRepository
+    lateinit var submissionsRepository: SubmissionsRepository
     private var parentId: String? = null
     private var examTitle: String? = null
     private var userId: String? = null
@@ -74,7 +74,7 @@ class SubmissionListFragment : Fragment() {
 
     private fun loadSubmissions() {
         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-            val submissions = submissionRepository.getSubmissionsByParentId(parentId, userId)
+            val submissions = submissionsRepository.getSubmissionsByParentId(parentId, userId)
             val submissionItems = submissions.map {
                 SubmissionItem(
                     id = it.id,
