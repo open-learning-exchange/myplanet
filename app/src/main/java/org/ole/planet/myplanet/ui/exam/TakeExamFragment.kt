@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.ui.exam
 
+import org.ole.planet.myplanet.base.BaseExamFragment
+
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
