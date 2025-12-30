@@ -16,12 +16,12 @@ import androidx.recyclerview.widget.RecyclerView
 import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowFinanceBinding
-import org.ole.planet.myplanet.model.TransactionData
+import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
 class FinanceAdapter(
     private val context: Context,
-) : ListAdapter<TransactionData, FinanceAdapter.FinanceViewHolder>(TransactionDataDiffCallback()) {
+) : ListAdapter<Transaction, FinanceAdapter.FinanceViewHolder>(TransactionDiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FinanceViewHolder {
         val binding = RowFinanceBinding.inflate(LayoutInflater.from(parent.context), parent, false)
@@ -63,12 +63,12 @@ class FinanceAdapter(
         binding.root
     )
 
-    private class TransactionDataDiffCallback : DiffUtil.ItemCallback<TransactionData>() {
-        override fun areItemsTheSame(oldItem: TransactionData, newItem: TransactionData): Boolean {
+    private class TransactionDiffCallback : DiffUtil.ItemCallback<Transaction>() {
+        override fun areItemsTheSame(oldItem: Transaction, newItem: Transaction): Boolean {
             return oldItem.id == newItem.id
         }
 
-        override fun areContentsTheSame(oldItem: TransactionData, newItem: TransactionData): Boolean {
+        override fun areContentsTheSame(oldItem: Transaction, newItem: Transaction): Boolean {
             return oldItem == newItem
         }
     }
