@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.references
+package org.ole.planet.myplanet.ui.reference
 
 import android.content.Context
 import android.content.Intent

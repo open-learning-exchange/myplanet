@@ -29,7 +29,7 @@ import org.ole.planet.myplanet.ui.life.helper.OnStartDragListener
 import org.ole.planet.myplanet.ui.myhealth.MyHealthFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.personals.PersonalsFragment
-import org.ole.planet.myplanet.ui.references.ReferenceFragment
+import org.ole.planet.myplanet.ui.reference.ReferenceFragment
 import org.ole.planet.myplanet.ui.submission.SubmissionsFragment
 import org.ole.planet.myplanet.ui.submission.SubmissionsFragment.Companion.newInstance
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment
