@@ -14,7 +14,7 @@ import org.ole.planet.myplanet.utilities.DiffUtils
 class TeamResourcesAdapter(
     private val context: Context,
     private val canRemoveResources: Boolean,
-    private val updateListener: ResourcesUpdateListner,
+    private val updateListener: ResourcesUpdateListener,
     private val onRemoveResource: (RealmMyLibrary, Int) -> Unit,
 ) : ListAdapter<RealmMyLibrary, TeamResourcesAdapter.ViewHolderTeamResources>(ITEM_CALLBACK) {
 
