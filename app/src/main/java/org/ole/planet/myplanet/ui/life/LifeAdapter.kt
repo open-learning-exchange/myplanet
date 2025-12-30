@@ -30,8 +30,8 @@ import org.ole.planet.myplanet.ui.myhealth.MyHealthFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.personals.PersonalsFragment
 import org.ole.planet.myplanet.ui.references.ReferenceFragment
-import org.ole.planet.myplanet.ui.submission.SubmissionsFragment
-import org.ole.planet.myplanet.ui.submission.SubmissionsFragment.Companion.newInstance
+import org.ole.planet.myplanet.ui.submissions.SubmissionsFragment
+import org.ole.planet.myplanet.ui.submissions.SubmissionsFragment.Companion.newInstance
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.Utilities

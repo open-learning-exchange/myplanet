@@ -29,7 +29,7 @@ import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.ui.components.CheckboxListView
 
 @AndroidEntryPoint
-class TeamResourcesFragment : BaseTeamFragment(), TeamPageListener, ResourcesUpdateListner {
+class TeamResourcesFragment : BaseTeamFragment(), TeamPageListener, ResourcesUpdateListener {
     private var _binding: FragmentTeamResourceBinding? = null
     private val binding get() = _binding!!
     private lateinit var adapterLibrary: TeamResourcesAdapter

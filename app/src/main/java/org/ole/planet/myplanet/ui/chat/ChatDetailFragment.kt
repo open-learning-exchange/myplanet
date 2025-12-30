@@ -43,11 +43,11 @@ import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatMessage
 import org.ole.planet.myplanet.model.ChatModel
-import org.ole.planet.myplanet.model.ChatRequestModel
+import org.ole.planet.myplanet.model.ChatRequest
 import org.ole.planet.myplanet.model.ContentData
-import org.ole.planet.myplanet.model.ContinueChatModel
-import org.ole.planet.myplanet.model.Conversation
+import org.ole.planet.myplanet.model.ContinueChatRequest
 import org.ole.planet.myplanet.model.Data
+import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.UserRepository
@@ -208,7 +208,7 @@ class ChatDetailFragment : Fragment() {
             customProgressDialog.show()
             try {
                 val messages = withContext(Dispatchers.Default) {
-                    val conversations = JsonUtils.gson.fromJson(newsConversations, Array<Conversation>::class.java).toList()
+                    val conversations = JsonUtils.gson.fromJson(newsConversations, Array<RealmConversation>::class.java).toList()
                     val list = mutableListOf<ChatMessage>()
                     val limit = 20
                     val limitedConversations = if (conversations.size > limit) conversations.takeLast(limit) else conversations
@@ -495,13 +495,13 @@ class ChatDetailFragment : Fragment() {
         json.toRequestBody(jsonMediaType)
 
     private fun createContinueChatRequest(message: String, aiProvider: AiProvider, id: String, rev: String): RequestBody {
-        val continueChatData = ContinueChatModel(data = Data("${user?.name}", message, aiProvider, id, rev), save = true)
+        val continueChatData = ContinueChatRequest(data = Data("${user?.name}", message, aiProvider, id, rev), save = true)
         val jsonContent = JsonUtils.gson.toJson(continueChatData)
         return jsonRequestBody(jsonContent)
     }
 
     private fun createChatRequest(message: String, aiProvider: AiProvider): RequestBody {
-        val chatData = ChatRequestModel(data = ContentData("${user?.name}", message, aiProvider), save = true)
+        val chatData = ChatRequest(data = ContentData("${user?.name}", message, aiProvider), save = true)
         val jsonContent = JsonUtils.gson.toJson(chatData)
         return jsonRequestBody(jsonContent)
     }
