@@ -4,7 +4,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmOfflineActivity
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserProfileHandler
 
 class ActivityRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
@@ -19,7 +19,7 @@ class ActivityRepositoryImpl @Inject constructor(
     override suspend fun getOfflineLogins(userName: String): Flow<List<RealmOfflineActivity>> {
         return queryListFlow(RealmOfflineActivity::class.java) {
             equalTo("userName", userName)
-            equalTo("type", UserProfileDbHandler.KEY_LOGIN)
+            equalTo("type", UserProfileHandler.KEY_LOGIN)
         }
     }
 }

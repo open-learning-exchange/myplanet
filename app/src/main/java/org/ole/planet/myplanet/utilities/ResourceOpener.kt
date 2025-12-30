@@ -8,7 +8,7 @@ import android.widget.Toast
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseResourceFragment
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserProfileHandler
 import org.ole.planet.myplanet.ui.viewer.AudioPlayerActivity
 import org.ole.planet.myplanet.ui.viewer.CSVViewerActivity
 import org.ole.planet.myplanet.ui.viewer.ImageViewerActivity
@@ -90,13 +90,13 @@ object ResourceOpener {
         activity.startActivity(intent)
     }
 
-    fun openFileType(activity: Activity, items: RealmMyLibrary, videoType: String, profileDbHandler: UserProfileDbHandler) {
+    fun openFileType(activity: Activity, items: RealmMyLibrary, videoType: String, profileDbHandler: UserProfileHandler) {
         val mimetype = Utilities.getMimeType(resourcePath(items))
         if (mimetype == null) {
             Utilities.toast(activity, activity.getString(R.string.unable_to_open_resource))
             return
         }
-        profileDbHandler.setResourceOpenCount(items, UserProfileDbHandler.KEY_RESOURCE_OPEN)
+        profileDbHandler.setResourceOpenCount(items, UserProfileHandler.KEY_RESOURCE_OPEN)
         if (mimetype.startsWith("video")) {
             playVideo(activity, videoType, items)
         } else {

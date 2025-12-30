@@ -29,7 +29,7 @@ import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.TransactionData
 import org.ole.planet.myplanet.service.UploadManager
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserProfileHandler
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.JsonUtils
@@ -37,7 +37,7 @@ import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
 class TeamsRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
-    private val userProfileDbHandler: UserProfileDbHandler,
+    private val userProfileDbHandler: UserProfileHandler,
     private val uploadManager: UploadManager,
     private val gson: Gson,
     @AppPreferences private val preferences: SharedPreferences,

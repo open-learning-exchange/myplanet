@@ -94,7 +94,7 @@ class TransactionSyncManager @Inject constructor(
         mRealm: Realm,
         settings: SharedPreferences,
         listener: SyncListener,
-        userProfileDbHandler: UserProfileDbHandler
+        userProfileDbHandler: UserProfileHandler
     ) {
         listener.onSyncStarted()
         val model = userProfileDbHandler.userModel

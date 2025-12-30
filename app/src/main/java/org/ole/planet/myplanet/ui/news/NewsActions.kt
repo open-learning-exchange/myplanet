@@ -23,7 +23,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserProfileHandler
 import org.ole.planet.myplanet.ui.team.member.MemberDetailFragment
 import org.ole.planet.myplanet.utilities.JsonUtils
 
@@ -232,7 +232,7 @@ object NewsActions {
 
     fun showMemberDetails(
         userModel: RealmUserModel?,
-        profileDbHandler: UserProfileDbHandler
+        profileDbHandler: UserProfileHandler
     ): MemberDetailFragment? {
         if (userModel == null) return null
         val userName = "${userModel.firstName} ${userModel.lastName}".trim().ifBlank { userModel.name }
