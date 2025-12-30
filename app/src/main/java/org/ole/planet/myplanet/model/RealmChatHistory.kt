@@ -20,7 +20,7 @@ open class RealmChatHistory : RealmObject() {
     var createdDate: String? = null
     var updatedDate: String? = null
     var lastUsed: Long = 0
-    var conversations: RealmList<Conversation>? = null
+    var conversations: RealmList<RealmConversation>? = null
     companion object {
         @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject?) {
@@ -39,10 +39,10 @@ open class RealmChatHistory : RealmObject() {
             chatHistory.lastUsed = Date().time
         }
 
-        private fun parseConversations(realm: Realm, jsonArray: JsonArray): RealmList<Conversation> {
-            val conversations = RealmList<Conversation>()
+        private fun parseConversations(realm: Realm, jsonArray: JsonArray): RealmList<RealmConversation> {
+            val conversations = RealmList<RealmConversation>()
             for (element in jsonArray) {
-                val conversation = JsonUtils.gson.fromJson(element, Conversation::class.java)
+                val conversation = JsonUtils.gson.fromJson(element, RealmConversation::class.java)
                 val realmConversation = realm.copyToRealm(conversation)
                 conversations.add(realmConversation)
             }
@@ -55,7 +55,7 @@ open class RealmChatHistory : RealmObject() {
                 if (chatHistory.conversations == null) {
                     chatHistory.conversations = RealmList()
                 }
-                val conversation = mRealm.createObject(Conversation::class.java)
+                val conversation = mRealm.createObject(RealmConversation::class.java)
                 conversation.query = query
                 conversation.response = response
                 chatHistory.conversations?.add(conversation)

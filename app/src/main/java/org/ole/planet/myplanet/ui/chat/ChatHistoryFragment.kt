@@ -30,7 +30,7 @@ import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.callback.TableDataUpdate
 import org.ole.planet.myplanet.databinding.FragmentChatHistoryBinding
 import org.ole.planet.myplanet.di.AppPreferences
-import org.ole.planet.myplanet.model.Conversation
+import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -284,7 +284,7 @@ class ChatHistoryFragment : Fragment() {
                     ::shareChat,
                 )
                 newAdapter.setChatHistoryItemClickListener(object : ChatHistoryAdapter.ChatHistoryItemClickListener {
-                    override fun onChatHistoryItemClicked(conversations: List<Conversation>?, id: String, rev: String?, aiProvider: String?) {
+                    override fun onChatHistoryItemClicked(conversations: List<RealmConversation>?, id: String, rev: String?, aiProvider: String?) {
                         conversations?.let { sharedViewModel.setSelectedChatHistory(it) }
                         sharedViewModel.setSelectedId(id)
                         rev?.let { sharedViewModel.setSelectedRev(it) }

@@ -20,7 +20,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AddTransactionBinding
 import org.ole.planet.myplanet.databinding.FragmentFinanceBinding
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.TransactionData
+import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDateTZ
 import org.ole.planet.myplanet.utilities.Utilities
@@ -31,7 +31,7 @@ class FinanceFragment : BaseTeamFragment() {
     private lateinit var addTransactionBinding: AddTransactionBinding
     private lateinit var financeAdapter: FinanceAdapter
     var date: Calendar? = null
-    private var transactions: List<TransactionData> = emptyList()
+    private var transactions: List<Transaction> = emptyList()
     private var isAsc = false
     private var transactionsJob: Job? = null
     private var currentStartDate: Long? = null
@@ -218,7 +218,7 @@ class FinanceFragment : BaseTeamFragment() {
         llImage?.removeAllViews()
     }
 
-    private fun calculateTotal(list: List<TransactionData>) {
+    private fun calculateTotal(list: List<Transaction>) {
         var debit = 0
         var credit = 0
         for (team in list) {
@@ -283,7 +283,7 @@ class FinanceFragment : BaseTeamFragment() {
         return addTransactionBinding.root
     }
 
-    private fun updatedFinanceList(results: List<TransactionData>) {
+    private fun updatedFinanceList(results: List<Transaction>) {
         if (view == null) return
 
         financeAdapter.submitList(results)

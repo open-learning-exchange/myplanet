@@ -13,8 +13,8 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.ui.submission.QuestionAnswer
-import org.ole.planet.myplanet.ui.submission.SubmissionDetail
+import org.ole.planet.myplanet.ui.submissions.QuestionAnswer
+import org.ole.planet.myplanet.ui.submissions.SubmissionDetail
 
 class SubmissionRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
@@ -301,7 +301,7 @@ class SubmissionRepositoryImpl @Inject constructor(
                     }
                 }
 
-                org.ole.planet.myplanet.ui.submission.QuestionAnswer(
+                org.ole.planet.myplanet.ui.submissions.QuestionAnswer(
                     questionId = question.id,
                     questionHeader = question.header,
                     questionBody = question.body,
@@ -312,7 +312,7 @@ class SubmissionRepositoryImpl @Inject constructor(
                 )
             }
 
-            org.ole.planet.myplanet.ui.submission.SubmissionDetail(
+            org.ole.planet.myplanet.ui.submissions.SubmissionDetail(
                 title = exam?.name ?: "Submission Details",
                 status = "Status: ${submission.status ?: "Unknown"}",
                 date = submission.startTime,
