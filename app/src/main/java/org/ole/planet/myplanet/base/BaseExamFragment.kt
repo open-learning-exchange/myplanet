@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.exam
+package org.ole.planet.myplanet.base
 
 import android.content.DialogInterface
 import android.graphics.Typeface
@@ -36,6 +36,7 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmitPhotos
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
+import org.ole.planet.myplanet.ui.exam.UserInformationFragment
 import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.utilities.CameraUtils
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
