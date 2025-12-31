@@ -39,7 +39,7 @@ class ReportsFragment : BaseTeamFragment() {
     private var _binding: FragmentReportsBinding? = null
     private val binding get() = _binding!!
     private var reports: List<RealmMyTeam> = emptyList()
-    private lateinit var reportsAdapter: ReportsAdapter
+    private lateinit var reportsAdapter: TeamReportsAdapter
     private var startTimeStamp: String? = null
     private var endTimeStamp: String? = null
     lateinit var teamType: String
@@ -191,7 +191,7 @@ class ReportsFragment : BaseTeamFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        reportsAdapter = ReportsAdapter(requireContext(), teamsRepository, viewLifecycleOwner.lifecycleScope, prefData)
+        reportsAdapter = TeamReportsAdapter(requireContext(), teamsRepository, viewLifecycleOwner.lifecycleScope, prefData)
         binding.rvReports.adapter = reportsAdapter
         binding.rvReports.layoutManager = LinearLayoutManager(activity)
 
