@@ -20,7 +20,7 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.databinding.ActivityAddMyHealthBinding
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmMyHealth.RealmMyHealthProfile
-import org.ole.planet.myplanet.model.RealmMyHealthPojo
+import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.decrypt
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.encrypt
@@ -104,12 +104,12 @@ class AddMyHealthActivity : AppCompatActivity() {
                     myHealth?.userKey = generateKey()
                 }
                 myHealth?.profile = health
-                var healthPojo = realm.where(RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
+                var healthPojo = realm.where(RealmHealthExamination::class.java).equalTo("_id", userId).findFirst()
                 if (healthPojo == null) {
-                    healthPojo = realm.where(RealmMyHealthPojo::class.java).equalTo("userId", userId).findFirst()
+                    healthPojo = realm.where(RealmHealthExamination::class.java).equalTo("userId", userId).findFirst()
                 }
                 if (healthPojo == null) {
-                    healthPojo = realm.createObject(RealmMyHealthPojo::class.java, userId)
+                    healthPojo = realm.createObject(RealmHealthExamination::class.java, userId)
                 }
                 healthPojo.isUpdated = true
                 healthPojo.userId = userModel?._id
@@ -136,8 +136,8 @@ class AddMyHealthActivity : AppCompatActivity() {
         lifecycleScope.launch {
             val healthData = databaseService.withRealmAsync { realm ->
                 val userModel = realm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
-                val healthPojo = realm.where(RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
-                    ?: realm.where(RealmMyHealthPojo::class.java).equalTo("userId", userId).findFirst()
+                val healthPojo = realm.where(RealmHealthExamination::class.java).equalTo("_id", userId).findFirst()
+                    ?: realm.where(RealmHealthExamination::class.java).equalTo("userId", userId).findFirst()
 
                 var decodedHealth: RealmMyHealth? = null
                 if (healthPojo != null && !TextUtils.isEmpty(healthPojo.data)) {

@@ -8,7 +8,7 @@ import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyHealthPojo
+import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmOfflineActivity
@@ -61,7 +61,7 @@ object Constants {
         classList["teams"] = RealmMyTeam::class.java
         classList["tasks"] = RealmTeamTask::class.java
         classList["meetups"] = RealmMeetup::class.java
-        classList["health"] = RealmMyHealthPojo::class.java
+        classList["health"] = RealmHealthExamination::class.java
         classList["certifications"] = RealmCertification::class.java
         classList["team_activities"] = RealmTeamLog::class.java
         classList["courses_progress"] = RealmCourseProgress::class.java

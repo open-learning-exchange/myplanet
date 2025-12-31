@@ -9,14 +9,14 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.model.ServerAddressesModel
+import org.ole.planet.myplanet.model.ServerAddress
 import org.ole.planet.myplanet.utilities.DiffUtils
 
 class ServerAddressAdapter(
-    private val onItemClick: (ServerAddressesModel) -> Unit,
-    private val onClearDataDialog: (ServerAddressesModel, Int) -> Unit,
+    private val onItemClick: (ServerAddress) -> Unit,
+    private val onClearDataDialog: (ServerAddress, Int) -> Unit,
     private val urlWithoutProtocol: String?,
-) : ListAdapter<ServerAddressesModel, ServerAddressAdapter.ViewHolder>(
+) : ListAdapter<ServerAddress, ServerAddressAdapter.ViewHolder>(
     DiffUtils.itemCallback(
         areItemsTheSame = { old, new -> old.url == new.url },
         areContentsTheSame = { old, new -> old == new },
@@ -80,7 +80,7 @@ class ServerAddressAdapter(
     inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val button: MaterialButton = itemView.findViewById(R.id.btn_server_address)
 
-        fun bind(serverAddress: ServerAddressesModel, isSelected: Boolean) {
+        fun bind(serverAddress: ServerAddress, isSelected: Boolean) {
             button.text = serverAddress.name
             button.contentDescription =
                 context.getString(
