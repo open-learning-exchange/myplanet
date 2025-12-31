@@ -10,7 +10,7 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.ui.survey.SurveyBindingData
+import org.ole.planet.myplanet.ui.survey.SurveyFormState
 import org.ole.planet.myplanet.ui.survey.SurveyInfo
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDateWithTime
@@ -159,10 +159,10 @@ class SurveyRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getSurveyBindingData(
+    override suspend fun getSurveyFormState(
         surveys: List<RealmStepExam>,
         teamId: String?
-    ): Map<String, SurveyBindingData> {
+    ): Map<String, SurveyFormState> {
         val surveyIds = surveys.map { it.id }
 
         val teamSubmissions = queryList(RealmSubmission::class.java) {
@@ -178,7 +178,7 @@ class SurveyRepositoryImpl @Inject constructor(
             val surveyId = survey.id!!
             val teamSubmission = teamSubmissions[surveyId]
             val questionCount = questionCounts[surveyId] ?: 0
-            surveyId to SurveyBindingData(teamSubmission, questionCount)
+            surveyId to SurveyFormState(teamSubmission, questionCount)
         }
     }
 

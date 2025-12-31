@@ -25,7 +25,7 @@ import org.ole.planet.myplanet.ui.courses.ProgressFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.utilities.MarkdownDialog
 
-class ChallengeHelper(
+class ChallengeService(
     private val activity: DashboardActivity,
     private val user: RealmUserModel?,
     private val settings: SharedPreferences,
@@ -86,7 +86,7 @@ class ChallengeHelper(
         if (userId != null) query.equalTo("userId", userId)
         val results = query.findAll()
         return results.filter { isCommunitySection(it) }
-            .map { ChallengeHelper.getDateFromTimestamp(it.time) }
+            .map { ChallengeService.getDateFromTimestamp(it.time) }
             .distinct()
     }
 

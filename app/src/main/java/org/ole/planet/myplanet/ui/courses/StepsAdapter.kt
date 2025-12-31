@@ -14,10 +14,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowStepsBinding
-import org.ole.planet.myplanet.repository.SubmissionRepository
+import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.utilities.DiffUtils
 
-class StepsAdapter(private val context: Context, private val submissionRepository: SubmissionRepository, private val lifecycleOwner: LifecycleOwner) : ListAdapter<StepItem, StepsAdapter.ViewHolder>(STEP_ITEM_COMPARATOR) {
+class StepsAdapter(private val context: Context, private val submissionsRepository: SubmissionsRepository, private val lifecycleOwner: LifecycleOwner) : ListAdapter<StepItem, StepsAdapter.ViewHolder>(STEP_ITEM_COMPARATOR) {
     private val descriptionVisibilityMap = mutableMapOf<String, Boolean>()
     private var currentlyVisibleStepId: String? = null
     private val examQuestionCountCache = mutableMapOf<String, Int>()
@@ -74,7 +74,7 @@ class StepsAdapter(private val context: Context, private val submissionRepositor
                 } else {
                     loadJob = lifecycleOwner.lifecycleScope.launch {
                         val size = withContext(Dispatchers.IO) {
-                            submissionRepository.getExamQuestionCount(stepId)
+                            submissionsRepository.getExamQuestionCount(stepId)
                         }
                         examQuestionCountCache[stepId] = size
                         if (bindingAdapterPosition == RecyclerView.NO_POSITION) {

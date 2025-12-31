@@ -65,7 +65,7 @@ import org.ole.planet.myplanet.repository.JoinRequestNotification
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.repository.SubmissionRepository
+import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatHistoryFragment
@@ -78,7 +78,7 @@ import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.resources.ResourceDetailFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.settings.SettingActivity
-import org.ole.planet.myplanet.ui.submission.SubmissionsAdapter
+import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.ui.survey.SendSurveyFragment
 import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.ui.sync.DashboardElementActivity
@@ -117,11 +117,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     @Inject
     lateinit var resourcesRepository: ResourcesRepository
     @Inject
-    lateinit var submissionRepository: SubmissionRepository
+    lateinit var submissionsRepository: SubmissionsRepository
     @Inject
     lateinit var notificationsRepository: NotificationsRepository
-    private val challengeHelper: ChallengeHelper by lazy {
-        ChallengeHelper(this, user, settings, editor, dashboardViewModel, progressRepository)
+    private val challengeHelper: ChallengeService by lazy {
+        ChallengeService(this, user, settings, editor, dashboardViewModel, progressRepository)
     }
     private lateinit var notificationManager: NotificationUtils.NotificationManager
     private var notificationsShownThisSession = false
@@ -560,7 +560,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             resourcesRepository.getPendingDownloads(user?.id ?: "").collect { onRealmDataChange() }
         }
         lifecycleScope.launch {
-            submissionRepository.getPendingSurveysFlow(user?.id).collect { onRealmDataChange() }
+            submissionsRepository.getPendingSurveysFlow(user?.id).collect { onRealmDataChange() }
         }
         lifecycleScope.launch {
             teamsRepository.getTasksFlow(user?.id).collect { onRealmDataChange() }

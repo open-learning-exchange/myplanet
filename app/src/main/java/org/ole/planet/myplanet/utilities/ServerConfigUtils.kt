@@ -3,30 +3,30 @@ package org.ole.planet.myplanet.utilities
 import android.content.Context
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.model.ServerAddressesModel
+import org.ole.planet.myplanet.model.ServerAddress
 
 object ServerConfigUtils {
-    fun getServerAddresses(context: Context): List<ServerAddressesModel> {
+    fun getServerAddresses(context: Context): List<ServerAddress> {
         return listOf(
-            ServerAddressesModel(context.getString(R.string.sync_planet_learning), BuildConfig.PLANET_LEARNING_URL),
-            ServerAddressesModel(context.getString(R.string.sync_guatemala), BuildConfig.PLANET_GUATEMALA_URL),
-            ServerAddressesModel(context.getString(R.string.sync_san_pablo), BuildConfig.PLANET_SANPABLO_URL),
-            ServerAddressesModel(context.getString(R.string.sync_planet_earth), BuildConfig.PLANET_EARTH_URL),
-            ServerAddressesModel(context.getString(R.string.sync_somalia), BuildConfig.PLANET_SOMALIA_URL),
-            ServerAddressesModel(context.getString(R.string.sync_vi), BuildConfig.PLANET_VI_URL),
-            ServerAddressesModel(context.getString(R.string.sync_xela), BuildConfig.PLANET_XELA_URL),
-            ServerAddressesModel(context.getString(R.string.sync_uriur), BuildConfig.PLANET_URIUR_URL),
-            ServerAddressesModel(context.getString(R.string.sync_ruiru), BuildConfig.PLANET_RUIRU_URL),
-            ServerAddressesModel(context.getString(R.string.sync_embakasi), BuildConfig.PLANET_EMBAKASI_URL),
-            ServerAddressesModel(context.getString(R.string.sync_cambridge), BuildConfig.PLANET_CAMBRIDGE_URL),
+            ServerAddress(context.getString(R.string.sync_planet_learning), BuildConfig.PLANET_LEARNING_URL),
+            ServerAddress(context.getString(R.string.sync_guatemala), BuildConfig.PLANET_GUATEMALA_URL),
+            ServerAddress(context.getString(R.string.sync_san_pablo), BuildConfig.PLANET_SANPABLO_URL),
+            ServerAddress(context.getString(R.string.sync_planet_earth), BuildConfig.PLANET_EARTH_URL),
+            ServerAddress(context.getString(R.string.sync_somalia), BuildConfig.PLANET_SOMALIA_URL),
+            ServerAddress(context.getString(R.string.sync_vi), BuildConfig.PLANET_VI_URL),
+            ServerAddress(context.getString(R.string.sync_xela), BuildConfig.PLANET_XELA_URL),
+            ServerAddress(context.getString(R.string.sync_uriur), BuildConfig.PLANET_URIUR_URL),
+            ServerAddress(context.getString(R.string.sync_ruiru), BuildConfig.PLANET_RUIRU_URL),
+            ServerAddress(context.getString(R.string.sync_embakasi), BuildConfig.PLANET_EMBAKASI_URL),
+            ServerAddress(context.getString(R.string.sync_cambridge), BuildConfig.PLANET_CAMBRIDGE_URL),
         )
     }
 
     fun getFilteredList(
         showAdditionalServers: Boolean,
-        serverList: List<ServerAddressesModel>,
+        serverList: List<ServerAddress>,
         pinnedUrl: String?
-    ): List<ServerAddressesModel> {
+    ): List<ServerAddress> {
         val pinnedServer = serverList.find { it.url == pinnedUrl }
         return if (showAdditionalServers) {
             serverList

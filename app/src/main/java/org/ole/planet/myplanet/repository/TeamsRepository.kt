@@ -6,7 +6,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.model.TransactionData
+import org.ole.planet.myplanet.model.Transaction
 
 data class JoinedMemberData(
     val user: RealmUserModel,
@@ -115,7 +115,7 @@ interface TeamsRepository {
         startDate: Long? = null,
         endDate: Long? = null,
         sortAscending: Boolean = false,
-    ): Flow<List<TransactionData>>
+    ): Flow<List<Transaction>>
     suspend fun createTransaction(
         teamId: String,
         type: String,
