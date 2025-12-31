@@ -25,7 +25,7 @@ import org.ole.planet.myplanet.model.RealmMyCourse.Companion.isMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.ui.exam.TakeExamFragment
+import org.ole.planet.myplanet.ui.exam.ExamTakingFragment
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.utilities.CameraUtils
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
@@ -239,7 +239,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         }
         fragmentCourseStepBinding.btnTakeTest.setOnClickListener {
             if (stepExams.isNotEmpty()) {
-                val takeExam: Fragment = TakeExamFragment()
+                val takeExam: Fragment = ExamTakingFragment()
                 val b = Bundle()
                 b.putString("stepId", stepId)
                 b.putInt("stepNum", stepNumber)
