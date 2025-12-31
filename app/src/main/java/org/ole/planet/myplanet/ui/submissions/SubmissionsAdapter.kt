@@ -12,7 +12,7 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.RowMysurveyBinding
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.ui.exam.TakeExamFragment
+import org.ole.planet.myplanet.ui.exam.ExamTakingFragment
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
 
@@ -181,7 +181,7 @@ class SubmissionsAdapter(
                 b.putBoolean("isMySurvey", isMySurvey)
                 b.putBoolean("isTeam", isTeam)
                 b.putString("teamId", teamId)
-                val f: Fragment = TakeExamFragment()
+                val f: Fragment = ExamTakingFragment()
                 f.arguments = b
                 listener.openCallFragment(f)
             }
