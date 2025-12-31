@@ -45,7 +45,7 @@ class DashboardViewModel @Inject constructor(
     private val teamsRepository: TeamsRepository,
     private val submissionsRepository: SubmissionsRepository,
     private val notificationsRepository: NotificationsRepository,
-    private val surveyRepository: SurveysRepository,
+    private val surveysRepository: SurveysRepository,
     private val activityRepository: ActivityRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -93,7 +93,7 @@ class DashboardViewModel @Inject constructor(
     }
 
     suspend fun getSurveySubmissionCount(userId: String?): Int {
-        return surveyRepository.getSurveySubmissionCount(userId)
+        return surveysRepository.getSurveySubmissionCount(userId)
     }
 
     suspend fun getUnreadNotificationsSize(userId: String?): Int {

@@ -54,7 +54,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
     @Inject
     lateinit var syncManager: SyncManager
     @Inject
-    lateinit var surveyRepository: SurveysRepository
+    lateinit var surveysRepository: SurveysRepository
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
@@ -281,17 +281,17 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
             try {
                 val (surveys, infos, data) = withContext(Dispatchers.IO) {
                     val currentSurveys = when {
-                        isTeam && useTeamShareAllowed -> surveyRepository.getAdoptableTeamSurveys(teamId)
-                        isTeam -> surveyRepository.getTeamOwnedSurveys(teamId)
-                        else -> surveyRepository.getIndividualSurveys()
+                        isTeam && useTeamShareAllowed -> surveysRepository.getAdoptableTeamSurveys(teamId)
+                        isTeam -> surveysRepository.getTeamOwnedSurveys(teamId)
+                        else -> surveysRepository.getIndividualSurveys()
                     }
-                    val surveyInfos = surveyRepository.getSurveyInfos(
+                    val surveyInfos = surveysRepository.getSurveyInfos(
                         isTeam,
                         teamId,
                         userProfileModel?.id,
                         currentSurveys
                     )
-                    val bindingData = surveyRepository.getSurveyFormState(currentSurveys, teamId)
+                    val bindingData = surveysRepository.getSurveyFormState(currentSurveys, teamId)
                     Triple(currentSurveys, surveyInfos, bindingData)
                 }
                 currentSurveys = surveys.sortedByDescending { survey ->
