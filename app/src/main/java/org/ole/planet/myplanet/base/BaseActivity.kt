@@ -6,7 +6,7 @@ import android.content.res.Configuration
 import android.os.Bundle
 import android.view.MenuItem
 import java.util.Locale
-import org.ole.planet.myplanet.ui.sync.SyncActivity
+import org.ole.planet.myplanet.ui.login.SyncActivity
 import org.ole.planet.myplanet.utilities.LocaleUtils
 
 abstract class BaseActivity : SyncActivity() {

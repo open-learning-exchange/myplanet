@@ -69,7 +69,7 @@ object ServerConfigUtils {
     ): String {
         val uri = android.net.Uri.parse(url)
         val (urlUser, urlPwd, couchdbURL) = if (url.contains("@")) {
-            val userinfo = org.ole.planet.myplanet.ui.sync.ProcessUserDataActivity.getUserInfo(uri)
+            val userinfo = org.ole.planet.myplanet.ui.login.ProcessUserDataActivity.getUserInfo(uri)
             Triple(userinfo[0], userinfo[1], url)
         } else {
             val user = "satellite"

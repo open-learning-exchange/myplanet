@@ -9,7 +9,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.data.LoginSyncManager
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.ui.sync.LoginActivity
+import org.ole.planet.myplanet.ui.login.LoginActivity
 
 object AuthUtils {
     private val specialCharPattern = Pattern.compile(

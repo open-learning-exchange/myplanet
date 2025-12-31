@@ -17,7 +17,7 @@ import kotlinx.coroutines.withTimeout
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
-import org.ole.planet.myplanet.ui.sync.SyncActivity
+import org.ole.planet.myplanet.ui.login.SyncActivity
 import org.ole.planet.myplanet.utilities.DialogUtils.CustomProgressDialog
 import org.ole.planet.myplanet.utilities.IntentUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
