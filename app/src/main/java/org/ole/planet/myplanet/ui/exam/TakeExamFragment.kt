@@ -34,7 +34,7 @@ import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMembershipDoc
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserProfileHandler
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
 import org.ole.planet.myplanet.utilities.JsonUtils
@@ -54,7 +54,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     private val answerCache = mutableMapOf<String, AnswerData>()
 
     @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
+    lateinit var userProfileHandler: UserProfileHandler
 
     data class AnswerData(
         var singleAnswer: String = "",
@@ -65,7 +65,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     override fun onCreateView(inflater: LayoutInflater, parent: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTakeExamBinding.inflate(inflater, parent, false)
         listAns = HashMap()
-        user = userProfileDbHandler.userModel
+        user = userProfileHandler.userModel
         return binding.root
     }
 
@@ -307,7 +307,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         membershipDoc.teamId = teamId
         sub?.membershipDoc = membershipDoc
 
-        val userModel = userProfileDbHandler.userModel
+        val userModel = userProfileHandler.userModel
 
         try {
             val userJson = JSONObject()

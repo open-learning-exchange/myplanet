@@ -27,7 +27,7 @@ import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmMyHealth.RealmMyHealthProfile
 import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserProfileHandler
 import org.ole.planet.myplanet.model.RealmExamination
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.decrypt
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.encrypt
@@ -47,7 +47,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
     @Inject
     lateinit var databaseService: DatabaseService
     @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
+    lateinit var userProfileHandler: UserProfileHandler
     private lateinit var binding: ActivityAddExaminationBinding
     lateinit var mRealm: Realm
     var userId: String? = null
@@ -79,7 +79,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         customDiag = HashSet()
         initViews()
-        currentUser = userProfileDbHandler.userModel
+        currentUser = userProfileHandler.userModel
         mapConditions = HashMap()
         mRealm = databaseService.realmInstance
         userId = intent.getStringExtra("userId")

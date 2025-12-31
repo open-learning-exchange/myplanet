@@ -47,7 +47,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserProfileHandler
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DiffUtils
@@ -60,7 +60,7 @@ import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.makeExpandable
 
-class NewsAdapter(var context: Context, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userProfileDbHandler: UserProfileDbHandler, private val scope: CoroutineScope, private val userRepository: UserRepository, private val voicesRepository: VoicesRepository, private val teamsRepository: TeamsRepository) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
+class NewsAdapter(var context: Context, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userProfileHandler: UserProfileHandler, private val scope: CoroutineScope, private val userRepository: UserRepository, private val voicesRepository: VoicesRepository, private val teamsRepository: TeamsRepository) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem ->
             if (oldItem === newItem) return@itemCallback true
@@ -101,7 +101,7 @@ class NewsAdapter(var context: Context, private var currentUser: RealmUserModel?
     private var recyclerView: RecyclerView? = null
     var user: RealmUserModel? = null
     private var labelManager: NewsLabelManager? = null
-    private val profileDbHandler = userProfileDbHandler
+    private val userProfileHandler = this.userProfileHandler
     lateinit var settings: SharedPreferences
     private val userCache = mutableMapOf<String, RealmUserModel?>()
     private val fetchingUserIds = mutableSetOf<String>()
@@ -167,7 +167,7 @@ class NewsAdapter(var context: Context, private var currentUser: RealmUserModel?
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val binding = RowNewsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        user = userProfileDbHandler.userModel
+        user = userProfileHandler.userModel
         settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         if (::mRealm.isInitialized) {
             if (labelManager == null) labelManager = NewsLabelManager(context, mRealm)

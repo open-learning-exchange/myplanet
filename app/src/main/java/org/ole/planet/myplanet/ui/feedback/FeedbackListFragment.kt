@@ -27,7 +27,7 @@ import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.FeedbackRepository
 import org.ole.planet.myplanet.service.SyncManager
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserProfileHandler
 import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment.OnFeedbackSubmittedListener
@@ -48,7 +48,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     @Inject
     lateinit var feedbackRepository: FeedbackRepository
     @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
+    lateinit var userProfileHandler: UserProfileHandler
     private val serverUrlMapper = ServerUrlMapper()
     
     @Inject
@@ -69,7 +69,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentFeedbackListBinding.inflate(inflater, container, false)
-        userModel = userProfileDbHandler.userModel
+        userModel = userProfileHandler.userModel
 
         binding.fab.setOnClickListener {
             val feedbackFragment = FeedbackFragment()

@@ -30,7 +30,7 @@ import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserProfileHandler
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.Constants
@@ -48,7 +48,7 @@ class NewsFragment : BaseNewsFragment() {
     var user: RealmUserModel? = null
     
     @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
+    lateinit var userProfileHandler: UserProfileHandler
     @Inject
     lateinit var voicesRepository: VoicesRepository
     @Inject
@@ -65,7 +65,7 @@ class NewsFragment : BaseNewsFragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentNewsBinding.inflate(inflater, container, false)
         llImage = binding.llImages
-        user = userProfileDbHandler.getUserModelCopy()
+        user = userProfileHandler.getUserModelCopy()
         setupUI(binding.newsFragmentParentLayout, requireActivity())
         if (user?.id?.startsWith("guest") == true) {
             binding.btnNewVoice.visibility = View.GONE
@@ -201,7 +201,7 @@ class NewsFragment : BaseNewsFragment() {
             } finally {
                 Trace.endSection()
             }
-            adapterNews = NewsAdapter(requireActivity(), user, null, "", null, userProfileDbHandler, viewLifecycleOwner.lifecycleScope, userRepository, voicesRepository, teamsRepository)
+            adapterNews = NewsAdapter(requireActivity(), user, null, "", null, userProfileHandler, viewLifecycleOwner.lifecycleScope, userRepository, voicesRepository, teamsRepository)
             adapterNews?.sharedPrefManager = sharedPrefManager
             adapterNews?.setmRealm(mRealm)
             adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
