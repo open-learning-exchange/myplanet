@@ -10,7 +10,7 @@ import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.CustomZoomButtonsController
 
-class OfflineMapActivity : AppCompatActivity() {
+class OfflineMapsActivity : AppCompatActivity() {
     private lateinit var activityOfflineMapBinding: ActivityOfflineMapBinding
     public override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
