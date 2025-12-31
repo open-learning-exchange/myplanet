@@ -15,10 +15,10 @@ import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.team.member.MemberDetailFragment
 import org.ole.planet.myplanet.utilities.DiffUtils
 
-internal class LeadersAdapter(
+internal class CommunityLeadersAdapter(
     var context: Context,
     private val userProfileDbHandler: UserProfileDbHandler
-) : ListAdapter<RealmUserModel, LeadersAdapter.ViewHolderLeader>(
+) : ListAdapter<RealmUserModel, CommunityLeadersAdapter.ViewHolderLeader>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem -> oldItem.name == newItem.name },
             areContentsTheSame = { oldItem, newItem ->
