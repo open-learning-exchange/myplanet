@@ -4,9 +4,9 @@ import javax.inject.Inject
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmTag
 
-class TagRepositoryImpl @Inject constructor(
+class TagsRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
-) : RealmRepository(databaseService), TagRepository {
+) : RealmRepository(databaseService), TagsRepository {
 
     override suspend fun getTags(dbType: String?): List<RealmTag> {
         return queryList(RealmTag::class.java) {
