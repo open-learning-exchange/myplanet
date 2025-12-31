@@ -49,7 +49,7 @@ import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
-import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
+import org.ole.planet.myplanet.ui.profile.BecomeMemberActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.SharedPrefManager

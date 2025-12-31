@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.userprofile
+package org.ole.planet.myplanet.ui.profile
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
