@@ -80,9 +80,9 @@ class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
         val settings = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         val sParentcode = settings.getString("parentCode", "")
         val communityName = settings.getString("communityName", "")
-        binding.viewPager2.adapter = CommunityPagerAdapter(requireActivity(), "$communityName@$sParentcode", true, settings)
+        binding.viewPager2.adapter = CommunityTabsAdapter(requireActivity(), "$communityName@$sParentcode", true, settings)
         TabLayoutMediator(binding.tabLayout, binding.viewPager2) { tab, position ->
-            tab.text = (binding.viewPager2.adapter as CommunityPagerAdapter).getPageTitle(position)
+            tab.text = (binding.viewPager2.adapter as CommunityTabsAdapter).getPageTitle(position)
         }.attach()
         binding.title.text = communityName
         binding.title.setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
