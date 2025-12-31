@@ -15,7 +15,7 @@ import org.ole.planet.myplanet.ui.viewer.ImageViewerActivity
 import org.ole.planet.myplanet.ui.viewer.MarkdownViewerActivity
 import org.ole.planet.myplanet.ui.viewer.PDFReaderActivity
 import org.ole.planet.myplanet.ui.viewer.TextFileViewerActivity
-import org.ole.planet.myplanet.ui.viewer.VideoPlayerActivity
+import org.ole.planet.myplanet.ui.viewer.VideoViewerActivity
 
 object ResourceOpener {
     private fun resourcePath(item: RealmMyLibrary): String {
@@ -69,7 +69,7 @@ object ResourceOpener {
     }
 
     fun playVideo(activity: Activity, videoType: String, items: RealmMyLibrary) {
-        val intent = Intent(activity, VideoPlayerActivity::class.java)
+        val intent = Intent(activity, VideoViewerActivity::class.java)
         val bundle = Bundle()
         bundle.putString("videoType", videoType)
         if (videoType == "online") {

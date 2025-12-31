@@ -15,7 +15,7 @@ import org.ole.planet.myplanet.model.RealmMyPersonal
 import org.ole.planet.myplanet.ui.personals.PersonalsAdapter.ViewHolderPersonals
 import org.ole.planet.myplanet.ui.viewer.ImageViewerActivity
 import org.ole.planet.myplanet.ui.viewer.PDFReaderActivity
-import org.ole.planet.myplanet.ui.viewer.VideoPlayerActivity
+import org.ole.planet.myplanet.ui.viewer.VideoViewerActivity
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.IntentUtils.openAudioFile
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
@@ -87,7 +87,7 @@ class PersonalsAdapter(private val context: Context) : ListAdapter<RealmMyPerson
         b.putString("videoURL", "" + Uri.fromFile(path?.let { File(it) }))
         b.putString("Auth", "" + Uri.fromFile(path?.let { File(it) }))
         b.putString("videoType", "offline")
-        val i = Intent(context, VideoPlayerActivity::class.java).putExtra("TOUCHED_FILE", path)
+        val i = Intent(context, VideoViewerActivity::class.java).putExtra("TOUCHED_FILE", path)
         i.putExtras(b)
         context.startActivity(i)
     }
