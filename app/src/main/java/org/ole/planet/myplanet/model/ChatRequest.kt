@@ -2,7 +2,7 @@ package org.ole.planet.myplanet.model
 
 import com.google.gson.annotations.SerializedName
 
-data class ChatRequestModel(
+data class ChatRequest(
     @SerializedName("data") val data: ContentData,
     @SerializedName("save") val save: Boolean
 )
@@ -13,7 +13,7 @@ data class ContentData(
     @SerializedName("aiProvider") val aiProvider: AiProvider
 )
 
-data class ContinueChatModel(
+data class ContinueChatRequest(
     @SerializedName("data") val data: Data,
     @SerializedName("save") val save: Boolean
 )

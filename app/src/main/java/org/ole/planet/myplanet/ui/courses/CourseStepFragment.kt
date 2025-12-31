@@ -26,7 +26,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.exam.TakeExamFragment
-import org.ole.planet.myplanet.ui.submission.SubmissionsAdapter
+import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.utilities.CameraUtils
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
@@ -193,7 +193,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         viewLifecycleOwner.lifecycleScope.launch {
             if (stepExams.isNotEmpty()) {
                 val firstStepId = stepExams[0].id
-                val isTestPresent = submissionRepository.hasSubmission(firstStepId, step.courseId, user?.id, "exam")
+                val isTestPresent = submissionsRepository.hasSubmission(firstStepId, step.courseId, user?.id, "exam")
                 fragmentCourseStepBinding.btnTakeTest.text = if (isTestPresent) {
                     getString(R.string.retake_test, stepExams.size)
                 } else {
@@ -203,7 +203,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
             }
             if (stepSurvey.isNotEmpty()) {
                 val firstStepId = stepSurvey[0].id
-                val isSurveyPresent = submissionRepository.hasSubmission(firstStepId, step.courseId, user?.id, "survey")
+                val isSurveyPresent = submissionsRepository.hasSubmission(firstStepId, step.courseId, user?.id, "survey")
                 fragmentCourseStepBinding.btnTakeSurvey.text = if (isSurveyPresent) {
                     getString(R.string.redo_survey)
                 } else {

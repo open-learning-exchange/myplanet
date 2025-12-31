@@ -24,7 +24,7 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-class ManagerSync private constructor(
+class LoginSyncManager private constructor(
     private val context: Context,
     private val userRepository: UserRepository,
 ) {
@@ -217,13 +217,13 @@ class ManagerSync private constructor(
 
     companion object {
         @JvmStatic
-        val instance: ManagerSync by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        val instance: LoginSyncManager by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
             val entryPoint =
                 EntryPointAccessors.fromApplication(
                     MainApplication.context.applicationContext,
                     RepositoryEntryPoint::class.java
                 )
-            ManagerSync(MainApplication.context, entryPoint.userRepository())
+            LoginSyncManager(MainApplication.context, entryPoint.userRepository())
         }
     }
 }

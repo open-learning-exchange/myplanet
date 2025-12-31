@@ -28,7 +28,7 @@ import org.ole.planet.myplanet.databinding.RowCourseBinding
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.TagRepository
+import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.utilities.CourseRatingUtils
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getInt
@@ -43,7 +43,7 @@ class CoursesAdapter(
     private var courseList: List<RealmMyCourse?>,
     private val map: HashMap<String?, JsonObject>,
     private var userModel: RealmUserModel?,
-    private val tagRepository: TagRepository
+    private val tagsRepository: TagsRepository
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private val selectedItems: MutableList<RealmMyCourse?> = ArrayList()
     private var listener: OnCourseItemSelected? = null
@@ -403,7 +403,7 @@ class CoursesAdapter(
 
         holder.itemView.findViewTreeLifecycleOwner()?.lifecycleScope?.launch {
             try {
-                val tags = tagRepository.getTagsForCourse(courseId)
+                val tags = tagsRepository.getTagsForCourse(courseId)
                 tagCache[courseId] = tags
                 val adapterPosition = holder.bindingAdapterPosition
                 if (adapterPosition != RecyclerView.NO_POSITION) {
