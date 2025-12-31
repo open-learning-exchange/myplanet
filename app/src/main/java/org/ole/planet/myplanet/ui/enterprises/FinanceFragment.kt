@@ -29,7 +29,7 @@ class FinanceFragment : BaseTeamFragment() {
     private var _binding: FragmentFinanceBinding? = null
     private val binding get() = _binding!!
     private lateinit var addTransactionBinding: AddTransactionBinding
-    private lateinit var financeAdapter: FinanceAdapter
+    private lateinit var financeAdapter: EnterpriseFinanceAdapter
     var date: Calendar? = null
     private var transactions: List<Transaction> = emptyList()
     private var isAsc = false
@@ -206,7 +206,7 @@ class FinanceFragment : BaseTeamFragment() {
             binding.addTransaction.visibility = View.GONE
         }
         binding.addTransaction.setOnClickListener { addTransaction() }
-        financeAdapter = FinanceAdapter(requireActivity())
+        financeAdapter = EnterpriseFinanceAdapter(requireActivity())
         binding.rvFinance.layoutManager = LinearLayoutManager(activity)
         binding.rvFinance.adapter = financeAdapter
         observeTransactions()

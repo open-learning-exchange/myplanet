@@ -19,9 +19,9 @@ import org.ole.planet.myplanet.databinding.RowFinanceBinding
 import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
-class FinanceAdapter(
+class EnterpriseFinanceAdapter(
     private val context: Context,
-) : ListAdapter<Transaction, FinanceAdapter.FinanceViewHolder>(TransactionDiffCallback()) {
+) : ListAdapter<Transaction, EnterpriseFinanceAdapter.FinanceViewHolder>(TransactionDiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FinanceViewHolder {
         val binding = RowFinanceBinding.inflate(LayoutInflater.from(parent.context), parent, false)
