@@ -26,7 +26,7 @@ import org.ole.planet.myplanet.ui.calendar.CalendarFragment
 import org.ole.planet.myplanet.ui.life.helper.ItemTouchHelperAdapter
 import org.ole.planet.myplanet.ui.life.helper.ItemTouchHelperViewHolder
 import org.ole.planet.myplanet.callback.OnStartDragListener
-import org.ole.planet.myplanet.ui.myhealth.MyHealthFragment
+import org.ole.planet.myplanet.ui.health.MyHealthFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.personals.PersonalsFragment
 import org.ole.planet.myplanet.ui.references.ReferenceFragment
