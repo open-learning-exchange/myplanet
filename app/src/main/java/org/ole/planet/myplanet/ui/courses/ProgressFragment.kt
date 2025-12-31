@@ -19,7 +19,7 @@ class ProgressFragment : Fragment() {
     private var _binding: FragmentProgressBinding? = null
     private val binding get() = _binding!!
     private val progressViewModel: ProgressViewModel by viewModels()
-    private lateinit var progressAdapter: ProgressAdapter
+    private lateinit var progressAdapter: CourseProgressAdapter
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentProgressBinding.inflate(inflater, container, false)
@@ -28,7 +28,7 @@ class ProgressFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        progressAdapter = ProgressAdapter(requireActivity())
+        progressAdapter = CourseProgressAdapter(requireActivity())
         binding.rvMyprogress.layoutManager = LinearLayoutManager(requireActivity())
         binding.rvMyprogress.adapter = progressAdapter
         progressViewModel.loadCourseData()
