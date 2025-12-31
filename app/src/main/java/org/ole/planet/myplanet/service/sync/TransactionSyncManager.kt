@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.service
+package org.ole.planet.myplanet.service.sync
 
 import android.content.Context
 import android.content.SharedPreferences
@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.JsonUtils.getJsonArray
 import org.ole.planet.myplanet.utilities.JsonUtils.getJsonObject
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
+import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.SecurePrefs
 import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.Utilities
@@ -97,7 +98,7 @@ class TransactionSyncManager @Inject constructor(
         userProfileDbHandler: UserProfileDbHandler
     ) {
         listener.onSyncStarted()
-        val model = userProfileDbHandler.userModel
+        val model = userProfileDbHandler.getUserModelCopy()
         val userName = SecurePrefs.getUserName(context, settings) ?: ""
         val password = SecurePrefs.getPassword(context, settings) ?: ""
         val header = "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)

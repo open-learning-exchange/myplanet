@@ -14,6 +14,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.service.sync.SyncManager
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.data.Service
