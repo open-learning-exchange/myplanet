@@ -24,7 +24,7 @@ import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
-import org.ole.planet.myplanet.repository.SurveyRepository
+import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 
@@ -45,7 +45,7 @@ class DashboardViewModel @Inject constructor(
     private val teamsRepository: TeamsRepository,
     private val submissionsRepository: SubmissionsRepository,
     private val notificationsRepository: NotificationsRepository,
-    private val surveyRepository: SurveyRepository,
+    private val surveyRepository: SurveysRepository,
     private val activityRepository: ActivityRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(DashboardUiState())
