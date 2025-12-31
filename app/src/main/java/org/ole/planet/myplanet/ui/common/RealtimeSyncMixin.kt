@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.sync
+package org.ole.planet.myplanet.ui.common
 
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
