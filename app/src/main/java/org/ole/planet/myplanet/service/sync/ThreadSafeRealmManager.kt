@@ -3,7 +3,7 @@ package org.ole.planet.myplanet.service.sync
 import io.realm.Realm
 import org.ole.planet.myplanet.data.DatabaseService
 
-object ThreadSafeRealmHelper {
+object ThreadSafeRealmManager {
     
     private val threadLocalRealm = ThreadLocal<Realm?>()
     

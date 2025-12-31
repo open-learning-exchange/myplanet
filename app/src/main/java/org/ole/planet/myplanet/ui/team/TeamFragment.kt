@@ -82,7 +82,7 @@ class TeamFragment : Fragment(), TeamListAdapter.OnClickTeamItem, TeamListAdapte
         return binding.root
     }
 
-     fun createTeamAlert(team: TeamData?) {
+     fun createTeamAlert(team: TeamDetails?) {
         alertCreateTeamBinding = AlertCreateTeamBinding.inflate(LayoutInflater.from(context))
         if (TextUtils.equals(type, "enterprise")) {
             alertCreateTeamBinding.spnTeamType.visibility = View.GONE
@@ -302,11 +302,11 @@ class TeamFragment : Fragment(), TeamListAdapter.OnClickTeamItem, TeamListAdapte
         }
     }
 
-    override fun onEditTeam(team: TeamData?) {
+    override fun onEditTeam(team: TeamDetails?) {
         team?.let { createTeamAlert(it) }
     }
 
-    override fun onLeaveTeam(team: TeamData, user: RealmUserModel?) {
+    override fun onLeaveTeam(team: TeamDetails, user: RealmUserModel?) {
         AlertDialog.Builder(requireContext(), R.style.CustomAlertDialog)
             .setMessage(R.string.confirm_exit)
             .setPositiveButton(R.string.yes) { _, _ ->
@@ -316,7 +316,7 @@ class TeamFragment : Fragment(), TeamListAdapter.OnClickTeamItem, TeamListAdapte
             .show()
     }
 
-    override fun onRequestToJoin(team: TeamData, user: RealmUserModel?) {
+    override fun onRequestToJoin(team: TeamDetails, user: RealmUserModel?) {
         viewModel.requestToJoin(team._id!!, user?.id, user?.planetCode, team.teamType)
     }
 

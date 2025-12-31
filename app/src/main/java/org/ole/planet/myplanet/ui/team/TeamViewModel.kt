@@ -17,8 +17,8 @@ import org.ole.planet.myplanet.repository.TeamsRepository
 class TeamViewModel @Inject constructor(
     private val teamsRepository: TeamsRepository
 ) : ViewModel() {
-    private val _teamData = MutableStateFlow<List<TeamData>>(emptyList())
-    val teamData: StateFlow<List<TeamData>> = _teamData
+    private val _teamData = MutableStateFlow<List<TeamDetails>>(emptyList())
+    val teamData: StateFlow<List<TeamDetails>> = _teamData
     private var currentTeams: List<RealmMyTeam> = emptyList()
 
 
@@ -31,7 +31,7 @@ class TeamViewModel @Inject constructor(
                 }
 
                 if (validTeams.isEmpty()) {
-                    return@withContext emptyList<TeamData>()
+                    return@withContext emptyList<TeamDetails>()
                 }
 
                 val teamIds = validTeams.mapNotNull { it._id }
@@ -45,7 +45,7 @@ class TeamViewModel @Inject constructor(
                 val teamDataList = validTeams.map { team ->
                     val teamId = team._id.orEmpty()
                     val status = memberStatuses[teamId]
-                    TeamData(
+                    TeamDetails(
                         _id = team._id,
                         name = team.name,
                         teamType = team.teamType,
@@ -68,7 +68,7 @@ class TeamViewModel @Inject constructor(
                 }
 
                 teamDataList.sortedWith(
-                    compareByDescending<TeamData> {
+                    compareByDescending<TeamDetails> {
                         when {
                             it.teamStatus?.isLeader == true -> 3
                             it.teamStatus?.isMember == true -> 2

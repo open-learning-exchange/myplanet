@@ -39,7 +39,7 @@ import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.data.ApiClient
 import org.ole.planet.myplanet.data.ApiInterface
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.data.ManagerSync
+import org.ole.planet.myplanet.data.LoginSyncManager
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.insert
@@ -52,7 +52,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam.Companion.insertMyTeams
 import org.ole.planet.myplanet.model.RealmResourceActivity.Companion.onSynced
 import org.ole.planet.myplanet.model.Rows
 import org.ole.planet.myplanet.service.sync.SyncMode
-import org.ole.planet.myplanet.service.sync.ThreadSafeRealmHelper
+import org.ole.planet.myplanet.service.sync.ThreadSafeRealmManager
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.JsonUtils.getJsonArray
@@ -142,7 +142,7 @@ class SyncManager constructor(
     private fun destroy() {
         if (betaSync) {
             syncScope.cancel()
-            ThreadSafeRealmHelper.closeThreadRealm()
+            ThreadSafeRealmManager.closeThreadRealm()
         }
         cancelBackgroundSync()
         cancel(context, 111)
@@ -304,7 +304,7 @@ class SyncManager constructor(
 
             // Phase 5: Admin and finalization
             logger.startProcess("admin_sync")
-            ManagerSync.instance.syncAdmin()
+            LoginSyncManager.instance.syncAdmin()
             logger.endProcess("admin_sync")
 
             databaseService.withRealm { realm ->
@@ -518,7 +518,7 @@ class SyncManager constructor(
             }
 
             logger.startProcess("admin_sync")
-            ManagerSync.instance.syncAdmin()
+            LoginSyncManager.instance.syncAdmin()
             logger.endProcess("admin_sync")
 
             databaseService.withRealm { realm ->
@@ -1076,7 +1076,7 @@ class SyncManager constructor(
     }
 
     private fun <T> safeRealmOperation(operation: (Realm) -> T): T? {
-        return ThreadSafeRealmHelper.withRealm(databaseService, operation)
+        return ThreadSafeRealmManager.withRealm(databaseService, operation)
     }
 
 }

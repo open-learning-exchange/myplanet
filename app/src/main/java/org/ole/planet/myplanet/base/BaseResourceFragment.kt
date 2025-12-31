@@ -45,12 +45,12 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.repository.SubmissionRepository
+import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.MyDownloadService
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import org.ole.planet.myplanet.ui.submission.SubmissionsAdapter
+import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.ui.components.CheckboxListView
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DialogUtils.getProgressDialog
@@ -76,7 +76,7 @@ abstract class BaseResourceFragment : Fragment() {
     @Inject
     lateinit var coursesRepository: CoursesRepository
     @Inject
-    lateinit var submissionRepository: SubmissionRepository
+    lateinit var submissionsRepository: SubmissionsRepository
     @Inject
     lateinit var databaseService: DatabaseService
     @Inject
@@ -247,7 +247,7 @@ abstract class BaseResourceFragment : Fragment() {
     fun showPendingSurveyDialog() {
         model = profileDbHandler.userModel
         viewLifecycleOwner.lifecycleScope.launch {
-            val list = submissionRepository.getPendingSurveys(model?.id)
+            val list = submissionsRepository.getPendingSurveys(model?.id)
             if (list.isEmpty()) return@launch
             val exams = getExamMap(mRealm, list)
             val arrayAdapter = createSurveyAdapter(list, exams)

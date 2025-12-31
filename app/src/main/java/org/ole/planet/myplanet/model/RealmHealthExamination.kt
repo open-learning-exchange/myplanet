@@ -8,7 +8,7 @@ import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.JsonUtils
 
-open class RealmMyHealthPojo : RealmObject() {
+open class RealmHealthExamination : RealmObject() {
     @PrimaryKey
     var _id: String? = null
     var userId: String? = null
@@ -50,10 +50,10 @@ open class RealmMyHealthPojo : RealmObject() {
     companion object {
         @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject?) {
-            var myHealth = mRealm.where(RealmMyHealthPojo::class.java)
+            var myHealth = mRealm.where(RealmHealthExamination::class.java)
                 .equalTo("_id", JsonUtils.getString("_id", act)).findFirst()
             if (myHealth == null) {
-                myHealth = mRealm.createObject(RealmMyHealthPojo::class.java, JsonUtils.getString("_id", act))
+                myHealth = mRealm.createObject(RealmHealthExamination::class.java, JsonUtils.getString("_id", act))
             }
             myHealth?.data = JsonUtils.getString("data", act)
             myHealth?.userId = JsonUtils.getString("_id", act)
@@ -78,7 +78,7 @@ open class RealmMyHealthPojo : RealmObject() {
         }
 
         @JvmStatic
-        fun serialize(health: RealmMyHealthPojo): JsonObject {
+        fun serialize(health: RealmHealthExamination): JsonObject {
             val `object` = JsonObject()
             if (!TextUtils.isEmpty(health.userId)) `object`.addProperty("_id", health.userId)
             if (!TextUtils.isEmpty(health._rev)) `object`.addProperty("_rev", health._rev)

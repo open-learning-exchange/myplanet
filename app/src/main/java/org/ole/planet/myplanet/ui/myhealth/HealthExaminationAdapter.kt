@@ -17,7 +17,7 @@ import java.util.Date
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertExaminationBinding
 import org.ole.planet.myplanet.databinding.RowExaminationBinding
-import org.ole.planet.myplanet.model.RealmMyHealthPojo
+import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.myhealth.HealthExaminationAdapter.ViewHolderHealthExamination
 import org.ole.planet.myplanet.utilities.DiffUtils
@@ -28,13 +28,13 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 class HealthExaminationAdapter(
     private val context: Context,
-    private var mh: RealmMyHealthPojo,
+    private var mh: RealmHealthExamination,
     private var userModel: RealmUserModel?,
     private var userMap: Map<String, RealmUserModel>
-) : ListAdapter<RealmMyHealthPojo, ViewHolderHealthExamination>(diffCallback) {
+) : ListAdapter<RealmHealthExamination, ViewHolderHealthExamination>(diffCallback) {
     private val displayNameCache = mutableMapOf<String, String>()
 
-    fun updateData(mh: RealmMyHealthPojo, userModel: RealmUserModel?, userMap: Map<String, RealmUserModel>) {
+    fun updateData(mh: RealmHealthExamination, userModel: RealmUserModel?, userMap: Map<String, RealmUserModel>) {
         this.mh = mh
         this.userModel = userModel
         this.userMap = userMap
@@ -118,7 +118,7 @@ class HealthExaminationAdapter(
         dialog.show()
     }
 
-    private fun showConditions(tvCondition: TextView, realmExamination: RealmMyHealthPojo?) {
+    private fun showConditions(tvCondition: TextView, realmExamination: RealmHealthExamination?) {
         val conditionsMap = JsonUtils.gson.fromJson(realmExamination?.conditions, JsonObject::class.java)
         val keys = conditionsMap.keySet()
         val conditions = StringBuilder()
@@ -142,7 +142,7 @@ class HealthExaminationAdapter(
 
     companion object {
         private val colonRegex by lazy { ":".toRegex() }
-        private val diffCallback = DiffUtils.itemCallback<RealmMyHealthPojo>(
+        private val diffCallback = DiffUtils.itemCallback<RealmHealthExamination>(
             { oldItem, newItem -> oldItem._id == newItem._id },
             { oldItem, newItem -> oldItem == newItem }
         )

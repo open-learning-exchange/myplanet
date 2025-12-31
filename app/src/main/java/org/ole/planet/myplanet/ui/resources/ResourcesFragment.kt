@@ -46,7 +46,7 @@ import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmTag.Companion.getTagsArray
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.TagRepository
+import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
@@ -88,7 +88,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     lateinit var syncManager: SyncManager
 
     @Inject
-    lateinit var tagRepository: TagRepository
+    lateinit var tagsRepository: TagsRepository
 
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
@@ -204,7 +204,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     override fun getAdapter(): RecyclerView.Adapter<*> {
         map = getRatings(mRealm, "resource", model?.id)
         val libraryList: List<RealmMyLibrary?> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary?>()
-        adapterLibrary = ResourcesAdapter(requireActivity(), libraryList, map!!, resourcesRepository, tagRepository, profileDbHandler?.userModel)
+        adapterLibrary = ResourcesAdapter(requireActivity(), libraryList, map!!, resourcesRepository, tagsRepository, profileDbHandler?.userModel)
         adapterLibrary.setRatingChangeListener(this)
         adapterLibrary.setListener(this)
         return adapterLibrary

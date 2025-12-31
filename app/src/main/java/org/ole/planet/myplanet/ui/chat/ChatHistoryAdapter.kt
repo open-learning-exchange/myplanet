@@ -17,7 +17,7 @@ import org.ole.planet.myplanet.databinding.AddNoteDialogBinding
 import org.ole.planet.myplanet.databinding.ChatShareDialogBinding
 import org.ole.planet.myplanet.databinding.GrandChildRecyclerviewDialogBinding
 import org.ole.planet.myplanet.databinding.RowChatHistoryBinding
-import org.ole.planet.myplanet.model.Conversation
+import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
@@ -85,7 +85,7 @@ class ChatHistoryAdapter(
     }
 
     interface ChatHistoryItemClickListener {
-        fun onChatHistoryItemClicked(conversations: List<Conversation>?, id: String, rev: String?, aiProvider: String?)
+        fun onChatHistoryItemClicked(conversations: List<RealmConversation>?, id: String, rev: String?, aiProvider: String?)
     }
 
     fun setChatHistoryItemClickListener(listener: ChatHistoryItemClickListener) {
@@ -314,7 +314,7 @@ class ChatHistoryAdapter(
         dialog.show()
     }
 
-    private fun serializeConversation(conversation: Conversation): HashMap<String?, String> {
+    private fun serializeConversation(conversation: RealmConversation): HashMap<String?, String> {
         val conversationMap = HashMap<String?, String>()
         conversationMap["query"] = conversation.query ?: ""
         conversationMap["response"] = conversation.response ?: ""
