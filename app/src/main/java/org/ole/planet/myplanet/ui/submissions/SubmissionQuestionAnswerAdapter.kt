@@ -8,7 +8,7 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.databinding.ItemQuestionAnswerBinding
 
-class QuestionAnswerAdapter : ListAdapter<QuestionAnswer, QuestionAnswerAdapter.ViewHolder>(QuestionAnswerDiffCallback()) {
+class SubmissionQuestionAnswerAdapter : ListAdapter<QuestionAnswer, SubmissionQuestionAnswerAdapter.ViewHolder>(QuestionAnswerDiffCallback()) {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = ItemQuestionAnswerBinding.inflate(
             LayoutInflater.from(parent.context),

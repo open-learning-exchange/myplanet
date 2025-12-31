@@ -18,7 +18,7 @@ class SubmissionDetailFragment : Fragment() {
     private var _binding: FragmentSubmissionDetailBinding? = null
     private val binding get() = _binding!!
     private val viewModel: SubmissionDetailViewModel by viewModels()
-    private lateinit var adapter: QuestionAnswerAdapter
+    private lateinit var adapter: SubmissionQuestionAnswerAdapter
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentSubmissionDetailBinding.inflate(inflater, container, false)
@@ -32,7 +32,7 @@ class SubmissionDetailFragment : Fragment() {
     }
 
     private fun setupRecyclerView() {
-        adapter = QuestionAnswerAdapter()
+        adapter = SubmissionQuestionAnswerAdapter()
 
         // Use a LinearLayoutManager that forces full height calculation
         val layoutManager = object : LinearLayoutManager(context) {
