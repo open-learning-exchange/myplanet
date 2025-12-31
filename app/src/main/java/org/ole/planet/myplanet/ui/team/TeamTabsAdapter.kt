@@ -18,7 +18,7 @@ import org.ole.planet.myplanet.ui.team.member.MemberFragment
 import org.ole.planet.myplanet.ui.team.member.MembersFragment
 import org.ole.planet.myplanet.ui.team.resources.TeamResourcesFragment
 
-class TeamPagerAdapter(
+class TeamTabsAdapter(
     private val fm: FragmentActivity,
     private val pages: List<TeamPageConfig>,
     private val teamId: String?,
