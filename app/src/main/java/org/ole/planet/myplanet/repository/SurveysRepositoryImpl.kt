@@ -15,10 +15,10 @@ import org.ole.planet.myplanet.ui.survey.SurveyInfo
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDateWithTime
 
-class SurveyRepositoryImpl @Inject constructor(
+class SurveysRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
     databaseService: DatabaseService
-) : RealmRepository(databaseService), SurveyRepository {
+) : RealmRepository(databaseService), SurveysRepository {
 
     override suspend fun getTeamOwnedSurveys(teamId: String?): List<RealmStepExam> {
         if (teamId.isNullOrEmpty()) return emptyList()
