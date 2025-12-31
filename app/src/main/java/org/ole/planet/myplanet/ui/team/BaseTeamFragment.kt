@@ -46,12 +46,12 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
         user = profileDbHandler?.userModel
         teamId = requireArguments().getString("id", "") ?: "$communityName@$sParentCode"
 
-        loadTeamData()
+        loadTeamDetails()
     }
 
     override fun setData(list: List<RealmNews?>?) {}
 
-    private fun loadTeamData() {
+    private fun loadTeamDetails() {
         val shouldQueryTeam = shouldQueryTeamFromRealm()
         val existingTeam = team
         lifecycleScope.launch(Dispatchers.IO) {

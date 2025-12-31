@@ -6,7 +6,7 @@ data class TeamStatus(
     val hasPendingRequest: Boolean
 )
 
-data class TeamData(
+data class TeamDetails(
     val _id: String?,
     val name: String?,
     val teamType: String?,

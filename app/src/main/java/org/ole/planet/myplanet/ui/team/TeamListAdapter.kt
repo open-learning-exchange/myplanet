@@ -26,7 +26,7 @@ class TeamListAdapter(
     private val fragmentManager: FragmentManager,
     private val currentUser: RealmUserModel?,
     private val sharedPrefManager: SharedPrefManager
-) : ListAdapter<TeamData, TeamListAdapter.ViewHolderTeam>(TeamDiffCallback) {
+) : ListAdapter<TeamDetails, TeamListAdapter.ViewHolderTeam>(TeamDiffCallback) {
     private var type: String? = ""
     private var teamListener: OnClickTeamItem? = null
     private var updateCompleteListener: OnUpdateCompleteListener? = null
@@ -34,7 +34,7 @@ class TeamListAdapter(
     private val teamStatusCache = mutableMapOf<String, TeamStatus>()
 
     interface OnClickTeamItem {
-        fun onEditTeam(team: TeamData?)
+        fun onEditTeam(team: TeamDetails?)
     }
 
     interface OnUpdateCompleteListener {
@@ -42,8 +42,8 @@ class TeamListAdapter(
     }
 
     interface OnTeamActionsListener {
-        fun onLeaveTeam(team: TeamData, user: RealmUserModel?)
-        fun onRequestToJoin(team: TeamData, user: RealmUserModel?)
+        fun onLeaveTeam(team: TeamDetails, user: RealmUserModel?)
+        fun onRequestToJoin(team: TeamDetails, user: RealmUserModel?)
     }
 
 
@@ -118,7 +118,7 @@ class TeamListAdapter(
         isMyTeam: Boolean,
         isTeamLeader: Boolean,
         hasPendingRequest: Boolean,
-        team: TeamData,
+        team: TeamDetails,
         user: RealmUserModel?,
     ) {
         if (isMyTeam) {
@@ -173,7 +173,7 @@ class TeamListAdapter(
         }
     }
 
-    private fun handleJoinLeaveClick(team: TeamData, user: RealmUserModel?) {
+    private fun handleJoinLeaveClick(team: TeamDetails, user: RealmUserModel?) {
         val teamStatus = team.teamStatus ?: return
         when {
             teamStatus.isLeader -> teamListener?.onEditTeam(team)
@@ -184,7 +184,7 @@ class TeamListAdapter(
         }
     }
 
-    private fun requestToJoin(team: TeamData, user: RealmUserModel?) {
+    private fun requestToJoin(team: TeamDetails, user: RealmUserModel?) {
         teamActionsListener?.onRequestToJoin(team, user)
 
         val teamId = team._id ?: return
@@ -204,7 +204,7 @@ class TeamListAdapter(
         submitList(updatedList)
     }
 
-    private fun getBundle(team: TeamData): Bundle {
+    private fun getBundle(team: TeamDetails): Bundle {
         return Bundle().apply {
             putString("state", if (team.type?.isEmpty() == true) "teams" else "${team.type}s")
             putString("item", team._id)
@@ -223,7 +223,7 @@ class TeamListAdapter(
     class ViewHolderTeam(val binding: ItemTeamListBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {
-        val TeamDiffCallback = DiffUtils.itemCallback<TeamData>(
+        val TeamDiffCallback = DiffUtils.itemCallback<TeamDetails>(
             areItemsTheSame = { oldItem, newItem -> oldItem._id == newItem._id },
             areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
         )
