@@ -22,7 +22,7 @@ import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.ui.news.ExpandableListAdapter
+import org.ole.planet.myplanet.ui.news.NewsExpandableListAdapter
 import org.ole.planet.myplanet.ui.team.TeamSelectionAdapter
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
@@ -59,7 +59,7 @@ class ChatHistoryAdapter(
     private lateinit var rowChatHistoryBinding: RowChatHistoryBinding
     private var chatHistoryItemClickListener: ChatHistoryItemClickListener? = null
     private var chatTitle: String? = ""
-    private lateinit var expandableListAdapter: ExpandableListAdapter
+    private lateinit var expandableListAdapter: NewsExpandableListAdapter
     private lateinit var expandableTitleList: List<String>
     private lateinit var expandableDetailList: HashMap<String, List<String>>
 
@@ -217,7 +217,7 @@ class ChatHistoryAdapter(
 
                 expandableDetailList = getData() as HashMap<String, List<String>>
                 expandableTitleList = ArrayList(expandableDetailList.keys)
-                expandableListAdapter = ExpandableListAdapter(context, expandableTitleList, expandableDetailList)
+                expandableListAdapter = NewsExpandableListAdapter(context, expandableTitleList, expandableDetailList)
                 chatShareDialogBinding.listView.setAdapter(expandableListAdapter)
 
                 chatShareDialogBinding.listView.setOnChildClickListener { _, _, groupPosition, childPosition, _ ->
