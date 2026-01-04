@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.health
+package org.ole.planet.myplanet.ui.myhealth
 
 import android.app.Activity
 import android.text.TextUtils

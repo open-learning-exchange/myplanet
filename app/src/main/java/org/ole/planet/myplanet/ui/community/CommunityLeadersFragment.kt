@@ -16,7 +16,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 
 @AndroidEntryPoint
-class LeadersFragment : Fragment() {
+class CommunityLeadersFragment : Fragment() {
     private var binding: FragmentMembersBinding? = null
     @Inject
     @AppPreferences

@@ -12,23 +12,23 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.databinding.FragmentCoursesProgressBinding
+import org.ole.planet.myplanet.databinding.FragmentProgressBinding
 
 @AndroidEntryPoint
-class CoursesProgressFragment : Fragment() {
-    private var _binding: FragmentCoursesProgressBinding? = null
+class ProgressFragment : Fragment() {
+    private var _binding: FragmentProgressBinding? = null
     private val binding get() = _binding!!
     private val progressViewModel: ProgressViewModel by viewModels()
-    private lateinit var progressAdapter: CoursesProgressAdapter
+    private lateinit var progressAdapter: ProgressAdapter
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentCoursesProgressBinding.inflate(inflater, container, false)
+        _binding = FragmentProgressBinding.inflate(inflater, container, false)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        progressAdapter = CoursesProgressAdapter(requireActivity())
+        progressAdapter = ProgressAdapter(requireActivity())
         binding.rvMyprogress.layoutManager = LinearLayoutManager(requireActivity())
         binding.rvMyprogress.adapter = progressAdapter
         progressViewModel.loadCourseData()

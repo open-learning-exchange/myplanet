@@ -39,7 +39,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.TeamNotificationInfo
 import org.ole.planet.myplanet.service.TransactionSyncManager
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
-import org.ole.planet.myplanet.ui.health.UserListAdapter
+import org.ole.planet.myplanet.ui.myhealth.UserListAdapter
 import org.ole.planet.myplanet.ui.news.NewsViewModel
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
