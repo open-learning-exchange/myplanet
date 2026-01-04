@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.sync
+package org.ole.planet.myplanet.ui.login
 
 import android.view.LayoutInflater
 import android.view.View
