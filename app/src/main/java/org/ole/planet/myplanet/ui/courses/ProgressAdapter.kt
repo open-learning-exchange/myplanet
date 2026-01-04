@@ -30,7 +30,7 @@ class ProgressAdapter(private val context: Context) : ListAdapter<JsonObject, Re
             if (item.asJsonObject.has("progress")) {
                 holder.binding.tvDescription.text = context.getString(R.string.step_progress, item.asJsonObject["progress"].asJsonObject["current"].asInt, item.asJsonObject["progress"].asJsonObject["max"].asInt)
                 holder.itemView.setOnClickListener {
-                    context.startActivity(Intent(context, CourseProgressActivity::class.java).putExtra("courseId", item.asJsonObject["courseId"].asString))
+                    context.startActivity(Intent(context, CoursesProgressActivity::class.java).putExtra("courseId", item.asJsonObject["courseId"].asString))
                 }
             }
             if (item.asJsonObject.has("mistakes")) holder.binding.tvTotal.text =

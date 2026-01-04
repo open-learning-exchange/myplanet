@@ -14,7 +14,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
-import org.ole.planet.myplanet.databinding.ActivityCourseProgressBinding
+import org.ole.planet.myplanet.databinding.ActivityCoursesProgressBinding
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmExamQuestion
@@ -26,8 +26,8 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 
 @AndroidEntryPoint
-class CourseProgressActivity : BaseActivity() {
-    private lateinit var binding: ActivityCourseProgressBinding
+class CoursesProgressActivity : BaseActivity() {
+    private lateinit var binding: ActivityCoursesProgressBinding
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     var user: RealmUserModel? = null
@@ -35,7 +35,7 @@ class CourseProgressActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityCourseProgressBinding.inflate(layoutInflater)
+        binding = ActivityCoursesProgressBinding.inflate(layoutInflater)
         setContentView(binding.root)
         EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
         initActionBar()
@@ -64,7 +64,7 @@ class CourseProgressActivity : BaseActivity() {
             data.current.toString(),
             data.max.toString()
         )
-        binding.rvProgress.adapter = CourseProgressGridAdapter(this, data.steps)
+        binding.rvProgress.adapter = CoursesProgressGridAdapter(this, data.steps)
     }
 
     private suspend fun loadData(courseId: String, userId: String?): CourseProgressData? {

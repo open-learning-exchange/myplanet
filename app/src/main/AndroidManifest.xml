@@ -74,7 +74,7 @@
             android:windowSoftInputMode="adjustResize|stateHidden"
             android:theme="@style/AppTheme" />
         <activity
-            android:name=".ui.courses.CourseProgressActivity"
+            android:name=".ui.courses.CoursesProgressActivity"
             android:theme="@style/AppTheme" />
         <activity
             android:name=".ui.myhealth.AddMyHealthActivity"
