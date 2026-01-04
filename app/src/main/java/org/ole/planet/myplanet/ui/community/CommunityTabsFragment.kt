@@ -14,7 +14,7 @@ import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 
 @AndroidEntryPoint
-class CommunityTabFragment : Fragment() {
+class CommunityTabsFragment : Fragment() {
     private var _binding: FragmentTeamDetailBinding? = null
     private val binding get() = _binding!!
     @Inject

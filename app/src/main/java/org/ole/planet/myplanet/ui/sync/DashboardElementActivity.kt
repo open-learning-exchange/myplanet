@@ -26,7 +26,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createActionAsync
-import org.ole.planet.myplanet.ui.community.CommunityTabFragment
+import org.ole.planet.myplanet.ui.community.CommunityTabsFragment
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.dashboard.BellDashboardFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
@@ -62,7 +62,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
             4 -> openEnterpriseFragment()
             3 -> openCallFragment(TeamFragment(), "survey")
             5 -> {
-                openCallFragment(CommunityTabFragment(), "community")
+                openCallFragment(CommunityTabsFragment(), "community")
             }
         }
     }

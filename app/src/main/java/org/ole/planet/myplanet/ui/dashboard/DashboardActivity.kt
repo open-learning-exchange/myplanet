@@ -69,7 +69,7 @@ import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatHistoryFragment
-import org.ole.planet.myplanet.ui.community.CommunityTabFragment
+import org.ole.planet.myplanet.ui.community.CommunityTabsFragment
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.callback.NotificationsListener
 import org.ole.planet.myplanet.ui.dashboard.notifications.NotificationsFragment
@@ -310,7 +310,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     val isEnterprise = frag.arguments?.getString("type") == "enterprise"
                     if (isDashboard) 0L else if (isEnterprise) 6L else 5L
                 }
-                is CommunityTabFragment -> 7L
+                is CommunityTabsFragment -> 7L
                 is SurveyFragment -> 8L
                 else -> null
             }
@@ -1056,7 +1056,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             R.string.menu_library -> openCallFragment(ResourcesFragment())
             R.string.menu_surveys -> openCallFragment(SurveyFragment())
             R.string.menu_courses -> openCallFragment(CoursesFragment())
-            R.string.menu_community -> openCallFragment(CommunityTabFragment())
+            R.string.menu_community -> openCallFragment(CommunityTabsFragment())
             R.string.txt_myLibrary -> {
                 if (user?.id?.startsWith("guest") == true) {
                     guestDialog(this, userProfileDbHandler)

@@ -16,7 +16,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.DialogCampaignChallengeBinding
 import org.ole.planet.myplanet.model.RealmUserChallengeActions
-import org.ole.planet.myplanet.ui.community.CommunityTabFragment
+import org.ole.planet.myplanet.ui.community.CommunityTabsFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.DashboardElementActivity
@@ -137,7 +137,7 @@ class MarkdownDialog : DialogFragment() {
                         (activity as? OnHomeItemClickListener)?.openCallFragment(fragment)
                     }
                     context.getString(R.string.next) -> {
-                        (activity as DashboardActivity).openCallFragment(CommunityTabFragment())
+                        (activity as DashboardActivity).openCallFragment(CommunityTabsFragment())
                     }
                     context.getString(R.string.sync) -> {
                         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
