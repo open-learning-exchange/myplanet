@@ -30,7 +30,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.databinding.FragmentTakeExamBinding
+import org.ole.planet.myplanet.databinding.FragmentExamTakingBinding
 import org.ole.planet.myplanet.model.RealmCertification.Companion.isCourseCertified
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMembershipDoc
@@ -48,8 +48,8 @@ import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
 @AndroidEntryPoint
-class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButton.OnCheckedChangeListener, ImageCaptureCallback {
-    private var _binding: FragmentTakeExamBinding? = null
+class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundButton.OnCheckedChangeListener, ImageCaptureCallback {
+    private var _binding: FragmentExamTakingBinding? = null
     private val binding get() = _binding!!
     private var isCertified = false
 
@@ -65,7 +65,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     )
 
     override fun onCreateView(inflater: LayoutInflater, parent: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentTakeExamBinding.inflate(inflater, parent, false)
+        _binding = FragmentExamTakingBinding.inflate(inflater, parent, false)
         listAns = HashMap()
         user = userProfileDbHandler.userModel
         return binding.root
