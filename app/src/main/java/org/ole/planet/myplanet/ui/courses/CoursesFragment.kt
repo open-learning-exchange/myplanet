@@ -51,7 +51,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.resources.CollectionsFragment
-import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
+import org.ole.planet.myplanet.ui.common.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.common.RealtimeSyncMixin
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.JsonUtils

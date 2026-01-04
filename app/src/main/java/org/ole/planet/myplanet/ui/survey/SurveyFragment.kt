@@ -30,7 +30,7 @@ import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.survey.SurveyFormState
-import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
+import org.ole.planet.myplanet.ui.common.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.common.RealtimeSyncMixin
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.SharedPrefManager

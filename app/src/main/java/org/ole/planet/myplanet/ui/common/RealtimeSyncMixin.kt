@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.callback.BaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.TableDataUpdate
 import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
+import org.ole.planet.myplanet.ui.common.DiffRefreshableAdapter
 
 interface RealtimeSyncMixin {
     fun getWatchedTables(): List<String>

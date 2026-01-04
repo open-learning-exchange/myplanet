@@ -30,7 +30,7 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.TagsRepository
-import org.ole.planet.myplanet.ui.sync.DiffRefreshableAdapter
+import org.ole.planet.myplanet.ui.common.DiffRefreshableAdapter
 import org.ole.planet.myplanet.utilities.CourseRatingUtils
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
