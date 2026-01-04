@@ -77,10 +77,10 @@
             android:name=".ui.courses.CourseProgressActivity"
             android:theme="@style/AppTheme" />
         <activity
-            android:name=".ui.myhealth.AddMyHealthActivity"
+            android:name=".ui.health.AddMyHealthActivity"
             android:theme="@style/AppTheme" />
         <activity
-            android:name=".ui.myhealth.AddExaminationActivity"
+            android:name=".ui.health.AddExaminationActivity"
             android:theme="@style/AppTheme" />
         <activity android:name=".ui.maps.OfflineMapActivity" />
         <activity

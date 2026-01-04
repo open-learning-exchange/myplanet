@@ -328,7 +328,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             requireView().findViewById<View>(R.id.fabMyProgress).apply {
                 visibility = View.VISIBLE
                 setOnClickListener {
-                    val progressFragment = ProgressFragment().apply {
+                    val progressFragment = CoursesProgressFragment().apply {
                         arguments = Bundle().apply {
                             putBoolean("isMyCourseLib", true)
                         }

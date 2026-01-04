@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.myhealth
+package org.ole.planet.myplanet.ui.health
 
 import android.content.Context
 import android.content.DialogInterface
@@ -19,7 +19,7 @@ import org.ole.planet.myplanet.databinding.AlertExaminationBinding
 import org.ole.planet.myplanet.databinding.RowExaminationBinding
 import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.ui.myhealth.HealthExaminationAdapter.ViewHolderHealthExamination
+import org.ole.planet.myplanet.ui.health.HealthExaminationAdapter.ViewHolderHealthExamination
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
