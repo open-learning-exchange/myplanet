@@ -714,7 +714,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             try {
                 submissionsRepository.deleteExamSubmissions(
-                    examIdValue ?: id,
+                    examIdValue ?: id ?: "",
                     examCourseIdValue,
                     userIdValue
                 )
