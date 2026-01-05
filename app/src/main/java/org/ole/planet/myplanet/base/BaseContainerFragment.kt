@@ -28,7 +28,7 @@ import java.io.File
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.PermissionActivity.Companion.hasInstallPermission
+import org.ole.planet.myplanet.base.BasePermissionActivity.Companion.hasInstallPermission
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.RealmMyLibrary
