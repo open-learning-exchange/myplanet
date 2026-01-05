@@ -4,7 +4,7 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
 
-class SimpleItemTouchHelperCallback(private val mAdapter: ItemTouchHelperAdapter) :
+class SimpleItemTouchHelperCallback(private val mAdapter: ItemTouchHelperListener) :
     ItemTouchHelper.Callback() {
     override fun isLongPressDragEnabled(): Boolean {
         return true

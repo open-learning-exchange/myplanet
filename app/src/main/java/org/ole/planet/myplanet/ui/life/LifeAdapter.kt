@@ -23,7 +23,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.repository.LifeRepository
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment
-import org.ole.planet.myplanet.ui.life.helper.ItemTouchHelperAdapter
+import org.ole.planet.myplanet.ui.life.helper.ItemTouchHelperListener
 import org.ole.planet.myplanet.ui.life.helper.ItemTouchHelperViewHolder
 import org.ole.planet.myplanet.callback.OnStartDragListener
 import org.ole.planet.myplanet.ui.health.MyHealthFragment
@@ -40,7 +40,7 @@ class LifeAdapter(
     private val context: Context,
     private val mDragStartListener: OnStartDragListener,
     private val lifeRepository: LifeRepository
-) : ListAdapter<RealmMyLife, RecyclerView.ViewHolder>(DIFF_CALLBACK), ItemTouchHelperAdapter {
+) : ListAdapter<RealmMyLife, RecyclerView.ViewHolder>(DIFF_CALLBACK), ItemTouchHelperListener {
     private val hide = 0.5f
     private val show = 1f
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {

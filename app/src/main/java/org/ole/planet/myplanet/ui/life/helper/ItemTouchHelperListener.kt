@@ -1,5 +1,5 @@
 package org.ole.planet.myplanet.ui.life.helper
 
-interface ItemTouchHelperAdapter {
+interface ItemTouchHelperListener {
     fun onItemMove(fromPosition: Int, toPosition: Int): Boolean
 }
