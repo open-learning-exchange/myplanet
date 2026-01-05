@@ -156,4 +156,24 @@ class CoursesRepositoryImpl @Inject constructor(
             realm.copyFromRealm(sortedList)
         }
     }
+
+    override suspend fun joinCourse(courseId: String, userId: String) {
+        executeTransaction { realm ->
+            val course = realm.where(RealmMyCourse::class.java)
+                .equalTo("courseId", courseId)
+                .findFirst()
+            course?.setUserId(userId)
+            RealmRemovedLog.onAdd(realm, "courses", userId, courseId)
+        }
+    }
+
+    override suspend fun leaveCourse(courseId: String, userId: String) {
+        executeTransaction { realm ->
+            val course = realm.where(RealmMyCourse::class.java)
+                .equalTo("courseId", courseId)
+                .findFirst()
+            course?.removeUserId(userId)
+            RealmRemovedLog.onRemove(realm, "courses", userId, courseId)
+        }
+    }
 }
