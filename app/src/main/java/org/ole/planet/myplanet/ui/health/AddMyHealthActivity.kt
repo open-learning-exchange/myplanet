@@ -14,7 +14,9 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.databinding.ActivityAddMyHealthBinding
@@ -48,7 +50,6 @@ class AddMyHealthActivity : AppCompatActivity() {
         userId = intent.getStringExtra("userId")
         findViewById<View>(R.id.btn_submit).setOnClickListener {
             createMyHealth()
-            Utilities.toast(this@AddMyHealthActivity, getString(R.string.my_health_saved_successfully))
         }
 
         val contactTypes = resources.getStringArray(R.array.contact_type)
@@ -70,7 +71,7 @@ class AddMyHealthActivity : AppCompatActivity() {
     }
 
     private fun createMyHealth() {
-        lifecycleScope.launch {
+        lifecycleScope.launch(Dispatchers.IO) {
             databaseService.executeTransactionAsync { realm ->
                 val userModel = realm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
                 val oldProfile = myHealth?.profile
@@ -121,7 +122,10 @@ class AddMyHealthActivity : AppCompatActivity() {
                     e.printStackTrace()
                 }
             }
-            finish()
+            withContext(Dispatchers.Main) {
+                Utilities.toast(this@AddMyHealthActivity, getString(R.string.my_health_saved_successfully))
+                finish()
+            }
         }
     }
 
@@ -133,7 +137,7 @@ class AddMyHealthActivity : AppCompatActivity() {
         val progressBar = findViewById<View>(R.id.progressBar)
         progressBar.visibility = View.VISIBLE
 
-        lifecycleScope.launch {
+        lifecycleScope.launch(Dispatchers.IO) {
             val healthData = databaseService.withRealmAsync { realm ->
                 val userModel = realm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
                 val healthPojo = realm.where(RealmHealthExamination::class.java).equalTo("_id", userId).findFirst()
@@ -163,30 +167,32 @@ class AddMyHealthActivity : AppCompatActivity() {
                 )
             }
 
-            progressBar.visibility = View.GONE
-            myHealth = healthData.myHealth
-            val health = myHealth?.profile
+            withContext(Dispatchers.Main) {
+                progressBar.visibility = View.GONE
+                myHealth = healthData.myHealth
+                val health = myHealth?.profile
 
-            binding.etEmergency.editText?.setText(health?.emergencyContactName)
-            binding.etContact.editText?.setText(health?.emergencyContact)
-            val contactTypes = resources.getStringArray(R.array.contact_type)
-            val contactType = health?.emergencyContactType
-            if (!contactType.isNullOrEmpty()) {
-                val index = contactTypes.indexOf(contactType)
-                if (index >= 0) {
-                    binding.spnContactType.setSelection(index)
+                binding.etEmergency.editText?.setText(health?.emergencyContactName)
+                binding.etContact.editText?.setText(health?.emergencyContact)
+                val contactTypes = resources.getStringArray(R.array.contact_type)
+                val contactType = health?.emergencyContactType
+                if (!contactType.isNullOrEmpty()) {
+                    val index = contactTypes.indexOf(contactType)
+                    if (index >= 0) {
+                        binding.spnContactType.setSelection(index)
+                    }
                 }
-            }
-            binding.etSpecialNeed.editText?.setText(health?.specialNeeds)
-            binding.etOtherNeed.editText?.setText(health?.notes)
+                binding.etSpecialNeed.editText?.setText(health?.specialNeeds)
+                binding.etOtherNeed.editText?.setText(health?.notes)
 
-            binding.etFname.editText?.setText(healthData.firstName)
-            binding.etMname.editText?.setText(healthData.middleName)
-            binding.etLname.editText?.setText(healthData.lastName)
-            binding.etEmail.editText?.setText(healthData.email)
-            binding.etPhone.editText?.setText(healthData.phoneNumber)
-            binding.etBirthdateLayout.editText?.setText(healthData.dob)
-            binding.etBirthplace.editText?.setText(healthData.birthPlace)
+                binding.etFname.editText?.setText(healthData.firstName)
+                binding.etMname.editText?.setText(healthData.middleName)
+                binding.etLname.editText?.setText(healthData.lastName)
+                binding.etEmail.editText?.setText(healthData.email)
+                binding.etPhone.editText?.setText(healthData.phoneNumber)
+                binding.etBirthdateLayout.editText?.setText(healthData.dob)
+                binding.etBirthplace.editText?.setText(healthData.birthPlace)
+            }
         }
     }
 
