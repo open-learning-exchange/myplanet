@@ -912,4 +912,26 @@ class TeamsRepositoryImpl @Inject constructor(
             query.count() > 0
         }
     }
+
+    override suspend fun getJoinedMemberCount(teamId: String): Int {
+        return withRealm { realm ->
+            val members = realm.where(RealmMyTeam::class.java)
+                .equalTo("teamId", teamId)
+                .equalTo("docType", "membership")
+                .findAll()
+            members.size
+        }
+    }
+
+    override suspend fun isUserRequested(teamId: String, userId: String?): Boolean {
+        if (userId.isNullOrBlank()) return false
+        return withRealm { realm ->
+            realm.where(RealmMyTeam::class.java)
+                .equalTo("docType", "request")
+                .equalTo("teamId", teamId)
+                .equalTo("userId", userId)
+                .findAll()
+                .isNotEmpty()
+        }
+    }
 }

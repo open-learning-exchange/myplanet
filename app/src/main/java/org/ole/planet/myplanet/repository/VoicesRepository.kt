@@ -18,4 +18,6 @@ interface VoicesRepository {
     suspend fun updateTeamNotification(teamId: String, count: Int)
     suspend fun getFilteredNews(teamId: String): List<RealmNews>
     suspend fun getReplies(newsId: String?): List<RealmNews>
+    fun addLabelToNews(newsId: String, label: String, callback: () -> Unit)
+    fun removeLabelFromNews(newsId: String, label: String, callback: () -> Unit)
 }

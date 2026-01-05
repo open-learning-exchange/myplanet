@@ -240,4 +240,46 @@ class VoicesRepositoryImpl @Inject constructor(
                 .let { realm.copyFromRealm(it) }
         }
     }
+
+    override fun addLabelToNews(newsId: String, label: String, callback: () -> Unit) {
+        databaseService.realmInstance.executeTransactionAsync({ transactionRealm ->
+            val managedNews = transactionRealm.where(RealmNews::class.java)
+                .equalTo("id", newsId)
+                .findFirst()
+            if (managedNews != null) {
+                var managedLabels = managedNews.labels
+                if (managedLabels == null) {
+                    managedLabels = io.realm.RealmList()
+                    managedNews.labels = managedLabels
+                }
+                if (!managedLabels.contains(label)) {
+                    managedLabels.add(label)
+                }
+            }
+        }, {
+            callback()
+        }, { error ->
+            error.printStackTrace()
+        })
+    }
+
+    override fun removeLabelFromNews(newsId: String, label: String, callback: () -> Unit) {
+        databaseService.realmInstance.executeTransactionAsync({ transactionRealm ->
+            val managedNews = transactionRealm.where(RealmNews::class.java)
+                .equalTo("id", newsId)
+                .findFirst()
+            if (managedNews != null) {
+                var managedLabels = managedNews.labels
+                if (managedLabels == null) {
+                    managedLabels = io.realm.RealmList()
+                    managedNews.labels = managedLabels
+                }
+                managedLabels.remove(label)
+            }
+        }, {
+            callback()
+        }, { error ->
+            error.printStackTrace()
+        })
+    }
 }

@@ -95,7 +95,6 @@ class NewsAdapter(var context: Context, private var currentUser: RealmUserModel?
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
     private var imageList: RealmList<String>? = null
-    lateinit var mRealm: Realm
     private var fromLogin = false
     private var nonTeamMember = false
     private var recyclerView: RecyclerView? = null
@@ -158,20 +157,11 @@ class NewsAdapter(var context: Context, private var currentUser: RealmUserModel?
         this.listener = listener
     }
 
-    fun setmRealm(mRealm: Realm?) {
-        if (mRealm != null) {
-            this.mRealm = mRealm
-            labelManager = NewsLabelManager(context, this.mRealm)
-        }
-    }
-
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val binding = RowNewsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         user = userProfileDbHandler.userModel
         settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        if (::mRealm.isInitialized) {
-            if (labelManager == null) labelManager = NewsLabelManager(context, mRealm)
-        }
+        labelManager = NewsLabelManager(context, voicesRepository)
         return ViewHolderNews(binding)
     }
 
@@ -331,7 +321,9 @@ class NewsAdapter(var context: Context, private var currentUser: RealmUserModel?
                             currentList.removeAt(adjustedPos)
                             submitListSafely(currentList)
                         }
-                        NewsActions.deletePost(mRealm, news, currentList.toMutableList(), teamName, listener)
+                        scope.launch {
+                            NewsActions.deletePost(voicesRepository, news, currentList.toMutableList(), teamName, listener)
+                        }
                     }
                     .setNegativeButton(R.string.cancel, null)
                     .show()
@@ -342,7 +334,7 @@ class NewsAdapter(var context: Context, private var currentUser: RealmUserModel?
             holder.binding.imgEdit.setOnClickListener {
                 NewsActions.showEditAlert(
                     context,
-                    mRealm,
+                    voicesRepository,
                     news.id,
                     true,
                     currentUser,
@@ -415,18 +407,7 @@ class NewsAdapter(var context: Context, private var currentUser: RealmUserModel?
 
     private fun submitListSafely(list: List<RealmNews?>, commitCallback: Runnable? = null) {
         userCache.clear()
-        val detachedList = list.map { news ->
-            if (news?.isValid == true && ::mRealm.isInitialized) {
-                try {
-                    mRealm.copyFromRealm(news)
-                } catch (e: Exception) {
-                    news
-                }
-            } else {
-                news
-            }
-        }
-        submitList(detachedList, commitCallback)
+        submitList(list, commitCallback)
     }
 
     private fun setMemberClickListeners(holder: ViewHolderNews, userModel: RealmUserModel?, currentLeader: RealmUserModel?) {
@@ -540,7 +521,7 @@ class NewsAdapter(var context: Context, private var currentUser: RealmUserModel?
             viewHolder.binding.btnReply.setOnClickListener {
                 NewsActions.showEditAlert(
                     context,
-                    mRealm,
+                    voicesRepository,
                     finalNews?.id,
                     false,
                     currentUser,

@@ -24,7 +24,6 @@ import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.callback.TableDataUpdate
 import org.ole.planet.myplanet.callback.TeamUpdateListener
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
-import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMemberCount
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -264,9 +263,11 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
             setupMyTeamButtons(user)
         }
 
-        team?._id?.let { id ->
-            if (getJoinedMemberCount(id, mRealm) <= 1 && isMyTeam) {
-                binding.btnLeave.visibility = View.GONE
+        viewLifecycleOwner.lifecycleScope.launch {
+            team?._id?.let { id ->
+                if (teamsRepository.getJoinedMemberCount(id) <= 1 && isMyTeam) {
+                    binding.btnLeave.visibility = View.GONE
+                }
             }
         }
     }
@@ -337,21 +338,23 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
             Utilities.toast(activity, getString(R.string.no_team_available))
             return
         }
-        val isUserRequested = currentTeam.requested(user?.id, mRealm)
-        if (isUserRequested) {
-            binding.btnLeave.text = getString(R.string.requested)
-            binding.btnLeave.isEnabled = false
-        } else {
-            binding.btnLeave.text = getString(R.string.join)
-            binding.btnLeave.setOnClickListener {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    val userId = user?.id
-                    val userPlanetCode = user?.planetCode
-                    val teamType = team?.teamType
-                    teamsRepository.requestToJoin(teamId, userId, userPlanetCode, teamType)
-                    binding.btnLeave.text = getString(R.string.requested)
-                    binding.btnLeave.isEnabled = false
-                    teamsRepository.syncTeamActivities()
+        viewLifecycleOwner.lifecycleScope.launch {
+            val isUserRequested = teamsRepository.isUserRequested(teamId, user?.id)
+            if (isUserRequested) {
+                binding.btnLeave.text = getString(R.string.requested)
+                binding.btnLeave.isEnabled = false
+            } else {
+                binding.btnLeave.text = getString(R.string.join)
+                binding.btnLeave.setOnClickListener {
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        val userId = user?.id
+                        val userPlanetCode = user?.planetCode
+                        val teamType = team?.teamType
+                        teamsRepository.requestToJoin(teamId, userId, userPlanetCode, teamType)
+                        binding.btnLeave.text = getString(R.string.requested)
+                        binding.btnLeave.isEnabled = false
+                        teamsRepository.syncTeamActivities()
+                    }
                 }
             }
         }
@@ -366,11 +369,13 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
         binding.btnLeave.setOnClickListener {
             AlertDialog.Builder(requireContext()).setMessage(R.string.confirm_exit)
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                    team?.leave(user, mRealm)
-                    Utilities.toast(activity, getString(R.string.left_team))
-                    val lastPageId = team?._id?.let { teamLastPage[it] } ?: arguments?.getString("navigateToPage")
-                    setupViewPager(false, lastPageId)
-                    binding.llActionButtons.visibility = View.GONE
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        teamsRepository.leaveTeam(team!!._id!!, user?.id)
+                        Utilities.toast(activity, getString(R.string.left_team))
+                        val lastPageId = team?._id?.let { teamLastPage[it] } ?: arguments?.getString("navigateToPage")
+                        setupViewPager(false, lastPageId)
+                        binding.llActionButtons.visibility = View.GONE
+                    }
                 }.setNegativeButton(R.string.no, null).show()
         }
 
@@ -413,11 +418,13 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
                 binding.title.text = updatedTeam.name
                 binding.subtitle.text = updatedTeam.type
 
-                team?._id?.let { id ->
-                    if (getJoinedMemberCount(id, mRealm) <= 1 && isMyTeam) {
-                        binding.btnLeave.visibility = View.GONE
-                    } else {
-                        binding.btnLeave.visibility = View.VISIBLE
+                viewLifecycleOwner.lifecycleScope.launch {
+                    team?._id?.let { id ->
+                        if (teamsRepository.getJoinedMemberCount(id) <= 1 && isMyTeam) {
+                            binding.btnLeave.visibility = View.GONE
+                        } else {
+                            binding.btnLeave.visibility = View.VISIBLE
+                        }
                     }
                 }
             }
@@ -428,13 +435,15 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
 
     override fun onMemberChanged() {
         _binding ?: return
-        _binding?.let { binding ->
-            val teamId = team?._id ?: return@let
-            val joinedCount = getJoinedMemberCount(teamId, mRealm)
-            binding.btnLeave.visibility = if (joinedCount <= 1) {
-                View.GONE
-            } else {
-                View.VISIBLE
+        viewLifecycleOwner.lifecycleScope.launch {
+            _binding?.let { binding ->
+                val teamId = team?._id ?: return@let
+                val joinedCount = teamsRepository.getJoinedMemberCount(teamId)
+                binding.btnLeave.visibility = if (joinedCount <= 1) {
+                    View.GONE
+                } else {
+                    View.VISIBLE
+                }
             }
         }
     }
