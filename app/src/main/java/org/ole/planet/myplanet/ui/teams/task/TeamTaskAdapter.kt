@@ -14,6 +14,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.callback.OnTaskCompletedListener
 import org.ole.planet.myplanet.databinding.RowTaskBinding
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.repository.UserRepository
@@ -28,8 +29,8 @@ class TeamTaskAdapter(
     private val userRepository: UserRepository
 ) : ListAdapter<RealmTeamTask, ViewHolderTask>(DIFF_CALLBACK) {
     private val assigneeCache: MutableMap<String, String> = mutableMapOf()
-    private var listener: OnCompletedListener? = null
-    fun setListener(listener: OnCompletedListener?) {
+    private var listener: OnTaskCompletedListener? = null
+    fun setListener(listener: OnTaskCompletedListener?) {
         this.listener = listener
     }
 
@@ -112,13 +113,6 @@ class TeamTaskAdapter(
                 }
             }
         }
-    }
-
-    interface OnCompletedListener {
-        fun onCheckChange(realmTeamTask: RealmTeamTask?, b: Boolean)
-        fun onEdit(task: RealmTeamTask?)
-        fun onDelete(task: RealmTeamTask?)
-        fun onClickMore(realmTeamTask: RealmTeamTask?)
     }
 
     class ViewHolderTask(val binding: RowTaskBinding) : RecyclerView.ViewHolder(binding.root) {
