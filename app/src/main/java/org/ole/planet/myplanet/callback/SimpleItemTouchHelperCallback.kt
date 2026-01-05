@@ -1,8 +1,9 @@
-package org.ole.planet.myplanet.ui.life.helper
+package org.ole.planet.myplanet.callback
 
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
+import org.ole.planet.myplanet.ui.life.helper.ItemTouchHelperViewHolder
 
 class SimpleItemTouchHelperCallback(private val mAdapter: ItemTouchHelperListener) :
     ItemTouchHelper.Callback() {
