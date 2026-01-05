@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.utilities
+package org.ole.planet.myplanet.ui.components
 
 import android.os.Bundle
 import android.text.Spannable

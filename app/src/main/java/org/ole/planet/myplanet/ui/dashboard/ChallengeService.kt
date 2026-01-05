@@ -23,7 +23,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.ui.courses.CoursesProgressFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
-import org.ole.planet.myplanet.utilities.MarkdownDialog
+import org.ole.planet.myplanet.ui.components.MarkdownDialog
 
 class ChallengeService(
     private val activity: DashboardActivity,

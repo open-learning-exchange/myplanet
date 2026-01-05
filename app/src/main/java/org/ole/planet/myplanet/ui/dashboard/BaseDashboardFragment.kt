@@ -365,8 +365,8 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), DashboardActio
         myLifeFlex.flexDirection = FlexDirection.ROW
 
         viewLifecycleOwner.lifecycleScope.launch {
-            launch { setUpMyLife(userId) }
-            launch { myLifeListInit(myLifeFlex) }
+            setUpMyLife(userId)
+            myLifeListInit(myLifeFlex)
         }
 
 
