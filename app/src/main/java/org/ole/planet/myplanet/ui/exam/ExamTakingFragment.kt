@@ -234,6 +234,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     }
 
     private fun createSubmission() {
+        if (sub != null) return
         mRealm.beginTransaction()
         try {
             sub = createSubmission(null, mRealm)
@@ -611,12 +612,8 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         } else {
             null
         }
-        
-        if (sub == null) {
-            sub = mRealm.where(RealmSubmission::class.java)
-                .equalTo("status", "pending")
-                .findAll().lastOrNull()
-        }
+
+        if (sub == null) return false
 
         val result = ExamSubmissionUtils.saveAnswer(
             mRealm,
