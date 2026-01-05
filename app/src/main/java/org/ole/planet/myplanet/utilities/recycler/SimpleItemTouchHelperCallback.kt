@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.life.helper
+package org.ole.planet.myplanet.utilities.recycler
 
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.ItemTouchHelper
