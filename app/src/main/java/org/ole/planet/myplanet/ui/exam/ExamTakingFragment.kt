@@ -36,6 +36,7 @@ import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMembershipDoc
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
+import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
@@ -57,6 +58,9 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
 
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
+
+    @Inject
+    lateinit var submissionsRepository: SubmissionsRepository
 
     data class AnswerData(
         var singleAnswer: String = "",
@@ -709,23 +713,11 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
 
         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             try {
-                databaseService.executeTransactionAsync { realm ->
-                    val parentIdToSearch = if (!TextUtils.isEmpty(examCourseIdValue)) {
-                        "${examIdValue ?: id}@${examCourseIdValue}"
-                    } else {
-                        examIdValue ?: id
-                    }
-
-                    val allSubmissions = realm.where(RealmSubmission::class.java)
-                        .equalTo("userId", userIdValue)
-                        .equalTo("parentId", parentIdToSearch)
-                        .findAll()
-
-                    allSubmissions.forEach { submission ->
-                        submission.answers?.deleteAllFromRealm()
-                        submission.deleteFromRealm()
-                    }
-                }
+                submissionsRepository.deleteExamSubmissions(
+                    examIdValue ?: id,
+                    examCourseIdValue,
+                    userIdValue
+                )
 
                 withContext(Dispatchers.Main) {
                     answerCache.clear()

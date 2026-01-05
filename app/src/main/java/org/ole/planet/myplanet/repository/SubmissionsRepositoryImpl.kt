@@ -348,4 +348,24 @@ class SubmissionsRepositoryImpl @Inject constructor(
                 .sort("lastUpdateTime", Sort.DESCENDING)
         }
     }
+
+    override suspend fun deleteExamSubmissions(examId: String, courseId: String?, userId: String?) {
+        databaseService.executeTransactionAsync { realm ->
+            val parentIdToSearch = if (!courseId.isNullOrEmpty()) {
+                "${examId}@${courseId}"
+            } else {
+                examId
+            }
+
+            val allSubmissions = realm.where(RealmSubmission::class.java)
+                .equalTo("userId", userId)
+                .equalTo("parentId", parentIdToSearch)
+                .findAll()
+
+            allSubmissions.forEach { submission ->
+                submission.answers?.deleteAllFromRealm()
+                submission.deleteFromRealm()
+            }
+        }
+    }
 }

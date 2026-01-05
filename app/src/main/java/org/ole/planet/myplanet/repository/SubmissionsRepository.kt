@@ -30,4 +30,5 @@ interface SubmissionsRepository {
     fun getNormalizedSubmitterName(submission: RealmSubmission): String?
     suspend fun getAllPendingSubmissions(): List<RealmSubmission>
     suspend fun getSubmissionsByParentId(parentId: String?, userId: String?): List<RealmSubmission>
+    suspend fun deleteExamSubmissions(examId: String, courseId: String?, userId: String?)
 }
