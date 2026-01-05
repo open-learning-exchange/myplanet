@@ -14,6 +14,7 @@ import org.ole.planet.myplanet.ui.survey.SurveyFormState
 import org.ole.planet.myplanet.ui.survey.SurveyInfo
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDateWithTime
+import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import android.content.SharedPreferences
 import org.ole.planet.myplanet.model.RealmMyTeam
@@ -24,7 +25,7 @@ import java.util.UUID
 class SurveysRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
     private val userProfileDbHandler: UserProfileDbHandler,
-    private val settings: SharedPreferences,
+    @AppPreferences private val settings: SharedPreferences,
     databaseService: DatabaseService
 ) : RealmRepository(databaseService), SurveysRepository {
 

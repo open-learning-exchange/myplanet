@@ -40,7 +40,8 @@ class SurveyAdapter(
     private val settings: SharedPreferences,
     private val userProfileDbHandler: UserProfileDbHandler,
     private val surveyInfoMap: Map<String, SurveyInfo>,
-    private val bindingDataMap: Map<String, SurveyFormState>
+    private val bindingDataMap: Map<String, SurveyFormState>,
+    private val coroutineScope: CoroutineScope
 ) : ListAdapter<RealmStepExam, SurveyAdapter.ViewHolderSurvey>(SurveyDiffCallback()) {
     private var listener: OnHomeItemClickListener? = null
     private val adoptedSurveyIds = mutableSetOf<String>()
@@ -156,7 +157,7 @@ class SurveyAdapter(
         }
 
         private fun adoptSurvey(exam: RealmStepExam, teamId: String?) {
-            CoroutineScope(Dispatchers.Main).launch {
+            coroutineScope.launch {
                 val success = withContext(Dispatchers.IO) {
                     surveysRepository.adoptSurvey(exam.id!!, teamId, isTeam)
                 }

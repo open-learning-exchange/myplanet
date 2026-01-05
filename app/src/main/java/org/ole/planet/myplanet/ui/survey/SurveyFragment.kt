@@ -87,7 +87,8 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
             settings,
             profileDbHandler,
             surveyInfoMap,
-            bindingDataMap
+            bindingDataMap,
+            viewLifecycleOwner.lifecycleScope
         )
         prefManager = SharedPrefManager(requireContext())
         
