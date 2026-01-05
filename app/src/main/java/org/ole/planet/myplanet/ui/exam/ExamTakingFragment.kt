@@ -93,14 +93,16 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         if ((questions?.size ?: 0) > 0) {
             if (type == "exam") {
                 clearAllExistingAnswers {
-                    createSubmission()
+                    createSubmission {
+                        startExam(questions?.get(currentIndex))
+                        updateNavButtons()
+                    }
+                }
+            } else {
+                createSubmission {
                     startExam(questions?.get(currentIndex))
                     updateNavButtons()
                 }
-            } else {
-                createSubmission()
-                startExam(questions?.get(currentIndex))
-                updateNavButtons()
             }
         } else {
             binding.container.visibility = View.GONE
@@ -233,34 +235,47 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         }
     }
 
-    private fun createSubmission() {
-        mRealm.beginTransaction()
-        try {
-            sub = createSubmission(null, mRealm)
-            setParentId()
-            setParentJson()
-            sub?.userId = user?.id
-            sub?.status = "pending"
-            sub?.type = type
-            sub?.startTime = Date().time
-            sub?.lastUpdateTime = Date().time
-            if (sub?.answers == null) {
-                sub?.answers = RealmList()
-            }
+    private fun createSubmission(onComplete: () -> Unit = {}) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                var submissionId: String? = null
+                databaseService.executeTransactionAsync { realm ->
+                    val submission = createSubmission(null, realm)
+                    setParentId(submission)
+                    setParentJson(submission)
+                    submission.userId = user?.id
+                    submission.status = "pending"
+                    submission.type = type
+                    submission.startTime = Date().time
+                    submission.lastUpdateTime = Date().time
+                    if (submission.answers == null) {
+                        submission.answers = RealmList()
+                    }
 
-            currentIndex = 0
-            if (isTeam && teamId != null) {
-                addTeamInformation(mRealm)
+                    currentIndex = 0
+                    if (isTeam && teamId != null) {
+                        addTeamInformation(realm)
+                    }
+                    submissionId = submission.id
+                }
+
+                withContext(Dispatchers.Main) {
+                    submissionId?.let {
+                        sub = mRealm.where(RealmSubmission::class.java).equalTo("id", it).findFirst()
+                    }
+                    onComplete()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    toast(activity, getString(R.string.failed_to_start_exam))
+                }
             }
-            mRealm.commitTransaction()
-        } catch (e: Exception) {
-            mRealm.cancelTransaction()
-            throw e
         }
     }
 
-    private fun setParentId() {
-        sub?.parentId = when {
+    private fun setParentId(submission: RealmSubmission?) {
+        submission?.parentId = when {
             !TextUtils.isEmpty(exam?.id) -> if (!TextUtils.isEmpty(exam?.courseId)) {
                 "${exam?.id}@${exam?.courseId}"
             } else {
@@ -271,11 +286,11 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
             } else {
                 id
             }
-            else -> sub?.parentId
+            else -> submission?.parentId
         }
     }
 
-    private fun setParentJson() {
+    private fun setParentJson(submission: RealmSubmission?) {
         try {
             val parentJsonString = JSONObject().apply {
                 put("_id", exam?.id ?: id)
@@ -286,7 +301,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                 put("noOfQuestions", exam?.noOfQuestions ?: 0)
                 put("isFromNation", exam?.isFromNation ?: false)
             }.toString()
-            sub?.parent = parentJsonString
+            submission?.parent = parentJsonString
         } catch (e: Exception) {
             e.printStackTrace()
         }
