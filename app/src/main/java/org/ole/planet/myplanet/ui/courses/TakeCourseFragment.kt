@@ -59,7 +59,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     lateinit var steps: List<RealmCourseStep?>
     var position = 0
     private var currentStep = 0
-    private var cachedCourseProgress: Int? = null
+    private var cachedProgress: Int? = null
     private val isFetchingProgress = java.util.concurrent.atomic.AtomicBoolean(false)
     private var joinDialog: AlertDialog? = null
 
@@ -99,17 +99,12 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
             withContext(Dispatchers.IO) {
                 steps = coursesRepository.getCourseSteps(courseId)
-
-                if (cachedCourseProgress == null && isFetchingProgress.compareAndSet(false, true)) {
-                    try {
-                        cachedCourseProgress = getCourseProgress()
-                    } finally {
-                        isFetchingProgress.set(false)
-                    }
-                }
             }
-
-            currentStep = cachedCourseProgress ?: 0
+            viewLifecycleOwner.lifecycleScope.launch {
+                updateCachedProgress()
+                currentStep = cachedProgress ?: 0
+                updateStepDisplay(binding.viewPager2.currentItem)
+            }
 
             if (steps.isEmpty()) {
                 binding.nextStep.visibility = View.GONE
@@ -150,7 +145,10 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         super.onResume()
         if (this::steps.isInitialized) {
             val currentPosition = binding.viewPager2.currentItem
-            updateStepDisplay(currentPosition)
+            viewLifecycleOwner.lifecycleScope.launch {
+                updateCachedProgress()
+                updateStepDisplay(currentPosition)
+            }
 
             // Update Next/Finish button visibility when returning from exam
             if (currentPosition >= steps.size) {
@@ -170,7 +168,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         binding.finishStep.setOnClickListener(this)
         binding.courseProgress.setOnSeekBarChangeListener(object : OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar, i: Int, b: Boolean) {
-                val currentProgress = getCurrentProgress(steps, mRealm, userModel?.id, courseId)
+                val currentProgress = cachedProgress ?: 0
                 if (b && i <= currentProgress + 1) {
                     binding.viewPager2.currentItem = i
                 }
@@ -189,7 +187,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             binding.tvStep.text = String.format(getString(R.string.step) + " %d/%d", stepNumber, steps.size)
         }
 
-        val currentProgress = getCurrentProgress(steps, mRealm, userModel?.id, courseId)
+        val currentProgress = cachedProgress ?: 0
         if (currentProgress < steps.size) {
             binding.courseProgress.secondaryProgress = currentProgress + 1
         }
@@ -260,8 +258,10 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             binding.nextStep.isClickable = true
             binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
         }
-
-        updateStepDisplay(position)
+        viewLifecycleOwner.lifecycleScope.launch {
+            updateCachedProgress()
+            updateStepDisplay(position)
+        }
     }
 
     private fun changeNextButtonState(position: Int) {
@@ -394,12 +394,12 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         }
     }
 
-    private suspend fun getCourseProgress(): Int {
-        return withContext(Dispatchers.IO) {
-            databaseService.withRealm { realm ->
-                val user = userProfileDbHandler.userModel
-                val courseProgressMap = RealmCourseProgress.getCourseProgress(realm, user?.id)
-                courseProgressMap[courseId]?.asJsonObject?.get("current")?.asInt ?: 0
+    private suspend fun updateCachedProgress() {
+        if (this::steps.isInitialized) {
+            cachedProgress = withContext(Dispatchers.IO) {
+                databaseService.withRealm { realm ->
+                    getCurrentProgress(steps, realm, userModel?.id, courseId)
+                }
             }
         }
     }
