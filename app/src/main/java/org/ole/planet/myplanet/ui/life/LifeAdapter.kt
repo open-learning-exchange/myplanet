@@ -27,7 +27,7 @@ import org.ole.planet.myplanet.callback.ItemTouchHelperListener
 import org.ole.planet.myplanet.ui.life.helper.ItemTouchHelperViewHolder
 import org.ole.planet.myplanet.callback.OnStartDragListener
 import org.ole.planet.myplanet.ui.health.MyHealthFragment
-import org.ole.planet.myplanet.ui.navigation.NavigationHelper
+import org.ole.planet.myplanet.utilities.NavigationHelper
 import org.ole.planet.myplanet.ui.personals.PersonalsFragment
 import org.ole.planet.myplanet.ui.references.ReferenceFragment
 import org.ole.planet.myplanet.ui.submissions.SubmissionsFragment
