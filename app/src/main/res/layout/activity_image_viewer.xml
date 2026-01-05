@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context="org.ole.planet.myplanet.ui.viewer.ImageViewerActivity">
+    tools:context="org.ole.planet.myplanet.ui.reader.ImageViewerActivity">
 
 
     <TextView

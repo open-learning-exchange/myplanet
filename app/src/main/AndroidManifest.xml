@@ -89,7 +89,7 @@
         <activity
             android:name=".ui.resources.AddResourceActivity"
             android:theme="@style/AppTheme" />
-        <activity android:name=".ui.viewer.AudioPlayerActivity"
+        <activity android:name=".ui.reader.AudioPlayerActivity"
             android:configChanges="orientation|screenSize" />
         <activity
             android:name=".ui.feedback.FeedbackDetailActivity"
@@ -100,19 +100,19 @@
             android:label="@string/title_activity_dashboard"
             android:windowSoftInputMode="adjustResize"
             android:theme="@style/FullscreenTheme" />
-        <activity android:name=".ui.viewer.PDFReaderActivity"
+        <activity android:name=".ui.reader.PDFReaderActivity"
             android:configChanges="orientation|screenSize" />
-        <activity android:name=".ui.viewer.WebViewActivity"
+        <activity android:name=".ui.reader.WebViewActivity"
             android:configChanges="orientation|screenSize" />
-        <activity android:name=".ui.viewer.VideoViewerActivity"
+        <activity android:name=".ui.reader.VideoViewerActivity"
             android:configChanges="orientation|screenSize" />
-        <activity android:name=".ui.viewer.ImageViewerActivity"
+        <activity android:name=".ui.reader.ImageViewerActivity"
             android:configChanges="orientation|screenSize" />
-        <activity android:name=".ui.viewer.TextFileViewerActivity"
+        <activity android:name=".ui.reader.TextFileViewerActivity"
             android:configChanges="orientation|screenSize" />
-        <activity android:name=".ui.viewer.MarkdownViewerActivity"
+        <activity android:name=".ui.reader.MarkdownViewerActivity"
             android:configChanges="orientation|screenSize" />
-        <activity android:name=".ui.viewer.CSVViewerActivity"
+        <activity android:name=".ui.reader.CSVViewerActivity"
             android:configChanges="orientation|screenSize" />
         <activity
             android:name=".ui.dictionary.DictionaryActivity"

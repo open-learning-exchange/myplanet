@@ -34,7 +34,7 @@ import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_RESOURCE_DOWNLOAD
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
-import org.ole.planet.myplanet.ui.viewer.WebViewActivity
+import org.ole.planet.myplanet.ui.reader.WebViewActivity
 import org.ole.planet.myplanet.utilities.CourseRatingUtils
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.ResourceOpener
