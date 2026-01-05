@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.userprofile
+package org.ole.planet.myplanet.ui.user
 
 import android.content.Context
 import android.os.Bundle

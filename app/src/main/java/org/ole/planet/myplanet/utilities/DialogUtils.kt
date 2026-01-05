@@ -20,7 +20,7 @@ import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.service.MyDownloadService
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.sync.SyncActivity
-import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
+import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
 
 object DialogUtils {
     @JvmStatic
