@@ -26,7 +26,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 
 @AndroidEntryPoint
-class CourseProgressActivity : BaseActivity() {
+class CoursesProgressGridActivity : BaseActivity() {
     private lateinit var binding: ActivityCourseProgressBinding
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
@@ -64,7 +64,7 @@ class CourseProgressActivity : BaseActivity() {
             data.current.toString(),
             data.max.toString()
         )
-        binding.rvProgress.adapter = ProgressGridAdapter(this, data.steps)
+        binding.rvProgress.adapter = CoursesProgressGridAdapter(this, data.steps)
     }
 
     private suspend fun loadData(courseId: String, userId: String?): CourseProgressData? {
