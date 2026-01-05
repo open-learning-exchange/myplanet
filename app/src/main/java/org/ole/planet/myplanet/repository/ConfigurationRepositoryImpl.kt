@@ -90,9 +90,25 @@ class ConfigurationRepositoryImpl @Inject constructor(
 
     override fun checkVersion(callback: ConfigurationRepository.CheckVersionCallback, settings: SharedPreferences) {
         serviceScope.launch {
-            withContext(Dispatchers.Main) {
-                callback.onCheckingVersion()
+            val lastCheckTime = preferences.getLong("last_version_check_timestamp", 0)
+            val currentTime = System.currentTimeMillis()
+            val twentyFourHoursInMillis = 24 * 60 * 60 * 1000
+
+            if (currentTime - lastCheckTime < twentyFourHoursInMillis) {
+                val cachedVersionDetail = preferences.getString("versionDetail", null)
+                val cachedApkVersion = preferences.getInt("cachedApkVersion", -1)
+
+                if (cachedVersionDetail != null && cachedApkVersion != -1) {
+                    try {
+                        val cachedInfo = JsonUtils.gson.fromJson(cachedVersionDetail, MyPlanet::class.java)
+                        handleVersionEvaluation(cachedInfo, cachedApkVersion, callback)
+                        return@launch
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
             }
+
             try {
                 val planetInfo = fetchVersionInfo(settings)
                 if (planetInfo == null) {
@@ -127,6 +143,10 @@ class ConfigurationRepositoryImpl @Inject constructor(
                         }
                         return@launch
                     }
+
+                preferences.edit {
+                    putInt("cachedApkVersion", apkVersion)
+                }
 
                 handleVersionEvaluation(planetInfo, apkVersion, callback)
             } catch (e: Exception) {
