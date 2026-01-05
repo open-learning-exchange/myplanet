@@ -8,8 +8,8 @@ import androidx.viewpager2.adapter.FragmentStateAdapter
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.ui.enterprises.EnterprisesFinancesFragment
 import org.ole.planet.myplanet.ui.enterprises.EnterprisesReportsFragment
-import org.ole.planet.myplanet.ui.voices.NewsFragment
 import org.ole.planet.myplanet.ui.teams.TeamCalendarFragment
+import org.ole.planet.myplanet.ui.voices.NewsFragment
 
 class CommunityPagerAdapter(private val fm: FragmentActivity, private val id: String, private var fromLogin: Boolean, val settings: SharedPreferences) : FragmentStateAdapter(fm) {
     override fun createFragment(position: Int): Fragment {

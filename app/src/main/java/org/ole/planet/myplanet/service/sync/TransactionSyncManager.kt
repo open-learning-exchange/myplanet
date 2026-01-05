@@ -7,7 +7,6 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Realm
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -22,6 +21,7 @@ import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLin
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
+import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.JsonUtils.getJsonArray
