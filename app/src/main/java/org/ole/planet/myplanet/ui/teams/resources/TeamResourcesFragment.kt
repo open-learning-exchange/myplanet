@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.team.resources
+package org.ole.planet.myplanet.ui.teams.resources
 
 import android.content.DialogInterface
 import android.graphics.Typeface
@@ -25,7 +25,7 @@ import org.ole.planet.myplanet.databinding.FragmentTeamResourceBinding
 import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.ui.team.BaseTeamFragment
+import org.ole.planet.myplanet.ui.teams.BaseTeamFragment
 import org.ole.planet.myplanet.ui.components.CheckboxListView
 
 @AndroidEntryPoint
