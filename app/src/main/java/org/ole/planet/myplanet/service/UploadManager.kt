@@ -346,11 +346,8 @@ class UploadManager @Inject constructor(
 
             feedbacksToUpload.forEach { feedback ->
                 try {
-                    val res = apiInterface.postDocSuspend(
-                        UrlUtils.header,
-                        "application/json",
-                        "${UrlUtils.getUrl()}/feedback",
-                        RealmFeedback.serializeFeedback(feedback)
+                    val res = apiInterface.postDocSuspend(UrlUtils.header, "application/json",
+                        "${UrlUtils.getUrl()}/feedback", RealmFeedback.serializeFeedback(feedback)
                     )
 
                     val r = res.body()
@@ -358,7 +355,6 @@ class UploadManager @Inject constructor(
                         val revElement = r["rev"]
                         val idElement = r["id"]
                         if (revElement != null && idElement != null) {
-                            // Use the helper method for transaction
                             databaseService.executeTransactionAsync { transactionRealm ->
                                 val realmFeedback = transactionRealm.where(RealmFeedback::class.java)
                                     .equalTo("id", feedback.id)
@@ -442,7 +438,6 @@ class UploadManager @Inject constructor(
                                     }
                             }
 
-                            // Upload attachment after database update
                             listener?.let {
                                 val photo = databaseService.withRealm { realm ->
                                     realm.where(RealmSubmitPhotos::class.java)
@@ -524,7 +519,6 @@ class UploadManager @Inject constructor(
                                         }
                                 }
 
-                                // Upload attachment after database update
                                 listener?.let {
                                     val library = databaseService.withRealm { realm ->
                                         realm.where(RealmMyLibrary::class.java)
@@ -553,11 +547,8 @@ class UploadManager @Inject constructor(
         if (!personal.isUploaded) {
             return withContext(Dispatchers.IO) {
                 try {
-                    val response = apiInterface?.postDoc(
-                        UrlUtils.header,
-                        "application/json",
-                        "${UrlUtils.getUrl()}/resources",
-                        RealmMyPersonal.serialize(personal, context)
+                    val response = apiInterface?.postDoc(UrlUtils.header, "application/json",
+                        "${UrlUtils.getUrl()}/resources", RealmMyPersonal.serialize(personal, context)
                     )?.execute()
 
                     val `object` = response?.body()
@@ -609,7 +600,6 @@ class UploadManager @Inject constructor(
         )
 
         val tasksToUpload = databaseService.withRealm { realm ->
-            // Use database query instead of in-memory filter
             val tasks = realm.where(RealmTeamTask::class.java)
                 .beginGroup()
                 .isNull("_id").or().isEmpty("_id").or().equalTo("isUpdated", true)
@@ -629,11 +619,8 @@ class UploadManager @Inject constructor(
         tasksToUpload.chunked(BATCH_SIZE).forEach { batch ->
             batch.forEach { taskData ->
                 try {
-                    val `object` = apiInterface.postDoc(
-                        UrlUtils.header,
-                        "application/json",
-                        "${UrlUtils.getUrl()}/tasks",
-                        taskData.serialized
+                    val `object` = apiInterface.postDoc(UrlUtils.header, "application/json",
+                        "${UrlUtils.getUrl()}/tasks", taskData.serialized
                     ).execute().body()
 
                     if (`object` != null) {
@@ -780,12 +767,8 @@ class UploadManager @Inject constructor(
         teamsToUpload.chunked(BATCH_SIZE).forEach { batch ->
             batch.forEach { teamData ->
                 try {
-                    val `object` = apiInterface.postDoc(
-                        UrlUtils.header,
-                        "application/json",
-                        "${UrlUtils.getUrl()}/teams",
-                        teamData.serialized
-                    ).execute().body()
+                    val `object` = apiInterface.postDoc(UrlUtils.header, "application/json",
+                        "${UrlUtils.getUrl()}/teams", teamData.serialized).execute().body()
 
                     if (`object` != null) {
                         val rev = getString("rev", `object`)
@@ -872,7 +855,6 @@ class UploadManager @Inject constructor(
                 }
             }
 
-            // Upload team activities
             uploadTeamActivitiesRefactored(apiInterface)
 
             listener.onSuccess("User activities sync completed successfully")
@@ -906,11 +888,8 @@ class UploadManager @Inject constructor(
         logsToUpload.chunked(BATCH_SIZE).forEach { batch ->
             batch.forEach { logData ->
                 try {
-                    val `object` = apiInterface?.postDoc(
-                        UrlUtils.header,
-                        "application/json",
-                        "${UrlUtils.getUrl()}/team_activities",
-                        logData.serialized
+                    val `object` = apiInterface?.postDoc(UrlUtils.header, "application/json",
+                        "${UrlUtils.getUrl()}/team_activities", logData.serialized
                     )?.execute()?.body()
 
                     if (`object` != null) {
@@ -1061,7 +1040,6 @@ class UploadManager @Inject constructor(
                         val `object` = newsData.serializedNews
                         val image = newsData.imagesArray
 
-                        // Process image uploads
                         if (!newsData.imageUrls.isNullOrEmpty()) {
                             newsData.imageUrls.chunked(5).forEach { imageChunk ->
                                 imageChunk.forEach { imageObject ->
@@ -1106,7 +1084,6 @@ class UploadManager @Inject constructor(
 
                         `object`.add("images", image)
 
-                        // Upload news
                         val newsUploadResponse: Response<JsonObject>? =
                             if (TextUtils.isEmpty(newsData.newsId)) {
                                 apiInterface.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/news", `object`).execute()
@@ -1189,11 +1166,8 @@ class UploadManager @Inject constructor(
         activitiesToUpload.chunked(BATCH_SIZE).forEach { batch ->
             batch.forEach { activityData ->
                 try {
-                    val o = apiInterface.postDoc(
-                        UrlUtils.header,
-                        "application/json",
-                        "${UrlUtils.getUrl()}/search_activities",
-                        activityData.serialized
+                    val o = apiInterface.postDoc(UrlUtils.header, "application/json",
+                        "${UrlUtils.getUrl()}/search_activities", activityData.serialized
                     ).execute().body()
 
                     if (o != null) {
@@ -1253,11 +1227,8 @@ class UploadManager @Inject constructor(
         activitiesToUpload.chunked(BATCH_SIZE).forEach { batch ->
             batch.forEach { activityData ->
                 try {
-                    val `object` = apiInterface.postDoc(
-                        UrlUtils.header,
-                        "application/json",
-                        "${UrlUtils.getUrl()}/$db",
-                        activityData.serialized
+                    val `object` = apiInterface.postDoc(UrlUtils.header, "application/json",
+                        "${UrlUtils.getUrl()}/$db", activityData.serialized
                     ).execute().body()
 
                     if (`object` != null) {
@@ -1305,11 +1276,8 @@ class UploadManager @Inject constructor(
         activitiesToUpload.chunked(BATCH_SIZE).forEach { batch ->
             batch.forEach { activityData ->
                 try {
-                    val `object` = apiInterface.postDoc(
-                        UrlUtils.header,
-                        "application/json",
-                        "${UrlUtils.getUrl()}/course_activities",
-                        activityData.serialized
+                    val `object` = apiInterface.postDoc(UrlUtils.header, "application/json",
+                        "${UrlUtils.getUrl()}/course_activities", activityData.serialized
                     ).execute().body()
 
                     if (`object` != null) {
@@ -1354,11 +1322,8 @@ class UploadManager @Inject constructor(
         meetupsToUpload.chunked(BATCH_SIZE).forEach { batch ->
             batch.forEach { meetupData ->
                 try {
-                    val `object` = apiInterface.postDoc(
-                        UrlUtils.header,
-                        "application/json",
-                        "${UrlUtils.getUrl()}/meetups",
-                        meetupData.serialized
+                    val `object` = apiInterface.postDoc(UrlUtils.header, "application/json",
+                        "${UrlUtils.getUrl()}/meetups", meetupData.serialized
                     ).execute().body()
 
                     if (`object` != null) {
@@ -1406,12 +1371,8 @@ class UploadManager @Inject constructor(
         surveysToUpload.chunked(BATCH_SIZE).forEach { batch ->
             batch.forEach { surveyData ->
                 try {
-                    val `object` = apiInterface.postDoc(
-                        UrlUtils.header,
-                        "application/json",
-                        "${UrlUtils.getUrl()}/exams",
-                        surveyData.serialized
-                    ).execute().body()
+                    val `object` = apiInterface.postDoc(UrlUtils.header, "application/json",
+                        "${UrlUtils.getUrl()}/exams", surveyData.serialized).execute().body()
 
                     if (`object` != null) {
                         databaseService.executeTransactionAsync { transactionRealm ->
