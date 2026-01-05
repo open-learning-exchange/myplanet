@@ -9,7 +9,7 @@ import com.google.gson.JsonArray
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowMyProgressGridBinding
 
-class ProgressGridAdapter(private val context: Context, private val list: JsonArray) :
+class CoursesProgressGridAdapter(private val context: Context, private val list: JsonArray) :
     RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private lateinit var rowMyProgressGridBinding: RowMyProgressGridBinding
 
