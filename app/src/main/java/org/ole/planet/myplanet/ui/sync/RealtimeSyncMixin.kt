@@ -69,7 +69,7 @@ class RealtimeSyncHelper(
         fragment.viewLifecycleOwner.lifecycleScope.launch {
             val adapter = mixin.getSyncRecyclerView()?.adapter ?: return@launch
             when {
-                adapter is DiffRefreshableAdapter -> adapter.refreshWithDiff()
+                adapter is DiffRefreshableCallback -> adapter.refreshWithDiff()
                 adapter is ListAdapter<*, *> -> {
                     (adapter as ListAdapter<Any, *>).let { listAdapter ->
                         listAdapter.submitList(listAdapter.currentList.toList())

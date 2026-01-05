@@ -1,5 +1,5 @@
 package org.ole.planet.myplanet.ui.sync
 
-interface DiffRefreshableAdapter {
+interface DiffRefreshableCallback {
     fun refreshWithDiff()
 }
