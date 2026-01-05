@@ -29,8 +29,8 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.data.Service
-import org.ole.planet.myplanet.data.Service.PlanetAvailableListener
+import org.ole.planet.myplanet.data.DataService
+import org.ole.planet.myplanet.data.DataService.PlanetAvailableListener
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmMyCourse
@@ -187,7 +187,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     protected fun showDownloadDialog(dbMyLibrary: List<RealmMyLibrary?>) {
         if (!isAdded) return
-        Service(requireContext()).isPlanetAvailable(object : PlanetAvailableListener {
+        DataService(requireContext()).isPlanetAvailable(object : PlanetAvailableListener {
             override fun isAvailable() {
                 if (!isAdded) return
                 val userId = profileDbHandler.userModel?.id
@@ -311,7 +311,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     fun startDownload(urls: ArrayList<String>) {
         if (!isFragmentActive()) return
-        Service(requireActivity()).isPlanetAvailable(object : PlanetAvailableListener {
+        DataService(requireActivity()).isPlanetAvailable(object : PlanetAvailableListener {
             override fun isAvailable() {
                 if (!isFragmentActive()) return
                 if (urls.isNotEmpty()) {
@@ -537,7 +537,7 @@ abstract class BaseResourceFragment : Fragment() {
         }
 
         fun backgroundDownload(urls: ArrayList<String>, context: Context) {
-            Service(context).isPlanetAvailable(object : PlanetAvailableListener {
+            DataService(context).isPlanetAvailable(object : PlanetAvailableListener {
                 override fun isAvailable() {
                     if (urls.isNotEmpty()) {
                         DownloadUtils.openDownloadService(context, urls, false)
