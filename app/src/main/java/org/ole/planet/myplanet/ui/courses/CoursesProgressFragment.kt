@@ -8,8 +8,6 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.databinding.FragmentCoursesProgressBinding
@@ -38,23 +36,8 @@ class CoursesProgressFragment : Fragment() {
     private fun observeCourseData() {
         lifecycleScope.launch {
             progressViewModel.courseData.collect { courseData ->
-                courseData?.let { jsonArray ->
-                    val list = jsonArray.map { it.asJsonObject }
-                    progressAdapter.submitList(list)
-                }
+                progressAdapter.submitList(courseData)
             }
-        }
-    }
-
-    companion object {
-        fun getCourseProgress(courseData: JsonArray, courseId: String): JsonObject? {
-            courseData.forEach { element ->
-                val course = element.asJsonObject
-                if (course.get("courseId").asString == courseId) {
-                    return course.getAsJsonObject("progress")
-                }
-            }
-            return null
         }
     }
 
