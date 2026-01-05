@@ -142,12 +142,15 @@ class AddMyHealthActivity : AppCompatActivity() {
                 var decodedHealth: RealmMyHealth? = null
                 if (healthPojo != null && !TextUtils.isEmpty(healthPojo.data)) {
                     try {
-                        decodedHealth = JsonUtils.gson.fromJson(
-                            decrypt(healthPojo.data, userModel?.key, userModel?.iv),
-                            RealmMyHealth::class.java
-                        )
+                        val decryptedData = withContext(Dispatchers.Default) {
+                            decrypt(healthPojo.data, userModel?.key, userModel?.iv)
+                        }
+                        decodedHealth = JsonUtils.gson.fromJson(decryptedData, RealmMyHealth::class.java)
                     } catch (e: Exception) {
                         e.printStackTrace()
+                        withContext(Dispatchers.Main) {
+                            Utilities.toast(this@AddMyHealthActivity, "Failed to decrypt health data.")
+                        }
                     }
                 }
 

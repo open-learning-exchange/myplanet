@@ -10,6 +10,7 @@ import android.view.View
 import android.widget.CheckBox
 import android.widget.CompoundButton
 import androidx.appcompat.app.AlertDialog
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.google.gson.JsonObject
@@ -29,7 +30,6 @@ import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmMyHealth.RealmMyHealthProfile
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.decrypt
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.encrypt
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateIv
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateKey
@@ -49,12 +49,13 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     private lateinit var binding: ActivityAddExaminationBinding
-    lateinit var mRealm: Realm
-    var userId: String? = null
-    var user: RealmUserModel? = null
+    private val viewModel: AddExaminationViewModel by viewModels()
+    private lateinit var mRealm: Realm
+    private var userId: String? = null
+    private var user: RealmUserModel? = null
     private var currentUser: RealmUserModel? = null
     private var pojo: RealmHealthExamination? = null
-    var health: RealmMyHealth? = null
+    private var health: RealmMyHealth? = null
     private var customDiag: MutableSet<String?>? = null
     private var mapConditions: HashMap<String?, Boolean>? = null
     var allowSubmission = true
@@ -83,10 +84,10 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         mapConditions = HashMap()
         mRealm = databaseService.realmInstance
         userId = intent.getStringExtra("userId")
-        pojo = mRealm.where(RealmHealthExamination::class.java).equalTo("_id", userId).findFirst()
-        if (pojo == null) {
-            pojo = mRealm.where(RealmHealthExamination::class.java).equalTo("userId", userId).findFirst()
-        }
+
+        setupObservers()
+        userId?.let { viewModel.loadHealthData(it) }
+
         user = mRealm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
         if (user != null && (user?.key == null || user?.iv == null)) {
             if (!mRealm.isInTransaction) mRealm.beginTransaction()
@@ -94,22 +95,36 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
             user?.iv = generateIv()
             mRealm.commitTransaction()
         }
-        if (pojo != null && !TextUtils.isEmpty(pojo?.data)) {
-            health = JsonUtils.gson.fromJson(decrypt(pojo?.data, user?.key, user?.iv), RealmMyHealth::class.java)
-        }
-        if (health == null) {
-            initHealth()
-        }
-        initExamination()
         validateFields()
-        findViewById<View>(R.id.btn_save).setOnClickListener {
-            if(!allowSubmission){
+        binding.btnSave.setOnClickListener {
+            if(!allowSubmission) {
                 scrollToView(binding.etBloodpressure)
             }
             if (!isValidInput || !allowSubmission) {
                 return@setOnClickListener
             }
             saveData()
+        }
+    }
+
+    private fun setupObservers() {
+        viewModel.isLoading.observe(this) { isLoading ->
+            binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
+        }
+        viewModel.error.observe(this) { error ->
+            error?.let {
+                Utilities.toast(this, it)
+                initHealth()
+                initExamination()
+            }
+        }
+        viewModel.healthData.observe(this) { healthData ->
+            if (healthData != null) {
+                health = healthData
+            } else {
+                initHealth()
+            }
+            initExamination()
         }
     }
 
