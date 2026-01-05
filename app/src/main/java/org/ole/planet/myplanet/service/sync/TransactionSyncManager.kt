@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.service
+package org.ole.planet.myplanet.service.sync
 
 import android.content.Context
 import android.content.SharedPreferences
@@ -7,6 +7,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Realm
+import org.ole.planet.myplanet.service.UserProfileDbHandler
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton

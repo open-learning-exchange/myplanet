@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.service
+package org.ole.planet.myplanet.service.sync
 
 import android.content.Context
 import android.content.SharedPreferences

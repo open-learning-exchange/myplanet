@@ -4,7 +4,6 @@ import io.realm.Realm
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import org.ole.planet.myplanet.service.TransactionSyncManager
 
 class StandardSyncStrategy @Inject constructor(
     private val transactionSyncManager: TransactionSyncManager
