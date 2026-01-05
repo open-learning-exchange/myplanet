@@ -39,7 +39,6 @@ import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.data.ApiClient
 import org.ole.planet.myplanet.data.ApiInterface
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.data.LoginSyncManager
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.insert
@@ -52,6 +51,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam.Companion.insertMyTeams
 import org.ole.planet.myplanet.model.RealmResourceActivity.Companion.onSynced
 import org.ole.planet.myplanet.model.Rows
 import org.ole.planet.myplanet.service.sync.SyncMode
+import org.ole.planet.myplanet.service.sync.LoginSyncManager
 import org.ole.planet.myplanet.service.sync.ThreadSafeRealmManager
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
