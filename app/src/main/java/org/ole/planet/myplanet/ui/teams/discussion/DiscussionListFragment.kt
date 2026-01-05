@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.team.discussion
+package org.ole.planet.myplanet.ui.teams.discussion
 
 import android.content.res.Configuration
 import android.os.Bundle
@@ -24,7 +24,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.news.NewsAdapter
-import org.ole.planet.myplanet.ui.team.BaseTeamFragment
+import org.ole.planet.myplanet.ui.teams.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 

@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.team.courses
+package org.ole.planet.myplanet.ui.teams.courses
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -8,7 +8,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import org.ole.planet.myplanet.databinding.FragmentTeamCourseBinding
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.ui.team.BaseTeamFragment
+import org.ole.planet.myplanet.ui.teams.BaseTeamFragment
 
 class TeamCoursesFragment : BaseTeamFragment() {
     private var _binding: FragmentTeamCourseBinding? = null

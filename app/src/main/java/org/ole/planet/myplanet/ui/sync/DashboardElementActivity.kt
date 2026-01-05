@@ -33,7 +33,7 @@ import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.ratings.RatingsFragment.Companion.newInstance
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
-import org.ole.planet.myplanet.ui.team.TeamFragment
+import org.ole.planet.myplanet.ui.teams.TeamFragment
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Constants.isBetaWifiFeatureEnabled

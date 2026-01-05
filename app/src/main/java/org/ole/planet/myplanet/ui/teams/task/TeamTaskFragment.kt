@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.team.task
+package org.ole.planet.myplanet.ui.teams.task
 
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
@@ -33,8 +33,8 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.health.UserListAdapter
-import org.ole.planet.myplanet.ui.team.BaseTeamFragment
-import org.ole.planet.myplanet.ui.team.task.TeamTaskAdapter.OnCompletedListener
+import org.ole.planet.myplanet.ui.teams.BaseTeamFragment
+import org.ole.planet.myplanet.ui.teams.task.TeamTaskAdapter.OnCompletedListener
 import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDateTZ

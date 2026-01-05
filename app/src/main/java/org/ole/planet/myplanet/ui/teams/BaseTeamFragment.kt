@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.team
+package org.ole.planet.myplanet.ui.teams
 
 import android.os.Bundle
 import androidx.lifecycle.lifecycleScope
