@@ -23,7 +23,7 @@ import org.ole.planet.myplanet.ui.health.MyHealthFragment
 import org.ole.planet.myplanet.ui.personals.PersonalsFragment
 import org.ole.planet.myplanet.ui.references.ReferenceFragment
 import org.ole.planet.myplanet.ui.submissions.SubmissionsFragment
-import org.ole.planet.myplanet.ui.team.TeamDetailFragment
+import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
 import org.ole.planet.myplanet.ui.user.AchievementFragment
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utilities.Utilities

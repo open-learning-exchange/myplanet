@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.team
+package org.ole.planet.myplanet.ui.teams
 
 data class TeamStatus(
     val isMember: Boolean,

@@ -41,7 +41,7 @@ import org.ole.planet.myplanet.service.sync.TransactionSyncManager
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
 import org.ole.planet.myplanet.ui.health.UserListAdapter
 import org.ole.planet.myplanet.ui.voices.NewsViewModel
-import org.ole.planet.myplanet.ui.team.TeamDetailFragment
+import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
 import org.ole.planet.myplanet.ui.user.UserProfileFragment
 import org.ole.planet.myplanet.utilities.Constants
