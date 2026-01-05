@@ -271,7 +271,6 @@ class UploadManager @Inject constructor(
     private suspend fun uploadCourseProgress() {
         val apiInterface = client.create(ApiInterface::class.java)
 
-        // Step 1: Query and copy data from Realm
         data class ProgressData(
             val progressId: String?,
             val userId: String?,
@@ -297,7 +296,6 @@ class UploadManager @Inject constructor(
             }
         }
 
-        // Step 2: Process network operations outside transaction on IO dispatcher
         var successCount = 0
         var errorCount = 0
 
@@ -313,7 +311,6 @@ class UploadManager @Inject constructor(
                         ).execute().body()
 
                         if (`object` != null) {
-                            // Step 3: Update Realm with results in separate transaction
                             databaseService.executeTransactionAsync { transactionRealm ->
                                 transactionRealm.where(RealmCourseProgress::class.java)
                                     .equalTo("id", progressData.progressId)
@@ -392,7 +389,6 @@ class UploadManager @Inject constructor(
     suspend fun uploadSubmitPhotos(listener: SuccessListener?) {
         val apiInterface = client.create(ApiInterface::class.java)
 
-        // Step 1: Query and copy data from Realm
         data class PhotoData(
             val photoId: String?,
             val serialized: JsonObject
@@ -421,7 +417,6 @@ class UploadManager @Inject constructor(
             return
         }
 
-        // Step 2: Process network operations outside transaction on IO dispatcher
         withContext(Dispatchers.IO) {
             photosToUpload.chunked(BATCH_SIZE).forEach { batch ->
                 batch.forEach { photoData ->
@@ -437,7 +432,6 @@ class UploadManager @Inject constructor(
                             val rev = getString("rev", `object`)
                             val id = getString("id", `object`)
 
-                            // Step 3: Update Realm with results in separate transaction
                             databaseService.executeTransactionAsync { transactionRealm ->
                                 transactionRealm.where(RealmSubmitPhotos::class.java)
                                     .equalTo("id", photoData.photoId)
@@ -471,7 +465,6 @@ class UploadManager @Inject constructor(
         val apiInterface = client.create(ApiInterface::class.java)
 
         try {
-            // Step 1: Query and copy data from Realm
             data class ResourceData(
                 val libraryId: String?,
                 val serialized: JsonObject
@@ -507,7 +500,6 @@ class UploadManager @Inject constructor(
                 return
             }
 
-            // Step 2: Process network operations outside transaction on IO dispatcher
             withContext(Dispatchers.IO) {
                 resourcesToUpload.chunked(BATCH_SIZE).forEach { batch ->
                     batch.forEach { resourceData ->
@@ -523,7 +515,6 @@ class UploadManager @Inject constructor(
                                 val rev = getString("rev", `object`)
                                 val id = getString("id", `object`)
 
-                                // Step 3: Update Realm with results in separate transaction
                                 databaseService.executeTransactionAsync { transactionRealm ->
                                     transactionRealm.where(RealmMyLibrary::class.java)
                                         .equalTo("id", resourceData.libraryId)
@@ -612,7 +603,6 @@ class UploadManager @Inject constructor(
     suspend fun uploadTeamTask() {
         val apiInterface = client.create(ApiInterface::class.java)
 
-        // Step 1: Query and copy data from Realm using proper query filters
         data class TaskData(
             val taskId: String?,
             val serialized: JsonObject
@@ -635,7 +625,6 @@ class UploadManager @Inject constructor(
             }
         }
 
-        // Step 2: Process network operations outside transaction on IO dispatcher
         withContext(Dispatchers.IO) {
         tasksToUpload.chunked(BATCH_SIZE).forEach { batch ->
             batch.forEach { taskData ->
@@ -651,7 +640,6 @@ class UploadManager @Inject constructor(
                         val rev = getString("rev", `object`)
                         val id = getString("id", `object`)
 
-                        // Step 3: Update Realm with results in separate transaction
                         databaseService.executeTransactionAsync { transactionRealm ->
                             transactionRealm.where(RealmTeamTask::class.java)
                                 .equalTo("id", taskData.taskId)
@@ -682,7 +670,6 @@ class UploadManager @Inject constructor(
         val apiInterface = client.create(ApiInterface::class.java)
 
         try {
-            // Step 1: Query and copy data from Realm
             data class SubmissionData(
                 val submissionId: String?,
                 val submissionDbId: String?,
@@ -718,7 +705,6 @@ class UploadManager @Inject constructor(
                 }
             }
 
-            // Step 2: Process network operations outside transaction
             submissionsToUpload.chunked(BATCH_SIZE).forEach { batch ->
                 batch.forEach { submissionData ->
                     try {
@@ -743,7 +729,6 @@ class UploadManager @Inject constructor(
                             val rev = getString("rev", jsonObject)
                             val id = getString("id", jsonObject)
 
-                            // Step 3: Update Realm with results in separate transaction
                             databaseService.executeTransactionAsync { transactionRealm ->
                                 transactionRealm.where(RealmSubmission::class.java)
                                     .equalTo("id", submissionData.submissionId)
@@ -772,7 +757,6 @@ class UploadManager @Inject constructor(
     suspend fun uploadTeams() {
         val apiInterface = client.create(ApiInterface::class.java)
 
-        // Step 1: Query and copy data from Realm
         data class TeamData(
             val teamId: String?,
             val serialized: JsonObject
@@ -792,7 +776,6 @@ class UploadManager @Inject constructor(
             }
         }
 
-        // Step 2: Process network operations outside transaction on IO dispatcher
         withContext(Dispatchers.IO) {
         teamsToUpload.chunked(BATCH_SIZE).forEach { batch ->
             batch.forEach { teamData ->
@@ -807,7 +790,6 @@ class UploadManager @Inject constructor(
                     if (`object` != null) {
                         val rev = getString("rev", `object`)
 
-                        // Step 3: Update Realm with results in separate transaction
                         databaseService.executeTransactionAsync { transactionRealm ->
                             transactionRealm.where(RealmMyTeam::class.java)
                                 .equalTo("_id", teamData.teamId)
@@ -843,7 +825,6 @@ class UploadManager @Inject constructor(
         }
 
         try {
-            // Step 1: Query and copy data from Realm
             data class ActivityData(
                 val activityId: String?,
                 val userId: String?,
@@ -870,7 +851,6 @@ class UploadManager @Inject constructor(
                 }
             }
 
-            // Step 2: Process network operations outside transaction
             activitiesToUpload.chunked(BATCH_SIZE).forEach { batch ->
                 batch.forEach { activityData ->
                     try {
@@ -881,7 +861,6 @@ class UploadManager @Inject constructor(
                             activityData.serialized
                         ).execute().body()
 
-                        // Step 3: Update Realm with results in separate transaction
                         databaseService.executeTransactionAsync { transactionRealm ->
                             transactionRealm.where(RealmOfflineActivity::class.java)
                                 .equalTo("_id", activityData.activityId)
@@ -904,7 +883,6 @@ class UploadManager @Inject constructor(
     }
 
     private suspend fun uploadTeamActivitiesRefactored(apiInterface: ApiInterface?) {
-        // Step 1: Query and copy data from Realm
         data class TeamLogData(
             val logId: String?,
             val serialized: JsonObject
@@ -924,7 +902,6 @@ class UploadManager @Inject constructor(
             }
         }
 
-        // Step 2: Process network operations outside transaction on IO dispatcher
         withContext(Dispatchers.IO) {
         logsToUpload.chunked(BATCH_SIZE).forEach { batch ->
             batch.forEach { logData ->
@@ -937,7 +914,6 @@ class UploadManager @Inject constructor(
                     )?.execute()?.body()
 
                     if (`object` != null) {
-                        // Step 3: Update Realm with results in separate transaction
                         databaseService.executeTransactionAsync { transactionRealm ->
                             transactionRealm.where(RealmTeamLog::class.java)
                                 .equalTo("_id", logData.logId)
@@ -973,7 +949,6 @@ class UploadManager @Inject constructor(
     suspend fun uploadRating() {
         val apiInterface = client.create(ApiInterface::class.java)
 
-        // Step 1: Query and copy data from Realm
         data class RatingData(
             val ratingId: String?,
             val ratingDbId: String?,
@@ -1001,7 +976,6 @@ class UploadManager @Inject constructor(
             }
         }
 
-        // Step 2: Process network operations outside transaction on IO dispatcher
         withContext(Dispatchers.IO) {
         ratingsToUpload.chunked(BATCH_SIZE).forEach { batch ->
             batch.forEach { ratingData ->
@@ -1024,7 +998,6 @@ class UploadManager @Inject constructor(
                         }
 
                     if (`object`?.body() != null) {
-                        // Step 3: Update Realm with results in separate transaction
                         databaseService.executeTransactionAsync { transactionRealm ->
                             transactionRealm.where(RealmRating::class.java)
                                 .equalTo("id", ratingData.ratingId)
@@ -1046,7 +1019,6 @@ class UploadManager @Inject constructor(
     suspend fun uploadNews() {
         val apiInterface = client.create(ApiInterface::class.java)
 
-        // Step 1: Query and copy data from Realm
         data class NewsData(
             val id: String,
             val newsId: String?,
@@ -1082,7 +1054,6 @@ class UploadManager @Inject constructor(
                 ?.let { realm.copyFromRealm(it) }
         }
 
-        // Step 2: Process network operations outside transaction on IO dispatcher
         withContext(Dispatchers.IO) {
             newsToUpload.chunked(BATCH_SIZE).forEach { batch ->
                 batch.forEach { newsData ->
@@ -1143,7 +1114,6 @@ class UploadManager @Inject constructor(
                                 apiInterface.putDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/news/${newsData.newsId}", `object`).execute()
                             }
 
-                        // Step 3: Update Realm with results in separate transaction
                         if (newsUploadResponse?.body() != null) {
                             databaseService.executeTransactionAsync { transactionRealm ->
                                 transactionRealm.where(RealmNews::class.java)
@@ -1196,7 +1166,6 @@ class UploadManager @Inject constructor(
     suspend fun uploadSearchActivity() {
         val apiInterface = client.create(ApiInterface::class.java)
 
-        // Step 1: Query and copy data from Realm
         data class SearchActivityData(
             val activityId: String?,
             val serialized: JsonObject
@@ -1216,7 +1185,6 @@ class UploadManager @Inject constructor(
             }
         }
 
-        // Step 2: Process network operations outside transaction on IO dispatcher
         withContext(Dispatchers.IO) {
         activitiesToUpload.chunked(BATCH_SIZE).forEach { batch ->
             batch.forEach { activityData ->
@@ -1229,7 +1197,6 @@ class UploadManager @Inject constructor(
                     ).execute().body()
 
                     if (o != null) {
-                        // Step 3: Update Realm with results in separate transaction
                         databaseService.executeTransactionAsync { transactionRealm ->
                             transactionRealm.where(RealmSearchActivity::class.java)
                                 .equalTo("_id", activityData.activityId)
@@ -1255,7 +1222,6 @@ class UploadManager @Inject constructor(
             "resource_activities"
         }
 
-        // Step 1: Query and copy data from Realm
         data class ResourceActivityData(
             val activityId: String?,
             val serialized: JsonObject
@@ -1283,7 +1249,6 @@ class UploadManager @Inject constructor(
             }
         }
 
-        // Step 2: Process network operations outside transaction on IO dispatcher
         withContext(Dispatchers.IO) {
         activitiesToUpload.chunked(BATCH_SIZE).forEach { batch ->
             batch.forEach { activityData ->
@@ -1296,7 +1261,6 @@ class UploadManager @Inject constructor(
                     ).execute().body()
 
                     if (`object` != null) {
-                        // Step 3: Update Realm with results in separate transaction
                         databaseService.executeTransactionAsync { transactionRealm ->
                             transactionRealm.where(RealmResourceActivity::class.java)
                                 .equalTo("_id", activityData.activityId)
@@ -1317,7 +1281,6 @@ class UploadManager @Inject constructor(
     suspend fun uploadCourseActivities() {
         val apiInterface = client.create(ApiInterface::class.java)
 
-        // Step 1: Query and copy data from Realm
         data class CourseActivityData(
             val activityId: String?,
             val serialized: JsonObject
@@ -1338,7 +1301,6 @@ class UploadManager @Inject constructor(
             }
         }
 
-        // Step 2: Process network operations outside transaction on IO dispatcher
         withContext(Dispatchers.IO) {
         activitiesToUpload.chunked(BATCH_SIZE).forEach { batch ->
             batch.forEach { activityData ->
@@ -1351,7 +1313,6 @@ class UploadManager @Inject constructor(
                     ).execute().body()
 
                     if (`object` != null) {
-                        // Step 3: Update Realm with results in separate transaction
                         databaseService.executeTransactionAsync { transactionRealm ->
                             transactionRealm.where(RealmCourseActivity::class.java)
                                 .equalTo("_id", activityData.activityId)
@@ -1372,7 +1333,6 @@ class UploadManager @Inject constructor(
     suspend fun uploadMeetups() {
         val apiInterface = client.create(ApiInterface::class.java)
 
-        // Step 1: Query and copy data from Realm
         data class MeetupData(
             val localMeetupId: String?,
             val serialized: JsonObject
@@ -1390,7 +1350,6 @@ class UploadManager @Inject constructor(
             }
         }
 
-        // Step 2: Process network operations outside transaction on IO dispatcher
         withContext(Dispatchers.IO) {
         meetupsToUpload.chunked(BATCH_SIZE).forEach { batch ->
             batch.forEach { meetupData ->
@@ -1403,7 +1362,6 @@ class UploadManager @Inject constructor(
                     ).execute().body()
 
                     if (`object` != null) {
-                        // Step 3: Update Realm with results in separate transaction
                         databaseService.executeTransactionAsync { transactionRealm ->
                             transactionRealm.where(RealmMeetup::class.java)
                                 .equalTo("id", meetupData.localMeetupId)
@@ -1424,7 +1382,6 @@ class UploadManager @Inject constructor(
     suspend fun uploadAdoptedSurveys() {
         val apiInterface = client.create(ApiInterface::class.java)
 
-        // Step 1: Query and copy data from Realm
         data class SurveyData(
             val surveyId: String?,
             val serialized: JsonObject
@@ -1445,7 +1402,6 @@ class UploadManager @Inject constructor(
             }
         }
 
-        // Step 2: Process network operations outside transaction on IO dispatcher
         withContext(Dispatchers.IO) {
         surveysToUpload.chunked(BATCH_SIZE).forEach { batch ->
             batch.forEach { surveyData ->
@@ -1458,7 +1414,6 @@ class UploadManager @Inject constructor(
                     ).execute().body()
 
                     if (`object` != null) {
-                        // Step 3: Update Realm with results in separate transaction
                         databaseService.executeTransactionAsync { transactionRealm ->
                             transactionRealm.where(RealmStepExam::class.java)
                                 .equalTo("id", surveyData.surveyId)
