@@ -57,8 +57,8 @@ import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.ServerAddress
 import org.ole.planet.myplanet.repository.ConfigurationRepository
-import org.ole.planet.myplanet.service.SyncManager
-import org.ole.planet.myplanet.service.TransactionSyncManager
+import org.ole.planet.myplanet.service.sync.SyncManager
+import org.ole.planet.myplanet.service.sync.TransactionSyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.androidDecrypter

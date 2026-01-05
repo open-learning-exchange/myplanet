@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.data.Service
 import org.ole.planet.myplanet.data.Service.CheckVersionCallback
 import org.ole.planet.myplanet.di.AutoSyncEntryPoint
 import org.ole.planet.myplanet.model.MyPlanet
+import org.ole.planet.myplanet.service.sync.SyncManager
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils.startDownloadUpdate

@@ -17,9 +17,9 @@ import kotlinx.coroutines.SupervisorJob
 import org.ole.planet.myplanet.data.ApiInterface
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.repository.SubmissionsRepository
-import org.ole.planet.myplanet.service.ImprovedSyncManager
-import org.ole.planet.myplanet.service.SyncManager
-import org.ole.planet.myplanet.service.TransactionSyncManager
+import org.ole.planet.myplanet.service.sync.ImprovedSyncManager
+import org.ole.planet.myplanet.service.sync.SyncManager
+import org.ole.planet.myplanet.service.sync.TransactionSyncManager
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UploadToShelfService
 

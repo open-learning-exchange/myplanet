@@ -26,7 +26,7 @@ import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.FeedbackRepository
-import org.ole.planet.myplanet.service.SyncManager
+import org.ole.planet.myplanet.service.sync.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
