@@ -25,12 +25,12 @@ import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils
 
-class ReportsAdapter(
+class EnterprisesReportsAdapter(
     private val context: Context,
     private val teamsRepository: TeamsRepository,
     private val scope: CoroutineScope,
     private val prefData: SharedPrefManager
-) : ListAdapter<RealmMyTeam, ReportsAdapter.ReportsViewHolder>(diffCallback) {
+) : ListAdapter<RealmMyTeam, EnterprisesReportsAdapter.ReportsViewHolder>(diffCallback) {
     private var startTimeStamp: String? = null
     private var endTimeStamp: String? = null
     private var nonTeamMember = false

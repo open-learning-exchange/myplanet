@@ -4,7 +4,7 @@ import androidx.annotation.StringRes
 import androidx.fragment.app.Fragment
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.ui.enterprises.EnterprisesFinancesFragment
-import org.ole.planet.myplanet.ui.enterprises.ReportsFragment
+import org.ole.planet.myplanet.ui.enterprises.EnterprisesReportsFragment
 import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.ui.team.courses.TeamCoursesFragment
 import org.ole.planet.myplanet.ui.team.discussion.DiscussionListFragment
@@ -57,7 +57,7 @@ sealed class TeamPageConfig(val id: String, @StringRes val titleRes: Int) {
     }
 
     object ReportsPage : TeamPageConfig("REPORTS", R.string.reports) {
-        override fun createFragment() = ReportsFragment()
+        override fun createFragment() = EnterprisesReportsFragment()
     }
 
     object DocumentsPage : TeamPageConfig("DOCUMENTS", R.string.documents) {
