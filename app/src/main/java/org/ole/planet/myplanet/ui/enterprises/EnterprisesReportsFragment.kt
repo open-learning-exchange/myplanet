@@ -35,11 +35,11 @@ import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
 
-class ReportsFragment : BaseTeamFragment() {
+class EnterprisesReportsFragment : BaseTeamFragment() {
     private var _binding: FragmentReportsBinding? = null
     private val binding get() = _binding!!
     private var reports: List<RealmMyTeam> = emptyList()
-    private lateinit var reportsAdapter: TeamReportsAdapter
+    private lateinit var reportsAdapter: EnterprisesReportsAdapter
     private var startTimeStamp: String? = null
     private var endTimeStamp: String? = null
     lateinit var teamType: String
@@ -191,7 +191,7 @@ class ReportsFragment : BaseTeamFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        reportsAdapter = TeamReportsAdapter(requireContext(), teamsRepository, viewLifecycleOwner.lifecycleScope, prefData)
+        reportsAdapter = EnterprisesReportsAdapter(requireContext(), teamsRepository, viewLifecycleOwner.lifecycleScope, prefData)
         binding.rvReports.adapter = reportsAdapter
         binding.rvReports.layoutManager = LinearLayoutManager(activity)
 

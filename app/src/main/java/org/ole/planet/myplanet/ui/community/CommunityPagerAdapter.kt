@@ -7,7 +7,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.ui.enterprises.FinanceFragment
-import org.ole.planet.myplanet.ui.enterprises.ReportsFragment
+import org.ole.planet.myplanet.ui.enterprises.EnterprisesReportsFragment
 import org.ole.planet.myplanet.ui.news.NewsFragment
 import org.ole.planet.myplanet.ui.team.TeamCalendarFragment
 
@@ -30,7 +30,7 @@ class CommunityPagerAdapter(private val fm: FragmentActivity, private val id: St
                 FinanceFragment()
             }
             else -> {
-                ReportsFragment()
+                EnterprisesReportsFragment()
             }
         }
         val b = Bundle()
