@@ -79,7 +79,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         val userProfileModel = profileDbHandler.userModel
         adapter = SurveyAdapter(
             requireActivity(),
-            mRealm,
+            surveysRepository,
             userProfileModel?.id,
             isTeam,
             teamId,
