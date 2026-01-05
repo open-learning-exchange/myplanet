@@ -704,7 +704,6 @@
     <string name="please_enter_server_url_first">Please enter server url first.</string>
     <string name="username_cannot_be_empty">Username cannot be empty</string>
     <string name="unable_to_login">Unable to login</string>
-    <string name="planet_server_not_reachable">Planet server not reachable.</string>
     <string name="select_language">select language</string>
     <string name="thank_you">Thank You!</string>
     <string name="please_wait">Please wait…</string>
