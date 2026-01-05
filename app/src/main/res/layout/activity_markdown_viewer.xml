@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@color/background_color"
-    tools:context="org.ole.planet.myplanet.ui.viewer.MarkdownViewerActivity">
+    tools:context="org.ole.planet.myplanet.ui.reader.MarkdownViewerActivity">
 
     <TextView
         android:id="@+id/markdownFileName"
