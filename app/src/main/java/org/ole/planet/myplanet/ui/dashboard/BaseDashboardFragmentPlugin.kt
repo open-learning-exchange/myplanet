@@ -7,6 +7,11 @@ import android.view.View
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import io.realm.Realm
 import io.realm.RealmObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
@@ -50,15 +55,26 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
                     if (!isRealmInitialized()) {
                         return@setOnClickListener
                     }
-                    val teamObject = mRealm.where(RealmMyTeam::class.java)?.equalTo("_id", id)?.findFirst()
-                    val optimizedFragment = TeamDetailFragment.newInstance(
-                        teamId = id ?: "",
-                        teamName = title ?: "",
-                        teamType = teamObject?.type ?: "",
-                        isMyTeam = true
-                    )
-                    prefData.setTeamName(title)
-                    homeItemClickListener?.openCallFragment(optimizedFragment)
+                    viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                        var teamType = ""
+                        Realm.getDefaultInstance().use { realm ->
+                            val teamObject =
+                                realm.where(RealmMyTeam::class.java)?.equalTo("_id", id)
+                                    ?.findFirst()
+                            teamType = teamObject?.type ?: ""
+                        }
+
+                        withContext(Dispatchers.Main) {
+                            val optimizedFragment = TeamDetailFragment.newInstance(
+                                teamId = id ?: "",
+                                teamName = title ?: "",
+                                teamType = teamType,
+                                isMyTeam = true
+                            )
+                            prefData.setTeamName(title)
+                            homeItemClickListener?.openCallFragment(optimizedFragment)
+                        }
+                    }
                 } else {
                     val b = Bundle()
                     b.putString("id", id)
