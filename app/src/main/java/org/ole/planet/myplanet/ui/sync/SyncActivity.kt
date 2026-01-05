@@ -806,18 +806,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
         builder.show()
     }
 
-    override fun onCheckingVersion() {
-        val lastCheckTime = settings.getLong("last_version_check_timestamp", 0)
-        val currentTime = System.currentTimeMillis()
-        val twentyFourHoursInMillis = 24 * 60 * 60 * 1000
-
-        if (currentTime - lastCheckTime < twentyFourHoursInMillis) {
-            return
-        }
-
-        customProgressDialog.setText(getString(R.string.checking_version))
-        customProgressDialog.show()
-    }
+    override fun onCheckingVersion() {}
 
     fun registerReceiver() {
         lifecycleScope.launch {
@@ -834,12 +823,16 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
         if (msg.startsWith("Config")) {
             settingDialog()
         }
-        customProgressDialog.dismiss()
+        if (customProgressDialog.isShowing() == true) {
+            customProgressDialog.dismiss()
+        }
         if (!blockSync) {
             continueSyncProcess()
         } else {
-            syncIconDrawable.stop()
-            syncIconDrawable.selectDrawable(0)
+            if (::syncIconDrawable.isInitialized) {
+                syncIconDrawable.stop()
+                syncIconDrawable.selectDrawable(0)
+            }
         }
     }
 
