@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.sync
+package org.ole.planet.myplanet.callback
 
 interface DiffRefreshableCallback {
     fun refreshWithDiff()
