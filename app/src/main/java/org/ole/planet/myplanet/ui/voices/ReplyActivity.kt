@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.news
+package org.ole.planet.myplanet.ui.voices
 
 import android.app.Activity
 import android.content.Intent
@@ -33,8 +33,8 @@ import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
-import org.ole.planet.myplanet.ui.news.NewsActions
-import org.ole.planet.myplanet.ui.news.NewsAdapter.OnNewsItemClickListener
+import org.ole.planet.myplanet.ui.voices.NewsActions
+import org.ole.planet.myplanet.ui.voices.NewsAdapter.OnNewsItemClickListener
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getImagePath
