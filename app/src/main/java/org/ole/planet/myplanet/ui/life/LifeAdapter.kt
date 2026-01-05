@@ -20,20 +20,20 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.model.RealmMyLife
-import org.ole.planet.myplanet.repository.LifeRepository
-import org.ole.planet.myplanet.ui.calendar.CalendarFragment
 import org.ole.planet.myplanet.callback.ItemTouchHelperListener
 import org.ole.planet.myplanet.callback.ItemTouchHelperViewHolder
 import org.ole.planet.myplanet.callback.OnStartDragListener
+import org.ole.planet.myplanet.model.RealmMyLife
+import org.ole.planet.myplanet.repository.LifeRepository
+import org.ole.planet.myplanet.ui.calendar.CalendarFragment
 import org.ole.planet.myplanet.ui.health.MyHealthFragment
-import org.ole.planet.myplanet.utilities.NavigationHelper
 import org.ole.planet.myplanet.ui.personals.PersonalsFragment
 import org.ole.planet.myplanet.ui.references.ReferenceFragment
 import org.ole.planet.myplanet.ui.submissions.SubmissionsFragment
 import org.ole.planet.myplanet.ui.submissions.SubmissionsFragment.Companion.newInstance
 import org.ole.planet.myplanet.ui.user.AchievementFragment
 import org.ole.planet.myplanet.utilities.DiffUtils
+import org.ole.planet.myplanet.utilities.NavigationHelper
 import org.ole.planet.myplanet.utilities.Utilities
 
 class LifeAdapter(

@@ -17,10 +17,10 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.DialogCampaignChallengeBinding
 import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
+import org.ole.planet.myplanet.ui.components.CustomClickableSpan
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.DashboardElementActivity
-import org.ole.planet.myplanet.ui.components.CustomClickableSpan
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 
 class MarkdownDialog : DialogFragment() {

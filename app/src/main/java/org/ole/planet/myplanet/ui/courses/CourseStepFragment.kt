@@ -25,12 +25,12 @@ import org.ole.planet.myplanet.model.RealmMyCourse.Companion.isMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.ui.components.CustomClickableSpan
 import org.ole.planet.myplanet.ui.exam.ExamTakingFragment
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.utilities.CameraUtils
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
-import org.ole.planet.myplanet.ui.components.CustomClickableSpan
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 
