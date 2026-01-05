@@ -167,7 +167,7 @@ class VoicesRepositoryImpl @Inject constructor(
 
     override suspend fun shareNewsToCommunity(newsId: String, userId: String, planetCode: String, parentCode: String, teamName: String): Result<Unit> {
         return try {
-            databaseService.executeTransactionAsync { realm ->
+            executeTransactionAsync { realm ->
                 val news = realm.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
                 if (news != null) {
                     val array = gson.fromJson(news.viewIn, JsonArray::class.java)

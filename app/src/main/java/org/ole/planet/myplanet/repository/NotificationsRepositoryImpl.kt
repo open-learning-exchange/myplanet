@@ -17,7 +17,7 @@ class NotificationsRepositoryImpl @Inject constructor(
         databaseService: DatabaseService,
 ) : RealmRepository(databaseService), NotificationsRepository {
     override suspend fun refresh() {
-        databaseService.realmInstance.refresh()
+        withRealm { it.refresh() }
     }
 
     override suspend fun markNotificationAsRead(notificationId: String, userId: String?) {
@@ -207,7 +207,7 @@ class NotificationsRepositoryImpl @Inject constructor(
     }
 
     override fun getJoinRequestDetails(relatedId: String?): Pair<String, String> {
-        return databaseService.withRealm { realm ->
+        return withRealm { realm ->
             val joinRequest = realm.where(RealmMyTeam::class.java)
                 .equalTo("_id", relatedId)
                 .equalTo("docType", "request")
@@ -227,7 +227,7 @@ class NotificationsRepositoryImpl @Inject constructor(
     }
 
     override fun getTaskTeamName(taskTitle: String): String? {
-        return databaseService.withRealm { realm ->
+        return withRealm { realm ->
             val taskObj = realm.where(RealmTeamTask::class.java)
                 .equalTo("title", taskTitle)
                 .findFirst()
