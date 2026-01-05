@@ -82,7 +82,7 @@
         <activity
             android:name=".ui.health.AddExaminationActivity"
             android:theme="@style/AppTheme" />
-        <activity android:name=".ui.maps.OfflineMapActivity" />
+        <activity android:name=".ui.maps.OfflineMapsActivity" />
         <activity
             android:name=".ui.news.ReplyActivity"
             android:theme="@style/AppTheme" />
