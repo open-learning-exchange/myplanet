@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.chat
+package org.ole.planet.myplanet.data
 
 import android.content.Context
 import com.google.gson.reflect.TypeToken
