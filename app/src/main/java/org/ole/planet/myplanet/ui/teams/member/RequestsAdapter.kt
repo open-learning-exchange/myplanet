@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.team.member
+package org.ole.planet.myplanet.ui.teams.member
 
 import android.content.Context
 import android.view.LayoutInflater

@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.team
+package org.ole.planet.myplanet.ui.teams
 
 import androidx.annotation.StringRes
 import androidx.fragment.app.Fragment
@@ -6,12 +6,12 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.ui.enterprises.EnterprisesFinancesFragment
 import org.ole.planet.myplanet.ui.enterprises.EnterprisesReportsFragment
 import org.ole.planet.myplanet.ui.survey.SurveyFragment
-import org.ole.planet.myplanet.ui.team.courses.TeamCoursesFragment
-import org.ole.planet.myplanet.ui.team.discussion.DiscussionListFragment
-import org.ole.planet.myplanet.ui.team.member.MemberFragment
-import org.ole.planet.myplanet.ui.team.member.MembersFragment
-import org.ole.planet.myplanet.ui.team.resources.TeamResourcesFragment
-import org.ole.planet.myplanet.ui.team.task.TeamTaskFragment
+import org.ole.planet.myplanet.ui.teams.courses.TeamCoursesFragment
+import org.ole.planet.myplanet.ui.teams.discussion.DiscussionListFragment
+import org.ole.planet.myplanet.ui.teams.member.MemberFragment
+import org.ole.planet.myplanet.ui.teams.member.MembersFragment
+import org.ole.planet.myplanet.ui.teams.resources.TeamResourcesFragment
+import org.ole.planet.myplanet.ui.teams.task.TeamTaskFragment
 
 sealed class TeamPageConfig(val id: String, @StringRes val titleRes: Int) {
     abstract fun createFragment(): Fragment

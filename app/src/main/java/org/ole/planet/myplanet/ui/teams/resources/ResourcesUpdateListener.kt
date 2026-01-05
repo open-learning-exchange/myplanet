@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.team.resources
+package org.ole.planet.myplanet.ui.teams.resources
 
 interface  ResourcesUpdateListener {
     fun onResourceListUpdated()

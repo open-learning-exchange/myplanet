@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.team
+package org.ole.planet.myplanet.ui.teams
 
 import android.os.Bundle
 import androidx.fragment.app.Fragment
@@ -7,16 +7,16 @@ import androidx.viewpager2.adapter.FragmentStateAdapter
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.MemberChangeListener
 import org.ole.planet.myplanet.callback.TeamUpdateListener
-import org.ole.planet.myplanet.ui.team.TeamPageConfig.ApplicantsPage
-import org.ole.planet.myplanet.ui.team.TeamPageConfig.DocumentsPage
-import org.ole.planet.myplanet.ui.team.TeamPageConfig.JoinRequestsPage
-import org.ole.planet.myplanet.ui.team.TeamPageConfig.MembersPage
-import org.ole.planet.myplanet.ui.team.TeamPageConfig.ResourcesPage
-import org.ole.planet.myplanet.ui.team.TeamPageConfig.SurveyPage
-import org.ole.planet.myplanet.ui.team.TeamPageConfig.TeamPage
-import org.ole.planet.myplanet.ui.team.member.MemberFragment
-import org.ole.planet.myplanet.ui.team.member.MembersFragment
-import org.ole.planet.myplanet.ui.team.resources.TeamResourcesFragment
+import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ApplicantsPage
+import org.ole.planet.myplanet.ui.teams.TeamPageConfig.DocumentsPage
+import org.ole.planet.myplanet.ui.teams.TeamPageConfig.JoinRequestsPage
+import org.ole.planet.myplanet.ui.teams.TeamPageConfig.MembersPage
+import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ResourcesPage
+import org.ole.planet.myplanet.ui.teams.TeamPageConfig.SurveyPage
+import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TeamPage
+import org.ole.planet.myplanet.ui.teams.member.MemberFragment
+import org.ole.planet.myplanet.ui.teams.member.MembersFragment
+import org.ole.planet.myplanet.ui.teams.resources.TeamResourcesFragment
 
 class TeamPagerAdapter(
     private val fm: FragmentActivity,
