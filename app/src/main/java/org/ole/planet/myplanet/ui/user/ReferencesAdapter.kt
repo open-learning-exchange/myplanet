@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.userprofile
+package org.ole.planet.myplanet.ui.user
 
 import android.content.Context
 import android.view.LayoutInflater
@@ -7,7 +7,7 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.JsonObject
 import org.ole.planet.myplanet.databinding.RowOtherInfoBinding
-import org.ole.planet.myplanet.ui.userprofile.ReferencesAdapter.ViewHolderOtherInfo
+import org.ole.planet.myplanet.ui.user.ReferencesAdapter.ViewHolderOtherInfo
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getString

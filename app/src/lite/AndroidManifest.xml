@@ -70,7 +70,7 @@
             android:configChanges="screenSize|screenLayout|orientation|keyboardHidden|keyboard"/>
 
         <activity
-            android:name=".ui.userprofile.BecomeMemberActivity"
+            android:name=".ui.user.BecomeMemberActivity"
             android:windowSoftInputMode="adjustResize|stateHidden"
             android:theme="@style/AppTheme" />
         <activity
