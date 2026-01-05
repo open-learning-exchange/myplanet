@@ -587,8 +587,8 @@ class LoginActivity : SyncActivity(), ProfileAdapter.OnItemClickListener {
                 prefData.setSavedUsers(existingUsers)
             }
         } else if (source === "member") {
-            var userProfile = profileDbHandler.userModel?.userImage
-            val userName: String? = profileDbHandler.userModel?.name
+            var userProfile = activityService.userModel?.userImage
+            val userName: String? = activityService.userModel?.name
             if (userProfile == null) {
                 userProfile = ""
             }

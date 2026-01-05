@@ -32,7 +32,7 @@ import org.ole.planet.myplanet.base.PermissionActivity.Companion.hasInstallPermi
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_RESOURCE_DOWNLOAD
+import org.ole.planet.myplanet.service.UserActivityService.Companion.KEY_RESOURCE_DOWNLOAD
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.viewer.WebViewActivity
 import org.ole.planet.myplanet.utilities.CourseRatingUtils
@@ -125,7 +125,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 }
                 true
             }
-            val userModel = profileDbHandler.userModel
+            val userModel = activityService.userModel
             if (userModel?.isGuest() == false) {
                 setOnClickListener {
                     homeItemClickListener?.showRatingDialog(type, id, title, listener)
@@ -214,21 +214,21 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 
             val offlineItem = matchingItems.firstOrNull { it.isResourceOffline() }
             if (offlineItem != null) {
-                ResourceOpener.openFileType(requireActivity(), offlineItem, "offline", profileDbHandler)
+                ResourceOpener.openFileType(requireActivity(), offlineItem, "offline", activityService)
                 return@launch
             }
 
             when {
                 items.isResourceOffline() -> ResourceOpener.openFileType(
-                    requireActivity(), items, "offline", profileDbHandler
+                    requireActivity(), items, "offline", activityService
                 )
                 FileUtils.getFileExtension(items.resourceLocalAddress) == "mp4" -> ResourceOpener.openFileType(
-                    requireActivity(), items, "online", profileDbHandler
+                    requireActivity(), items, "online", activityService
                 )
                 else -> {
                     val arrayList = arrayListOf(UrlUtils.getUrl(items))
                     startDownloadWithAutoOpen(arrayList, items)
-                    profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_DOWNLOAD)
+                    activityService.setResourceOpenCount(items, KEY_RESOURCE_DOWNLOAD)
                 }
             }
         }
@@ -277,7 +277,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 
     private fun openFileType(items: RealmMyLibrary, videoType: String) {
         dismissProgressDialog()
-        ResourceOpener.openFileType(requireActivity(), items, videoType, profileDbHandler)
+        ResourceOpener.openFileType(requireActivity(), items, videoType, activityService)
     }
 
     private fun showResourceList(downloadedResources: List<RealmMyLibrary>) {

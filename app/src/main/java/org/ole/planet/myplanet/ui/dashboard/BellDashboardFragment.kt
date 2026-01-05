@@ -57,7 +57,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         val view = binding.root
         declareElements()
         onLoaded(view)
-        user = profileDbHandler?.userModel
+        user = activityService?.userModel
         return binding.root
     }
 
@@ -404,14 +404,14 @@ class BellDashboardFragment : BaseDashboardFragment() {
         }
         binding.homeCardLibrary.myLibraryImageButton.setOnClickListener {
             if (user?.id?.startsWith("guest") == true) {
-                guestDialog(requireContext(), profileDbHandler)
+                guestDialog(requireContext(), activityService)
             } else {
                 homeItemClickListener?.openMyFragment(ResourcesFragment())
             }
         }
         binding.homeCardCourses.myCoursesImageButton.setOnClickListener {
             if (user?.id?.startsWith("guest") == true) {
-                guestDialog(requireContext(), profileDbHandler)
+                guestDialog(requireContext(), activityService)
             } else {
                 homeItemClickListener?.openMyFragment(CoursesFragment())
             }

@@ -47,7 +47,7 @@ import org.ole.planet.myplanet.model.RealmTag.Companion.getTagsArray
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.service.sync.SyncManager
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserActivityService
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.resources.CollectionsFragment
@@ -90,7 +90,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     lateinit var syncManager: SyncManager
 
     @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
+    lateinit var userActivityService: UserActivityService
 
     @Inject
     lateinit var tagsRepository: TagsRepository
@@ -237,7 +237,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        userModel = userProfileDbHandler.userModel
+        userModel = userActivityService.userModel
         searchTags = ArrayList()
         initializeView()
         loadDataAsync()
@@ -533,7 +533,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         builder.setCancelable(true)
             .setPositiveButton(R.string.go_to_mycourses) { dialog: DialogInterface, _: Int ->
                 if (userModel?.id?.startsWith("guest") == true) {
-                    DialogUtils.guestDialog(requireContext(), profileDbHandler)
+                    DialogUtils.guestDialog(requireContext(), activityService)
                 } else {
                     val fragment = CoursesFragment().apply {
                         arguments = Bundle().apply {

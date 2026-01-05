@@ -162,7 +162,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         currentDialog = dialog
         service.getMinApk(this, url, serverPin, this, "DashboardActivity")
         lifecycleScope.launch {
-            createActionAsync(databaseService, "${profileDbHandler.userModel?.id}", null, "sync")
+            createActionAsync(databaseService, "${activityService.userModel?.id}", null, "sync")
         }
     }
 
@@ -216,7 +216,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
 
     fun logout() {
         lifecycleScope.launch {
-            profileDbHandler.logoutAsync()
+            activityService.logoutAsync()
             SecurePrefs.clearCredentials(this@DashboardElementActivity)
             settings.edit { putBoolean(Constants.KEY_LOGIN, false) }
             settings.edit { putBoolean(Constants.KEY_NOTIFICATION_SHOWN, false) }

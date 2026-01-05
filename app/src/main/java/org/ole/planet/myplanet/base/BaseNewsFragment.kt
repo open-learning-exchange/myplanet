@@ -95,7 +95,7 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
 
     override fun onMemberSelected(userModel: RealmUserModel?) {
         if (!isAdded) return
-        val handler = profileDbHandler
+        val handler = activityService
         val fragment = NewsActions.showMemberDetails(userModel, handler) ?: return
         NavigationHelper.replaceFragment(
             requireActivity().supportFragmentManager,

@@ -20,7 +20,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.repository.VoicesRepository
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserActivityService
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.voices.NewsAdapter
@@ -36,7 +36,7 @@ class DiscussionListFragment : BaseTeamFragment() {
     @Inject
     lateinit var voicesRepository: VoicesRepository
     @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
+    lateinit var userActivityService: UserActivityService
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
 
@@ -185,7 +185,7 @@ class DiscussionListFragment : BaseTeamFragment() {
         val existingAdapter = binding.rvDiscussion.adapter
         if (existingAdapter == null) {
             val adapterNews = activity?.let {
-                NewsAdapter(it, user, null, getEffectiveTeamName(), teamId, userProfileDbHandler, viewLifecycleOwner.lifecycleScope, userRepository, voicesRepository, teamsRepository)
+                NewsAdapter(it, user, null, getEffectiveTeamName(), teamId, userActivityService, viewLifecycleOwner.lifecycleScope, userRepository, voicesRepository, teamsRepository)
             }
             adapterNews?.sharedPrefManager = sharedPrefManager
             adapterNews?.setmRealm(mRealm)

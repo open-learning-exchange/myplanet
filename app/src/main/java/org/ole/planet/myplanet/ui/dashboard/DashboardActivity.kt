@@ -67,7 +67,7 @@ import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserActivityService
 import org.ole.planet.myplanet.ui.chat.ChatHistoryFragment
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
@@ -109,7 +109,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private val dashboardViewModel: DashboardViewModel by viewModels()
     private lateinit var tabSelectedListener: OnTabSelectedListener
     @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
+    lateinit var userActivityService: UserActivityService
     @Inject
     lateinit var teamsRepository: TeamsRepository
     @Inject
@@ -254,11 +254,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun updateAppTitle() {
         try {
-            val userProfileModel = profileDbHandler.userModel
+            val userProfileModel = activityService.userModel
             if (userProfileModel != null) {
                 var name: String? = userProfileModel.getFullName()
                 if (name.isNullOrBlank()) {
-                    name = profileDbHandler.userModel?.name
+                    name = activityService.userModel?.name
                 }
                 val communityName = settings.getString("communityName", "")
                 binding.appBarBell.appTitleName.text = if (user?.planetCode == "") {
@@ -281,7 +281,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             return true
         }
         navigationView.setOnItemSelectedListener(this)
-        val isTopBarVisible = userProfileDbHandler.userModel?.isShowTopbar == true
+        val isTopBarVisible = userActivityService.userModel?.isShowTopbar == true
         navigationView.visibility = if (isTopBarVisible) {
             View.VISIBLE
         } else {
@@ -322,7 +322,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
         lifecycleScope.launch {
             delay(50)
-            if (!(user?.id?.startsWith("guest") == true && profileDbHandler.offlineVisits >= 3) &&
+            if (!(user?.id?.startsWith("guest") == true && activityService.offlineVisits >= 3) &&
                 resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
             ) {
                 result?.openDrawer()
@@ -360,7 +360,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         ChatHistoryFragment::class.java.simpleName
                     )
                 } else {
-                    guestDialog(this, userProfileDbHandler)
+                    guestDialog(this, userActivityService)
                 }
             }
             R.id.menu_goOnline -> wifiStatusSwitch()
@@ -372,7 +372,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         FeedbackListFragment::class.java.simpleName
                     )
                 } else {
-                    guestDialog(this, userProfileDbHandler)
+                    guestDialog(this, userActivityService)
                 }
             }
             R.id.action_settings -> startActivity(Intent(this@DashboardActivity, SettingActivity::class.java))
@@ -888,13 +888,13 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun checkUser() {
-        user = userProfileDbHandler.userModel
+        user = userActivityService.userModel
         if (user == null) {
             toast(this, getString(R.string.session_expired))
             logout()
             return
         }
-        if (user?.id?.startsWith("guest") == true && profileDbHandler.offlineVisits >= 3) {
+        if (user?.id?.startsWith("guest") == true && activityService.offlineVisits >= 3) {
             val builder = AlertDialog.Builder(this, R.style.AlertDialogTheme)
             builder.setTitle(getString(R.string.become_a_member))
             builder.setMessage(getString(R.string.trial_period_ended))
@@ -910,7 +910,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             becomeMember.setOnClickListener {
                 val guest = true
                 val intent = Intent(this, BecomeMemberActivity::class.java)
-                intent.putExtra("username", profileDbHandler.userModel?.name)
+                intent.putExtra("username", activityService.userModel?.name)
                 intent.putExtra("guest", guest)
                 setResult(RESULT_OK, intent)
                 startActivity(intent)
@@ -1059,7 +1059,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             R.string.menu_community -> openCallFragment(CommunityTabFragment())
             R.string.txt_myLibrary -> {
                 if (user?.id?.startsWith("guest") == true) {
-                    guestDialog(this, userProfileDbHandler)
+                    guestDialog(this, userActivityService)
                 } else {
                     openMyFragment(ResourcesFragment())
                 }
@@ -1071,7 +1071,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             })
             R.string.txt_myCourses -> {
                 if (user?.id?.startsWith("guest") == true) {
-                    guestDialog(this, userProfileDbHandler)
+                    guestDialog(this, userActivityService)
                 } else {
                     openMyFragment(CoursesFragment())
                 }
@@ -1199,14 +1199,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
             R.id.menu_mycourses -> {
                 if (user?.id?.startsWith("guest") == true) {
-                    guestDialog(this, userProfileDbHandler)
+                    guestDialog(this, userActivityService)
                 } else {
                     openMyFragment(CoursesFragment())
                 }
             }
             R.id.menu_mylibrary -> {
                 if (user?.id?.startsWith("guest") == true) {
-                    guestDialog(this, userProfileDbHandler)
+                    guestDialog(this, userActivityService)
                 } else {
                     openMyFragment(ResourcesFragment())
                 }

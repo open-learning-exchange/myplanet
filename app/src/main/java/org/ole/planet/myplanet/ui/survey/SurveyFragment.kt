@@ -76,7 +76,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         super.onCreate(savedInstanceState)
         isTeam = arguments?.getBoolean("isTeam", false) == true
         teamId = arguments?.getString("teamId", null)
-        val userProfileModel = profileDbHandler.userModel
+        val userProfileModel = activityService.userModel
         adapter = SurveyAdapter(
             requireActivity(),
             mRealm,
@@ -85,7 +85,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
             teamId,
             this,
             settings,
-            profileDbHandler,
+            activityService,
             surveyInfoMap,
             bindingDataMap
         )
@@ -274,7 +274,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
     fun updateAdapterData(isTeamShareAllowed: Boolean? = null) {
         val useTeamShareAllowed = isTeamShareAllowed ?: currentIsTeamShareAllowed
         currentIsTeamShareAllowed = useTeamShareAllowed
-        val userProfileModel = profileDbHandler.userModel
+        val userProfileModel = activityService.userModel
         loadSurveysJob?.cancel()
         loadSurveysJob = viewLifecycleOwner.lifecycleScope.launch {
             binding.loadingSpinner.visibility = View.VISIBLE

@@ -239,7 +239,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), DashboardActio
         }
         setCountText(teams.size, RealmMyTeam::class.java, requireView())
 
-        val userId = profileDbHandler.userModel?.id
+        val userId = activityService.userModel?.id
         val teamIds = teams.mapNotNull { it._id }
         if (userId != null && teamIds.isNotEmpty()) {
             viewLifecycleOwner.lifecycleScope.launch {
@@ -269,7 +269,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), DashboardActio
     }
 
     private suspend fun myLifeListInit(flexboxLayout: FlexboxLayout) {
-        val user = profileDbHandler.userModel
+        val user = activityService.userModel
 
         val dbMylife = databaseService.withRealmAsync { realmInstance ->
             val rawMylife: List<RealmMyLife> = RealmMyLife.getMyLifeByUserId(realmInstance, settings)
@@ -436,7 +436,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), DashboardActio
         if (model?.getRoleAsString()?.contains("health") == true) {
             settings?.let { transactionSyncManager.syncAllHealthData(realm, it, this) }
         } else {
-            settings?.let { transactionSyncManager.syncKeyIv(realm, it, this, profileDbHandler) }
+            settings?.let { transactionSyncManager.syncKeyIv(realm, it, this, activityService) }
         }
     }
 

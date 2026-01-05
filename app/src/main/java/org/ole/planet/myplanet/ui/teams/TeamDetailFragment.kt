@@ -28,7 +28,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMemberCount
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.sync.SyncManager
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserActivityService
 import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ApplicantsPage
@@ -54,7 +54,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateListener {
     
     @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
+    lateinit var userActivityService: UserActivityService
     
     @Inject
     lateinit var syncManager: SyncManager
@@ -77,11 +77,11 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
     private var loadTeamJob: Job? = null
 
     private fun getCurrentUser(): RealmUserModel? {
-        return userProfileDbHandler.userModel
+        return userActivityService.userModel
     }
 
     private fun detachCurrentUser(): RealmUserModel? {
-        return userProfileDbHandler.getUserModelCopy()
+        return userActivityService.getUserModelCopy()
     }
 
     private fun pageIndexById(pageId: String?): Int? {

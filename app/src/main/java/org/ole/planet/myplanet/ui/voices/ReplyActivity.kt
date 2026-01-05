@@ -31,7 +31,7 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserActivityService
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.voices.NewsActions
 import org.ole.planet.myplanet.ui.voices.NewsAdapter.OnNewsItemClickListener
@@ -55,7 +55,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     private val viewModel: ReplyViewModel by viewModels()
     
     @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
+    lateinit var userActivityService: UserActivityService
     @Inject
     lateinit var userRepository: org.ole.planet.myplanet.repository.UserRepository
     @Inject
@@ -79,7 +79,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         title = "Reply"
         imageList = RealmList()
         id = intent.getStringExtra("id")
-        user = userProfileDbHandler.userModel
+        user = userActivityService.userModel
         activityReplyBinding.rvReply.layoutManager = LinearLayoutManager(this)
         activityReplyBinding.rvReply.isNestedScrollingEnabled = false
         showData(id)
@@ -98,7 +98,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         lifecycleScope.launch {
             val (news, list) = viewModel.getNewsWithReplies(id)
             databaseService.withRealm { realm ->
-                newsAdapter = NewsAdapter(this@ReplyActivity, user, news, "", null, userProfileDbHandler, lifecycleScope, userRepository, voicesRepository, teamsRepository)
+                newsAdapter = NewsAdapter(this@ReplyActivity, user, news, "", null, userActivityService, lifecycleScope, userRepository, voicesRepository, teamsRepository)
                 newsAdapter.sharedPrefManager = sharedPrefManager
                 newsAdapter.setListener(this@ReplyActivity)
                 newsAdapter.setmRealm(realm)
@@ -138,7 +138,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     override fun onNewsItemClick(news: RealmNews?) {}
 
     override fun onMemberSelected(userModel: RealmUserModel?) {
-        val fragment = NewsActions.showMemberDetails(userModel, userProfileDbHandler) ?: return
+        val fragment = NewsActions.showMemberDetails(userModel, userActivityService) ?: return
         NavigationHelper.replaceFragment(
             supportFragmentManager,
             R.id.fragment_container,

@@ -43,7 +43,7 @@ import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserActivityService
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.clearRealmDb
@@ -106,7 +106,7 @@ class SettingActivity : AppCompatActivity() {
     @AndroidEntryPoint
     class SettingFragment : PreferenceFragmentCompat() {
         @Inject
-        lateinit var profileDbHandler: UserProfileDbHandler
+        lateinit var activityService: UserActivityService
         @Inject
         lateinit var databaseService: DatabaseService
     @Inject
@@ -130,7 +130,7 @@ class SettingActivity : AppCompatActivity() {
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
             requireContext().setTheme(R.style.PreferencesTheme)
             setPreferencesFromResource(R.xml.pref, rootKey)
-            user = profileDbHandler.userModel
+            user = activityService.userModel
             dialog = DialogUtils.getCustomProgressDialog(requireActivity())
 
             setBetaToggleOn()

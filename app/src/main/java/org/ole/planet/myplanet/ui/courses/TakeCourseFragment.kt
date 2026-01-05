@@ -39,7 +39,7 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.isStepCompleted
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.CoursesRepository
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserActivityService
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.DialogUtils.getDialog
 import org.ole.planet.myplanet.utilities.Utilities
@@ -51,7 +51,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     @Inject
     lateinit var databaseService: DatabaseService
     @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
+    lateinit var userActivityService: UserActivityService
     @Inject
     lateinit var coursesRepository: CoursesRepository
     lateinit var mRealm: Realm
@@ -76,7 +76,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTakeCourseBinding.inflate(inflater, container, false)
         mRealm = databaseService.realmInstance
-        userModel = userProfileDbHandler.userModel
+        userModel = userActivityService.userModel
         return binding.root
     }
 
@@ -397,7 +397,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     private suspend fun getCourseProgress(): Int {
         return withContext(Dispatchers.IO) {
             databaseService.withRealm { realm ->
-                val user = userProfileDbHandler.userModel
+                val user = userActivityService.userModel
                 val courseProgressMap = RealmCourseProgress.getCourseProgress(realm, user?.id)
                 courseProgressMap[courseId]?.asJsonObject?.get("current")?.asInt ?: 0
             }

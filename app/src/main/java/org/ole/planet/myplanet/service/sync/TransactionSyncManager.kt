@@ -7,7 +7,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Realm
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserActivityService
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -95,10 +95,10 @@ class TransactionSyncManager @Inject constructor(
         mRealm: Realm,
         settings: SharedPreferences,
         listener: SyncListener,
-        userProfileDbHandler: UserProfileDbHandler
+        userActivityService: UserActivityService
     ) {
         listener.onSyncStarted()
-        val model = userProfileDbHandler.userModel
+        val model = userActivityService.userModel
         val userName = SecurePrefs.getUserName(context, settings) ?: ""
         val password = SecurePrefs.getPassword(context, settings) ?: ""
         val header = "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)

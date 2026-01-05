@@ -48,7 +48,7 @@ import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.MyDownloadService
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserActivityService
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.ui.components.CheckboxListView
@@ -80,7 +80,7 @@ abstract class BaseResourceFragment : Fragment() {
     @Inject
     lateinit var databaseService: DatabaseService
     @Inject
-    lateinit var profileDbHandler: UserProfileDbHandler
+    lateinit var activityService: UserActivityService
     @Inject
     @AppPreferences
     lateinit var settings: SharedPreferences
@@ -190,7 +190,7 @@ abstract class BaseResourceFragment : Fragment() {
         Service(requireContext()).isPlanetAvailable(object : PlanetAvailableListener {
             override fun isAvailable() {
                 if (!isAdded) return
-                val userId = profileDbHandler.userModel?.id
+                val userId = activityService.userModel?.id
                 val librariesForDialog = if (userId.isNullOrBlank()) {
                     dbMyLibrary
                 } else {
@@ -245,7 +245,7 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     fun showPendingSurveyDialog() {
-        model = profileDbHandler.userModel
+        model = activityService.userModel
         viewLifecycleOwner.lifecycleScope.launch {
             val list = submissionsRepository.getPendingSurveys(model?.id)
             if (list.isEmpty()) return@launch
@@ -429,7 +429,7 @@ abstract class BaseResourceFragment : Fragment() {
     fun addToLibrary(libraryItems: List<RealmMyLibrary?>, selectedItems: ArrayList<Int>) {
         if (!isRealmInitialized()) return
         
-        val userId = profileDbHandler.userModel?.id ?: return
+        val userId = activityService.userModel?.id ?: return
 
         try {
             if (!mRealm.isInTransaction) {
@@ -459,7 +459,7 @@ abstract class BaseResourceFragment : Fragment() {
     fun addAllToLibrary(libraryItems: List<RealmMyLibrary?>) {
         if (!isRealmInitialized()) return
 
-        val userId = profileDbHandler.userModel?.id ?: return
+        val userId = activityService.userModel?.id ?: return
 
         try {
             if (!mRealm.isInTransaction) {

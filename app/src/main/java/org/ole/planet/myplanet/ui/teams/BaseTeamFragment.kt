@@ -43,7 +43,7 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
         super.onCreate(savedInstanceState)
         val sParentCode = settings.getString("parentCode", "")
         val communityName = settings.getString("communityName", "")
-        user = profileDbHandler?.userModel
+        user = activityService?.userModel
         teamId = requireArguments().getString("id", "") ?: "$communityName@$sParentCode"
 
         loadTeamDetails()

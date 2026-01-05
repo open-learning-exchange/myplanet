@@ -54,7 +54,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             if (!isAdded) {
                 return@launch
             }
-            val userId = profileDbHandler.userModel?.id
+            val userId = activityService.userModel?.id
             try {
                 val updatedLibrary = withContext(Dispatchers.IO) {
                     val backgroundLibrary = fetchLibrary(libraryId!!)
@@ -72,7 +72,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                 e.printStackTrace()
             }
             binding.btnDownload.setImageResource(R.drawable.ic_play)
-            val currentUserId = profileDbHandler.userModel?.id
+            val currentUserId = activityService.userModel?.id
             if (currentUserId != null && library.userId?.contains(currentUserId) != true) {
                 Utilities.toast(activity, getString(R.string.added_to_my_library))
                 binding.btnRemove.setImageResource(R.drawable.close_x)
@@ -83,7 +83,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         super.onCreateView(inflater, container, savedInstanceState)
         _binding = FragmentLibraryDetailBinding.inflate(inflater, container, false)
-        userModel = profileDbHandler.userModel
+        userModel = activityService.userModel
         setLoadingState(true)
         return binding.root
     }
@@ -143,7 +143,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             }
             try {
                 withContext(Dispatchers.IO) {
-                    profileDbHandler.setResourceOpenCount(library)
+                    activityService.setResourceOpenCount(library)
                 }
             } catch (ex: Exception) {
                 ex.printStackTrace()
@@ -198,7 +198,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             }
             openResource(library)
         }
-        val userId = profileDbHandler.userModel?.id
+        val userId = activityService.userModel?.id
         val isAdd = userId?.let { library.userId?.contains(it) } != true
         if (userModel?.isGuest() != true) {
             binding.btnRemove.setImageResource(
@@ -218,7 +218,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             binding.btnRemove.visibility = View.GONE
         }
         binding.btnRemove.setOnClickListener {
-            val userId = profileDbHandler.userModel?.id
+            val userId = activityService.userModel?.id
             viewLifecycleOwner.lifecycleScope.launch {
                 if (!isAdded) {
                     return@launch
