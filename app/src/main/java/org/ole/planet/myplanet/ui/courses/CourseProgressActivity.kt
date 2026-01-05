@@ -64,7 +64,9 @@ class CourseProgressActivity : BaseActivity() {
             data.current.toString(),
             data.max.toString()
         )
-        binding.rvProgress.adapter = ProgressGridAdapter(this, data.steps)
+        val adapter = ProgressGridAdapter(this)
+        binding.rvProgress.adapter = adapter
+        adapter.submitList(data.steps.map { it.asJsonObject })
     }
 
     private suspend fun loadData(courseId: String, userId: String?): CourseProgressData? {
