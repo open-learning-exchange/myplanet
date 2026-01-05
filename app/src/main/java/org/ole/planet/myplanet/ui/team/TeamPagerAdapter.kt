@@ -59,9 +59,11 @@ class TeamPagerAdapter(
                 fragment.setMemberChangeListener(memberChangeListener)
             }
             CoursesPage -> if (fragment is TeamCoursesFragment) {
+                android.util.Log.d("TeamPagerAdapter", "Setting MainApplication.listener to TeamCoursesFragment")
                 MainApplication.listener = fragment
             }
             DocumentsPage, ResourcesPage -> if (fragment is TeamResourcesFragment) {
+                android.util.Log.d("TeamPagerAdapter", "Setting MainApplication.listener to TeamResourcesFragment")
                 MainApplication.listener = fragment
             }
             SurveyPage -> {

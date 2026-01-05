@@ -376,9 +376,50 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
 
         binding.btnAddDoc.setOnClickListener {
             MainApplication.showDownload = true
-            selectPage(DocumentsPage.id)
+            val coursesPageIndex = pageIndexById(CoursesPage.id)
+            val isAlreadyOnCoursesPage = coursesPageIndex != null && binding.viewPager2.currentItem == coursesPageIndex
+
+            selectPage(CoursesPage.id)
             MainApplication.showDownload = false
-            MainApplication.listener?.onAddCourse()
+
+            // If already on courses page, call immediately with shorter delay
+            // Otherwise wait longer for page transition
+            val delay = if (isAlreadyOnCoursesPage) 50L else 300L
+
+            binding.root.postDelayed({
+                // Try multiple strategies to get the fragment
+                val currentPosition = binding.viewPager2.currentItem
+                val fragmentTag = "f$currentPosition"
+                var currentFragment = childFragmentManager.findFragmentByTag(fragmentTag)
+
+                // Debug logging
+                android.util.Log.d("TeamDetailFragment", "Looking for fragment with tag: $fragmentTag, found: ${currentFragment != null}")
+                android.util.Log.d("TeamDetailFragment", "Current fragment type: ${currentFragment?.javaClass?.simpleName}")
+                android.util.Log.d("TeamDetailFragment", "MainApplication.listener: ${MainApplication.listener != null}")
+                android.util.Log.d("TeamDetailFragment", "MainApplication.listener type: ${MainApplication.listener?.javaClass?.simpleName}")
+
+                // Try to find the fragment in different ways
+                if (currentFragment == null) {
+                    currentFragment = childFragmentManager.fragments.find {
+                        it is org.ole.planet.myplanet.ui.team.courses.TeamCoursesFragment && it.isVisible
+                    }
+                }
+
+                when {
+                    currentFragment is org.ole.planet.myplanet.callback.TeamPageListener -> {
+                        android.util.Log.d("TeamDetailFragment", "Calling onAddCourse on current fragment")
+                        currentFragment.onAddCourse()
+                    }
+                    MainApplication.listener != null -> {
+                        android.util.Log.d("TeamDetailFragment", "Calling onAddCourse on MainApplication.listener")
+                        MainApplication.listener?.onAddCourse()
+                    }
+                    else -> {
+                        android.util.Log.e("TeamDetailFragment", "Could not find TeamCoursesFragment to call onAddCourse")
+                        org.ole.planet.myplanet.utilities.Utilities.toast(requireActivity(), "Unable to show add course dialog")
+                    }
+                }
+            }, delay)
         }
     }
 
