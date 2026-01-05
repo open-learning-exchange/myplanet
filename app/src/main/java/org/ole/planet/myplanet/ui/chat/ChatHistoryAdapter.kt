@@ -22,7 +22,7 @@ import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.ui.news.ExpandableListAdapter
+import org.ole.planet.myplanet.ui.voices.ExpandableListAdapter
 import org.ole.planet.myplanet.ui.team.TeamSelectionAdapter
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.JsonUtils

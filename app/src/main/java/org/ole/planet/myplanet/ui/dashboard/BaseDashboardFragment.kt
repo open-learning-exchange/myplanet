@@ -40,7 +40,7 @@ import org.ole.planet.myplanet.model.TeamNotificationInfo
 import org.ole.planet.myplanet.service.sync.TransactionSyncManager
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
 import org.ole.planet.myplanet.ui.health.UserListAdapter
-import org.ole.planet.myplanet.ui.news.NewsViewModel
+import org.ole.planet.myplanet.ui.voices.NewsViewModel
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.ui.userprofile.UserProfileFragment

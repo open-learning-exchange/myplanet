@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.news
+package org.ole.planet.myplanet.ui.voices
 
 import android.content.Context
 import android.graphics.Typeface

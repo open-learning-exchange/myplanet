@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.news
+package org.ole.planet.myplanet.ui.voices
 
 import android.content.res.Configuration
 import android.os.Bundle

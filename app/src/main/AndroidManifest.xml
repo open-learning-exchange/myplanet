@@ -84,7 +84,7 @@
             android:theme="@style/AppTheme" />
         <activity android:name=".ui.maps.OfflineMapsActivity" />
         <activity
-            android:name=".ui.news.ReplyActivity"
+            android:name=".ui.voices.ReplyActivity"
             android:theme="@style/AppTheme" />
         <activity
             android:name=".ui.resources.AddResourceActivity"
