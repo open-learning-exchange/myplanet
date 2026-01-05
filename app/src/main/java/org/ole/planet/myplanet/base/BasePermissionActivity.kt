@@ -20,7 +20,7 @@ import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.utilities.Utilities
 
-abstract class PermissionActivity : AppCompatActivity() {
+abstract class BasePermissionActivity : AppCompatActivity() {
     fun checkPermission(strPermission: String?): Boolean {
         val result = strPermission?.let { ContextCompat.checkSelfPermission(this, it) }
         return result == PackageManager.PERMISSION_GRANTED

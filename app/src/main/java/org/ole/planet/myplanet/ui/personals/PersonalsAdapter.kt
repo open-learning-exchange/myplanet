@@ -13,9 +13,9 @@ import org.ole.planet.myplanet.callback.OnSelectedMyPersonal
 import org.ole.planet.myplanet.databinding.RowMyPersonalBinding
 import org.ole.planet.myplanet.model.RealmMyPersonal
 import org.ole.planet.myplanet.ui.personals.PersonalsAdapter.ViewHolderPersonals
-import org.ole.planet.myplanet.ui.viewer.ImageViewerActivity
-import org.ole.planet.myplanet.ui.viewer.PDFReaderActivity
-import org.ole.planet.myplanet.ui.viewer.VideoViewerActivity
+import org.ole.planet.myplanet.ui.reader.ImageViewerActivity
+import org.ole.planet.myplanet.ui.reader.PDFReaderActivity
+import org.ole.planet.myplanet.ui.reader.VideoViewerActivity
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.IntentUtils.openAudioFile
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate

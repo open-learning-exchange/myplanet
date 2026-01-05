@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context="org.ole.planet.myplanet.ui.viewer.CSVViewerActivity"
+    tools:context="org.ole.planet.myplanet.ui.reader.CSVViewerActivity"
     android:background="@color/light_dark">
 
     <TextView
@@ -17,7 +17,6 @@
         android:textColor="@color/daynight_textColor"
         android:textSize="@dimen/text_size_large"
         android:textStyle="bold" />
-
     <ProgressBar
         android:id="@+id/csvProgressBar"
         style="?android:attr/progressBarStyleHorizontal"
@@ -27,7 +26,6 @@
         android:layout_marginEnd="@dimen/padding_large"
         android:indeterminate="true"
         android:visibility="gone" />
-
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"

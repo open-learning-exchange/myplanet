@@ -30,7 +30,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.PermissionActivity
+import org.ole.planet.myplanet.base.BasePermissionActivity
 import org.ole.planet.myplanet.callback.SecurityDataListener
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.data.ApiClient.client
@@ -50,7 +50,7 @@ import org.ole.planet.myplanet.utilities.FileUtils.installApk
 import org.ole.planet.myplanet.utilities.UrlUtils
 
 @AndroidEntryPoint
-abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
+abstract class ProcessUserDataActivity : BasePermissionActivity(), SuccessListener {
     
     @Inject
     @AppPreferences
