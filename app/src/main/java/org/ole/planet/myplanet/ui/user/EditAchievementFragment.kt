@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.profile
+package org.ole.planet.myplanet.ui.user
 
 import android.app.DatePickerDialog
 import android.content.DialogInterface
