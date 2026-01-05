@@ -21,4 +21,14 @@ interface CoursesRepository {
         subjectLevel: String,
         tagNames: List<String>
     ): List<RealmMyCourse>
+
+    suspend fun saveSearchActivity(
+        searchText: String,
+        userName: String,
+        planetCode: String,
+        parentCode: String,
+        tags: List<org.ole.planet.myplanet.model.RealmTag>,
+        grade: String,
+        subject: String
+    )
 }
