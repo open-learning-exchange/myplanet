@@ -7,7 +7,7 @@ import java.text.Normalizer
 import java.util.regex.Pattern
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SyncListener
-import org.ole.planet.myplanet.data.LoginSyncManager
+import org.ole.planet.myplanet.service.sync.LoginSyncManager
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 
