@@ -101,7 +101,6 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
                 newsAdapter = NewsAdapter(this@ReplyActivity, user, news, "", null, userProfileDbHandler, lifecycleScope, userRepository, voicesRepository, teamsRepository)
                 newsAdapter.sharedPrefManager = sharedPrefManager
                 newsAdapter.setListener(this@ReplyActivity)
-                newsAdapter.setmRealm(realm)
                 newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
                 newsAdapter.setNonTeamMember(intent.getBooleanExtra("nonTeamMember", false))
                 newsAdapter.setImageList(imageList)

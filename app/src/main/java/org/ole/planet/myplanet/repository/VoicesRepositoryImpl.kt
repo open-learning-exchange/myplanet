@@ -240,4 +240,39 @@ class VoicesRepositoryImpl @Inject constructor(
                 .let { realm.copyFromRealm(it) }
         }
     }
+
+    override suspend fun deleteNews(newsId: String) {
+        withRealm { realm ->
+            realm.executeTransaction {
+                deleteRepliesOf(newsId, it)
+                it.where(RealmNews::class.java).equalTo("id", newsId).findAll().deleteAllFromRealm()
+            }
+        }
+    }
+
+    private fun deleteRepliesOf(newsId: String, realm: io.realm.Realm) {
+        val replies = realm.where(RealmNews::class.java).equalTo("replyTo", newsId).findAll()
+        replies.forEach { reply ->
+            deleteRepliesOf(reply.id!!, realm)
+            reply.deleteFromRealm()
+        }
+    }
+
+    override suspend fun addLabel(newsId: String, label: String) {
+        withRealm { realm ->
+            realm.executeTransaction {
+                val news = it.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
+                news?.labels?.add(label)
+            }
+        }
+    }
+
+    override suspend fun removeLabel(newsId: String, label: String) {
+        withRealm { realm ->
+            realm.executeTransaction {
+                val news = it.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
+                news?.labels?.remove(label)
+            }
+        }
+    }
 }
