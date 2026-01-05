@@ -77,12 +77,12 @@
             android:name=".ui.courses.CourseProgressActivity"
             android:theme="@style/AppTheme" />
         <activity
-            android:name=".ui.myhealth.AddMyHealthActivity"
+            android:name=".ui.health.AddMyHealthActivity"
             android:theme="@style/AppTheme" />
         <activity
-            android:name=".ui.myhealth.AddExaminationActivity"
+            android:name=".ui.health.AddExaminationActivity"
             android:theme="@style/AppTheme" />
-        <activity android:name=".ui.maps.OfflineMapActivity" />
+        <activity android:name=".ui.maps.OfflineMapsActivity" />
         <activity
             android:name=".ui.news.ReplyActivity"
             android:theme="@style/AppTheme" />
@@ -104,7 +104,7 @@
             android:configChanges="orientation|screenSize" />
         <activity android:name=".ui.viewer.WebViewActivity"
             android:configChanges="orientation|screenSize" />
-        <activity android:name=".ui.viewer.VideoPlayerActivity"
+        <activity android:name=".ui.viewer.VideoViewerActivity"
             android:configChanges="orientation|screenSize" />
         <activity android:name=".ui.viewer.ImageViewerActivity"
             android:configChanges="orientation|screenSize" />

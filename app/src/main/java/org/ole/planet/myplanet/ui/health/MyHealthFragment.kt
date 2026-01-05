@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.myhealth
+package org.ole.planet.myplanet.ui.health
 
 import android.app.DatePickerDialog
 import android.content.Context.MODE_PRIVATE

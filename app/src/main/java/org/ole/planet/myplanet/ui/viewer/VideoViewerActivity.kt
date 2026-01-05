@@ -34,7 +34,7 @@ import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
-class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback {
+class VideoViewerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback {
     private lateinit var binding: ActivityExoPlayerVideoBinding
     private var exoPlayer: ExoPlayer? = null
     private var auth: String = ""
@@ -193,7 +193,7 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
         exoPlayer?.apply {
             setMediaSource(mediaSource)
             seekTo(currentPosition)
-            playWhenReady = this@VideoPlayerActivity.playWhenReady
+            playWhenReady = this@VideoViewerActivity.playWhenReady
             prepare()
         }
     }
@@ -231,7 +231,7 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
                 exoPlayer?.apply {
                     setMediaSource(audioSource)
                     seekTo(currentPosition)
-                    playWhenReady = this@VideoPlayerActivity.playWhenReady
+                    playWhenReady = this@VideoViewerActivity.playWhenReady
                     prepare()
                 }
             }
