@@ -50,8 +50,8 @@ import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibrary
 import org.ole.planet.myplanet.data.ApiClient
 import org.ole.planet.myplanet.data.ApiClient.client
 import org.ole.planet.myplanet.data.ApiInterface
-import org.ole.planet.myplanet.data.Service
-import org.ole.planet.myplanet.data.Service.ConfigurationIdListener
+import org.ole.planet.myplanet.data.DataService
+import org.ole.planet.myplanet.data.DataService.ConfigurationIdListener
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -129,7 +129,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
     var forceSync = false
     var syncFailed = false
     lateinit var defaultPref: SharedPreferences
-    lateinit var service: Service
+    lateinit var service: DataService
     var currentDialog: MaterialDialog? = null
     var serverConfigAction = ""
     var serverCheck = true

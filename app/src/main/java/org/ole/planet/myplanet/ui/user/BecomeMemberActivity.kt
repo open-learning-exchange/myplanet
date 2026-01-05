@@ -19,7 +19,7 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.callback.SecurityDataListener
-import org.ole.planet.myplanet.data.Service
+import org.ole.planet.myplanet.data.DataService
 import org.ole.planet.myplanet.databinding.ActivityBecomeMemberBinding
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
@@ -140,7 +140,7 @@ class BecomeMemberActivity : BaseActivity() {
             show()
         }
 
-        Service(this).becomeMember(obj, object : Service.CreateUserCallback {
+        DataService(this).becomeMember(obj, object : DataService.CreateUserCallback {
             override fun onSuccess(success: String) {
                 runOnUiThread { Utilities.toast(this@BecomeMemberActivity, success) }
             }
