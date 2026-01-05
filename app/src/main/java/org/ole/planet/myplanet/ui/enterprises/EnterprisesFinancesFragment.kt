@@ -25,11 +25,11 @@ import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDateTZ
 import org.ole.planet.myplanet.utilities.Utilities
 
-class FinanceFragment : BaseTeamFragment() {
+class EnterprisesFinancesFragment : BaseTeamFragment() {
     private var _binding: FragmentFinanceBinding? = null
     private val binding get() = _binding!!
     private lateinit var addTransactionBinding: AddTransactionBinding
-    private lateinit var financeAdapter: FinanceAdapter
+    private lateinit var financeAdapter: EnterprisesFinancesAdapter
     var date: Calendar? = null
     private var transactions: List<Transaction> = emptyList()
     private var isAsc = false
@@ -206,7 +206,7 @@ class FinanceFragment : BaseTeamFragment() {
             binding.addTransaction.visibility = View.GONE
         }
         binding.addTransaction.setOnClickListener { addTransaction() }
-        financeAdapter = FinanceAdapter(requireActivity())
+        financeAdapter = EnterprisesFinancesAdapter(requireActivity())
         binding.rvFinance.layoutManager = LinearLayoutManager(activity)
         binding.rvFinance.adapter = financeAdapter
         observeTransactions()
