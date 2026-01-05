@@ -6,6 +6,7 @@ import androidx.lifecycle.lifecycleScope
 import com.google.gson.JsonObject
 import io.realm.Realm
 import java.text.SimpleDateFormat
+import org.ole.planet.myplanet.data.DatabaseService
 import java.time.LocalDate
 import java.util.Date
 import java.util.Locale
@@ -31,7 +32,8 @@ class ChallengeHelper(
     private val settings: SharedPreferences,
     private val editor: SharedPreferences.Editor,
     private val viewModel: DashboardViewModel,
-    private val progressRepository: ProgressRepository
+    private val progressRepository: ProgressRepository,
+    private val databaseService: DatabaseService
 ) {
     private val fragmentManager: FragmentManager
         get() = activity.supportFragmentManager
@@ -43,7 +45,7 @@ class ChallengeHelper(
         val courseId = "4e6b78800b6ad18b4e8b0e1e38a98cac"
         activity.lifecycleScope.launch(Dispatchers.IO) {
             try {
-                Realm.getDefaultInstance().use { realm ->
+                databaseService.withRealm { realm ->
                     val uniqueDates = fetchVoiceDates(realm, startTime, endTime, user?.id)
                     val allUniqueDates = fetchVoiceDates(realm, startTime, endTime, null)
 
@@ -146,7 +148,7 @@ class ChallengeHelper(
     }
 
     private fun challengeDialog(voiceCount: Int, courseStatus: String, allVoiceCount: Int, hasUnfinishedSurvey: Boolean) {
-        Realm.getDefaultInstance().use { realm ->
+        databaseService.withRealm { realm ->
             val voiceTaskDone = if (voiceCount >= 5) "✅" else "[ ]"
             val prereqsMet = courseStatus.contains("terminado", ignoreCase = true) && voiceCount >= 5
             var hasValidSync = false
@@ -164,7 +166,7 @@ class ChallengeHelper(
 
             val hasShownCongrats = settings.getBoolean("has_shown_congrats", false)
 
-            if (isCompleted && hasShownCongrats) return
+            if (isCompleted && hasShownCongrats) return@withRealm
 
             if (isCompleted && !hasShownCongrats) {
                 editor.putBoolean("has_shown_congrats", true).apply()
