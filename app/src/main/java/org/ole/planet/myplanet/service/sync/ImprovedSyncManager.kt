@@ -18,7 +18,6 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.data.LoginSyncManager
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.service.sync.AdaptiveBatchProcessor
 import org.ole.planet.myplanet.service.sync.RealmPoolManager
