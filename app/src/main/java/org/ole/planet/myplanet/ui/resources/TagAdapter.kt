@@ -12,6 +12,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowAdapterNavigationChildBinding
 import org.ole.planet.myplanet.databinding.RowAdapterNavigationParentBinding
 import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.ui.callback.OnTagClickListener
 import org.ole.planet.myplanet.utilities.DiffUtils
 
 sealed class TagData {
@@ -129,10 +130,4 @@ class TagAdapter(
         checkBox.setOnCheckedChangeListener { _, _ -> listener.onCheckboxTagSelected(tag) }
     }
 
-    interface OnTagClickListener {
-        fun onTagClicked(tag: RealmTag)
-        fun onParentTagClicked(parent: TagData.Parent)
-        fun onCheckboxTagSelected(tag: RealmTag)
-        fun hasChildren(tagId: String?): Boolean
-    }
 }
