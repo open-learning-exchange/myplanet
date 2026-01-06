@@ -39,7 +39,7 @@ import org.ole.planet.myplanet.utilities.FileUtils.externalMemoryAvailable
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.UrlUtils.header
 
-class MyDownloadService : Service() {
+class DownloadService : Service() {
     private var data = ByteArray(1024 * 4)
     private var outputFile: File? = null
     private var notificationBuilder: NotificationCompat.Builder? = null
@@ -215,7 +215,7 @@ class MyDownloadService : Service() {
             if (message == "File Not Found") {
                 val intent = Intent(RESOURCE_NOT_FOUND_ACTION)
                 downloadScope.launch {
-                    val broadcastService = getBroadcastService(this@MyDownloadService)
+                    val broadcastService = getBroadcastService(this@DownloadService)
                     broadcastService.sendBroadcast(intent)
                 }
             }
@@ -225,7 +225,7 @@ class MyDownloadService : Service() {
     @Throws(IOException::class)
     private fun downloadFile(body: ResponseBody, url: String) {
         val fileSize = body.contentLength()
-        outputFile = FileUtils.getSDPathFromUrl(this@MyDownloadService, url)
+        outputFile = FileUtils.getSDPathFromUrl(this@DownloadService, url)
         var total: Long = 0
         val startTime = System.currentTimeMillis()
         var timeCount = 1
@@ -307,7 +307,7 @@ class MyDownloadService : Service() {
             putExtra("fromSync", fromSync)
         }
         downloadScope.launch {
-            val broadcastService = getBroadcastService(this@MyDownloadService)
+            val broadcastService = getBroadcastService(this@DownloadService)
             broadcastService.sendBroadcast(intent)
         }
     }
@@ -368,7 +368,7 @@ class MyDownloadService : Service() {
         const val COMPLETION_NOTIFICATION_ID = 2
 
         fun startService(context: Context, urlsKey: String, fromSync: Boolean) {
-            val intent = Intent(context, MyDownloadService::class.java).apply {
+            val intent = Intent(context, DownloadService::class.java).apply {
                 putExtra("urls_key", urlsKey)
                 putExtra("fromSync", fromSync)
             }
@@ -410,7 +410,7 @@ class MyDownloadService : Service() {
 
         private fun handleForegroundServiceError(context: Context, urlsKey: String, fromSync: Boolean) {
             try {
-                val intent = Intent(context, MyDownloadService::class.java).apply {
+                val intent = Intent(context, DownloadService::class.java).apply {
                     putExtra("urls_key", urlsKey)
                     putExtra("fromSync", fromSync)
                 }
