@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.dashboard
+package org.ole.planet.myplanet.utilities
 
 import android.content.SharedPreferences
 import androidx.fragment.app.FragmentManager
