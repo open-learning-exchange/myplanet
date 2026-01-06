@@ -49,7 +49,8 @@ open class RealmRepository(protected val databaseService: DatabaseService) {
         clazz: Class<T>,
         builder: RealmQuery<T>.() -> Unit = {},
     ): Flow<List<T>> = callbackFlow {
-        val realm = Realm.getDefaultInstance()
+        @Suppress("DEPRECATION")
+        val realm = databaseService.realmInstance
         val results = realm.where(clazz).apply(builder).findAllAsync()
         val listener = RealmChangeListener<RealmResults<T>> {
             if (it.isLoaded && it.isValid) {
