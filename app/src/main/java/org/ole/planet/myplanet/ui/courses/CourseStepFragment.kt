@@ -9,8 +9,10 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import dagger.hilt.android.AndroidEntryPoint
 import java.util.Date
 import java.util.UUID
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -21,10 +23,10 @@ import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.databinding.FragmentCourseStepBinding
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.isMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.ui.components.CustomClickableSpan
 import org.ole.planet.myplanet.ui.exam.ExamTakingFragment
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
@@ -42,7 +44,10 @@ private data class CourseStepData(
     val userHasCourse: Boolean
 )
 
+@AndroidEntryPoint
 class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
+    @Inject
+    lateinit var coursesRepository: CoursesRepository
     private lateinit var fragmentCourseStepBinding: FragmentCourseStepBinding
     var stepId: String? = null
     private lateinit var step: RealmCourseStep
@@ -124,7 +129,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                 .equalTo("type", "surveys")
                 .findAll()
                 .let { realm.copyFromRealm(it) }
-            val userHasCourse = isMyCourse(user?.id, step.courseId, realm)
+            val userHasCourse = coursesRepository.isMyCourse(user?.id, step.courseId)
             CourseStepData(step, resources, stepExams, stepSurvey, userHasCourse)
         }
     }
@@ -216,17 +221,18 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
 
     override fun setMenuVisibility(visible: Boolean) {
         super.setMenuVisibility(visible)
-        try {
-            if (visible) {
-                val userHasCourse = databaseService.withRealm { realm ->
-                    isMyCourse(user?.id, step.courseId, realm)
+        if (!isAdded) return
+        lifecycleScope.launch {
+            try {
+                if (visible) {
+                    val userHasCourse = coursesRepository.isMyCourse(user?.id, step.courseId)
+                    if (userHasCourse) {
+                        launchSaveCourseProgress()
+                    }
                 }
-                if (userHasCourse) {
-                    launchSaveCourseProgress()
-                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
     }
 
