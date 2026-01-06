@@ -43,37 +43,37 @@ class ChallengeHelper(
         val endTime = 1734307200000
 
         val courseId = "4e6b78800b6ad18b4e8b0e1e38a98cac"
-        activity.lifecycleScope.launch(Dispatchers.IO) {
+        activity.lifecycleScope.launch(Dispatchers.Main) {
             try {
-                databaseService.withRealm { realm ->
-                    val uniqueDates = fetchVoiceDates(realm, startTime, endTime, user?.id)
-                    val allUniqueDates = fetchVoiceDates(realm, startTime, endTime, null)
+                val courseData = withContext(Dispatchers.IO) {
+                    progressRepository.fetchCourseData(user?.id)
+                }
 
-                    val courseData = progressRepository.fetchCourseData(user?.id)
-                    val progress = CoursesProgressFragment.getCourseProgress(courseData, courseId)
-                    val courseName = realm.where(RealmMyCourse::class.java)
-                        .equalTo("courseId", courseId)
-                        .findFirst()?.courseTitle
-
-                    val hasUnfinishedSurvey = hasPendingSurvey(realm, courseId)
-
-                    val validUrls = listOf(
-                        "https://${BuildConfig.PLANET_GUATEMALA_URL}",
-                        "http://${BuildConfig.PLANET_XELA_URL}",
-                        "http://${BuildConfig.PLANET_URIUR_URL}",
-                        "http://${BuildConfig.PLANET_SANPABLO_URL}",
-                        "http://${BuildConfig.PLANET_EMBAKASI_URL}",
-                        "https://${BuildConfig.PLANET_VI_URL}"
-                    )
-
-                    val today = LocalDate.now()
-                    if (user?.id?.startsWith("guest") == false && shouldPromptChallenge(today, validUrls)) {
-                        val courseStatus = getCourseStatus(progress, courseName)
-
-                        withContext(Dispatchers.Main) {
-                            challengeDialog(uniqueDates.size, courseStatus, allUniqueDates.size, hasUnfinishedSurvey)
-                        }
+                val realmData = databaseService.withRealmAsync { realm ->
+                    object {
+                        val uniqueDates = fetchVoiceDates(realm, startTime, endTime, user?.id)
+                        val allUniqueDates = fetchVoiceDates(realm, startTime, endTime, null)
+                        val courseName = realm.where(RealmMyCourse::class.java)
+                            .equalTo("courseId", courseId)
+                            .findFirst()?.courseTitle
+                        val hasUnfinishedSurvey = hasPendingSurvey(realm, courseId)
                     }
+                }
+
+                val progress = CoursesProgressFragment.getCourseProgress(courseData, courseId)
+                val validUrls = listOf(
+                    "https://${BuildConfig.PLANET_GUATEMALA_URL}",
+                    "http://${BuildConfig.PLANET_XELA_URL}",
+                    "http://${BuildConfig.PLANET_URIUR_URL}",
+                    "http://${BuildConfig.PLANET_SANPABLO_URL}",
+                    "http://${BuildConfig.PLANET_EMBAKASI_URL}",
+                    "https://${BuildConfig.PLANET_VI_URL}"
+                )
+
+                val today = LocalDate.now()
+                if (user?.id?.startsWith("guest") == false && shouldPromptChallenge(today, validUrls)) {
+                    val courseStatus = getCourseStatus(progress, realmData.courseName)
+                    challengeDialog(realmData.uniqueDates.size, courseStatus, realmData.allUniqueDates.size, realmData.hasUnfinishedSurvey)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()

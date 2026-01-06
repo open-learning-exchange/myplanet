@@ -121,8 +121,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     lateinit var submissionsRepository: SubmissionsRepository
     @Inject
     lateinit var notificationsRepository: NotificationsRepository
-    @Inject
-    lateinit var databaseService: DatabaseService
     private val challengeHelper: ChallengeHelper by lazy {
         ChallengeHelper(this, user, settings, editor, dashboardViewModel, progressRepository, databaseService)
     }
