@@ -29,13 +29,14 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
+import org.ole.planet.myplanet.di.AppPreferences
+
 class ConfigurationRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
     private val apiInterface: ApiInterface,
-    @ApplicationScope private val serviceScope: CoroutineScope
+    @ApplicationScope private val serviceScope: CoroutineScope,
+    @AppPreferences private val preferences: SharedPreferences
 ) : ConfigurationRepository {
-
-    private val preferences: SharedPreferences = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
 
     override fun checkHealth(listener: SuccessListener) {
