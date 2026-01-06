@@ -17,8 +17,6 @@ import javax.inject.Inject
 
 @AndroidEntryPoint
 class TeamCoursesFragment : BaseTeamFragment() {
-    @Inject
-    lateinit var teamsRepository: TeamsRepository
     private var _binding: FragmentTeamCourseBinding? = null
     private val binding get() = _binding!!
     private var adapterTeamCourse: TeamCoursesAdapter? = null
