@@ -76,22 +76,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         super.onCreate(savedInstanceState)
         isTeam = arguments?.getBoolean("isTeam", false) == true
         teamId = arguments?.getString("teamId", null)
-        val userProfileModel = profileDbHandler.userModel
-        adapter = SurveyAdapter(
-            requireActivity(),
-            surveysRepository,
-            userProfileModel?.id,
-            isTeam,
-            teamId,
-            this,
-            settings,
-            profileDbHandler,
-            surveyInfoMap,
-            bindingDataMap,
-            viewLifecycleOwner.lifecycleScope
-        )
         prefManager = SharedPrefManager(requireContext())
-        
         startExamSync()
     }
 
@@ -171,6 +156,20 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        val userProfileModel = profileDbHandler.userModel
+        adapter = SurveyAdapter(
+            requireActivity(),
+            surveysRepository,
+            userProfileModel?.id,
+            isTeam,
+            teamId,
+            this,
+            settings,
+            profileDbHandler,
+            surveyInfoMap,
+            bindingDataMap,
+            viewLifecycleOwner.lifecycleScope
+        )
         realtimeSyncHelper = RealtimeSyncHelper(this, this)
         realtimeSyncHelper.setupRealtimeSync()
         initializeViews()
