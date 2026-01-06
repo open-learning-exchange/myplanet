@@ -81,6 +81,27 @@ class CoursesRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getCourseStep(stepId: String): RealmCourseStep? {
+        return findByField(RealmCourseStep::class.java, "id", stepId)
+    }
+
+    override suspend fun getStepExams(stepId: String, type: String): List<RealmStepExam> {
+        return queryList(RealmStepExam::class.java) {
+            equalTo("stepId", stepId)
+            equalTo("type", type)
+        }
+    }
+
+    override suspend fun isMyCourse(userId: String?, courseId: String?): Boolean {
+        if (userId.isNullOrBlank() || courseId.isNullOrBlank()) {
+            return false
+        }
+        return count(RealmMyCourse::class.java) {
+            equalTo("userId", userId)
+            equalTo("courseId", courseId)
+        } > 0
+    }
+
     override suspend fun markCourseAdded(courseId: String, userId: String?): Boolean {
         if (courseId.isBlank()) {
             return false

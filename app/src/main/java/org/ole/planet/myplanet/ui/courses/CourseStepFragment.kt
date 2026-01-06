@@ -7,10 +7,18 @@ import android.text.style.URLSpan
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.fragment.app.Fragment
+import android.os.Bundle
+import android.text.Spannable
+import android.text.method.LinkMovementMethod
+import android.text.style.URLSpan
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import androidx.lifecycle.lifecycleScope
+import dagger.hilt.android.AndroidEntryPoint
 import java.util.Date
 import java.util.UUID
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -21,10 +29,10 @@ import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.databinding.FragmentCourseStepBinding
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.isMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.ui.components.CustomClickableSpan
 import org.ole.planet.myplanet.ui.exam.ExamTakingFragment
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
@@ -42,8 +50,12 @@ private data class CourseStepData(
     val userHasCourse: Boolean
 )
 
+@AndroidEntryPoint
 class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     private lateinit var fragmentCourseStepBinding: FragmentCourseStepBinding
+
+    @Inject
+    lateinit var coursesRepository: CoursesRepository
     var stepId: String? = null
     private lateinit var step: RealmCourseStep
     private lateinit var resources: List<RealmMyLibrary>
@@ -105,28 +117,12 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     }
 
     private suspend fun loadStepData(): CourseStepData = withContext(Dispatchers.IO) {
-        databaseService.withRealm { realm ->
-            val step = realm.where(RealmCourseStep::class.java)
-                .equalTo("id", stepId)
-                .findFirst()
-                ?.let { realm.copyFromRealm(it) }!!
-            val resources = realm.where(RealmMyLibrary::class.java)
-                .equalTo("stepId", stepId)
-                .findAll()
-                .let { realm.copyFromRealm(it) }
-            val stepExams = realm.where(RealmStepExam::class.java)
-                .equalTo("stepId", stepId)
-                .equalTo("type", "courses")
-                .findAll()
-                .let { realm.copyFromRealm(it) }
-            val stepSurvey = realm.where(RealmStepExam::class.java)
-                .equalTo("stepId", stepId)
-                .equalTo("type", "surveys")
-                .findAll()
-                .let { realm.copyFromRealm(it) }
-            val userHasCourse = isMyCourse(user?.id, step.courseId, realm)
-            CourseStepData(step, resources, stepExams, stepSurvey, userHasCourse)
-        }
+        val step = coursesRepository.getCourseStep(stepId!!)!!
+        val resources = resourcesRepository.getStepResources(stepId!!)
+        val stepExams = coursesRepository.getStepExams(stepId!!, "courses")
+        val stepSurvey = coursesRepository.getStepExams(stepId!!, "surveys")
+        val userHasCourse = coursesRepository.isMyCourse(user?.id, step.courseId)
+        CourseStepData(step, resources, stepExams, stepSurvey, userHasCourse)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -217,12 +213,12 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     override fun setMenuVisibility(visible: Boolean) {
         super.setMenuVisibility(visible)
         try {
-            if (visible) {
-                val userHasCourse = databaseService.withRealm { realm ->
-                    isMyCourse(user?.id, step.courseId, realm)
-                }
-                if (userHasCourse) {
-                    launchSaveCourseProgress()
+            if (visible && this::step.isInitialized) {
+                lifecycleScope.launch {
+                    val userHasCourse = coursesRepository.isMyCourse(user?.id, step.courseId)
+                    if (userHasCourse) {
+                        launchSaveCourseProgress()
+                    }
                 }
             }
         } catch (e: Exception) {
