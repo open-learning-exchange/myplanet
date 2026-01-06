@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.teams
 
 import android.os.Bundle
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentActivity
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.MemberChangeListener
@@ -21,17 +20,17 @@ import org.ole.planet.myplanet.ui.teams.member.MembersFragment
 import org.ole.planet.myplanet.ui.teams.resources.TeamResourcesFragment
 
 class TeamPagerAdapter(
-    private val fm: FragmentActivity,
+    private val parentFragment: Fragment,
     private val pages: List<TeamPageConfig>,
     private val teamId: String?,
     private val memberChangeListener: MemberChangeListener,
     private val teamUpdateListener: TeamUpdateListener
-) : FragmentStateAdapter(fm) {
+) : FragmentStateAdapter(parentFragment) {
 
     override fun getItemCount(): Int = pages.size
 
     fun getPageTitle(position: Int): CharSequence =
-        fm.getString(pages[position].titleRes)
+        parentFragment.getString(pages[position].titleRes)
 
     override fun getItemId(position: Int): Long {
         val page = pages.getOrNull(position)
@@ -58,14 +57,6 @@ class TeamPagerAdapter(
             ApplicantsPage, JoinRequestsPage -> if (fragment is MembersFragment) {
                 fragment.setMemberChangeListener(memberChangeListener)
             }
-            CoursesPage -> if (fragment is TeamCoursesFragment) {
-                android.util.Log.d("TeamPagerAdapter", "Setting MainApplication.listener to TeamCoursesFragment")
-                MainApplication.listener = fragment
-            }
-            DocumentsPage, ResourcesPage -> if (fragment is TeamResourcesFragment) {
-                android.util.Log.d("TeamPagerAdapter", "Setting MainApplication.listener to TeamResourcesFragment")
-                MainApplication.listener = fragment
-            }
             SurveyPage -> {
                 fragment.arguments = (fragment.arguments ?: Bundle()).apply {
                     putBoolean("isTeam", true)
@@ -88,5 +79,28 @@ class TeamPagerAdapter(
         args.putInt("fragmentPosition", position)
 
         return fragment
+    }
+
+    fun updateListenerForCurrentPage(position: Int) {
+        val page = pages.getOrNull(position) ?: return
+
+        // Find the fragment for this position using the parent fragment's childFragmentManager
+        val fragmentTag = "f$position"
+        val fragment = parentFragment.childFragmentManager.findFragmentByTag(fragmentTag)
+
+        when (page) {
+            CoursesPage -> if (fragment is TeamCoursesFragment) {
+                MainApplication.listener = fragment
+            }
+            DocumentsPage, ResourcesPage -> if (fragment is TeamResourcesFragment) {
+                MainApplication.listener = fragment
+            }
+            else -> {
+                // For other pages, clear the listener if it was pointing to a resource/course fragment
+                if (MainApplication.listener is TeamCoursesFragment || MainApplication.listener is TeamResourcesFragment) {
+                    MainApplication.listener = null
+                }
+            }
+        }
     }
 }

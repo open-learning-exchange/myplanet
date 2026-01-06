@@ -289,7 +289,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
 
         binding.viewPager2.adapter = null
         binding.viewPager2.adapter = TeamPagerAdapter(
-            requireActivity(),
+            this,
             pageConfigs,
             team?._id,
             this,
@@ -306,11 +306,27 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
 
         selectPage(restorePageId, false)
 
+        // Set the initial listener for the current page after a short delay to ensure fragment is created
+        binding.root.postDelayed({
+            val adapter = binding.viewPager2.adapter
+            if (adapter is TeamPagerAdapter) {
+                val currentPosition = binding.viewPager2.currentItem
+                adapter.updateListenerForCurrentPage(currentPosition)
+            }
+        }, 100)
+
         binding.viewPager2.registerOnPageChangeCallback(
             object : ViewPager2.OnPageChangeCallback() {
                 override fun onPageSelected(position: Int) {
                     val pageConfig = pageConfigs.getOrNull(position)
                     val pageId = pageConfig?.id
+
+                    // Update the MainApplication.listener to point to the currently visible fragment
+                    val adapter = binding.viewPager2.adapter
+                    if (adapter is TeamPagerAdapter) {
+                        adapter.updateListenerForCurrentPage(position)
+                    }
+
                     team?._id?.let { teamId ->
                         pageId?.let {
                             teamLastPage[teamId] = it
@@ -378,26 +394,36 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
         binding.btnAddDoc.setOnClickListener {
             MainApplication.showDownload = true
             val coursesPageIndex = pageIndexById(CoursesPage.id)
-            val isAlreadyOnCoursesPage = coursesPageIndex != null && binding.viewPager2.currentItem == coursesPageIndex
 
-            selectPage(CoursesPage.id)
+            if (coursesPageIndex == null) {
+                MainApplication.showDownload = false
+                org.ole.planet.myplanet.utilities.Utilities.toast(requireActivity(), "Courses page not available for this team type")
+                return@setOnClickListener
+            }
+
+            val isAlreadyOnCoursesPage = binding.viewPager2.currentItem == coursesPageIndex
+
+            if (!isAlreadyOnCoursesPage) {
+                selectPage(CoursesPage.id)
+            }
+
+            // Update the listener to ensure it points to TeamCoursesFragment
+            val adapter = binding.viewPager2.adapter
+            if (adapter is TeamPagerAdapter) {
+                adapter.updateListenerForCurrentPage(coursesPageIndex)
+            }
+
             MainApplication.showDownload = false
 
             // If already on courses page, call immediately with shorter delay
             // Otherwise wait longer for page transition
-            val delay = if (isAlreadyOnCoursesPage) 50L else 300L
+            val delay = if (isAlreadyOnCoursesPage) 150L else 400L
 
             binding.root.postDelayed({
                 // Try multiple strategies to get the fragment
                 val currentPosition = binding.viewPager2.currentItem
                 val fragmentTag = "f$currentPosition"
                 var currentFragment = childFragmentManager.findFragmentByTag(fragmentTag)
-
-                // Debug logging
-                android.util.Log.d("TeamDetailFragment", "Looking for fragment with tag: $fragmentTag, found: ${currentFragment != null}")
-                android.util.Log.d("TeamDetailFragment", "Current fragment type: ${currentFragment?.javaClass?.simpleName}")
-                android.util.Log.d("TeamDetailFragment", "MainApplication.listener: ${MainApplication.listener != null}")
-                android.util.Log.d("TeamDetailFragment", "MainApplication.listener type: ${MainApplication.listener?.javaClass?.simpleName}")
 
                 // Try to find the fragment in different ways
                 if (currentFragment == null) {
@@ -408,15 +434,12 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
 
                 when {
                     currentFragment is org.ole.planet.myplanet.callback.TeamPageListener -> {
-                        android.util.Log.d("TeamDetailFragment", "Calling onAddCourse on current fragment")
                         currentFragment.onAddCourse()
                     }
                     MainApplication.listener != null -> {
-                        android.util.Log.d("TeamDetailFragment", "Calling onAddCourse on MainApplication.listener")
                         MainApplication.listener?.onAddCourse()
                     }
                     else -> {
-                        android.util.Log.e("TeamDetailFragment", "Could not find TeamCoursesFragment to call onAddCourse")
                         org.ole.planet.myplanet.utilities.Utilities.toast(requireActivity(), "Unable to show add course dialog")
                     }
                 }
