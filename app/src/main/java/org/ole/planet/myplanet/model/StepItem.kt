@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.courses
+package org.ole.planet.myplanet.model
 
 data class StepItem(
     val id: String?,
