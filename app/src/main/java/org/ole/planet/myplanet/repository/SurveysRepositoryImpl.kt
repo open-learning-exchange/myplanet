@@ -17,6 +17,7 @@ import android.content.SharedPreferences
 import org.ole.planet.myplanet.model.RealmMembershipDoc
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDateWithTime
 import java.util.UUID
 
@@ -24,7 +25,7 @@ class SurveysRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
     databaseService: DatabaseService,
     private val userProfileDbHandler: UserProfileDbHandler,
-    private val settings: SharedPreferences,
+    @DefaultPreferences private val settings: SharedPreferences,
 ) : RealmRepository(databaseService), SurveysRepository {
 
     override suspend fun adoptSurvey(examId: String, userId: String?, teamId: String?, isTeam: Boolean) {
