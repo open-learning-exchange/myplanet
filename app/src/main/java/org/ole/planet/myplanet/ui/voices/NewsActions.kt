@@ -24,6 +24,7 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.ui.teams.member.MemberDetailFragment
 import org.ole.planet.myplanet.utilities.JsonUtils
 
@@ -39,7 +40,7 @@ object NewsActions {
 
     fun createEditDialogComponents(
         context: Context,
-        listener: NewsAdapter.OnNewsItemClickListener?
+        listener: OnNewsItemClickListener?
     ): EditDialogComponents {
         val v = android.view.LayoutInflater.from(context).inflate(R.layout.alert_input, null)
         val tlInput = v.findViewById<TextInputLayout>(R.id.tl_input)
@@ -132,7 +133,7 @@ object NewsActions {
         realm: Realm,
         currentUser: RealmUserModel?,
         imageList: RealmList<String>?,
-        listener: NewsAdapter.OnNewsItemClickListener?
+        listener: OnNewsItemClickListener?
     ) {
         val s = components.editText.text.toString().trim()
         if (s.isEmpty()) {
@@ -154,7 +155,7 @@ object NewsActions {
         id: String?,
         isEdit: Boolean,
         currentUser: RealmUserModel?,
-        listener: NewsAdapter.OnNewsItemClickListener?,
+        listener: OnNewsItemClickListener?,
         viewHolder: RecyclerView.ViewHolder,
         updateReplyButton: (RecyclerView.ViewHolder, RealmNews?, Int) -> Unit = { _, _, _ -> }
     ) {
@@ -250,5 +251,74 @@ object NewsActions {
             userModel.userImage
         )
         return fragment
+    }
+
+    fun deletePost(
+        realm: Realm,
+        news: RealmNews?,
+        list: MutableList<RealmNews?>,
+        teamName: String,
+        listener: OnNewsItemClickListener? = null
+    ) {
+        val ar = JsonUtils.gson.fromJson(news?.viewIn, JsonArray::class.java)
+        if (!realm.isInTransaction) realm.beginTransaction()
+        val position = list.indexOf(news)
+        if (position != -1) {
+            list.removeAt(position)
+        }
+        if (teamName.isNotEmpty() || ar.size() < 2) {
+            news?.let { newsItem ->
+                deleteChildPosts(realm, newsItem.id, list)
+
+                val managedNews = if (newsItem.isManaged) {
+                    newsItem
+                } else {
+                    realm.where(RealmNews::class.java)
+                        .equalTo("id", newsItem.id)
+                        .findFirst()
+                }
+
+                managedNews?.deleteFromRealm()
+            }
+        } else {
+            news?.let { newsItem ->
+                val filtered = JsonArray().apply {
+                    ar.forEach { elem ->
+                        if (!elem.asJsonObject.has("sharedDate")) {
+                            add(elem)
+                        }
+                    }
+                }
+
+                val managedNews = if (newsItem.isManaged) {
+                    newsItem
+                } else {
+                    realm.where(RealmNews::class.java)
+                        .equalTo("id", newsItem.id)
+                        .findFirst()
+                }
+
+                managedNews?.viewIn = JsonUtils.gson.toJson(filtered)
+            }
+        }
+        realm.commitTransaction()
+        listener?.onDataChanged()
+    }
+
+    private fun deleteChildPosts(
+        realm: Realm,
+        parentId: String?,
+        list: MutableList<RealmNews?>
+    ) {
+        if (parentId == null) return
+        val children = realm.where(RealmNews::class.java)
+            .equalTo("replyTo", parentId)
+            .findAll()
+        children.forEach { child ->
+            deleteChildPosts(realm, child.id, list)
+            val idx = list.indexOf(child)
+            if (idx != -1) list.removeAt(idx)
+            child.deleteFromRealm()
+        }
     }
 }

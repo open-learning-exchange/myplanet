@@ -48,6 +48,7 @@ import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DiffUtils
@@ -548,15 +549,6 @@ class NewsAdapter(var context: Context, private var currentUser: RealmUserModel?
         return if (parentNews == null) super.getItemCount() else super.getItemCount() + 1
     }
 
-    interface OnNewsItemClickListener {
-        fun showReply(news: RealmNews?, fromLogin: Boolean, nonTeamMember: Boolean)
-        fun addImage(llImage: ViewGroup?)
-        fun onNewsItemClick(news: RealmNews?)
-        fun clearImages()
-        fun onDataChanged()
-        fun onMemberSelected(userModel: RealmUserModel?)
-        fun getCurrentImageList(): RealmList<String>?
-    }
 
     private fun showShareButton(holder: RecyclerView.ViewHolder, news: RealmNews?) {
         val viewHolder = holder as ViewHolderNews
