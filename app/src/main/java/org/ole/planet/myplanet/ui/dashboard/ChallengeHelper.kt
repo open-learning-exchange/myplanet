@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.dashboard
 import android.content.SharedPreferences
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Realm
 import java.text.SimpleDateFormat
@@ -22,7 +23,6 @@ import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.ui.components.MarkdownDialog
-import org.ole.planet.myplanet.ui.courses.CoursesProgressFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 
 class ChallengeHelper(
@@ -48,7 +48,7 @@ class ChallengeHelper(
                     val allUniqueDates = fetchVoiceDates(realm, startTime, endTime, null)
 
                     val courseData = progressRepository.fetchCourseData(user?.id)
-                    val progress = CoursesProgressFragment.getCourseProgress(courseData, courseId)
+                    val progress = getCourseProgress(courseData, courseId)
                     val courseName = realm.where(RealmMyCourse::class.java)
                         .equalTo("courseId", courseId)
                         .findFirst()?.courseTitle
@@ -77,6 +77,16 @@ class ChallengeHelper(
                 e.printStackTrace()
             }
         }
+    }
+
+    private fun getCourseProgress(courseData: JsonArray, courseId: String): JsonObject? {
+        courseData.forEach { element ->
+            val course = element.asJsonObject
+            if (course.get("courseId").asString == courseId) {
+                return course.getAsJsonObject("progress")
+            }
+        }
+        return null
     }
 
     private fun fetchVoiceDates(realm: Realm, start: Long, end: Long, userId: String?): List<String> {
