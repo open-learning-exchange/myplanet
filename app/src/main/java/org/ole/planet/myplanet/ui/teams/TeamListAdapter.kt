@@ -16,6 +16,8 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemTeamListBinding
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
+import org.ole.planet.myplanet.ui.teams.callback.OnTeamActionsListener
+import org.ole.planet.myplanet.ui.teams.callback.OnUpdateCompleteListener
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.NavigationHelper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
@@ -35,15 +37,6 @@ class TeamListAdapter(
 
     interface OnClickTeamItem {
         fun onEditTeam(team: TeamDetails?)
-    }
-
-    interface OnUpdateCompleteListener {
-        fun onUpdateComplete(itemCount: Int)
-    }
-
-    interface OnTeamActionsListener {
-        fun onLeaveTeam(team: TeamDetails, user: RealmUserModel?)
-        fun onRequestToJoin(team: TeamDetails, user: RealmUserModel?)
     }
 
 

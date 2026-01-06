@@ -26,11 +26,13 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.SharedPrefManager
+import org.ole.planet.myplanet.ui.teams.callback.OnTeamActionsListener
+import org.ole.planet.myplanet.ui.teams.callback.OnUpdateCompleteListener
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
-class TeamFragment : Fragment(), TeamListAdapter.OnClickTeamItem, TeamListAdapter.OnUpdateCompleteListener,
-    TeamListAdapter.OnTeamActionsListener {
+class TeamFragment : Fragment(), TeamListAdapter.OnClickTeamItem, OnUpdateCompleteListener,
+    OnTeamActionsListener {
     private var _binding: FragmentTeamBinding? = null
     private val binding get() = _binding!!
     private lateinit var alertCreateTeamBinding: AlertCreateTeamBinding
