@@ -19,11 +19,12 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.TagClickListener
 import org.ole.planet.myplanet.databinding.FragmentCollectionsBinding
 import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.ui.callback.OnTagClickListener
 import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.utilities.KeyboardUtils
 
 @AndroidEntryPoint
-class CollectionsFragment : DialogFragment(), TagAdapter.OnTagClickListener, CompoundButton.OnCheckedChangeListener {
+class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton.OnCheckedChangeListener {
     private var _binding: FragmentCollectionsBinding? = null
     private val binding get() = _binding!!
     @Inject
