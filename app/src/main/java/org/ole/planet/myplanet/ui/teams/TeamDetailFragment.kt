@@ -46,6 +46,7 @@ import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ResourcesPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.SurveyPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TasksPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TeamPage
+import org.ole.planet.myplanet.ui.teams.courses.TeamCoursesFragment
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
@@ -401,7 +402,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
                 // Try to find the fragment in different ways
                 if (currentFragment == null) {
                     currentFragment = childFragmentManager.fragments.find {
-                        it is org.ole.planet.myplanet.ui.team.courses.TeamCoursesFragment && it.isVisible
+                        it is TeamCoursesFragment && it.isVisible
                     }
                 }
 
