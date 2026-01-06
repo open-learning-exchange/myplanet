@@ -52,8 +52,9 @@ import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
+import org.ole.planet.myplanet.callback.NotificationsListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
-import org.ole.planet.myplanet.data.Service
+import org.ole.planet.myplanet.data.DataService
 import org.ole.planet.myplanet.databinding.ActivityDashboardBinding
 import org.ole.planet.myplanet.databinding.CustomTabBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -65,34 +66,33 @@ import org.ole.planet.myplanet.repository.JoinRequestNotification
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.repository.SubmissionRepository
+import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.ui.chat.ChatHistoryListFragment
+import org.ole.planet.myplanet.ui.chat.ChatHistoryFragment
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
-import org.ole.planet.myplanet.callback.NotificationsListener
 import org.ole.planet.myplanet.ui.dashboard.notifications.NotificationsFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
-import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.resources.ResourceDetailFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.settings.SettingActivity
-import org.ole.planet.myplanet.ui.submission.SubmissionsAdapter
+import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.ui.survey.SendSurveyFragment
 import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.ui.sync.DashboardElementActivity
-import org.ole.planet.myplanet.ui.team.TeamDetailFragment
-import org.ole.planet.myplanet.ui.team.TeamFragment
-import org.ole.planet.myplanet.ui.team.TeamPageConfig.JoinRequestsPage
-import org.ole.planet.myplanet.ui.team.TeamPageConfig.TasksPage
-import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
+import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
+import org.ole.planet.myplanet.ui.teams.TeamFragment
+import org.ole.planet.myplanet.ui.teams.TeamPageConfig.JoinRequestsPage
+import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TasksPage
+import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
 import org.ole.planet.myplanet.utilities.Constants.isBetaWifiFeatureEnabled
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.LocaleUtils
+import org.ole.planet.myplanet.utilities.NavigationHelper
 import org.ole.planet.myplanet.utilities.NotificationUtils
 import org.ole.planet.myplanet.utilities.ThemeManager
 import org.ole.planet.myplanet.utilities.Utilities.toast
@@ -117,7 +117,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     @Inject
     lateinit var resourcesRepository: ResourcesRepository
     @Inject
-    lateinit var submissionRepository: SubmissionRepository
+    lateinit var submissionsRepository: SubmissionsRepository
     @Inject
     lateinit var notificationsRepository: NotificationsRepository
     private val challengeHelper: ChallengeHelper by lazy {
@@ -243,7 +243,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         navigationView = binding.topBarNavigation
         navigationView.labelVisibilityMode = NavigationBarView.LABEL_VISIBILITY_LABELED
         binding.appBarBell.bellToolbar.inflateMenu(R.menu.menu_bell_dashboard)
-        service = Service(this)
+        service = DataService(this)
         tl = findViewById(R.id.tab_layout)
         onGlobalLayoutListener = android.view.ViewTreeObserver.OnGlobalLayoutListener { topBarVisible() }
         binding.root.viewTreeObserver.addOnGlobalLayoutListener(onGlobalLayoutListener)
@@ -356,8 +356,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             R.id.action_chat -> {
                 if (user?.id?.startsWith("guest") == false) {
                     openCallFragment(
-                        ChatHistoryListFragment(),
-                        ChatHistoryListFragment::class.java.simpleName
+                        ChatHistoryFragment(),
+                        ChatHistoryFragment::class.java.simpleName
                     )
                 } else {
                     guestDialog(this, userProfileDbHandler)
@@ -560,7 +560,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             resourcesRepository.getPendingDownloads(user?.id ?: "").collect { onRealmDataChange() }
         }
         lifecycleScope.launch {
-            submissionRepository.getPendingSurveysFlow(user?.id).collect { onRealmDataChange() }
+            submissionsRepository.getPendingSurveysFlow(user?.id).collect { onRealmDataChange() }
         }
         lifecycleScope.launch {
             teamsRepository.getTasksFlow(user?.id).collect { onRealmDataChange() }
@@ -875,10 +875,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         actionView.setOnClickListener(onClickListener)
     }
 
-    fun refreshChatHistoryList() {
+    fun refreshChatHistory() {
         val fragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
-        if (fragment is ChatHistoryListFragment) {
-            fragment.refreshChatHistoryList()
+        if (fragment is ChatHistoryFragment) {
+            fragment.refreshChatHistory()
         }
     }
 

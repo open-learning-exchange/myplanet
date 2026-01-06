@@ -17,11 +17,11 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.ApiInterface
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
 import org.ole.planet.myplanet.service.UploadToShelfService
-import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.UrlUtils
@@ -343,9 +343,9 @@ class UserRepositoryImpl @Inject constructor(
         userId: String,
         currentUser: RealmUserModel
     ): HealthRecord? = withRealm { realm ->
-        var mh = realm.where(org.ole.planet.myplanet.model.RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
+        var mh = realm.where(org.ole.planet.myplanet.model.RealmHealthExamination::class.java).equalTo("_id", userId).findFirst()
         if (mh == null) {
-            mh = realm.where(org.ole.planet.myplanet.model.RealmMyHealthPojo::class.java).equalTo("userId", userId).findFirst()
+            mh = realm.where(org.ole.planet.myplanet.model.RealmHealthExamination::class.java).equalTo("userId", userId).findFirst()
         }
         if (mh == null) return@withRealm null
 
@@ -362,7 +362,7 @@ class UserRepositoryImpl @Inject constructor(
         }
         if (mm == null) return@withRealm null
 
-        val healths = realm.where(org.ole.planet.myplanet.model.RealmMyHealthPojo::class.java).equalTo("profileId", mm.userKey).findAll()
+        val healths = realm.where(org.ole.planet.myplanet.model.RealmHealthExamination::class.java).equalTo("profileId", mm.userKey).findAll()
         val list = realm.copyFromRealm(healths)
         if (list.isEmpty()) {
             return@withRealm HealthRecord(mh, mm, emptyList(), emptyMap())

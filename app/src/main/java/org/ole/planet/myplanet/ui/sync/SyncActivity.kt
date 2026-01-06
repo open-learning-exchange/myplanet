@@ -34,6 +34,12 @@ import androidx.recyclerview.widget.RecyclerView
 import com.afollestad.materialdialogs.DialogAction
 import com.afollestad.materialdialogs.MaterialDialog
 import dagger.hilt.android.AndroidEntryPoint
+import java.io.File
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
+import java.util.concurrent.TimeUnit
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.launchIn
@@ -50,16 +56,16 @@ import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibrary
 import org.ole.planet.myplanet.data.ApiClient
 import org.ole.planet.myplanet.data.ApiClient.client
 import org.ole.planet.myplanet.data.ApiInterface
-import org.ole.planet.myplanet.data.Service
-import org.ole.planet.myplanet.data.Service.ConfigurationIdListener
+import org.ole.planet.myplanet.data.DataService
+import org.ole.planet.myplanet.data.DataService.ConfigurationIdListener
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.model.ServerAddressesModel
+import org.ole.planet.myplanet.model.ServerAddress
 import org.ole.planet.myplanet.repository.ConfigurationRepository
-import org.ole.planet.myplanet.service.SyncManager
-import org.ole.planet.myplanet.service.TransactionSyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.sync.SyncManager
+import org.ole.planet.myplanet.service.sync.TransactionSyncManager
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.androidDecrypter
 import org.ole.planet.myplanet.utilities.Constants
@@ -82,12 +88,6 @@ import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.Utilities
-import java.io.File
-import java.util.Calendar
-import java.util.Date
-import java.util.Locale
-import java.util.concurrent.TimeUnit
-import javax.inject.Inject
 
 @AndroidEntryPoint
 abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository.CheckVersionCallback,
@@ -129,13 +129,13 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
     var forceSync = false
     var syncFailed = false
     lateinit var defaultPref: SharedPreferences
-    lateinit var service: Service
+    lateinit var service: DataService
     var currentDialog: MaterialDialog? = null
     var serverConfigAction = ""
     var serverCheck = true
     var showAdditionalServers = false
     var serverAddressAdapter: ServerAddressAdapter? = null
-    var serverListAddresses: List<ServerAddressesModel> = emptyList()
+    var serverListAddresses: List<ServerAddress> = emptyList()
     private var isProgressDialogShowing = false
     @Inject
     lateinit var configurationRepository: ConfigurationRepository
@@ -806,18 +806,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
         builder.show()
     }
 
-    override fun onCheckingVersion() {
-        val lastCheckTime = settings.getLong("last_version_check_timestamp", 0)
-        val currentTime = System.currentTimeMillis()
-        val twentyFourHoursInMillis = 24 * 60 * 60 * 1000
-
-        if (currentTime - lastCheckTime < twentyFourHoursInMillis) {
-            return
-        }
-
-        customProgressDialog.setText(getString(R.string.checking_version))
-        customProgressDialog.show()
-    }
+    override fun onCheckingVersion() {}
 
     fun registerReceiver() {
         lifecycleScope.launch {
@@ -834,12 +823,16 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
         if (msg.startsWith("Config")) {
             settingDialog()
         }
-        customProgressDialog.dismiss()
+        if (customProgressDialog.isShowing() == true) {
+            customProgressDialog.dismiss()
+        }
         if (!blockSync) {
             continueSyncProcess()
         } else {
-            syncIconDrawable.stop()
-            syncIconDrawable.selectDrawable(0)
+            if (::syncIconDrawable.isInitialized) {
+                syncIconDrawable.stop()
+                syncIconDrawable.selectDrawable(0)
+            }
         }
     }
 

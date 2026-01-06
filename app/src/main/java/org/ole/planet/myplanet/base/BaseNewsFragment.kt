@@ -27,15 +27,15 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ImageThumbBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.ui.navigation.NavigationHelper
-import org.ole.planet.myplanet.ui.news.NewsActions
-import org.ole.planet.myplanet.ui.news.NewsAdapter
-import org.ole.planet.myplanet.ui.news.NewsAdapter.OnNewsItemClickListener
-import org.ole.planet.myplanet.ui.news.ReplyActivity
+import org.ole.planet.myplanet.ui.callback.OnNewsItemClickListener
+import org.ole.planet.myplanet.ui.voices.NewsActions
+import org.ole.planet.myplanet.ui.voices.NewsAdapter
+import org.ole.planet.myplanet.ui.voices.ReplyActivity
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getRealPathFromURI
 import org.ole.planet.myplanet.utilities.JsonUtils
+import org.ole.planet.myplanet.utilities.NavigationHelper
 
 @RequiresApi(api = Build.VERSION_CODES.O)
 abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListener {

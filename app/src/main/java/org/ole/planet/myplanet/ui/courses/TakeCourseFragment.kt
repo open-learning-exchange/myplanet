@@ -40,8 +40,8 @@ import org.ole.planet.myplanet.model.RealmSubmission.Companion.isStepCompleted
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.DialogUtils.getDialog
+import org.ole.planet.myplanet.utilities.NavigationHelper
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
@@ -341,30 +341,13 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                     }
                 }
 
-                withContext(Dispatchers.IO) {
-                    val backgroundRealm = databaseService.realmInstance
-                    try {
-                        backgroundRealm.executeTransaction { realm ->
-                            val course = realm.where(RealmMyCourse::class.java)
-                                .equalTo("courseId", courseId)
-                                .findFirst()
-
-                            if (course != null) {
-                                if (isCurrentlyJoined) {
-                                    course.removeUserId(userModel?.id)
-                                } else {
-                                    course.setUserId(userModel?.id)
-                                }
-                            }
-                        }
-
+                userModel?.id?.let { userId ->
+                    courseId?.let { cId ->
                         if (isCurrentlyJoined) {
-                            onRemove(backgroundRealm, "courses", userModel?.id, courseId)
+                            coursesRepository.leaveCourse(cId, userId)
                         } else {
-                            onAdd(backgroundRealm, "courses", userModel?.id, courseId)
+                            coursesRepository.joinCourse(cId, userId)
                         }
-                    } finally {
-                        backgroundRealm.close()
                     }
                 }
 

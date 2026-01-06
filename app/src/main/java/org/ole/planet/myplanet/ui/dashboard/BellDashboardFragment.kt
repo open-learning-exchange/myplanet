@@ -34,9 +34,9 @@ import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.ui.life.LifeFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
-import org.ole.planet.myplanet.ui.submission.SubmissionsAdapter
-import org.ole.planet.myplanet.ui.submission.SubmissionsFragment
-import org.ole.planet.myplanet.ui.team.TeamFragment
+import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
+import org.ole.planet.myplanet.ui.submissions.SubmissionsFragment
+import org.ole.planet.myplanet.ui.teams.TeamFragment
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 
 class BellDashboardFragment : BaseDashboardFragment() {
@@ -138,7 +138,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
             if (checkScheduledReminders()) {
                 return@launch
             }
-            val pendingSurveys = submissionRepository.getUniquePendingSurveys(user?.id)
+            val pendingSurveys = submissionsRepository.getUniquePendingSurveys(user?.id)
 
             if (pendingSurveys.isNotEmpty()) {
                 val surveyIds = pendingSurveys.joinToString(",") { it.id.toString() }
@@ -151,7 +151,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
                     pendingSurveys.size,
                     if (pendingSurveys.size > 1) "surveys" else "survey"
                 )
-                val surveyTitles = submissionRepository.getSurveyTitlesFromSubmissions(pendingSurveys)
+                val surveyTitles = submissionsRepository.getSurveyTitlesFromSubmissions(pendingSurveys)
                 showSurveyListDialog(pendingSurveys, title, surveyTitles)
             } else {
                 checkScheduledReminders()
@@ -265,7 +265,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
             if (surveyIdList.isEmpty()) {
                 continue
             }
-            val submissions = submissionRepository.getSubmissionsByIds(surveyIdList)
+            val submissions = submissionsRepository.getSubmissionsByIds(surveyIdList)
             val submissionsById = submissions.associateBy { it.id }
             val pendingSurveys = surveyIdList.mapNotNull { submissionsById[it] }
 
@@ -294,7 +294,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
                 pendingSurveys.size,
                 if (pendingSurveys.size > 1) "surveys" else "survey"
             )
-            val surveyTitles = submissionRepository.getSurveyTitlesFromSubmissions(pendingSurveys)
+            val surveyTitles = submissionsRepository.getSurveyTitlesFromSubmissions(pendingSurveys)
             showSurveyListDialog(pendingSurveys, title, surveyTitles, dismissOnNeutral = true)
         }
     }
@@ -321,7 +321,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
             .setNegativeButton(getString(R.string.cancel)) { dialog, _ -> dialog.dismiss() }
             .create()
 
-        val adapter = SurveyAdapter({ position ->
+        val adapter = DashboardSurveyAdapter({ position ->
             val selectedSurvey = pendingSurveys[position].id
             SubmissionsAdapter.openSurvey(homeItemClickListener, selectedSurvey, true, false, "")
         }, surveyListDialog!!)

@@ -37,13 +37,13 @@ import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.TeamNotificationInfo
-import org.ole.planet.myplanet.service.TransactionSyncManager
+import org.ole.planet.myplanet.service.sync.TransactionSyncManager
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
-import org.ole.planet.myplanet.ui.myhealth.UserListArrayAdapter
-import org.ole.planet.myplanet.ui.news.NewsViewModel
-import org.ole.planet.myplanet.ui.team.TeamDetailFragment
-import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
-import org.ole.planet.myplanet.ui.userprofile.UserProfileFragment
+import org.ole.planet.myplanet.ui.health.UserListAdapter
+import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
+import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
+import org.ole.planet.myplanet.ui.user.UserProfileFragment
+import org.ole.planet.myplanet.ui.voices.NewsViewModel
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DownloadUtils
@@ -365,8 +365,8 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), DashboardActio
         myLifeFlex.flexDirection = FlexDirection.ROW
 
         viewLifecycleOwner.lifecycleScope.launch {
-            launch { setUpMyLife(userId) }
-            launch { myLifeListInit(myLifeFlex) }
+            setUpMyLife(userId)
+            myLifeListInit(myLifeFlex)
         }
 
 
@@ -407,7 +407,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), DashboardActio
             viewModel.uiState.collect {
                 if (dialog.isShowing) {
                     if (it.users.isNotEmpty()) {
-                        val adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, it.users)
+                        val adapter = UserListAdapter(requireActivity(), android.R.layout.simple_list_item_1, it.users)
                         alertHealthListBinding.list.adapter = adapter
                         alertHealthListBinding.list.onItemClickListener = AdapterView.OnItemClickListener { _, _, i, _ ->
                             val selected = alertHealthListBinding.list.adapter.getItem(i) as RealmUserModel

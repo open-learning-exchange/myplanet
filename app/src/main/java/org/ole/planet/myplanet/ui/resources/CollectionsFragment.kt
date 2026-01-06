@@ -19,15 +19,16 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.TagClickListener
 import org.ole.planet.myplanet.databinding.FragmentCollectionsBinding
 import org.ole.planet.myplanet.model.RealmTag
-import org.ole.planet.myplanet.repository.TagRepository
+import org.ole.planet.myplanet.ui.callback.OnTagClickListener
+import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.utilities.KeyboardUtils
 
 @AndroidEntryPoint
-class CollectionsFragment : DialogFragment(), TagAdapter.OnTagClickListener, CompoundButton.OnCheckedChangeListener {
+class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton.OnCheckedChangeListener {
     private var _binding: FragmentCollectionsBinding? = null
     private val binding get() = _binding!!
     @Inject
-    lateinit var tagRepository: TagRepository
+    lateinit var tagsRepository: TagsRepository
     private lateinit var list: List<RealmTag>
     private lateinit var childMap: HashMap<String, List<RealmTag>>
     private var filteredList: ArrayList<RealmTag> = ArrayList()
@@ -85,9 +86,9 @@ class CollectionsFragment : DialogFragment(), TagAdapter.OnTagClickListener, Com
 
     private fun setListAdapter() {
         viewLifecycleOwner.lifecycleScope.launch {
-            list = tagRepository.getTags(dbType)
+            list = tagsRepository.getTags(dbType)
             selectedItemsList = ArrayList(recentList)
-            childMap = tagRepository.buildChildMap()
+            childMap = tagsRepository.buildChildMap()
             adapter = TagAdapter(this@CollectionsFragment)
             binding.listTags.adapter = adapter
             currentTagDataList = buildTagDataList(list).toMutableList()

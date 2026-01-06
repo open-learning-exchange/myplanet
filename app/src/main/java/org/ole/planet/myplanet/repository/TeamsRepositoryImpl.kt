@@ -27,7 +27,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.model.TransactionData
+import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
@@ -218,7 +218,7 @@ class TeamsRepositoryImpl @Inject constructor(
         startDate: Long?,
         endDate: Long?,
         sortAscending: Boolean,
-    ): Flow<List<TransactionData>> {
+    ): Flow<List<Transaction>> {
         return queryTransactions(teamId, startDate, endDate, true).map { transactions ->
             val transactionDataList = mapTransactionsToPresentationModel(transactions)
             if (!sortAscending) {
@@ -250,8 +250,8 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun mapTransactionsToPresentationModel(transactions: List<RealmMyTeam>): List<TransactionData> {
-        val transactionDataList = mutableListOf<TransactionData>()
+    private fun mapTransactionsToPresentationModel(transactions: List<RealmMyTeam>): List<Transaction> {
+        val transactionDataList = mutableListOf<Transaction>()
         var balance = 0
         for (team in transactions.filter { it._id != null }) {
             balance += if ("debit".equals(team.type, ignoreCase = true)) {
@@ -260,7 +260,7 @@ class TeamsRepositoryImpl @Inject constructor(
                 team.amount
             }
             transactionDataList.add(
-                TransactionData(
+                Transaction(
                     id = team._id!!,
                     date = team.date,
                     description = team.description,

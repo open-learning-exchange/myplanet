@@ -34,7 +34,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.data.Service
+import org.ole.planet.myplanet.data.DataService
 import org.ole.planet.myplanet.databinding.ActivityLoginBinding
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.MyPlanet
@@ -43,8 +43,8 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
-import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
-import org.ole.planet.myplanet.ui.userprofile.ProfileAdapter
+import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
+import org.ole.planet.myplanet.ui.user.ProfileAdapter
 import org.ole.planet.myplanet.utilities.AuthUtils
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils
@@ -86,7 +86,7 @@ class LoginActivity : SyncActivity(), ProfileAdapter.OnItemClickListener {
         btnLang = binding.btnLang
         inputName = binding.inputName
         inputPassword = binding.inputPassword
-        service = Service(this)
+        service = DataService(this)
 
         binding.tvAvailableSpace.text = buildString {
             append(getString(R.string.available_space_colon))

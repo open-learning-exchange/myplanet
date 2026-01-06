@@ -21,20 +21,20 @@ import org.ole.planet.myplanet.repository.LifeRepository
 import org.ole.planet.myplanet.repository.LifeRepositoryImpl
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.NotificationsRepositoryImpl
-import org.ole.planet.myplanet.repository.PersonalRepository
-import org.ole.planet.myplanet.repository.PersonalRepositoryImpl
+import org.ole.planet.myplanet.repository.PersonalsRepository
+import org.ole.planet.myplanet.repository.PersonalsRepositoryImpl
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.ProgressRepositoryImpl
 import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.RatingsRepositoryImpl
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepositoryImpl
-import org.ole.planet.myplanet.repository.SubmissionRepository
-import org.ole.planet.myplanet.repository.SubmissionRepositoryImpl
-import org.ole.planet.myplanet.repository.SurveyRepository
-import org.ole.planet.myplanet.repository.SurveyRepositoryImpl
-import org.ole.planet.myplanet.repository.TagRepository
-import org.ole.planet.myplanet.repository.TagRepositoryImpl
+import org.ole.planet.myplanet.repository.SubmissionsRepository
+import org.ole.planet.myplanet.repository.SubmissionsRepositoryImpl
+import org.ole.planet.myplanet.repository.SurveysRepository
+import org.ole.planet.myplanet.repository.SurveysRepositoryImpl
+import org.ole.planet.myplanet.repository.TagsRepository
+import org.ole.planet.myplanet.repository.TagsRepositoryImpl
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsRepositoryImpl
 import org.ole.planet.myplanet.repository.UserRepository
@@ -80,7 +80,7 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindPersonalRepository(impl: PersonalRepositoryImpl): PersonalRepository
+    abstract fun bindPersonalRepository(impl: PersonalsRepositoryImpl): PersonalsRepository
 
     @Binds
     @Singleton
@@ -96,15 +96,15 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindSubmissionRepository(impl: SubmissionRepositoryImpl): SubmissionRepository
+    abstract fun bindSubmissionsRepository(impl: SubmissionsRepositoryImpl): SubmissionsRepository
 
     @Binds
     @Singleton
-    abstract fun bindSurveyRepository(impl: SurveyRepositoryImpl): SurveyRepository
+    abstract fun bindSurveysRepository(impl: SurveysRepositoryImpl): SurveysRepository
 
     @Binds
     @Singleton
-    abstract fun bindTagRepository(impl: TagRepositoryImpl): TagRepository
+    abstract fun bindTagsRepository(impl: TagsRepositoryImpl): TagsRepository
 
     @Binds
     @Singleton

@@ -29,10 +29,10 @@ import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
-import org.ole.planet.myplanet.ui.submission.SubmissionsAdapter
-import org.ole.planet.myplanet.ui.team.TeamDetailFragment
-import org.ole.planet.myplanet.ui.team.TeamPageConfig.JoinRequestsPage
-import org.ole.planet.myplanet.ui.team.TeamPageConfig.TasksPage
+import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
+import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
+import org.ole.planet.myplanet.ui.teams.TeamPageConfig.JoinRequestsPage
+import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TasksPage
 import org.ole.planet.myplanet.utilities.NotificationUtils
 
 @AndroidEntryPoint

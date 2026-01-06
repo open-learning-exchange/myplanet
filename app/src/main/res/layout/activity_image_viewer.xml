@@ -4,8 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context="org.ole.planet.myplanet.ui.viewer.ImageViewerActivity">
-
+    tools:context="org.ole.planet.myplanet.ui.reader.ImageViewerActivity">
 
     <TextView
         android:id="@+id/imageFileName"
@@ -17,8 +16,6 @@
         android:textColor="@color/md_black_1000"
         android:textSize="@dimen/text_size_large"
         android:textStyle="bold" />
-
-
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -31,7 +28,5 @@
             android:contentDescription="@string/image_resource"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
-
     </LinearLayout>
-
 </LinearLayout>

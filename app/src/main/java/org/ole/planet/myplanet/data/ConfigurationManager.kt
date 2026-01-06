@@ -32,7 +32,7 @@ class ConfigurationManager(
 ) {
 
     fun getMinApk(
-        listener: Service.ConfigurationIdListener?,
+        listener: DataService.ConfigurationIdListener?,
         url: String,
         pin: String,
         activity: SyncActivity,

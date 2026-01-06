@@ -45,17 +45,17 @@ import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmTag.Companion.getTagsArray
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.TagRepository
-import org.ole.planet.myplanet.service.SyncManager
+import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
-import org.ole.planet.myplanet.ui.navigation.NavigationHelper
+import org.ole.planet.myplanet.service.sync.SyncManager
 import org.ole.planet.myplanet.ui.resources.CollectionsFragment
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
+import org.ole.planet.myplanet.utilities.NavigationHelper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 
 @AndroidEntryPoint
@@ -93,7 +93,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     lateinit var userProfileDbHandler: UserProfileDbHandler
 
     @Inject
-    lateinit var tagRepository: TagRepository
+    lateinit var tagsRepository: TagsRepository
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
 
@@ -206,7 +206,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     sortedCourseList,
                     map,
                     userModel,
-                    tagRepository
+                    tagsRepository
                 )
                 adapterCourses.setProgressMap(progressMap)
                 adapterCourses.setListener(this@CoursesFragment)
@@ -227,7 +227,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             emptyList(),
             HashMap<String?, JsonObject>(),
             userModel,
-            tagRepository
+            tagsRepository
         )
         adapterCourses.setProgressMap(HashMap<String?, JsonObject>())
         adapterCourses.setListener(this@CoursesFragment)
@@ -328,7 +328,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             requireView().findViewById<View>(R.id.fabMyProgress).apply {
                 visibility = View.VISIBLE
                 setOnClickListener {
-                    val progressFragment = ProgressFragment().apply {
+                    val progressFragment = CoursesProgressFragment().apply {
                         arguments = Bundle().apply {
                             putBoolean("isMyCourseLib", true)
                         }
@@ -629,22 +629,16 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             val tags = searchTags.toList()
             val grade = gradeLevel
             val subject = subjectLevel
-            lifecycleScope.launch(Dispatchers.IO) {
-                databaseService.executeTransactionAsync { realm ->
-                    val activity = realm.createObject(RealmSearchActivity::class.java, UUID.randomUUID().toString())
-                    activity.user = userName
-                    activity.time = Calendar.getInstance().timeInMillis
-                    activity.createdOn = planetCode
-                    activity.parentCode = parentCode
-                    activity.text = searchText
-                    activity.type = "courses"
-                    val filter = JsonObject()
-
-                    filter.add("tags", getTagsArray(tags))
-                    filter.addProperty("doc.gradeLevel", grade)
-                    filter.addProperty("doc.subjectLevel", subject)
-                    activity.filter = JsonUtils.gson.toJson(filter)
-                }
+            lifecycleScope.launch {
+                coursesRepository.saveSearchActivity(
+                    searchText,
+                    userName,
+                    planetCode,
+                    parentCode,
+                    tags,
+                    grade,
+                    subject
+                )
             }
         }
     }
