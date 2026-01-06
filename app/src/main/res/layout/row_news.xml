@@ -103,16 +103,13 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
-                <com.google.android.flexbox.FlexboxLayout
-                    android:id="@+id/ll_news_images"
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rv_images"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:padding="@dimen/padding_small"
+                    android:orientation="horizontal"
                     android:visibility="gone"
-                    app:flexWrap="wrap"
-                    app:alignItems="flex_start"
-                    app:alignContent="flex_start"
-                    app:justifyContent="flex_start" />
+                    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"/>
                 <ImageView
                     android:id="@+id/img_news"
                     android:layout_width="120dp"

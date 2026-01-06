@@ -1,32 +1,38 @@
 package org.ole.planet.myplanet.ui.teams.discussion
 
+import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.appcompat.app.AlertDialog
 import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentDiscussionListBinding
-import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
+import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.dto.NewsViewData
+import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.teams.BaseTeamFragment
+import org.ole.planet.myplanet.ui.voices.NewsActions
 import org.ole.planet.myplanet.ui.voices.NewsAdapter
-import org.ole.planet.myplanet.utilities.FileUtils
-import org.ole.planet.myplanet.utilities.NavigationHelper
-import org.ole.planet.myplanet.utilities.SharedPrefManager
+import org.ole.planet.myplanet.ui.voices.NewsMapper
+import org.ole.planet.myplanet.ui.voices.ReplyActivity
 
 @AndroidEntryPoint
 class DiscussionListFragment : BaseTeamFragment() {
@@ -36,192 +42,116 @@ class DiscussionListFragment : BaseTeamFragment() {
     @Inject
     lateinit var voicesRepository: VoicesRepository
     @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
+    lateinit var teamsRepository: TeamsRepository
     @Inject
-    lateinit var sharedPrefManager: SharedPrefManager
+    lateinit var userRepository: UserRepository
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
 
-    private var filteredNewsList: List<RealmNews?> = listOf()
+    private var teamId: String? = null
+    private var user: RealmUserModel? = null
+    private val _isMemberFlow = MutableStateFlow(false)
+    val isMemberFlow: StateFlow<Boolean> = _isMemberFlow
+    private var allNewsList: MutableList<NewsViewData> = mutableListOf()
+    private var currentPage = 1
+    private val pageSize = 20
+    private var isLoading = false
+    private var isLastPage = false
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentDiscussionListBinding.inflate(inflater, container, false)
-        binding.addMessage.setOnClickListener {
-            binding.llAddNews.visibility = if (binding.llAddNews.isVisible) {
-                binding.etMessage.setText("")
-                binding.tlMessage.error = null
-                clearImages()
-                View.GONE
-            } else {
-                View.VISIBLE
-            }
-            binding.addMessage.text = if (binding.llAddNews.isVisible) {
-                getString(R.string.hide_new_message)
-            } else {
-                getString(R.string.add_message)
-            }
-        }
-
-        binding.addNewsImage.setOnClickListener {
-            llImage = binding.llImages
-            val openFolderIntent = FileUtils.openOleFolder(requireContext())
-            openFolderLauncher.launch(openFolderIntent)
-        }
-
-        binding.btnSubmit.setOnClickListener {
-            val message = binding.etMessage.text.toString().trim { it <= ' ' }
-            if (message.isEmpty()) {
-                binding.tlMessage.error = getString(R.string.please_enter_message)
-                return@setOnClickListener
-            }
-            binding.etMessage.setText(R.string.empty_text)
-            val map = HashMap<String?, String>()
-            map["viewInId"] = getEffectiveTeamId()
-            map["viewInSection"] = "teams"
-            map["message"] = message
-            map["messageType"] = getEffectiveTeamType()
-            map["messagePlanetCode"] = team?.teamPlanetCode ?: ""
-            map["name"] = getEffectiveTeamName()
-
-            user?.let { userModel ->
-                viewLifecycleOwner.lifecycleScope.launch {
-                    try {
-                        databaseService.executeTransactionAsync { realm ->
-                            createNews(map, realm, userModel, imageList)
-                        }
-                        binding.rvDiscussion.post {
-                            binding.rvDiscussion.smoothScrollToPosition(0)
-                        }
-                        binding.etMessage.text?.clear()
-                        imageList.clear()
-                        llImage?.removeAllViews()
-                        binding.llAddNews.visibility = View.GONE
-                        binding.tlMessage.error = null
-                        binding.addMessage.text = getString(R.string.add_message)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
-            }
-        }
-
-        if (shouldQueryTeamFromRealm()) {
-            team = try {
-                mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
-            } catch (e: Exception) {
-                e.printStackTrace()
-                null
-            }
-
-            if (team == null) {
-                try {
-                    team = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId).findFirst()
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
-        }
-        binding.addMessage.isVisible = false
+        teamId = arguments?.getString("teamId")
+        user = userProfileDbHandler.getUserModelCopy()
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        changeLayoutManager(resources.configuration.orientation, binding.rvDiscussion)
+        setupScrollListener()
+        loadDiscussions()
+    }
+
+    private fun loadDiscussions() {
+        if (isLoading || isLastPage) return
+        isLoading = true
+        binding.progressBar.visibility = View.VISIBLE
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val realmNewsList = voicesRepository.getFilteredNews(getEffectiveTeamId())
-            val count = realmNewsList.size
-            voicesRepository.updateTeamNotification(getEffectiveTeamId(), count)
-            showRecyclerView(realmNewsList)
+            voicesRepository.getDiscussionsByTeamIdFlow(teamId!!, currentPage, pageSize).collect { newsList ->
+                if (newsList.isEmpty()) {
+                    isLastPage = true
+                    binding.progressBar.visibility = View.GONE
+                    isLoading = false
+                    return@collect
+                }
+                val newsViewDataList = newsList.map {
+                    NewsMapper.toNewsViewData(it, requireContext(), user, teamsRepository, userRepository, voicesRepository, teamId)
+                }
+                allNewsList.addAll(newsViewDataList)
+                setData(allNewsList)
+                currentPage++
+                isLoading = false
+                binding.progressBar.visibility = View.GONE
+            }
         }
+    }
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch {
-                    voicesRepository.getDiscussionsByTeamIdFlow(getEffectiveTeamId()).collect {
-                        setData(it)
+    private fun setupScrollListener() {
+        binding.rvDiscussion.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                super.onScrolled(recyclerView, dx, dy)
+                val layoutManager = recyclerView.layoutManager as LinearLayoutManager
+                val visibleItemCount = layoutManager.childCount
+                val totalItemCount = layoutManager.itemCount
+                val firstVisibleItemPosition = layoutManager.findFirstVisibleItemPosition()
+
+                if (!isLoading && !isLastPage) {
+                    if (visibleItemCount + firstVisibleItemPosition >= totalItemCount && firstVisibleItemPosition >= 0) {
+                        loadDiscussions()
                     }
                 }
-                combine(isMemberFlow, teamFlow) { isMember, teamData ->
-                    Pair(isMember, teamData?.isPublic == true)
-                }.collectLatest { (isMember, isPublicTeamFromFlow) ->
-                    val isGuest = user?.id?.startsWith("guest") == true
-                    val isPublicTeam = isPublicTeamFromFlow || team?.isPublic == true
-                    val canPost = !isGuest && (isMember || isPublicTeam)
-                    binding.addMessage.isVisible = canPost
-                    (binding.rvDiscussion.adapter as? NewsAdapter)?.setNonTeamMember(!isMember)
+            }
+        })
+    }
+    override fun onNewsItemClick(news: NewsViewData?) {
+        NewsActions.showEditAlert(requireContext(), voicesRepository, teamsRepository, userRepository, news?.id, false, user) { newReply ->
+            val index = allNewsList.indexOfFirst { it.id == news?.id }
+            if (index != -1) {
+                val currentNews = allNewsList[index]
+                val updatedNews = currentNews.copy(replyCount = currentNews.replyCount + 1)
+                allNewsList[index] = updatedNews
+                setData(allNewsList)
+            }
+        }
+    }
+
+    override fun showReply(news: NewsViewData?) {
+        startActivity(Intent(requireActivity(), ReplyActivity::class.java).putExtra("id", news?.id))
+    }
+
+    override fun onDelete(news: NewsViewData?) {
+        AlertDialog.Builder(requireContext())
+            .setTitle("Delete Discussion")
+            .setMessage("Are you sure you want to delete this discussion?")
+            .setPositiveButton("Yes") { _, _ ->
+                viewLifecycleOwner.lifecycleScope.launch {
+                    news?.id?.let { voicesRepository.deleteNews(it) }
+                    allNewsList.remove(news)
+                    setData(allNewsList)
                 }
             }
-        }
+            .setNegativeButton("No", null)
+            .show()
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {
-        val bundle = Bundle()
-        bundle.putString("newsId", news?.newsId)
-        bundle.putString("newsRev", news?.newsRev)
-        bundle.putString("conversations", news?.conversations)
-
-        val chatDetailFragment = ChatDetailFragment()
-        chatDetailFragment.arguments = bundle
-
-        NavigationHelper.replaceFragment(
-            parentFragmentManager,
-            R.id.fragment_container,
-            chatDetailFragment,
-            addToBackStack = true
-        )
-    }
-
-    override fun clearImages() {
-        imageList.clear()
-        llImage?.removeAllViews()
-    }
-
-    override fun onConfigurationChanged(newConfig: Configuration) {
-        super.onConfigurationChanged(newConfig)
-        changeLayoutManager(newConfig.orientation, binding.rvDiscussion)
-    }
-
-    private fun showRecyclerView(realmNewsList: List<RealmNews?>?) {
-        val existingAdapter = binding.rvDiscussion.adapter
-        if (existingAdapter == null) {
-            val adapterNews = activity?.let {
-                NewsAdapter(it, user, null, getEffectiveTeamName(), teamId, userProfileDbHandler, viewLifecycleOwner.lifecycleScope, userRepository, voicesRepository, teamsRepository)
-            }
-            adapterNews?.sharedPrefManager = sharedPrefManager
-            adapterNews?.setmRealm(mRealm)
-            adapterNews?.setListener(this)
-            if (!isMemberFlow.value) adapterNews?.setNonTeamMember(true)
-            realmNewsList?.let { adapterNews?.updateList(it) }
-            binding.rvDiscussion.adapter = adapterNews
-            adapterNews?.let {
-                showNoData(binding.tvNodata, it.itemCount, "discussions")
-            }
-        } else {
-            (existingAdapter as? NewsAdapter)?.let { adapter ->
-                realmNewsList?.let {
-                    adapter.updateList(it)
-                    showNoData(binding.tvNodata, adapter.itemCount, "discussions")
-                }
+    override fun onEdit(news: NewsViewData?) {
+        NewsActions.showEditAlert(requireContext(), voicesRepository, teamsRepository, userRepository, news?.id, true, user) { updatedNews ->
+            val index = allNewsList.indexOfFirst { it.id == updatedNews.id }
+            if (index != -1) {
+                allNewsList[index] = updatedNews
+                setData(allNewsList)
             }
         }
     }
-
-    override fun setData(list: List<RealmNews?>?) {
-        showRecyclerView(list)
-    }
-
-    override fun onDestroyView() {
-        if (isRealmInitialized()) {
-            mRealm.close()
-        }
-        _binding = null
-        super.onDestroyView()
-    }
-
-    private fun shouldQueryTeamFromRealm(): Boolean {
-        val hasDirectData = requireArguments().containsKey("teamName") &&
-                requireArguments().containsKey("teamType") &&
-                requireArguments().containsKey("teamId")
-        return !hasDirectData
-    }
+    //...
 }

@@ -116,32 +116,45 @@ class VoicesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getCommunityNews(userIdentifier: String): Flow<List<RealmNews>> {
+    override suspend fun getCommunityNews(userIdentifier: String, page: Int, pageSize: Int): Flow<List<RealmNews>> {
         val allNewsFlow = queryListFlow(RealmNews::class.java) {
             isEmpty("replyTo")
             equalTo("docType", "message", Case.INSENSITIVE)
             sort("time", Sort.DESCENDING)
         }
-        .flowOn(Dispatchers.Main) // Realm async queries require a Looper thread.
+            .flowOn(Dispatchers.Main) // Realm async queries require a Looper thread.
 
         return allNewsFlow.map { allNews ->
-            // allNews are unmanaged copies (POJOs) created by copyFromRealm in queryListFlow.
-            // It is safe to process them on a background thread.
-            allNews.filter { news ->
+            val filteredNews = allNews.filter { news ->
                 isVisibleToUser(news, userIdentifier)
-            }.map { news ->
-                news.sortDate = news.calculateSortDate()
-                news
+            }
+
+            if (pageSize == -1) {
+                filteredNews.map { news ->
+                    news.sortDate = news.calculateSortDate()
+                    news
+                }
+            } else {
+                val startIndex = (page - 1) * pageSize
+                val endIndex = (startIndex + pageSize).coerceAtMost(filteredNews.size)
+                if (startIndex >= filteredNews.size) {
+                    emptyList()
+                } else {
+                    filteredNews.subList(startIndex, endIndex).map { news ->
+                        news.sortDate = news.calculateSortDate()
+                        news
+                    }
+                }
             }
         }.flowOn(Dispatchers.Default)
     }
 
-    override suspend fun getDiscussionsByTeamIdFlow(teamId: String): Flow<List<RealmNews>> {
+    override suspend fun getDiscussionsByTeamIdFlow(teamId: String, page: Int, pageSize: Int): Flow<List<RealmNews>> {
         return queryListFlow(RealmNews::class.java) {
             isEmpty("replyTo")
             sort("time", Sort.DESCENDING)
         }.map { discussions ->
-            discussions.filter { news ->
+            val filteredDiscussions = discussions.filter { news ->
                 val viewableByTeams = !news.viewableBy.isNullOrEmpty() &&
                         news.viewableBy.equals("teams", ignoreCase = true) &&
                         news.viewableId.equals(teamId, ignoreCase = true)
@@ -161,6 +174,17 @@ class VoicesRepositoryImpl @Inject constructor(
                 }
 
                 viewableByTeams || viewInTeam
+            }
+            if (pageSize == -1) {
+                filteredDiscussions
+            } else {
+                val startIndex = (page - 1) * pageSize
+                val endIndex = (startIndex + pageSize).coerceAtMost(filteredDiscussions.size)
+                if (startIndex >= filteredDiscussions.size) {
+                    emptyList()
+                } else {
+                    filteredDiscussions.subList(startIndex, endIndex)
+                }
             }
         }.flowOn(Dispatchers.Default)
     }
@@ -238,6 +262,42 @@ class VoicesRepositoryImpl @Inject constructor(
                 .equalTo("replyTo", newsId, Case.INSENSITIVE)
                 .findAll()
                 .let { realm.copyFromRealm(it) }
+        }
+    }
+
+    override suspend fun deleteNews(newsId: String) {
+        withRealm { realm ->
+            realm.executeTransaction {
+                it.where(RealmNews::class.java).equalTo("id", newsId).findAll().deleteAllFromRealm()
+            }
+        }
+    }
+
+    override suspend fun getNewsById(newsId: String): RealmNews? {
+        return withRealm { realm ->
+            realm.where(RealmNews::class.java).equalTo("id", newsId).findFirst()?.let {
+                realm.copyFromRealm(it)
+            }
+        }
+    }
+
+    override suspend fun updateNews(newsId: String, message: String) {
+        withRealm { realm ->
+            realm.executeTransaction {
+                val news = it.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
+                news?.message = message
+                news?.isEdited = true
+            }
+        }
+    }
+
+    override suspend fun createReply(replyToId: String, message: String, user: RealmUserModel?): RealmNews {
+        return withRealmAsync { realm ->
+            val map = HashMap<String?, String>()
+            map["message"] = message
+            map["replyTo"] = replyToId
+            val managedNews = createNews(map, realm, user, null)
+            realm.copyFromRealm(managedNews)
         }
     }
 }
