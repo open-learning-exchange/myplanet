@@ -14,11 +14,10 @@ import android.text.style.URLSpan
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import dagger.hilt.android.AndroidEntryPoint
 import java.util.Date
 import java.util.UUID
-import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -50,12 +49,8 @@ private data class CourseStepData(
     val userHasCourse: Boolean
 )
 
-@AndroidEntryPoint
 class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     private lateinit var fragmentCourseStepBinding: FragmentCourseStepBinding
-
-    @Inject
-    lateinit var coursesRepository: CoursesRepository
     var stepId: String? = null
     private lateinit var step: RealmCourseStep
     private lateinit var resources: List<RealmMyLibrary>
@@ -118,9 +113,23 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
 
     private suspend fun loadStepData(): CourseStepData = withContext(Dispatchers.IO) {
         val step = coursesRepository.getCourseStep(stepId!!)!!
-        val resources = resourcesRepository.getStepResources(stepId!!)
-        val stepExams = coursesRepository.getStepExams(stepId!!, "courses")
-        val stepSurvey = coursesRepository.getStepExams(stepId!!, "surveys")
+        val resources = resourcesRepository.getStepResources(stepId!!, false)
+        // NOTE: The RealmStepExam model is not available in the 'lite' build flavor.
+        // To avoid breaking the 'lite' build, the queries for exams and surveys
+        // are performed directly here instead of being moved to CoursesRepository.
+        val (stepExams, stepSurvey) = databaseService.withRealm { realm ->
+            val stepExams = realm.where(RealmStepExam::class.java)
+                .equalTo("stepId", stepId)
+                .equalTo("type", "courses")
+                .findAll()
+                .let { realm.copyFromRealm(it) }
+            val stepSurvey = realm.where(RealmStepExam::class.java)
+                .equalTo("stepId", stepId)
+                .equalTo("type", "surveys")
+                .findAll()
+                .let { realm.copyFromRealm(it) }
+            Pair(stepExams, stepSurvey)
+        }
         val userHasCourse = coursesRepository.isMyCourse(user?.id, step.courseId)
         CourseStepData(step, resources, stepExams, stepSurvey, userHasCourse)
     }

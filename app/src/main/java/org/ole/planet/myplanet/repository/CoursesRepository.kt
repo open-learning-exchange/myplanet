@@ -15,7 +15,6 @@ interface CoursesRepository {
     suspend fun getCourseExamCount(courseId: String?): Int
     suspend fun getCourseSteps(courseId: String?): List<RealmCourseStep>
     suspend fun getCourseStep(stepId: String): RealmCourseStep?
-    suspend fun getStepExams(stepId: String, type: String): List<RealmStepExam>
     suspend fun isMyCourse(userId: String?, courseId: String?): Boolean
     suspend fun markCourseAdded(courseId: String, userId: String?): Boolean
     suspend fun joinCourse(courseId: String, userId: String)

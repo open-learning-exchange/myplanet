@@ -85,13 +85,6 @@ class CoursesRepositoryImpl @Inject constructor(
         return findByField(RealmCourseStep::class.java, "id", stepId)
     }
 
-    override suspend fun getStepExams(stepId: String, type: String): List<RealmStepExam> {
-        return queryList(RealmStepExam::class.java) {
-            equalTo("stepId", stepId)
-            equalTo("type", type)
-        }
-    }
-
     override suspend fun isMyCourse(userId: String?, courseId: String?): Boolean {
         if (userId.isNullOrBlank() || courseId.isNullOrBlank()) {
             return false
