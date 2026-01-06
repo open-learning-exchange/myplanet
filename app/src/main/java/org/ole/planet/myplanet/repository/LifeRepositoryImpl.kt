@@ -4,9 +4,9 @@ import javax.inject.Inject
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLife
 
-class LifeRepositoryImpl @Inject constructor(private val databaseService: DatabaseService) : LifeRepository {
+class LifeRepositoryImpl @Inject constructor(databaseService: DatabaseService) : RealmRepository(databaseService), LifeRepository {
     override suspend fun updateVisibility(isVisible: Boolean, myLifeId: String) {
-        databaseService.executeTransactionAsync { realm ->
+        executeTransaction { realm ->
             val myLife = realm.where(RealmMyLife::class.java).equalTo("_id", myLifeId).findFirst()
             myLife?.let {
                 it.isVisible = isVisible
@@ -15,7 +15,7 @@ class LifeRepositoryImpl @Inject constructor(private val databaseService: Databa
     }
 
     override suspend fun updateMyLifeListOrder(list: List<RealmMyLife>) {
-        databaseService.executeTransactionAsync { realm ->
+        executeTransaction { realm ->
             list.forEachIndexed { index, myLife ->
                 val realmMyLife = realm.where(RealmMyLife::class.java).equalTo("_id", myLife._id).findFirst()
                 realmMyLife?.weight = index
