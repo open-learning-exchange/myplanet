@@ -1,6 +1,8 @@
 package org.ole.planet.myplanet.repository
 
+import android.content.SharedPreferences
 import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.survey.SurveyFormState
 import org.ole.planet.myplanet.ui.survey.SurveyInfo
 
@@ -20,4 +22,20 @@ interface SurveysRepository {
         surveys: List<RealmStepExam>,
         teamId: String?
     ): Map<String, SurveyFormState>
+
+    suspend fun adoptSurvey(
+        exam: RealmStepExam,
+        teamId: String,
+        isTeam: Boolean,
+        userProfileDbHandler: UserProfileDbHandler,
+        settings: SharedPreferences
+    )
+
+    suspend fun adoptSurveys(
+        exams: List<RealmStepExam>,
+        teamId: String,
+        isTeam: Boolean,
+        userProfileDbHandler: UserProfileDbHandler,
+        settings: SharedPreferences
+    )
 }

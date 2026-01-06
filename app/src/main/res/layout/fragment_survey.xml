@@ -51,6 +51,20 @@
         </RadioGroup>
 
         <LinearLayout
+            android:id="@+id/ll_adopt_buttons"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <Button
+                android:id="@+id/btn_adopt_selected"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/adopt_selected" />
+        </LinearLayout>
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"

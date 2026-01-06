@@ -8,11 +8,14 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.Spinner
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -21,7 +24,6 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
-import org.ole.planet.myplanet.callback.SurveyAdoptListener
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.callback.TableDataUpdate
 import org.ole.planet.myplanet.databinding.FragmentSurveyBinding
@@ -29,16 +31,17 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.service.sync.SyncManager
-import org.ole.planet.myplanet.ui.survey.SurveyFormState
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.SharedPrefManager
+import javax.inject.Inject
 
 @AndroidEntryPoint
-class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListener, RealtimeSyncMixin {
+class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), RealtimeSyncMixin {
     private var _binding: FragmentSurveyBinding? = null
     private val binding get() = _binding!!
+    private val viewModel: SurveyViewModel by viewModels()
     private lateinit var adapter: SurveyAdapter
     private var isTeam: Boolean = false
     private var teamId: String? = null
@@ -79,18 +82,16 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         val userProfileModel = profileDbHandler.userModel
         adapter = SurveyAdapter(
             requireActivity(),
-            mRealm,
             userProfileModel?.id,
             isTeam,
             teamId,
-            this,
-            settings,
-            profileDbHandler,
             surveyInfoMap,
             bindingDataMap
-        )
+        ) { exam ->
+            viewModel.adoptSurvey(exam, teamId, isTeam)
+        }
         prefManager = SharedPrefManager(requireContext())
-        
+
         startExamSync()
     }
 
@@ -161,9 +162,63 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         }
     }
 
-    override fun onSurveyAdopted() {
-        binding.rbTeamSurvey.isChecked = true
-        updateAdapterData(isTeamShareAllowed = false)
+    private fun collectUiState() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.uiState.collect { state ->
+                    val surveyId = when (state) {
+                        is SurveyUiState.Loading -> state.surveyId
+                        is SurveyUiState.Success -> state.surveyId
+                        is SurveyUiState.Error -> state.surveyId
+                        else -> null
+                    }
+
+                    val position = adapter.currentList.indexOfFirst { it.id == surveyId }
+
+                    if (position != -1 && surveyId != "batch") {
+                        when (state) {
+                            is SurveyUiState.Loading -> {
+                                val payload = Bundle().apply { putBoolean(SurveyAdapter.PAYLOAD_IS_LOADING, true) }
+                                adapter.notifyItemChanged(position, payload)
+                            }
+                            is SurveyUiState.Success -> {
+                                val payload = Bundle().apply { putBoolean(SurveyAdapter.PAYLOAD_IS_LOADING, false) }
+                                adapter.notifyItemChanged(position, payload)
+                                Snackbar.make(binding.root, getString(R.string.survey_adopted_successfully), Snackbar.LENGTH_LONG).show()
+                                binding.rbTeamSurvey.isChecked = true
+                                updateAdapterData(isTeamShareAllowed = false)
+                            }
+                            is SurveyUiState.Error -> {
+                                val payload = Bundle().apply { putBoolean(SurveyAdapter.PAYLOAD_IS_LOADING, false) }
+                                adapter.notifyItemChanged(position, payload)
+                                Snackbar.make(binding.root, state.message, Snackbar.LENGTH_LONG).show()
+                            }
+                            else -> {}
+                        }
+                    } else if (surveyId == "batch") {
+                        when (state) {
+                            is SurveyUiState.Loading -> {
+                                customProgressDialog = DialogUtils.CustomProgressDialog(requireContext()).apply {
+                                    setText(getString(R.string.adopting))
+                                    show()
+                                }
+                            }
+                            is SurveyUiState.Success -> {
+                                customProgressDialog?.dismiss()
+                                Snackbar.make(binding.root, getString(R.string.survey_adopted_successfully), Snackbar.LENGTH_LONG).show()
+                                binding.rbTeamSurvey.isChecked = true
+                                updateAdapterData(isTeamShareAllowed = false)
+                            }
+                            is SurveyUiState.Error -> {
+                                customProgressDialog?.dismiss()
+                                Snackbar.make(binding.root, state.message, Snackbar.LENGTH_LONG).show()
+                            }
+                            else -> {}
+                        }
+                    }
+                }
+            }
+        }
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> = adapter
@@ -181,11 +236,28 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
 
             override fun afterTextChanged(s: Editable) {}
         }
+
         binding.layoutSearch.etSearch.addTextChangedListener(textWatcher)
         setupRecyclerView()
         setupListeners()
+        collectUiState()
         updateAdapterData(isTeamShareAllowed = false)
         showHideRadioButton()
+    }
+
+    private fun Spinner.onSameItemSelected(listener: AdapterView.OnItemSelectedListener) {
+        val originalListener = onItemSelectedListener
+        onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                originalListener?.onItemSelected(parent, view, position, id)
+                listener.onItemSelected(parent, view, position, id)
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+                originalListener?.onNothingSelected(parent)
+                listener.onNothingSelected(parent)
+            }
+        }
     }
 
     override fun onResume() {
@@ -243,14 +315,27 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         })
 
+        binding.btnAdoptSelected.setOnClickListener {
+            val selectedSurveys = adapter.getSelectedSurveys()
+            if (selectedSurveys.isNotEmpty()) {
+                viewModel.adoptSurveys(selectedSurveys, teamId ?: "", isTeam)
+            } else {
+                Snackbar.make(binding.root, "Please select at least one survey to adopt.", Snackbar.LENGTH_SHORT).show()
+            }
+        }
+
         binding.rbAdoptSurvey.setOnClickListener {
             updateAdapterData(isTeamShareAllowed = true)
             recyclerView.scrollToPosition(0)
+            adapter.enterMultiSelectMode()
+            binding.llAdoptButtons.visibility = View.VISIBLE
         }
 
         binding.rbTeamSurvey.setOnClickListener {
             updateAdapterData(isTeamShareAllowed = false)
             recyclerView.scrollToPosition(0)
+            adapter.exitMultiSelectMode()
+            binding.llAdoptButtons.visibility = View.GONE
         }
     }
 
@@ -372,5 +457,4 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
             block()
         }
     }
-
 }
