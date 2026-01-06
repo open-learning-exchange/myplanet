@@ -21,4 +21,6 @@ interface CoursesRepository {
         subjectLevel: String,
         tagNames: List<String>
     ): List<RealmMyCourse>
+    suspend fun joinCourse(courseId: String, userId: String)
+    suspend fun leaveCourse(courseId: String, userId: String)
 }
