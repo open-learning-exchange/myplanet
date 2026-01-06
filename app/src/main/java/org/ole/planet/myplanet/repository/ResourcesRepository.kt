@@ -24,4 +24,11 @@ interface ResourcesRepository {
     suspend fun markResourceOfflineByLocalAddress(localAddress: String)
     suspend fun getPrivateImageUrlsCreatedAfter(timestamp: Long): List<String>
     suspend fun markAllResourcesOffline(isOffline: Boolean)
+    suspend fun saveSearchActivity(
+        userName: String,
+        searchText: String,
+        planetCode: String,
+        parentCode: String,
+        filterPayload: String
+    )
 }
