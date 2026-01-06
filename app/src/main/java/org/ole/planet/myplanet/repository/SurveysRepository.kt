@@ -2,7 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.ui.survey.SurveyFormState
-import org.ole.planet.myplanet.ui.survey.SurveyInfo
+import org.ole.planet.myplanet.model.SurveyInfo
 
 interface SurveysRepository {
     suspend fun getSurveySubmissionCount(userId: String?): Int
