@@ -42,8 +42,20 @@ class TeamCoursesFragment : BaseTeamFragment(), TeamPageListener {
     }
     
     private fun setupCoursesList() {
-        val courses = mRealm.where(RealmMyCourse::class.java).`in`("id", team?.courses?.toTypedArray<String>()).findAll()
-        adapterTeamCourse = settings?.let { TeamCoursesAdapter(requireActivity(), courses.toMutableList(), mRealm, teamId, it) }
+        val freshTeam = mRealm.where(org.ole.planet.myplanet.model.RealmMyTeam::class.java)
+            .equalTo("_id", teamId)
+            .findFirst()
+        
+        team = freshTeam
+        
+        val courseIds = freshTeam?.courses?.toTypedArray<String>() ?: emptyArray()
+        val courses = if (courseIds.isNotEmpty()) {
+            mRealm.where(RealmMyCourse::class.java).`in`("courseId", courseIds).findAll()
+        } else {
+            mRealm.where(RealmMyCourse::class.java).alwaysFalse().findAll()
+        }
+
+        adapterTeamCourse = TeamCoursesAdapter(requireActivity(), courses.toMutableList(), mRealm, teamId, settings)
         binding.rvCourse.layoutManager = LinearLayoutManager(activity)
         binding.rvCourse.adapter = adapterTeamCourse
         adapterTeamCourse?.let {
@@ -76,7 +88,11 @@ class TeamCoursesFragment : BaseTeamFragment(), TeamPageListener {
         val safeActivity = activity ?: return
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val existingIds = team?.courses?.toList() ?: emptyList()
+            val freshTeam = mRealm.where(org.ole.planet.myplanet.model.RealmMyTeam::class.java)
+                .equalTo("_id", teamId)
+                .findFirst()
+
+            val existingIds = freshTeam?.courses?.toList() ?: emptyList()
             val allCourses = mRealm.where(RealmMyCourse::class.java).findAll()
             val availableCourses = allCourses.filter { it.courseId !in existingIds }
 
@@ -86,7 +102,7 @@ class TeamCoursesFragment : BaseTeamFragment(), TeamPageListener {
             }
 
             val titleView = TextView(safeActivity).apply {
-                text = "Select Courses"
+                text = context.getString(R.string.select_courses)
                 setTextColor(context.getColor(R.color.daynight_textColor))
                 setPadding(75, 50, 0, 0)
                 textSize = 24f
@@ -126,7 +142,6 @@ class TeamCoursesFragment : BaseTeamFragment(), TeamPageListener {
         if (team == null || courses.isEmpty()) return
         val teamId = team?._id ?: return
 
-        // Extract course IDs before async transaction to avoid thread issues
         val courseIds = courses.mapNotNull { it.courseId }
         if (courseIds.isEmpty()) return
 
@@ -146,14 +161,12 @@ class TeamCoursesFragment : BaseTeamFragment(), TeamPageListener {
                 }
             },
             {
-                // onSuccess
                 if (isAdded) {
                     Utilities.toast(requireActivity(), getString(R.string.added_to_my_courses))
                     updateCoursesList()
                 }
             },
             { error ->
-                // onError
                 if (isAdded) {
                     Utilities.toast(requireActivity(), "Error adding courses: ${error.message}")
                     Log.d("TeamCoursesFragment", "Error adding courses: ${error.message}")

@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.model
 
 import android.content.SharedPreferences
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import io.realm.Realm
@@ -241,7 +242,7 @@ open class RealmMyTeam : RealmObject() {
         }
 
         @JvmStatic
-        fun serialize(team: RealmMyTeam): JsonObject {
+        fun serialize(team: RealmMyTeam, realm: Realm): JsonObject {
             val `object` = JsonObject()
 
             JsonUtils.addString(`object`, "_id", team._id)
@@ -286,7 +287,157 @@ open class RealmMyTeam : RealmObject() {
                 `object`.addProperty("type", team.teamType)
             }
 
+            if (!team.courses.isNullOrEmpty()) {
+                val coursesArray = serializeCoursesForTeam(team.courses!!, realm)
+                `object`.add("courses", coursesArray)
+            }
+
             return JsonParser.parseString(JsonUtils.gson.toJson(`object`)).asJsonObject
+        }
+
+        @JvmStatic
+        private fun serializeCoursesForTeam(courseIds: RealmList<String>, realm: Realm): JsonArray {
+            val coursesArray = JsonArray()
+
+            for (courseId in courseIds) {
+                val course = realm.where(RealmMyCourse::class.java)
+                    .equalTo("courseId", courseId)
+                    .findFirst()
+
+                course?.let {
+                    val courseJson = serializeCourseForTeam(it, realm)
+                    coursesArray.add(courseJson)
+                }
+            }
+
+            return coursesArray
+        }
+
+        @JvmStatic
+        private fun serializeCourseForTeam(course: RealmMyCourse, realm: Realm): JsonObject {
+            val courseJson = JsonObject()
+
+            courseJson.addProperty("_id", course.courseId)
+            courseJson.addProperty("_rev", course.courseRev)
+            courseJson.addProperty("courseTitle", course.courseTitle)
+            courseJson.addProperty("description", course.description)
+            courseJson.addProperty("languageOfInstruction", course.languageOfInstruction)
+            courseJson.addProperty("gradeLevel", course.gradeLevel)
+            courseJson.addProperty("subjectLevel", course.subjectLevel)
+            courseJson.addProperty("createdDate", course.createdDate)
+            courseJson.addProperty("method", course.method)
+
+            val fullCourse = realm.where(RealmMyCourse::class.java)
+                .equalTo("courseId", course.courseId)
+                .findFirst()
+
+            fullCourse?.let {
+                courseJson.addProperty("creator", "")
+                courseJson.addProperty("sourcePlanet", "")
+                courseJson.addProperty("resideOn", "")
+                courseJson.addProperty("updatedDate", 0)
+                courseJson.add("images", JsonArray())
+
+                val stepsArray = serializeStepsForCourse(it.courseSteps, realm, it.courseId)
+                courseJson.add("steps", stepsArray)
+            }
+
+            return courseJson
+        }
+
+        @JvmStatic
+        private fun serializeStepsForCourse(steps: RealmList<RealmCourseStep>?, realm: Realm, courseId: String?): JsonArray {
+            val stepsArray = JsonArray()
+
+            steps?.forEach { step ->
+                val stepJson = JsonObject()
+                stepJson.addProperty("stepTitle", step.stepTitle)
+                stepJson.addProperty("description", step.description)
+                stepJson.addProperty("id", step.id)
+
+                val resourcesArray = serializeStepResources(step.id, courseId, realm)
+                stepJson.add("resources", resourcesArray)
+
+                val exam = realm.where(RealmStepExam::class.java)
+                    .equalTo("stepId", step.id)
+                    .equalTo("courseId", courseId)
+                    .findFirst()
+
+                exam?.let {
+                    val examJson = JsonObject()
+                    examJson.addProperty("name", it.name)
+                    examJson.addProperty("passingPercentage", it.passingPercentage)
+                    examJson.addProperty("_id", it.id)
+                    examJson.addProperty("_rev", it._rev)
+                    examJson.addProperty("totalMarks", it.totalMarks)
+                    examJson.addProperty("type", it.type)
+
+                    val questions = realm.where(RealmExamQuestion::class.java)
+                        .equalTo("examId", it.id)
+                        .findAll()
+                    examJson.add("questions", RealmExamQuestion.serializeQuestions(questions))
+
+                    if (it.type == "surveys") {
+                        stepJson.add("survey", examJson)
+                    } else {
+                        stepJson.add("exam", examJson)
+                    }
+                }
+
+                stepsArray.add(stepJson)
+            }
+
+            return stepsArray
+        }
+
+        @JvmStatic
+        private fun serializeStepResources(stepId: String?, courseId: String?, realm: Realm): JsonArray {
+            val resourcesArray = JsonArray()
+
+            val resources = realm.where(RealmMyLibrary::class.java)
+                .equalTo("stepId", stepId)
+                .equalTo("courseId", courseId)
+                .findAll()
+
+            resources.forEach { resource ->
+                val resourceJson = JsonObject()
+                resourceJson.addProperty("_id", resource.resourceId)
+                resourceJson.addProperty("_rev", resource._rev)
+                resourceJson.addProperty("title", resource.title)
+                resourceJson.addProperty("author", resource.author)
+                resourceJson.addProperty("year", resource.year)
+                resourceJson.addProperty("description", resource.description)
+                resourceJson.addProperty("language", resource.language)
+                resourceJson.addProperty("publisher", resource.publisher)
+                resourceJson.addProperty("linkToLicense", resource.linkToLicense)
+                resourceJson.addProperty("medium", resource.medium)
+                resourceJson.addProperty("resourceType", resource.resourceType)
+                resourceJson.addProperty("addedBy", resource.addedBy)
+                resourceJson.addProperty("isDownloadable", resource.resourceOffline)
+                resourceJson.addProperty("createdDate", resource.createdDate)
+                resourceJson.addProperty("private", false)
+                resourceJson.addProperty("filename", resource.filename)
+                resourceJson.addProperty("mediaType", resource.mediaType)
+                resourceJson.addProperty("openWith", resource.openWith)
+                
+                val subjectArray = JsonArray()
+                resource.subject?.forEach { subject -> subjectArray.add(subject) }
+                resourceJson.add("subject", subjectArray)
+
+                val levelArray = JsonArray()
+                resource.level?.forEach { level -> levelArray.add(level) }
+                resourceJson.add("level", levelArray)
+
+                val resourceForArray = JsonArray()
+                resourceForArray.add("default")
+                resourceForArray.add("leader")
+                resourceForArray.add("learner")
+                resourceJson.add("resourceFor", resourceForArray)
+
+                resourcesArray.add(resourceJson)
+            }
+
+            return resourcesArray
         }
 
         fun getMyTeamsByUserId(mRealm: Realm, settings: SharedPreferences?): RealmResults<RealmMyTeam> {

@@ -1181,5 +1181,6 @@
     <string name="no_images_to_download">डाउनलोड गर्नका लागि कुनै तस्बिरहरू छैनन्</string>
     <string name="app_theme">एप थिम</string>
     <string name="team_surveys">टोली सर्वेक्षणहरू</string>
+    <string name="select_courses">पाठ्यक्रमहरू चयन गर्नुहोस्</string>
 
 </resources>
