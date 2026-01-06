@@ -17,20 +17,15 @@ import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 class TeamCoursesAdapter(
     private val context: Context,
     private var list: MutableList<RealmMyCourse>,
-    mRealm: Realm?,
-    teamId: String?,
-    settings: SharedPreferences
+    private val teamCreator: String,
+    private val settings: SharedPreferences
 ) : RecyclerView.Adapter<TeamCoursesAdapter.ViewHolder>() {
     private var listener: OnHomeItemClickListener? = null
-    private val settings: SharedPreferences
-    private val teamCreator: String
 
     init {
         if (context is OnHomeItemClickListener) {
             listener = context
         }
-        this.settings = settings
-        teamCreator = getTeamCreator(teamId, mRealm)
     }
 
     fun getList(): List<RealmMyCourse> = list
