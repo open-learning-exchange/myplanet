@@ -152,7 +152,6 @@ object NewsActions {
 
     fun showEditAlert(
         context: Context,
-        realm: Realm,
         id: String?,
         isEdit: Boolean,
         currentUser: RealmUserModel?,
@@ -166,21 +165,23 @@ object NewsActions {
         val icon = components.view.findViewById<ImageView>(R.id.alert_icon)
         icon.setImageResource(R.drawable.ic_edit)
 
-        val news = realm.where(RealmNews::class.java).equalTo("id", id).findFirst()
-        if (isEdit) {
-            components.editText.setText(context.getString(R.string.message_placeholder, news?.message))
-            loadExistingImages(context, news, components.imageLayout)
-        }
-        val dialog = AlertDialog.Builder(context, R.style.ReplyAlertDialog)
-            .setView(components.view)
-            .setPositiveButton(R.string.button_submit, null)
-            .setNegativeButton(R.string.cancel) { d, _ -> d.dismiss() }
-            .create()
-        dialog.show()
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-            val currentImageList = listener?.getCurrentImageList()
-            handlePositiveButton(dialog, isEdit, components, news, realm, currentUser, currentImageList, listener)
-            updateReplyButton(viewHolder,news,viewHolder.bindingAdapterPosition)
+        Realm.getDefaultInstance().use { realm ->
+            val news = realm.where(RealmNews::class.java).equalTo("id", id).findFirst()
+            if (isEdit) {
+                components.editText.setText(context.getString(R.string.message_placeholder, news?.message))
+                loadExistingImages(context, news, components.imageLayout)
+            }
+            val dialog = AlertDialog.Builder(context, R.style.ReplyAlertDialog)
+                .setView(components.view)
+                .setPositiveButton(R.string.button_submit, null)
+                .setNegativeButton(R.string.cancel) { d, _ -> d.dismiss() }
+                .create()
+            dialog.show()
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val currentImageList = listener?.getCurrentImageList()
+                handlePositiveButton(dialog, isEdit, components, news, realm, currentUser, currentImageList, listener)
+                updateReplyButton(viewHolder, news, viewHolder.bindingAdapterPosition)
+            }
         }
     }
 
@@ -276,7 +277,7 @@ object NewsActions {
                         .equalTo("id", newsItem.id)
                         .findFirst()
                 }
-                
+
                 managedNews?.deleteFromRealm()
             }
         } else {
@@ -288,7 +289,7 @@ object NewsActions {
                         }
                     }
                 }
-                
+
                 val managedNews = if (newsItem.isManaged) {
                     newsItem
                 } else {
@@ -296,7 +297,7 @@ object NewsActions {
                         .equalTo("id", newsItem.id)
                         .findFirst()
                 }
-                
+
                 managedNews?.viewIn = JsonUtils.gson.toJson(filtered)
             }
         }
