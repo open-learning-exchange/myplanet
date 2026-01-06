@@ -42,6 +42,13 @@ private data class CourseStepData(
     val userHasCourse: Boolean
 )
 
+private data class IntermediateStepData(
+    val step: RealmCourseStep,
+    val resources: List<RealmMyLibrary>,
+    val stepExams: List<RealmStepExam>,
+    val stepSurvey: List<RealmStepExam>
+)
+
 class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     private lateinit var fragmentCourseStepBinding: FragmentCourseStepBinding
     var stepId: String? = null
@@ -105,7 +112,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     }
 
     private suspend fun loadStepData(): CourseStepData = withContext(Dispatchers.IO) {
-        val data = databaseService.withRealm { realm ->
+        val intermediateData = databaseService.withRealm { realm ->
             val step = realm.where(RealmCourseStep::class.java)
                 .equalTo("id", stepId)
                 .findFirst()
@@ -124,10 +131,16 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                 .equalTo("type", "surveys")
                 .findAll()
                 .let { realm.copyFromRealm(it) }
-            Triple(step, resources, stepExams, stepSurvey)
+            IntermediateStepData(step, resources, stepExams, stepSurvey)
         }
-        val userHasCourse = coursesRepository.isMyCourse(user?.id, data.first.courseId)
-        CourseStepData(data.first, data.second, data.third.first, data.third.second, userHasCourse)
+        val userHasCourse = coursesRepository.isMyCourse(user?.id, intermediateData.step.courseId)
+        return@withContext CourseStepData(
+            step = intermediateData.step,
+            resources = intermediateData.resources,
+            stepExams = intermediateData.stepExams,
+            stepSurvey = intermediateData.stepSurvey,
+            userHasCourse = userHasCourse
+        )
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
