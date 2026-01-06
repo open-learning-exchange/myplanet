@@ -9,10 +9,8 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import dagger.hilt.android.AndroidEntryPoint
 import java.util.Date
 import java.util.UUID
-import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -23,10 +21,10 @@ import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.databinding.FragmentCourseStepBinding
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
+import org.ole.planet.myplanet.model.RealmMyCourse.Companion.isMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.ui.components.CustomClickableSpan
 import org.ole.planet.myplanet.ui.exam.ExamTakingFragment
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
@@ -44,10 +42,7 @@ private data class CourseStepData(
     val userHasCourse: Boolean
 )
 
-@AndroidEntryPoint
 class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
-    @Inject
-    lateinit var coursesRepository: CoursesRepository
     private lateinit var fragmentCourseStepBinding: FragmentCourseStepBinding
     var stepId: String? = null
     private lateinit var step: RealmCourseStep
@@ -110,7 +105,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     }
 
     private suspend fun loadStepData(): CourseStepData = withContext(Dispatchers.IO) {
-        databaseService.withRealm { realm ->
+        val data = databaseService.withRealm { realm ->
             val step = realm.where(RealmCourseStep::class.java)
                 .equalTo("id", stepId)
                 .findFirst()
@@ -129,9 +124,10 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                 .equalTo("type", "surveys")
                 .findAll()
                 .let { realm.copyFromRealm(it) }
-            val userHasCourse = coursesRepository.isMyCourse(user?.id, step.courseId)
-            CourseStepData(step, resources, stepExams, stepSurvey, userHasCourse)
+            Triple(step, resources, stepExams, stepSurvey)
         }
+        val userHasCourse = coursesRepository.isMyCourse(user?.id, data.first.courseId)
+        CourseStepData(data.first, data.second, data.third.first, data.third.second, userHasCourse)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
