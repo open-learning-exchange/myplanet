@@ -7,13 +7,6 @@ import android.text.style.URLSpan
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.os.Bundle
-import android.text.Spannable
-import android.text.method.LinkMovementMethod
-import android.text.style.URLSpan
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import java.util.Date
