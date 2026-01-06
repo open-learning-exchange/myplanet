@@ -248,7 +248,7 @@ class DownloadService : Service() {
                         if (fileSize > 0) {
                             totalFileSize = (fileSize / 1024.0).toInt()
                             val progress = (total * 100 / fileSize).toInt()
-                            this@MyDownloadService.totalFileSize = totalFileSize
+                            this.totalFileSize = totalFileSize
                             download.totalFileSize = totalFileSize
                             download.progress = progress
                         } else {
