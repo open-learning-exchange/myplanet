@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.callback.BaseRealtimeSyncListener
+import org.ole.planet.myplanet.callback.DiffRefreshableCallback
 import org.ole.planet.myplanet.callback.TableDataUpdate
 import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
 
@@ -69,7 +70,7 @@ class RealtimeSyncHelper(
         fragment.viewLifecycleOwner.lifecycleScope.launch {
             val adapter = mixin.getSyncRecyclerView()?.adapter ?: return@launch
             when {
-                adapter is DiffRefreshableAdapter -> adapter.refreshWithDiff()
+                adapter is DiffRefreshableCallback -> adapter.refreshWithDiff()
                 adapter is ListAdapter<*, *> -> {
                     (adapter as ListAdapter<Any, *>).let { listAdapter ->
                         listAdapter.submitList(listAdapter.currentList.toList())

@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.data
+package org.ole.planet.myplanet.service.sync
 
 import android.content.Context
 import android.content.SharedPreferences
@@ -14,6 +14,8 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SyncListener
+import org.ole.planet.myplanet.data.ApiClient
+import org.ole.planet.myplanet.data.ApiInterface
 import org.ole.planet.myplanet.di.RepositoryEntryPoint
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.androidDecrypter

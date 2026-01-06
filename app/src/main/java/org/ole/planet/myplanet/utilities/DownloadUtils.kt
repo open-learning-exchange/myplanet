@@ -21,9 +21,9 @@ import java.util.regex.Pattern
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.data.DownloadWorker
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.service.DownloadWorker
 import org.ole.planet.myplanet.service.MyDownloadService
 
 object DownloadUtils {

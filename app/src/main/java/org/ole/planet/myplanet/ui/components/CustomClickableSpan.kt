@@ -5,7 +5,7 @@ import android.content.Intent
 import android.text.style.ClickableSpan
 import android.view.View
 import android.widget.Toast
-import org.ole.planet.myplanet.ui.viewer.WebViewActivity
+import org.ole.planet.myplanet.ui.reader.WebViewActivity
 
 class CustomClickableSpan(private val url: String, private val title: String, private val context: Context) : ClickableSpan() {
     override fun onClick(widget: View) {

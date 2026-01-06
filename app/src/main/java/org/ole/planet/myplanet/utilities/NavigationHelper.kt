@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.navigation
+package org.ole.planet.myplanet.utilities
 
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager

@@ -39,7 +39,6 @@ import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.data.ApiClient
 import org.ole.planet.myplanet.data.ApiInterface
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.data.LoginSyncManager
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.insert

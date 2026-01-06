@@ -22,10 +22,10 @@ import org.ole.planet.myplanet.data.ApiClient.client
 import org.ole.planet.myplanet.data.ApiInterface
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
-import org.ole.planet.myplanet.model.RealmMeetup.Companion.getMyMeetUpIds
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourseIds
 import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmHealthExamination.Companion.serialize
+import org.ole.planet.myplanet.model.RealmMeetup.Companion.getMyMeetUpIds
+import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourseIds
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getMyLibIds
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.removedIds
 import org.ole.planet.myplanet.model.RealmUserModel

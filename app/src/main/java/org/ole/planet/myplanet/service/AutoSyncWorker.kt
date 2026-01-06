@@ -16,8 +16,8 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.callback.SyncListener
-import org.ole.planet.myplanet.data.Service
-import org.ole.planet.myplanet.data.Service.CheckVersionCallback
+import org.ole.planet.myplanet.data.DataService
+import org.ole.planet.myplanet.data.DataService.CheckVersionCallback
 import org.ole.planet.myplanet.di.AutoSyncEntryPoint
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.service.sync.SyncManager
@@ -50,7 +50,7 @@ class AutoSyncWorker(
             if (isAppInForeground(context)) {
                 Utilities.toast(context, "Syncing started...")
             }
-            Service(context).checkVersion(this, preferences)
+            DataService(context).checkVersion(this, preferences)
         }
         return Result.success()
     }
@@ -76,7 +76,7 @@ class AutoSyncWorker(
         if (!blockSync) {
             syncManager.start(this, "upload")
             uploadToShelfService.uploadUserData {
-                Service(MainApplication.context).healthAccess {
+                DataService(MainApplication.context).healthAccess {
                     uploadToShelfService.uploadHealth()
                 }
             }

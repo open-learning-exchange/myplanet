@@ -21,11 +21,11 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.ProgressRepository
+import org.ole.planet.myplanet.ui.components.MarkdownDialog
 import org.ole.planet.myplanet.ui.courses.CoursesProgressFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
-import org.ole.planet.myplanet.utilities.MarkdownDialog
 
-class ChallengeService(
+class ChallengeHelper(
     private val activity: DashboardActivity,
     private val user: RealmUserModel?,
     private val settings: SharedPreferences,
@@ -86,7 +86,7 @@ class ChallengeService(
         if (userId != null) query.equalTo("userId", userId)
         val results = query.findAll()
         return results.filter { isCommunitySection(it) }
-            .map { ChallengeService.getDateFromTimestamp(it.time) }
+            .map { ChallengeHelper.getDateFromTimestamp(it.time) }
             .distinct()
     }
 

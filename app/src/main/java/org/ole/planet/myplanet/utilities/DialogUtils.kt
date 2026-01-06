@@ -14,7 +14,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.data.Service
+import org.ole.planet.myplanet.data.DataService
 import org.ole.planet.myplanet.databinding.DialogProgressBinding
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.service.MyDownloadService
@@ -177,7 +177,7 @@ object DialogUtils {
         scope: CoroutineScope
     ) {
         scope.launch {
-            val checksumMatch = Service(context.applicationContext).checkCheckSum(path)
+            val checksumMatch = DataService(context.applicationContext).checkCheckSum(path)
             if (checksumMatch) {
                 Utilities.toast(context, context.getString(R.string.apk_already_exists))
                 FileUtils.installApk(context, path)

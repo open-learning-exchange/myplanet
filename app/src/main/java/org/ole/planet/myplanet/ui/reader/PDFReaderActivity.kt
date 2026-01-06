@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.viewer
+package org.ole.planet.myplanet.ui.reader
 
 import android.graphics.pdf.PdfRenderer
 import android.os.Bundle
