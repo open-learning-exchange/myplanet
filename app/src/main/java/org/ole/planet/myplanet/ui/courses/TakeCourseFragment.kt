@@ -100,37 +100,34 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             withContext(Dispatchers.IO) {
                 steps = coursesRepository.getCourseSteps(courseId)
             }
-            viewLifecycleOwner.lifecycleScope.launch {
-                updateCachedProgress()
-                currentStep = cachedProgress ?: 0
-                updateStepDisplay(binding.viewPager2.currentItem)
-            }
-
             if (steps.isEmpty()) {
                 binding.nextStep.visibility = View.GONE
                 binding.previousStep.visibility = View.GONE
             }
-
-            position = if (currentStep > 0) currentStep else 0
-            setNavigationButtons()
-            binding.viewPager2.adapter =
-                CoursesPagerAdapter(
-                    this@TakeCourseFragment,
-                    courseId,
-                    steps.mapNotNull { it?.id }.toTypedArray()
-                )
-            binding.viewPager2.isUserInputEnabled = false
-            binding.viewPager2.setCurrentItem(position, false)
-            binding.viewPager2.registerOnPageChangeCallback(object :
-                ViewPager2.OnPageChangeCallback() {
-                override fun onPageSelected(position: Int) {
-                    super.onPageSelected(position)
-                    this@TakeCourseFragment.onPageSelected(position)
+            viewLifecycleOwner.lifecycleScope.launch {
+                updateCachedProgress()
+                currentStep = cachedProgress ?: 0
+                position = if (currentStep > 0) currentStep else 0
+                setNavigationButtons()
+                binding.viewPager2.adapter =
+                    CoursesPagerAdapter(
+                        this@TakeCourseFragment,
+                        courseId,
+                        steps.mapNotNull { it?.id }.toTypedArray()
+                    )
+                binding.viewPager2.isUserInputEnabled = false
+                binding.viewPager2.setCurrentItem(position, false)
+                binding.viewPager2.registerOnPageChangeCallback(object :
+                    ViewPager2.OnPageChangeCallback() {
+                    override fun onPageSelected(position: Int) {
+                        super.onPageSelected(position)
+                        this@TakeCourseFragment.onPageSelected(position)
+                    }
+                })
+                updateStepDisplay(position)
+                if (position == 0) {
+                    binding.previousStep.visibility = View.GONE
                 }
-            })
-            updateStepDisplay(position)
-            if (position == 0) {
-                binding.previousStep.visibility = View.GONE
             }
             setCourseData()
             setListeners()
