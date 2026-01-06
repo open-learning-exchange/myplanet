@@ -629,22 +629,16 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             val tags = searchTags.toList()
             val grade = gradeLevel
             val subject = subjectLevel
-            lifecycleScope.launch(Dispatchers.IO) {
-                databaseService.executeTransactionAsync { realm ->
-                    val activity = realm.createObject(RealmSearchActivity::class.java, UUID.randomUUID().toString())
-                    activity.user = userName
-                    activity.time = Calendar.getInstance().timeInMillis
-                    activity.createdOn = planetCode
-                    activity.parentCode = parentCode
-                    activity.text = searchText
-                    activity.type = "courses"
-                    val filter = JsonObject()
-
-                    filter.add("tags", getTagsArray(tags))
-                    filter.addProperty("doc.gradeLevel", grade)
-                    filter.addProperty("doc.subjectLevel", subject)
-                    activity.filter = JsonUtils.gson.toJson(filter)
-                }
+            lifecycleScope.launch {
+                coursesRepository.saveSearchActivity(
+                    searchText,
+                    userName,
+                    planetCode,
+                    parentCode,
+                    tags,
+                    grade,
+                    subject
+                )
             }
         }
     }

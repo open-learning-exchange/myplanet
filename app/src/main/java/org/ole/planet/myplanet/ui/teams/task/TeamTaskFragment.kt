@@ -33,15 +33,15 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.health.UserListAdapter
+import org.ole.planet.myplanet.callback.OnTaskCompletedListener
 import org.ole.planet.myplanet.ui.teams.BaseTeamFragment
-import org.ole.planet.myplanet.ui.teams.task.TeamTaskAdapter.OnCompletedListener
 import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDateTZ
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
-class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
+class TeamTaskFragment : BaseTeamFragment(), OnTaskCompletedListener {
     private var _binding: FragmentTeamTaskBinding? = null
     private val binding get() = _binding!!
     private var deadline: Calendar? = null
