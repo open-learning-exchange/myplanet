@@ -15,6 +15,8 @@ import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemTeamListBinding
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.TeamDetails
+import org.ole.planet.myplanet.model.TeamStatus
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.teams.callback.OnTeamActionsListener
 import org.ole.planet.myplanet.ui.teams.callback.OnUpdateCompleteListener
