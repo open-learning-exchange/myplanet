@@ -10,13 +10,9 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.databinding.FragmentTeamCourseBinding
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.ui.teams.BaseTeamFragment
-import javax.inject.Inject
 
 class TeamCoursesFragment : BaseTeamFragment() {
-    @Inject
-    lateinit var coursesRepository: CoursesRepository
     private var _binding: FragmentTeamCourseBinding? = null
     private val binding get() = _binding!!
     private var adapterTeamCourse: TeamCoursesAdapter? = null
