@@ -81,6 +81,12 @@ class CoursesRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getCoursesByIds(courseIds: List<String>): List<RealmMyCourse> {
+        return queryList(RealmMyCourse::class.java) {
+            `in`("id", courseIds.toTypedArray())
+        }
+    }
+
     override suspend fun markCourseAdded(courseId: String, userId: String?): Boolean {
         if (courseId.isBlank()) {
             return false
