@@ -221,4 +221,13 @@ class CoursesRepositoryImpl @Inject constructor(
             equalTo("userId", userId)
         }.isNotEmpty()
     }
+
+    override suspend fun getCoursesByIds(ids: List<String>): List<RealmMyCourse> {
+        if (ids.isEmpty()) {
+            return emptyList()
+        }
+        return queryList(RealmMyCourse::class.java) {
+            `in`("id", ids.toTypedArray())
+        }
+    }
 }

@@ -33,4 +33,5 @@ interface CoursesRepository {
         grade: String,
         subject: String
     )
+    suspend fun getCoursesByIds(ids: List<String>): List<RealmMyCourse>
 }
