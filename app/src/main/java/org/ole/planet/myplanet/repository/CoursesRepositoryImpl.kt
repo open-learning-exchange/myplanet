@@ -15,7 +15,7 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.utilities.JsonUtils
 
 class CoursesRepositoryImpl @Inject constructor(
-    private val databaseService: DatabaseService,
+    databaseService: DatabaseService,
     private val activityRepository: ActivityRepository
 ) : RealmRepository(databaseService), CoursesRepository {
 
