@@ -724,7 +724,7 @@ class UploadManager @Inject constructor(
                 val copiedTeam = realm.copyFromRealm(team)
                 TeamData(
                     teamId = copiedTeam._id,
-                    serialized = RealmMyTeam.serialize(copiedTeam)
+                    serialized = RealmMyTeam.serialize(copiedTeam, realm)
                 )
             }
         }

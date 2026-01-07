@@ -168,8 +168,8 @@ class TeamResourcesFragment : BaseTeamFragment(), TeamPageListener, ResourcesUpd
         }
     }
 
-    override fun onAddDocument() {
-        showResourceListDialog()
+    override fun onAddCourse() {
+        // Not applicable for resources fragment
     }
 
     override fun onDestroyView() {

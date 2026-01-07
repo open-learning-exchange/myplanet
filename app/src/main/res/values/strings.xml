@@ -1181,5 +1181,6 @@
     <string name="no_images_to_download">No images to download</string>
     <string name="app_theme">app theme</string>
     <string name="team_surveys">Team surveys</string>
+    <string name="select_courses">Select courses</string>
 
 </resources>

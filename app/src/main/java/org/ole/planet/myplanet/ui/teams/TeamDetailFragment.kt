@@ -46,6 +46,7 @@ import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ResourcesPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.SurveyPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TasksPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TeamPage
+import org.ole.planet.myplanet.ui.teams.courses.TeamCoursesFragment
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
@@ -288,7 +289,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
 
         binding.viewPager2.adapter = null
         binding.viewPager2.adapter = TeamPagerAdapter(
-            requireActivity(),
+            this,
             pageConfigs,
             team?._id,
             this,
@@ -305,11 +306,27 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
 
         selectPage(restorePageId, false)
 
+        // Set the initial listener for the current page after a short delay to ensure fragment is created
+        binding.root.postDelayed({
+            val adapter = binding.viewPager2.adapter
+            if (adapter is TeamPagerAdapter) {
+                val currentPosition = binding.viewPager2.currentItem
+                adapter.updateListenerForCurrentPage(currentPosition)
+            }
+        }, 100)
+
         binding.viewPager2.registerOnPageChangeCallback(
             object : ViewPager2.OnPageChangeCallback() {
                 override fun onPageSelected(position: Int) {
                     val pageConfig = pageConfigs.getOrNull(position)
                     val pageId = pageConfig?.id
+
+                    // Update the MainApplication.listener to point to the currently visible fragment
+                    val adapter = binding.viewPager2.adapter
+                    if (adapter is TeamPagerAdapter) {
+                        adapter.updateListenerForCurrentPage(position)
+                    }
+
                     team?._id?.let { teamId ->
                         pageId?.let {
                             teamLastPage[teamId] = it
@@ -376,9 +393,57 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
 
         binding.btnAddDoc.setOnClickListener {
             MainApplication.showDownload = true
-            selectPage(DocumentsPage.id)
+            val coursesPageIndex = pageIndexById(CoursesPage.id)
+
+            if (coursesPageIndex == null) {
+                MainApplication.showDownload = false
+                org.ole.planet.myplanet.utilities.Utilities.toast(requireActivity(), "Courses page not available for this team type")
+                return@setOnClickListener
+            }
+
+            val isAlreadyOnCoursesPage = binding.viewPager2.currentItem == coursesPageIndex
+
+            if (!isAlreadyOnCoursesPage) {
+                selectPage(CoursesPage.id)
+            }
+
+            // Update the listener to ensure it points to TeamCoursesFragment
+            val adapter = binding.viewPager2.adapter
+            if (adapter is TeamPagerAdapter) {
+                adapter.updateListenerForCurrentPage(coursesPageIndex)
+            }
+
             MainApplication.showDownload = false
-            MainApplication.listener?.onAddDocument()
+
+            // If already on courses page, call immediately with shorter delay
+            // Otherwise wait longer for page transition
+            val delay = if (isAlreadyOnCoursesPage) 150L else 400L
+
+            binding.root.postDelayed({
+                // Try multiple strategies to get the fragment
+                val currentPosition = binding.viewPager2.currentItem
+                val fragmentTag = "f$currentPosition"
+                var currentFragment = childFragmentManager.findFragmentByTag(fragmentTag)
+
+                // Try to find the fragment in different ways
+                if (currentFragment == null) {
+                    currentFragment = childFragmentManager.fragments.find {
+                        it is TeamCoursesFragment && it.isVisible
+                    }
+                }
+
+                when {
+                    currentFragment is org.ole.planet.myplanet.callback.TeamPageListener -> {
+                        currentFragment.onAddCourse()
+                    }
+                    MainApplication.listener != null -> {
+                        MainApplication.listener?.onAddCourse()
+                    }
+                    else -> {
+                        org.ole.planet.myplanet.utilities.Utilities.toast(requireActivity(), "Unable to show add course dialog")
+                    }
+                }
+            }, delay)
         }
     }
 
