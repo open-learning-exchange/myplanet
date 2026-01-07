@@ -17,9 +17,6 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TeamsRepository
 
-private val Realm.isOpen: Boolean
-    get() = !isClosed
-
 @AndroidEntryPoint
 abstract class BaseTeamFragment : BaseNewsFragment() {
     var user: RealmUserModel? = null
@@ -57,7 +54,7 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
         lifecycleScope.launch(Dispatchers.IO) {
             val teamResult = if (shouldQueryTeam) {
                 try {
-                    teamsRepository.getTeamByDocumentIdOrTeamId(teamId)
+                    teamsRepository.getTeamById(teamId)
                 } catch (e: IllegalArgumentException) {
                     e.printStackTrace()
                     null

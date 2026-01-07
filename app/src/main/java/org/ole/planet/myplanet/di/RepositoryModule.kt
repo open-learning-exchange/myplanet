@@ -80,7 +80,7 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindPersonalRepository(impl: PersonalsRepositoryImpl): PersonalsRepository
+    abstract fun bindPersonalsRepository(impl: PersonalsRepositoryImpl): PersonalsRepository
 
     @Binds
     @Singleton

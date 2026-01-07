@@ -17,7 +17,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.DataService
 import org.ole.planet.myplanet.databinding.DialogProgressBinding
 import org.ole.planet.myplanet.model.MyPlanet
-import org.ole.planet.myplanet.service.MyDownloadService
+import org.ole.planet.myplanet.service.DownloadService
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
@@ -29,7 +29,7 @@ object DialogUtils {
         prgDialog.setTitle(context.getString(R.string.downloading_file))
         prgDialog.setMax(100)
         prgDialog.setNegativeButton(context.getString(R.string.stop_download), isVisible = true) {
-            context.stopService(Intent(context, MyDownloadService::class.java))
+            context.stopService(Intent(context, DownloadService::class.java))
             prgDialog.dismiss()
         }
         return prgDialog
@@ -188,7 +188,7 @@ object DialogUtils {
                     progressDialog.setCancelable(false)
                     progressDialog.show()
                 }
-                MyDownloadService.startService(context, "$urls", false)
+                DownloadService.startService(context, "$urls", false)
             }
         }
     }

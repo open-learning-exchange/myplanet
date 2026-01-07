@@ -20,4 +20,6 @@ interface SurveysRepository {
         surveys: List<RealmStepExam>,
         teamId: String?
     ): Map<String, SurveyFormState>
+
+    suspend fun adoptSurvey(examId: String, userId: String?, teamId: String?, isTeam: Boolean)
 }

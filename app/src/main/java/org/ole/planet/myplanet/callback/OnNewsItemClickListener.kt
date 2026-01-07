@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.callback
+package org.ole.planet.myplanet.callback
 
 import android.view.ViewGroup
 import io.realm.RealmList
