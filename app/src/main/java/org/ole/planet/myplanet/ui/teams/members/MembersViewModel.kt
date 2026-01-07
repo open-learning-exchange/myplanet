@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.teams.member
+package org.ole.planet.myplanet.ui.teams.members
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

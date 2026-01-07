@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.teams.member
+package org.ole.planet.myplanet.ui.teams.members
 
 import android.content.res.Configuration
 import android.os.Bundle
@@ -27,7 +27,7 @@ class MemberFragment : BaseMemberFragment() {
             }
         }
     }
-    private var adapterJoined: MemberAdapter? = null
+    private var adapterJoined: TeamsMembersAdapter? = null
     private var cachedJoinedMembers: List<JoinedMemberData>? = null
 
     fun setMemberChangeListener(listener: MemberChangeListener) {
@@ -60,9 +60,9 @@ class MemberFragment : BaseMemberFragment() {
     override val adapter: RecyclerView.Adapter<*>
         get() {
             if (adapterJoined == null) {
-                adapterJoined = MemberAdapter(
+                adapterJoined = TeamsMembersAdapter(
                     requireActivity(), user?.id,
-                    object : MemberAdapter.MemberActionListener {
+                    object : TeamsMembersAdapter.MemberActionListener {
                         override fun onRemoveMember(member: JoinedMemberData, position: Int) {
                             handleRemoveMember(member)
                         }
@@ -77,7 +77,7 @@ class MemberFragment : BaseMemberFragment() {
                     }
                 )
             }
-            return adapterJoined as MemberAdapter
+            return adapterJoined as TeamsMembersAdapter
         }
 
     private fun handleLeaveTeam() {

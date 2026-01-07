@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.teams.member
+package org.ole.planet.myplanet.ui.teams.members
 
 import android.content.Context
 import android.content.res.Configuration
@@ -19,7 +19,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 
 @AndroidEntryPoint
-class MembersFragment : BaseMemberFragment() {
+class TeamsMembersFragment : BaseMemberFragment() {
 
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
