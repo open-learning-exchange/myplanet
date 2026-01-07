@@ -76,7 +76,7 @@ class TagAdapter(
                 binding.tvDrawerTitle1.visibility = View.VISIBLE
                 binding.tvDrawerTitle.visibility = View.GONE
                 binding.ivIndicators.visibility = View.GONE
-                binding.tvDrawerTitle1.setOnClickListener { listener.onTagClicked(parent.tag) }
+                binding.tvDrawerTitle1.setOnClickListener { listener.onTagSelected(parent.tag) }
             } else {
                 binding.tvDrawerTitle.visibility = View.VISIBLE
                 binding.tvDrawerTitle1.visibility = View.GONE
@@ -93,7 +93,7 @@ class TagAdapter(
             binding.tvDrawerTitle.text = child.tag.name
             binding.root.setBackgroundColor(ContextCompat.getColor(itemView.context, R.color.multi_select_grey))
             binding.tvDrawerTitle.setTextColor(ContextCompat.getColor(itemView.context, R.color.daynight_textColor))
-            binding.tvDrawerTitle.setOnClickListener { listener.onTagClicked(child.tag) }
+            binding.tvDrawerTitle.setOnClickListener { listener.onTagSelected(child.tag) }
             createCheckbox(binding.root, child.tag, child.isSelectMultiple, child.isSelected)
         }
     }

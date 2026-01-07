@@ -16,7 +16,6 @@ import kotlin.collections.ArrayList
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.TagClickListener
 import org.ole.planet.myplanet.databinding.FragmentCollectionsBinding
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.TagData
@@ -35,7 +34,7 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
     private var filteredList: ArrayList<RealmTag> = ArrayList()
     private lateinit var adapter: TagAdapter
     private var dbType: String? = null
-    private var listener: TagClickListener? = null
+    private var listener: OnTagClickListener? = null
     private var selectedItemsList: ArrayList<RealmTag> = ArrayList()
     private var textWatcher: TextWatcher? = null
     private var currentTagDataList = mutableListOf<TagData>()
@@ -118,9 +117,13 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
         return tagDataList
     }
 
-    override fun onTagClicked(tag: RealmTag) {
+    override fun onTagSelected(tag: RealmTag) {
         listener?.onTagSelected(tag)
         dismiss()
+    }
+
+    override fun onTagClicked(tag: RealmTag) {
+        // Not used in this fragment, but required by the interface
     }
 
     override fun onParentTagClicked(parent: TagData.Parent) {
@@ -141,6 +144,10 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
 
     override fun hasChildren(tagId: String?): Boolean {
         return childMap.containsKey(tagId)
+    }
+
+    override fun onOkClicked(list: List<RealmTag>?) {
+        // Not needed for TagAdapter listener
     }
 
     override fun onCheckedChanged(compoundButton: CompoundButton, b: Boolean) {
@@ -170,7 +177,7 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
         }
     }
 
-    fun setListener(listener: TagClickListener) {
+    fun setListener(listener: OnTagClickListener) {
         this.listener = listener
     }
 }

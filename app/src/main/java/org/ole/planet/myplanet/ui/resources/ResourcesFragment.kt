@@ -31,9 +31,9 @@ import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.callback.OnFilterListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnLibraryItemSelected
+import org.ole.planet.myplanet.callback.OnTagClickListener
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.callback.TableDataUpdate
-import org.ole.planet.myplanet.callback.TagClickListener
 import org.ole.planet.myplanet.databinding.FragmentMyLibraryBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getArrayList
@@ -59,7 +59,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSelected,
-    ChipDeletedListener, TagClickListener, OnFilterListener, RealtimeSyncMixin {
+    ChipDeletedListener, OnTagClickListener, OnFilterListener, RealtimeSyncMixin {
     private var _binding: FragmentMyLibraryBinding? = null
     private val binding get() = _binding!!
     private val tvAddToLib get() = binding.tvAdd
@@ -480,17 +480,28 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     override fun onOkClicked(list: List<RealmTag>?) {
-        if (list?.isEmpty() == true) {
-            searchTags.clear()
-            adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.text.toString(), searchTags))) {
-                recyclerView.scrollToPosition(0)
-            }
-            showNoData(tvMessage, adapterLibrary.itemCount, "resources")
-        } else {
-            for (tag in list ?: emptyList()) {
-                onTagClicked(tag)
-            }
+        searchTags.clear()
+        if (!list.isNullOrEmpty()) {
+            searchTags.addAll(list)
         }
+        tvSelected.visibility = View.VISIBLE
+        flexBoxTags.removeAllViews()
+        val chipCloud = ChipCloud(activity, flexBoxTags, config)
+        chipCloud.setDeleteListener(this)
+        chipCloud.addChips(searchTags)
+        adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.text.toString(), searchTags))) {
+            recyclerView.scrollToPosition(0)
+        }
+        showTagText(searchTags, tvSelected)
+        showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+    }
+
+    override fun onParentTagClicked(parent: org.ole.planet.myplanet.model.TagData.Parent) {}
+
+    override fun onCheckboxTagSelected(tag: RealmTag) {}
+
+    override fun hasChildren(tagId: String?): Boolean {
+        return false
     }
 
     private fun changeButtonStatus() {
@@ -666,7 +677,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     override fun getWatchedTables(): List<String> {
         return listOf("resources")
     }
-    
+
     override fun onDataUpdated(table: String, update: TableDataUpdate) {}
 
     override fun shouldAutoRefresh(table: String): Boolean = true
