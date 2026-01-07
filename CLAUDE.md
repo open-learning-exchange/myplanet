@@ -25,8 +25,8 @@ This document provides comprehensive guidance for AI assistants working on the m
 - **Primary Language**: Kotlin (with Java compatibility layer)
 - **Min SDK**: 26 (Android 8.0)
 - **Target SDK**: 36 (Android 15)
-- **Current Version**: 0.38.5 (versionCode: 3805)
-- **Build System**: Gradle 8.13.1
+- **Current Version**: 0.42.56 (versionCode: 4256)
+- **Build System**: Gradle 8.14.2
 - **License**: AGPL v3
 
 ### Build Flavors
@@ -54,13 +54,13 @@ myplanet/
 │   │   │   │   ├── callback/                # Event listeners and interfaces
 │   │   │   │   ├── data/                    # Data services and API
 │   │   │   │   ├── di/                      # Dependency injection modules
-│   │   │   │   ├── model/                   # Realm data models (37+ classes)
+│   │   │   │   ├── model/                   # Realm data models (53 classes)
 │   │   │   │   ├── repository/              # Repository pattern implementations
 │   │   │   │   ├── service/                 # Background services and workers
-│   │   │   │   ├── ui/                      # UI components (25+ packages)
+│   │   │   │   ├── ui/                      # UI components (28 packages)
 │   │   │   │   └── utilities/               # Helper utilities
 │   │   │   ├── res/                         # Android resources
-│   │   │   │   ├── layout/                  # 166 layout files
+│   │   │   │   ├── layout/                  # 169 layout files
 │   │   │   │   ├── values/                  # Strings, colors, styles
 │   │   │   │   ├── values-{lang}/           # Translations (ar, es, fr, ne, so)
 │   │   │   │   └── drawable*/               # Images and icons
@@ -83,34 +83,38 @@ myplanet/
 |---------|---------|-----------|
 | `base/` | Base classes for common functionality | BaseActivity, BaseRecyclerFragment, PermissionActivity |
 | `callback/` | Event listeners and interfaces | OnLibraryItemSelected, SyncListener, TeamUpdateListener |
-| `data/` | Data access and API services | Service.kt (23.8 KB), ApiInterface, ManagerSync |
+| `data/` | Data access and API services | DataService.kt, DatabaseService.kt, ApiInterface, auth/ |
 | `di/` | Hilt dependency injection | NetworkModule, DatabaseModule, RepositoryModule |
-| `model/` | Realm database models | 37+ models including RealmMyTeam, RealmMyCourse, RealmMyLibrary |
-| `repository/` | Repository pattern implementations | 15 repositories with Interface + Impl pairs |
-| `service/` | Background services | SyncManager (36.1 KB), UploadManager (44.4 KB), AutoSyncWorker |
-| `ui/` | User interface components | 25+ feature packages (courses, resources, team, chat, etc.) |
+| `model/` | Realm database models | 53 models including RealmMyTeam, RealmMyCourse, RealmMyLibrary |
+| `repository/` | Repository pattern implementations | 18 repositories with Interface + Impl pairs |
+| `service/` | Background services | sync/SyncManager.kt, UploadManager.kt, AutoSyncWorker |
+| `ui/` | User interface components | 28 feature packages (courses, resources, teams, chat, etc.) |
 | `utilities/` | Helper functions | NetworkUtils, ImageUtils, DialogUtils, FileUploadService |
 
 ### Critical Files to Understand
 
-1. **`MainApplication.kt`** (15.5 KB)
+1. **`MainApplication.kt`** (~420 lines)
    - Application initialization
    - Hilt setup
    - Network monitoring
    - Auto-sync worker scheduling
    - Location: `app/src/main/java/org/ole/planet/myplanet/MainApplication.kt`
 
-2. **`Service.kt`** (23.8 KB)
+2. **`DataService.kt`** (~450 lines)
    - Main data service for local database operations
-   - Location: `app/src/main/java/org/ole/planet/myplanet/data/Service.kt`
+   - Location: `app/src/main/java/org/ole/planet/myplanet/data/DataService.kt`
 
-3. **`SyncManager.kt`** (36.1 KB)
+3. **`SyncManager.kt`** (~1080 lines)
    - Orchestrates data synchronization with server
-   - Location: `app/src/main/java/org/ole/planet/myplanet/service/SyncManager.kt`
+   - Location: `app/src/main/java/org/ole/planet/myplanet/service/sync/SyncManager.kt`
 
-4. **`UploadManager.kt`** (44.4 KB)
+4. **`UploadManager.kt`** (~1330 lines)
    - Handles upload operations
    - Location: `app/src/main/java/org/ole/planet/myplanet/service/UploadManager.kt`
+
+5. **`TeamsRepositoryImpl.kt`** (~915 lines)
+   - Team management functionality
+   - Location: `app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt`
 
 ---
 
@@ -121,17 +125,17 @@ myplanet/
 | Category | Technology | Version | Purpose |
 |----------|-----------|---------|---------|
 | **Language** | Kotlin | 2.2.21 | Primary development language |
-| **Build System** | Gradle | 8.13.1 | Build automation |
+| **Build System** | Gradle | 8.14.2 | Build automation |
 | **DI Framework** | Dagger Hilt | 2.57.2 | Dependency injection |
 | **Database** | Realm | 10.19.0 | Local object database |
 | **Networking** | Retrofit | 3.0.0 | REST API client |
-| **HTTP Client** | OkHttp | 5.3.1 | HTTP communication |
+| **HTTP Client** | OkHttp | 5.3.2 | HTTP communication |
 | **JSON** | Gson | 2.13.2 | JSON serialization |
 | **Async** | Kotlin Coroutines | 1.10.2 | Asynchronous programming |
 | **Background Tasks** | AndroidX Work | 2.11.0 | Background job scheduling |
 | **UI Framework** | Material Design 3 | 1.13.0 | UI components |
 | **Image Loading** | Glide | 5.0.5 | Image loading and caching |
-| **Media Playback** | Media3 (ExoPlayer) | 1.8.0 | Audio/video playback |
+| **Media Playback** | Media3 (ExoPlayer) | 1.9.0 | Audio/video playback |
 | **Markdown** | Markwon | 4.6.2 | Markdown rendering |
 | **Maps** | OSMDroid | 6.1.20 | OpenStreetMap integration |
 
@@ -1143,10 +1147,10 @@ git rebase --continue
 | Purpose | File Path | Line Count |
 |---------|-----------|------------|
 | Main entry point | `app/src/main/java/org/ole/planet/myplanet/MainApplication.kt` | ~420 |
-| Core data service | `app/src/main/java/org/ole/planet/myplanet/data/Service.kt` | ~650 |
-| Sync orchestration | `app/src/main/java/org/ole/planet/myplanet/service/SyncManager.kt` | ~1000 |
-| Upload handling | `app/src/main/java/org/ole/planet/myplanet/service/UploadManager.kt` | ~1200 |
-| Team management | `app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt` | ~650 |
+| Core data service | `app/src/main/java/org/ole/planet/myplanet/data/DataService.kt` | ~450 |
+| Sync orchestration | `app/src/main/java/org/ole/planet/myplanet/service/sync/SyncManager.kt` | ~1080 |
+| Upload handling | `app/src/main/java/org/ole/planet/myplanet/service/UploadManager.kt` | ~1330 |
+| Team management | `app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt` | ~915 |
 | Build configuration | `app/build.gradle` | ~250 |
 | Dependency versions | `gradle/libs.versions.toml` | ~200 |
 
@@ -1202,6 +1206,6 @@ For questions or clarifications, refer to the Discord community or GitHub issues
 
 ---
 
-**Last Updated**: 2025-11-18
-**Version**: 0.38.5
+**Last Updated**: 2026-01-06
+**Version**: 0.42.56
 **Maintainer**: Open Learning Exchange
