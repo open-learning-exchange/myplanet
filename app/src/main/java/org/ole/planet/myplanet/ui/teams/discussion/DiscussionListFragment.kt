@@ -104,19 +104,8 @@ class DiscussionListFragment : BaseTeamFragment() {
         }
 
         if (shouldQueryTeamFromRealm()) {
-            team = try {
-                mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
-            } catch (e: Exception) {
-                e.printStackTrace()
-                null
-            }
-
-            if (team == null) {
-                try {
-                    team = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId).findFirst()
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
+            lifecycleScope.launch {
+                team = teamsRepository.getTeamById(teamId)
             }
         }
         binding.addMessage.isVisible = false
