@@ -332,36 +332,36 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     private fun addRemoveCourse() {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val isCurrentlyJoined = withContext(Dispatchers.IO) {
+                val isJoined = withContext(Dispatchers.IO) {
                     val course = courseId?.let { coursesRepository.getCourseById(it) }
-                    val isJoined = course?.userId?.contains(userModel?.id) == true
-                    userModel?.id?.let { userId ->
-                        courseId?.let { cId ->
-                            if (isJoined) {
-                                coursesRepository.leaveCourse(cId, userId)
-                            } else {
-                                coursesRepository.joinCourse(cId, userId)
-                            }
+                    course?.userId?.contains(userModel?.id) == true
+                }
+
+                userModel?.id?.let { userId ->
+                    courseId?.let { cId ->
+                        if (isJoined) {
+                            coursesRepository.leaveCourse(cId, userId)
+                        } else {
+                            coursesRepository.joinCourse(cId, userId)
                         }
                     }
+                }
 
+                withContext(Dispatchers.IO) {
                     val updatedCourse = courseId?.let { coursesRepository.getCourseById(it) }
                     if (updatedCourse != null) {
                         currentCourse = updatedCourse
                     }
-                    isJoined
                 }
 
-                withContext(Dispatchers.Main) {
-                    val statusMessage = if (isCurrentlyJoined) {
-                        getString(R.string.removed_from)
-                    } else {
-                        getString(R.string.added_to)
-                    }
-
-                    Utilities.toast(activity, "course $statusMessage ${getString(R.string.my_courses)}")
-                    setCourseData()
+                val statusMessage = if (isJoined) {
+                    getString(R.string.removed_from)
+                } else {
+                    getString(R.string.added_to)
                 }
+
+                Utilities.toast(activity, "course $statusMessage ${getString(R.string.my_courses)}")
+                setCourseData()
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
                     e.printStackTrace()
