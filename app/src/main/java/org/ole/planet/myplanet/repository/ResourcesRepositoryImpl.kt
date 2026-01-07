@@ -10,7 +10,7 @@ import java.util.UUID
 import org.ole.planet.myplanet.model.RealmSearchActivity
 
 class ResourcesRepositoryImpl @Inject constructor(
-    private val databaseService: DatabaseService,
+    databaseService: DatabaseService,
     private val activityRepository: ActivityRepository
 ) : RealmRepository(databaseService), ResourcesRepository {
 
