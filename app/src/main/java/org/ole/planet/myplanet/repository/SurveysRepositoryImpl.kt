@@ -11,7 +11,7 @@ import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.ui.survey.SurveyFormState
-import org.ole.planet.myplanet.ui.survey.SurveyInfo
+import org.ole.planet.myplanet.model.SurveyInfo
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import android.content.SharedPreferences
 import org.ole.planet.myplanet.model.RealmMembershipDoc

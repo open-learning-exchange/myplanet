@@ -33,7 +33,7 @@ class SubmissionListFragment : Fragment() {
     private var parentId: String? = null
     private var examTitle: String? = null
     private var userId: String? = null
-    private lateinit var adapter: SubmissionListAdapter
+    private lateinit var adapter: SubmissionsListAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -67,7 +67,7 @@ class SubmissionListFragment : Fragment() {
             DividerItemDecoration(context, DividerItemDecoration.VERTICAL)
         )
         val listener = activity as? OnHomeItemClickListener
-        adapter = SubmissionListAdapter(requireContext(), listener) { submissionId ->
+        adapter = SubmissionsListAdapter(requireContext(), listener) { submissionId ->
             if (submissionId != null) {
                 generateSubmissionPdf(submissionId)
             }

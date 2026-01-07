@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.survey
+package org.ole.planet.myplanet.model
 
 data class SurveyInfo(
     val surveyId: String,

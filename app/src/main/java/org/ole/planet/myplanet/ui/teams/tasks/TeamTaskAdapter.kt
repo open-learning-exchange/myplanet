@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.teams.task
+package org.ole.planet.myplanet.ui.teams.tasks
 
 import android.app.AlertDialog
 import android.content.Context
@@ -18,7 +18,7 @@ import org.ole.planet.myplanet.callback.OnTaskCompletedListener
 import org.ole.planet.myplanet.databinding.RowTaskBinding
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.ui.teams.task.TeamTaskAdapter.ViewHolderTask
+import org.ole.planet.myplanet.ui.teams.tasks.TeamTaskAdapter.ViewHolderTask
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
