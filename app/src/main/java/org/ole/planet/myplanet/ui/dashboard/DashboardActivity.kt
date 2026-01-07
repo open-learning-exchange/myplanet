@@ -44,6 +44,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import javax.inject.Inject
 import kotlin.math.ceil
+import org.ole.planet.myplanet.data.DatabaseService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -121,7 +122,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     @Inject
     lateinit var notificationsRepository: NotificationsRepository
     private val challengeHelper: ChallengeHelper by lazy {
-        ChallengeHelper(this, user, settings, editor, dashboardViewModel, progressRepository)
+        ChallengeHelper(this, user, settings, editor, dashboardViewModel, progressRepository, databaseService)
     }
     private lateinit var notificationManager: NotificationUtils.NotificationManager
     private var notificationsShownThisSession = false
