@@ -211,4 +211,14 @@ class CoursesRepositoryImpl @Inject constructor(
             RealmRemovedLog.onRemove(realm, "courses", userId, courseId)
         }
     }
+
+    override suspend fun isMyCourse(userId: String?, courseId: String?): Boolean {
+        if (userId.isNullOrBlank() || courseId.isNullOrBlank()) {
+            return false
+        }
+        return queryList(RealmMyCourse::class.java) {
+            equalTo("courseId", courseId)
+            equalTo("userId", userId)
+        }.isNotEmpty()
+    }
 }
