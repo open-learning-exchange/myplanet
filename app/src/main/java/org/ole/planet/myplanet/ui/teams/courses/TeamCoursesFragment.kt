@@ -27,12 +27,12 @@ class TeamCoursesFragment : BaseTeamFragment() {
     
     private fun setupCoursesList() {
         val courses = mRealm.where(RealmMyCourse::class.java).`in`("id", team?.courses?.toTypedArray<String>()).findAll()
-        adapterTeamCourse = settings?.let { TeamCoursesAdapter(requireActivity(), courses.toMutableList(), mRealm, teamId, it) }
+        val courseList = mRealm.copyFromRealm(courses)
+        adapterTeamCourse = settings?.let { TeamCoursesAdapter(requireActivity(), mRealm, teamId, it) }
         binding.rvCourse.layoutManager = LinearLayoutManager(activity)
         binding.rvCourse.adapter = adapterTeamCourse
-        adapterTeamCourse?.let {
-            showNoData(binding.tvNodata, it.itemCount, "teamCourses")
-        }
+        adapterTeamCourse?.submitList(courseList)
+        showNoData(binding.tvNodata, courseList.size, "teamCourses")
     }
     override fun onNewsItemClick(news: RealmNews?) {}
     override fun clearImages() {
