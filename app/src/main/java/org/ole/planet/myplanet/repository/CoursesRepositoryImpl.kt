@@ -9,14 +9,14 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.utilities.JsonUtils
 
 class CoursesRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService
+    private val databaseService: DatabaseService,
+    private val activityRepository: ActivityRepository
 ) : RealmRepository(databaseService), CoursesRepository {
 
     override suspend fun getMyCoursesFlow(userId: String): Flow<List<RealmMyCourse>> {
@@ -82,7 +82,7 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun markCourseAdded(courseId: String, userId: String?): Boolean {
-        if (courseId.isBlank()) {
+        if (courseId.isBlank() || userId.isNullOrBlank()) {
             return false
         }
 
@@ -93,16 +93,12 @@ class CoursesRepositoryImpl @Inject constructor(
                 .findFirst()
                 ?.let { course ->
                     course.setUserId(userId)
-                    if (!userId.isNullOrBlank()) {
-                        realm.where(RealmRemovedLog::class.java)
-                            .equalTo("type", "courses")
-                            .equalTo("userId", userId)
-                            .equalTo("docId", course.courseId)
-                            .findAll()
-                            .deleteAllFromRealm()
-                    }
                     courseFound = true
                 }
+        }
+
+        if (courseFound) {
+            activityRepository.markCourseAdded(userId, courseId)
         }
 
         return courseFound
@@ -198,8 +194,8 @@ class CoursesRepositoryImpl @Inject constructor(
                 .equalTo("courseId", courseId)
                 .findFirst()
             course?.setUserId(userId)
-            RealmRemovedLog.onAdd(realm, "courses", userId, courseId)
         }
+        activityRepository.markCourseAdded(userId, courseId)
     }
 
     override suspend fun leaveCourse(courseId: String, userId: String) {
@@ -208,8 +204,8 @@ class CoursesRepositoryImpl @Inject constructor(
                 .equalTo("courseId", courseId)
                 .findFirst()
             course?.removeUserId(userId)
-            RealmRemovedLog.onRemove(realm, "courses", userId, courseId)
         }
+        activityRepository.markCourseRemoved(userId, courseId)
     }
 
     override suspend fun isMyCourse(userId: String?, courseId: String?): Boolean {

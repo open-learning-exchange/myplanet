@@ -8,9 +8,9 @@ import java.util.UUID
 open class RealmRemovedLog : RealmObject() {
     @PrimaryKey
     var id: String? = null
-    private var userId: String? = null
-    private var type: String? = null
-    private var docId: String? = null
+    internal var userId: String? = null
+    internal var type: String? = null
+    internal var docId: String? = null
 
     companion object {
         @JvmStatic
