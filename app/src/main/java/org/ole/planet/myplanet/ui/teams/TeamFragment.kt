@@ -27,7 +27,7 @@ import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.callback.OnTeamActionsListener
-import org.ole.planet.myplanet.ui.teams.callback.OnUpdateCompleteListener
+import org.ole.planet.myplanet.callback.OnUpdateCompleteListener
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
