@@ -36,17 +36,13 @@ import org.ole.planet.myplanet.ui.life.LifeFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.ui.submissions.SubmissionsFragment
-import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
-import org.ole/planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.ui.teams.TeamFragment
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
+import org.ole.planet.myplanet.di.TeamsRepositoryEntryPoint
+import dagger.hilt.android.EntryPointAccessors
 
-@AndroidEntryPoint
 class BellDashboardFragment : BaseDashboardFragment() {
-    @Inject
-    lateinit var teamsRepository: TeamsRepository
     private var _binding: FragmentHomeBellBinding? = null
     private val binding get() = _binding!!
     private var networkStatusJob: Job? = null
@@ -451,6 +447,11 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     override fun handleClick(id: String?, title: String?, f: Fragment, v: TextView) {
         if (f is TeamDetailFragment) {
+            val hiltEntryPoint = EntryPointAccessors.fromApplication(
+                requireContext(),
+                TeamsRepositoryEntryPoint::class.java
+            )
+            val teamsRepository = hiltEntryPoint.teamsRepository()
             v.text = title
             v.setOnClickListener {
                 lifecycleScope.launch {
