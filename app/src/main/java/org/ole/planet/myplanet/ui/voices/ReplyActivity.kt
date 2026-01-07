@@ -31,7 +31,7 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserProfileService
 import org.ole.planet.myplanet.ui.voices.NewsActions
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
@@ -55,7 +55,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     private val viewModel: ReplyViewModel by viewModels()
     
     @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
+    lateinit var userProfileDbHandler: UserProfileService
     @Inject
     lateinit var userRepository: org.ole.planet.myplanet.repository.UserRepository
     @Inject

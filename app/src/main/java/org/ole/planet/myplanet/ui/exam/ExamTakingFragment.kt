@@ -37,7 +37,7 @@ import org.ole.planet.myplanet.model.RealmMembershipDoc
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
 import org.ole.planet.myplanet.repository.SubmissionsRepository
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserProfileService
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
 import org.ole.planet.myplanet.utilities.JsonUtils
@@ -57,7 +57,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     private val answerCache = mutableMapOf<String, AnswerData>()
 
     @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
+    lateinit var userProfileDbHandler: UserProfileService
 
     @Inject
     lateinit var submissionsRepository: SubmissionsRepository

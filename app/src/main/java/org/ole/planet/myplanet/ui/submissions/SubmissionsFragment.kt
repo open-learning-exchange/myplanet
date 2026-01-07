@@ -19,7 +19,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.databinding.FragmentMySubmissionBinding
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserProfileService
 
 @AndroidEntryPoint
 class SubmissionsFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
@@ -28,7 +28,7 @@ class SubmissionsFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
     private val viewModel: SubmissionViewModel by viewModels()
 
     @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
+    lateinit var userProfileDbHandler: UserProfileService
 
     private lateinit var textWatcher: TextWatcher
     private lateinit var adapter: SubmissionsAdapter

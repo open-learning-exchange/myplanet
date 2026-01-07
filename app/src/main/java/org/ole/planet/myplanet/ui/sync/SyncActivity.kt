@@ -63,7 +63,7 @@ import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.ServerAddress
 import org.ole.planet.myplanet.repository.ConfigurationRepository
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserProfileService
 import org.ole.planet.myplanet.service.sync.SyncManager
 import org.ole.planet.myplanet.service.sync.TransactionSyncManager
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
@@ -114,7 +114,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
     lateinit var syncIconDrawable: AnimationDrawable
     lateinit var prefData: SharedPrefManager
     @Inject
-    lateinit var profileDbHandler: UserProfileDbHandler
+    lateinit var profileDbHandler: UserProfileService
     lateinit var spnCloud: Spinner
     lateinit var protocolCheckIn: RadioGroup
     lateinit var serverUrl: EditText

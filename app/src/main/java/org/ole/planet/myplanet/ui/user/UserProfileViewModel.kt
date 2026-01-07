@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserProfileService
 
 sealed class ProfileUpdateState {
     object Idle : ProfileUpdateState()
@@ -21,7 +21,7 @@ sealed class ProfileUpdateState {
 @HiltViewModel
 class UserProfileViewModel @Inject constructor(
     private val userRepository: UserRepository,
-    private val userProfileDbHandler: UserProfileDbHandler,
+    private val userProfileDbHandler: UserProfileService,
 ) : ViewModel() {
 
     private val _userModel = MutableStateFlow<RealmUserModel?>(null)
