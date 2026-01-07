@@ -16,7 +16,7 @@ import org.ole.planet.myplanet.model.TagData
 import org.ole.planet.myplanet.callback.OnTagClickListener
 import org.ole.planet.myplanet.utilities.DiffUtils
 
-class TagAdapter(
+class ResourcesTagsAdapter(
     private val listener: OnTagClickListener
 ) : ListAdapter<TagData, RecyclerView.ViewHolder>(
     DiffUtils.itemCallback(
