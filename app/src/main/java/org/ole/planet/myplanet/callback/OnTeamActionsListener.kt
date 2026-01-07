@@ -1,7 +1,7 @@
 package org.ole.planet.myplanet.callback
 
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.ui.teams.TeamDetails
+import org.ole.planet.myplanet.model.TeamDetails
 
 interface OnTeamActionsListener {
     fun onLeaveTeam(team: TeamDetails, user: RealmUserModel?)
