@@ -16,7 +16,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemTeamListBinding
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
-import org.ole.planet.myplanet.ui.teams.callback.OnTeamActionsListener
+import org.ole.planet.myplanet.callback.OnTeamActionsListener
 import org.ole.planet.myplanet.ui.teams.callback.OnUpdateCompleteListener
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.NavigationHelper
