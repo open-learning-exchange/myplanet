@@ -37,9 +37,8 @@ class AutoSyncWorker(
     private lateinit var uploadToShelfService: UploadToShelfService
     private val workerScope = CoroutineScope(Dispatchers.IO)
     override fun doWork(): Result {
-        preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        
         val entryPoint = EntryPointAccessors.fromApplication(context, AutoSyncEntryPoint::class.java)
+        preferences = entryPoint.sharedPreferences()
         syncManager = entryPoint.syncManager()
         uploadManager = entryPoint.uploadManager()
         uploadToShelfService = entryPoint.uploadToShelfService()
