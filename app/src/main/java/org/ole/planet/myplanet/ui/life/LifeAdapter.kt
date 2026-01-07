@@ -28,7 +28,7 @@ import org.ole.planet.myplanet.repository.LifeRepository
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment
 import org.ole.planet.myplanet.ui.health.MyHealthFragment
 import org.ole.planet.myplanet.ui.personals.PersonalsFragment
-import org.ole.planet.myplanet.ui.references.ReferenceFragment
+import org.ole.planet.myplanet.ui.references.ReferencesFragment
 import org.ole.planet.myplanet.ui.submissions.SubmissionsFragment
 import org.ole.planet.myplanet.ui.submissions.SubmissionsFragment.Companion.newInstance
 import org.ole.planet.myplanet.ui.user.AchievementFragment
@@ -155,7 +155,7 @@ class LifeAdapter(
                 "ic_my_survey" -> return newInstance("survey")
                 "ic_myhealth" -> return MyHealthFragment()
                 "ic_calendar" -> return CalendarFragment()
-                "ic_references" -> return ReferenceFragment()
+                "ic_references" -> return ReferencesFragment()
                 "my_achievement" -> return AchievementFragment()
             }
             return null

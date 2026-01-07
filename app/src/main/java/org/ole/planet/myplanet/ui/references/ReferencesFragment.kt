@@ -11,14 +11,14 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
-import org.ole.planet.myplanet.databinding.FragmentReferenceBinding
+import org.ole.planet.myplanet.databinding.FragmentReferencesBinding
 import org.ole.planet.myplanet.databinding.RowReferenceBinding
 import org.ole.planet.myplanet.model.Reference
 import org.ole.planet.myplanet.ui.dictionary.DictionaryActivity
 import org.ole.planet.myplanet.ui.maps.OfflineMapsActivity
 
-class ReferenceFragment : Fragment() {
-    private var _binding: FragmentReferenceBinding? = null
+class ReferencesFragment : Fragment() {
+    private var _binding: FragmentReferencesBinding? = null
     private val binding get() = _binding!!
     private lateinit var rowReferenceBinding: RowReferenceBinding
     private var homeItemClickListener: OnHomeItemClickListener? = null
@@ -29,7 +29,7 @@ class ReferenceFragment : Fragment() {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentReferenceBinding.inflate(inflater, container, false)
+        _binding = FragmentReferencesBinding.inflate(inflater, container, false)
         val list = listOf(
             Reference(getString(R.string.maps), android.R.drawable.ic_dialog_map),
             Reference(getString(R.string.english_dictionary), R.drawable.ic_dictionary)
