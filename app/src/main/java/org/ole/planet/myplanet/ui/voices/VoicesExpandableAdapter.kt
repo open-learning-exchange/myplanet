@@ -11,7 +11,7 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import org.ole.planet.myplanet.R
 
-class ExpandableListAdapter(private val context: Context, private val expandableTitleList: List<String>, private val expandableDetailList: HashMap<String, List<String>>) : BaseExpandableListAdapter() {
+class VoicesExpandableAdapter(private val context: Context, private val expandableTitleList: List<String>, private val expandableDetailList: HashMap<String, List<String>>) : BaseExpandableListAdapter() {
     override fun getChild(lstPosn: Int, expandedListPosition: Int): Any {
         return expandableDetailList[expandableTitleList[lstPosn]]!![expandedListPosition]
     }
