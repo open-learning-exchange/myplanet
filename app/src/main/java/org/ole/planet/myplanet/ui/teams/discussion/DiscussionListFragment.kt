@@ -39,6 +39,8 @@ class DiscussionListFragment : BaseTeamFragment() {
     lateinit var userProfileDbHandler: UserProfileDbHandler
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
+    @Inject
+    lateinit var teamsRepository: TeamsRepository
 
     private var filteredNewsList: List<RealmNews?> = listOf()
 
@@ -103,22 +105,6 @@ class DiscussionListFragment : BaseTeamFragment() {
             }
         }
 
-        if (shouldQueryTeamFromRealm()) {
-            team = try {
-                mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
-            } catch (e: Exception) {
-                e.printStackTrace()
-                null
-            }
-
-            if (team == null) {
-                try {
-                    team = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId).findFirst()
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
-        }
         binding.addMessage.isVisible = false
         return binding.root
     }
@@ -128,13 +114,21 @@ class DiscussionListFragment : BaseTeamFragment() {
         changeLayoutManager(resources.configuration.orientation, binding.rvDiscussion)
 
         viewLifecycleOwner.lifecycleScope.launch {
+            // Asynchronously load the team if necessary
+            if (shouldQueryTeamFromRealm()) {
+                team = teamsRepository.getTeamById(teamId)
+            }
+
+            // Initialize the RecyclerView with an empty list first
+            showRecyclerView(emptyList())
+
+            // Fetch and display the news list
             val realmNewsList = voicesRepository.getFilteredNews(getEffectiveTeamId())
             val count = realmNewsList.size
             voicesRepository.updateTeamNotification(getEffectiveTeamId(), count)
             showRecyclerView(realmNewsList)
-        }
 
-        viewLifecycleOwner.lifecycleScope.launch {
+            // Start collecting flows only after the team is potentially loaded
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     voicesRepository.getDiscussionsByTeamIdFlow(getEffectiveTeamId()).collect {
@@ -142,10 +136,10 @@ class DiscussionListFragment : BaseTeamFragment() {
                     }
                 }
                 combine(isMemberFlow, teamFlow) { isMember, teamData ->
-                    Pair(isMember, teamData?.isPublic == true)
-                }.collectLatest { (isMember, isPublicTeamFromFlow) ->
+                    val isPublic = teamData?.isPublic ?: team?.isPublic ?: false
+                    Pair(isMember, isPublic)
+                }.collectLatest { (isMember, isPublicTeam) ->
                     val isGuest = user?.id?.startsWith("guest") == true
-                    val isPublicTeam = isPublicTeamFromFlow || team?.isPublic == true
                     val canPost = !isGuest && (isMember || isPublicTeam)
                     binding.addMessage.isVisible = canPost
                     (binding.rvDiscussion.adapter as? NewsAdapter)?.setNonTeamMember(!isMember)
