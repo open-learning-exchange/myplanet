@@ -12,23 +12,9 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowAdapterNavigationChildBinding
 import org.ole.planet.myplanet.databinding.RowAdapterNavigationParentBinding
 import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.model.TagData
 import org.ole.planet.myplanet.callback.OnTagClickListener
 import org.ole.planet.myplanet.utilities.DiffUtils
-
-sealed class TagData {
-    data class Parent(
-        val tag: RealmTag,
-        var isExpanded: Boolean = false,
-        val isSelected: Boolean = false,
-        val isSelectMultiple: Boolean = false,
-    ) : TagData()
-
-    data class Child(
-        val tag: RealmTag,
-        val isSelected: Boolean = false,
-        val isSelectMultiple: Boolean = false,
-    ) : TagData()
-}
 
 class TagAdapter(
     private val listener: OnTagClickListener
