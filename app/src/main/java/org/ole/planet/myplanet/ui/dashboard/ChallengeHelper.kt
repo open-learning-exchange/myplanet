@@ -22,7 +22,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.ProgressRepository
-import org.ole.planet.myplanet.ui.components.MarkdownDialog
+import org.ole.planet.myplanet.ui.components.MarkdownDialogFragment
 import org.ole.planet.myplanet.ui.courses.CoursesProgressFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 
@@ -175,7 +175,7 @@ class ChallengeHelper(
             ${activity.getString(R.string.your_earnings, viewModel.calculateIndividualProgress(voiceCount, hasUnfinishedSurvey))}
             ### ${activity.getString(R.string.congratulations)} <br/>
         """.trimIndent()
-                MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount, allVoiceCount, hasUnfinishedSurvey)
+                MarkdownDialogFragment.newInstance(markdownContent, courseStatus, voiceCount, allVoiceCount, hasUnfinishedSurvey)
                     .show(fragmentManager, "markdown_dialog")
             } else {
                 val cappedVoiceCount = minOf(voiceCount, 5)
@@ -191,7 +191,7 @@ class ChallengeHelper(
             ### ${activity.getString(R.string.share_opinion)} $voicesText <br/>
             ### ${activity.getString(R.string.remember_sync)} <br/>
         """.trimIndent()
-                MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount, allVoiceCount, hasUnfinishedSurvey)
+                MarkdownDialogFragment.newInstance(markdownContent, courseStatus, voiceCount, allVoiceCount, hasUnfinishedSurvey)
                     .show(fragmentManager, "markdown_dialog")
             }
         }
