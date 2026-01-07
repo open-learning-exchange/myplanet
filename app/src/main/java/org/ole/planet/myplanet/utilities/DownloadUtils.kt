@@ -24,7 +24,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.service.DownloadWorker
-import org.ole.planet.myplanet.service.MyDownloadService
+import org.ole.planet.myplanet.service.DownloadService
 
 object DownloadUtils {
     private const val DOWNLOAD_CHANNEL = "DownloadChannel"
@@ -146,7 +146,7 @@ object DownloadUtils {
     @RequiresApi(Build.VERSION_CODES.S)
     fun openDownloadService(context: Context?, urls: ArrayList<String>, fromSync: Boolean) {
         context?.let { ctx ->
-            val preferences = ctx.getSharedPreferences(MyDownloadService.PREFS_NAME, Context.MODE_PRIVATE)
+            val preferences = ctx.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
             preferences.edit {
                 putStringSet("url_list_key", urls.toSet())
             }
@@ -158,7 +158,7 @@ object DownloadUtils {
     private fun startDownloadServiceSafely(context: Context, urlsKey: String, fromSync: Boolean) {
         if (canStartForegroundService(context)) {
             try {
-                MyDownloadService.startService(context, urlsKey, fromSync)
+                DownloadService.startService(context, urlsKey, fromSync)
             } catch (e: Exception) {
                 e.printStackTrace()
                 handleForegroundServiceNotAllowed(context, urlsKey, fromSync)

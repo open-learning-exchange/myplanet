@@ -18,7 +18,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.ApiInterface
 import org.ole.planet.myplanet.di.ApiInterfaceEntryPoint
 import org.ole.planet.myplanet.model.Download
-import org.ole.planet.myplanet.service.MyDownloadService
+import org.ole.planet.myplanet.service.DownloadService
 import org.ole.planet.myplanet.service.getBroadcastService
 import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.FileUtils
@@ -27,7 +27,7 @@ import org.ole.planet.myplanet.utilities.UrlUtils
 
 class DownloadWorker(val context: Context, workerParams: WorkerParameters) : CoroutineWorker(context, workerParams) {
     private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-    private val preferences = context.getSharedPreferences(MyDownloadService.PREFS_NAME, Context.MODE_PRIVATE)
+    private val preferences = context.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
     private val apiInterface: ApiInterface by lazy {
         EntryPointAccessors.fromApplication(
             context.applicationContext,
@@ -155,7 +155,7 @@ class DownloadWorker(val context: Context, workerParams: WorkerParameters) : Cor
             }
         }
 
-        val intent = Intent(MyDownloadService.MESSAGE_PROGRESS).apply {
+        val intent = Intent(DownloadService.MESSAGE_PROGRESS).apply {
             putExtra("download", download)
             putExtra("fromSync", fromSync)
         }
