@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.teams.callback
+package org.ole.planet.myplanet.callback
 
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.teams.TeamDetails

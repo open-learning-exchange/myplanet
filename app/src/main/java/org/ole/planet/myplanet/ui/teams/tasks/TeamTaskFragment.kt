@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.teams.task
+package org.ole.planet.myplanet.ui.teams.tasks
 
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
