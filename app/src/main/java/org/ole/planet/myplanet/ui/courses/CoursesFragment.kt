@@ -562,9 +562,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         hideButtons()
     }
 
-    override fun onTagClicked(tag: RealmTag?) {
+    override fun onTagClicked(tag: RealmTag) {
         if (!searchTags.contains(tag)) {
-            tag?.let { searchTags.add(it) }
+            searchTags.add(tag)
         }
         filterCoursesAndUpdateUi()
         showTagText(searchTags, tvSelected)
