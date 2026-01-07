@@ -25,7 +25,7 @@ import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
-import org.ole.planet.myplanet.ui.teams.member.MemberDetailFragment
+import org.ole.planet.myplanet.ui.teams.members.MemberDetailFragment
 import org.ole.planet.myplanet.utilities.JsonUtils
 
 object NewsActions {
