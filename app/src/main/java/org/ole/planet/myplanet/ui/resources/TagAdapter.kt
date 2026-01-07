@@ -12,7 +12,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowAdapterNavigationChildBinding
 import org.ole.planet.myplanet.databinding.RowAdapterNavigationParentBinding
 import org.ole.planet.myplanet.model.RealmTag
-import org.ole.planet.myplanet.ui.callback.OnTagClickListener
+import org.ole.planet.myplanet.callback.OnTagClickListener
 import org.ole.planet.myplanet.utilities.DiffUtils
 
 sealed class TagData {

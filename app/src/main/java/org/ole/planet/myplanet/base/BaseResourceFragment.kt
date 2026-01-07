@@ -47,7 +47,7 @@ import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.service.MyDownloadService
+import org.ole.planet.myplanet.service.DownloadService
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.components.CheckboxListView
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
@@ -375,7 +375,7 @@ abstract class BaseResourceFragment : Fragment() {
                         DashboardActivity.MESSAGE_PROGRESS -> broadcastReceiver.onReceive(requireContext(), intent)
                         "ACTION_NETWORK_CHANGED" -> receiver.onReceive(requireContext(), intent)
                         "SHOW_WIFI_ALERT" -> stateReceiver.onReceive(requireContext(), intent)
-                        MyDownloadService.RESOURCE_NOT_FOUND_ACTION -> resourceNotFoundReceiver.onReceive(requireContext(), intent)
+                        DownloadService.RESOURCE_NOT_FOUND_ACTION -> resourceNotFoundReceiver.onReceive(requireContext(), intent)
                     }
                 }
             }
