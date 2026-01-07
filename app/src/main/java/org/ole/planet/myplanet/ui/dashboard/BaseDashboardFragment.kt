@@ -63,9 +63,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), DashboardActio
     @Inject
     lateinit var transactionSyncManager: TransactionSyncManager
 
-    @Inject
-    lateinit var teamsRepository: TeamsRepository
-
     fun onLoaded(v: View) {
         viewLifecycleOwner.lifecycleScope.launch {
             model = userRepository.getUserModelSuspending()
@@ -455,26 +452,4 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), DashboardActio
         di?.dismiss()
     }
 
-    override fun handleClick(id: String?, title: String?, f: androidx.fragment.app.Fragment, v: TextView) {
-        v.text = title
-        v.setOnClickListener {
-            if (homeItemClickListener != null) {
-                if (f is TeamDetailFragment) {
-                    lifecycleScope.launch {
-                        val teamObject = id?.let { teamsRepository.getTeamById(it) }
-                        val optimizedFragment = TeamDetailFragment.newInstance(
-                            teamId = id ?: "",
-                            teamName = title ?: "",
-                            teamType = teamObject?.type ?: "",
-                            isMyTeam = true
-                        )
-                        prefData.setTeamName(title)
-                        homeItemClickListener?.openCallFragment(optimizedFragment)
-                    }
-                } else {
-                    super.handleClick(id, title, f, v)
-                }
-            }
-        }
-    }
 }

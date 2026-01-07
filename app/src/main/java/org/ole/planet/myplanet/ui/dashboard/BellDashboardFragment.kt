@@ -36,10 +36,17 @@ import org.ole.planet.myplanet.ui.life.LifeFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.ui.submissions.SubmissionsFragment
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
+import org.ole/planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.ui.teams.TeamFragment
+import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 
+@AndroidEntryPoint
 class BellDashboardFragment : BaseDashboardFragment() {
+    @Inject
+    lateinit var teamsRepository: TeamsRepository
     private var _binding: FragmentHomeBellBinding? = null
     private val binding get() = _binding!!
     private var networkStatusJob: Job? = null
@@ -440,5 +447,26 @@ class BellDashboardFragment : BaseDashboardFragment() {
        surveyReminderJob?.cancel()
         super.onDestroyView()
         _binding = null
+    }
+
+    override fun handleClick(id: String?, title: String?, f: Fragment, v: TextView) {
+        if (f is TeamDetailFragment) {
+            v.text = title
+            v.setOnClickListener {
+                lifecycleScope.launch {
+                    val teamObject = id?.let { teamsRepository.getTeamById(it) }
+                    val optimizedFragment = TeamDetailFragment.newInstance(
+                        teamId = id ?: "",
+                        teamName = title ?: "",
+                        teamType = teamObject?.type ?: "",
+                        isMyTeam = true
+                    )
+                    prefData.setTeamName(title)
+                    homeItemClickListener?.openCallFragment(optimizedFragment)
+                }
+            }
+        } else {
+            super.handleClick(id, title, f, v)
+        }
     }
 }
