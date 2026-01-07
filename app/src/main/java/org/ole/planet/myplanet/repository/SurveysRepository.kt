@@ -1,10 +1,12 @@
 package org.ole.planet.myplanet.repository
 
+import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.ui.survey.SurveyFormState
 import org.ole.planet.myplanet.model.SurveyInfo
 
 interface SurveysRepository {
+    suspend fun getExamQuestions(examId: String): List<RealmExamQuestion>
     suspend fun getSurveySubmissionCount(userId: String?): Int
     suspend fun getTeamOwnedSurveys(teamId: String?): List<RealmStepExam>
     suspend fun getAdoptableTeamSurveys(teamId: String?): List<RealmStepExam>
