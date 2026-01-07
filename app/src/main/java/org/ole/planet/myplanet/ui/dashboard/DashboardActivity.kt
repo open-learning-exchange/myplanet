@@ -553,6 +553,28 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
         }
     }
+
+    private suspend fun refreshNotificationsWithRetry(userId: String, maxRetries: Int = 2) {
+        var lastException: Exception? = null
+        repeat(maxRetries) { attempt ->
+            try {
+                notificationsRepository.refresh()
+                val unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
+                withContext(Dispatchers.Main) {
+                    onNotificationCountUpdated(unreadCount)
+                }
+                return
+            } catch (e: Exception) {
+                lastException = e
+                e.printStackTrace()
+                if (attempt < maxRetries - 1) {
+                    delay(300)
+                }
+            }
+        }
+        lastException?.printStackTrace()
+    }
+
     private fun setupRealmListeners() {
         lifecycleScope.launch {
             resourcesRepository.getRecentResources(user?.id ?: "").collect { onRealmDataChange() }
@@ -598,25 +620,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                                     } else {
                                         withContext(Dispatchers.IO) {
                                             delay(300)
-                                            try {
-                                                 notificationsRepository.refresh()
-                                                val unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
-                                                withContext(Dispatchers.Main) {
-                                                    onNotificationCountUpdated(unreadCount)
-                                                }
-                                            } catch (e: Exception) {
-                                                e.printStackTrace()
-                                                delay(300)
-                                                try {
-                                                     notificationsRepository.refresh()
-                                                    val unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
-                                                    withContext(Dispatchers.Main) {
-                                                        onNotificationCountUpdated(unreadCount)
-                                                    }
-                                                } catch (e2: Exception) {
-                                                    e2.printStackTrace()
-                                                }
-                                            }
+                                            refreshNotificationsWithRetry(userId)
                                         }
                                     }
                                 } else {
