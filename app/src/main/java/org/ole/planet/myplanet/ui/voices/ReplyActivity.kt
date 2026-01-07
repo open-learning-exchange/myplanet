@@ -33,7 +33,7 @@ import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.voices.NewsActions
-import org.ole.planet.myplanet.ui.voices.NewsAdapter.OnNewsItemClickListener
+import org.ole.planet.myplanet.ui.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getImagePath
@@ -101,7 +101,6 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
                 newsAdapter = NewsAdapter(this@ReplyActivity, user, news, "", null, userProfileDbHandler, lifecycleScope, userRepository, voicesRepository, teamsRepository)
                 newsAdapter.sharedPrefManager = sharedPrefManager
                 newsAdapter.setListener(this@ReplyActivity)
-                newsAdapter.setmRealm(realm)
                 newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
                 newsAdapter.setNonTeamMember(intent.getBooleanExtra("nonTeamMember", false))
                 newsAdapter.setImageList(imageList)

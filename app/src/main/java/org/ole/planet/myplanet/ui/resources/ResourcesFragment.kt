@@ -21,8 +21,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
 import fisk.chipcloud.ChipDeletedListener
-import java.util.Calendar
-import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -606,18 +604,15 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 add("mediaType", getJsonArrayFromList(mediums))
             }
             val filterPayload = Gson().toJson(filter)
-            val createdAt = Calendar.getInstance().timeInMillis
-            val activityId = UUID.randomUUID().toString()
 
-            databaseService.executeTransactionAsync { realm ->
-                val activity = realm.createObject(RealmSearchActivity::class.java, activityId)
-                activity.user = userName
-                activity.time = createdAt
-                activity.createdOn = planetCode
-                activity.parentCode = parentCode
-                activity.text = searchText
-                activity.type = "resources"
-                activity.filter = filterPayload
+            lifecycleScope.launch {
+                resourcesRepository.saveSearchActivity(
+                    userName,
+                    searchText,
+                    planetCode,
+                    parentCode,
+                    filterPayload
+                )
             }
         }
     }

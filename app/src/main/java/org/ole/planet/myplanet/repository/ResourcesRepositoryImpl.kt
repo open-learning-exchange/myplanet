@@ -5,9 +5,12 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import java.util.Calendar
+import java.util.UUID
 import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onAdd
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onRemove
+import org.ole.planet.myplanet.model.RealmSearchActivity
 
 class ResourcesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
@@ -176,6 +179,25 @@ class ResourcesRepositoryImpl @Inject constructor(
             for (library in libraries) {
                 library.resourceOffline = isOffline
             }
+        }
+    }
+
+    override suspend fun saveSearchActivity(
+        userName: String,
+        searchText: String,
+        planetCode: String,
+        parentCode: String,
+        filterPayload: String
+    ) {
+        executeTransaction { realm ->
+            val activity = realm.createObject(RealmSearchActivity::class.java, UUID.randomUUID().toString())
+            activity.user = userName
+            activity.time = Calendar.getInstance().timeInMillis
+            activity.createdOn = planetCode
+            activity.parentCode = parentCode
+            activity.text = searchText
+            activity.type = "resources"
+            activity.filter = filterPayload
         }
     }
 }

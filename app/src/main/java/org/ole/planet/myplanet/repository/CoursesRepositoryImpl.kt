@@ -1,5 +1,8 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.JsonObject
+import java.util.Calendar
+import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.data.DatabaseService
@@ -7,7 +10,10 @@ import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRemovedLog
+import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.utilities.JsonUtils
 
 class CoursesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
@@ -155,5 +161,64 @@ class CoursesRepositoryImpl @Inject constructor(
                 .sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
             realm.copyFromRealm(sortedList)
         }
+    }
+
+    override suspend fun saveSearchActivity(
+        searchText: String,
+        userName: String,
+        planetCode: String,
+        parentCode: String,
+        tags: List<RealmTag>,
+        grade: String,
+        subject: String
+    ) {
+        executeTransaction { realm ->
+            val activity = realm.createObject(
+                RealmSearchActivity::class.java,
+                UUID.randomUUID().toString()
+            )
+            activity.user = userName
+            activity.time = Calendar.getInstance().timeInMillis
+            activity.createdOn = planetCode
+            activity.parentCode = parentCode
+            activity.text = searchText
+            activity.type = "courses"
+            val filter = JsonObject()
+
+            filter.add("tags", RealmTag.getTagsArray(tags))
+            filter.addProperty("doc.gradeLevel", grade)
+            filter.addProperty("doc.subjectLevel", subject)
+            activity.filter = JsonUtils.gson.toJson(filter)
+        }
+    }
+
+    override suspend fun joinCourse(courseId: String, userId: String) {
+        executeTransaction { realm ->
+            val course = realm.where(RealmMyCourse::class.java)
+                .equalTo("courseId", courseId)
+                .findFirst()
+            course?.setUserId(userId)
+            RealmRemovedLog.onAdd(realm, "courses", userId, courseId)
+        }
+    }
+
+    override suspend fun leaveCourse(courseId: String, userId: String) {
+        executeTransaction { realm ->
+            val course = realm.where(RealmMyCourse::class.java)
+                .equalTo("courseId", courseId)
+                .findFirst()
+            course?.removeUserId(userId)
+            RealmRemovedLog.onRemove(realm, "courses", userId, courseId)
+        }
+    }
+
+    override suspend fun isMyCourse(userId: String?, courseId: String?): Boolean {
+        if (userId.isNullOrBlank() || courseId.isNullOrBlank()) {
+            return false
+        }
+        return queryList(RealmMyCourse::class.java) {
+            equalTo("courseId", courseId)
+            equalTo("userId", userId)
+        }.isNotEmpty()
     }
 }
