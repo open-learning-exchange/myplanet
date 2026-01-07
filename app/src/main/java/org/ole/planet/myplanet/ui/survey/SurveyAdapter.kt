@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.survey
 
+import org.ole.planet.myplanet.model.SurveyInfo
 import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
