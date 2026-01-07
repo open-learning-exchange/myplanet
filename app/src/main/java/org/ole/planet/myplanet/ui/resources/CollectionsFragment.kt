@@ -19,7 +19,8 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.TagClickListener
 import org.ole.planet.myplanet.databinding.FragmentCollectionsBinding
 import org.ole.planet.myplanet.model.RealmTag
-import org.ole.planet.myplanet.ui.callback.OnTagClickListener
+import org.ole.planet.myplanet.model.TagData
+import org.ole.planet.myplanet.callback.OnTagClickListener
 import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.utilities.KeyboardUtils
 
