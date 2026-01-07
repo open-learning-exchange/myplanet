@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
+import org.ole.planet.myplanet.data.DatabaseService
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
@@ -27,10 +28,12 @@ class SubmissionListFragment : Fragment() {
     private val binding get() = _binding!!
     @Inject
     lateinit var submissionsRepository: SubmissionsRepository
+    @Inject
+    lateinit var databaseService: DatabaseService
     private var parentId: String? = null
     private var examTitle: String? = null
     private var userId: String? = null
-    private lateinit var adapter: SubmissionListAdapter
+    private lateinit var adapter: SubmissionsListAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,7 +67,7 @@ class SubmissionListFragment : Fragment() {
             DividerItemDecoration(context, DividerItemDecoration.VERTICAL)
         )
         val listener = activity as? OnHomeItemClickListener
-        adapter = SubmissionListAdapter(requireContext(), listener) { submissionId ->
+        adapter = SubmissionsListAdapter(requireContext(), listener) { submissionId ->
             if (submissionId != null) {
                 generateSubmissionPdf(submissionId)
             }
@@ -99,7 +102,7 @@ class SubmissionListFragment : Fragment() {
     private fun generateSubmissionPdf(submissionId: String) {
         viewLifecycleOwner.lifecycleScope.launch {
             binding.progressBar.visibility = View.VISIBLE
-            val file = SubmissionPdfUtils.generateSubmissionPdf(requireContext(), submissionId)
+            val file = SubmissionPdfUtils.generateSubmissionPdf(requireContext(), submissionId, databaseService)
             binding.progressBar.visibility = View.GONE
 
             if (file != null) {
@@ -117,7 +120,8 @@ class SubmissionListFragment : Fragment() {
             val file = SubmissionPdfUtils.generateMultipleSubmissionsPdf(
                 requireContext(),
                 submissionIds,
-                examTitle ?: "Submissions"
+                examTitle ?: "Submissions",
+                databaseService
             )
             binding.progressBar.visibility = View.GONE
 

@@ -12,11 +12,11 @@ import org.ole.planet.myplanet.databinding.ItemSubmissionBinding
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.TimeUtils
 
-class SubmissionListAdapter(
+class SubmissionsListAdapter(
     private val context: Context,
     private val listener: OnHomeItemClickListener?,
     private val onGeneratePdf: (String?) -> Unit
-) : ListAdapter<SubmissionItem, SubmissionListAdapter.ViewHolder>(USER_COMPARATOR) {
+) : ListAdapter<SubmissionItem, SubmissionsListAdapter.ViewHolder>(USER_COMPARATOR) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = ItemSubmissionBinding.inflate(LayoutInflater.from(context), parent, false)
