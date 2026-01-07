@@ -17,6 +17,7 @@ interface CoursesRepository {
     suspend fun markCourseAdded(courseId: String, userId: String?): Boolean
     suspend fun joinCourse(courseId: String, userId: String)
     suspend fun leaveCourse(courseId: String, userId: String)
+    suspend fun isMyCourse(userId: String?, courseId: String?): Boolean
     suspend fun filterCourses(
         searchText: String,
         gradeLevel: String,
