@@ -349,4 +349,10 @@ class SurveysRepositoryImpl @Inject constructor(
                 .count().toInt()
         }
     }
+
+    override suspend fun getExamQuestions(examId: String): List<RealmExamQuestion> {
+        return queryList(RealmExamQuestion::class.java) {
+            equalTo("examId", examId)
+        }
+    }
 }
