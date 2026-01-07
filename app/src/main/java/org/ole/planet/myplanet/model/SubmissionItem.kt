@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.submissions
+package org.ole.planet.myplanet.model
 
 data class SubmissionItem(
     val id: String?,
