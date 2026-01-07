@@ -23,7 +23,7 @@ import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.DashboardElementActivity
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 
-class MarkdownDialog : DialogFragment() {
+class MarkdownDialogFragment : DialogFragment() {
     private lateinit var dialogCampaignChallengeBinding: DialogCampaignChallengeBinding
     private var markdownContent: String = ""
     private var courseStatus: String = ""
@@ -38,8 +38,8 @@ class MarkdownDialog : DialogFragment() {
         private const val ARG_ALL_VOICE_COUNT = "all_voice_count"
         private const val ARG_HAS_UNFINISHED_SURVEY = "has_unfinished_survey"
 
-        fun newInstance(markdownContent: String, courseStatus: String, voiceCount: Int, allVoiceCount: Int, hasUnfinishedSurvey: Boolean): MarkdownDialog {
-            val fragment = MarkdownDialog()
+        fun newInstance(markdownContent: String, courseStatus: String, voiceCount: Int, allVoiceCount: Int, hasUnfinishedSurvey: Boolean): MarkdownDialogFragment {
+            val fragment = MarkdownDialogFragment()
             val args = Bundle().apply {
                 putString(ARG_MARKDOWN_CONTENT, markdownContent)
                 putString(ARG_COURSE_STATUS, courseStatus)
