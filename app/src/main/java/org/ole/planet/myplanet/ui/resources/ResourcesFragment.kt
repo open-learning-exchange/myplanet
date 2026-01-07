@@ -453,12 +453,14 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         hideButton()
     }
 
-    override fun onTagClicked(realmTag: RealmTag) {
+    override fun onTagClicked(realmTag: RealmTag?) {
         tvSelected.visibility = View.VISIBLE
         flexBoxTags.removeAllViews()
         val chipCloud = ChipCloud(activity, flexBoxTags, config)
         chipCloud.setDeleteListener(this)
-        if (!searchTags.contains(realmTag)) searchTags.add(realmTag)
+        if (realmTag != null) {
+            if (!searchTags.contains(realmTag)) searchTags.add(realmTag)
+        }
         chipCloud.addChips(searchTags)
         adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.text.toString(), searchTags))) {
             recyclerView.scrollToPosition(0)
