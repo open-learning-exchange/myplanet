@@ -8,6 +8,7 @@ import android.os.Environment
 import io.realm.Realm
 import java.io.File
 import java.io.FileOutputStream
+import org.ole.planet.myplanet.data.DatabaseService
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -26,14 +27,14 @@ object SubmissionPdfUtils {
 
     suspend fun generateSubmissionPdf(
         context: Context,
-        submissionId: String
-    ): File? = withContext(Dispatchers.IO) {
-        Realm.getDefaultInstance().use { realm ->
-            try {
-                val submission = realm.where(RealmSubmission::class.java).equalTo("id", submissionId).findFirst()
-                    ?: return@use null
+        submissionId: String,
+        databaseService: DatabaseService
+    ): File? = databaseService.withRealmAsync { realm ->
+        try {
+            val submission = realm.where(RealmSubmission::class.java).equalTo("id", submissionId).findFirst()
+                ?: return@withRealmAsync null
 
-                val document = PdfDocument()
+            val document = PdfDocument()
                 var pageNumber = 1
                 var pageInfo = PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber).create()
                 var page = document.startPage(pageInfo)
@@ -108,23 +109,22 @@ object SubmissionPdfUtils {
                 e.printStackTrace()
                 null
             }
-        }
     }
 
     suspend fun generateMultipleSubmissionsPdf(
         context: Context,
         submissionIds: List<String>,
-        examTitle: String
-    ): File? = withContext(Dispatchers.IO) {
-        Realm.getDefaultInstance().use { realm ->
-            try {
-                val submissions = submissionIds.mapNotNull { id ->
-                    realm.where(RealmSubmission::class.java).equalTo("id", id).findFirst()
-                }
+        examTitle: String,
+        databaseService: DatabaseService
+    ): File? = databaseService.withRealmAsync { realm ->
+        try {
+            val submissions = submissionIds.mapNotNull { id ->
+                realm.where(RealmSubmission::class.java).equalTo("id", id).findFirst()
+            }
 
-                if (submissions.isEmpty()) return@use null
+            if (submissions.isEmpty()) return@withRealmAsync null
 
-                val document = PdfDocument()
+            val document = PdfDocument()
                 var pageNumber = 1
                 var pageInfo = PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber).create()
                 var page = document.startPage(pageInfo)
@@ -219,7 +219,6 @@ object SubmissionPdfUtils {
                 e.printStackTrace()
                 null
             }
-        }
     }
 
     private fun drawMultilineText(canvas: Canvas, text: String, x: Float, y: Float, paint: Paint, maxWidth: Float): Float {
