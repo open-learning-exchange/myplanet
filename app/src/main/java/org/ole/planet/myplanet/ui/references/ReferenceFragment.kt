@@ -15,7 +15,7 @@ import org.ole.planet.myplanet.databinding.FragmentReferenceBinding
 import org.ole.planet.myplanet.databinding.RowReferenceBinding
 import org.ole.planet.myplanet.model.Reference
 import org.ole.planet.myplanet.ui.dictionary.DictionaryActivity
-import org.ole.planet.myplanet.ui.map.OfflineMapActivity
+import org.ole.planet.myplanet.ui.maps.OfflineMapsActivity
 
 class ReferenceFragment : Fragment() {
     private var _binding: FragmentReferenceBinding? = null
@@ -51,7 +51,7 @@ class ReferenceFragment : Fragment() {
                 rowReferenceBinding.icon.setImageResource(list[position].icon)
                 rowReferenceBinding.root.setOnClickListener {
                     if (position == 0)
-                        startActivity(Intent(activity, OfflineMapActivity::class.java))
+                        startActivity(Intent(activity, OfflineMapsActivity::class.java))
                     else {
                         startActivity(Intent(activity, DictionaryActivity::class.java))
                     }

@@ -20,10 +20,10 @@ import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.di.WorkerDependenciesEntryPoint
+import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.NetworkUtils
-import org.ole.planet.myplanet.utilities.ServerUrlMapper
 
 class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters) : CoroutineWorker(context, workerParams) {
     private val workerEntryPoint = EntryPointAccessors.fromApplication(
@@ -31,7 +31,7 @@ class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters)
         WorkerDependenciesEntryPoint::class.java
     )
     private val uploadManager = workerEntryPoint.uploadManager()
-    private val submissionRepository = workerEntryPoint.submissionRepository()
+    private val submissionsRepository = workerEntryPoint.submissionsRepository()
     companion object {
         private const val NOTIFICATION_ID = 1001
         private const val CHANNEL_ID = "server_reachability_channel"
@@ -182,7 +182,7 @@ class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters)
 
     private suspend fun uploadSubmissions() {
         try {
-            if (submissionRepository.hasPendingOfflineSubmissions()) {
+            if (submissionsRepository.hasPendingOfflineSubmissions()) {
                 withContext(Dispatchers.IO) {
                     uploadManager.uploadSubmissions()
                 }
@@ -194,7 +194,7 @@ class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters)
     }
 
     private suspend fun uploadExamResultWrapper() {
-        if (!submissionRepository.hasPendingExamResults()) {
+        if (!submissionsRepository.hasPendingExamResults()) {
             return
         }
 

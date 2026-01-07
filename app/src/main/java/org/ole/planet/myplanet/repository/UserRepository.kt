@@ -3,8 +3,8 @@ package org.ole.planet.myplanet.repository
 import android.content.SharedPreferences
 import com.google.gson.JsonObject
 import io.realm.Sort
+import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.ui.myhealth.HealthRecord
 
 interface UserRepository {
     suspend fun getUserById(userId: String): RealmUserModel?
@@ -52,6 +52,8 @@ interface UserRepository {
     )
 
     suspend fun becomeMember(obj: JsonObject): Pair<Boolean, String>
+
+    suspend fun searchUsers(query: String, sortField: String, sortOrder: Sort): List<RealmUserModel>
     suspend fun getHealthRecordsAndAssociatedUsers(
         userId: String,
         currentUser: RealmUserModel
@@ -60,4 +62,6 @@ interface UserRepository {
     fun getUserModel(): RealmUserModel?
     suspend fun getUserModelSuspending(): RealmUserModel?
     fun getActiveUserId(): String
+    suspend fun validateUsername(username: String): String?
+    suspend fun cleanupDuplicateUsers()
 }

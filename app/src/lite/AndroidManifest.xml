@@ -57,7 +57,7 @@
         android:networkSecurityConfig="@xml/network_security_config"
         tools:replace="android:label">
         <activity
-            android:name=".ui.onboarding.OnBoardingActivity"
+            android:name=".ui.onboarding.OnboardingActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -70,26 +70,26 @@
             android:configChanges="screenSize|screenLayout|orientation|keyboardHidden|keyboard"/>
 
         <activity
-            android:name=".ui.userprofile.BecomeMemberActivity"
+            android:name=".ui.user.BecomeMemberActivity"
             android:windowSoftInputMode="adjustResize|stateHidden"
             android:theme="@style/AppTheme" />
         <activity
             android:name=".ui.courses.CourseProgressActivity"
             android:theme="@style/AppTheme" />
         <activity
-            android:name=".ui.myhealth.AddMyHealthActivity"
+            android:name=".ui.health.AddMyHealthActivity"
             android:theme="@style/AppTheme" />
         <activity
-            android:name=".ui.myhealth.AddExaminationActivity"
+            android:name=".ui.health.AddExaminationActivity"
             android:theme="@style/AppTheme" />
-        <activity android:name=".ui.map.OfflineMapActivity" />
+        <activity android:name=".ui.maps.OfflineMapsActivity" />
         <activity
-            android:name=".ui.news.ReplyActivity"
+            android:name=".ui.voices.ReplyActivity"
             android:theme="@style/AppTheme" />
         <activity
             android:name=".ui.resources.AddResourceActivity"
             android:theme="@style/AppTheme" />
-        <activity android:name=".ui.viewer.AudioPlayerActivity"
+        <activity android:name=".ui.reader.AudioPlayerActivity"
             android:configChanges="orientation|screenSize" />
         <activity
             android:name=".ui.feedback.FeedbackDetailActivity"
@@ -100,19 +100,19 @@
             android:label="@string/title_activity_dashboard"
             android:windowSoftInputMode="adjustResize"
             android:theme="@style/FullscreenTheme" />
-        <activity android:name=".ui.viewer.PDFReaderActivity"
+        <activity android:name=".ui.reader.PDFReaderActivity"
             android:configChanges="orientation|screenSize" />
-        <activity android:name=".ui.viewer.WebViewActivity"
+        <activity android:name=".ui.reader.WebViewActivity"
             android:configChanges="orientation|screenSize" />
-        <activity android:name=".ui.viewer.VideoPlayerActivity"
+        <activity android:name=".ui.reader.VideoViewerActivity"
             android:configChanges="orientation|screenSize" />
-        <activity android:name=".ui.viewer.ImageViewerActivity"
+        <activity android:name=".ui.reader.ImageViewerActivity"
             android:configChanges="orientation|screenSize" />
-        <activity android:name=".ui.viewer.TextFileViewerActivity"
+        <activity android:name=".ui.reader.TextFileViewerActivity"
             android:configChanges="orientation|screenSize" />
-        <activity android:name=".ui.viewer.MarkdownViewerActivity"
+        <activity android:name=".ui.reader.MarkdownViewerActivity"
             android:configChanges="orientation|screenSize" />
-        <activity android:name=".ui.viewer.CSVViewerActivity"
+        <activity android:name=".ui.reader.CSVViewerActivity"
             android:configChanges="orientation|screenSize" />
         <activity
             android:name=".ui.dictionary.DictionaryActivity"
@@ -130,7 +130,7 @@
                 android:resource="@xml/file_paths" />
         </provider>
         <service
-            android:name=".datamanager.MyDownloadService"
+            android:name=".service.MyDownloadService"
             android:foregroundServiceType="dataSync"
             android:enabled="true"
             android:permission="android.permission.FOREGROUND_SERVICE"

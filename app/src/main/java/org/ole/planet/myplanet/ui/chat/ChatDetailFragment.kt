@@ -38,26 +38,24 @@ import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.data.ChatApiService
 import org.ole.planet.myplanet.databinding.FragmentChatDetailBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatMessage
 import org.ole.planet.myplanet.model.ChatModel
-import org.ole.planet.myplanet.model.ChatRequestModel
+import org.ole.planet.myplanet.model.ChatRequest
 import org.ole.planet.myplanet.model.ContentData
-import org.ole.planet.myplanet.model.ContinueChatModel
-import org.ole.planet.myplanet.model.Conversation
+import org.ole.planet.myplanet.model.ContinueChatRequest
 import org.ole.planet.myplanet.model.Data
-import org.ole.planet.myplanet.model.RealmChatHistory
-import org.ole.planet.myplanet.model.RealmChatHistory.Companion.addConversationToChatHistory
+import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utilities.DialogUtils
-import org.ole.planet.myplanet.utilities.GsonUtils
-import org.ole.planet.myplanet.utilities.ServerUrlMapper
+import org.ole.planet.myplanet.utilities.JsonUtils
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -86,7 +84,7 @@ class ChatDetailFragment : Fragment() {
     @Inject
     lateinit var chatRepository: ChatRepository
     @Inject
-    lateinit var chatApiHelper: ChatApiHelper
+    lateinit var chatApiService: ChatApiService
     @Inject
     lateinit var userRepository: UserRepository
     private val serverUrlMapper = ServerUrlMapper()
@@ -211,7 +209,7 @@ class ChatDetailFragment : Fragment() {
             customProgressDialog.show()
             try {
                 val messages = withContext(Dispatchers.Default) {
-                    val conversations = GsonUtils.gson.fromJson(newsConversations, Array<Conversation>::class.java).toList()
+                    val conversations = JsonUtils.gson.fromJson(newsConversations, Array<RealmConversation>::class.java).toList()
                     val list = mutableListOf<ChatMessage>()
                     val limit = 20
                     val limitedConversations = if (conversations.size > limit) conversations.takeLast(limit) else conversations
@@ -333,7 +331,7 @@ class ChatDetailFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             updateServerIfNecessary(mapping)
             withContext(Dispatchers.Main) {
-                chatApiHelper.fetchAiProviders { providers ->
+                chatApiService.fetchAiProviders { providers ->
                     sharedViewModel.setAiProvidersLoading(false)
                     if (providers == null || providers.values.all { !it }) {
                         sharedViewModel.setAiProvidersError(true)
@@ -488,7 +486,7 @@ class ChatDetailFragment : Fragment() {
     private fun getModelsMap(): Map<String, String> {
         val modelsString = settings.getString("ai_models", null)
         return if (modelsString != null) {
-            GsonUtils.gson.fromJson(modelsString, object : TypeToken<Map<String, String>>() {}.type)
+            JsonUtils.gson.fromJson(modelsString, object : TypeToken<Map<String, String>>() {}.type)
         } else {
             emptyMap()
         }
@@ -498,14 +496,14 @@ class ChatDetailFragment : Fragment() {
         json.toRequestBody(jsonMediaType)
 
     private fun createContinueChatRequest(message: String, aiProvider: AiProvider, id: String, rev: String): RequestBody {
-        val continueChatData = ContinueChatModel(data = Data("${user?.name}", message, aiProvider, id, rev), save = true)
-        val jsonContent = GsonUtils.gson.toJson(continueChatData)
+        val continueChatData = ContinueChatRequest(data = Data("${user?.name}", message, aiProvider, id, rev), save = true)
+        val jsonContent = JsonUtils.gson.toJson(continueChatData)
         return jsonRequestBody(jsonContent)
     }
 
     private fun createChatRequest(message: String, aiProvider: AiProvider): RequestBody {
-        val chatData = ChatRequestModel(data = ContentData("${user?.name}", message, aiProvider), save = true)
-        val jsonContent = GsonUtils.gson.toJson(chatData)
+        val chatData = ChatRequest(data = ContentData("${user?.name}", message, aiProvider), save = true)
+        val jsonContent = JsonUtils.gson.toJson(chatData)
         return jsonRequestBody(jsonContent)
     }
 
@@ -520,7 +518,7 @@ class ChatDetailFragment : Fragment() {
 
     private fun sendChatRequest(content: RequestBody, query: String, id: String?, newChat: Boolean) {
         viewLifecycleOwner.lifecycleScope.launch {
-            chatApiHelper.sendChatRequest(content, object : Callback<ChatModel> {
+            chatApiService.sendChatRequest(content, object : Callback<ChatModel> {
                 override fun onResponse(call: Call<ChatModel>, response: Response<ChatModel>) {
                     handleResponse(response, query, id)
                 }
@@ -574,7 +572,7 @@ class ChatDetailFragment : Fragment() {
             try {
                 chatRepository.saveNewChat(jsonObject)
                 if (isAdded && activity is DashboardActivity) {
-                    (activity as DashboardActivity).refreshChatHistoryList()
+                    (activity as DashboardActivity).refreshChatHistory()
                 }
             } catch (e: Exception) {
                 if (isAdded) {
@@ -626,7 +624,7 @@ class ChatDetailFragment : Fragment() {
                 chatRepository.continueConversation(realmChatId, query, chatResponse, _rev)
                 withContext(Dispatchers.Main) {
                     if (isAdded && activity is DashboardActivity) {
-                        (activity as DashboardActivity).refreshChatHistoryList()
+                        (activity as DashboardActivity).refreshChatHistory()
                     }
                 }
             } catch (e: Exception) {

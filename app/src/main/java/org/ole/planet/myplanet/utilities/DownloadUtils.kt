@@ -21,10 +21,10 @@ import java.util.regex.Pattern
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.datamanager.DownloadWorker
-import org.ole.planet.myplanet.datamanager.MyDownloadService
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.repository.LibraryRepository
+import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.service.DownloadWorker
+import org.ole.planet.myplanet.service.MyDownloadService
 
 object DownloadUtils {
     private const val DOWNLOAD_CHANNEL = "DownloadChannel"
@@ -250,24 +250,24 @@ object DownloadUtils {
 
         MainApplication.applicationScope.launch {
             try {
-                libraryRepository.markResourceOfflineByLocalAddress(currentFileName)
+                resourcesRepository.markResourceOfflineByLocalAddress(currentFileName)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
     }
 
-    private val libraryRepository: LibraryRepository by lazy {
+    private val resourcesRepository: ResourcesRepository by lazy {
         val entryPoint = EntryPointAccessors.fromApplication(
             MainApplication.context,
             DownloadUtilsEntryPoint::class.java
         )
-        entryPoint.libraryRepository()
+        entryPoint.resourcesRepository()
     }
 
     @EntryPoint
     @InstallIn(SingletonComponent::class)
     interface DownloadUtilsEntryPoint {
-        fun libraryRepository(): LibraryRepository
+        fun resourcesRepository(): ResourcesRepository
     }
 }

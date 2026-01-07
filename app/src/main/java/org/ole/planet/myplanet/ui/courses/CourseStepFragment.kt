@@ -25,12 +25,12 @@ import org.ole.planet.myplanet.model.RealmMyCourse.Companion.isMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.ui.exam.TakeExamFragment
-import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
+import org.ole.planet.myplanet.ui.components.CustomClickableSpan
+import org.ole.planet.myplanet.ui.exam.ExamTakingFragment
+import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.utilities.CameraUtils
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
-import org.ole.planet.myplanet.utilities.CustomClickableSpan
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 
@@ -193,7 +193,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         viewLifecycleOwner.lifecycleScope.launch {
             if (stepExams.isNotEmpty()) {
                 val firstStepId = stepExams[0].id
-                val isTestPresent = submissionRepository.hasSubmission(firstStepId, step.courseId, user?.id, "exam")
+                val isTestPresent = submissionsRepository.hasSubmission(firstStepId, step.courseId, user?.id, "exam")
                 fragmentCourseStepBinding.btnTakeTest.text = if (isTestPresent) {
                     getString(R.string.retake_test, stepExams.size)
                 } else {
@@ -203,7 +203,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
             }
             if (stepSurvey.isNotEmpty()) {
                 val firstStepId = stepSurvey[0].id
-                val isSurveyPresent = submissionRepository.hasSubmission(firstStepId, step.courseId, user?.id, "survey")
+                val isSurveyPresent = submissionsRepository.hasSubmission(firstStepId, step.courseId, user?.id, "survey")
                 fragmentCourseStepBinding.btnTakeSurvey.text = if (isSurveyPresent) {
                     getString(R.string.redo_survey)
                 } else {
@@ -232,14 +232,14 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
 
     private fun setListeners() {
         viewLifecycleOwner.lifecycleScope.launch {
-            val notDownloadedResources = libraryRepository.getStepResources(stepId, resourceOffline = false)
+            val notDownloadedResources = resourcesRepository.getStepResources(stepId, resourceOffline = false)
             setResourceButton(notDownloadedResources, fragmentCourseStepBinding.btnResources)
-            val downloadedResources = libraryRepository.getStepResources(stepId, resourceOffline = true)
+            val downloadedResources = resourcesRepository.getStepResources(stepId, resourceOffline = true)
             setOpenResourceButton(downloadedResources, fragmentCourseStepBinding.btnOpen)
         }
         fragmentCourseStepBinding.btnTakeTest.setOnClickListener {
             if (stepExams.isNotEmpty()) {
-                val takeExam: Fragment = TakeExamFragment()
+                val takeExam: Fragment = ExamTakingFragment()
                 val b = Bundle()
                 b.putString("stepId", stepId)
                 b.putInt("stepNum", stepNumber)
@@ -251,7 +251,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
 
         fragmentCourseStepBinding.btnTakeSurvey.setOnClickListener {
             if (stepSurvey.isNotEmpty()) {
-                AdapterMySubmission.openSurvey(homeItemClickListener, stepSurvey[0].id, false, false, "")
+                SubmissionsAdapter.openSurvey(homeItemClickListener, stepSurvey[0].id, false, false, "")
             }
         }
         fragmentCourseStepBinding.btnResources.visibility = View.GONE

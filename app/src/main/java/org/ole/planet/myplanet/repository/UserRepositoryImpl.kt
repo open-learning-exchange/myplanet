@@ -4,7 +4,9 @@ import android.content.Context
 import android.content.SharedPreferences
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.text.Normalizer
 import java.util.Calendar
+import java.util.regex.Pattern
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
@@ -12,15 +14,16 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.datamanager.ApiInterface
-import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.data.ApiInterface
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
 import org.ole.planet.myplanet.service.UploadToShelfService
-import org.ole.planet.myplanet.ui.myhealth.HealthRecord
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
+import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.UrlUtils
 
 class UserRepositoryImpl @Inject constructor(
@@ -55,6 +58,17 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun getUsersSortedBy(fieldName: String, sortOrder: io.realm.Sort): List<RealmUserModel> {
         return queryList(RealmUserModel::class.java) {
             sort(fieldName, sortOrder)
+        }
+    }
+
+    override suspend fun searchUsers(query: String, sortField: String, sortOrder: io.realm.Sort): List<RealmUserModel> {
+        return withRealm { realm ->
+            val results = realm.where(RealmUserModel::class.java)
+                .contains("firstName", query, io.realm.Case.INSENSITIVE).or()
+                .contains("lastName", query, io.realm.Case.INSENSITIVE).or()
+                .contains("name", query, io.realm.Case.INSENSITIVE)
+                .sort(sortField, sortOrder).findAll()
+            realm.copyFromRealm(results)
         }
     }
 
@@ -329,9 +343,9 @@ class UserRepositoryImpl @Inject constructor(
         userId: String,
         currentUser: RealmUserModel
     ): HealthRecord? = withRealm { realm ->
-        var mh = realm.where(org.ole.planet.myplanet.model.RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
+        var mh = realm.where(org.ole.planet.myplanet.model.RealmHealthExamination::class.java).equalTo("_id", userId).findFirst()
         if (mh == null) {
-            mh = realm.where(org.ole.planet.myplanet.model.RealmMyHealthPojo::class.java).equalTo("userId", userId).findFirst()
+            mh = realm.where(org.ole.planet.myplanet.model.RealmHealthExamination::class.java).equalTo("userId", userId).findFirst()
         }
         if (mh == null) return@withRealm null
 
@@ -340,7 +354,7 @@ class UserRepositoryImpl @Inject constructor(
             null
         } else {
             try {
-                org.ole.planet.myplanet.utilities.GsonUtils.gson.fromJson(json, org.ole.planet.myplanet.model.RealmMyHealth::class.java)
+                org.ole.planet.myplanet.utilities.JsonUtils.gson.fromJson(json, org.ole.planet.myplanet.model.RealmMyHealth::class.java)
             } catch (e: Exception) {
                 e.printStackTrace()
                 null
@@ -348,7 +362,7 @@ class UserRepositoryImpl @Inject constructor(
         }
         if (mm == null) return@withRealm null
 
-        val healths = realm.where(org.ole.planet.myplanet.model.RealmMyHealthPojo::class.java).equalTo("profileId", mm.userKey).findAll()
+        val healths = realm.where(org.ole.planet.myplanet.model.RealmHealthExamination::class.java).equalTo("profileId", mm.userKey).findAll()
         val list = realm.copyFromRealm(healths)
         if (list.isEmpty()) {
             return@withRealm HealthRecord(mh, mm, emptyList(), emptyMap())
@@ -367,5 +381,58 @@ class UserRepositoryImpl @Inject constructor(
             realm.copyFromRealm(users).filter { it.id != null }.associateBy { it.id!! }
         }
         HealthRecord(mh, mm, list, userMap)
+    }
+
+    override suspend fun validateUsername(username: String): String? {
+        val specialCharPattern = Pattern.compile(
+            ".*[ßäöüéèêæÆœøØ¿àìòùÀÈÌÒÙáíóúýÁÉÍÓÚÝâîôûÂÊÎÔÛãñõÃÑÕëïÿÄËÏÖÜŸåÅŒçÇðÐ].*"
+        )
+
+        val firstChar = username.firstOrNull()
+        when {
+            username.isEmpty() -> return context.getString(R.string.username_cannot_be_empty)
+            username.contains(" ") -> return context.getString(R.string.invalid_username)
+            firstChar != null && !firstChar.isDigit() && !firstChar.isLetter() ->
+                return context.getString(R.string.must_start_with_letter_or_number)
+            username.any { it != '_' && it != '.' && it != '-' && !it.isDigit() && !it.isLetter() } ||
+            specialCharPattern.matcher(username).matches() ||
+            !Normalizer.normalize(username, Normalizer.Form.NFD).codePoints().allMatch { code ->
+                Character.isLetterOrDigit(code) || code == '.'.code || code == '-'.code || code == '_'.code
+            } -> return context.getString(R.string.only_letters_numbers_and_are_allowed)
+        }
+
+        val isTaken = withRealm { realm ->
+            realm.where(RealmUserModel::class.java)
+                .equalTo("name", username)
+                .not().beginsWith("_id", "guest")
+                .count() > 0L
+        }
+
+        return if (isTaken) context.getString(R.string.username_taken) else null
+    }
+
+    override suspend fun cleanupDuplicateUsers() {
+        withRealm { realm ->
+            val allUsers = realm.where(RealmUserModel::class.java).findAll()
+            val usersByName = allUsers.groupBy { it.name }
+
+            usersByName.forEach { (_, users) ->
+                if (users.size > 1) {
+                    val sortedUsers = users.sortedWith { user1, user2 ->
+                        when {
+                            user1._id?.startsWith("org.couchdb.user:") == true &&
+                                    user2._id?.startsWith("guest_") == true -> -1
+                            user1._id?.startsWith("guest_") == true &&
+                                    user2._id?.startsWith("org.couchdb.user:") == true -> 1
+                            else -> 0
+                        }
+                    }
+
+                    for (i in 1 until sortedUsers.size) {
+                        sortedUsers[i].deleteFromRealm()
+                    }
+                }
+            }
+        }
     }
 }

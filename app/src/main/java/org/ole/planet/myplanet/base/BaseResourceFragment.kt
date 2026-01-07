@@ -28,10 +28,9 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
-import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.datamanager.MyDownloadService
-import org.ole.planet.myplanet.datamanager.Service
-import org.ole.planet.myplanet.datamanager.Service.PlanetAvailableListener
+import org.ole.planet.myplanet.data.DataService
+import org.ole.planet.myplanet.data.DataService.PlanetAvailableListener
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmMyCourse
@@ -44,14 +43,15 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.getExamMap
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.CourseRepository
-import org.ole.planet.myplanet.repository.LibraryRepository
-import org.ole.planet.myplanet.repository.SubmissionRepository
+import org.ole.planet.myplanet.repository.CoursesRepository
+import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.service.MyDownloadService
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.components.CheckboxListView
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
-import org.ole.planet.myplanet.utilities.CheckboxListView
+import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DialogUtils.getProgressDialog
 import org.ole.planet.myplanet.utilities.DialogUtils.showError
@@ -72,11 +72,11 @@ abstract class BaseResourceFragment : Fragment() {
     @Inject
     lateinit var userRepository: UserRepository
     @Inject
-    lateinit var libraryRepository: LibraryRepository
+    lateinit var resourcesRepository: ResourcesRepository
     @Inject
-    lateinit var courseRepository: CourseRepository
+    lateinit var coursesRepository: CoursesRepository
     @Inject
-    lateinit var submissionRepository: SubmissionRepository
+    lateinit var submissionsRepository: SubmissionsRepository
     @Inject
     lateinit var databaseService: DatabaseService
     @Inject
@@ -128,7 +128,7 @@ abstract class BaseResourceFragment : Fragment() {
             val pendingResult = goAsync()
             this@BaseResourceFragment.lifecycleScope.launch {
                 try {
-                    val list = libraryRepository.getLibraryListForUser(
+                    val list = resourcesRepository.getLibraryListForUser(
                         settings.getString("userId", "--")
                     )
                     showDownloadDialog(list)
@@ -187,7 +187,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     protected fun showDownloadDialog(dbMyLibrary: List<RealmMyLibrary?>) {
         if (!isAdded) return
-        Service(requireContext()).isPlanetAvailable(object : PlanetAvailableListener {
+        DataService(requireContext()).isPlanetAvailable(object : PlanetAvailableListener {
             override fun isAvailable() {
                 if (!isAdded) return
                 val userId = profileDbHandler.userModel?.id
@@ -247,14 +247,14 @@ abstract class BaseResourceFragment : Fragment() {
     fun showPendingSurveyDialog() {
         model = profileDbHandler.userModel
         viewLifecycleOwner.lifecycleScope.launch {
-            val list = submissionRepository.getPendingSurveys(model?.id)
+            val list = submissionsRepository.getPendingSurveys(model?.id)
             if (list.isEmpty()) return@launch
             val exams = getExamMap(mRealm, list)
             val arrayAdapter = createSurveyAdapter(list, exams)
             pendingSurveyDialog?.dismiss()
             pendingSurveyDialog = AlertDialog.Builder(requireActivity()).setTitle("Pending Surveys")
                 .setAdapter(arrayAdapter) { _: DialogInterface?, i: Int ->
-                    AdapterMySubmission.openSurvey(homeItemClickListener, list[i].id, true, false, "")
+                    SubmissionsAdapter.openSurvey(homeItemClickListener, list[i].id, true, false, "")
                 }.setPositiveButton(R.string.dismiss, null).create()
             pendingSurveyDialog?.setOnDismissListener {
                 pendingSurveyDialog = null
@@ -311,7 +311,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     fun startDownload(urls: ArrayList<String>) {
         if (!isFragmentActive()) return
-        Service(requireActivity()).isPlanetAvailable(object : PlanetAvailableListener {
+        DataService(requireActivity()).isPlanetAvailable(object : PlanetAvailableListener {
             override fun isAvailable() {
                 if (!isFragmentActive()) return
                 if (urls.isNotEmpty()) {
@@ -537,7 +537,7 @@ abstract class BaseResourceFragment : Fragment() {
         }
 
         fun backgroundDownload(urls: ArrayList<String>, context: Context) {
-            Service(context).isPlanetAvailable(object : PlanetAvailableListener {
+            DataService(context).isPlanetAvailable(object : PlanetAvailableListener {
                 override fun isAvailable() {
                     if (urls.isNotEmpty()) {
                         DownloadUtils.openDownloadService(context, urls, false)

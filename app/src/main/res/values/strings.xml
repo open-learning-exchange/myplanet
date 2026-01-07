@@ -1177,5 +1177,9 @@
     <string name="achievement_saved">Achievement Updated</string>
     <string name="team_name_already_exists">A team with this name already exists</string>
     <string name="enterprise_name_already_exists">An enterprise with this name already exists</string>
+    <string name="downloading_images_please_check_notification">Downloading images, please check notification…</string>
+    <string name="no_images_to_download">No images to download</string>
+    <string name="app_theme">app theme</string>
+    <string name="team_surveys">Team surveys</string>
 
 </resources>

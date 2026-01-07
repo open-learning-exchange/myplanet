@@ -3,12 +3,11 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="org.ole.planet.myplanet.ui.viewer.VideoPlayerActivity">
+    tools:context="org.ole.planet.myplanet.ui.reader.VideoViewerActivity">
 
     <androidx.media3.ui.PlayerView
         android:id="@+id/exo_player_simple"
         android:layout_width="match_parent"
         android:contentDescription="@string/video_player"
         android:layout_height="match_parent" />
-
 </androidx.constraintlayout.widget.ConstraintLayout>

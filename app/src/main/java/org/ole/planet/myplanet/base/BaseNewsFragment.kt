@@ -27,15 +27,15 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ImageThumbBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.ui.navigation.NavigationHelper
-import org.ole.planet.myplanet.ui.news.AdapterNews
-import org.ole.planet.myplanet.ui.news.AdapterNews.OnNewsItemClickListener
-import org.ole.planet.myplanet.ui.news.NewsActions
-import org.ole.planet.myplanet.ui.news.ReplyActivity
+import org.ole.planet.myplanet.ui.callback.OnNewsItemClickListener
+import org.ole.planet.myplanet.ui.voices.NewsActions
+import org.ole.planet.myplanet.ui.voices.NewsAdapter
+import org.ole.planet.myplanet.ui.voices.ReplyActivity
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getRealPathFromURI
-import org.ole.planet.myplanet.utilities.GsonUtils
+import org.ole.planet.myplanet.utilities.JsonUtils
+import org.ole.planet.myplanet.utilities.NavigationHelper
 
 @RequiresApi(api = Build.VERSION_CODES.O)
 abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListener {
@@ -43,7 +43,7 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
     @JvmField
     protected var llImage: ViewGroup? = null
     @JvmField
-    protected var adapterNews: AdapterNews? = null
+    protected var adapterNews: NewsAdapter? = null
     lateinit var openFolderLauncher: ActivityResultLauncher<Intent>
     private lateinit var replyActivityLauncher: ActivityResultLauncher<Intent>
 
@@ -144,7 +144,7 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
         val `object` = JsonObject()
         `object`.addProperty("imageUrl", path)
         `object`.addProperty("fileName", getFileNameFromUrl(path))
-        imageList.add(GsonUtils.gson.toJson(`object`))
+        imageList.add(JsonUtils.gson.toJson(`object`))
 
         try {
             llImage?.visibility = View.VISIBLE

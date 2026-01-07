@@ -26,20 +26,20 @@ import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.callback.TableDataUpdate
 import org.ole.planet.myplanet.databinding.FragmentSurveyBinding
 import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.SurveyBindingData
-import org.ole.planet.myplanet.repository.SurveyRepository
-import org.ole.planet.myplanet.service.SyncManager
+import org.ole.planet.myplanet.repository.SurveysRepository
+import org.ole.planet.myplanet.service.sync.ServerUrlMapper
+import org.ole.planet.myplanet.service.sync.SyncManager
+import org.ole.planet.myplanet.ui.survey.SurveyFormState
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utilities.DialogUtils
-import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 
 @AndroidEntryPoint
 class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListener, RealtimeSyncMixin {
     private var _binding: FragmentSurveyBinding? = null
     private val binding get() = _binding!!
-    private lateinit var adapter: AdapterSurvey
+    private lateinit var adapter: SurveyAdapter
     private var isTeam: Boolean = false
     private var teamId: String? = null
     private var currentIsTeamShareAllowed: Boolean = false
@@ -48,13 +48,13 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
     private var loadSurveysJob: Job? = null
     private var currentSurveys: List<RealmStepExam> = emptyList()
     private val surveyInfoMap = mutableMapOf<String, SurveyInfo>()
-    private val bindingDataMap = mutableMapOf<String, SurveyBindingData>()
+    private val bindingDataMap = mutableMapOf<String, SurveyFormState>()
     private var textWatcher: TextWatcher? = null
 
     @Inject
     lateinit var syncManager: SyncManager
     @Inject
-    lateinit var surveyRepository: SurveyRepository
+    lateinit var surveysRepository: SurveysRepository
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
@@ -77,7 +77,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         isTeam = arguments?.getBoolean("isTeam", false) == true
         teamId = arguments?.getString("teamId", null)
         val userProfileModel = profileDbHandler.userModel
-        adapter = AdapterSurvey(
+        adapter = SurveyAdapter(
             requireActivity(),
             mRealm,
             userProfileModel?.id,
@@ -281,24 +281,31 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
             try {
                 val (surveys, infos, data) = withContext(Dispatchers.IO) {
                     val currentSurveys = when {
-                        isTeam && useTeamShareAllowed -> surveyRepository.getAdoptableTeamSurveys(teamId)
-                        isTeam -> surveyRepository.getTeamOwnedSurveys(teamId)
-                        else -> surveyRepository.getIndividualSurveys()
+                        isTeam && useTeamShareAllowed -> surveysRepository.getAdoptableTeamSurveys(teamId)
+                        isTeam -> surveysRepository.getTeamOwnedSurveys(teamId)
+                        else -> surveysRepository.getIndividualSurveys()
                     }
-                    val surveyInfos = surveyRepository.getSurveyInfos(
+                    val surveyInfos = surveysRepository.getSurveyInfos(
                         isTeam,
                         teamId,
                         userProfileModel?.id,
                         currentSurveys
                     )
-                    val bindingData = surveyRepository.getSurveyBindingData(currentSurveys, teamId)
+                    val bindingData = surveysRepository.getSurveyFormState(currentSurveys, teamId)
                     Triple(currentSurveys, surveyInfos, bindingData)
                 }
-                currentSurveys = surveys
+                currentSurveys = surveys.sortedByDescending { survey ->
+                    if (survey.sourceSurveyId != null) {
+                        if (survey.adoptionDate > 0) survey.adoptionDate else survey.createdDate
+                    } else {
+                        survey.createdDate
+                    }
+                }
                 surveyInfoMap.clear()
                 surveyInfoMap.putAll(infos)
                 bindingDataMap.clear()
                 bindingDataMap.putAll(data)
+                binding.spnSort.setSelection(0, false)
                 applySearchFilter()
             } finally {
                 if (isAdded && _binding != null) {

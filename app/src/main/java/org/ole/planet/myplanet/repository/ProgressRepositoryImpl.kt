@@ -1,10 +1,9 @@
 package org.ole.planet.myplanet.repository
 
-import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import javax.inject.Inject
-import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
@@ -12,6 +11,7 @@ import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.utilities.JsonUtils
 
 class ProgressRepositoryImpl @Inject constructor(databaseService: DatabaseService) : RealmRepository(databaseService), ProgressRepository {
     override suspend fun fetchCourseData(userId: String?): JsonArray {
@@ -97,10 +97,7 @@ class ProgressRepositoryImpl @Inject constructor(databaseService: DatabaseServic
                     }
                 }
             }
-            obj.add(
-                "stepMistake",
-                Gson().fromJson(Gson().toJson(mistakesMap), JsonObject::class.java)
-            )
+            obj.add("stepMistake", JsonUtils.gson.toJsonTree(mistakesMap).asJsonObject)
             obj.addProperty("mistakes", totalMistakes)
         }
     }

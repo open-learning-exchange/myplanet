@@ -23,10 +23,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.databinding.FragmentTakeCourseBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmCourseActivity.Companion.createActivity
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseProgress.Companion.getCurrentProgress
@@ -39,10 +38,10 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.isStepCompleted
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.CourseRepository
+import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.DialogUtils.getDialog
+import org.ole.planet.myplanet.utilities.NavigationHelper
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
@@ -54,7 +53,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     @Inject
-    lateinit var courseRepository: CourseRepository
+    lateinit var coursesRepository: CoursesRepository
     lateinit var mRealm: Realm
     private var currentCourse: RealmMyCourse? = null
     lateinit var steps: List<RealmCourseStep?>
@@ -87,7 +86,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         binding.contentLayout.visibility = View.GONE
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val course: RealmMyCourse? = courseRepository.getDetachedCourseById(courseId)
+            val course: RealmMyCourse? = coursesRepository.getDetachedCourseById(courseId)
             binding.loadingIndicator.visibility = View.GONE
             if (course == null) {
                 Toast.makeText(requireContext(), getString(R.string.failed_to_load_course), Toast.LENGTH_LONG).show()
@@ -99,7 +98,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             binding.tvCourseTitle.text = currentCourse?.courseTitle
 
             withContext(Dispatchers.IO) {
-                steps = courseRepository.getCourseSteps(courseId)
+                steps = coursesRepository.getCourseSteps(courseId)
 
                 if (cachedCourseProgress == null && isFetchingProgress.compareAndSet(false, true)) {
                     try {
@@ -331,20 +330,51 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private fun addRemoveCourse() {
-        if (!mRealm.isInTransaction) mRealm.beginTransaction()
-        if (currentCourse?.userId?.contains(userModel?.id) == true) {
-            currentCourse?.removeUserId(userModel?.id)
-            onRemove(mRealm, "courses", userModel?.id, courseId)
-        } else {
-            currentCourse?.setUserId(userModel?.id)
-            onAdd(mRealm, "courses", userModel?.id, courseId)
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val isCurrentlyJoined = withContext(Dispatchers.IO) {
+                    databaseService.withRealm { realm ->
+                        val course = realm.where(RealmMyCourse::class.java)
+                            .equalTo("courseId", courseId)
+                            .findFirst()
+                        course?.userId?.contains(userModel?.id) == true
+                    }
+                }
+
+                userModel?.id?.let { userId ->
+                    courseId?.let { cId ->
+                        if (isCurrentlyJoined) {
+                            coursesRepository.leaveCourse(cId, userId)
+                        } else {
+                            coursesRepository.joinCourse(cId, userId)
+                        }
+                    }
+                }
+
+                withContext(Dispatchers.Main) {
+                    val updatedCourse = mRealm.where(RealmMyCourse::class.java)
+                        .equalTo("courseId", courseId)
+                        .findFirst()
+                    if (updatedCourse != null) {
+                        currentCourse = mRealm.copyFromRealm(updatedCourse)
+                    }
+
+                    val statusMessage = if (isCurrentlyJoined) {
+                        getString(R.string.removed_from)
+                    } else {
+                        getString(R.string.added_to)
+                    }
+
+                    Utilities.toast(activity, "course $statusMessage ${getString(R.string.my_courses)}")
+                    setCourseData()
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    e.printStackTrace()
+                    Utilities.toast(activity, "Failed to update course: ${e.message}")
+                }
+            }
         }
-        Utilities.toast(activity, "course ${(if (currentCourse?.userId?.contains(userModel?.id) == true) {
-            getString(R.string.added_to)
-        } else {
-            getString(R.string.removed_from)
-        })} ${getString(R.string.my_courses)}")
-        setCourseData()
     }
 
     private suspend fun getCourseProgress(): Int {

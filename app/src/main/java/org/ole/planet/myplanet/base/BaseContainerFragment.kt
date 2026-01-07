@@ -28,15 +28,15 @@ import java.io.File
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.PermissionActivity.Companion.hasInstallPermission
+import org.ole.planet.myplanet.base.BasePermissionActivity.Companion.hasInstallPermission
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_RESOURCE_DOWNLOAD
-import org.ole.planet.myplanet.ui.navigation.NavigationHelper
-import org.ole.planet.myplanet.ui.viewer.WebViewActivity
+import org.ole.planet.myplanet.ui.reader.WebViewActivity
 import org.ole.planet.myplanet.utilities.CourseRatingUtils
 import org.ole.planet.myplanet.utilities.FileUtils
+import org.ole.planet.myplanet.utilities.NavigationHelper
 import org.ole.planet.myplanet.utilities.ResourceOpener
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.UrlUtils
@@ -174,7 +174,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val resource = items.resourceId?.let { libraryRepository.getLibraryItemByResourceId(it) }
+            val resource = items.resourceId?.let { resourcesRepository.getLibraryItemByResourceId(it) }
             val downloadUrls = resource?.attachments
                 ?.mapNotNull { attachment ->
                     attachment.name?.let { name ->
@@ -209,7 +209,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     private fun openNonHtmlResource(items: RealmMyLibrary) {
         viewLifecycleOwner.lifecycleScope.launch {
             val matchingItems = items.resourceLocalAddress?.let {
-                libraryRepository.getLibraryItemsByLocalAddress(it)
+                resourcesRepository.getLibraryItemsByLocalAddress(it)
             } ?: emptyList()
 
             val offlineItem = matchingItems.firstOrNull { it.isResourceOffline() }

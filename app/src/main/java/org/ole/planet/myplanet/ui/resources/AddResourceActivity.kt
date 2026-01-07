@@ -22,11 +22,11 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityAddResourceBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.LibraryRepository
+import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.utilities.CheckboxListView
+import org.ole.planet.myplanet.ui.components.CheckboxListView
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
-import org.ole.planet.myplanet.utilities.LocaleHelper
+import org.ole.planet.myplanet.utilities.LocaleUtils
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
 @AndroidEntryPoint
@@ -34,7 +34,7 @@ class AddResourceActivity : AppCompatActivity() {
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     @Inject
-    lateinit var libraryRepository: LibraryRepository
+    lateinit var resourcesRepository: ResourcesRepository
     private lateinit var binding: ActivityAddResourceBinding
     var userModel: RealmUserModel? = null
     var subjects: RealmList<String>? = null
@@ -43,7 +43,7 @@ class AddResourceActivity : AppCompatActivity() {
     private var resourceUrl: String? = null
 
     override fun attachBaseContext(base: Context) {
-        super.attachBaseContext(LocaleHelper.onAttach(base))
+        super.attachBaseContext(LocaleUtils.onAttach(base))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -92,8 +92,8 @@ class AddResourceActivity : AppCompatActivity() {
             setUserId(userModel?.id)
         }
         lifecycleScope.launch {
-            libraryRepository.saveLibraryItem(resource)
-            libraryRepository.markResourceAdded(userModel?.id, id)
+            resourcesRepository.saveLibraryItem(resource)
+            resourcesRepository.markResourceAdded(userModel?.id, id)
             toast(this@AddResourceActivity, getString(R.string.added_to_my_library))
             finish()
         }

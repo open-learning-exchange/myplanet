@@ -6,7 +6,7 @@ import com.google.gson.JsonObject
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.utilities.GsonUtils
+import org.ole.planet.myplanet.utilities.JsonUtils
 
 open class RealmAnswer : RealmObject() {
     @PrimaryKey
@@ -26,7 +26,7 @@ open class RealmAnswer : RealmObject() {
                 return array
             }
             for (choice in valueChoices ?: emptyList()) {
-                array.add(GsonUtils.gson.fromJson(choice, JsonObject::class.java))
+                array.add(JsonUtils.gson.fromJson(choice, JsonObject::class.java))
             }
             return array
         }
