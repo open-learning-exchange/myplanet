@@ -19,12 +19,12 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 
 @AndroidEntryPoint
-class TeamsMembersFragment : BaseMemberFragment() {
+class MemberRequestsFragment : BaseMemberFragment() {
 
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
 
-    private val viewModel: MembersViewModel by viewModels()
+    private val viewModel: MemberRequestsViewModel by viewModels()
     private lateinit var currentUser: RealmUserModel
     private var memberChangeListener: MemberChangeListener? = null
     fun setMemberChangeListener(listener: MemberChangeListener) {

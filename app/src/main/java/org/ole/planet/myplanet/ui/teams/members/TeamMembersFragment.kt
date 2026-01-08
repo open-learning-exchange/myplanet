@@ -19,7 +19,7 @@ import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.JoinedMemberData
 
-class MemberFragment : BaseMemberFragment() {
+class TeamMembersFragment : BaseMemberFragment() {
     private var memberChangeListener: MemberChangeListener = object : MemberChangeListener {
         override fun onMemberChanged() {
             viewLifecycleOwner.lifecycleScope.launch {
@@ -27,7 +27,7 @@ class MemberFragment : BaseMemberFragment() {
             }
         }
     }
-    private var adapterJoined: TeamsMembersAdapter? = null
+    private var adapterJoined: TeamMembersAdapter? = null
     private var cachedJoinedMembers: List<JoinedMemberData>? = null
 
     fun setMemberChangeListener(listener: MemberChangeListener) {
@@ -60,9 +60,9 @@ class MemberFragment : BaseMemberFragment() {
     override val adapter: RecyclerView.Adapter<*>
         get() {
             if (adapterJoined == null) {
-                adapterJoined = TeamsMembersAdapter(
+                adapterJoined = TeamMembersAdapter(
                     requireActivity(), user?.id,
-                    object : TeamsMembersAdapter.MemberActionListener {
+                    object : TeamMembersAdapter.MemberActionListener {
                         override fun onRemoveMember(member: JoinedMemberData, position: Int) {
                             handleRemoveMember(member)
                         }
@@ -77,7 +77,7 @@ class MemberFragment : BaseMemberFragment() {
                     }
                 )
             }
-            return adapterJoined as TeamsMembersAdapter
+            return adapterJoined as TeamMembersAdapter
         }
 
     private fun handleLeaveTeam() {

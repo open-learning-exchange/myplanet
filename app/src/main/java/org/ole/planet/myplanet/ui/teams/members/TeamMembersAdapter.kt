@@ -21,14 +21,13 @@ import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowJoinedUserBinding
 import org.ole.planet.myplanet.repository.JoinedMemberData
-import org.ole.planet.myplanet.ui.teams.members.MemberDetailFragment
 import org.ole.planet.myplanet.utilities.NavigationHelper
 
-class TeamsMembersAdapter(
+class TeamMembersAdapter(
     private val context: Context,
     private val currentUserId: String?,
     private val actionListener: MemberActionListener
-) : ListAdapter<JoinedMemberData, TeamsMembersAdapter.ViewHolderUser>(DIFF_CALLBACK) {
+) : ListAdapter<JoinedMemberData, TeamMembersAdapter.ViewHolderUser>(DIFF_CALLBACK) {
     private var isLoggedInUserTeamLeader: Boolean = false
     interface MemberActionListener {
         fun onRemoveMember(member: JoinedMemberData, position: Int)
