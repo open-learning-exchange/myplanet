@@ -8,8 +8,8 @@ import org.ole.planet.myplanet.ui.enterprises.EnterprisesReportsFragment
 import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.ui.teams.courses.TeamCoursesFragment
 import org.ole.planet.myplanet.ui.teams.discussion.DiscussionListFragment
-import org.ole.planet.myplanet.ui.teams.member.MemberFragment
-import org.ole.planet.myplanet.ui.teams.member.MembersFragment
+import org.ole.planet.myplanet.ui.teams.members.JoinedMembersFragment
+import org.ole.planet.myplanet.ui.teams.members.RequestsFragment
 import org.ole.planet.myplanet.ui.teams.resources.TeamResourcesFragment
 import org.ole.planet.myplanet.ui.teams.tasks.TeamTaskFragment
 
@@ -29,11 +29,11 @@ sealed class TeamPageConfig(val id: String, @StringRes val titleRes: Int) {
     }
 
     object TeamPage : TeamPageConfig("TEAM", R.string.team) {
-        override fun createFragment() = MemberFragment()
+        override fun createFragment() = JoinedMembersFragment()
     }
 
     object MembersPage : TeamPageConfig("MEMBERS", R.string.members) {
-        override fun createFragment() = MemberFragment()
+        override fun createFragment() = JoinedMembersFragment()
     }
 
     object TasksPage : TeamPageConfig("TASKS", R.string.tasks) {
@@ -69,10 +69,10 @@ sealed class TeamPageConfig(val id: String, @StringRes val titleRes: Int) {
     }
 
     object ApplicantsPage : TeamPageConfig("APPLICANTS", R.string.applicants) {
-        override fun createFragment() = MembersFragment()
+        override fun createFragment() = RequestsFragment()
     }
 
     object JoinRequestsPage : TeamPageConfig("JOIN_REQUESTS", R.string.join_requests) {
-        override fun createFragment() = MembersFragment()
+        override fun createFragment() = RequestsFragment()
     }
 }

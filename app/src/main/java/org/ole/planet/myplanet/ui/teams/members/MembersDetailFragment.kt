@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.teams.member
+package org.ole.planet.myplanet.ui.teams.members
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -11,7 +11,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentMemberDetailBinding
 import org.ole.planet.myplanet.utilities.NavigationHelper
 
-class MemberDetailFragment : Fragment() {
+class MembersDetailFragment : Fragment() {
     private var _binding: FragmentMemberDetailBinding? = null
     private val binding get() = _binding!!
 
@@ -86,7 +86,7 @@ class MemberDetailFragment : Fragment() {
             username: String,
             memberLevel: String,
             imageUrl: String?
-        ) = MemberDetailFragment().apply {
+        ) = MembersDetailFragment().apply {
             arguments = Bundle().apply {
                 putString("member_name", name)
                 putString("profile_email", email)

@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.teams.member
+package org.ole.planet.myplanet.ui.teams.members
 
 import android.content.Context
 import android.os.Bundle
@@ -23,11 +23,11 @@ import org.ole.planet.myplanet.databinding.RowJoinedUserBinding
 import org.ole.planet.myplanet.repository.JoinedMemberData
 import org.ole.planet.myplanet.utilities.NavigationHelper
 
-class MemberAdapter(
+class JoinedMembersAdapter(
     private val context: Context,
     private val currentUserId: String?,
     private val actionListener: MemberActionListener
-) : ListAdapter<JoinedMemberData, MemberAdapter.ViewHolderUser>(DIFF_CALLBACK) {
+) : ListAdapter<JoinedMemberData, JoinedMembersAdapter.ViewHolderUser>(DIFF_CALLBACK) {
     private var isLoggedInUserTeamLeader: Boolean = false
     interface MemberActionListener {
         fun onRemoveMember(member: JoinedMemberData, position: Int)
@@ -120,7 +120,7 @@ class MemberAdapter(
             val userName = "${member.firstName} ${member.lastName}".trim().ifBlank {
                 member.name
             }
-            val fragment = MemberDetailFragment.newInstance(
+            val fragment = MembersDetailFragment.newInstance(
                 userName.toString(),
                 member.email.toString(),
                 member.dob.toString().substringBefore("T"),
