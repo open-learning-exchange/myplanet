@@ -131,4 +131,5 @@ interface TeamsRepository {
     suspend fun getAssignee(userId: String): RealmUserModel?
     suspend fun getRequestedMembers(teamId: String): List<RealmUserModel>
     suspend fun isTeamNameExists(name: String, type: String, excludeTeamId: String? = null): Boolean
+    suspend fun getTeamCreator(teamId: String): String
 }

@@ -912,4 +912,22 @@ class TeamsRepositoryImpl @Inject constructor(
             query.count() > 0
         }
     }
+
+    override suspend fun getTeamCreator(teamId: String): String {
+        return withRealm { realm ->
+            val team = realm.where(RealmMyTeam::class.java)
+                .equalTo("_id", teamId)
+                .findFirst()
+
+            val creatorId = team?.createdBy
+            if (creatorId.isNullOrBlank()) {
+                return@withRealm ""
+            }
+
+            val creator = realm.where(RealmUserModel::class.java)
+                .equalTo("id", creatorId)
+                .findFirst()
+            creator?.name ?: ""
+        }
+    }
 }
