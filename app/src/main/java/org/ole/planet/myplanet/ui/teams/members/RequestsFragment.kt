@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.teams.member
+package org.ole.planet.myplanet.ui.teams.members
 
 import android.content.Context
 import android.content.res.Configuration
@@ -19,12 +19,12 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserSessionManager
 
 @AndroidEntryPoint
-class MembersFragment : BaseMemberFragment() {
+class RequestsFragment : BaseMemberFragment() {
 
     @Inject
     lateinit var userSessionManager: UserSessionManager
 
-    private val viewModel: MembersViewModel by viewModels()
+    private val viewModel: RequestsViewModel by viewModels()
     private lateinit var currentUser: RealmUserModel
     private var memberChangeListener: MemberChangeListener? = null
     fun setMemberChangeListener(listener: MemberChangeListener) {
