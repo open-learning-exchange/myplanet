@@ -2,6 +2,8 @@ package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import java.util.Date
+import java.util.UUID
 import javax.inject.Inject
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmAnswer
@@ -99,6 +101,36 @@ class ProgressRepositoryImpl @Inject constructor(databaseService: DatabaseServic
             }
             obj.add("stepMistake", JsonUtils.gson.toJsonTree(mistakesMap).asJsonObject)
             obj.addProperty("mistakes", totalMistakes)
+        }
+    }
+    override suspend fun saveCourseProgress(
+        userId: String?,
+        planetCode: String?,
+        parentCode: String?,
+        courseId: String?,
+        stepNum: Int,
+        passed: Boolean?
+    ) {
+        executeTransaction { realm ->
+            var courseProgress = realm.where(RealmCourseProgress::class.java)
+                .equalTo("courseId", courseId)
+                .equalTo("userId", userId)
+                .equalTo("stepNum", stepNum)
+                .findFirst()
+            if (courseProgress == null) {
+                courseProgress =
+                    realm.createObject(RealmCourseProgress::class.java, UUID.randomUUID().toString())
+                courseProgress.createdDate = Date().time
+            }
+            courseProgress?.courseId = courseId
+            courseProgress?.stepNum = stepNum
+            if (passed != null) {
+                courseProgress?.passed = passed
+            }
+            courseProgress?.createdOn = planetCode
+            courseProgress?.updatedDate = Date().time
+            courseProgress?.parentCode = parentCode
+            courseProgress?.userId = userId
         }
     }
 }
