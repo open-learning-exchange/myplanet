@@ -181,4 +181,36 @@ object TimeUtils {
             date
         }
     }
+
+    fun formatDateToDDMMYYYY(dateString: String?): String {
+        return try {
+            if (dateString.isNullOrBlank()) return ""
+
+            val localDate = if (dateString.contains("T")) {
+                val cleaned = dateString.replace("T", " ").replace(".000Z", "")
+                LocalDateTime.parse(cleaned, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")).toLocalDate()
+            } else {
+                LocalDate.parse(dateString, DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+            }
+
+            val formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy", defaultLocale)
+            localDate.format(formatter)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            dateString ?: ""
+        }
+    }
+
+    fun convertDDMMYYYYToISO(dateString: String?): String {
+        return try {
+            if (dateString.isNullOrBlank()) return ""
+
+            val localDate = LocalDate.parse(dateString, DateTimeFormatter.ofPattern("dd-MM-yyyy", defaultLocale))
+            val isoDate = localDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+            convertToISO8601(isoDate)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            dateString ?: ""
+        }
+    }
 }
