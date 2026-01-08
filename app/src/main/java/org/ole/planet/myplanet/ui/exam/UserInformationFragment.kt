@@ -34,7 +34,7 @@ import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.databinding.FragmentUserInformationBinding
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.SubmissionsRepository
-import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UsersRepository
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
@@ -50,7 +50,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     @Inject
     lateinit var submissionsRepository: SubmissionsRepository
     @Inject
-    lateinit var userRepository: UserRepository
+    lateinit var userRepository: UsersRepository
     @Inject
     lateinit var userSessionManager: UserSessionManager
     var userModel: RealmUserModel? = null

@@ -16,7 +16,7 @@ import org.ole.planet.myplanet.base.BaseDialogFragment
 import org.ole.planet.myplanet.databinding.FragmentSendSurveyBinding
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.SubmissionsRepository
-import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UsersRepository
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
@@ -26,7 +26,7 @@ class SendSurveyFragment : BaseDialogFragment() {
     @Inject
     lateinit var submissionsRepository: SubmissionsRepository
     @Inject
-    lateinit var userRepository: UserRepository
+    lateinit var userRepository: UsersRepository
     override val key: String
         get() = "surveyId"
 

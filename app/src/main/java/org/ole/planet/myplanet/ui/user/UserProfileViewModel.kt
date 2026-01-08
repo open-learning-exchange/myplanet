@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UsersRepository
 import org.ole.planet.myplanet.service.UserSessionManager
 
 sealed class ProfileUpdateState {
@@ -20,7 +20,7 @@ sealed class ProfileUpdateState {
 
 @HiltViewModel
 class UserProfileViewModel @Inject constructor(
-    private val userRepository: UserRepository,
+    private val userRepository: UsersRepository,
     private val userSessionManager: UserSessionManager,
 ) : ViewModel() {
 

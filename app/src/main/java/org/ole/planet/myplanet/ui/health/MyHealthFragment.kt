@@ -44,7 +44,7 @@ import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
 import org.ole.planet.myplanet.databinding.FragmentVitalSignBinding
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UsersRepository
 import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
@@ -65,7 +65,7 @@ class MyHealthFragment : Fragment() {
     @Inject
     lateinit var syncManager: SyncManager
     @Inject
-    lateinit var userRepository: UserRepository
+    lateinit var userRepository: UsersRepository
     private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
     private lateinit var realtimeSyncListener: BaseRealtimeSyncListener
     private var _binding: FragmentVitalSignBinding? = null

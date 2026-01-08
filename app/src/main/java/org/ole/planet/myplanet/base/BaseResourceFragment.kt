@@ -46,7 +46,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
-import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UsersRepository
 import org.ole.planet.myplanet.service.DownloadService
 import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.ui.components.CheckboxListView
@@ -70,7 +70,7 @@ abstract class BaseResourceFragment : Fragment() {
     var convertView: View? = null
     internal lateinit var prgDialog: DialogUtils.CustomProgressDialog
     @Inject
-    lateinit var userRepository: UserRepository
+    lateinit var userRepository: UsersRepository
     @Inject
     lateinit var resourcesRepository: ResourcesRepository
     @Inject

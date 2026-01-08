@@ -17,7 +17,7 @@ import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.data.ApiClient
 import org.ole.planet.myplanet.data.ApiInterface
 import org.ole.planet.myplanet.di.RepositoryEntryPoint
-import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UsersRepository
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.androidDecrypter
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.JsonUtils
@@ -28,7 +28,7 @@ import retrofit2.Response
 
 class LoginSyncManager private constructor(
     private val context: Context,
-    private val userRepository: UserRepository,
+    private val userRepository: UsersRepository,
 ) {
     private val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 

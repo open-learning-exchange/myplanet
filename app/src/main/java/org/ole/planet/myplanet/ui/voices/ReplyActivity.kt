@@ -57,7 +57,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     @Inject
     lateinit var userSessionManager: UserSessionManager
     @Inject
-    lateinit var userRepository: org.ole.planet.myplanet.repository.UserRepository
+    lateinit var userRepository: org.ole.planet.myplanet.repository.UsersRepository
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
     @Inject

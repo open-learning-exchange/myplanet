@@ -27,7 +27,7 @@ import org.ole.planet.myplanet.di.DatabaseServiceEntryPoint
 import org.ole.planet.myplanet.di.RepositoryEntryPoint
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmCommunity
-import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UsersRepository
 import org.ole.planet.myplanet.service.UploadToShelfService
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.sync.ProcessUserDataActivity
@@ -49,7 +49,7 @@ class DataService @Inject constructor(
     private val retrofitInterface: ApiInterface,
     private val databaseService: DatabaseService,
     @ApplicationScope private val serviceScope: CoroutineScope,
-    private val userRepository: UserRepository,
+    private val userRepository: UsersRepository,
     private val uploadToShelfService: UploadToShelfService,
 ) {
     constructor(context: Context) : this(

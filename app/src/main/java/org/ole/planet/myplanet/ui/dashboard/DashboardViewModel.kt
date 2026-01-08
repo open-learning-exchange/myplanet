@@ -26,7 +26,7 @@ import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
-import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UsersRepository
 
 data class DashboardUiState(
     val unreadNotifications: Int = 0,
@@ -39,7 +39,7 @@ data class DashboardUiState(
 
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
-    private val userRepository: UserRepository,
+    private val userRepository: UsersRepository,
     private val resourcesRepository: ResourcesRepository,
     private val coursesRepository: CoursesRepository,
     private val teamsRepository: TeamsRepository,

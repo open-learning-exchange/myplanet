@@ -17,7 +17,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnTaskCompletedListener
 import org.ole.planet.myplanet.databinding.RowTaskBinding
 import org.ole.planet.myplanet.model.RealmTeamTask
-import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UsersRepository
 import org.ole.planet.myplanet.ui.teams.tasks.TeamTaskAdapter.ViewHolderTask
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
@@ -26,7 +26,7 @@ class TeamTaskAdapter(
     private val context: Context,
     var nonTeamMember: Boolean,
     private val coroutineScope: CoroutineScope,
-    private val userRepository: UserRepository
+    private val userRepository: UsersRepository
 ) : ListAdapter<RealmTeamTask, ViewHolderTask>(DIFF_CALLBACK) {
     private val assigneeCache: MutableMap<String, String> = mutableMapOf()
     private var listener: OnTaskCompletedListener? = null

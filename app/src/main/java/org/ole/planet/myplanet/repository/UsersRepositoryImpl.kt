@@ -26,13 +26,13 @@ import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.UrlUtils
 
-class UserRepositoryImpl @Inject constructor(
+class UsersRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     @AppPreferences private val settings: SharedPreferences,
     private val apiInterface: ApiInterface,
     private val uploadToShelfService: UploadToShelfService,
     @ApplicationContext private val context: Context
-) : RealmRepository(databaseService), UserRepository {
+) : RealmRepository(databaseService), UsersRepository {
     override suspend fun getUserById(userId: String): RealmUserModel? {
         return withRealm { realm ->
             realm.where(RealmUserModel::class.java)

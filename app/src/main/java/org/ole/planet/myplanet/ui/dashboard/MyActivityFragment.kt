@@ -19,7 +19,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentMyActivityBinding
-import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UsersRepository
 import org.ole.planet.myplanet.service.UserSessionManager
 
 @AndroidEntryPoint
@@ -29,7 +29,7 @@ class MyActivityFragment : Fragment() {
     @Inject
     lateinit var userSessionManager: UserSessionManager
     @Inject
-    lateinit var userRepository: UserRepository
+    lateinit var userRepository: UsersRepository
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentMyActivityBinding.inflate(inflater, container, false)
         return binding.root

@@ -21,7 +21,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UsersRepository
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -30,7 +30,7 @@ class UserSessionManager @Inject constructor(
     private val realmService: DatabaseService,
     @AppPreferences private val settings: SharedPreferences,
     @ApplicationScope private val applicationScope: CoroutineScope,
-    private val userRepository: UserRepository,
+    private val userRepository: UsersRepository,
 ) {
     private val fullName: String
 

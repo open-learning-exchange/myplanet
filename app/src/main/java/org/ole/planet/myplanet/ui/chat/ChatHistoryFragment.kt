@@ -37,7 +37,7 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
-import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UsersRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
@@ -73,7 +73,7 @@ class ChatHistoryFragment : Fragment() {
     @Inject
     lateinit var chatRepository: ChatRepository
     @Inject
-    lateinit var userRepository: UserRepository
+    lateinit var userRepository: UsersRepository
     @Inject
     lateinit var teamsRepository: TeamsRepository
     @Inject

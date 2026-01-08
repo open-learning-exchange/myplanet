@@ -6,7 +6,7 @@ import io.realm.Sort
 import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.RealmUserModel
 
-interface UserRepository {
+interface UsersRepository {
     suspend fun getUserById(userId: String): RealmUserModel?
     suspend fun getUserByAnyId(id: String): RealmUserModel?
     suspend fun getUserByName(name: String): RealmUserModel?

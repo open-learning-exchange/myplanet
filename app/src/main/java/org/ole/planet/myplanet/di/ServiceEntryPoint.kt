@@ -4,7 +4,7 @@ import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineScope
-import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UsersRepository
 
 @EntryPoint
 @InstallIn(SingletonComponent::class)
@@ -12,5 +12,5 @@ interface ServiceEntryPoint {
     @ApplicationScope
     fun applicationScope(): CoroutineScope
 
-    fun userRepository(): UserRepository
+    fun userRepository(): UsersRepository
 }

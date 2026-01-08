@@ -39,7 +39,7 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UsersRepository
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UploadToShelfService
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
@@ -66,7 +66,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), SuccessListen
     lateinit var uploadToShelfService: UploadToShelfService
 
     @Inject
-    lateinit var userRepository: UserRepository
+    lateinit var userRepository: UsersRepository
     lateinit var settings: SharedPreferences
     val customProgressDialog: DialogUtils.CustomProgressDialog by lazy {
         DialogUtils.CustomProgressDialog(this)
