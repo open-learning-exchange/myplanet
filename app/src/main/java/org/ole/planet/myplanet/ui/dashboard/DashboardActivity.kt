@@ -89,7 +89,6 @@ import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TasksPage
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
 import org.ole.planet.myplanet.utilities.Constants.isBetaWifiFeatureEnabled
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
-import org.ole.planet.myplanet.utilities.ChallengeUtils
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
@@ -122,7 +121,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     lateinit var submissionsRepository: SubmissionsRepository
     @Inject
     lateinit var notificationsRepository: NotificationsRepository
-    private val challengeHelper: ChallengeUtils by lazy {
+    private val challengeUtils: ChallengeUtils by lazy {
         ChallengeUtils(this, user, settings, editor, dashboardViewModel, progressRepository, databaseService)
     }
     private lateinit var notificationManager: NotificationUtils.NotificationManager
@@ -215,7 +214,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         binding.root.post {
             setupSystemNotificationReceiver()
             checkIfShouldShowNotifications()
-            challengeHelper.evaluateChallengeDialog()
+            challengeUtils.evaluateChallengeDialog()
             reportFullyDrawn()
         }
     }

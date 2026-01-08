@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.utilities
+package org.ole.planet.myplanet.ui.dashboard
 
 import android.content.SharedPreferences
 import androidx.fragment.app.FragmentManager
@@ -27,7 +27,7 @@ import org.ole.planet.myplanet.ui.courses.CoursesProgressFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 
 class ChallengeUtils(
-    private val activity: org.ole.planet.myplanet.ui.dashboard.DashboardActivity,
+    private val activity: DashboardActivity,
     private val user: RealmUserModel?,
     private val settings: SharedPreferences,
     private val editor: SharedPreferences.Editor,
