@@ -21,7 +21,7 @@ import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.ui.events.EventsDetailFragment
 import org.ole.planet.myplanet.ui.health.MyHealthFragment
 import org.ole.planet.myplanet.ui.personals.PersonalsFragment
-import org.ole.planet.myplanet.ui.references.ReferenceFragment
+import org.ole.planet.myplanet.ui.references.ReferencesFragment
 import org.ole.planet.myplanet.ui.submissions.SubmissionsFragment
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
 import org.ole.planet.myplanet.ui.user.AchievementFragment
@@ -42,7 +42,7 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         )
     }
 
-    fun handleClick(id: String?, title: String?, f: Fragment, v: TextView) {
+    open fun handleClick(id: String?, title: String?, f: Fragment, v: TextView) {
         v.text = title
         v.setOnClickListener {
             if (homeItemClickListener != null) {
@@ -75,7 +75,7 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
             homeItemClickListener?.let { listener ->
                 when (title) {
                     "mySubmissions" -> openIfLoggedIn { listener.openCallFragment(SubmissionsFragment()) }
-                    "References" -> listener.openCallFragment(ReferenceFragment())
+                    "References" -> listener.openCallFragment(ReferencesFragment())
                     "Calendar" -> listener.openCallFragment(CalendarFragment())
                     "mySurveys" -> openIfLoggedIn { listener.openCallFragment(SubmissionsFragment.newInstance("survey")) }
                     "myAchievements" -> openIfLoggedIn { listener.openCallFragment(AchievementFragment()) }
