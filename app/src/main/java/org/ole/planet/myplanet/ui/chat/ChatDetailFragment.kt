@@ -50,7 +50,7 @@ import org.ole.planet.myplanet.model.ContinueChatRequest
 import org.ole.planet.myplanet.model.Data
 import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.ChatRepository
+import org.ole.planet.myplanet.repository.ChatsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
@@ -82,7 +82,7 @@ class ChatDetailFragment : Fragment() {
     lateinit var settings: SharedPreferences
     lateinit var customProgressDialog: DialogUtils.CustomProgressDialog
     @Inject
-    lateinit var chatRepository: ChatRepository
+    lateinit var chatRepository: ChatsRepository
     @Inject
     lateinit var chatApiService: ChatApiService
     @Inject

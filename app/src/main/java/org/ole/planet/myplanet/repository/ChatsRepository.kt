@@ -4,7 +4,7 @@ import com.google.gson.JsonObject
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmNews
 
-interface ChatRepository {
+interface ChatsRepository {
     suspend fun getChatHistoryForUser(userName: String?): List<RealmChatHistory>
     suspend fun getPlanetNewsMessages(planetCode: String?): List<RealmNews>
     suspend fun getLatestRev(id: String): String?

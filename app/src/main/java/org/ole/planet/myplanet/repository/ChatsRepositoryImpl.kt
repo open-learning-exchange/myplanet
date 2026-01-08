@@ -9,9 +9,9 @@ import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.addConversationToChatHistory
 import org.ole.planet.myplanet.model.RealmNews
 
-class ChatRepositoryImpl @Inject constructor(
+class ChatsRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
-) : RealmRepository(databaseService), ChatRepository {
+) : RealmRepository(databaseService), ChatsRepository {
     override suspend fun getChatHistoryForUser(userName: String?): List<RealmChatHistory> {
         if (userName.isNullOrEmpty()) {
             return emptyList()
