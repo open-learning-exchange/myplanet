@@ -6,8 +6,12 @@ import org.ole.planet.myplanet.model.RealmMyLife
 
 class LifeRepositoryImpl @Inject constructor(databaseService: DatabaseService) : RealmRepository(databaseService), LifeRepository {
     override suspend fun getMyLifeByUserId(userId: String): List<RealmMyLife> {
-        return queryList {
-            it.where(RealmMyLife::class.java).equalTo("userId", userId).sort("weight")
+        return withRealm { realm ->
+            val results = realm.where(RealmMyLife::class.java)
+                .equalTo("userId", userId)
+                .sort("weight")
+                .findAll()
+            realm.copyFromRealm(results)
         }
     }
 
