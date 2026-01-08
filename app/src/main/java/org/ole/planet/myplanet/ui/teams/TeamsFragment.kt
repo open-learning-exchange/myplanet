@@ -32,7 +32,7 @@ import org.ole.planet.myplanet.callback.OnUpdateCompleteListener
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
-class TeamFragment : Fragment(), TeamAdapter.OnClickTeamItem, OnUpdateCompleteListener,
+class TeamsFragment : Fragment(), TeamsAdapter.OnClickTeamItem, OnUpdateCompleteListener,
     OnTeamActionsListener {
     private var _binding: FragmentTeamBinding? = null
     private val binding get() = _binding!!
@@ -51,7 +51,7 @@ class TeamFragment : Fragment(), TeamAdapter.OnClickTeamItem, OnUpdateCompleteLi
     private var fromDashboard: Boolean = false
     var user: RealmUserModel? = null
     private var teamList: List<RealmMyTeam> = emptyList()
-    private lateinit var teamAdapter: TeamAdapter
+    private lateinit var teamAdapter: TeamsAdapter
     private var conditionApplied: Boolean = false
     private var textWatcher: TextWatcher? = null
 
@@ -213,16 +213,16 @@ class TeamFragment : Fragment(), TeamAdapter.OnClickTeamItem, OnUpdateCompleteLi
 
     private fun setupRecyclerView() {
         binding.rvTeamList.layoutManager = LinearLayoutManager(activity)
-        teamAdapter = TeamAdapter(
+        teamAdapter = TeamsAdapter(
             requireActivity(),
             childFragmentManager,
             user,
             sharedPrefManager
         ).apply {
             setType(type)
-            setTeamListener(this@TeamFragment)
-            setUpdateCompleteListener(this@TeamFragment)
-            setTeamActionsListener(this@TeamFragment)
+            setTeamListener(this@TeamsFragment)
+            setUpdateCompleteListener(this@TeamsFragment)
+            setTeamActionsListener(this@TeamsFragment)
         }
         binding.rvTeamList.adapter = teamAdapter
     }

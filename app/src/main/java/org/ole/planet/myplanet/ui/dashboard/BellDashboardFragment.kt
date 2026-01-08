@@ -36,7 +36,7 @@ import org.ole.planet.myplanet.ui.life.LifeFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.ui.submissions.SubmissionsFragment
-import org.ole.planet.myplanet.ui.teams.TeamFragment
+import org.ole.planet.myplanet.ui.teams.TeamsFragment
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.di.TeamsRepositoryEntryPoint
@@ -398,7 +398,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     private fun declareElements() {
         binding.homeCardTeams.llHomeTeam.setOnClickListener {
-            val fragment = TeamFragment().apply {
+            val fragment = TeamsFragment().apply {
                 arguments = Bundle().apply {
                     putBoolean("fromDashboard", true)
                 }

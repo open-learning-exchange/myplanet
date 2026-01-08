@@ -83,7 +83,7 @@ import org.ole.planet.myplanet.ui.survey.SendSurveyFragment
 import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.ui.sync.DashboardElementActivity
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
-import org.ole.planet.myplanet.ui.teams.TeamFragment
+import org.ole.planet.myplanet.ui.teams.TeamsFragment
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.JoinRequestsPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TasksPage
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
@@ -306,7 +306,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     val isMy = frag.arguments?.getBoolean("isMyCourseLib", false) == true
                     if (isMy) 2L else 4L
                 }
-                is TeamFragment -> {
+                is TeamsFragment -> {
                     val isDashboard = frag.arguments?.getBoolean("fromDashboard", false) == true
                     val isEnterprise = frag.arguments?.getString("type") == "enterprise"
                     if (isDashboard) 0L else if (isEnterprise) 6L else 5L
@@ -442,7 +442,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 NotificationUtils.TYPE_TASK -> {
                     val taskId = intent.getStringExtra("taskId")
                     if (taskId != null) {
-                        openMyFragment(TeamFragment().apply {
+                        openMyFragment(TeamsFragment().apply {
                             arguments = Bundle().apply {
                                 putString("taskId", taskId)
                             }
@@ -456,7 +456,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 }
                 NotificationUtils.TYPE_JOIN_REQUEST -> {
                     val teamName = intent.getStringExtra("teamName")
-                    openMyFragment(TeamFragment().apply {
+                    openMyFragment(TeamsFragment().apply {
                         arguments = Bundle().apply {
                             teamName?.let { putString("teamName", it) }
                         }
@@ -1069,7 +1069,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     openMyFragment(ResourcesFragment())
                 }
             }
-            R.string.team -> openMyFragment(TeamFragment().apply {
+            R.string.team -> openMyFragment(TeamsFragment().apply {
                 arguments = Bundle().apply {
                     putBoolean("fromDashboard", false)
                 }

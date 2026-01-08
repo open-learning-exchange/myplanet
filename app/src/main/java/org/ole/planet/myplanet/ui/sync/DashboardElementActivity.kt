@@ -32,7 +32,7 @@ import org.ole.planet.myplanet.ui.dashboard.BellDashboardFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.ratings.RatingsFragment.Companion.newInstance
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
-import org.ole.planet.myplanet.ui.teams.TeamFragment
+import org.ole.planet.myplanet.ui.teams.TeamsFragment
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Constants.isBetaWifiFeatureEnabled
@@ -60,7 +60,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
             1 -> openCallFragment(ResourcesFragment(), "library")
             2 -> openCallFragment(CoursesFragment(), "course")
             4 -> openEnterpriseFragment()
-            3 -> openCallFragment(TeamFragment(), "survey")
+            3 -> openCallFragment(TeamsFragment(), "survey")
             5 -> {
                 openCallFragment(CommunityTabFragment(), "community")
             }
@@ -269,7 +269,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
     }
 
     fun openEnterpriseFragment() {
-        val fragment: Fragment = TeamFragment()
+        val fragment: Fragment = TeamsFragment()
         val b = Bundle()
         b.putString("type", "enterprise")
         fragment.arguments = b
