@@ -265,10 +265,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             if ((selectedItems?.size ?: 0) > 0) {
                 confirmation = createAlertDialog()
                 confirmation?.show()
-                addToMyList()
-                selectedItems?.clear()
-                tvAddToLib.isEnabled = false
-                checkList()
             }
         }
     }
@@ -402,12 +398,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             }
         builder.setNegativeButton(getString(R.string.ok)) { dialog: DialogInterface, _: Int ->
             dialog.cancel()
-            val newFragment = ResourcesFragment()
-            recreateFragment(newFragment)
         }
-        builder.setOnDismissListener{
-            val newFragment = ResourcesFragment()
-            recreateFragment(newFragment)
+        builder.setOnDismissListener {
+            addToMyList()
         }
         return builder.create()
     }
