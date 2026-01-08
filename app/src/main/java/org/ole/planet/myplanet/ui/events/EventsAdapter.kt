@@ -10,13 +10,13 @@ import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
-class EventsAdapter : ListAdapter<RealmMeetup, EventsAdapter.ViewHolderEvent>(DIFF_CALLBACK) {
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderEvent {
+class EventsAdapter : ListAdapter<RealmMeetup, EventsAdapter.EventsViewHolder>(DIFF_CALLBACK) {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): EventsViewHolder {
         val binding = ItemMeetupBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return ViewHolderEvent(binding)
+        return EventsViewHolder(binding)
     }
 
-    override fun onBindViewHolder(holder: ViewHolderEvent, position: Int) {
+    override fun onBindViewHolder(holder: EventsViewHolder, position: Int) {
         val meetup = getItem(position)
         val binding = holder.binding
         val context = binding.root.context
@@ -31,7 +31,7 @@ class EventsAdapter : ListAdapter<RealmMeetup, EventsAdapter.ViewHolderEvent>(DI
         binding.tvCreator.text = context.getString(R.string.message_placeholder, meetup.creator)
     }
 
-    class ViewHolderEvent(val binding: ItemMeetupBinding) : RecyclerView.ViewHolder(binding.root)
+    class EventsViewHolder(val binding: ItemMeetupBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {
         val DIFF_CALLBACK = DiffUtils.itemCallback<RealmMeetup>(
