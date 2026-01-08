@@ -22,14 +22,14 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserProfileService
+import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 
 @AndroidEntryPoint
 class CourseProgressActivity : BaseActivity() {
     private lateinit var binding: ActivityCourseProgressBinding
     @Inject
-    lateinit var userProfileDbHandler: UserProfileService
+    lateinit var userSessionManager: UserSessionManager
     var user: RealmUserModel? = null
     lateinit var courseId: String
 
@@ -40,7 +40,7 @@ class CourseProgressActivity : BaseActivity() {
         EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
         initActionBar()
         courseId = intent.getStringExtra("courseId").toString()
-        user = userProfileDbHandler.userModel
+        user = userSessionManager.userModel
 
         binding.rvProgress.layoutManager = GridLayoutManager(this, 4)
 

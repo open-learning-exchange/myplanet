@@ -16,13 +16,13 @@ import org.ole.planet.myplanet.base.BaseMemberFragment
 import org.ole.planet.myplanet.callback.MemberChangeListener
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserProfileService
+import org.ole.planet.myplanet.service.UserSessionManager
 
 @AndroidEntryPoint
 class MembersFragment : BaseMemberFragment() {
 
     @Inject
-    lateinit var userProfileDbHandler: UserProfileService
+    lateinit var userSessionManager: UserSessionManager
 
     private val viewModel: MembersViewModel by viewModels()
     private lateinit var currentUser: RealmUserModel
@@ -33,7 +33,7 @@ class MembersFragment : BaseMemberFragment() {
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        currentUser = userProfileDbHandler.userModel ?: RealmUserModel()
+        currentUser = userSessionManager.userModel ?: RealmUserModel()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

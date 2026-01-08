@@ -23,7 +23,7 @@ import org.ole.planet.myplanet.databinding.ActivityAddResourceBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.service.UserProfileService
+import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.ui.components.CheckboxListView
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.LocaleUtils
@@ -32,7 +32,7 @@ import org.ole.planet.myplanet.utilities.Utilities.toast
 @AndroidEntryPoint
 class AddResourceActivity : AppCompatActivity() {
     @Inject
-    lateinit var userProfileDbHandler: UserProfileService
+    lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var resourcesRepository: ResourcesRepository
     private lateinit var binding: ActivityAddResourceBinding
@@ -54,7 +54,7 @@ class AddResourceActivity : AppCompatActivity() {
         EdgeToEdgeUtils.setupEdgeToEdgeWithKeyboard(this, binding.root)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
-        userModel = userProfileDbHandler.userModel
+        userModel = userSessionManager.userModel
         resourceUrl = intent.getStringExtra("resource_local_url")
         levels = RealmList()
         subjects = RealmList()

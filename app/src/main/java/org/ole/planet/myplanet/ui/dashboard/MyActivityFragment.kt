@@ -20,14 +20,14 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentMyActivityBinding
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.service.UserProfileService
+import org.ole.planet.myplanet.service.UserSessionManager
 
 @AndroidEntryPoint
 class MyActivityFragment : Fragment() {
     private var _binding: FragmentMyActivityBinding? = null
     private val binding get() = _binding!!
     @Inject
-    lateinit var userProfileDbHandler: UserProfileService
+    lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var userRepository: UserRepository
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -37,7 +37,7 @@ class MyActivityFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val userModel = userProfileDbHandler.userModel
+        val userModel = userSessionManager.userModel
         val daynightTextColor = ResourcesCompat.getColor(resources, R.color.daynight_textColor, null)
 
         val endMillis = Calendar.getInstance().timeInMillis

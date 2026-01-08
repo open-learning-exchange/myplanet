@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TeamsRepository
-import org.ole.planet.myplanet.service.UserProfileService
+import org.ole.planet.myplanet.service.UserSessionManager
 
 data class MembersUiState(
     val members: List<RealmUserModel> = emptyList(),
@@ -24,7 +24,7 @@ data class MembersUiState(
 @HiltViewModel
 class MembersViewModel @Inject constructor(
     private val teamsRepository: TeamsRepository,
-    private val userProfileDbHandler: UserProfileService
+    private val userSessionManager: UserSessionManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MembersUiState())
@@ -36,7 +36,7 @@ class MembersViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             val members = teamsRepository.getRequestedMembers(teamId)
             val memberCount = teamsRepository.getJoinedMembers(teamId).size
-            val isLeader = teamsRepository.isTeamLeader(teamId, userProfileDbHandler.userModel?.id)
+            val isLeader = teamsRepository.isTeamLeader(teamId, userSessionManager.userModel?.id)
             _uiState.value = MembersUiState(members, isLeader, memberCount)
         }
     }

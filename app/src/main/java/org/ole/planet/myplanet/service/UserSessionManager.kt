@@ -25,7 +25,7 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Utilities
 
-class UserProfileService @Inject constructor(
+class UserSessionManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val realmService: DatabaseService,
     @AppPreferences private val settings: SharedPreferences,

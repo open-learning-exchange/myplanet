@@ -16,7 +16,7 @@ import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import android.content.SharedPreferences
 import org.ole.planet.myplanet.model.RealmMembershipDoc
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.service.UserProfileService
+import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDateWithTime
 import java.util.UUID
@@ -24,7 +24,7 @@ import java.util.UUID
 class SurveysRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
     databaseService: DatabaseService,
-    private val userProfileDbHandler: UserProfileService,
+    private val userSessionManager: UserSessionManager,
     @DefaultPreferences private val settings: SharedPreferences,
 ) : RealmRepository(databaseService), SurveysRepository {
 
@@ -42,7 +42,7 @@ class SurveysRepositoryImpl @Inject constructor(
                     return@executeTransaction
                 }
 
-                val userModel = userProfileDbHandler.userModel
+                val userModel = userSessionManager.userModel
                 val sParentCode = settings.getString("parentCode", "")
                 val planetCode = settings.getString("planetCode", "")
 

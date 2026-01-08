@@ -43,7 +43,7 @@ import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.service.UserProfileService
+import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.clearRealmDb
 import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.clearSharedPref
@@ -106,7 +106,7 @@ class SettingActivity : AppCompatActivity() {
     @AndroidEntryPoint
     class SettingFragment : PreferenceFragmentCompat() {
         @Inject
-        lateinit var profileDbHandler: UserProfileService
+        lateinit var profileDbHandler: UserSessionManager
         @Inject
         lateinit var databaseService: DatabaseService
     @Inject

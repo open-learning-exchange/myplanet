@@ -15,7 +15,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentFeedbackBinding
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.FeedbackRepository
-import org.ole.planet.myplanet.service.UserProfileService
+import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
@@ -25,7 +25,7 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
     @Inject
     lateinit var feedbackRepository: FeedbackRepository
     @Inject
-    lateinit var userProfileDbHandler: UserProfileService
+    lateinit var userSessionManager: UserSessionManager
     private var model: RealmUserModel ?= null
     var user: String? = ""
 
@@ -45,7 +45,7 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentFeedbackBinding.inflate(inflater, container, false)
-        model = userProfileDbHandler.userModel
+        model = userSessionManager.userModel
         user = model?.name
         binding.btnSubmit.setOnClickListener(this)
         binding.btnCancel.setOnClickListener(this)

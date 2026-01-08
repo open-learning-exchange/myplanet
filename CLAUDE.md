@@ -314,7 +314,7 @@ git commit -m "feat: add user profile photo upload
 
 - Implement camera integration
 - Add image cropping functionality
-- Update UserProfileService"
+- Update UserSessionManager"
 
 # Push to remote (MUST use -u flag)
 git push -u origin claude/feature-name-sessionid
