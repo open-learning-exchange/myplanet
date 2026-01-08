@@ -14,11 +14,11 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmFeedback
-import org.ole.planet.myplanet.repository.FeedbackRepository
+import org.ole.planet.myplanet.repository.FeedbacksRepository
 
 @HiltViewModel
 class FeedbackDetailViewModel @Inject constructor(
-    private val feedbackRepository: FeedbackRepository
+    private val feedbackRepository: FeedbacksRepository
 ) : ViewModel() {
 
     private val _feedback = MutableStateFlow<RealmFeedback?>(null)

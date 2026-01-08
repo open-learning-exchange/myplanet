@@ -12,10 +12,10 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.RealmUserModel
 
-class FeedbackRepositoryImpl @Inject constructor(
+class FeedbacksRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     private val gson: Gson
-) : RealmRepository(databaseService), FeedbackRepository {
+) : RealmRepository(databaseService), FeedbacksRepository {
 
     override fun createFeedback(
         user: String?,

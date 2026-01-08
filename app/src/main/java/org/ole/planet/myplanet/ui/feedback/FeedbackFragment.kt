@@ -14,7 +14,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentFeedbackBinding
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.FeedbackRepository
+import org.ole.planet.myplanet.repository.FeedbacksRepository
 import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -23,7 +23,7 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
     private var _binding: FragmentFeedbackBinding? = null
     private val binding get() = _binding!!
     @Inject
-    lateinit var feedbackRepository: FeedbackRepository
+    lateinit var feedbackRepository: FeedbacksRepository
     @Inject
     lateinit var userSessionManager: UserSessionManager
     private var model: RealmUserModel ?= null

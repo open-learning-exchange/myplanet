@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.RealmUserModel
 
-interface FeedbackRepository {
+interface FeedbacksRepository {
     fun createFeedback(
         user: String?,
         urgent: String,

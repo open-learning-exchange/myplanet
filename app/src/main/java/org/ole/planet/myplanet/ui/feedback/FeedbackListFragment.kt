@@ -25,7 +25,7 @@ import org.ole.planet.myplanet.databinding.FragmentFeedbackListBinding
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.FeedbackRepository
+import org.ole.planet.myplanet.repository.FeedbacksRepository
 import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
@@ -46,7 +46,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     @AppPreferences
     lateinit var settings: SharedPreferences
     @Inject
-    lateinit var feedbackRepository: FeedbackRepository
+    lateinit var feedbackRepository: FeedbacksRepository
     @Inject
     lateinit var userSessionManager: UserSessionManager
     private val serverUrlMapper = ServerUrlMapper()
