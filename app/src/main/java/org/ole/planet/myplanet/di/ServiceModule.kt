@@ -16,6 +16,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import org.ole.planet.myplanet.data.ApiInterface
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.repository.RatingsRepository
+import org.ole.planet.myplanet.repository.RatingsRepositoryImpl
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UploadToShelfService
@@ -84,5 +86,14 @@ object ServiceModule {
         @ApplicationScope scope: CoroutineScope
     ): TransactionSyncManager {
         return TransactionSyncManager(apiInterface, databaseService, context, scope)
+    }
+
+    @Provides
+    @Singleton
+    fun provideRatingsRepository(
+        databaseService: DatabaseService,
+        gson: Gson
+    ): RatingsRepository {
+        return RatingsRepositoryImpl(databaseService, gson)
     }
 }
