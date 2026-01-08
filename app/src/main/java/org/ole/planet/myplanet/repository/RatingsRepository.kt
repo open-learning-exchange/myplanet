@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.service
+package org.ole.planet.myplanet.repository
 
 interface RatingsRepository {
     suspend fun getRatingSummary(type: String, itemId: String, userId: String): RatingSummary
@@ -11,8 +11,6 @@ interface RatingsRepository {
         rating: Float,
         comment: String,
     ): RatingSummary
-
-    suspend fun getRatings(type: String, userId: String?): HashMap<String?, com.google.gson.JsonObject>
 }
 
 data class RatingEntry(

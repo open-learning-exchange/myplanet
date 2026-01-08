@@ -17,11 +17,11 @@ import kotlinx.coroutines.SupervisorJob
 import org.ole.planet.myplanet.data.ApiInterface
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.repository.SubmissionsRepository
-import org.ole.planet.myplanet.service.RatingsRepository
-import org.ole.planet.myplanet.service.RatingsRepositoryImpl
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UploadToShelfService
 import org.ole.planet.myplanet.service.sync.ImprovedSyncManager
+import org.ole.planet.myplanet.ui.repository.RatingsRepository
+import org.ole.planet.myplanet.ui.repository.RatingsRepositoryImpl
 import org.ole.planet.myplanet.service.sync.SyncManager
 import org.ole.planet.myplanet.service.sync.TransactionSyncManager
 

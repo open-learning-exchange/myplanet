@@ -40,7 +40,7 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TagsRepository
-import org.ole.planet.myplanet.service.RatingsRepository
+import org.ole.planet.myplanet.ui.repository.RatingsRepository
 import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.service.sync.SyncManager
@@ -219,6 +219,14 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
+        val allCourses: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>().filter { !it?.courseTitle.isNullOrBlank() }
+
+        val courseList = if (isMyCourseLib) {
+            allCourses.filter { it?.isMyCourse == true }
+        } else {
+            allCourses.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
+        }
+
         val courseList = emptyList<RealmMyCourse?>()
         val map = HashMap<String?, com.google.gson.JsonObject>()
         val progressMap = HashMap<String, com.google.gson.JsonObject>()

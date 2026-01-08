@@ -1,6 +1,7 @@
-package org.ole.planet.myplanet.service
+package org.ole.planet.myplanet.ui.repository
 
 import com.google.gson.Gson
+import com.google.gson.JsonObject
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
@@ -8,6 +9,7 @@ import kotlin.math.roundToInt
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.RatingSummary
 import org.ole.planet.myplanet.repository.RealmRepository
 
 class RatingsRepositoryImpl @Inject constructor(
@@ -82,8 +84,8 @@ class RatingsRepositoryImpl @Inject constructor(
         return getRatingSummary(type, itemId, resolvedUserId)
     }
 
-    private fun RealmRating.toRatingEntry(): RatingEntry =
-        RatingEntry(
+    private fun RealmRating.toRatingEntry(): org.ole.planet.myplanet.repository.RatingEntry =
+        org.ole.planet.myplanet.repository.RatingEntry(
             id = id,
             comment = comment,
             rate = rate,
@@ -137,11 +139,11 @@ class RatingsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getRatings(type: String, userId: String?): HashMap<String?, com.google.gson.JsonObject> {
+    override suspend fun getRatings(type: String, userId: String?): HashMap<String?, JsonObject> {
         return withRealm { realm ->
             val ratings = realm.where(RealmRating::class.java).equalTo("type", type).findAll()
             val aggregated = aggregateRatings(ratings, userId)
-            val map = HashMap<String?, com.google.gson.JsonObject>()
+            val map = HashMap<String?, JsonObject>()
             for ((item, aggregation) in aggregated) {
                 map[item] = aggregation.toJson()
             }
