@@ -5,6 +5,12 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLife
 
 class LifeRepositoryImpl @Inject constructor(databaseService: DatabaseService) : RealmRepository(databaseService), LifeRepository {
+    override suspend fun getMyLifeByUserId(userId: String): List<RealmMyLife> {
+        return queryList {
+            it.where(RealmMyLife::class.java).equalTo("userId", userId).sort("weight")
+        }
+    }
+
     override suspend fun updateVisibility(isVisible: Boolean, myLifeId: String) {
         executeTransaction { realm ->
             val myLife = realm.where(RealmMyLife::class.java).equalTo("_id", myLifeId).findFirst()

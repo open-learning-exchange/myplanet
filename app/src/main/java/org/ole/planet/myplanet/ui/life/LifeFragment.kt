@@ -14,8 +14,9 @@ import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.callback.OnStartDragListener
 import org.ole.planet.myplanet.callback.SimpleItemTouchHelperCallback
 import org.ole.planet.myplanet.databinding.FragmentLifeBinding
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmMyLife
-import org.ole.planet.myplanet.model.RealmMyLife.Companion.getMyLifeByUserId
 import org.ole.planet.myplanet.repository.LifeRepository
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 
@@ -48,8 +49,14 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val myLifeList = getMyLifeByUserId(mRealm, model?.id)
-        lifeAdapter.submitList(mRealm.copyFromRealm(myLifeList))
+        model?.id?.let { userId ->
+            viewLifecycleOwner.lifecycleScope.launch {
+                val myLifeList = lifeRepository.getMyLifeByUserId(userId)
+                if (isAdded) {
+                    lifeAdapter.submitList(myLifeList)
+                }
+            }
+        }
         recyclerView.setHasFixedSize(true)
         setupUI(binding.myLifeParentLayout, requireActivity())
         val callback: ItemTouchHelper.Callback = SimpleItemTouchHelperCallback(lifeAdapter)
