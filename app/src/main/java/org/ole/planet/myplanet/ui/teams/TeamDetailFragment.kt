@@ -19,7 +19,7 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.BaseRealtimeSyncListener
-import org.ole.planet.myplanet.callback.MemberChangeListener
+import org.ole.planet.myplanet.callback.OnMemberChangeListener
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.callback.TableDataUpdate
 import org.ole.planet.myplanet.callback.TeamUpdateListener
@@ -51,7 +51,7 @@ import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
-class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateListener {
+class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, TeamUpdateListener {
     
     @Inject
     lateinit var userSessionManager: UserSessionManager
