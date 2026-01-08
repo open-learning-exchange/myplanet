@@ -9,7 +9,7 @@ import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.ui.teams.courses.TeamCoursesFragment
 import org.ole.planet.myplanet.ui.teams.discussion.DiscussionListFragment
 import org.ole.planet.myplanet.ui.teams.members.TeamMembersFragment
-import org.ole.planet.myplanet.ui.teams.members.MemberRequestsFragment
+import org.ole.planet.myplanet.ui.teams.members.JoinRequestsFragment
 import org.ole.planet.myplanet.ui.teams.resources.TeamResourcesFragment
 import org.ole.planet.myplanet.ui.teams.tasks.TeamTaskFragment
 
@@ -69,10 +69,10 @@ sealed class TeamPageConfig(val id: String, @StringRes val titleRes: Int) {
     }
 
     object ApplicantsPage : TeamPageConfig("APPLICANTS", R.string.applicants) {
-        override fun createFragment() = MemberRequestsFragment()
+        override fun createFragment() = JoinRequestsFragment()
     }
 
     object JoinRequestsPage : TeamPageConfig("JOIN_REQUESTS", R.string.join_requests) {
-        override fun createFragment() = MemberRequestsFragment()
+        override fun createFragment() = JoinRequestsFragment()
     }
 }

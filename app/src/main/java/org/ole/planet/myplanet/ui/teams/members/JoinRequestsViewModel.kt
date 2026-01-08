@@ -15,20 +15,20 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 
-data class MemberRequestsUiState(
+data class JoinRequestsUiState(
     val members: List<RealmUserModel> = emptyList(),
     val isLeader: Boolean = false,
     val memberCount: Int = 0
 )
 
 @HiltViewModel
-class MemberRequestsViewModel @Inject constructor(
+class JoinRequestsViewModel @Inject constructor(
     private val teamsRepository: TeamsRepository,
     private val userProfileDbHandler: UserProfileDbHandler
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(MemberRequestsUiState())
-    val uiState: StateFlow<MemberRequestsUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(JoinRequestsUiState())
+    val uiState: StateFlow<JoinRequestsUiState> = _uiState.asStateFlow()
     private val _successAction = MutableSharedFlow<Unit>()
     val successAction = _successAction.asSharedFlow()
 
@@ -37,7 +37,7 @@ class MemberRequestsViewModel @Inject constructor(
             val members = teamsRepository.getRequestedMembers(teamId)
             val memberCount = teamsRepository.getJoinedMembers(teamId).size
             val isLeader = teamsRepository.isTeamLeader(teamId, userProfileDbHandler.userModel?.id)
-            _uiState.value = MemberRequestsUiState(members, isLeader, memberCount)
+            _uiState.value = JoinRequestsUiState(members, isLeader, memberCount)
         }
     }
 
