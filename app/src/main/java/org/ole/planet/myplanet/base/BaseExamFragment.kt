@@ -21,7 +21,6 @@ import io.noties.markwon.Markwon
 import io.noties.markwon.editor.MarkwonEditor
 import io.noties.markwon.editor.MarkwonEditorTextWatcher
 import io.realm.Realm
-import io.realm.RealmResults
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
@@ -54,7 +53,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     var type: String? = "exam"
     var currentIndex = 0
     private var stepNumber = 0
-    var questions: RealmResults<RealmExamQuestion>? = null
+    var questions: List<RealmExamQuestion>? = null
     var ans = ""
     var user: RealmUserModel? = null
     var sub: RealmSubmission? = null

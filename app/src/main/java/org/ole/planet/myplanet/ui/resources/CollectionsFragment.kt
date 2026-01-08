@@ -16,7 +16,6 @@ import kotlin.collections.ArrayList
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.TagClickListener
 import org.ole.planet.myplanet.databinding.FragmentCollectionsBinding
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.TagData
@@ -33,9 +32,9 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
     private lateinit var list: List<RealmTag>
     private lateinit var childMap: HashMap<String, List<RealmTag>>
     private var filteredList: ArrayList<RealmTag> = ArrayList()
-    private lateinit var adapter: TagAdapter
+    private lateinit var adapter: ResourcesTagsAdapter
     private var dbType: String? = null
-    private var listener: TagClickListener? = null
+    private var listener: OnTagClickListener? = null
     private var selectedItemsList: ArrayList<RealmTag> = ArrayList()
     private var textWatcher: TextWatcher? = null
     private var currentTagDataList = mutableListOf<TagData>()
@@ -90,7 +89,7 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
             list = tagsRepository.getTags(dbType)
             selectedItemsList = ArrayList(recentList)
             childMap = tagsRepository.buildChildMap()
-            adapter = TagAdapter(this@CollectionsFragment)
+            adapter = ResourcesTagsAdapter(this@CollectionsFragment)
             binding.listTags.adapter = adapter
             currentTagDataList = buildTagDataList(list).toMutableList()
             adapter.submitList(currentTagDataList)
@@ -170,7 +169,7 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
         }
     }
 
-    fun setListener(listener: TagClickListener) {
+    fun setListener(listener: OnTagClickListener) {
         this.listener = listener
     }
 }

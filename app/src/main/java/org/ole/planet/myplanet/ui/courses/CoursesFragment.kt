@@ -20,10 +20,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
-import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
-import java.util.Calendar
-import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -37,13 +34,11 @@ import org.ole.planet.myplanet.callback.OnCourseItemSelected
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.callback.TableDataUpdate
-import org.ole.planet.myplanet.callback.TagClickListener
+import org.ole.planet.myplanet.callback.OnTagClickListener
 import org.ole.planet.myplanet.model.RealmCourseProgress.Companion.getCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmRating.Companion.getRatings
-import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
-import org.ole.planet.myplanet.model.RealmTag.Companion.getTagsArray
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -53,13 +48,12 @@ import org.ole.planet.myplanet.ui.resources.CollectionsFragment
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utilities.DialogUtils
-import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.NavigationHelper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 
 @AndroidEntryPoint
-class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelected, TagClickListener, RealtimeSyncMixin {
+class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelected, OnTagClickListener, RealtimeSyncMixin {
 
     private lateinit var tvAddToLib: TextView
     private lateinit var tvSelected: TextView
@@ -222,14 +216,19 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
-        adapterCourses = CoursesAdapter(
-            requireActivity(),
-            emptyList(),
-            HashMap<String?, JsonObject>(),
-            userModel,
-            tagsRepository
-        )
-        adapterCourses.setProgressMap(HashMap<String?, JsonObject>())
+        val allCourses: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>().filter { !it?.courseTitle.isNullOrBlank() }
+
+        val courseList = if (isMyCourseLib) {
+            allCourses.filter { it?.isMyCourse == true }
+        } else {
+            allCourses.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
+        }
+
+        val map = getRatings(mRealm, "course", model?.id)
+        val progressMap = getCourseProgress(mRealm, model?.id)
+
+        adapterCourses = CoursesAdapter(requireActivity(), courseList, map, userModel, tagsRepository)
+        adapterCourses.setProgressMap(progressMap)
         adapterCourses.setListener(this@CoursesFragment)
         adapterCourses.setRatingChangeListener(this@CoursesFragment)
         return adapterCourses
@@ -377,10 +376,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             if ((selectedItems?.size ?: 0) > 0) {
                 confirmation = createAlertDialog()
                 confirmation.show()
-                addToMyList()
-                selectedItems?.clear()
-                tvAddToLib.isEnabled = false
-                checkList()
             }
         }
         etSearch = requireView().findViewById(R.id.et_search)
@@ -545,12 +540,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             }
             .setNegativeButton(R.string.ok) { dialog: DialogInterface, _: Int ->
                 dialog.cancel()
-                clearAllSelections()
-                loadDataAsync()
             }
             .setOnDismissListener {
-                clearAllSelections()
-                loadDataAsync()
+                addToMyList()
             }
 
         return builder.create()
@@ -562,9 +554,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         hideButtons()
     }
 
-    override fun onTagClicked(tag: RealmTag?) {
+    override fun onTagClicked(tag: RealmTag) {
         if (!searchTags.contains(tag)) {
-            tag?.let { searchTags.add(it) }
+            searchTags.add(tag)
         }
         filterCoursesAndUpdateUi()
         showTagText(searchTags, tvSelected)

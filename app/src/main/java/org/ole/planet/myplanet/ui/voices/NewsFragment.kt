@@ -201,7 +201,7 @@ class NewsFragment : BaseNewsFragment() {
             } finally {
                 Trace.endSection()
             }
-            adapterNews = NewsAdapter(requireActivity(), user, null, "", null, userProfileDbHandler, viewLifecycleOwner.lifecycleScope, userRepository, voicesRepository, teamsRepository)
+            adapterNews = VoicesAdapter(requireActivity(), user, null, "", null, userProfileDbHandler, viewLifecycleOwner.lifecycleScope, userRepository, voicesRepository, teamsRepository)
             adapterNews?.sharedPrefManager = sharedPrefManager
             adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
             adapterNews?.setListener(this)
@@ -209,7 +209,7 @@ class NewsFragment : BaseNewsFragment() {
             adapterNews?.updateList(sortedList)
             binding.rvNews.adapter = adapterNews
         } else {
-            (binding.rvNews.adapter as? NewsAdapter)?.updateList(list)
+            (binding.rvNews.adapter as? VoicesAdapter)?.updateList(list)
         }
         adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, "news") }
         binding.llAddNews.visibility = View.GONE
