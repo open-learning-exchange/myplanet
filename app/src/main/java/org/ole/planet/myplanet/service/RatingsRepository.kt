@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.repository
+package org.ole.planet.myplanet.service
 
 interface RatingsRepository {
     suspend fun getRatingSummary(type: String, itemId: String, userId: String): RatingSummary

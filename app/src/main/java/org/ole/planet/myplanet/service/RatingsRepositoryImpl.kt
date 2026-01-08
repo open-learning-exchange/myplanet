@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.repository
+package org.ole.planet.myplanet.service
 
 import com.google.gson.Gson
 import java.util.Date
@@ -8,6 +8,7 @@ import kotlin.math.roundToInt
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.RealmRepository
 
 class RatingsRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,

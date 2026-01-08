@@ -41,15 +41,6 @@ android {
         }
     }
 
-    sourceSets {
-        main {
-            java {
-                srcDirs 'src/main/java'
-                include '**/repository/**'
-            }
-        }
-    }
-
     packagingOptions {
         resources {
             excludes += [
