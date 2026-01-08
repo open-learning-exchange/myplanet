@@ -11,6 +11,8 @@ interface RatingsRepository {
         rating: Float,
         comment: String,
     ): RatingSummary
+
+    suspend fun getRatings(type: String, userId: String?): HashMap<String?, com.google.gson.JsonObject>
 }
 
 data class RatingEntry(
