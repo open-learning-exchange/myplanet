@@ -24,7 +24,6 @@ import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.callback.TeamUpdateListener
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
-import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMemberCount
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserSessionManager
@@ -46,6 +45,8 @@ import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ResourcesPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.SurveyPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TasksPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TeamPage
+import kotlinx.coroutines.Dispatchers
+import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
@@ -58,6 +59,9 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
     
     @Inject
     lateinit var syncManager: SyncManager
+
+    @Inject
+    lateinit var teamsRepository: TeamsRepository
 
     private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
     private lateinit var realtimeSyncListener: BaseRealtimeSyncListener
@@ -265,8 +269,13 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
         }
 
         team?._id?.let { id ->
-            if (getJoinedMemberCount(id, mRealm) <= 1 && isMyTeam) {
-                binding.btnLeave.visibility = View.GONE
+            viewLifecycleOwner.lifecycleScope.launch {
+                val memberCount = withContext(Dispatchers.IO) {
+                    teamsRepository.getJoinedMemberCount(id)
+                }
+                if (memberCount <= 1 && isMyTeam) {
+                    binding.btnLeave.visibility = View.GONE
+                }
             }
         }
     }
@@ -414,7 +423,10 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
                 binding.subtitle.text = updatedTeam.type
 
                 team?._id?.let { id ->
-                    if (getJoinedMemberCount(id, mRealm) <= 1 && isMyTeam) {
+                    val memberCount = withContext(Dispatchers.IO) {
+                        teamsRepository.getJoinedMemberCount(id)
+                    }
+                    if (memberCount <= 1 && isMyTeam) {
                         binding.btnLeave.visibility = View.GONE
                     } else {
                         binding.btnLeave.visibility = View.VISIBLE
@@ -430,11 +442,15 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener, TeamUpdateL
         _binding ?: return
         _binding?.let { binding ->
             val teamId = team?._id ?: return@let
-            val joinedCount = getJoinedMemberCount(teamId, mRealm)
-            binding.btnLeave.visibility = if (joinedCount <= 1) {
-                View.GONE
-            } else {
-                View.VISIBLE
+            viewLifecycleOwner.lifecycleScope.launch {
+                val joinedCount = withContext(Dispatchers.IO) {
+                    teamsRepository.getJoinedMemberCount(teamId)
+                }
+                binding.btnLeave.visibility = if (joinedCount <= 1) {
+                    View.GONE
+                } else {
+                    View.VISIBLE
+                }
             }
         }
     }
