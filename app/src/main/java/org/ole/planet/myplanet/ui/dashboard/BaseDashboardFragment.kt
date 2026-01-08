@@ -39,7 +39,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.TeamNotificationInfo
 import org.ole.planet.myplanet.service.sync.TransactionSyncManager
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
-import org.ole.planet.myplanet.ui.health.UserListAdapter
+import org.ole.planet.myplanet.ui.health.UserSelectionAdapter
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
 import org.ole.planet.myplanet.ui.user.UserProfileFragment
@@ -407,7 +407,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), DashboardActio
             viewModel.uiState.collect {
                 if (dialog.isShowing) {
                     if (it.users.isNotEmpty()) {
-                        val adapter = UserListAdapter(requireActivity(), android.R.layout.simple_list_item_1, it.users)
+                        val adapter = UserSelectionAdapter(requireActivity(), android.R.layout.simple_list_item_1, it.users)
                         alertHealthListBinding.list.adapter = adapter
                         alertHealthListBinding.list.onItemClickListener = AdapterView.OnItemClickListener { _, _, i, _ ->
                             val selected = alertHealthListBinding.list.adapter.getItem(i) as RealmUserModel
