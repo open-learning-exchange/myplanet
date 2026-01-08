@@ -451,7 +451,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         flexBoxTags.removeAllViews()
         val chipCloud = ChipCloud(activity, flexBoxTags, config)
         chipCloud.setDeleteListener(this)
-        if (!searchTags.contains(realmTag)) searchTags.add(realmTag)
+        if (!searchTags.any { it.name == realmTag.name }) searchTags.add(realmTag)
         chipCloud.addChips(searchTags)
         adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.text.toString(), searchTags))) {
             recyclerView.scrollToPosition(0)

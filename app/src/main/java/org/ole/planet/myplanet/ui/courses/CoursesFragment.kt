@@ -555,7 +555,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     override fun onTagClicked(tag: RealmTag) {
-        if (!searchTags.contains(tag)) {
+        if (!searchTags.any { it.name == tag.name }) {
             searchTags.add(tag)
         }
         filterCoursesAndUpdateUi()
@@ -600,7 +600,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     override fun onOkClicked(list: List<RealmTag>?) {
         searchTags.clear()
         list?.forEach { tag ->
-            if (!searchTags.contains(tag)) {
+            if (!searchTags.any { it.name == tag.name }) {
                 searchTags.add(tag)
             }
         }
