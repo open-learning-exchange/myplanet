@@ -11,7 +11,7 @@ import org.ole.planet.myplanet.model.RealmSearchActivity
 
 class ResourcesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
-    private val activityRepository: ActivityRepository
+    private val activityRepository: ActivitiesRepository
 ) : RealmRepository(databaseService), ResourcesRepository {
 
     override suspend fun getAllLibraryItems(): List<RealmMyLibrary> {
