@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="@dimen/padding_large"
-    tools:context=".ui.myhealth.AddMyHealthActivity"
+    tools:context=".ui.health.AddHealthActivity"
     android:background="@color/secondary_bg">
 
     <androidx.core.widget.NestedScrollView

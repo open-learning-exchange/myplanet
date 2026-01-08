@@ -226,7 +226,7 @@ class MyHealthFragment : Fragment() {
         binding.updateHealth.visibility = View.VISIBLE
 
         binding.updateHealth.setOnClickListener {
-            startActivity(Intent(activity, AddMyHealthActivity::class.java).putExtra("userId", userId))
+            startActivity(Intent(activity, AddHealthActivity::class.java).putExtra("userId", userId))
         }
 
         binding.txtDob.text = if (TextUtils.isEmpty(userModel?.dob)) getString(R.string.birth_date) else getFormattedDate(userModel?.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
@@ -265,7 +265,7 @@ class MyHealthFragment : Fragment() {
                 startActivity(Intent(activity, AddExaminationActivity::class.java).putExtra("userId", userId))
             }
             binding.updateHealth.setOnClickListener {
-                startActivity(Intent(activity, AddMyHealthActivity::class.java).putExtra("userId", userId))
+                startActivity(Intent(activity, AddHealthActivity::class.java).putExtra("userId", userId))
             }
             showRecords()
         }
