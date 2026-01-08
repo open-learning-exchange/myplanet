@@ -14,7 +14,7 @@ import org.ole.planet.myplanet.ui.teams.TeamPageConfig.MembersPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ResourcesPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.SurveyPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TeamPage
-import org.ole.planet.myplanet.ui.teams.members.JoinedMembersFragment
+import org.ole.planet.myplanet.ui.teams.members.MembersFragment
 import org.ole.planet.myplanet.ui.teams.members.RequestsFragment
 import org.ole.planet.myplanet.ui.teams.resources.TeamResourcesFragment
 
@@ -47,10 +47,10 @@ class TeamPagerAdapter(
         val fragment = page.createFragment()
 
         when (page) {
-            TeamPage -> if (fragment is JoinedMembersFragment) {
+            TeamPage -> if (fragment is MembersFragment) {
                 fragment.setMemberChangeListener(memberChangeListener)
             }
-            MembersPage -> if (fragment is JoinedMembersFragment) {
+            MembersPage -> if (fragment is MembersFragment) {
                 fragment.setMemberChangeListener(memberChangeListener)
             }
             ApplicantsPage, JoinRequestsPage -> if (fragment is RequestsFragment) {
