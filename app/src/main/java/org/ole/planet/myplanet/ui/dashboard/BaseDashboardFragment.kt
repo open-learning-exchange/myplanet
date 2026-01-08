@@ -164,9 +164,9 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), DashboardActio
             }
             launch {
                 viewModel.uiState
-                    .map { it.offlineLogins }
+                    .map { it.fullName to it.offlineLogins }
                     .distinctUntilChanged()
-                    .collect { offlineLogins ->
+                    .collect { (fullName, offlineLogins) ->
                         view?.findViewById<TextView>(R.id.txtFullName)?.text =
                             getString(R.string.user_name, fullName, offlineLogins)
                     }

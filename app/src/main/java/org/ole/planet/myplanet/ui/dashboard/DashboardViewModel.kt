@@ -35,6 +35,7 @@ data class DashboardUiState(
     val teams: List<RealmMyTeam> = emptyList(),
     val users: List<RealmUserModel> = emptyList(),
     val offlineLogins: Int = 0,
+    val fullName: String? = null,
 )
 
 @HiltViewModel
@@ -131,6 +132,9 @@ class DashboardViewModel @Inject constructor(
             launch {
                 val user = userRepository.getUserById(userId)
                 val userName = user?.name
+                val fullName = user?.getFullName()?.takeIf { it.trim().isNotBlank() } ?: user?.name
+                _uiState.update { it.copy(fullName = fullName) }
+
                 if (userName != null) {
                     activityRepository.getOfflineLogins(userName).collect { logins ->
                         _uiState.update { it.copy(offlineLogins = logins.size) }
