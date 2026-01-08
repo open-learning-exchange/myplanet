@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.ItemTouchHelperListener
-import org.ole.planet.myplanet.callback.ItemTouchHelperViewHolder
+import org.ole.planet.myplanet.utilities.ItemTouchHelperViewHolder
 import org.ole.planet.myplanet.callback.OnStartDragListener
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.repository.LifeRepository

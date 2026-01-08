@@ -1,11 +1,12 @@
-package org.ole.planet.myplanet.callback
+package org.ole.planet.myplanet.utilities
 
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
+import org.ole.planet.myplanet.callback.ItemTouchHelperListener
+import org.ole.planet.myplanet.utilities.ItemTouchHelperViewHolder
 
-class SimpleItemTouchHelperCallback(private val mAdapter: ItemTouchHelperListener) :
-    ItemTouchHelper.Callback() {
+class DragAndDropCallback(private val mAdapter: ItemTouchHelperListener) : ItemTouchHelper.Callback() {
     override fun isLongPressDragEnabled(): Boolean {
         return true
     }
