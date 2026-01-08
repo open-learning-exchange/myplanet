@@ -30,7 +30,7 @@ class TeamListAdapter(
     private val fragmentManager: FragmentManager,
     private val currentUser: RealmUserModel?,
     private val sharedPrefManager: SharedPrefManager
-) : ListAdapter<TeamDetails, TeamListAdapter.ViewHolderTeam>(TeamDiffCallback) {
+) : ListAdapter<TeamDetails, TeamListAdapter.TeamsViewHolder>(TeamDiffCallback) {
     private var type: String? = ""
     private var teamListener: OnClickTeamItem? = null
     private var updateCompleteListener: OnUpdateCompleteListener? = null
@@ -54,12 +54,12 @@ class TeamListAdapter(
         this.updateCompleteListener = listener
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderTeam {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TeamsViewHolder {
         val binding = ItemTeamListBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return ViewHolderTeam(binding)
+        return TeamsViewHolder(binding)
     }
 
-    override fun onBindViewHolder(holder: ViewHolderTeam, position: Int) {
+    override fun onBindViewHolder(holder: TeamsViewHolder, position: Int) {
         val team = getItem(position)
         val user: RealmUserModel? = currentUser
 
@@ -215,7 +215,7 @@ class TeamListAdapter(
         teamStatusCache.clear()
     }
 
-    class ViewHolderTeam(val binding: ItemTeamListBinding) : RecyclerView.ViewHolder(binding.root)
+    class TeamsViewHolder(val binding: ItemTeamListBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {
         val TeamDiffCallback = DiffUtils.itemCallback<TeamDetails>(
