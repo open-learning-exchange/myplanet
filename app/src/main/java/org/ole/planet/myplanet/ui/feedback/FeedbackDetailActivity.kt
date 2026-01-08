@@ -12,10 +12,10 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import org.ole.planet.myplanet.utilities.DiffUtils
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Date
@@ -157,15 +157,9 @@ class FeedbackDetailActivity : AppCompatActivity() {
     }
 
     companion object {
-        val DIFF_CALLBACK: DiffUtil.ItemCallback<FeedbackReply> =
-            object : DiffUtil.ItemCallback<FeedbackReply>() {
-                override fun areItemsTheSame(oldItem: FeedbackReply, newItem: FeedbackReply): Boolean {
-                    return oldItem.date == newItem.date && oldItem.user == newItem.user
-                }
-
-                override fun areContentsTheSame(oldItem: FeedbackReply, newItem: FeedbackReply): Boolean {
-                    return oldItem == newItem
-                }
-            }
+        val DIFF_CALLBACK = DiffUtils.itemCallback<FeedbackReply>(
+            areItemsTheSame = { oldItem, newItem -> oldItem.date == newItem.date && oldItem.user == newItem.user },
+            areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
+        )
     }
 }
