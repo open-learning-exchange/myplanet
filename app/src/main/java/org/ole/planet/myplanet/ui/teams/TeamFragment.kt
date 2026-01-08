@@ -32,7 +32,7 @@ import org.ole.planet.myplanet.callback.OnUpdateCompleteListener
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
-class TeamFragment : Fragment(), TeamListAdapter.OnClickTeamItem, OnUpdateCompleteListener,
+class TeamFragment : Fragment(), TeamAdapter.OnClickTeamItem, OnUpdateCompleteListener,
     OnTeamActionsListener {
     private var _binding: FragmentTeamBinding? = null
     private val binding get() = _binding!!
@@ -51,7 +51,7 @@ class TeamFragment : Fragment(), TeamListAdapter.OnClickTeamItem, OnUpdateComple
     private var fromDashboard: Boolean = false
     var user: RealmUserModel? = null
     private var teamList: List<RealmMyTeam> = emptyList()
-    private lateinit var teamListAdapter: TeamListAdapter
+    private lateinit var teamAdapter: TeamAdapter
     private var conditionApplied: Boolean = false
     private var textWatcher: TextWatcher? = null
 
@@ -213,7 +213,7 @@ class TeamFragment : Fragment(), TeamListAdapter.OnClickTeamItem, OnUpdateComple
 
     private fun setupRecyclerView() {
         binding.rvTeamList.layoutManager = LinearLayoutManager(activity)
-        teamListAdapter = TeamListAdapter(
+        teamAdapter = TeamAdapter(
             requireActivity(),
             childFragmentManager,
             user,
@@ -224,13 +224,13 @@ class TeamFragment : Fragment(), TeamListAdapter.OnClickTeamItem, OnUpdateComple
             setUpdateCompleteListener(this@TeamFragment)
             setTeamActionsListener(this@TeamFragment)
         }
-        binding.rvTeamList.adapter = teamListAdapter
+        binding.rvTeamList.adapter = teamAdapter
     }
 
     private fun observeTeamData() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.teamData.collectLatest { teamDataList ->
-                teamListAdapter.submitList(teamDataList)
+                teamAdapter.submitList(teamDataList)
                 onUpdateComplete(teamDataList.size)
                 listContentDescription(conditionApplied)
             }
