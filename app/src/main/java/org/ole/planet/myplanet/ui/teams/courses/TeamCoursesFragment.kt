@@ -40,7 +40,7 @@ class TeamCoursesFragment : BaseTeamFragment() {
     }
 
     private fun setupCoursesList(currentTeam: RealmMyTeam) {
-        val courses = mRealm.where(RealmMyCourse::class.java).`in`("id", currentTeam.courses.toTypedArray<String>()).findAll()
+        val courses = mRealm.where(RealmMyCourse::class.java).`in`("id", currentTeam.courses?.toTypedArray() ?: emptyArray<String>()).findAll()
         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
             val creator = withContext(Dispatchers.IO) {
                 teamsRepository.getTeamCreator(teamId)
