@@ -10,8 +10,8 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.RatingEntry
 import org.ole.planet.myplanet.repository.RatingSummary
-import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.service.RatingsRepository
 
 class RatingsViewModel @Inject constructor(
     private val ratingsRepository: RatingsRepository,
