@@ -42,7 +42,7 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         )
     }
 
-    fun handleClick(id: String?, title: String?, f: Fragment, v: TextView) {
+    open fun handleClick(id: String?, title: String?, f: Fragment, v: TextView) {
         v.text = title
         v.setOnClickListener {
             if (homeItemClickListener != null) {

@@ -23,7 +23,7 @@ import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.teams.BaseTeamFragment
-import org.ole.planet.myplanet.ui.voices.NewsAdapter
+import org.ole.planet.myplanet.ui.voices.VoicesAdapter
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.NavigationHelper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
@@ -148,7 +148,7 @@ class DiscussionListFragment : BaseTeamFragment() {
                     val isPublicTeam = isPublicTeamFromFlow || team?.isPublic == true
                     val canPost = !isGuest && (isMember || isPublicTeam)
                     binding.addMessage.isVisible = canPost
-                    (binding.rvDiscussion.adapter as? NewsAdapter)?.setNonTeamMember(!isMember)
+                    (binding.rvDiscussion.adapter as? VoicesAdapter)?.setNonTeamMember(!isMember)
                 }
             }
         }
@@ -185,7 +185,7 @@ class DiscussionListFragment : BaseTeamFragment() {
         val existingAdapter = binding.rvDiscussion.adapter
         if (existingAdapter == null) {
             val adapterNews = activity?.let {
-                NewsAdapter(it, user, null, getEffectiveTeamName(), teamId, userProfileDbHandler, viewLifecycleOwner.lifecycleScope, userRepository, voicesRepository, teamsRepository)
+                VoicesAdapter(it, user, null, getEffectiveTeamName(), teamId, userProfileDbHandler, viewLifecycleOwner.lifecycleScope, userRepository, voicesRepository, teamsRepository)
             }
             adapterNews?.sharedPrefManager = sharedPrefManager
             adapterNews?.setListener(this)
@@ -196,7 +196,7 @@ class DiscussionListFragment : BaseTeamFragment() {
                 showNoData(binding.tvNodata, it.itemCount, "discussions")
             }
         } else {
-            (existingAdapter as? NewsAdapter)?.let { adapter ->
+            (existingAdapter as? VoicesAdapter)?.let { adapter ->
                 realmNewsList?.let {
                     adapter.updateList(it)
                     showNoData(binding.tvNodata, adapter.itemCount, "discussions")

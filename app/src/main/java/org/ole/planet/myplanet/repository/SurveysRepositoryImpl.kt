@@ -28,6 +28,12 @@ class SurveysRepositoryImpl @Inject constructor(
     @DefaultPreferences private val settings: SharedPreferences,
 ) : RealmRepository(databaseService), SurveysRepository {
 
+    override suspend fun getExamQuestions(examId: String): List<RealmExamQuestion> {
+        return queryList(RealmExamQuestion::class.java) {
+            equalTo("examId", examId)
+        }
+    }
+
     override suspend fun adoptSurvey(examId: String, userId: String?, teamId: String?, isTeam: Boolean) {
         databaseService.withRealmAsync { realm ->
             realm.executeTransaction { transactionRealm ->
