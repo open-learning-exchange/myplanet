@@ -37,6 +37,7 @@ import org.ole.planet.myplanet.model.RealmMembershipDoc
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
 import org.ole.planet.myplanet.repository.SubmissionsRepository
+import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
@@ -62,6 +63,9 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     @Inject
     lateinit var submissionsRepository: SubmissionsRepository
 
+    @Inject
+    lateinit var surveysRepository: SurveysRepository
+
     data class AnswerData(
         var singleAnswer: String = "",
         var multipleAnswers: HashMap<String, String> = HashMap(),
@@ -78,39 +82,41 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         initExam()
-        questions = mRealm.where(RealmExamQuestion::class.java).equalTo("examId", exam?.id).findAll()
-        binding.tvQuestionCount.text = getString(R.string.Q1, questions?.size)
-        var q: RealmQuery<*> = mRealm.where(RealmSubmission::class.java)
-            .equalTo("userId", user?.id)
-            .equalTo("parentId", if (!TextUtils.isEmpty(exam?.courseId)) {
-                id + "@" + exam?.courseId
-            } else {
-                id
-            }).sort("startTime", Sort.DESCENDING)
-        if (type == "exam") {
-            q = q.equalTo("status", "pending")
-        }
-        sub = q.findFirst() as RealmSubmission?
-        val courseId = exam?.courseId
-        isCertified = isCourseCertified(mRealm, courseId)
-
-        if ((questions?.size ?: 0) > 0) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            questions = surveysRepository.getExamQuestions(exam?.id ?: "")
+            binding.tvQuestionCount.text = getString(R.string.Q1, questions?.size)
+            var q: RealmQuery<*> = mRealm.where(RealmSubmission::class.java)
+                .equalTo("userId", user?.id)
+                .equalTo("parentId", if (!TextUtils.isEmpty(exam?.courseId)) {
+                    id + "@" + exam?.courseId
+                } else {
+                    id
+                }).sort("startTime", Sort.DESCENDING)
             if (type == "exam") {
-                clearAllExistingAnswers {
+                q = q.equalTo("status", "pending")
+            }
+            sub = q.findFirst() as RealmSubmission?
+            val courseId = exam?.courseId
+            isCertified = isCourseCertified(mRealm, courseId)
+
+            if ((questions?.size ?: 0) > 0) {
+                if (type == "exam") {
+                    clearAllExistingAnswers {
+                        createSubmission()
+                        startExam(questions?.get(currentIndex))
+                        updateNavButtons()
+                    }
+                } else {
                     createSubmission()
                     startExam(questions?.get(currentIndex))
                     updateNavButtons()
                 }
             } else {
-                createSubmission()
-                startExam(questions?.get(currentIndex))
-                updateNavButtons()
+                binding.container.visibility = View.GONE
+                binding.btnSubmit.visibility = View.GONE
+                binding.tvQuestionCount.setText(R.string.no_questions)
+                Snackbar.make(binding.tvQuestionCount, R.string.no_questions_available, Snackbar.LENGTH_LONG).show()
             }
-        } else {
-            binding.container.visibility = View.GONE
-            binding.btnSubmit.visibility = View.GONE
-            binding.tvQuestionCount.setText(R.string.no_questions)
-            Snackbar.make(binding.tvQuestionCount, R.string.no_questions_available, Snackbar.LENGTH_LONG).show()
         }
 
         binding.btnBack.setOnClickListener {

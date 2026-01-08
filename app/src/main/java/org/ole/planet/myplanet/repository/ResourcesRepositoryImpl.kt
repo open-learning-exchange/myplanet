@@ -7,13 +7,11 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import java.util.Calendar
 import java.util.UUID
-import org.ole.planet.myplanet.model.RealmRemovedLog
-import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onAdd
-import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onRemove
 import org.ole.planet.myplanet.model.RealmSearchActivity
 
 class ResourcesRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService
+    databaseService: DatabaseService,
+    private val activityRepository: ActivityRepository
 ) : RealmRepository(databaseService), ResourcesRepository {
 
     override suspend fun getAllLibraryItems(): List<RealmMyLibrary> {
@@ -88,9 +86,7 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun markResourceAdded(userId: String?, resourceId: String) {
-        withRealmAsync { realm ->
-            RealmRemovedLog.onAdd(realm, "resources", userId, resourceId)
-        }
+        activityRepository.markResourceAdded(userId, resourceId)
     }
 
     override suspend fun updateUserLibrary(
@@ -109,12 +105,10 @@ class ResourcesRepositoryImpl @Inject constructor(
                     }
                 }
         }
-        withRealmAsync { realm ->
-            if (isAdd) {
-                onAdd(realm, "resources", userId, resourceId)
-            } else {
-                onRemove(realm, "resources", userId, resourceId)
-            }
+        if (isAdd) {
+            activityRepository.markResourceAdded(userId, resourceId)
+        } else {
+            activityRepository.markResourceRemoved(userId, resourceId)
         }
         return getLibraryItemByResourceId(resourceId)
             ?: getLibraryItemById(resourceId)

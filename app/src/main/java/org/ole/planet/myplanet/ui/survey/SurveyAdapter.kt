@@ -10,7 +10,7 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
-import org.ole.planet.myplanet.callback.OnSurveyAdoptListener
+import org.ole.planet.myplanet.callback.SurveyAdoptListener
 import org.ole.planet.myplanet.databinding.RowSurveyBinding
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
@@ -21,7 +21,7 @@ class SurveyAdapter(
     private val userId: String?,
     private val isTeam: Boolean,
     val teamId: String?,
-    private val onAdoptSurveyListener: OnSurveyAdoptListener,
+    private val onAdoptSurveyListener: SurveyAdoptListener,
     private val surveyInfoMap: Map<String, SurveyInfo>,
     private val bindingDataMap: Map<String, SurveyFormState>
 ) : ListAdapter<RealmStepExam, SurveyAdapter.ViewHolderSurvey>(SurveyDiffCallback()) {
