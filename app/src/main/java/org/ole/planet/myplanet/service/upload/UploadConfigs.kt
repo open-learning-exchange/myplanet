@@ -5,10 +5,13 @@ import org.ole.planet.myplanet.model.RealmCourseActivity
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.RealmMeetup
+import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNewsLog
+import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmitPhotos
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
@@ -140,5 +143,62 @@ object UploadConfigs {
         additionalUpdates = { _, photo, _ ->
             photo.uploaded = true
         }
+    )
+
+    // POST/PUT Methods (Phase 4)
+
+    val ExamResults = UploadConfig(
+        modelClass = RealmSubmission::class,
+        endpoint = "submissions",
+        queryBuilder = { query ->
+            query.isNotNull("parentId").isNotNull("userId")
+                .beginGroup()
+                .isNull("_id").or().isEmpty("_id")
+                .endGroup()
+        },
+        serializer = UploadSerializer.Full(RealmSubmission::serializeExamResult),
+        idExtractor = { it.id },
+        dbIdExtractor = { it._id },  // Enables POST/PUT logic
+        filterGuests = true,
+        guestUserIdExtractor = { it.userId }
+    )
+
+    val Submissions = UploadConfig(
+        modelClass = RealmSubmission::class,
+        endpoint = "submissions",
+        queryBuilder = { query ->
+            query.equalTo("isUpdated", true).or().isEmpty("_id")
+        },
+        serializer = UploadSerializer.WithRealm(RealmSubmission::serialize),
+        idExtractor = { it.id },
+        dbIdExtractor = { it._id },  // Enables POST/PUT logic
+        additionalUpdates = { _, submission, _ ->
+            submission.isUpdated = false
+        }
+    )
+
+    val Rating = UploadConfig(
+        modelClass = RealmRating::class,
+        endpoint = "ratings",
+        queryBuilder = { query ->
+            query.equalTo("isUpdated", true)
+        },
+        serializer = UploadSerializer.Simple(RealmRating::serializeRating),
+        idExtractor = { it.id },
+        dbIdExtractor = { it._id },  // Enables POST/PUT logic
+        filterGuests = true,
+        guestUserIdExtractor = { it.userId },
+        additionalUpdates = { _, rating, _ ->
+            rating.isUpdated = false
+        }
+    )
+
+    val News = UploadConfig(
+        modelClass = RealmNews::class,
+        endpoint = "news",
+        queryBuilder = { query -> query },  // Upload all news items
+        serializer = UploadSerializer.Simple(RealmNews::serializeNews),
+        idExtractor = { it.id },
+        dbIdExtractor = { it._id }  // Enables POST/PUT logic
     )
 }

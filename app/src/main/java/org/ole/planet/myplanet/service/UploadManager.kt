@@ -8,12 +8,6 @@ import com.google.gson.Gson
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Realm
-import io.realm.RealmResults
-import java.io.File
-import java.io.IOException
-import java.util.Date
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -26,27 +20,18 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmAchievement
-import org.ole.planet.myplanet.model.RealmApkLog
-import org.ole.planet.myplanet.model.RealmCourseActivity
-import org.ole.planet.myplanet.model.RealmCourseProgress
-import org.ole.planet.myplanet.model.RealmFeedback
-import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyPersonal
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmNewsLog
 import org.ole.planet.myplanet.model.RealmOfflineActivity
-import org.ole.planet.myplanet.model.RealmRating
-import org.ole.planet.myplanet.model.RealmResourceActivity
-import org.ole.planet.myplanet.model.RealmSearchActivity
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmitPhotos
 import org.ole.planet.myplanet.model.RealmTeamLog
-import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.SubmissionsRepository
+import org.ole.planet.myplanet.service.upload.UploadConfigs
+import org.ole.planet.myplanet.service.upload.UploadCoordinator
+import org.ole.planet.myplanet.service.upload.UploadResult
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.NetworkUtils
@@ -55,6 +40,11 @@ import org.ole.planet.myplanet.utilities.VersionUtils.getAndroidId
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import java.io.File
+import java.io.IOException
+import java.util.Date
+import javax.inject.Inject
+import javax.inject.Singleton
 
 private const val BATCH_SIZE = 50
 
@@ -73,11 +63,11 @@ class UploadManager @Inject constructor(
     private val submissionsRepository: SubmissionsRepository,
     @AppPreferences private val pref: SharedPreferences,
     private val gson: Gson,
-    private val uploadCoordinator: org.ole.planet.myplanet.service.upload.UploadCoordinator
+    private val uploadCoordinator: UploadCoordinator
 ) : FileUploadService() {
 
     private suspend fun uploadNewsActivities() {
-        uploadCoordinator.upload(org.ole.planet.myplanet.service.upload.UploadConfigs.NewsActivities)
+        uploadCoordinator.upload(UploadConfigs.NewsActivities)
     }
 
     fun uploadActivities(listener: SuccessListener?) {
@@ -149,66 +139,19 @@ class UploadManager @Inject constructor(
 
     suspend fun uploadExamResult(listener: SuccessListener) {
         withContext(Dispatchers.IO) {
-            val apiInterface = client.create(ApiInterface::class.java)
             try {
-                val submissions = submissionsRepository.getAllPendingSubmissions()
-                val submissionIds = submissions
-                    .filter { (it.answers?.size ?: 0) > 0 && it.userId?.startsWith("guest") != true }
-                    .mapNotNull { it.id }
+                val result = uploadCoordinator.upload(UploadConfigs.ExamResults)
 
-                var processedCount = 0
-                var errorCount = 0
-
-                submissionIds.chunked(BATCH_SIZE).forEach { batchIds ->
-                    val submissionsToUpload = databaseService.withRealm { realm ->
-                        realm.where(RealmSubmission::class.java)
-                            .`in`("id", batchIds.toTypedArray())
-                            .findAll()
-                            .map { sub ->
-                                val serialized = RealmSubmission.serializeExamResult(realm, sub, context)
-                                Triple(sub.id, serialized, sub._id)
-                            }
-                    }
-
-                    for ((id, serialized, _id) in submissionsToUpload) {
-                        try {
-                            val response = if (TextUtils.isEmpty(_id)) {
-                                apiInterface.postDocSuspend(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/submissions", serialized)
-                            } else {
-                                apiInterface.putDocSuspend(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/submissions/$_id", serialized)
-                            }
-
-                            if (response.isSuccessful && id != null) {
-                                val responseBody = response.body()
-                                if (responseBody != null) {
-                                    databaseService.withRealm { realm ->
-                                        realm.executeTransaction { transactionRealm ->
-                                            transactionRealm.where(RealmSubmission::class.java).equalTo("id", id).findFirst()?.let { sub ->
-                                                sub._id = getString("id", responseBody)
-                                                sub._rev = getString("rev", responseBody)
-                                            }
-                                        }
-                                    }
-                                    processedCount++
-                                } else {
-                                    errorCount++
-                                }
-                            } else {
-                                errorCount++
-                            }
-                        } catch (e: IOException) {
-                            errorCount++
-                            e.printStackTrace()
-                        } catch (e: Exception) {
-                            errorCount++
-                            e.printStackTrace()
-                        }
-                    }
+                val message = when (result) {
+                    is UploadResult.Success -> "Result sync completed successfully (${result.data} processed, 0 errors)"
+                    is UploadResult.PartialSuccess -> "Result sync completed with issues (${result.succeeded.size} processed, ${result.failed.size} errors)"
+                    is UploadResult.Failure -> "Result sync failed: ${result.errors.size} errors"
+                    is UploadResult.Empty -> "No exam results to upload"
                 }
 
                 uploadCourseProgress()
                 withContext(Dispatchers.Main) {
-                    listener.onSuccess("Result sync completed successfully ($processedCount processed, $errorCount errors)")
+                    listener.onSuccess(message)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -253,16 +196,15 @@ class UploadManager @Inject constructor(
     }
 
     private suspend fun uploadCourseProgress() {
-        uploadCoordinator.upload(org.ole.planet.myplanet.service.upload.UploadConfigs.CourseProgress)
+        uploadCoordinator.upload(UploadConfigs.CourseProgress)
     }
 
     suspend fun uploadFeedback(): Boolean {
-        val result = uploadCoordinator.upload(org.ole.planet.myplanet.service.upload.UploadConfigs.Feedback)
-        return when (result) {
-            is org.ole.planet.myplanet.service.upload.UploadResult.Success -> true
-            is org.ole.planet.myplanet.service.upload.UploadResult.PartialSuccess -> result.failed.isEmpty()
-            is org.ole.planet.myplanet.service.upload.UploadResult.Failure -> false
-            is org.ole.planet.myplanet.service.upload.UploadResult.Empty -> true
+        return when (val result = uploadCoordinator.upload(UploadConfigs.Feedback)) {
+            is UploadResult.Success -> true
+            is UploadResult.PartialSuccess -> result.failed.isEmpty()
+            is UploadResult.Failure -> false
+            is UploadResult.Empty -> true
         }
     }
 
@@ -458,7 +400,7 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadTeamTask() {
-        uploadCoordinator.upload(org.ole.planet.myplanet.service.upload.UploadConfigs.TeamTask)
+        uploadCoordinator.upload(UploadConfigs.TeamTask)
     }
 
     suspend fun uploadSubmissions(buttonClickTime: Long = 0L) {
@@ -471,79 +413,17 @@ class UploadManager @Inject constructor(
             Log.d("UploadManager", "Mini survey sync started at: $startTime (buttonClickTime was $buttonClickTime)")
         }
 
-        val apiInterface = client.create(ApiInterface::class.java)
-
         try {
-            data class SubmissionData(
-                val submissionId: String?,
-                val submissionDbId: String?,
-                val serialized: JsonObject
-            )
+            val result = uploadCoordinator.upload(UploadConfigs.Submissions)
 
-            val submissionsToUpload = databaseService.withRealm { realm ->
-                val list = realm.where(RealmSubmission::class.java)
-                    .equalTo("isUpdated", true).or().isEmpty("_id").findAll()
-
-                Log.d("UploadManager", "Found ${list.size} submissions to upload")
-                if (list.isEmpty()) {
-                    // Debug: Show all submissions to understand why none matched
-                    val allSubmissions = realm.where(RealmSubmission::class.java).findAll()
-                    Log.d("UploadManager", "Total submissions in DB: ${allSubmissions.size}")
-                    allSubmissions.take(5).forEach { sub ->
-                        Log.d("UploadManager", "  Submission: id=${sub.id}, _id=${sub._id}, isUpdated=${sub.isUpdated}, status=${sub.status}")
-                    }
-                } else {
-                    list.forEach { sub ->
-                        Log.d("UploadManager", "  Will upload: id=${sub.id}, _id=${sub._id}, isUpdated=${sub.isUpdated}")
-                    }
-                }
-
-                list.map { submission ->
-                    val copiedSubmission = realm.copyFromRealm(submission)
-                    SubmissionData(
-                        submissionId = copiedSubmission.id,
-                        submissionDbId = copiedSubmission._id,
-                        serialized = RealmSubmission.serialize(realm, copiedSubmission)
-                    )
-                }
-            }
-
-            submissionsToUpload.chunked(BATCH_SIZE).forEach { batch ->
-                batch.forEach { submissionData ->
-                    try {
-                        val response = if (TextUtils.isEmpty(submissionData.submissionDbId)) {
-                            apiInterface.postDoc(UrlUtils.header, "application/json",
-                                "${UrlUtils.getUrl()}/submissions", submissionData.serialized
-                            ).execute()
-                        } else {
-                            apiInterface.putDoc(UrlUtils.header, "application/json",
-                                "${UrlUtils.getUrl()}/submissions/${submissionData.submissionDbId}",
-                                submissionData.serialized
-                            ).execute()
-                        }
-
-                        val jsonObject = response.body()
-                        if (jsonObject != null) {
-                            val rev = getString("rev", jsonObject)
-                            val id = getString("id", jsonObject)
-
-                            databaseService.executeTransactionAsync { transactionRealm ->
-                                transactionRealm.where(RealmSubmission::class.java)
-                                    .equalTo("id", submissionData.submissionId)
-                                    .findFirst()?.let { submission ->
-                                        submission._rev = rev
-                                        submission._id = id
-                                        submission.isUpdated = false
-                                    }
-                            }
-                        }
-                    } catch (e: IOException) {
-                        e.printStackTrace()
-                    }
-                }
-            }
+            Log.d("UploadManager", when (result) {
+                is UploadResult.Success -> "Uploaded ${result.data} submissions successfully"
+                is UploadResult.PartialSuccess -> "Partial success: ${result.succeeded.size} succeeded, ${result.failed.size} failed"
+                is UploadResult.Failure -> "Upload failed: ${result.errors.size} errors"
+                is UploadResult.Empty -> "No submissions to upload"
+            })
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("UploadManager", "Error uploading submissions", e)
         } finally {
             val endTime = System.currentTimeMillis()
             val duration = endTime - startTime
@@ -660,7 +540,7 @@ class UploadManager @Inject constructor(
                 }
             }
 
-            uploadTeamActivitiesRefactored(apiInterface)
+            uploadTeamActivitiesRefactored()
 
             listener.onSuccess("User activities sync completed successfully")
         } catch (e: Exception) {
@@ -669,8 +549,8 @@ class UploadManager @Inject constructor(
         }
     }
 
-    private suspend fun uploadTeamActivitiesRefactored(apiInterface: ApiInterface?) {
-        uploadCoordinator.upload(org.ole.planet.myplanet.service.upload.UploadConfigs.TeamActivitiesRefactored)
+    private suspend fun uploadTeamActivitiesRefactored() {
+        uploadCoordinator.upload(UploadConfigs.TeamActivitiesRefactored)
     }
 
     fun uploadTeamActivities(realm: Realm, apiInterface: ApiInterface?) {
@@ -689,99 +569,16 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadRating() {
-        val apiInterface = client.create(ApiInterface::class.java)
-
-        data class RatingData(
-            val ratingId: String?,
-            val ratingDbId: String?,
-            val userId: String?,
-            val serialized: JsonObject
-        )
-
-        val ratingsToUpload = databaseService.withRealm { realm ->
-            val activities = realm.where(RealmRating::class.java).equalTo("isUpdated", true).findAll()
-
-            activities.mapNotNull { rating ->
-                if (rating.userId?.startsWith("guest") == true) {
-                    null
-                } else {
-                    val copiedRating = realm.copyFromRealm(rating)
-                    RatingData(
-                        ratingId = copiedRating.id,
-                        ratingDbId = copiedRating._id,
-                        userId = copiedRating.userId,
-                        serialized = RealmRating.serializeRating(copiedRating)
-                    )
-                }
-            }
-        }
-
-        withContext(Dispatchers.IO) {
-            ratingsToUpload.chunked(BATCH_SIZE).forEach { batch ->
-                batch.forEach { ratingData ->
-                    try {
-                        val `object`: Response<JsonObject>? =
-                            if (TextUtils.isEmpty(ratingData.ratingDbId)) {
-                                apiInterface.postDoc(UrlUtils.header, "application/json",
-                                    "${UrlUtils.getUrl()}/ratings", ratingData.serialized
-                                ).execute()
-                            } else {
-                                apiInterface.putDoc(UrlUtils.header, "application/json",
-                                    "${UrlUtils.getUrl()}/ratings/${ratingData.ratingDbId}",
-                                    ratingData.serialized
-                                ).execute()
-                            }
-
-                        if (`object`?.body() != null) {
-                            databaseService.executeTransactionAsync { transactionRealm ->
-                                transactionRealm.where(RealmRating::class.java)
-                                    .equalTo("id", ratingData.ratingId)
-                                    .findFirst()?.let { act ->
-                                        act._id = getString("id", `object`.body())
-                                        act._rev = getString("rev", `object`.body())
-                                        act.isUpdated = false
-                                    }
-                            }
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
-            }
-        }
+        uploadCoordinator.upload(UploadConfigs.Rating)
     }
 
     suspend fun uploadNews() {
+        // Note: uploadNews has unique logic that requires uploading images BEFORE the news document,
+        // then modifying the serialized JSON based on image upload responses. This doesn't fit the
+        // standard UploadCoordinator pattern, so we handle it with custom logic but still use
+        // the coordinator for the core upload/update flow where possible.
+
         val apiInterface = client.create(ApiInterface::class.java)
-
-        data class NewsData(
-            val id: String,
-            val newsId: String?,
-            val userId: String?,
-            val imageUrls: List<String>?,
-            val serializedNews: JsonObject,
-            val imagesArray: com.google.gson.JsonArray
-        )
-
-        val newsToUpload = databaseService.withRealm { realm ->
-            val activities = realm.where(RealmNews::class.java).findAll()
-            activities.mapNotNull { act ->
-                if (act.userId?.startsWith("guest") == true) {
-                    null
-                } else {
-                    val copiedAct = realm.copyFromRealm(act)
-                    NewsData(
-                        id = copiedAct.id ?: "",
-                        newsId = copiedAct._id,
-                        userId = copiedAct.userId,
-                        imageUrls = copiedAct.imageUrls?.toList(),
-                        serializedNews = RealmNews.serializeNews(copiedAct),
-                        imagesArray = copiedAct.imagesArray
-                    )
-                }
-            }
-        }
-
         val user = databaseService.withRealm { realm ->
             realm.where(RealmUserModel::class.java)
                 .equalTo("id", pref.getString("userId", ""))
@@ -789,69 +586,95 @@ class UploadManager @Inject constructor(
                 ?.let { realm.copyFromRealm(it) }
         }
 
+        val newsItems = databaseService.withRealm { realm ->
+            realm.where(RealmNews::class.java)
+                .findAll()
+                .mapNotNull { news ->
+                    if (news.userId?.startsWith("guest") == true) null
+                    else realm.copyFromRealm(news)
+                }
+        }
+
         withContext(Dispatchers.IO) {
-            newsToUpload.chunked(BATCH_SIZE).forEach { batch ->
-                batch.forEach { newsData ->
+            newsItems.chunked(BATCH_SIZE).forEach { batch ->
+                batch.forEach { news ->
                     try {
-                        val `object` = newsData.serializedNews
-                        val image = newsData.imagesArray
+                        // Upload images first and collect metadata
+                        val imagesArray = com.google.gson.JsonArray()
+                        var messageWithImages = news.message ?: ""
 
-                        if (!newsData.imageUrls.isNullOrEmpty()) {
-                            newsData.imageUrls.chunked(5).forEach { imageChunk ->
-                                imageChunk.forEach { imageObject ->
-                                    val imgObject = gson.fromJson(imageObject, JsonObject::class.java)
-                                    val ob = createImage(user, imgObject)
-                                    val response = apiInterface.postDoc(UrlUtils.header,
-                                        "application/json", "${UrlUtils.getUrl()}/resources", ob
-                                    ).execute().body()
+                        news.imageUrls?.forEach { imageUrl ->
+                            val imgObject = gson.fromJson(imageUrl, JsonObject::class.java)
 
-                                    val rev = getString("rev", response)
-                                    val id = getString("id", response)
-                                    val f = File(getString("imageUrl", imgObject))
-                                    val name = FileUtils.getFileNameFromUrl(getString("imageUrl", imgObject))
-                                    val format = "%s/resources/%s/%s"
-                                    val connection = f.toURI().toURL().openConnection()
-                                    val mimeType = connection.contentType
-                                    val body = FileUtils.fullyReadFileToBytes(f).toRequestBody("application/octet-stream".toMediaTypeOrNull())
-                                    val url = String.format(format, UrlUtils.getUrl(), id, name)
+                            // Create image resource document
+                            val imageDoc = createImage(user, imgObject)
+                            val imageResponse = apiInterface.postDoc(
+                                UrlUtils.header,
+                                "application/json",
+                                "${UrlUtils.getUrl()}/resources",
+                                imageDoc
+                            ).execute().body()
 
-                                    val res = apiInterface.uploadResource(getHeaderMap(mimeType, rev), url, body).execute()
-                                    val attachment = res.body()
+                            val resourceId = getString("id", imageResponse)
+                            val resourceRev = getString("rev", imageResponse)
 
-                                    val resourceObject = JsonObject()
-                                    resourceObject.addProperty("resourceId", getString("id", attachment))
-                                    resourceObject.addProperty("filename", getString("fileName", imgObject))
-                                    val markdown = "![](resources/" + getString("id", attachment) + "/" + getString("fileName", imgObject) + ")"
-                                    resourceObject.addProperty("markdown", markdown)
+                            // Upload image file as attachment
+                            val imageFile = File(getString("imageUrl", imgObject))
+                            val fileName = FileUtils.getFileNameFromUrl(getString("imageUrl", imgObject))
+                            val mimeType = imageFile.toURI().toURL().openConnection().contentType
+                            val fileBody = FileUtils.fullyReadFileToBytes(imageFile)
+                                .toRequestBody("application/octet-stream".toMediaTypeOrNull())
 
-                                    var msg = getString("message", `object`)
-                                    msg += """
-                                    $markdown
-                                    """.trimIndent()
-                                    `object`.addProperty("message", msg)
-                                    image.add(resourceObject)
-                                }
-                            }
+                            apiInterface.uploadResource(
+                                getHeaderMap(mimeType, resourceRev),
+                                "${UrlUtils.getUrl()}/resources/$resourceId/$fileName",
+                                fileBody
+                            ).execute()
+
+                            // Build image metadata and markdown
+                            val resourceObject = JsonObject()
+                            resourceObject.addProperty("resourceId", resourceId)
+                            resourceObject.addProperty("filename", fileName)
+                            val markdown = "![](resources/$resourceId/$fileName)"
+                            resourceObject.addProperty("markdown", markdown)
+                            imagesArray.add(resourceObject)
+
+                            // Append markdown to message
+                            messageWithImages += "\n$markdown"
                         }
 
-                        `object`.add("images", image)
+                        // Serialize news with updated message and images
+                        val newsJson = RealmNews.serializeNews(news)
+                        newsJson.addProperty("message", messageWithImages)
+                        newsJson.add("images", imagesArray)
 
-                        val newsUploadResponse: Response<JsonObject>? =
-                            if (TextUtils.isEmpty(newsData.newsId)) {
-                                apiInterface.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/news", `object`).execute()
-                            } else {
-                                apiInterface.putDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/news/${newsData.newsId}", `object`).execute()
-                            }
+                        // Upload news document (POST or PUT)
+                        val newsResponse = if (TextUtils.isEmpty(news._id)) {
+                            apiInterface.postDoc(
+                                UrlUtils.header,
+                                "application/json",
+                                "${UrlUtils.getUrl()}/news",
+                                newsJson
+                            ).execute()
+                        } else {
+                            apiInterface.putDoc(
+                                UrlUtils.header,
+                                "application/json",
+                                "${UrlUtils.getUrl()}/news/${news._id}",
+                                newsJson
+                            ).execute()
+                        }
 
-                        if (newsUploadResponse?.body() != null) {
-                            databaseService.executeTransactionAsync { transactionRealm ->
-                                transactionRealm.where(RealmNews::class.java)
-                                    .equalTo("id", newsData.id)
-                                    .findFirst()?.let { act ->
-                                        act.imageUrls?.clear()
-                                        act._id = getString("id", newsUploadResponse.body())
-                                        act._rev = getString("rev", newsUploadResponse.body())
-                                        act.images = gson.toJson(image)
+                        // Update database on success
+                        if (newsResponse.isSuccessful && newsResponse.body() != null) {
+                            databaseService.executeTransactionAsync { realm ->
+                                realm.where(RealmNews::class.java)
+                                    .equalTo("id", news.id)
+                                    .findFirst()?.let { managedNews ->
+                                        managedNews.imageUrls?.clear()
+                                        managedNews._id = getString("id", newsResponse.body())
+                                        managedNews._rev = getString("rev", newsResponse.body())
+                                        managedNews.images = gson.toJson(imagesArray)
                                     }
                             }
                         }
@@ -865,31 +688,31 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadCrashLog() {
-        uploadCoordinator.upload(org.ole.planet.myplanet.service.upload.UploadConfigs.CrashLog)
+        uploadCoordinator.upload(UploadConfigs.CrashLog)
     }
 
     suspend fun uploadSearchActivity() {
-        uploadCoordinator.upload(org.ole.planet.myplanet.service.upload.UploadConfigs.SearchActivity)
+        uploadCoordinator.upload(UploadConfigs.SearchActivity)
     }
 
     suspend fun uploadResourceActivities(type: String) {
         val config = if (type == "sync") {
-            org.ole.planet.myplanet.service.upload.UploadConfigs.ResourceActivitiesSync
+            UploadConfigs.ResourceActivitiesSync
         } else {
-            org.ole.planet.myplanet.service.upload.UploadConfigs.ResourceActivities
+            UploadConfigs.ResourceActivities
         }
         uploadCoordinator.upload(config)
     }
 
     suspend fun uploadCourseActivities() {
-        uploadCoordinator.upload(org.ole.planet.myplanet.service.upload.UploadConfigs.CourseActivities)
+        uploadCoordinator.upload(UploadConfigs.CourseActivities)
     }
 
     suspend fun uploadMeetups() {
-        uploadCoordinator.upload(org.ole.planet.myplanet.service.upload.UploadConfigs.Meetups)
+        uploadCoordinator.upload(UploadConfigs.Meetups)
     }
 
     suspend fun uploadAdoptedSurveys() {
-        uploadCoordinator.upload(org.ole.planet.myplanet.service.upload.UploadConfigs.AdoptedSurveys)
+        uploadCoordinator.upload(UploadConfigs.AdoptedSurveys)
     }
 }
