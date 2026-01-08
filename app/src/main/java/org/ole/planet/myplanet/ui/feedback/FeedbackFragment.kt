@@ -15,7 +15,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentFeedbackBinding
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.FeedbackRepository
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserProfileService
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
@@ -25,7 +25,7 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
     @Inject
     lateinit var feedbackRepository: FeedbackRepository
     @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
+    lateinit var userProfileDbHandler: UserProfileService
     private var model: RealmUserModel ?= null
     var user: String? = ""
 

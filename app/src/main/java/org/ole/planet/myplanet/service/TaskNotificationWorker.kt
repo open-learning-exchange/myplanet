@@ -22,7 +22,7 @@ class TaskNotificationWorker(appContext: Context, workerParams: WorkerParameters
             applicationContext,
             WorkerDependenciesEntryPoint::class.java
         )
-        val userProfileDbHandler = entryPoint.userProfileDbHandler()
+        val userProfileDbHandler = entryPoint.userProfileService()
         val teamsRepository = entryPoint.teamsRepository()
 
         val user = userProfileDbHandler.userModel

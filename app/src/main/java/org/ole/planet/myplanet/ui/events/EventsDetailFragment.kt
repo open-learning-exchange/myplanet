@@ -20,7 +20,7 @@ import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.getHashMap
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.EventsRepository
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserProfileService
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 
@@ -30,7 +30,7 @@ class EventsDetailFragment : Fragment(), View.OnClickListener {
     private val binding get() = _binding!!
     private var meetups: RealmMeetup? = null
     @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
+    lateinit var userProfileDbHandler: UserProfileService
     @Inject
     lateinit var eventsRepository: EventsRepository
     private var meetUpId: String? = null

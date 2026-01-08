@@ -20,14 +20,14 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentMyActivityBinding
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserProfileService
 
 @AndroidEntryPoint
 class MyActivityFragment : Fragment() {
     private var _binding: FragmentMyActivityBinding? = null
     private val binding get() = _binding!!
     @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
+    lateinit var userProfileDbHandler: UserProfileService
     @Inject
     lateinit var userRepository: UserRepository
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {

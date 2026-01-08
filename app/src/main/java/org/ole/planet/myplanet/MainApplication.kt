@@ -98,7 +98,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                     context,
                     WorkerDependenciesEntryPoint::class.java
                 )
-                val userProfileDbHandler = entryPoint.userProfileDbHandler()
+                val userProfileDbHandler = entryPoint.userProfileService()
                 val settings = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
                 try {
                     val databaseService = (context.applicationContext as MainApplication).databaseService

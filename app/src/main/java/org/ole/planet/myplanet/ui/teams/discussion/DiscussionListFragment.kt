@@ -20,7 +20,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.repository.VoicesRepository
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserProfileService
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.teams.BaseTeamFragment
 import org.ole.planet.myplanet.ui.voices.VoicesAdapter
@@ -36,7 +36,7 @@ class DiscussionListFragment : BaseTeamFragment() {
     @Inject
     lateinit var voicesRepository: VoicesRepository
     @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
+    lateinit var userProfileDbHandler: UserProfileService
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
 

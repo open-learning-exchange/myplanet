@@ -43,7 +43,7 @@ import org.ole.planet.myplanet.databinding.FragmentAddResourceBinding
 import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.service.AudioRecorderService
 import org.ole.planet.myplanet.service.AudioRecorderService.AudioRecordListener
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserProfileService
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -64,7 +64,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
     @Inject
     lateinit var personalsRepository: PersonalsRepository
     @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
+    lateinit var userProfileDbHandler: UserProfileService
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) {
