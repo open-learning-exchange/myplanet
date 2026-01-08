@@ -72,7 +72,8 @@ class UploadManager @Inject constructor(
     private val databaseService: DatabaseService,
     private val submissionsRepository: SubmissionsRepository,
     @AppPreferences private val pref: SharedPreferences,
-    private val gson: Gson
+    private val gson: Gson,
+    private val uploadCoordinator: org.ole.planet.myplanet.service.upload.UploadCoordinator
 ) : FileUploadService() {
 
     private suspend fun uploadNewsActivities() {
