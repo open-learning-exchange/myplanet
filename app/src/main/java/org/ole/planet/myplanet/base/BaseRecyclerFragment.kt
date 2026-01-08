@@ -164,8 +164,14 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
             isAddInProgress = false
             setJoinInProgress(false)
-            recyclerView.adapter = getAdapter()
-            showNoData(tvMessage, getAdapter().itemCount, "")
+
+            if (!mRealm.isClosed) {
+                mRealm.refresh()
+            }
+
+            val newAdapter = getAdapter()
+            recyclerView.adapter = newAdapter
+            showNoData(tvMessage, newAdapter.itemCount, "")
 
             result.exceptionOrNull()?.let { throw it }
 

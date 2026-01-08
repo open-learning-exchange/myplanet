@@ -6,4 +6,6 @@ import org.ole.planet.myplanet.model.RealmOfflineActivity
 interface ActivityRepository {
     suspend fun getOfflineActivities(userName: String, type: String): List<RealmOfflineActivity>
     suspend fun getOfflineLogins(userName: String): Flow<List<RealmOfflineActivity>>
+    suspend fun markResourceAdded(userId: String?, resourceId: String)
+    suspend fun markResourceRemoved(userId: String, resourceId: String)
 }
