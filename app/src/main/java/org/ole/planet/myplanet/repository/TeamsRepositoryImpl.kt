@@ -29,7 +29,7 @@ import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.service.UploadManager
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.JsonUtils
@@ -37,7 +37,7 @@ import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
 class TeamsRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
-    private val userProfileDbHandler: UserProfileDbHandler,
+    private val userSessionManager: UserSessionManager,
     private val uploadManager: UploadManager,
     private val gson: Gson,
     @AppPreferences private val preferences: SharedPreferences,
@@ -607,7 +607,7 @@ class TeamsRepositoryImpl @Inject constructor(
         if (task.sync.isNullOrBlank()) {
             val syncObj = JsonObject().apply {
                 addProperty("type", "local")
-                addProperty("planetCode", userProfileDbHandler.userModel?.planetCode)
+                addProperty("planetCode", userSessionManager.userModel?.planetCode)
             }
             task.sync = gson.toJson(syncObj)
         }
@@ -870,8 +870,8 @@ class TeamsRepositoryImpl @Inject constructor(
             members.map { member ->
                 val lastVisitTimestamp = RealmTeamLog.getLastVisit(realm, member.name, teamId)
                 val visitCount = RealmTeamLog.getVisitCount(realm, member.name, teamId)
-                val offlineVisits = "${userProfileDbHandler.getOfflineVisits(member)}"
-                val profileLastVisit = userProfileDbHandler.getLastVisit(member)
+                val offlineVisits = "${userSessionManager.getOfflineVisits(member)}"
+                val profileLastVisit = userSessionManager.getLastVisit(member)
                 JoinedMemberData(
                     member, visitCount, lastVisitTimestamp, offlineVisits,
                     profileLastVisit, member.id == leaderId
