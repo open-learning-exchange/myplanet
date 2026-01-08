@@ -129,6 +129,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
     var forceSync = false
     var syncFailed = false
     lateinit var defaultPref: SharedPreferences
+    @Inject
     lateinit var service: DataService
     var currentDialog: MaterialDialog? = null
     var serverConfigAction = ""
