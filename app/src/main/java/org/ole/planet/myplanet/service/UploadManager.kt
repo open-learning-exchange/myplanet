@@ -77,25 +77,8 @@ class UploadManager @Inject constructor(
 ) : FileUploadService() {
 
     private suspend fun uploadNewsActivities() {
-        val apiInterface = client.create(ApiInterface::class.java)
-        databaseService.executeTransactionAsync { transactionRealm ->
-                val newsLog: List<RealmNewsLog> = transactionRealm.where(RealmNewsLog::class.java)
-                    .isNull("_id").or().isEmpty("_id")
-                    .findAll()
-
-                newsLog.processInBatches { news ->
-                        try {
-                            val `object` = apiInterface.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/myplanet_activities", RealmNewsLog.serialize(news)).execute().body()
-                            if (`object` != null) {
-                                news._id = getString("id", `object`)
-                                news._rev = getString("rev", `object`)
-                            }
-                        } catch (e: IOException) {
-                            e.printStackTrace()
-                        }
-                }
-            }
-        }
+        uploadCoordinator.upload(org.ole.planet.myplanet.service.upload.UploadConfigs.NewsActivities)
+    }
 
     fun uploadActivities(listener: SuccessListener?) {
         val apiInterface = client.create(ApiInterface::class.java)
@@ -270,109 +253,17 @@ class UploadManager @Inject constructor(
     }
 
     private suspend fun uploadCourseProgress() {
-        val apiInterface = client.create(ApiInterface::class.java)
-
-        data class ProgressData(
-            val progressId: String?,
-            val userId: String?,
-            val serialized: JsonObject
-        )
-
-        val progressToUpload = databaseService.withRealm { realm ->
-            val data = realm.where(RealmCourseProgress::class.java).isNull("_id").findAll()
-
-            data.mapNotNull { progress ->
-                if (progress.userId?.startsWith("guest") == true) {
-                    null
-                } else {
-                    val copiedProgress = realm.copyFromRealm(progress)
-                    ProgressData(progressId = copiedProgress.id, userId = copiedProgress.userId,
-                        serialized = RealmCourseProgress.serializeProgress(copiedProgress)
-                    )
-                }
-            }
-        }
-
-        var successCount = 0
-        var errorCount = 0
-
-        withContext(Dispatchers.IO) {
-            progressToUpload.chunked(BATCH_SIZE).forEach { batch ->
-                batch.forEach { progressData ->
-                    try {
-                        val `object` = apiInterface.postDoc(UrlUtils.header, "application/json",
-                            "${UrlUtils.getUrl()}/courses_progress", progressData.serialized
-                        ).execute().body()
-
-                        if (`object` != null) {
-                            databaseService.executeTransactionAsync { transactionRealm ->
-                                transactionRealm.where(RealmCourseProgress::class.java)
-                                    .equalTo("id", progressData.progressId)
-                                    .findFirst()?.let { sub ->
-                                        sub._id = getString("id", `object`)
-                                        sub._rev = getString("rev", `object`)
-                                    }
-                            }
-                            successCount++
-                        } else {
-                            errorCount++
-                        }
-                    } catch (e: IOException) {
-                        errorCount++
-                        e.printStackTrace()
-                    }
-                }
-            }
-        }
+        uploadCoordinator.upload(org.ole.planet.myplanet.service.upload.UploadConfigs.CourseProgress)
     }
 
     suspend fun uploadFeedback(): Boolean {
-        val apiInterface = client.create(ApiInterface::class.java)
-        var success = true
-        try {
-            val feedbacksToUpload = databaseService.withRealm { realm ->
-                realm.copyFromRealm(realm.where(RealmFeedback::class.java).findAll())
-            }
-
-            if (feedbacksToUpload.isEmpty()) {
-                return true
-            }
-
-            feedbacksToUpload.forEach { feedback ->
-                try {
-                    val res = apiInterface.postDocSuspend(UrlUtils.header, "application/json",
-                        "${UrlUtils.getUrl()}/feedback", RealmFeedback.serializeFeedback(feedback)
-                    )
-
-                    val r = res.body()
-                    if (res.isSuccessful && r != null) {
-                        val revElement = r["rev"]
-                        val idElement = r["id"]
-                        if (revElement != null && idElement != null) {
-                            databaseService.executeTransactionAsync { transactionRealm ->
-                                val realmFeedback = transactionRealm.where(RealmFeedback::class.java)
-                                    .equalTo("id", feedback.id).findFirst()
-                                realmFeedback?.let {
-                                    it._rev = revElement.asString
-                                    it._id = idElement.asString
-                                }
-                            }
-                        } else {
-                            success = false
-                        }
-                    } else {
-                        success = false
-                    }
-                } catch (e: IOException) {
-                    success = false
-                    e.printStackTrace()
-                }
-            }
-        } catch (e: Exception) {
-            success = false
-            e.printStackTrace()
+        val result = uploadCoordinator.upload(org.ole.planet.myplanet.service.upload.UploadConfigs.Feedback)
+        return when (result) {
+            is org.ole.planet.myplanet.service.upload.UploadResult.Success -> true
+            is org.ole.planet.myplanet.service.upload.UploadResult.PartialSuccess -> result.failed.isEmpty()
+            is org.ole.planet.myplanet.service.upload.UploadResult.Failure -> false
+            is org.ole.planet.myplanet.service.upload.UploadResult.Empty -> true
         }
-        return success
     }
 
     suspend fun uploadSubmitPhotos(listener: SuccessListener?) {
@@ -567,55 +458,7 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadTeamTask() {
-        val apiInterface = client.create(ApiInterface::class.java)
-
-        data class TaskData(
-            val taskId: String?,
-            val serialized: JsonObject
-        )
-
-        val tasksToUpload = databaseService.withRealm { realm ->
-            val tasks = realm.where(RealmTeamTask::class.java)
-                .beginGroup()
-                .isNull("_id").or().isEmpty("_id").or().equalTo("isUpdated", true)
-                .endGroup().findAll()
-
-            tasks.map { task ->
-                val copiedTask = realm.copyFromRealm(task)
-                TaskData(
-                    taskId = copiedTask.id,
-                    serialized = RealmTeamTask.serialize(realm, copiedTask)
-                )
-            }
-        }
-
-        withContext(Dispatchers.IO) {
-            tasksToUpload.chunked(BATCH_SIZE).forEach { batch ->
-                batch.forEach { taskData ->
-                    try {
-                        val `object` = apiInterface.postDoc(UrlUtils.header, "application/json",
-                            "${UrlUtils.getUrl()}/tasks", taskData.serialized
-                        ).execute().body()
-
-                        if (`object` != null) {
-                            val rev = getString("rev", `object`)
-                            val id = getString("id", `object`)
-
-                            databaseService.executeTransactionAsync { transactionRealm ->
-                                transactionRealm.where(RealmTeamTask::class.java)
-                                    .equalTo("id", taskData.taskId)
-                                    .findFirst()?.let { task ->
-                                        task._rev = rev
-                                        task._id = id
-                                    }
-                            }
-                        }
-                    } catch (e: IOException) {
-                        e.printStackTrace()
-                    }
-                }
-            }
-        }
+        uploadCoordinator.upload(org.ole.planet.myplanet.service.upload.UploadConfigs.TeamTask)
     }
 
     suspend fun uploadSubmissions(buttonClickTime: Long = 0L) {
@@ -827,47 +670,7 @@ class UploadManager @Inject constructor(
     }
 
     private suspend fun uploadTeamActivitiesRefactored(apiInterface: ApiInterface?) {
-        data class TeamLogData(
-            val logId: String?,
-            val serialized: JsonObject
-        )
-
-        val logsToUpload = databaseService.withRealm { realm ->
-            val logs = realm.where(RealmTeamLog::class.java).isNull("_rev").findAll()
-
-            logs.map { log ->
-                val copiedLog = realm.copyFromRealm(log)
-                TeamLogData(
-                    logId = copiedLog._id,
-                    serialized = RealmTeamLog.serializeTeamActivities(copiedLog, context)
-                )
-            }
-        }
-
-        withContext(Dispatchers.IO) {
-            logsToUpload.chunked(BATCH_SIZE).forEach { batch ->
-                batch.forEach { logData ->
-                    try {
-                        val `object` = apiInterface?.postDoc(UrlUtils.header, "application/json",
-                            "${UrlUtils.getUrl()}/team_activities", logData.serialized
-                        )?.execute()?.body()
-
-                        if (`object` != null) {
-                            databaseService.executeTransactionAsync { transactionRealm ->
-                                transactionRealm.where(RealmTeamLog::class.java)
-                                    .equalTo("_id", logData.logId)
-                                    .findFirst()?.let { log ->
-                                        log._id = getString("id", `object`)
-                                        log._rev = getString("rev", `object`)
-                                    }
-                            }
-                        }
-                    } catch (e: IOException) {
-                        e.printStackTrace()
-                    }
-                }
-            }
-        }
+        uploadCoordinator.upload(org.ole.planet.myplanet.service.upload.UploadConfigs.TeamActivitiesRefactored)
     }
 
     fun uploadTeamActivities(realm: Realm, apiInterface: ApiInterface?) {
@@ -1062,269 +865,31 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadCrashLog() {
-        val apiInterface = client.create(ApiInterface::class.java)
-
-        try {
-            databaseService.executeTransactionAsync { transactionRealm ->
-                uploadCrashLogData(transactionRealm, apiInterface)
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
-    private fun uploadCrashLogData(realm: Realm, apiInterface: ApiInterface?) {
-        val logs: RealmResults<RealmApkLog> = realm.where(RealmApkLog::class.java).isNull("_rev").findAll()
-
-        logs.processInBatches { act ->
-                try {
-                    val o = apiInterface?.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/apk_logs", RealmApkLog.serialize(act, context))?.execute()?.body()
-
-                    if (o != null) {
-                        act._rev = getString("rev", o)
-                    }
-                } catch (e: IOException) {
-                    e.printStackTrace()
-                }
-        }
+        uploadCoordinator.upload(org.ole.planet.myplanet.service.upload.UploadConfigs.CrashLog)
     }
 
     suspend fun uploadSearchActivity() {
-        val apiInterface = client.create(ApiInterface::class.java)
-
-        data class SearchActivityData(
-            val activityId: String?,
-            val serialized: JsonObject
-        )
-
-        val activitiesToUpload = databaseService.withRealm { realm ->
-            val logs = realm.where(RealmSearchActivity::class.java).isEmpty("_rev").findAll()
-
-            logs.map { activity ->
-                val copiedActivity = realm.copyFromRealm(activity)
-                SearchActivityData(
-                    activityId = copiedActivity._id,
-                    serialized = copiedActivity.serialize()
-                )
-            }
-        }
-
-        withContext(Dispatchers.IO) {
-            activitiesToUpload.chunked(BATCH_SIZE).forEach { batch ->
-                batch.forEach { activityData ->
-                    try {
-                        val o = apiInterface.postDoc(UrlUtils.header, "application/json",
-                            "${UrlUtils.getUrl()}/search_activities", activityData.serialized
-                        ).execute().body()
-
-                        if (o != null) {
-                            databaseService.executeTransactionAsync { transactionRealm ->
-                                transactionRealm.where(RealmSearchActivity::class.java)
-                                    .equalTo("_id", activityData.activityId)
-                                    .findFirst()?.let { act ->
-                                        act._rev = getString("rev", o)
-                                    }
-                            }
-                        }
-                    } catch (e: IOException) {
-                        e.printStackTrace()
-                    }
-                }
-            }
-        }
+        uploadCoordinator.upload(org.ole.planet.myplanet.service.upload.UploadConfigs.SearchActivity)
     }
 
     suspend fun uploadResourceActivities(type: String) {
-        val apiInterface = client.create(ApiInterface::class.java)
-
-        val db = if (type == "sync") {
-            "admin_activities"
+        val config = if (type == "sync") {
+            org.ole.planet.myplanet.service.upload.UploadConfigs.ResourceActivitiesSync
         } else {
-            "resource_activities"
+            org.ole.planet.myplanet.service.upload.UploadConfigs.ResourceActivities
         }
-
-        data class ResourceActivityData(
-            val activityId: String?,
-            val serialized: JsonObject
-        )
-
-        val activitiesToUpload = databaseService.withRealm { realm ->
-            val activities = if (type == "sync") {
-                realm.where(RealmResourceActivity::class.java).isNull("_rev").equalTo("type", "sync").findAll()
-            } else {
-                realm.where(RealmResourceActivity::class.java).isNull("_rev").notEqualTo("type", "sync").findAll()
-            }
-
-            activities.map { activity ->
-                val copiedActivity = realm.copyFromRealm(activity)
-                ResourceActivityData(
-                    activityId = copiedActivity._id,
-                    serialized = RealmResourceActivity.serializeResourceActivities(copiedActivity)
-                )
-            }
-        }
-
-        withContext(Dispatchers.IO) {
-            activitiesToUpload.chunked(BATCH_SIZE).forEach { batch ->
-                batch.forEach { activityData ->
-                    try {
-                        val `object` = apiInterface.postDoc(UrlUtils.header, "application/json",
-                            "${UrlUtils.getUrl()}/$db", activityData.serialized
-                        ).execute().body()
-
-                        if (`object` != null) {
-                            databaseService.executeTransactionAsync { transactionRealm ->
-                                transactionRealm.where(RealmResourceActivity::class.java)
-                                    .equalTo("_id", activityData.activityId)
-                                    .findFirst()?.let { act ->
-                                        act._rev = getString("rev", `object`)
-                                        act._id = getString("id", `object`)
-                                    }
-                            }
-                        }
-                    } catch (e: IOException) {
-                        e.printStackTrace()
-                    }
-                }
-            }
-        }
+        uploadCoordinator.upload(config)
     }
 
     suspend fun uploadCourseActivities() {
-        val apiInterface = client.create(ApiInterface::class.java)
-
-        data class CourseActivityData(
-            val activityId: String?,
-            val serialized: JsonObject
-        )
-
-        val activitiesToUpload = databaseService.withRealm { realm ->
-            val activities = realm.where(RealmCourseActivity::class.java).isNull("_rev").notEqualTo("type", "sync").findAll()
-
-            activities.map { activity ->
-                val copiedActivity = realm.copyFromRealm(activity)
-                CourseActivityData(
-                    activityId = copiedActivity._id,
-                    serialized = RealmCourseActivity.serializeSerialize(copiedActivity)
-                )
-            }
-        }
-
-        withContext(Dispatchers.IO) {
-            activitiesToUpload.chunked(BATCH_SIZE).forEach { batch ->
-                batch.forEach { activityData ->
-                    try {
-                        val `object` = apiInterface.postDoc(UrlUtils.header, "application/json",
-                            "${UrlUtils.getUrl()}/course_activities", activityData.serialized
-                        ).execute().body()
-
-                        if (`object` != null) {
-                            databaseService.executeTransactionAsync { transactionRealm ->
-                                transactionRealm.where(RealmCourseActivity::class.java)
-                                    .equalTo("_id", activityData.activityId)
-                                    .findFirst()?.let { act ->
-                                        act._rev = getString("rev", `object`)
-                                        act._id = getString("id", `object`)
-                                    }
-                            }
-                        }
-                    } catch (e: IOException) {
-                        e.printStackTrace()
-                    }
-                }
-            }
-        }
+        uploadCoordinator.upload(org.ole.planet.myplanet.service.upload.UploadConfigs.CourseActivities)
     }
 
     suspend fun uploadMeetups() {
-        val apiInterface = client.create(ApiInterface::class.java)
-
-        data class MeetupData(
-            val localMeetupId: String?,
-            val serialized: JsonObject
-        )
-
-        val meetupsToUpload = databaseService.withRealm { realm ->
-            val meetups = realm.where(RealmMeetup::class.java).findAll()
-
-            meetups.map { meetup ->
-                val copiedMeetup = realm.copyFromRealm(meetup)
-                MeetupData(
-                    localMeetupId = copiedMeetup.id,
-                    serialized = RealmMeetup.serialize(copiedMeetup)
-                )
-            }
-        }
-
-        withContext(Dispatchers.IO) {
-            meetupsToUpload.chunked(BATCH_SIZE).forEach { batch ->
-                batch.forEach { meetupData ->
-                    try {
-                        val `object` = apiInterface.postDoc(UrlUtils.header, "application/json",
-                            "${UrlUtils.getUrl()}/meetups", meetupData.serialized
-                        ).execute().body()
-
-                        if (`object` != null) {
-                        databaseService.executeTransactionAsync { transactionRealm ->
-                            transactionRealm.where(RealmMeetup::class.java)
-                                .equalTo("id", meetupData.localMeetupId)
-                                .findFirst()?.let { meetup ->
-                                    meetup.meetupId = getString("id", `object`)
-                                    meetup.meetupIdRev = getString("rev", `object`)
-                                }
-                        }
-                    }
-                    } catch (e: IOException) {
-                        e.printStackTrace()
-                    }
-                }
-            }
-        }
+        uploadCoordinator.upload(org.ole.planet.myplanet.service.upload.UploadConfigs.Meetups)
     }
 
     suspend fun uploadAdoptedSurveys() {
-        val apiInterface = client.create(ApiInterface::class.java)
-
-        data class SurveyData(
-            val surveyId: String?,
-            val serialized: JsonObject
-        )
-
-        val surveysToUpload = databaseService.withRealm { realm ->
-            val adoptedSurveys = realm.where(RealmStepExam::class.java).isNotNull("sourceSurveyId").isNull("_rev").findAll()
-
-            adoptedSurveys.map { survey ->
-                val copiedSurvey = realm.copyFromRealm(survey)
-                SurveyData(
-                    surveyId = copiedSurvey.id,
-                    serialized = RealmStepExam.serializeExam(realm, copiedSurvey)
-                )
-            }
-        }
-
-        withContext(Dispatchers.IO) {
-            surveysToUpload.chunked(BATCH_SIZE).forEach { batch ->
-                batch.forEach { surveyData ->
-                    try {
-                        val `object` = apiInterface.postDoc(UrlUtils.header, "application/json",
-                            "${UrlUtils.getUrl()}/exams", surveyData.serialized).execute().body()
-
-                        if (`object` != null) {
-                            databaseService.executeTransactionAsync { transactionRealm ->
-                                transactionRealm.where(RealmStepExam::class.java)
-                                    .equalTo("id", surveyData.surveyId)
-                                    .findFirst()?.let { survey ->
-                                        survey._rev = getString("rev", `object`)
-                                    }
-                            }
-                        }
-                    } catch (e: IOException) {
-                        e.printStackTrace()
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
-            }
-        }
+        uploadCoordinator.upload(org.ole.planet.myplanet.service.upload.UploadConfigs.AdoptedSurveys)
     }
 }
