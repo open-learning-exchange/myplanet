@@ -9,8 +9,10 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import dagger.hilt.android.AndroidEntryPoint
 import java.util.Date
 import java.util.UUID
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -31,6 +33,7 @@ import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.utilities.CameraUtils
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
+import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 
@@ -49,7 +52,10 @@ private data class IntermediateStepData(
     val stepSurvey: List<RealmStepExam>
 )
 
+@AndroidEntryPoint
 class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
+    @Inject
+    lateinit var progressRepository: ProgressRepository
     private lateinit var fragmentCourseStepBinding: FragmentCourseStepBinding
     var stepId: String? = null
     private lateinit var step: RealmCourseStep
@@ -77,36 +83,20 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         return fragmentCourseStepBinding.root
     }
 
-    private suspend fun saveCourseProgress(userId: String?, planetCode: String?, parentCode: String?) {
-        databaseService.executeTransactionAsync { realm ->
-            var courseProgress = realm.where(RealmCourseProgress::class.java)
-                .equalTo("courseId", step.courseId)
-                .equalTo("userId", userId)
-                .equalTo("stepNum", stepNumber)
-                .findFirst()
-            if (courseProgress == null) {
-                courseProgress = realm.createObject(RealmCourseProgress::class.java, UUID.randomUUID().toString())
-                courseProgress.createdDate = Date().time
-            }
-            courseProgress?.courseId = step.courseId
-            courseProgress?.stepNum = stepNumber
-            if (stepExams.isEmpty()) {
-                courseProgress?.passed = true
-            }
-            courseProgress?.createdOn = planetCode
-            courseProgress?.updatedDate = Date().time
-            courseProgress?.parentCode = parentCode
-            courseProgress?.userId = userId
-        }
-    }
-
     private fun launchSaveCourseProgress() {
         if (saveInProgress?.isActive == true) return
         val userId = user?.id
         val planetCode = user?.planetCode
         val parentCode = user?.parentCode
         saveInProgress = lifecycleScope.launch {
-            saveCourseProgress(userId, planetCode, parentCode)
+            progressRepository.saveCourseProgress(
+                userId,
+                planetCode,
+                parentCode,
+                step.courseId,
+                stepNumber,
+                if (stepExams.isEmpty()) true else null
+            )
         }
         saveInProgress?.invokeOnCompletion { saveInProgress = null }
     }
