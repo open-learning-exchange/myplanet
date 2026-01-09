@@ -54,6 +54,7 @@ class ChatHistoryFragment : Fragment() {
     private var _binding: FragmentChatHistoryBinding? = null
     private val binding get() = _binding!!
     private lateinit var sharedViewModel: ChatViewModel
+    private lateinit var onBackPressedCallback: ChatHistoryOnBackPressedCallback
     var user: RealmUserModel? = null
     private var isFullSearch: Boolean = false
     private var isQuestion: Boolean = false
@@ -101,7 +102,8 @@ class ChatHistoryFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         val slidingPaneLayout = binding.slidingPaneLayout
         slidingPaneLayout.lockMode = SlidingPaneLayout.LOCK_MODE_LOCKED
-        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, ChatHistoryOnBackPressedCallback(slidingPaneLayout))
+        onBackPressedCallback = ChatHistoryOnBackPressedCallback(slidingPaneLayout)
+        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, onBackPressedCallback)
 
         setupRealtimeSync()
         checkAiProvidersIfNeeded()
@@ -389,6 +391,7 @@ class ChatHistoryFragment : Fragment() {
         if (::realtimeSyncListener.isInitialized) {
             syncCoordinator.removeListener(realtimeSyncListener)
         }
+        onBackPressedCallback.remove()
         searchBarWatcher?.let { binding.searchBar.removeTextChangedListener(it) }
         _binding = null
         super.onDestroyView()
@@ -406,6 +409,10 @@ class ChatHistoryOnBackPressedCallback(private val slidingPaneLayout: SlidingPan
     SlidingPaneLayout.PanelSlideListener {
     init {
         slidingPaneLayout.addPanelSlideListener(this)
+    }
+
+    fun remove() {
+        slidingPaneLayout.removePanelSlideListener(this)
     }
     override fun handleOnBackPressed() {
         slidingPaneLayout.closePane()
