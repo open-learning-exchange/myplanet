@@ -89,4 +89,16 @@ class FeedbackRepositoryImpl @Inject constructor(
     override suspend fun saveFeedback(feedback: RealmFeedback) {
         save(feedback)
     }
+
+    override suspend fun saveFeedback(
+        feedbackBody: String,
+        user: RealmUserModel?,
+        urgent: String,
+        type: String,
+        item: String?,
+        state: String?
+    ) {
+        val feedback = createFeedback(user?.name, urgent, type, feedbackBody, item, state)
+        save(feedback)
+    }
 }
