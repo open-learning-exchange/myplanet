@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.callback.BaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.DiffRefreshableCallback
-import org.ole.planet.myplanet.callback.TableDataUpdate
+import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
 
 interface RealtimeSyncMixin {

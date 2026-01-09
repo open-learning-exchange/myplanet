@@ -21,7 +21,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.BaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.OnMemberChangeListener
 import org.ole.planet.myplanet.callback.SyncListener
-import org.ole.planet.myplanet.callback.TableDataUpdate
+import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.callback.TeamUpdateListener
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMemberCount
