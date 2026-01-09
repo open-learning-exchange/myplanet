@@ -58,8 +58,6 @@ import org.ole.planet.myplanet.utilities.Utilities.toast
 
 @AndroidEntryPoint
 class LoginActivity : SyncActivity(), UserProfileAdapter.OnItemClickListener {
-    @Inject
-    lateinit var userRepository: UserRepository
     private lateinit var binding: ActivityLoginBinding
     private lateinit var nameWatcher1: TextWatcher
     private lateinit var nameWatcher2: TextWatcher
