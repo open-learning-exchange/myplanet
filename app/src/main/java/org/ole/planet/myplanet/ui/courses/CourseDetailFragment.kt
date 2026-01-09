@@ -15,7 +15,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.FragmentCourseDetailBinding
-import org.ole.planet.myplanet.model.StepItem
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -93,12 +92,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         binding.stepsList.layoutManager = LinearLayoutManager(activity)
         val adapter = StepsAdapter(requireActivity(), submissionsRepository, viewLifecycleOwner)
         binding.stepsList.adapter = adapter
-        adapter.submitList(steps.map { step ->
-            StepItem(
-                id = step.id,
-                stepTitle = step.stepTitle
-            )
-        })
+        adapter.submitList(steps.toList())
     }
 
     override fun onRatingChanged() {

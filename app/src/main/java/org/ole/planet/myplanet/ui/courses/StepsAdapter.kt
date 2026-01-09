@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -14,11 +15,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowStepsBinding
-import org.ole.planet.myplanet.model.StepItem
+import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.utilities.DiffUtils
 
-class StepsAdapter(private val context: Context, private val submissionsRepository: SubmissionsRepository, private val lifecycleOwner: LifecycleOwner) : ListAdapter<StepItem, StepsAdapter.ViewHolder>(STEP_ITEM_COMPARATOR) {
+class StepsAdapter(private val context: Context, private val submissionsRepository: SubmissionsRepository, private val lifecycleOwner: LifecycleOwner) : ListAdapter<RealmCourseStep, StepsAdapter.ViewHolder>(STEP_ITEM_COMPARATOR) {
     private val descriptionVisibilityMap = mutableMapOf<String, Boolean>()
     private var currentlyVisibleStepId: String? = null
     private val examQuestionCountCache = mutableMapOf<String, Int>()
@@ -41,7 +42,7 @@ class StepsAdapter(private val context: Context, private val submissionsReposito
         }
     }
 
-    override fun submitList(list: List<StepItem>?) {
+    override fun submitList(list: List<RealmCourseStep>?) {
         list?.forEach { step ->
             step.id?.let { descriptionVisibilityMap.getOrPut(it) { false } }
         }
@@ -62,7 +63,7 @@ class StepsAdapter(private val context: Context, private val submissionsReposito
             }
         }
 
-        fun bind(step: StepItem) {
+        fun bind(step: RealmCourseStep) {
             rowStepsBinding.tvTitle.text = step.stepTitle
             rowStepsBinding.tvDescription.text = context.getString(R.string.test_size, 0)
             loadJob?.cancel()
@@ -142,9 +143,13 @@ class StepsAdapter(private val context: Context, private val submissionsReposito
     }
 
     companion object {
-        private val STEP_ITEM_COMPARATOR = DiffUtils.itemCallback<StepItem>(
+        private val STEP_ITEM_COMPARATOR = DiffUtils.itemCallback<RealmCourseStep>(
             areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id },
-            areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
+            areContentsTheSame = { oldItem, newItem ->
+                oldItem.stepTitle == newItem.stepTitle &&
+                oldItem.description == newItem.description &&
+                oldItem.noOfResources == newItem.noOfResources
+            }
         )
     }
 }
