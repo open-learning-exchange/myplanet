@@ -1,9 +1,5 @@
-package org.ole.planet.myplanet.repository
 
-import kotlinx.coroutines.flow.Flow
-import org.ole.planet.myplanet.model.RealmCourseStep
-import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyLibrary
+import com.google.gson.JsonObject
 
 interface CoursesRepository {
     suspend fun getMyCoursesFlow(userId: String): Flow<List<RealmMyCourse>>
@@ -33,4 +29,5 @@ interface CoursesRepository {
         grade: String,
         subject: String
     )
+    suspend fun createCourse(courseData: JsonObject, userId: String)
 }

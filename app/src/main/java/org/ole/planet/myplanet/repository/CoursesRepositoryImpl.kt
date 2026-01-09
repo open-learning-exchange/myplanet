@@ -221,4 +221,33 @@ class CoursesRepositoryImpl @Inject constructor(
             equalTo("userId", userId)
         }.isNotEmpty()
     }
+
+    override suspend fun createCourse(courseData: JsonObject, userId: String) {
+        val courseId = courseData.get("_id")?.asString ?: ""
+        if (courseId.isEmpty()) {
+            return
+        }
+        databaseService.withRealm { realm ->
+            var myCourse = realm.where(RealmMyCourse::class.java)
+                .equalTo("courseId", courseId)
+                .equalTo("userId", userId)
+                .findFirst()
+            if (myCourse == null) {
+                myCourse = realm.createObject(RealmMyCourse::class.java, UUID.randomUUID().toString())
+                myCourse.courseId = courseId
+            }
+
+            myCourse?.apply {
+                this.userId = userId
+                this.courseTitle = courseData.get("courseTitle")?.asString ?: ""
+                this.description = courseData.get("description")?.asString ?: ""
+                this.gradeLevel = courseData.get("gradeLevel")?.asString ?: ""
+                this.subjectLevel = courseData.get("subjectLevel")?.asString ?: ""
+                this.method = courseData.get("method")?.asString ?: ""
+                this.rating = courseData.get("rating")?.asString ?: ""
+                this.averageRating = courseData.get("averageRating")?.asFloat ?: 0f
+                this.memberCount = courseData.get("memberCount")?.asInt ?: 0
+            }
+        }
+    }
 }

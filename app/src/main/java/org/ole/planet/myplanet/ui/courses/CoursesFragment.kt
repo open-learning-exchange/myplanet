@@ -545,7 +545,25 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 dialog.cancel()
             }
             .setOnDismissListener {
-                addToMyList()
+                lifecycleScope.launch {
+                    selectedItems?.forEach { course ->
+                        val courseData = com.google.gson.JsonObject().apply {
+                            addProperty("_id", course?.courseId)
+                            addProperty("courseTitle", course?.courseTitle)
+                            addProperty("description", course?.description)
+                            addProperty("gradeLevel", course?.gradeLevel)
+                            addProperty("subjectLevel", course?.subjectLevel)
+                            addProperty("method", course?.method)
+                            addProperty("rating", course?.rating)
+                            addProperty("averageRating", course?.averageRating)
+                            addProperty("memberCount", course?.memberCount)
+                        }
+                        userModel?.id?.let { userId ->
+                            coursesRepository.createCourse(courseData, userId)
+                        }
+                    }
+                    loadDataAsync()
+                }
             }
 
         return builder.create()
