@@ -317,7 +317,11 @@ class AchievementFragment : BaseContainerFragment() {
             if (lib.isResourceOffline()) {
                 openResource(lib)
             } else {
-                startDownload(arrayListOf(UrlUtils.getUrl(lib)))
+                lifecycleScope.launch {
+                    if (resourcesRepository.downloadResources(listOf(lib))) {
+                        showProgressDialog()
+                    }
+                }
             }
         }
         return btnBinding.root

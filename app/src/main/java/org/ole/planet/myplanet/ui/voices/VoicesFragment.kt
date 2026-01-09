@@ -186,10 +186,9 @@ class VoicesFragment : BaseNewsFragment() {
             viewLifecycleOwner.lifecycleScope.launch {
                 if (resourceIds.isNotEmpty()) {
                     val libraries = resourcesRepository.getLibraryItemsByIds(resourceIds)
-                    getUrlsAndStartDownload(
-                        libraries.map<RealmMyLibrary, RealmMyLibrary?> { it },
-                        arrayListOf()
-                    )
+                    if (resourcesRepository.downloadResources(libraries)) {
+                        showProgressDialog()
+                    }
                 }
             }
             val updatedListAsMutable: MutableList<RealmNews?> = list.toMutableList()

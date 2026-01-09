@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.repository
 
+import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Sort
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
@@ -8,8 +10,10 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import java.util.Calendar
 import java.util.UUID
 import org.ole.planet.myplanet.model.RealmSearchActivity
+import org.ole.planet.myplanet.utilities.DownloadUtils
 
 class ResourcesRepositoryImpl @Inject constructor(
+    @ApplicationContext private val context: Context,
     databaseService: DatabaseService,
     private val activityRepository: ActivityRepository
 ) : RealmRepository(databaseService), ResourcesRepository {
@@ -192,6 +196,19 @@ class ResourcesRepositoryImpl @Inject constructor(
             activity.text = searchText
             activity.type = "resources"
             activity.filter = filterPayload
+        }
+    }
+
+    override suspend fun downloadResources(resources: List<RealmMyLibrary>): Boolean {
+        return try {
+            val urls = resources.mapNotNull { it.resourceRemoteAddress }
+            if (urls.isNotEmpty()) {
+                DownloadUtils.openDownloadService(context, ArrayList(urls), false)
+            }
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
         }
     }
 }
