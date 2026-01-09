@@ -526,26 +526,12 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     companion object {
-        var auth = ""
-
         fun getAllLibraryList(mRealm: Realm): List<RealmMyLibrary> {
             val l = mRealm.where(RealmMyLibrary::class.java).equalTo("resourceOffline", false).findAll()
             val libList: MutableList<RealmMyLibrary> = ArrayList()
             val libraries = getLibraries(l)
             libList.addAll(libraries)
             return libList
-        }
-
-        fun backgroundDownload(urls: ArrayList<String>, context: Context) {
-            DataService(context).isPlanetAvailable(object : PlanetAvailableListener {
-                override fun isAvailable() {
-                    if (urls.isNotEmpty()) {
-                        DownloadUtils.openDownloadService(context, urls, false)
-                    }
-                }
-
-                override fun notAvailable() {}
-            })
         }
 
         private fun getLibraries(l: RealmResults<RealmMyLibrary>): List<RealmMyLibrary> {

@@ -41,45 +41,28 @@ import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils
 import retrofit2.Call
+import dagger.hilt.android.qualifiers.ApplicationContext
 import retrofit2.Callback
 import retrofit2.Response
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class DataService constructor(
-    private val context: Context,
+@Singleton
+class DataService @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val retrofitInterface: ApiInterface,
     private val databaseService: DatabaseService,
     @ApplicationScope private val serviceScope: CoroutineScope,
     private val userRepository: UserRepository,
     private val uploadToShelfService: UploadToShelfService,
 ) {
-    constructor(context: Context) : this(
-        context,
-        EntryPointAccessors.fromApplication(
-            context.applicationContext,
-            ApiInterfaceEntryPoint::class.java
-        ).apiInterface(),
-        EntryPointAccessors.fromApplication(
-            context.applicationContext,
-            DatabaseServiceEntryPoint::class.java
-        ).databaseService(),
-        EntryPointAccessors.fromApplication(
-            context.applicationContext,
-            ApplicationScopeEntryPoint::class.java
-        ).applicationScope(),
-        EntryPointAccessors.fromApplication(
-            context.applicationContext,
-            RepositoryEntryPoint::class.java
-        ).userRepository(),
-        EntryPointAccessors.fromApplication(
-            context.applicationContext,
-            AutoSyncEntryPoint::class.java
-        ).uploadToShelfService(),
-    )
-
     private val preferences: SharedPreferences = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
-    private val configurationManager =
-        ConfigurationManager(context, preferences, retrofitInterface)
+    private val configurationManager: ConfigurationManager
+
+    init {
+        configurationManager = ConfigurationManager(context, preferences, retrofitInterface)
+    }
 
     @Deprecated("Use ConfigurationRepository.checkHealth instead")
     fun healthAccess(listener: SuccessListener) {
