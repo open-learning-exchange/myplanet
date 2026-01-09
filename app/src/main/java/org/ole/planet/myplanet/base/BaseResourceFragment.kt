@@ -28,7 +28,6 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
-import org.ole.planet.myplanet.data.DataService
 import org.ole.planet.myplanet.data.DataService.PlanetAvailableListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
@@ -43,6 +42,7 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.getExamMap
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.ConfigurationRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
@@ -79,6 +79,8 @@ abstract class BaseResourceFragment : Fragment() {
     lateinit var submissionsRepository: SubmissionsRepository
     @Inject
     lateinit var databaseService: DatabaseService
+    @Inject
+    lateinit var configurationRepository: ConfigurationRepository
     @Inject
     lateinit var profileDbHandler: UserSessionManager
     @Inject
@@ -187,7 +189,8 @@ abstract class BaseResourceFragment : Fragment() {
 
     protected fun showDownloadDialog(dbMyLibrary: List<RealmMyLibrary?>) {
         if (!isAdded) return
-        DataService(requireContext()).isPlanetAvailable(object : PlanetAvailableListener {
+        configurationRepository.checkServerAvailability(object :
+            ConfigurationRepository.PlanetAvailableListener {
             override fun isAvailable() {
                 if (!isAdded) return
                 val userId = profileDbHandler.userModel?.id
@@ -311,7 +314,8 @@ abstract class BaseResourceFragment : Fragment() {
 
     fun startDownload(urls: ArrayList<String>) {
         if (!isFragmentActive()) return
-        DataService(requireActivity()).isPlanetAvailable(object : PlanetAvailableListener {
+        configurationRepository.checkServerAvailability(object :
+            ConfigurationRepository.PlanetAvailableListener {
             override fun isAvailable() {
                 if (!isFragmentActive()) return
                 if (urls.isNotEmpty()) {
@@ -536,8 +540,13 @@ abstract class BaseResourceFragment : Fragment() {
             return libList
         }
 
-        fun backgroundDownload(urls: ArrayList<String>, context: Context) {
-            DataService(context).isPlanetAvailable(object : PlanetAvailableListener {
+        fun backgroundDownload(
+            urls: ArrayList<String>,
+            context: Context,
+            configurationRepository: ConfigurationRepository
+        ) {
+            configurationRepository.checkServerAvailability(object :
+                ConfigurationRepository.PlanetAvailableListener {
                 override fun isAvailable() {
                     if (urls.isNotEmpty()) {
                         DownloadUtils.openDownloadService(context, urls, false)

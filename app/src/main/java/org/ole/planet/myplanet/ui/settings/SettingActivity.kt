@@ -42,6 +42,7 @@ import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.ConfigurationRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
@@ -109,8 +110,10 @@ class SettingActivity : AppCompatActivity() {
         lateinit var profileDbHandler: UserSessionManager
         @Inject
         lateinit var databaseService: DatabaseService
-    @Inject
-    lateinit var resourcesRepository: ResourcesRepository
+        @Inject
+        lateinit var resourcesRepository: ResourcesRepository
+        @Inject
+        lateinit var configurationRepository: ConfigurationRepository
         @Inject
         @DefaultPreferences
         lateinit var defaultPref: SharedPreferences
@@ -167,7 +170,7 @@ class SettingActivity : AppCompatActivity() {
                                     realm.copyFromRealm(getAllLibraryList(realm)).also { libraryList = it }
                                 }
                             }
-                            backgroundDownload(downloadAllFiles(files), requireContext())
+                            backgroundDownload(downloadAllFiles(files), requireContext(), configurationRepository)
                         } finally {
                             preference.isEnabled = true
                         }

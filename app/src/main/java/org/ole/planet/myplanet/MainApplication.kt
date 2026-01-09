@@ -37,6 +37,7 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.ApiClientEntryPoint
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.ApplicationScopeEntryPoint
+import org.ole.planet.myplanet.di.ConfigurationEntryPoint
 import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.di.WorkerDependenciesEntryPoint
 import org.ole.planet.myplanet.model.RealmApkLog
@@ -308,10 +309,15 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                                 isServerReachable(serverUrl)
                             }
                             if (canReachServer && defaultPref.getBoolean("beta_auto_download", false)) {
+                                val configurationEntryPoint = EntryPointAccessors.fromApplication(
+                                    context,
+                                    ConfigurationEntryPoint::class.java
+                                )
                                 databaseService.withRealm { realm ->
                                     backgroundDownload(
                                         downloadAllFiles(getAllLibraryList(realm)),
-                                        applicationContext
+                                        applicationContext,
+                                        configurationEntryPoint.configurationRepository()
                                     )
                                 }
                             }

@@ -91,6 +91,9 @@ class ConfigurationRepositoryImpl @Inject constructor(
 
     override fun checkVersion(callback: ConfigurationRepository.CheckVersionCallback, settings: SharedPreferences) {
         serviceScope.launch {
+            withContext(Dispatchers.Main) {
+                callback.onCheckingVersion()
+            }
             val lastCheckTime = preferences.getLong("last_version_check_timestamp", 0)
             val currentTime = System.currentTimeMillis()
             val twentyFourHoursInMillis = 24 * 60 * 60 * 1000

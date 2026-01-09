@@ -560,7 +560,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
                             databaseService.withRealm { realm ->
                                 backgroundDownload(
                                     downloadAllFiles(getAllLibraryList(realm)),
-                                    activityContext
+                                    activityContext,
+                                    configurationRepository
                                 )
                             }
                         }
