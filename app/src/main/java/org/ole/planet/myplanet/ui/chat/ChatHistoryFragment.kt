@@ -67,7 +67,8 @@ class ChatHistoryFragment : Fragment() {
     private var shareTargets = ChatShareTargets(null, emptyList(), emptyList())
     private var memoizedShareTargets: ChatShareTargets? = null
     private var searchBarWatcher: TextWatcher? = null
-    
+    private var onBackPressedCallback: ChatHistoryOnBackPressedCallback? = null
+
     @Inject
     lateinit var syncManager: SyncManager
     @Inject
@@ -101,7 +102,8 @@ class ChatHistoryFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         val slidingPaneLayout = binding.slidingPaneLayout
         slidingPaneLayout.lockMode = SlidingPaneLayout.LOCK_MODE_LOCKED
-        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, ChatHistoryOnBackPressedCallback(slidingPaneLayout))
+        onBackPressedCallback = ChatHistoryOnBackPressedCallback(slidingPaneLayout)
+        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, onBackPressedCallback!!)
 
         setupRealtimeSync()
         checkAiProvidersIfNeeded()
@@ -389,6 +391,7 @@ class ChatHistoryFragment : Fragment() {
         if (::realtimeSyncListener.isInitialized) {
             syncCoordinator.removeListener(realtimeSyncListener)
         }
+        onBackPressedCallback?.remove()
         searchBarWatcher?.let { binding.searchBar.removeTextChangedListener(it) }
         _binding = null
         super.onDestroyView()
@@ -419,5 +422,9 @@ class ChatHistoryOnBackPressedCallback(private val slidingPaneLayout: SlidingPan
 
     override fun onPanelClosed(panel: View) {
         isEnabled = false
+    }
+
+    fun remove() {
+        slidingPaneLayout.removePanelSlideListener(this)
     }
 }
