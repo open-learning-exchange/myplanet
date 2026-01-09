@@ -92,6 +92,7 @@ class TeamViewModel @Inject constructor(
     }
 
     fun leaveTeam(teamId: String, userId: String?) {
+        if (userId.isNullOrBlank()) return
         viewModelScope.launch {
             teamsRepository.leaveTeam(teamId, userId)
             teamsRepository.syncTeamActivities()

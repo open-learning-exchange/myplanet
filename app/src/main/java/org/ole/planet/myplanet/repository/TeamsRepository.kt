@@ -49,7 +49,7 @@ interface TeamsRepository {
     suspend fun getTeamMemberStatuses(userId: String?, teamIds: Collection<String>): Map<String, TeamMemberStatus>
     suspend fun getRecentVisitCounts(teamIds: Collection<String>): Map<String, Long>
     suspend fun requestToJoin(teamId: String, userId: String?, userPlanetCode: String?, teamType: String?)
-    suspend fun leaveTeam(teamId: String, userId: String?)
+    suspend fun leaveTeam(teamId: String, userId: String)
     suspend fun removeMember(teamId: String, userId: String)
     suspend fun addResourceLinks(teamId: String, resources: List<RealmMyLibrary>, user: RealmUserModel?)
     suspend fun removeResourceLink(teamId: String, resourceId: String)
