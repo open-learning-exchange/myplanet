@@ -5,7 +5,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.callback.MemberChangeListener
+import org.ole.planet.myplanet.callback.OnMemberChangeListener
 import org.ole.planet.myplanet.callback.TeamUpdateListener
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ApplicantsPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.DocumentsPage
@@ -22,7 +22,7 @@ class TeamPagerAdapter(
     private val fm: FragmentActivity,
     private val pages: List<TeamPageConfig>,
     private val teamId: String?,
-    private val memberChangeListener: MemberChangeListener,
+    private val onMemberChangeListener: OnMemberChangeListener,
     private val teamUpdateListener: TeamUpdateListener
 ) : FragmentStateAdapter(fm) {
 
@@ -48,13 +48,13 @@ class TeamPagerAdapter(
 
         when (page) {
             TeamPage -> if (fragment is MembersFragment) {
-                fragment.setMemberChangeListener(memberChangeListener)
+                fragment.setOnMemberChangeListener(onMemberChangeListener)
             }
             MembersPage -> if (fragment is MembersFragment) {
-                fragment.setMemberChangeListener(memberChangeListener)
+                fragment.setOnMemberChangeListener(onMemberChangeListener)
             }
             ApplicantsPage, JoinRequestsPage -> if (fragment is RequestsFragment) {
-                fragment.setMemberChangeListener(memberChangeListener)
+                fragment.setOnMemberChangeListener(onMemberChangeListener)
             }
             DocumentsPage, ResourcesPage -> if (fragment is TeamResourcesFragment) {
                 MainApplication.listener = fragment

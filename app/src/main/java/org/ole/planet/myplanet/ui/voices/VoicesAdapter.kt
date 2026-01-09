@@ -163,13 +163,13 @@ class VoicesAdapter(var context: Context, private var currentUser: RealmUserMode
         user = userSessionManager.userModel
         settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         labelManager = VoicesLabelManager(context, voicesRepository, scope)
-        return ViewHolderNews(binding)
+        return VoicesViewHolder(binding)
     }
 
     @SuppressLint("SetTextI18n")
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        if (holder is ViewHolderNews) {
+        if (holder is VoicesViewHolder) {
             holder.bind(position)
             val news = getNews(holder, position)
 
@@ -222,7 +222,7 @@ class VoicesAdapter(var context: Context, private var currentUser: RealmUserMode
         return ""
     }
 
-    private fun resetViews(holder: ViewHolderNews) {
+    private fun resetViews(holder: VoicesViewHolder) {
         with(holder.binding) {
             tvName.text = ""
             imgUser.setImageResource(0)
@@ -244,7 +244,7 @@ class VoicesAdapter(var context: Context, private var currentUser: RealmUserMode
         }
     }
 
-    private fun configureUser(holder: ViewHolderNews, news: RealmNews): RealmUserModel? {
+    private fun configureUser(holder: VoicesViewHolder, news: RealmNews): RealmUserModel? {
         val userId = news.userId
         if (userId.isNullOrEmpty()) return null
 
@@ -283,7 +283,7 @@ class VoicesAdapter(var context: Context, private var currentUser: RealmUserMode
         }
     }
 
-    private fun setMessageAndDate(holder: ViewHolderNews, news: RealmNews, sharedTeamName: String) {
+    private fun setMessageAndDate(holder: VoicesViewHolder, news: RealmNews, sharedTeamName: String) {
         val markdownContentWithLocalPaths = prependBaseUrlToImages(
             news.message,
             "file://" + context.getExternalFilesDir(null) + "/ole/",
@@ -305,7 +305,7 @@ class VoicesAdapter(var context: Context, private var currentUser: RealmUserMode
         holder.binding.tvEdited.visibility = if (news.isEdited) View.VISIBLE else View.GONE
     }
 
-    private fun configureEditDeleteButtons(holder: ViewHolderNews, news: RealmNews) {
+    private fun configureEditDeleteButtons(holder: VoicesViewHolder, news: RealmNews) {
         if (news.sharedBy == currentUser?._id && !fromLogin && !nonTeamMember && teamName.isEmpty()) {
             holder.binding.imgDelete.visibility = View.VISIBLE
         }
@@ -354,7 +354,7 @@ class VoicesAdapter(var context: Context, private var currentUser: RealmUserMode
         }
     }
 
-    private fun handleChat(holder: ViewHolderNews, news: RealmNews) {
+    private fun handleChat(holder: VoicesViewHolder, news: RealmNews) {
         if (news.newsId?.isNotEmpty() == true) {
             val conversations = JsonUtils.gson.fromJson(news.conversations, Array<RealmConversation>::class.java).toList()
             val chatAdapter = ChatAdapter(context, holder.binding.recyclerGchat, holder.itemView.findViewTreeLifecycleOwner()?.lifecycleScope)
@@ -415,7 +415,7 @@ class VoicesAdapter(var context: Context, private var currentUser: RealmUserMode
         submitList(list, commitCallback)
     }
 
-    private fun setMemberClickListeners(holder: ViewHolderNews, userModel: RealmUserModel?, currentLeader: RealmUserModel?) {
+    private fun setMemberClickListeners(holder: VoicesViewHolder, userModel: RealmUserModel?, currentLeader: RealmUserModel?) {
         if (!fromLogin) {
             holder.binding.imgUser.setOnClickListener {
                 val model = userModel ?: currentLeader
@@ -470,7 +470,7 @@ class VoicesAdapter(var context: Context, private var currentUser: RealmUserMode
         fetchTeamLeaderStatus()
     }
 
-    private fun updateReplyCount(viewHolder: ViewHolderNews, news: RealmNews?, position: Int) {
+    private fun updateReplyCount(viewHolder: VoicesViewHolder, news: RealmNews?, position: Int) {
         viewHolder.job?.cancel()
         viewHolder.job = scope.launch {
             try {
@@ -508,7 +508,7 @@ class VoicesAdapter(var context: Context, private var currentUser: RealmUserMode
     }
 
     private fun showHideButtons(news: RealmNews?, holder: RecyclerView.ViewHolder) {
-        val viewHolder = holder as ViewHolderNews
+        val viewHolder = holder as VoicesViewHolder
         with(viewHolder.binding) {
             imgEdit.setVisibility(canEdit(news))
             imgDelete.setVisibility(canDelete(news))
@@ -520,7 +520,7 @@ class VoicesAdapter(var context: Context, private var currentUser: RealmUserMode
     private fun shouldShowReplyButton(): Boolean = canReply()
 
     private fun showReplyButton(holder: RecyclerView.ViewHolder, finalNews: RealmNews?, position: Int) {
-        val viewHolder = holder as ViewHolderNews
+        val viewHolder = holder as VoicesViewHolder
         if (shouldShowReplyButton()) {
             viewHolder.binding.btnReply.visibility = if (nonTeamMember) View.GONE else View.VISIBLE
             viewHolder.binding.btnReply.setOnClickListener {
@@ -551,7 +551,7 @@ class VoicesAdapter(var context: Context, private var currentUser: RealmUserMode
 
 
     private fun showShareButton(holder: RecyclerView.ViewHolder, news: RealmNews?) {
-        val viewHolder = holder as ViewHolderNews
+        val viewHolder = holder as VoicesViewHolder
 
         viewHolder.binding.btnShare.setVisibility(canShare(news))
 
@@ -596,7 +596,7 @@ class VoicesAdapter(var context: Context, private var currentUser: RealmUserMode
 
     override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
         super.onViewRecycled(holder)
-        if (holder is ViewHolderNews) {
+        if (holder is VoicesViewHolder) {
             holder.job?.cancel()
         }
     }
@@ -777,7 +777,7 @@ class VoicesAdapter(var context: Context, private var currentUser: RealmUserMode
         dialog.show()
     }
 
-    internal inner class ViewHolderNews(val binding: RowNewsBinding) : RecyclerView.ViewHolder(binding.root) {
+    internal inner class VoicesViewHolder(val binding: RowNewsBinding) : RecyclerView.ViewHolder(binding.root) {
         var job: kotlinx.coroutines.Job? = null
         private var adapterPosition = 0
         fun bind(position: Int) {
