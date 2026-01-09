@@ -42,6 +42,7 @@ class AutoSyncWorker(
         syncManager = entryPoint.syncManager()
         uploadManager = entryPoint.uploadManager()
         uploadToShelfService = entryPoint.uploadToShelfService()
+        val dataService = entryPoint.dataService()
         val lastSync = preferences.getLong("LastSync", 0)
         val currentTime = System.currentTimeMillis()
         val syncInterval = preferences.getInt("autoSyncInterval", 60 * 60)
@@ -49,7 +50,7 @@ class AutoSyncWorker(
             if (isAppInForeground(context)) {
                 Utilities.toast(context, "Syncing started...")
             }
-            DataService(context).checkVersion(this, preferences)
+            dataService.checkVersion(this, preferences)
         }
         return Result.success()
     }
@@ -72,10 +73,12 @@ class AutoSyncWorker(
 
     override fun onCheckingVersion() {}
     override fun onError(msg: String, blockSync: Boolean) {
+        val entryPoint = EntryPointAccessors.fromApplication(context, AutoSyncEntryPoint::class.java)
+        val dataService = entryPoint.dataService()
         if (!blockSync) {
             syncManager.start(this, "upload")
             uploadToShelfService.uploadUserData {
-                DataService(MainApplication.context).healthAccess {
+                dataService.healthAccess {
                     uploadToShelfService.uploadHealth()
                 }
             }

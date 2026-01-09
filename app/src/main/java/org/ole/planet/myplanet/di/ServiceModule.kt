@@ -15,8 +15,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import org.ole.planet.myplanet.data.ApiInterface
+import org.ole.planet.myplanet.data.DataService
+import org.ole.planet.myplanet.data.DataService
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.repository.SubmissionsRepository
+import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UploadToShelfService
 import org.ole.planet.myplanet.service.sync.ImprovedSyncManager
@@ -84,5 +88,25 @@ object ServiceModule {
         @ApplicationScope scope: CoroutineScope
     ): TransactionSyncManager {
         return TransactionSyncManager(apiInterface, databaseService, context, scope)
+    }
+
+    @Provides
+    @Singleton
+    fun provideDataService(
+        @ApplicationContext context: Context,
+        apiInterface: ApiInterface,
+        databaseService: DatabaseService,
+        @ApplicationScope scope: CoroutineScope,
+        userRepository: UserRepository,
+        uploadToShelfService: UploadToShelfService
+    ): DataService {
+        return DataService(
+            context,
+            apiInterface,
+            databaseService,
+            scope,
+            userRepository,
+            uploadToShelfService
+        )
     }
 }
