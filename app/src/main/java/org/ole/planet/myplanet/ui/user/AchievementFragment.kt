@@ -34,7 +34,7 @@ import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.service.sync.SyncManager
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.ui.references.ReferencesAdapter
+import org.ole.planet.myplanet.ui.user.OtherInfoAdapter
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.UrlUtils
@@ -326,9 +326,9 @@ class AchievementFragment : BaseContainerFragment() {
     private fun setupReferences(data: AchievementData) {
         binding.rvOtherInfo.layoutManager = LinearLayoutManager(requireContext())
         if (binding.rvOtherInfo.adapter == null) {
-            binding.rvOtherInfo.adapter = ReferencesAdapter(requireContext(), data.references)
+            binding.rvOtherInfo.adapter = OtherInfoAdapter(requireContext(), data.references)
         } else {
-            (binding.rvOtherInfo.adapter as ReferencesAdapter).submitList(data.references)
+            (binding.rvOtherInfo.adapter as OtherInfoAdapter).submitList(data.references)
         }
     }
 
