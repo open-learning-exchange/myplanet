@@ -35,11 +35,11 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.callback.OnTagClickListener
-import org.ole.planet.myplanet.model.RealmCourseProgress.Companion.getCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmRating.Companion.getRatings
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
@@ -88,6 +88,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     @Inject
     lateinit var tagsRepository: TagsRepository
+
+    @Inject
+    lateinit var progressRepository: ProgressRepository
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
 
@@ -184,7 +187,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     mRealm.refresh()
                 }
                 val map = getRatings(mRealm, "course", model?.id)
-                val progressMap = getCourseProgress(mRealm, model?.id)
+                val progressMap = progressRepository.getCourseProgress(model?.id)
                 val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>().filter { !it?.courseTitle.isNullOrBlank() }
                 val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
 
@@ -225,7 +228,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         }
 
         val map = getRatings(mRealm, "course", model?.id)
-        val progressMap = getCourseProgress(mRealm, model?.id)
+        val progressMap = HashMap<String?, com.google.gson.JsonObject>()
 
         adapterCourses = CoursesAdapter(requireActivity(), courseList, map, userModel, tagsRepository)
         adapterCourses.setProgressMap(progressMap)
@@ -501,7 +504,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             val (filteredCourses, map, progressMap) = withContext(Dispatchers.IO) {
                 val courses = coursesRepository.filterCourses(searchText, selectedGrade, selectedSubject, tagNames)
                 val ratings = databaseService.withRealm { realm -> getRatings(realm, "course", model?.id) }
-                val progress = databaseService.withRealm { realm -> getCourseProgress(realm, model?.id) }
+                val progress = progressRepository.getCourseProgress(model?.id)
                 Triple(courses, ratings, progress)
             }
             adapterCourses.updateData(filteredCourses, map, progressMap)
@@ -682,12 +685,14 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         if (table == "courses" && update.shouldRefreshUI) {
             if (::adapterCourses.isInitialized) {
                 val map = getRatings(mRealm, "course", model?.id)
-                val progressMap = getCourseProgress(mRealm, model?.id)
-                val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java)
-                    .filterIsInstance<RealmMyCourse?>()
-                    .filter { !it?.courseTitle.isNullOrBlank() }
-                val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
-                adapterCourses.updateData(sortedCourseList, map, progressMap)
+                lifecycleScope.launch {
+                    val progressMap = progressRepository.getCourseProgress(model?.id)
+                    val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java)
+                        .filterIsInstance<RealmMyCourse?>()
+                        .filter { !it?.courseTitle.isNullOrBlank() }
+                    val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
+                    adapterCourses.updateData(sortedCourseList, map, progressMap)
+                }
             } else {
                 recyclerView.adapter = getAdapter()
             }

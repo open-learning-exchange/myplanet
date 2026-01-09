@@ -19,7 +19,7 @@ class NotificationsAdapter(
     notifications: List<RealmNotification>,
     private val onMarkAsReadClick: (String) -> Unit,
     private val onNotificationClick: (RealmNotification) -> Unit
-) : ListAdapter<RealmNotification, NotificationsAdapter.ViewHolderNotifications>(
+) : ListAdapter<RealmNotification, NotificationsAdapter.NotificationsViewHolder>(
     DiffUtilExtensions.itemCallback(
         areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id },
         areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
@@ -30,12 +30,12 @@ class NotificationsAdapter(
         submitList(notifications)
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderNotifications {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): NotificationsViewHolder {
         val rowNotificationsBinding = RowNotificationsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return ViewHolderNotifications(rowNotificationsBinding)
+        return NotificationsViewHolder(rowNotificationsBinding)
     }
 
-    override fun onBindViewHolder(holder: ViewHolderNotifications, position: Int) {
+    override fun onBindViewHolder(holder: NotificationsViewHolder, position: Int) {
         val notification = getItem(position)
         holder.bind(notification)
     }
@@ -44,7 +44,7 @@ class NotificationsAdapter(
         submitList(newNotifications)
     }
 
-    inner class ViewHolderNotifications(private val rowNotificationsBinding: RowNotificationsBinding) :
+    inner class NotificationsViewHolder(private val rowNotificationsBinding: RowNotificationsBinding) :
         RecyclerView.ViewHolder(rowNotificationsBinding.root) {
 
         fun bind(notification: RealmNotification) {
