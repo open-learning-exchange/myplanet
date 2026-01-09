@@ -24,7 +24,6 @@ import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.di.ApplicationScopeEntryPoint
 import org.ole.planet.myplanet.di.AutoSyncEntryPoint
 import org.ole.planet.myplanet.di.DatabaseServiceEntryPoint
-import org.ole.planet.myplanet.di.RepositoryEntryPoint
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmCommunity
 import org.ole.planet.myplanet.repository.UserRepository
@@ -56,27 +55,6 @@ class DataService constructor(
         context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
     private val configurationManager =
         ConfigurationManager(context, preferences, retrofitInterface)
-
-    suspend fun checkCheckSum(path: String?): Boolean = withContext(Dispatchers.IO) {
-        try {
-            val response =
-                retrofitInterface.getChecksum(UrlUtils.getChecksumUrl(preferences)).execute()
-            if (response.isSuccessful) {
-                val checksum = response.body()?.string()
-                if (!checksum.isNullOrEmpty()) {
-                    val f = FileUtils.getSDPathFromUrl(context, path)
-                    if (f.exists()) {
-                        val sha256 = Sha256Utils().getCheckSumFromFile(f)
-                        return@withContext checksum.contains(sha256)
-                    }
-                }
-            }
-            false
-        } catch (e: IOException) {
-            e.printStackTrace()
-            false
-        }
-    }
 
     fun becomeMember(
         obj: JsonObject,

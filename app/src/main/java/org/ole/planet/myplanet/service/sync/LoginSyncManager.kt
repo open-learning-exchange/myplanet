@@ -16,7 +16,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.data.ApiClient
 import org.ole.planet.myplanet.data.ApiInterface
-import org.ole.planet.myplanet.di.RepositoryEntryPoint
+import org.ole.planet.myplanet.di.UserEntryPoint
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.androidDecrypter
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
@@ -223,7 +223,7 @@ class LoginSyncManager private constructor(
             val entryPoint =
                 EntryPointAccessors.fromApplication(
                     MainApplication.context.applicationContext,
-                    RepositoryEntryPoint::class.java
+                    UserEntryPoint::class.java
                 )
             LoginSyncManager(MainApplication.context, entryPoint.userRepository())
         }

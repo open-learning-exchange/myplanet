@@ -12,6 +12,7 @@ import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
 import java.util.Locale
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -36,6 +37,9 @@ class BecomeMemberActivity : BaseActivity() {
     var guest: Boolean = false
     private var usernameWatcher: TextWatcher? = null
     private var passwordWatcher: TextWatcher? = null
+
+    @Inject
+    lateinit var dataService: DataService
     
     private data class MemberInfo(
         val username: String,
@@ -140,7 +144,7 @@ class BecomeMemberActivity : BaseActivity() {
             show()
         }
 
-        DataService(this).becomeMember(obj, object : DataService.CreateUserCallback {
+        dataService.becomeMember(obj, object : DataService.CreateUserCallback {
             override fun onSuccess(success: String) {
                 runOnUiThread { Utilities.toast(this@BecomeMemberActivity, success) }
             }

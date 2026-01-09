@@ -14,9 +14,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.data.DataService
 import org.ole.planet.myplanet.databinding.DialogProgressBinding
 import org.ole.planet.myplanet.model.MyPlanet
+import org.ole.planet.myplanet.repository.ConfigurationRepository
 import org.ole.planet.myplanet.service.DownloadService
 import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.ui.sync.SyncActivity
@@ -154,17 +154,18 @@ object DialogUtils {
         context: Context,
         info: MyPlanet?,
         progressDialog: CustomProgressDialog?,
-        scope: CoroutineScope
+        scope: CoroutineScope,
+        configurationRepository: ConfigurationRepository
     ): AlertDialog.Builder {
         return AlertDialog.Builder(context, R.style.CustomAlertDialog)
             .setTitle(R.string.new_version_of_my_planet_available)
             .setMessage(R.string.download_first_to_continue)
             .setNeutralButton(R.string.upgrade_local) { _, _ ->
-                startDownloadUpdate(context, UrlUtils.getApkUpdateUrl(info?.localapkpath), progressDialog, scope)
+                startDownloadUpdate(context, UrlUtils.getApkUpdateUrl(info?.localapkpath), progressDialog, scope, configurationRepository)
             }
             .setPositiveButton(R.string.upgrade) { _, _ ->
                 info?.apkpath?.let { path ->
-                    startDownloadUpdate(context, path, progressDialog, scope)
+                    startDownloadUpdate(context, path, progressDialog, scope, configurationRepository)
                 }
             }
     }
@@ -174,10 +175,11 @@ object DialogUtils {
         context: Context,
         path: String,
         progressDialog: CustomProgressDialog?,
-        scope: CoroutineScope
+        scope: CoroutineScope,
+        configurationRepository: ConfigurationRepository
     ) {
         scope.launch {
-            val checksumMatch = DataService(context.applicationContext).checkCheckSum(path)
+            val checksumMatch = configurationRepository.checkCheckSum(path)
             if (checksumMatch) {
                 Utilities.toast(context, context.getString(R.string.apk_already_exists))
                 FileUtils.installApk(context, path)
