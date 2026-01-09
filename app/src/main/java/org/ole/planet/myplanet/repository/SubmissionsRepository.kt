@@ -31,4 +31,5 @@ interface SubmissionsRepository {
     suspend fun getAllPendingSubmissions(): List<RealmSubmission>
     suspend fun getSubmissionsByParentId(parentId: String?, userId: String?): List<RealmSubmission>
     suspend fun deleteExamSubmissions(examId: String, courseId: String?, userId: String?)
+    suspend fun saveAnswer(submissionId: String?, questionId: String, answer: String, listAnswers: Map<String, String>?, otherText: String?, type: String, index: Int, total: Int): Boolean
 }

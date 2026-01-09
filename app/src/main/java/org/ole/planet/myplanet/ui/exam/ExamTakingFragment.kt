@@ -45,7 +45,6 @@ import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.JsonUtils.getStringAsJsonArray
 import org.ole.planet.myplanet.utilities.KeyboardUtils.hideSoftKeyboard
-import org.ole.planet.myplanet.utilities.ExamSubmissionUtils
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
@@ -179,7 +178,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                 answerData.singleAnswer = binding.etAnswer.text.toString()
             }
         }
-        updateAnsDb()
+        updateAnsDb {  }
     }
 
     private fun goToPreviousQuestion() {
@@ -586,16 +585,16 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                     return
                 }
 
-                val cont = updateAnsDb()
+                updateAnsDb { cont ->
+                    if (this.type == "exam" && !cont) {
+                        Snackbar.make(binding.root, getString(R.string.incorrect_ans), Snackbar.LENGTH_LONG).show()
+                        return@updateAnsDb
+                    }
 
-                if (this.type == "exam" && !cont) {
-                    Snackbar.make(binding.root, getString(R.string.incorrect_ans), Snackbar.LENGTH_LONG).show()
-                    return
+                    capturePhoto()
+                    hideSoftKeyboard(requireActivity())
+                    checkAnsAndContinue(cont)
                 }
-
-                capturePhoto()
-                hideSoftKeyboard(requireActivity())
-                checkAnsAndContinue(cont)
             }
         }
     }
@@ -611,36 +610,49 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     }
 
 
-    private fun updateAnsDb(): Boolean {
+    private fun updateAnsDb(callback: (Boolean) -> Unit) {
         val questionsSize = questions?.size ?: 0
-        if (currentIndex < 0 || currentIndex >= questionsSize) return true
+        if (currentIndex < 0 || currentIndex >= questionsSize) {
+            callback(true)
+            return
+        }
 
-        val currentQuestion = questions?.get(currentIndex) ?: return true
+        val currentQuestion = questions?.get(currentIndex)
+        if (currentQuestion == null) {
+            callback(true)
+            return
+        }
         val otherText = if (binding.etAnswer.isVisible) {
             binding.etAnswer.text.toString()
         } else {
             null
         }
-        
+
         if (sub == null) {
             sub = mRealm.where(RealmSubmission::class.java)
                 .equalTo("status", "pending")
                 .findAll().lastOrNull()
         }
+        val submissionId = sub?.id
 
-        val result = ExamSubmissionUtils.saveAnswer(
-            mRealm,
-            sub,
-            currentQuestion,
-            ans,
-            listAns,
-            otherText,
-            binding.etAnswer.isVisible,
-            type ?: "exam",
-            currentIndex,
-            questions?.size ?: 0
-        )
-        return result
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val result = submissionsRepository.saveAnswer(
+                    submissionId,
+                    currentQuestion.id,
+                    ans,
+                    listAns,
+                    otherText,
+                    type ?: "exam",
+                    currentIndex,
+                    questions?.size ?: 0
+                )
+                callback(result)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                callback(false)
+            }
+        }
     }
 
     override fun onCheckedChanged(compoundButton: CompoundButton, isChecked: Boolean) {
