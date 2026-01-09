@@ -150,17 +150,33 @@ class TeamFragment : Fragment(), TeamsAdapter.OnClickTeamItem, OnUpdateCompleteL
                             }
 
                             if (team == null) {
-                                teamsRepository.createTeam(
-                                    category = type,
-                                    name = name,
-                                    description = description,
-                                    services = services,
-                                    rules = rules,
-                                    teamType = selectedTeamType,
-                                    isPublic = alertCreateTeamBinding.switchPublic.isChecked,
-                                    user = userModel,
-                                ).onSuccess {
-                                    binding.etSearch.visibility = View.VISIBLE
+                                if (type == "enterprise") {
+                                    teamsRepository.createEnterprise(
+                                        name = name,
+                                        description = description,
+                                        services = services,
+                                        rules = rules,
+                                        isPublic = alertCreateTeamBinding.switchPublic.isChecked,
+                                        user = userModel,
+                                    ).onSuccess {
+                                        binding.etSearch.visibility = View.VISIBLE
+                                        binding.tableTitle.visibility = View.VISIBLE
+                                        Utilities.toast(activity, getString(R.string.enterprise_created))
+                                        refreshTeamList()
+                                        dialog.dismiss()
+                                    }.onFailure {
+                                        Utilities.toast(activity, failureMessage)
+                                    }
+                                } else {
+                                    teamsRepository.createTeam(
+                                        category = type,
+                                        name = name,
+                                        description = description,
+                                        teamType = selectedTeamType,
+                                        isPublic = alertCreateTeamBinding.switchPublic.isChecked,
+                                        user = userModel,
+                                    ).onSuccess {
+                                        binding.etSearch.visibility = View.VISIBLE
                                     binding.tableTitle.visibility = View.VISIBLE
                                     Utilities.toast(activity, getString(R.string.team_created))
                                     refreshTeamList()

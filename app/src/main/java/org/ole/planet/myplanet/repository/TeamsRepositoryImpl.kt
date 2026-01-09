@@ -688,8 +688,6 @@ class TeamsRepositoryImpl @Inject constructor(
         category: String?,
         name: String,
         description: String,
-        services: String,
-        rules: String,
         teamType: String?,
         isPublic: Boolean,
         user: RealmUserModel,
@@ -700,14 +698,8 @@ class TeamsRepositoryImpl @Inject constructor(
                 val team = realm.createObject(RealmMyTeam::class.java, teamId)
                 team.status = "active"
                 team.createdDate = Date().time
-                if (category == "enterprise") {
-                    team.type = "enterprise"
-                    team.services = services
-                    team.rules = rules
-                } else {
-                    team.type = "team"
-                    team.teamType = teamType
-                }
+                team.type = "team"
+                team.teamType = teamType
                 team.name = name
                 team.description = description
                 team.createdBy = user._id
@@ -730,6 +722,48 @@ class TeamsRepositoryImpl @Inject constructor(
                 membership.updated = true
             }
             teamId
+        }
+    }
+
+    override suspend fun createEnterprise(
+        name: String,
+        description: String,
+        services: String,
+        rules: String,
+        isPublic: Boolean,
+        user: RealmUserModel,
+    ): Result<String> {
+        return runCatching {
+            val enterpriseId = AndroidDecrypter.generateIv()
+            executeTransaction { realm ->
+                val enterprise = realm.createObject(RealmMyTeam::class.java, enterpriseId)
+                enterprise.status = "active"
+                enterprise.createdDate = Date().time
+                enterprise.type = "enterprise"
+                enterprise.services = services
+                enterprise.rules = rules
+                enterprise.name = name
+                enterprise.description = description
+                enterprise.createdBy = user._id
+                enterprise.teamId = ""
+                enterprise.isPublic = isPublic
+                enterprise.userId = user.id
+                enterprise.parentCode = user.parentCode
+                enterprise.teamPlanetCode = user.planetCode
+                enterprise.updated = true
+
+                val membershipId = AndroidDecrypter.generateIv()
+                val membership = realm.createObject(RealmMyTeam::class.java, membershipId)
+                membership.userId = user._id
+                membership.teamId = enterpriseId
+                membership.teamPlanetCode = user.planetCode
+                membership.userPlanetCode = user.planetCode
+                membership.docType = "membership"
+                membership.isLeader = true
+                membership.teamType = "enterprise"
+                membership.updated = true
+            }
+            enterpriseId
         }
     }
 
