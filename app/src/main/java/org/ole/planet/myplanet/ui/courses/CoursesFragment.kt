@@ -690,7 +690,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     adapterCourses.updateData(sortedCourseList, map, progressMap)
                 }
             } else {
-                loadDataAsync()
+                recyclerView.adapter = getAdapter()
             }
         }
     }
