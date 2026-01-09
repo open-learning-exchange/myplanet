@@ -41,10 +41,11 @@ import org.ole.planet.myplanet.utilities.Utilities
 class CoursesAdapter(
     private val context: Context,
     private var courseList: List<RealmMyCourse?>,
-    private val map: HashMap<String?, JsonObject>,
+    map: Map<String?, JsonObject>,
     private var userModel: RealmUserModel?,
     private val tagsRepository: TagsRepository
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+    private val map: MutableMap<String?, JsonObject> = map.toMutableMap()
     private val selectedItems: MutableList<RealmMyCourse?> = ArrayList()
     private var listener: OnCourseItemSelected? = null
     private var homeItemClickListener: OnHomeItemClickListener? = null
@@ -80,7 +81,7 @@ class CoursesAdapter(
 
     private fun dispatchDiff(
         newList: List<RealmMyCourse?>,
-        newMap: HashMap<String?, JsonObject>? = null,
+        newMap: Map<String?, JsonObject>? = null,
         newProgressMap: HashMap<String?, JsonObject>? = null
     ) {
         val oldMap = HashMap(map)
@@ -134,7 +135,7 @@ class CoursesAdapter(
 
     fun updateData(
         newCourseList: List<RealmMyCourse?>,
-        newMap: HashMap<String?, JsonObject>,
+        newMap: Map<String?, JsonObject>,
         newProgressMap: HashMap<String?, JsonObject>?
     ) {
         dispatchDiff(newCourseList, newMap, newProgressMap)

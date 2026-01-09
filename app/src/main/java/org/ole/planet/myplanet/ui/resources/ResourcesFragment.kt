@@ -39,7 +39,6 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getArrayList
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getLevels
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getSubjects
-import org.ole.planet.myplanet.model.RealmRating.Companion.getRatings
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmTag.Companion.getTagsArray
@@ -87,6 +86,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     @Inject
     lateinit var tagsRepository: TagsRepository
+
+    @Inject
+    lateinit var ratingsRepository: RatingsRepository
 
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
@@ -178,29 +180,30 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         if (!isAdded || requireActivity().isFinishing) return
 
         try {
-            map = getRatings(mRealm, "resource", model?.id)
-            val libraryList: List<RealmMyLibrary?> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary?>()
-            val currentSearchTags = if (::searchTags.isInitialized) searchTags else emptyList()
-            val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
-            val filteredLibraryList: List<RealmMyLibrary?> =
-                if (currentSearchTags.isEmpty() && searchQuery.isEmpty()) {
-                    applyFilter(libraryList.filterNotNull()).map { it }
-                } else {
-                    applyFilter(filterLibraryByTag(searchQuery, currentSearchTags)).map { it }
-                }
+            lifecycleScope.launch {
+                map = ratingsRepository.getRatingsMap("resource", model?.id)
+                val libraryList: List<RealmMyLibrary?> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary?>()
+                val currentSearchTags = if (::searchTags.isInitialized) searchTags else emptyList()
+                val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
+                val filteredLibraryList: List<RealmMyLibrary?> =
+                    if (currentSearchTags.isEmpty() && searchQuery.isEmpty()) {
+                        applyFilter(libraryList.filterNotNull()).map { it }
+                    } else {
+                        applyFilter(filterLibraryByTag(searchQuery, currentSearchTags)).map { it }
+                    }
 
-            adapterLibrary.setLibraryList(filteredLibraryList)
-            adapterLibrary.setRatingMap(map!!)
-            checkList()
-            showNoData(tvMessage, adapterLibrary.itemCount, "resources")
-
+                adapterLibrary.setLibraryList(filteredLibraryList)
+                adapterLibrary.setRatingMap(map!!)
+                checkList()
+                showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
-        map = getRatings(mRealm, "resource", model?.id)
+        map = HashMap()
         val libraryList: List<RealmMyLibrary?> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary?>()
         adapterLibrary = ResourcesAdapter(requireActivity(), libraryList, map!!, resourcesRepository, tagsRepository, profileDbHandler?.userModel)
         adapterLibrary.setRatingChangeListener(this)
@@ -666,6 +669,10 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     
     override fun getSyncRecyclerView(): RecyclerView? {
         return if (::recyclerView.isInitialized) recyclerView else null
+    }
+
+    override fun onRatingChanged() {
+        refreshResourcesData()
     }
     
 }

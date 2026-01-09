@@ -40,11 +40,12 @@ import org.ole.planet.myplanet.utilities.Utilities
 class ResourcesAdapter(
     private val context: Context,
     private var libraryList: List<RealmMyLibrary?>,
-    private var ratingMap: HashMap<String?, JsonObject>,
+    ratingMap: Map<String?, JsonObject>,
     private val resourcesRepository: ResourcesRepository,
     private val tagsRepository: TagsRepository,
     private val userModel: RealmUserModel?
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>(), DiffRefreshableCallback {
+    private var ratingMap: MutableMap<String?, JsonObject> = ratingMap.toMutableMap()
     private var diffJob: Job? = null
     private val selectedItems: MutableList<RealmMyLibrary?> = ArrayList()
     private var listener: OnLibraryItemSelected? = null
@@ -333,7 +334,7 @@ class ResourcesAdapter(
         }
     }
 
-    fun setRatingMap(newRatingMap: HashMap<String?, JsonObject>) {
+    fun setRatingMap(newRatingMap: Map<String?, JsonObject>) {
         val updatedResourceIds = mutableSetOf<String?>()
 
         newRatingMap.forEach { (resourceId, newRating) ->
