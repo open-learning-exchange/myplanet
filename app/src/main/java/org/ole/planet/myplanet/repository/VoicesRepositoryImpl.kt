@@ -122,11 +122,9 @@ class VoicesRepositoryImpl @Inject constructor(
             equalTo("docType", "message", Case.INSENSITIVE)
             sort("time", Sort.DESCENDING)
         }
-        .flowOn(Dispatchers.Main) // Realm async queries require a Looper thread.
+        .flowOn(Dispatchers.Main)
 
         return allNewsFlow.map { allNews ->
-            // allNews are unmanaged copies (POJOs) created by copyFromRealm in queryListFlow.
-            // It is safe to process them on a background thread.
             allNews.filter { news ->
                 isVisibleToUser(news, userIdentifier)
             }.map { news ->

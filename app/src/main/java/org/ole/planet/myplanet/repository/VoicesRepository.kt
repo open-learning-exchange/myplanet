@@ -22,5 +22,5 @@ interface VoicesRepository {
     suspend fun addLabel(newsId: String, label: String)
     suspend fun removeLabel(newsId: String, label: String)
     suspend fun editNews(newsId: String, message: String, imageUrls: List<String>?)
-    suspend fun createReply(parentNewsId: String, message: String, imageUrls: List<String>?)
+    suspend fun createReply(parentNewsId: String, message: String, imageUrls: List<String>?, user: RealmUserModel?)
 }

@@ -413,7 +413,6 @@ class VoicesAdapter(var context: Context, private var currentUser: RealmUserMode
 
     private fun submitListSafely(list: List<RealmNews?>, commitCallback: Runnable? = null) {
         userCache.clear()
-        // The list is already detached, no need to copy from Realm
         submitList(list, commitCallback)
     }
 

@@ -17,12 +17,14 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmList
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import java.io.File
 import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.ui.teams.members.MembersDetailFragment
@@ -130,7 +132,8 @@ object NewsActions {
         isEdit: Boolean,
         components: EditDialogComponents,
         news: RealmNews?,
-        realm: Realm,
+        repository: VoicesRepository,
+        scope: CoroutineScope,
         currentUser: RealmUserModel?,
         imageList: RealmList<String>?,
         listener: OnNewsItemClickListener?
@@ -140,11 +143,17 @@ object NewsActions {
             components.inputLayout.error = dialog.context.getString(R.string.please_enter_message)
             return
         }
-        if (isEdit) {
-            editPost(realm, s, news, imageList)
-        } else {
-            postReply(realm, s, news, currentUser, imageList)
+
+        val imageUrls = imageList?.toList()
+
+        scope.launch {
+            if (isEdit) {
+                news?.id?.let { repository.editNews(it, s, imageUrls) }
+            } else {
+                news?.id?.let { repository.createReply(it, s, imageUrls, currentUser) }
+            }
         }
+
         dialog.dismiss()
         listener?.clearImages()
         listener?.onDataChanged()
@@ -156,6 +165,8 @@ object NewsActions {
         isEdit: Boolean,
         currentUser: RealmUserModel?,
         listener: OnNewsItemClickListener?,
+        repository: VoicesRepository,
+        scope: CoroutineScope,
         viewHolder: RecyclerView.ViewHolder,
         updateReplyButton: (RecyclerView.ViewHolder, RealmNews?, Int) -> Unit = { _, _, _ -> }
     ) {
@@ -179,57 +190,10 @@ object NewsActions {
             dialog.show()
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                 val currentImageList = listener?.getCurrentImageList()
-                handlePositiveButton(dialog, isEdit, components, news, realm, currentUser, currentImageList, listener)
+                handlePositiveButton(dialog, isEdit, components, news, repository, scope, currentUser, currentImageList, listener)
                 updateReplyButton(viewHolder, news, viewHolder.bindingAdapterPosition)
             }
         }
-    }
-
-    private fun postReply(
-        realm: Realm,
-        s: String?,
-        news: RealmNews?,
-        currentUser: RealmUserModel?,
-        imageList: RealmList<String>?
-    ) {
-        val shouldCommit = !realm.isInTransaction
-        if (shouldCommit) realm.beginTransaction()
-        val map = HashMap<String?, String>()
-        map["message"] = s ?: ""
-        map["viewableBy"] = news?.viewableBy ?: ""
-        map["viewableId"] = news?.viewableId ?: ""
-        map["replyTo"] = news?.id ?: ""
-        map["messageType"] = news?.messageType ?: ""
-        map["messagePlanetCode"] = news?.messagePlanetCode ?: ""
-        map["viewIn"] = news?.viewIn ?: ""
-        currentUser?.let { createNews(map, realm, it, imageList, true) }
-        if (shouldCommit) realm.commitTransaction()
-    }
-
-    private fun editPost(realm: Realm, s: String, news: RealmNews?, imageList: RealmList<String>?) {
-        if (s.isEmpty()) return
-        if (!realm.isInTransaction) realm.beginTransaction()
-
-        if (imagesToRemove.isNotEmpty()) {
-            news?.imageUrls?.let { imageUrls ->
-                val updatedUrls = imageUrls.filter { imageUrlJson ->
-                    try {
-                        val imgObject = JsonUtils.gson.fromJson(imageUrlJson, JsonObject::class.java)
-                        val path = JsonUtils.getString("imageUrl", imgObject)
-                        !imagesToRemove.contains(path)
-                    } catch (_: Exception) {
-                        true
-                    }
-                }
-                news.imageUrls?.clear()
-                news.imageUrls?.addAll(updatedUrls)
-            }
-            imagesToRemove.clear()
-        }
-
-        imageList?.forEach { news?.imageUrls?.add(it) }
-        news?.updateMessage(s)
-        realm.commitTransaction()
     }
 
     fun showMemberDetails(
