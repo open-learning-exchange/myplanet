@@ -150,16 +150,16 @@ class TeamFragment : Fragment(), TeamsAdapter.OnClickTeamItem, OnUpdateCompleteL
                             }
 
                             if (team == null) {
-                                teamsRepository.createTeam(
-                                    category = type,
-                                    name = name,
-                                    description = description,
-                                    services = services,
-                                    rules = rules,
-                                    teamType = selectedTeamType,
-                                    isPublic = alertCreateTeamBinding.switchPublic.isChecked,
-                                    user = userModel,
-                                ).onSuccess {
+                                val teamObject = com.google.gson.JsonObject().apply {
+                                    addProperty("name", name)
+                                    addProperty("description", description)
+                                    addProperty("services", services)
+                                    addProperty("rules", rules)
+                                    addProperty("teamType", selectedTeamType)
+                                    addProperty("isPublic", alertCreateTeamBinding.switchPublic.isChecked)
+                                    addProperty("category", type)
+                                }
+                                teamsRepository.createTeamAndAddMember(teamObject, userModel).onSuccess {
                                     binding.etSearch.visibility = View.VISIBLE
                                     binding.tableTitle.visibility = View.VISIBLE
                                     Utilities.toast(activity, getString(R.string.team_created))
