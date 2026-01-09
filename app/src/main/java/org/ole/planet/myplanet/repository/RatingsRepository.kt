@@ -11,6 +11,8 @@ interface RatingsRepository {
         rating: Float,
         comment: String,
     ): RatingSummary
+
+    suspend fun rateResource(rating: Float, resourceId: String, user: org.ole.planet.myplanet.model.RealmUserModel, comment: String)
 }
 
 data class RatingEntry(

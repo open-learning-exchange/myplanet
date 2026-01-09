@@ -5,7 +5,13 @@ import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import kotlin.math.roundToInt
+import com.google.gson.Gson
+import java.util.Date
+import java.util.UUID
+import javax.inject.Inject
+import kotlin.math.roundToInt
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmUserModel
 
@@ -79,6 +85,26 @@ class RatingsRepositoryImpl @Inject constructor(
         }
 
         return getRatingSummary(type, itemId, resolvedUserId)
+    }
+
+    override suspend fun rateResource(rating: Float, resourceId: String, user: RealmUserModel, comment: String) {
+        val resourceTitle = withRealmAsync { realm ->
+            realm.where(RealmMyLibrary::class.java)
+                .equalTo("resourceId", resourceId)
+                .findFirst()?.title
+        } ?: ""
+
+        val userId = user.id?.takeIf { it.isNotBlank() } ?: user._id
+        require(!userId.isNullOrBlank()) { "User ID not found in user model" }
+
+        submitRating(
+            type = "resource",
+            itemId = resourceId,
+            title = resourceTitle,
+            userId = userId,
+            rating = rating,
+            comment = comment
+        )
     }
 
     private fun RealmRating.toRatingEntry(): RatingEntry =

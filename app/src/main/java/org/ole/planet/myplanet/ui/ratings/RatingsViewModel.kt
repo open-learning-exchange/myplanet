@@ -82,17 +82,26 @@ class RatingsViewModel @Inject constructor(
 
                 _userState.value = user
 
-                val summary = ratingsRepository.submitRating(
-                    type = type,
-                    itemId = itemId,
-                    title = title,
-                    userId = user.id?.takeIf { it.isNotBlank() } ?: user._id ?: userId,
-                    rating = rating,
-                    comment = comment
-                )
-
-                _ratingState.value = summary.toUiState()
-                _submitState.value = SubmitState.Success
+                if (type == "resource") {
+                    ratingsRepository.rateResource(
+                        rating = rating,
+                        resourceId = itemId,
+                        user = user,
+                        comment = comment
+                    )
+                    _submitState.value = SubmitState.Success
+                } else {
+                    val summary = ratingsRepository.submitRating(
+                        type = type,
+                        itemId = itemId,
+                        title = title,
+                        userId = user.id?.takeIf { it.isNotBlank() } ?: user._id ?: userId,
+                        rating = rating,
+                        comment = comment
+                    )
+                    _ratingState.value = summary.toUiState()
+                    _submitState.value = SubmitState.Success
+                }
             } catch (e: Exception) {
                 _submitState.value = SubmitState.Error(e.message ?: "Failed to submit rating")
             } finally {
