@@ -31,4 +31,5 @@ interface ResourcesRepository {
         parentCode: String,
         filterPayload: String
     )
+    fun downloadResources(resources: List<RealmMyLibrary>)
 }

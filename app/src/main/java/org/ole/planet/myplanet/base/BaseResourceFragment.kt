@@ -213,13 +213,12 @@ abstract class BaseResourceFragment : Fragment() {
                         .setPositiveButton(R.string.download_selected) { _: DialogInterface?, _: Int ->
                             lv?.selectedItemsList?.let {
                                 addToLibrary(librariesForDialog, it)
-                                downloadFiles(librariesForDialog, it)
-                            }?.let { startDownload(it) }
-                        }.setNeutralButton(R.string.download_all) { _: DialogInterface?, _: Int ->
-                            lv?.selectedItemsList?.let {
-                                addAllToLibrary(librariesForDialog)
+                                val selectedLibraries = it.mapNotNull { index -> librariesForDialog.getOrNull(index) }
+                                resourcesRepository.downloadResources(selectedLibraries.filterNotNull())
                             }
-                            startDownload(downloadAllFiles(librariesForDialog))
+                        }.setNeutralButton(R.string.download_all) { _: DialogInterface?, _: Int ->
+                            addAllToLibrary(librariesForDialog)
+                            resourcesRepository.downloadResources(librariesForDialog.filterNotNull())
                         }.setNegativeButton(R.string.txt_cancel, null)
                     downloadSuggestionDialog?.dismiss()
                     downloadSuggestionDialog = alertDialogBuilder.create()
@@ -309,26 +308,6 @@ abstract class BaseResourceFragment : Fragment() {
         }
     }
 
-    fun startDownload(urls: ArrayList<String>) {
-        if (!isFragmentActive()) return
-        DataService(requireActivity()).isPlanetAvailable(object : PlanetAvailableListener {
-            override fun isAvailable() {
-                if (!isFragmentActive()) return
-                if (urls.isNotEmpty()) {
-                    try {
-                        showProgressDialog()
-                        DownloadUtils.openDownloadService(activity, urls, false)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
-            }
-
-            override fun notAvailable() {
-                showNotConnectedToast()
-            }
-        })
-    }
 
     fun setProgress(download: Download) {
         prgDialog.setProgress(download.progress)
