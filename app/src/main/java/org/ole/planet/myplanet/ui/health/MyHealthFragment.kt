@@ -39,7 +39,7 @@ import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.BaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.SyncListener
-import org.ole.planet.myplanet.callback.TableDataUpdate
+import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
 import org.ole.planet.myplanet.databinding.FragmentVitalSignBinding
@@ -53,6 +53,7 @@ import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.SharedPrefManager
+import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -179,7 +180,7 @@ class MyHealthFragment : Fragment() {
         view.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.secondary_bg))
         setupRealtimeSync()
         alertMyPersonalBinding = AlertMyPersonalBinding.inflate(LayoutInflater.from(context))
-        binding.txtDob.hint = "yyyy-MM-dd'"
+        binding.txtDob.hint = "dd-MM-yyyy"
 
         val allowDateEdit = false
         if(allowDateEdit) {
@@ -187,7 +188,7 @@ class MyHealthFragment : Fragment() {
                 val now = Calendar.getInstance()
                 val dpd = DatePickerDialog(requireContext(), { _, year, month, dayOfMonth ->
                     val selectedDate =
-                        String.format(Locale.US, "%04d-%02d-%02d", year, month + 1, dayOfMonth)
+                        String.format(Locale.US, "%02d-%02d-%04d", dayOfMonth, month + 1, year)
                     binding.txtDob.text = selectedDate
                 }, now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH))
                 dpd.show()
@@ -229,7 +230,7 @@ class MyHealthFragment : Fragment() {
             startActivity(Intent(activity, AddMyHealthActivity::class.java).putExtra("userId", userId))
         }
 
-        binding.txtDob.text = if (TextUtils.isEmpty(userModel?.dob)) getString(R.string.birth_date) else getFormattedDate(userModel?.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+        binding.txtDob.text = if (TextUtils.isEmpty(userModel?.dob)) getString(R.string.birth_date) else TimeUtils.formatDateToDDMMYYYY(userModel?.dob)
     }
 
     private fun setupRealtimeSync() {
@@ -396,7 +397,7 @@ class MyHealthFragment : Fragment() {
             binding.txtFullName.text = getString(R.string.three_strings, currentUser.firstName, currentUser.middleName, currentUser.lastName)
             binding.txtEmail.text = Utilities.checkNA(currentUser.email)
             binding.txtLanguage.text = Utilities.checkNA(currentUser.language)
-            binding.txtDob.text = Utilities.checkNA(currentUser.dob)
+            binding.txtDob.text = TimeUtils.formatDateToDDMMYYYY(currentUser.dob).ifEmpty { getString(R.string.empty_text) }
 
             val healthRecord = userRepository.getHealthRecordsAndAssociatedUsers(userId!!, currentUser)
 
