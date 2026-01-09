@@ -52,9 +52,22 @@
         android:background="?attr/selectableItemBackground"
         android:padding="8dp"
         android:src="@drawable/ic_join_request"
+        app:layout_constraintEnd_toStartOf="@id/btn_sync"
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="@color/daynight_textColor" />
+
+    <ImageView
+        android:id="@+id/btn_sync"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginEnd="8dp"
+        android:background="?attr/selectableItemBackground"
+        android:padding="8dp"
+        android:src="@drawable/ic_sync"
         app:layout_constraintEnd_toStartOf="@id/btn_feedback"
         app:layout_constraintTop_toTopOf="parent"
         app:tint="@color/daynight_textColor" />
+
     <ImageView
         android:id="@+id/btn_feedback"
         android:layout_width="40dp"

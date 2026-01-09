@@ -33,6 +33,7 @@ import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.JsonUtils
+import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
 class TeamsRepositoryImpl @Inject constructor(
@@ -917,6 +918,80 @@ class TeamsRepositoryImpl @Inject constructor(
             }
 
             query.count() > 0
+        }
+    }
+
+    override suspend fun syncTeam(teamId: String) {
+        val apiInterface = client?.create(ApiInterface::class.java) ?: return
+        withContext(Dispatchers.IO) {
+            try {
+                val teamToSync = databaseService.withRealm { realm ->
+                    realm.where(RealmMyTeam::class.java)
+                        .equalTo("_id", teamId)
+                        .findFirst()
+                        ?.let { realm.copyFromRealm(it) }
+                }
+
+                if (teamToSync != null) {
+                    val serializedTeam = RealmMyTeam.serialize(teamToSync)
+                    val response = apiInterface.postDoc(
+                        UrlUtils.header,
+                        "application/json",
+                        "${UrlUtils.getUrl()}/teams",
+                        serializedTeam
+                    ).execute()
+
+                    if (response.isSuccessful && response.body() != null) {
+                        val body = response.body()!!
+                        val rev = JsonUtils.getString("rev", body)
+                        databaseService.executeTransactionAsync { transactionRealm ->
+                            transactionRealm.where(RealmMyTeam::class.java)
+                                .equalTo("_id", teamId)
+                                .findFirst()?.let { team ->
+                                    team._rev = rev
+                                    team.updated = false
+                                }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            try {
+                val logsToUpload = databaseService.withRealm { realm ->
+                    realm.where(RealmTeamLog::class.java)
+                        .equalTo("teamId", teamId)
+                        .isNull("_rev")
+                        .findAll()
+                        .let { realm.copyFromRealm(it) }
+                }
+
+                logsToUpload.forEach { log ->
+                    val serializedLog = RealmTeamLog.serializeTeamActivities(log, MainApplication.context)
+                    val response = apiInterface.postDoc(
+                        UrlUtils.header,
+                        "application/json",
+                        "${UrlUtils.getUrl()}/team_activities",
+                        serializedLog
+                    ).execute()
+
+                    if (response.isSuccessful && response.body() != null) {
+                        val body = response.body()!!
+                        val id = JsonUtils.getString("id", body)
+                        val rev = JsonUtils.getString("rev", body)
+                        databaseService.executeTransactionAsync { transactionRealm ->
+                            transactionRealm.where(RealmTeamLog::class.java)
+                                .equalTo("_id", log._id)
+                                .findFirst()?.let { realmLog ->
+                                    realmLog._id = id
+                                    realmLog._rev = rev
+                                }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 }
