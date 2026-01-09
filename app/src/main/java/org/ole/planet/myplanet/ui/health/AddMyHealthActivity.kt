@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateIv
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateKey
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
+import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
@@ -59,7 +60,7 @@ class AddMyHealthActivity : AppCompatActivity() {
         val datePickerClickListener = View.OnClickListener {
             val now = Calendar.getInstance()
             val dpd = DatePickerDialog(this, { _, year, month, dayOfMonth ->
-                val selectedDate = String.format(Locale.US, "%04d-%02d-%02d", year, month + 1, dayOfMonth)
+                val selectedDate = String.format(Locale.US, "%02d-%02d-%04d", dayOfMonth, month + 1, year)
                 binding.etBirthdateLayout.editText?.setText(selectedDate)
             }, now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH))
             dpd.datePicker.maxDate = System.currentTimeMillis()
@@ -79,7 +80,8 @@ class AddMyHealthActivity : AppCompatActivity() {
                 userModel?.middleName = "${binding.etMname.editText?.text}".trim { ch -> ch <= ' ' }
                 userModel?.lastName = "${binding.etLname.editText?.text}".trim { ch -> ch <= ' ' }
                 userModel?.email = "${binding.etEmail.editText?.text}".trim { ch -> ch <= ' ' }
-                userModel?.dob = "${binding.etBirthdateLayout.editText?.text}".trim { ch -> ch <= ' ' }
+                val dobInput = "${binding.etBirthdateLayout.editText?.text}".trim { ch -> ch <= ' ' }
+                userModel?.dob = TimeUtils.convertDDMMYYYYToISO(dobInput)
                 userModel?.birthPlace = "${binding.etBirthplace.editText?.text}".trim { ch -> ch <= ' ' }
                 userModel?.phoneNumber = "${binding.etPhone.editText?.text}".trim { ch -> ch <= ' ' }
                 health.emergencyContactName = "${binding.etEmergency.editText?.text}".trim { ch -> ch <= ' ' }
@@ -185,7 +187,7 @@ class AddMyHealthActivity : AppCompatActivity() {
             binding.etLname.editText?.setText(healthData.lastName)
             binding.etEmail.editText?.setText(healthData.email)
             binding.etPhone.editText?.setText(healthData.phoneNumber)
-            binding.etBirthdateLayout.editText?.setText(healthData.dob)
+            binding.etBirthdateLayout.editText?.setText(TimeUtils.formatDateToDDMMYYYY(healthData.dob))
             binding.etBirthplace.editText?.setText(healthData.birthPlace)
         }
     }
