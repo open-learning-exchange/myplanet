@@ -200,15 +200,13 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 recyclerView.adapter = null
                 adapterCourses = CoursesAdapter(
                     requireActivity(),
-                    sortedCourseList,
-                    map,
                     userModel,
                     tagsRepository
                 )
-                adapterCourses.setProgressMap(progressMap)
                 adapterCourses.setListener(this@CoursesFragment)
                 adapterCourses.setRatingChangeListener(this@CoursesFragment)
                 recyclerView.adapter = adapterCourses
+                adapterCourses.updateData(sortedCourseList, map, progressMap)
 
                 checkList()
                 showNoData(tvMessage, adapterCourses.itemCount, "courses")
@@ -230,10 +228,10 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         val map = getRatings(mRealm, "course", model?.id)
         val progressMap = HashMap<String?, com.google.gson.JsonObject>()
 
-        adapterCourses = CoursesAdapter(requireActivity(), courseList, map, userModel, tagsRepository)
-        adapterCourses.setProgressMap(progressMap)
+        adapterCourses = CoursesAdapter(requireActivity(), userModel, tagsRepository)
         adapterCourses.setListener(this@CoursesFragment)
         adapterCourses.setRatingChangeListener(this@CoursesFragment)
+        adapterCourses.updateData(courseList, map, progressMap)
         return adapterCourses
     }
 
@@ -449,7 +447,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     private fun checkList() {
-        if (adapterCourses.getCourseList().isEmpty()) {
+        if (adapterCourses.currentList.isEmpty()) {
             selectAll.visibility = View.GONE
             etSearch.visibility = View.GONE
             tvAddToLib.visibility = View.GONE
@@ -460,7 +458,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         } else {
             etSearch.visibility = View.VISIBLE
             requireView().findViewById<View>(R.id.filter).visibility = View.VISIBLE
-            val allMyCourses = adapterCourses.getCourseList().all { it?.isMyCourse == true }
+            val allMyCourses = adapterCourses.currentList.all { it.course.isMyCourse }
             if (userModel?.isGuest() == false) {
                 selectAll.visibility = if (allMyCourses) View.GONE else View.VISIBLE
             }
