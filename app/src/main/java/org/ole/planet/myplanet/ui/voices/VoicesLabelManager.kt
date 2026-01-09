@@ -16,12 +16,12 @@ import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Utilities
 
-class NewsLabelManager(
+class VoicesLabelManager(
     private val context: Context,
     private val voicesRepository: VoicesRepository,
     private val scope: CoroutineScope
 ) {
-    fun setupAddLabelMenu(binding: RowNewsBinding, news: RealmNews?, canManageLabels: Boolean) {
+    fun setupAddLabelMenu(binding: RowNewsBinding, voice: RealmNews?, canManageLabels: Boolean) {
         binding.btnAddLabel.setOnClickListener(null)
         binding.btnAddLabel.isEnabled = canManageLabels
         if (!canManageLabels) {
@@ -29,7 +29,7 @@ class NewsLabelManager(
         }
 
         binding.btnAddLabel.setOnClickListener {
-            val usedLabels = news?.labels?.toSet() ?: emptySet()
+            val usedLabels = voice?.labels?.toSet() ?: emptySet()
             val availableLabels = Constants.LABELS.filterValues { it !in usedLabels }
 
             val wrapper = androidx.appcompat.view.ContextThemeWrapper(context, R.style.CustomPopupMenu)
@@ -39,18 +39,18 @@ class NewsLabelManager(
             }
             menu.setOnMenuItemClickListener { menuItem ->
                 val selectedLabel = Constants.LABELS[menuItem.title]
-                val newsId = news?.id
-                if (selectedLabel != null && newsId != null && news.labels?.contains(selectedLabel) != true) {
+                val voiceId = voice?.id
+                if (selectedLabel != null && voiceId != null && voice.labels?.contains(selectedLabel) != true) {
                     scope.launch {
                         try {
-                            voicesRepository.addLabel(newsId, selectedLabel)
+                            voicesRepository.addLabel(voiceId, selectedLabel)
                             withContext(Dispatchers.Main) {
-                                if (news.labels == null) {
-                                    news.labels = RealmList()
+                                if (voice.labels == null) {
+                                    voice.labels = RealmList()
                                 }
-                                news.labels?.add(selectedLabel)
+                                voice.labels?.add(selectedLabel)
                                 Utilities.toast(context, context.getString(R.string.label_added))
-                                showChips(binding, news, canManageLabels)
+                                showChips(binding, voice, canManageLabels)
                             }
                         } catch (e: Exception) {
                             e.printStackTrace()
@@ -63,10 +63,10 @@ class NewsLabelManager(
         }
     }
 
-    fun showChips(binding: RowNewsBinding, news: RealmNews, canManageLabels: Boolean) {
+    fun showChips(binding: RowNewsBinding, voice: RealmNews, canManageLabels: Boolean) {
         binding.fbChips.removeAllViews()
 
-        for (label in news.labels ?: emptyList()) {
+        for (label in voice.labels ?: emptyList()) {
             val chipConfig = Utilities.getCloudConfig().apply {
                 selectMode(if (canManageLabels) ChipCloud.SelectMode.close else ChipCloud.SelectMode.none)
             }
@@ -79,16 +79,16 @@ class NewsLabelManager(
                     val selectedLabel = when {
                         labelText == null -> null
                         Constants.LABELS.containsKey(labelText) -> Constants.LABELS[labelText]
-                        else -> news.labels?.firstOrNull { getLabel(it) == labelText }
+                        else -> voice.labels?.firstOrNull { getLabel(it) == labelText }
                     }
-                    val newsId = news.id
-                    if (selectedLabel != null && newsId != null) {
+                    val voiceId = voice.id
+                    if (selectedLabel != null && voiceId != null) {
                         scope.launch {
                             try {
-                                voicesRepository.removeLabel(newsId, selectedLabel)
+                                voicesRepository.removeLabel(voiceId, selectedLabel)
                                 withContext(Dispatchers.Main) {
-                                    news.labels?.remove(selectedLabel)
-                                    showChips(binding, news, canManageLabels)
+                                    voice.labels?.remove(selectedLabel)
+                                    showChips(binding, voice, canManageLabels)
                                 }
                             } catch (e: Exception) {
                                 e.printStackTrace()
@@ -98,12 +98,12 @@ class NewsLabelManager(
                 }
             }
         }
-        updateAddLabelVisibility(binding, news, canManageLabels)
+        updateAddLabelVisibility(binding, voice, canManageLabels)
     }
 
     private fun updateAddLabelVisibility(
         binding: RowNewsBinding,
-        news: RealmNews?,
+        voice: RealmNews?,
         canManageLabels: Boolean,
     ) {
         if (!canManageLabels) {
@@ -111,7 +111,7 @@ class NewsLabelManager(
             return
         }
 
-        val usedLabels = news?.labels?.toSet() ?: emptySet()
+        val usedLabels = voice?.labels?.toSet() ?: emptySet()
         val labels = Constants.LABELS.values.toSet()
         binding.btnAddLabel.visibility =
             if (usedLabels.containsAll(labels)) View.GONE else View.VISIBLE
