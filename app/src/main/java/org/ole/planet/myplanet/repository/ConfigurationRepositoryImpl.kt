@@ -43,7 +43,7 @@ class ConfigurationRepositoryImpl @Inject constructor(
         try {
             val healthUrl = UrlUtils.getHealthAccessUrl(preferences)
             if (healthUrl.isBlank()) {
-                listener.onSuccess("")
+                listener.handleUploadSuccess("")
                 return
             }
 
@@ -51,18 +51,18 @@ class ConfigurationRepositoryImpl @Inject constructor(
                 override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
                     try {
                         when (response.code()) {
-                            200 -> listener.onSuccess(context.getString(R.string.server_sync_successfully))
-                            401 -> listener.onSuccess("Unauthorized - Invalid credentials")
-                            404 -> listener.onSuccess("Server endpoint not found")
-                            500 -> listener.onSuccess("Server internal error")
-                            502 -> listener.onSuccess("Bad gateway - Server unavailable")
-                            503 -> listener.onSuccess("Service temporarily unavailable")
-                            504 -> listener.onSuccess("Gateway timeout")
-                            else -> listener.onSuccess("Server error: ${response.code()}")
+                            200 -> listener.handleUploadSuccess(context.getString(R.string.server_sync_successfully))
+                            401 -> listener.handleUploadSuccess("Unauthorized - Invalid credentials")
+                            404 -> listener.handleUploadSuccess("Server endpoint not found")
+                            500 -> listener.handleUploadSuccess("Server internal error")
+                            502 -> listener.handleUploadSuccess("Bad gateway - Server unavailable")
+                            503 -> listener.handleUploadSuccess("Service temporarily unavailable")
+                            504 -> listener.handleUploadSuccess("Gateway timeout")
+                            else -> listener.handleUploadSuccess("Server error: ${response.code()}")
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()
-                        listener.onSuccess("")
+                        listener.handleUploadSuccess("")
                     }
                 }
 
@@ -76,16 +76,16 @@ class ConfigurationRepositoryImpl @Inject constructor(
                             is java.io.IOException -> "Network connection error"
                             else -> "Network error: ${t.localizedMessage ?: "Unknown error"}"
                         }
-                        listener.onSuccess(errorMsg)
+                        listener.handleUploadSuccess(errorMsg)
                     } catch (e: Exception) {
                         e.printStackTrace()
-                        listener.onSuccess("Health check failed")
+                        listener.handleUploadSuccess("Health check failed")
                     }
                 }
             })
         } catch (e: Exception) {
             e.printStackTrace()
-            listener.onSuccess("Health access initialization failed")
+            listener.handleUploadSuccess("Health access initialization failed")
         }
     }
 
@@ -114,7 +114,7 @@ class ConfigurationRepositoryImpl @Inject constructor(
                 val planetInfo = fetchVersionInfo(settings)
                 if (planetInfo == null) {
                     withContext(Dispatchers.Main) {
-                        callback.onError(context.getString(R.string.version_not_found), true)
+                        callback.handleUploadError(context.getString(R.string.version_not_found), true)
                     }
                     return@launch
                 }
@@ -129,7 +129,7 @@ class ConfigurationRepositoryImpl @Inject constructor(
                 val versionStr = JsonUtils.gson.fromJson(rawApkVersion, String::class.java)
                 if (versionStr.isNullOrEmpty()) {
                     withContext(Dispatchers.Main) {
-                        callback.onError(context.getString(R.string.planet_is_up_to_date), false)
+                        callback.handleUploadError(context.getString(R.string.planet_is_up_to_date), false)
                     }
                     return@launch
                 }
@@ -137,7 +137,7 @@ class ConfigurationRepositoryImpl @Inject constructor(
                 val apkVersion = parseApkVersionString(versionStr)
                     ?: run {
                         withContext(Dispatchers.Main) {
-                            callback.onError(
+                            callback.handleUploadError(
                                 context.getString(R.string.new_apk_version_required_but_not_found_on_server),
                                 false
                             )
@@ -153,7 +153,7 @@ class ConfigurationRepositoryImpl @Inject constructor(
             } catch (e: Exception) {
                 e.printStackTrace()
                 withContext(Dispatchers.Main) {
-                    callback.onError(context.getString(R.string.connection_failed), true)
+                    callback.handleUploadError(context.getString(R.string.connection_failed), true)
                 }
             }
         }
@@ -258,7 +258,7 @@ class ConfigurationRepositoryImpl @Inject constructor(
         if (Constants.showBetaFeature(Constants.KEY_UPGRADE_MAX, context) && info.latestapkcode > currentVersion) {
             serviceScope.launch {
                 withContext(Dispatchers.Main) {
-                    callback.onUpdateAvailable(info, false)
+                    callback.showUpdateAvailableDialog(info, false)
                 }
             }
             return
@@ -266,7 +266,7 @@ class ConfigurationRepositoryImpl @Inject constructor(
         if (apkVersion > currentVersion) {
             serviceScope.launch {
                 withContext(Dispatchers.Main) {
-                    callback.onUpdateAvailable(info, currentVersion >= info.minapkcode)
+                    callback.showUpdateAvailableDialog(info, currentVersion >= info.minapkcode)
                 }
             }
             return
@@ -274,13 +274,13 @@ class ConfigurationRepositoryImpl @Inject constructor(
         if (currentVersion < info.minapkcode && apkVersion < info.minapkcode) {
             serviceScope.launch {
                 withContext(Dispatchers.Main) {
-                    callback.onUpdateAvailable(info, true)
+                    callback.showUpdateAvailableDialog(info, true)
                 }
             }
         } else {
             serviceScope.launch {
                 withContext(Dispatchers.Main) {
-                    callback.onError(context.getString(R.string.planet_is_up_to_date), false)
+                    callback.handleUploadError(context.getString(R.string.planet_is_up_to_date), false)
                 }
             }
         }

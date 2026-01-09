@@ -111,12 +111,12 @@ class LoginActivity : SyncActivity(), UserProfileAdapter.OnItemClickListener {
         }
 
         if (versionInfo != null) {
-            onUpdateAvailable(versionInfo, intent.getBooleanExtra("cancelable", false))
+            showUpdateAvailableDialog(versionInfo, intent.getBooleanExtra("cancelable", false))
         } else {
             configurationRepository.checkVersion(this, settings)
         }
         checkUsagesPermission()
-        forceSyncTrigger()
+        checkForceSyncTrigger()
 
         val url = getUrl()
         if (url.isNotEmpty() && url != "/db") {
@@ -133,7 +133,7 @@ class LoginActivity : SyncActivity(), UserProfileAdapter.OnItemClickListener {
                 FeedbackFragment().show(supportFragmentManager, "")
             } else {
                 toast(this, getString(R.string.please_enter_server_url_first))
-                settingDialog()
+                showServerSettingsDialog()
             }
         }
 
@@ -220,7 +220,7 @@ class LoginActivity : SyncActivity(), UserProfileAdapter.OnItemClickListener {
                 }
             } else {
                 toast(this, getString(R.string.please_enter_server_url_first))
-                settingDialog()
+                showServerSettingsDialog()
             }
         }
         if (!settings.contains("serverProtocol")) settings.edit {
@@ -232,13 +232,13 @@ class LoginActivity : SyncActivity(), UserProfileAdapter.OnItemClickListener {
                 becomeAMember()
             } else {
                 toast(this, getString(R.string.please_enter_server_url_first))
-                settingDialog()
+                showServerSettingsDialog()
             }
         }
 
         binding.imgBtnSetting.setOnClickListener {
             binding.inputName.setText(R.string.empty_text)
-            settingDialog()
+            showServerSettingsDialog()
         }
 
         binding.btnGuestLogin.setOnClickListener {
@@ -247,7 +247,7 @@ class LoginActivity : SyncActivity(), UserProfileAdapter.OnItemClickListener {
                 showGuestLoginDialog()
             } else {
                 toast(this, getString(R.string.please_enter_server_url_first))
-                settingDialog()
+                showServerSettingsDialog()
             }
         }
     }
@@ -277,7 +277,7 @@ class LoginActivity : SyncActivity(), UserProfileAdapter.OnItemClickListener {
                 service.getMinApk(this, url, serverPin, this, "LoginActivity")
             } else {
                 toast(this, getString(R.string.please_enter_server_url_first))
-                settingDialog()
+                showServerSettingsDialog()
             }
         }
         declareHideKeyboardElements()
@@ -511,7 +511,7 @@ class LoginActivity : SyncActivity(), UserProfileAdapter.OnItemClickListener {
                     toast(this, getString(R.string.unable_to_login))
                 } else {
                     saveUserInfoPref(settings, "", model)
-                    onLogin()
+                    handleLoginTasks()
                 }
             } else {
                 submitForm(user.name, user.password)
@@ -546,7 +546,7 @@ class LoginActivity : SyncActivity(), UserProfileAdapter.OnItemClickListener {
                         positiveButton.isEnabled = true
                     } else {
                         saveUserInfoPref(settings, "", model)
-                        onLogin()
+                        handleLoginTasks()
                         dialog.dismiss()
                     }
                 }
@@ -613,7 +613,7 @@ class LoginActivity : SyncActivity(), UserProfileAdapter.OnItemClickListener {
             startActivity(Intent(this, BecomeMemberActivity::class.java))
         } else {
             toast(this, getString(R.string.please_enter_server_url_first))
-            settingDialog()
+            showServerSettingsDialog()
         }
     }
 

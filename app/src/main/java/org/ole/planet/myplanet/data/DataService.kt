@@ -86,7 +86,7 @@ class DataService @Inject constructor(
         try {
             val healthUrl = UrlUtils.getHealthAccessUrl(preferences)
             if (healthUrl.isBlank()) {
-                listener.onSuccess("")
+                listener.handleUploadSuccess("")
                 return
             }
 
@@ -94,18 +94,18 @@ class DataService @Inject constructor(
                 override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
                     try {
                         when (response.code()) {
-                            200 -> listener.onSuccess(context.getString(R.string.server_sync_successfully))
-                            401 -> listener.onSuccess("Unauthorized - Invalid credentials")
-                            404 -> listener.onSuccess("Server endpoint not found")
-                            500 -> listener.onSuccess("Server internal error")
-                            502 -> listener.onSuccess("Bad gateway - Server unavailable")
-                            503 -> listener.onSuccess("Service temporarily unavailable")
-                            504 -> listener.onSuccess("Gateway timeout")
-                            else -> listener.onSuccess("Server error: ${response.code()}")
+                            200 -> listener.handleUploadSuccess(context.getString(R.string.server_sync_successfully))
+                            401 -> listener.handleUploadSuccess("Unauthorized - Invalid credentials")
+                            404 -> listener.handleUploadSuccess("Server endpoint not found")
+                            500 -> listener.handleUploadSuccess("Server internal error")
+                            502 -> listener.handleUploadSuccess("Bad gateway - Server unavailable")
+                            503 -> listener.handleUploadSuccess("Service temporarily unavailable")
+                            504 -> listener.handleUploadSuccess("Gateway timeout")
+                            else -> listener.handleUploadSuccess("Server error: ${response.code()}")
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()
-                        listener.onSuccess("")
+                        listener.handleUploadSuccess("")
                     }
                 }
 
@@ -119,16 +119,16 @@ class DataService @Inject constructor(
                             is java.io.IOException -> "Network connection error"
                             else -> "Network error: ${t.localizedMessage ?: "Unknown error"}"
                         }
-                        listener.onSuccess(errorMsg)
+                        listener.handleUploadSuccess(errorMsg)
                     } catch (e: Exception) {
                         e.printStackTrace()
-                        listener.onSuccess("Health check failed")
+                        listener.handleUploadSuccess("Health check failed")
                     }
                 }
             })
         } catch (e: Exception) {
             e.printStackTrace()
-            listener.onSuccess("Health access initialization failed")
+            listener.handleUploadSuccess("Health access initialization failed")
         }
     }
 
@@ -335,21 +335,21 @@ class DataService @Inject constructor(
 
                 withContext(Dispatchers.Main) {
                     transactionResult.onSuccess {
-                        callback.onSuccess(context.getString(R.string.server_sync_successfully))
+                        callback.handleUploadSuccess(context.getString(R.string.server_sync_successfully))
                     }.onFailure { e ->
                         e.printStackTrace()
-                        callback.onSuccess(context.getString(R.string.server_sync_has_failed))
+                        callback.handleUploadSuccess(context.getString(R.string.server_sync_has_failed))
                     }
                 }
             } else {
                 withContext(Dispatchers.Main) {
-                    callback.onSuccess(context.getString(R.string.server_sync_has_failed))
+                    callback.handleUploadSuccess(context.getString(R.string.server_sync_has_failed))
                 }
             }
         } catch (t: Throwable) {
             t.printStackTrace()
             withContext(Dispatchers.Main) {
-                callback.onSuccess(context.getString(R.string.server_sync_has_failed))
+                callback.handleUploadSuccess(context.getString(R.string.server_sync_has_failed))
             }
         }
     }
@@ -447,6 +447,6 @@ class DataService @Inject constructor(
     }
 
     interface ConfigurationIdListener {
-        fun onConfigurationIdReceived(id: String, code: String, url: String, defaultUrl: String, isAlternativeUrl: Boolean, callerActivity: String)
+        fun handleConfigurationIdResult(id: String, code: String, url: String, defaultUrl: String, isAlternativeUrl: Boolean, callerActivity: String)
     }
 }

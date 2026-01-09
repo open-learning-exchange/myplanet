@@ -105,12 +105,12 @@ class UploadManager @Inject constructor(
                 .findFirst()
                 ?.let { realm.copyFromRealm(it) }
         } ?: run {
-            listener?.onSuccess("Cannot upload activities: user model is null")
+            listener?.handleUploadSuccess("Cannot upload activities: user model is null")
             return
         }
 
         if (model.isManager()) {
-            listener?.onSuccess("Skipping activities upload for manager")
+            listener?.handleUploadSuccess("Skipping activities upload for manager")
             return
         }
 
@@ -136,11 +136,11 @@ class UploadManager @Inject constructor(
 
                         apiInterface.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/myplanet_activities", `object`).enqueue(object : Callback<JsonObject?> {
                             override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
-                                listener?.onSuccess("My planet activities uploaded successfully")
+                                listener?.handleUploadSuccess("My planet activities uploaded successfully")
                             }
 
                             override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
-                                listener?.onSuccess("Failed to upload activities: ${t.message}")
+                                listener?.handleUploadSuccess("Failed to upload activities: ${t.message}")
                             }
                         })
                     }
@@ -149,18 +149,18 @@ class UploadManager @Inject constructor(
                         val `object` = MyPlanet.getMyPlanetActivities(context, pref, model)
                         apiInterface.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/myplanet_activities", `object`).enqueue(object : Callback<JsonObject?> {
                             override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
-                                listener?.onSuccess("My planet activities uploaded successfully")
+                                listener?.handleUploadSuccess("My planet activities uploaded successfully")
                             }
 
                             override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
-                                listener?.onSuccess("Failed to upload activities: ${t.message}")
+                                listener?.handleUploadSuccess("Failed to upload activities: ${t.message}")
                             }
                         })
                     }
                 })
         } catch (e: Exception) {
             e.printStackTrace()
-            listener?.onSuccess("Failed to upload activities: ${e.message}")
+            listener?.handleUploadSuccess("Failed to upload activities: ${e.message}")
         }
     }
 
@@ -225,12 +225,12 @@ class UploadManager @Inject constructor(
 
                 uploadCourseProgress()
                 withContext(Dispatchers.Main) {
-                    listener.onSuccess("Result sync completed successfully ($processedCount processed, $errorCount errors)")
+                    listener.handleUploadSuccess("Result sync completed successfully ($processedCount processed, $errorCount errors)")
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
                 withContext(Dispatchers.Main) {
-                    listener.onSuccess("Error during result sync: ${e.message}")
+                    listener.handleUploadSuccess("Error during result sync: ${e.message}")
                 }
             }
         }
@@ -399,7 +399,7 @@ class UploadManager @Inject constructor(
         }
 
         if (photosToUpload.isEmpty()) {
-            listener?.onSuccess("No photos to upload")
+            listener?.handleUploadSuccess("No photos to upload")
             return
         }
 
@@ -474,7 +474,7 @@ class UploadManager @Inject constructor(
             }
 
             if (resourcesToUpload.isEmpty()) {
-                listener?.onSuccess("No resources to upload")
+                listener?.handleUploadSuccess("No resources to upload")
                 return
             }
 
@@ -516,7 +516,7 @@ class UploadManager @Inject constructor(
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            listener?.onSuccess("Resource upload failed: ${e.message}")
+            listener?.handleUploadSuccess("Resource upload failed: ${e.message}")
         }
     }
 
@@ -765,12 +765,12 @@ class UploadManager @Inject constructor(
                 .findFirst()
                 ?.let { realm.copyFromRealm(it) }
         } ?: run {
-            listener.onSuccess("Cannot upload user activities: user model is null")
+            listener.handleUploadSuccess("Cannot upload user activities: user model is null")
             return
         }
 
         if (model.isManager()) {
-            listener.onSuccess("Skipping user activities upload for manager")
+            listener.handleUploadSuccess("Skipping user activities upload for manager")
             return
         }
 
@@ -819,10 +819,10 @@ class UploadManager @Inject constructor(
 
             uploadTeamActivitiesRefactored(apiInterface)
 
-            listener.onSuccess("User activities sync completed successfully")
+            listener.handleUploadSuccess("User activities sync completed successfully")
         } catch (e: Exception) {
             e.printStackTrace()
-            listener.onSuccess("Failed to upload user activities: ${e.message}")
+            listener.handleUploadSuccess("Failed to upload user activities: ${e.message}")
         }
     }
 

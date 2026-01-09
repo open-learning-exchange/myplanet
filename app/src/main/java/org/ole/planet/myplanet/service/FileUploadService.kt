@@ -57,23 +57,23 @@ open class FileUploadService {
                 }
 
                 override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
-                    listener.onSuccess("Unable to upload resource")
+                    listener.handleUploadSuccess("Unable to upload resource")
                 }
             })
         } catch (e: IOException) {
             e.printStackTrace()
-            listener.onSuccess("Unable to upload resource")
+            listener.handleUploadSuccess("Unable to upload resource")
         }
     }
 
     private fun onDataReceived(`object`: JsonObject?, listener: SuccessListener) {
         if (`object` != null) {
             if (JsonUtils.getBoolean("ok", `object`)) {
-                listener.onSuccess("Uploaded successfully")
+                listener.handleUploadSuccess("Uploaded successfully")
                 return
             }
         }
-        listener.onSuccess("Unable to upload resource")
+        listener.handleUploadSuccess("Unable to upload resource")
     }
 
     companion object {
