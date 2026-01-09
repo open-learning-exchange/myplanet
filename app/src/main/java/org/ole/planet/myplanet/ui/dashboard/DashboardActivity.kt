@@ -98,7 +98,7 @@ import org.ole.planet.myplanet.utilities.NotificationUtils
 import org.ole.planet.myplanet.utilities.ThemeManager
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
-@AndroidEntryPoint  
+@AndroidEntryPoint
 class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener, NotificationsListener {
 
     private lateinit var binding: ActivityDashboardBinding
@@ -147,6 +147,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         handleInitialFragment()
         addBackPressCallback()
         collectUiState()
+        collectEvents()
 
         lifecycleScope.launch {
             initializeDashboard()
@@ -159,46 +160,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     content.viewTreeObserver.removeOnPreDrawListener(this)
                     startPostponedEnterTransition()
                     return true
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                 }
             }
         )
@@ -209,7 +170,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         setupToolbarActions()
         hideWifi()
         handleNotificationIntent(intent)
-        setupRealmListeners()
+        dashboardViewModel.listenForDataChanges(user?.id ?: "")
 
         binding.root.post {
             setupSystemNotificationReceiver()
@@ -225,6 +186,22 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 dashboardViewModel.uiState.collect { state ->
                     updateNotificationBadge(state.unreadNotifications) {
                         openNotificationsList(user?.id ?: "")
+                    }
+                }
+            }
+        }
+    }
+
+    private fun collectEvents() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                dashboardViewModel.dataChangedEvent.collect {
+                    if (notificationsShownThisSession) {
+                        val currentTime = System.currentTimeMillis()
+                        if (currentTime - lastNotificationCheckTime > notificationCheckThrottleMs) {
+                            lastNotificationCheckTime = currentTime
+                            checkAndCreateNewNotifications()
+                        }
                     }
                 }
             }
@@ -572,31 +549,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
         }
         lastException?.printStackTrace()
-    }
-
-    private fun setupRealmListeners() {
-        lifecycleScope.launch {
-            resourcesRepository.getRecentResources(user?.id ?: "").collect { onRealmDataChange() }
-        }
-        lifecycleScope.launch {
-            resourcesRepository.getPendingDownloads(user?.id ?: "").collect { onRealmDataChange() }
-        }
-        lifecycleScope.launch {
-            submissionsRepository.getPendingSurveysFlow(user?.id).collect { onRealmDataChange() }
-        }
-        lifecycleScope.launch {
-            teamsRepository.getTasksFlow(user?.id).collect { onRealmDataChange() }
-        }
-    }
-
-    private fun onRealmDataChange() {
-        if (notificationsShownThisSession) {
-            val currentTime = System.currentTimeMillis()
-            if (currentTime - lastNotificationCheckTime > notificationCheckThrottleMs) {
-                lastNotificationCheckTime = currentTime
-                checkAndCreateNewNotifications()
-            }
-        }
     }
 
     private fun setupSystemNotificationReceiver() {
