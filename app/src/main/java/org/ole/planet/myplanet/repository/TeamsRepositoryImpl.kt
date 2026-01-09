@@ -473,8 +473,8 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun leaveTeam(teamId: String, userId: String?) {
-        if (teamId.isBlank() || userId.isNullOrBlank()) return
+    override suspend fun leaveTeam(teamId: String, userId: String) {
+        if (teamId.isBlank() || userId.isBlank()) return
         executeTransaction { realm ->
             val memberships = realm.where(RealmMyTeam::class.java)
                 .equalTo("userId", userId)
