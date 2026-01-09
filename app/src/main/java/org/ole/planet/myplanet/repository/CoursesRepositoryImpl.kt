@@ -25,23 +25,20 @@ class CoursesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getCourseByCourseId(courseId: String?): RealmMyCourse? {
-        if (courseId.isNullOrBlank()) {
-            return null
-        }
-        return findByField(RealmMyCourse::class.java, "courseId", courseId)
-    }
-
-    override suspend fun getDetachedCourseById(courseId: String?): RealmMyCourse? {
-        if (courseId.isNullOrBlank()) {
-            return null
-        }
+    override suspend fun getCourseById(courseId: String): RealmMyCourse? {
         return withRealm { realm ->
             val course = realm.where(RealmMyCourse::class.java)
                 .equalTo("courseId", courseId)
                 .findFirst()
             course?.let { realm.copyFromRealm(it) }
         }
+    }
+
+    override suspend fun getCourseByCourseId(courseId: String?): RealmMyCourse? {
+        if (courseId.isNullOrBlank()) {
+            return null
+        }
+        return findByField(RealmMyCourse::class.java, "courseId", courseId)
     }
 
     override suspend fun getCourseOnlineResources(courseId: String?): List<RealmMyLibrary> {
