@@ -47,6 +47,8 @@ import kotlin.math.ceil
 import org.ole.planet.myplanet.data.DatabaseService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.BuildConfig
@@ -576,16 +578,16 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun setupRealmListeners() {
         lifecycleScope.launch {
-            resourcesRepository.getRecentResources(user?.id ?: "").collect { onRealmDataChange() }
-        }
-        lifecycleScope.launch {
-            resourcesRepository.getPendingDownloads(user?.id ?: "").collect { onRealmDataChange() }
-        }
-        lifecycleScope.launch {
-            submissionsRepository.getPendingSurveysFlow(user?.id).collect { onRealmDataChange() }
-        }
-        lifecycleScope.launch {
-            teamsRepository.getTasksFlow(user?.id).collect { onRealmDataChange() }
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                combine(
+                    resourcesRepository.getRecentResources(user?.id ?: ""),
+                    resourcesRepository.getPendingDownloads(user?.id ?: ""),
+                    submissionsRepository.getPendingSurveysFlow(user?.id),
+                    teamsRepository.getTasksFlow(user?.id),
+                ) { _, _, _, _ -> Unit }
+                    .debounce(500L)
+                    .collect { onRealmDataChange() }
+            }
         }
     }
 
