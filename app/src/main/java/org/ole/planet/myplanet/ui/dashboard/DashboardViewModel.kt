@@ -7,9 +7,13 @@ import io.realm.Sort
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmMyCourse
@@ -52,7 +56,11 @@ class DashboardViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
+    private val _dataChangedEvent = MutableSharedFlow<Unit>()
+    val dataChangedEvent: SharedFlow<Unit> = _dataChangedEvent.asSharedFlow()
+
     private var userContentJob: Job? = null
+    private var dataListenerJob: Job? = null
 
     fun setUnreadNotifications(count: Int) {
         _uiState.update { it.copy(unreadNotifications = count) }
@@ -153,6 +161,25 @@ class DashboardViewModel @Inject constructor(
 
     suspend fun getLibraryForSelectedUser(userId: String): List<RealmMyLibrary> {
         return resourcesRepository.getLibraryForSelectedUser(userId)
+    }
+
+    fun listenForDataChanges(userId: String) {
+        dataListenerJob?.cancel()
+        dataListenerJob = viewModelScope.launch {
+            val recentResourcesFlow = resourcesRepository.getRecentResources(userId)
+            val pendingDownloadsFlow = resourcesRepository.getPendingDownloads(userId)
+            val pendingSurveysFlow = submissionsRepository.getPendingSurveysFlow(userId)
+            val tasksFlow = teamsRepository.getTasksFlow(userId)
+
+            merge(
+                recentResourcesFlow,
+                pendingDownloadsFlow,
+                pendingSurveysFlow,
+                tasksFlow
+            ).collect {
+                _dataChangedEvent.emit(Unit)
+            }
+        }
     }
 
     fun loadUsers() {
