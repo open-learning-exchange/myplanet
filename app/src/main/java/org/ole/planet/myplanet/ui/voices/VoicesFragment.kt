@@ -23,7 +23,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseNewsFragment
-import org.ole.planet.myplanet.databinding.FragmentNewsBinding
+import org.ole.planet.myplanet.databinding.FragmentVoicesBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
@@ -42,8 +42,8 @@ import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.textChanges
 
 @AndroidEntryPoint
-class NewsFragment : BaseNewsFragment() {
-    private var _binding: FragmentNewsBinding? = null
+class VoicesFragment : BaseNewsFragment() {
+    private var _binding: FragmentVoicesBinding? = null
     private val binding get() = _binding!!
     var user: RealmUserModel? = null
     
@@ -63,10 +63,10 @@ class NewsFragment : BaseNewsFragment() {
     private val labelDisplayToValue = mutableMapOf<String, String>()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentNewsBinding.inflate(inflater, container, false)
+        _binding = FragmentVoicesBinding.inflate(inflater, container, false)
         llImage = binding.llImages
         user = userSessionManager.getUserModelCopy()
-        setupUI(binding.newsFragmentParentLayout, requireActivity())
+        setupUI(binding.voicesFragmentParentLayout, requireActivity())
         if (user?.id?.startsWith("guest") == true) {
             binding.btnNewVoice.visibility = View.GONE
         }
@@ -193,7 +193,7 @@ class NewsFragment : BaseNewsFragment() {
                 }
             }
             val updatedListAsMutable: MutableList<RealmNews?> = list.toMutableList()
-            Trace.beginSection("NewsFragment.sort")
+            Trace.beginSection("VoicesFragment.sort")
             val sortedList = try {
                 updatedListAsMutable.sortedWith(compareByDescending { news ->
                     news?.sortDate ?: 0L
@@ -360,7 +360,7 @@ class NewsFragment : BaseNewsFragment() {
 
             news?.labels?.forEach { label ->
                 val labelName = Constants.LABELS.entries.find { it.value == label }?.key
-                    ?: NewsLabelManager.formatLabelValue(label)
+                    ?: VoicesLabelManager.formatLabelValue(label)
                 allLabels.add(labelName)
                 labelDisplayToValue.putIfAbsent(labelName, label)
             }

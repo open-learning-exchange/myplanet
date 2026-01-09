@@ -100,7 +100,7 @@ class VoicesAdapter(var context: Context, private var currentUser: RealmUserMode
     private var nonTeamMember = false
     private var recyclerView: RecyclerView? = null
     var user: RealmUserModel? = null
-    private var labelManager: NewsLabelManager? = null
+    private var labelManager: VoicesLabelManager? = null
     private val profileDbHandler = userSessionManager
     lateinit var settings: SharedPreferences
     private val userCache = mutableMapOf<String, RealmUserModel?>()
@@ -162,7 +162,7 @@ class VoicesAdapter(var context: Context, private var currentUser: RealmUserMode
         val binding = RowNewsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         user = userSessionManager.userModel
         settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        labelManager = NewsLabelManager(context, voicesRepository, scope)
+        labelManager = VoicesLabelManager(context, voicesRepository, scope)
         return ViewHolderNews(binding)
     }
 
