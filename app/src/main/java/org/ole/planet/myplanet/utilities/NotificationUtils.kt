@@ -494,14 +494,14 @@ class NotificationActionReceiver : BroadcastReceiver() {
 
                 when (action) {
                     NotificationUtils.ACTION_MARK_AS_READ -> {
-                        markNotificationAsRead(context, notificationId)
+                        notificationsRepository.markNotificationAsReadAndBroadcast(context, notificationId)
                         notificationId?.let {
                             NotificationUtils.getInstance(context).clearNotification(it)
                         }
                     }
 
                     NotificationUtils.ACTION_STORAGE_SETTINGS -> {
-                        markNotificationAsRead(context, notificationId)
+                        notificationsRepository.markNotificationAsReadAndBroadcast(context, notificationId)
                         val storageIntent = Intent(Settings.ACTION_INTERNAL_STORAGE_SETTINGS).apply {
                             flags = Intent.FLAG_ACTIVITY_NEW_TASK
                         }
@@ -512,7 +512,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
                     }
 
                     NotificationUtils.ACTION_OPEN_NOTIFICATION -> {
-                        markNotificationAsRead(context, notificationId)
+                        notificationsRepository.markNotificationAsReadAndBroadcast(context, notificationId)
                         val notificationType = intent.getStringExtra(NotificationUtils.EXTRA_NOTIFICATION_TYPE)
                         val relatedId = intent.getStringExtra(NotificationUtils.EXTRA_RELATED_ID)
 
@@ -531,47 +531,6 @@ class NotificationActionReceiver : BroadcastReceiver() {
                 }
             } finally {
                 pendingResult.finish()
-            }
-        }
-    }
-
-    private suspend fun markNotificationAsRead(context: Context, notificationId: String?) {
-        if (notificationId == null) {
-            return
-        }
-
-        try {
-            withContext(Dispatchers.IO) {
-                notificationsRepository.markNotificationsAsRead(setOf(notificationId))
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-
-        withContext(Dispatchers.Main) {
-            delay(200)
-            val broadcastIntent = Intent("org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM")
-            broadcastIntent.setPackage(context.packageName)
-            broadcastIntent.putExtra("notification_id", notificationId)
-            context.sendBroadcast(broadcastIntent)
-
-            try {
-                val localBroadcastIntent = Intent("org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM_LOCAL")
-                localBroadcastIntent.putExtra("notification_id", notificationId)
-                val broadcastService = getBroadcastService(context)
-                broadcastService.sendBroadcast(localBroadcastIntent)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-
-            try {
-                val dashboardIntent = Intent(context, DashboardActivity::class.java)
-                dashboardIntent.action = "REFRESH_NOTIFICATION_BADGE"
-                dashboardIntent.putExtra("notification_id", notificationId)
-                dashboardIntent.flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
-                context.startActivity(dashboardIntent)
-            } catch (e: Exception) {
-                e.printStackTrace()
             }
         }
     }
