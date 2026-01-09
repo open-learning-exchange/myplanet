@@ -86,7 +86,6 @@ class LoginActivity : SyncActivity(), UserProfileAdapter.OnItemClickListener {
         btnLang = binding.btnLang
         inputName = binding.inputName
         inputPassword = binding.inputPassword
-        service = DataService(this)
 
         binding.tvAvailableSpace.text = buildString {
             append(getString(R.string.available_space_colon))

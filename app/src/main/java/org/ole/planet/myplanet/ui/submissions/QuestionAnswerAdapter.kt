@@ -3,12 +3,12 @@ package org.ole.planet.myplanet.ui.submissions
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.databinding.ItemQuestionAnswerBinding
+import org.ole.planet.myplanet.utilities.DiffUtils
 
-class QuestionAnswerAdapter : ListAdapter<QuestionAnswer, QuestionAnswerAdapter.ViewHolder>(QuestionAnswerDiffCallback()) {
+class QuestionAnswerAdapter : ListAdapter<QuestionAnswer, QuestionAnswerAdapter.ViewHolder>(DIFF_CALLBACK) {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = ItemQuestionAnswerBinding.inflate(
             LayoutInflater.from(parent.context),
@@ -49,14 +49,11 @@ class QuestionAnswerAdapter : ListAdapter<QuestionAnswer, QuestionAnswerAdapter.
             return qa.answer ?: "No answer provided"
         }
     }
-}
 
-class QuestionAnswerDiffCallback : DiffUtil.ItemCallback<QuestionAnswer>() {
-    override fun areItemsTheSame(oldItem: QuestionAnswer, newItem: QuestionAnswer): Boolean {
-        return oldItem.questionId == newItem.questionId
-    }
-
-    override fun areContentsTheSame(oldItem: QuestionAnswer, newItem: QuestionAnswer): Boolean {
-        return oldItem == newItem
+    companion object {
+        val DIFF_CALLBACK = DiffUtils.itemCallback<QuestionAnswer>(
+            areItemsTheSame = { oldItem, newItem -> oldItem.questionId == newItem.questionId },
+            areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
+        )
     }
 }

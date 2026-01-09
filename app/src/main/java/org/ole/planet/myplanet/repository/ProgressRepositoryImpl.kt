@@ -16,6 +16,37 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.utilities.JsonUtils
 
 class ProgressRepositoryImpl @Inject constructor(databaseService: DatabaseService) : RealmRepository(databaseService), ProgressRepository {
+    override suspend fun getCourseProgress(userId: String?): HashMap<String?, JsonObject> {
+        val mycourses = queryList(RealmMyCourse::class.java) {
+            equalTo("userId", userId)
+        }
+        val map = HashMap<String?, JsonObject>()
+        for (course in mycourses) {
+            course.courseId?.let { courseId ->
+                val progressObject = JsonObject()
+                val steps = queryList(RealmCourseStep::class.java) {
+                    equalTo("courseId", courseId)
+                }
+                progressObject.addProperty("max", steps.size)
+                val progresses = queryList(RealmCourseProgress::class.java) {
+                    equalTo("userId", userId)
+                    equalTo("courseId", courseId)
+                }
+                val completedSteps = progresses.map { it.stepNum }.toSet()
+                var currentProgress = 0
+                while (currentProgress < steps.size) {
+                    if (!completedSteps.contains(currentProgress + 1)) {
+                        break
+                    }
+                    currentProgress++
+                }
+                progressObject.addProperty("current", currentProgress)
+                map[courseId] = progressObject
+            }
+        }
+        return map
+    }
+
     override suspend fun fetchCourseData(userId: String?): JsonArray {
         val mycourses = queryList(RealmMyCourse::class.java) {
             equalTo("userId", userId)
