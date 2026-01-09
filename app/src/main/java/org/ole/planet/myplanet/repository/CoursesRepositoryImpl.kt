@@ -9,7 +9,6 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse
 import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmResults
 import org.ole.planet.myplanet.model.CourseProgressData
@@ -192,7 +191,7 @@ class CoursesRepositoryImpl @Inject constructor(
             activity.parentCode = parentCode
             activity.text = searchText
             activity.type = "courses"
-            val filter = JsonObject()
+            val filter = com.google.gson.JsonObject()
 
             filter.add("tags", RealmTag.getTagsArray(tags))
             filter.addProperty("doc.gradeLevel", grade)

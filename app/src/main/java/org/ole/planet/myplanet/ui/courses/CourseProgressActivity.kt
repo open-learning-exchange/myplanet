@@ -10,6 +10,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.databinding.ActivityCourseProgressBinding
 import org.ole.planet.myplanet.model.CourseProgressData
+import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
@@ -36,7 +37,7 @@ class CourseProgressActivity : BaseActivity() {
         binding.rvProgress.layoutManager = GridLayoutManager(this, 4)
 
         lifecycleScope.launch {
-            val data = coursesRepository.getCourseProgress(courseId, user?.id)
+            val data = coursesRepository.getCourseProgress(courseId, user?._id)
             if (data != null) {
                 updateUI(data)
             }
