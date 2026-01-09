@@ -9,19 +9,17 @@ import android.view.ViewGroup
 import android.widget.CheckBox
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.flexbox.FlexboxLayout
 import com.google.gson.JsonObject
 import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
-import java.util.Locale
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.DiffRefreshableCallback
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnLibraryItemSelected
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
@@ -29,50 +27,39 @@ import org.ole.planet.myplanet.databinding.RowLibraryBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.utilities.CourseRatingUtils
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
+import java.util.Locale
 
 class ResourcesAdapter(
     private val context: Context,
-    private var libraryList: List<RealmMyLibrary?>,
     private var ratingMap: HashMap<String?, JsonObject>,
-    private val resourcesRepository: ResourcesRepository,
     private val tagsRepository: TagsRepository,
     private val userModel: RealmUserModel?
-) : RecyclerView.Adapter<RecyclerView.ViewHolder>(), DiffRefreshableCallback {
-    private var diffJob: Job? = null
+) : ListAdapter<RealmMyLibrary, RecyclerView.ViewHolder>(ITEM_CALLBACK) {
     private val selectedItems: MutableList<RealmMyLibrary?> = ArrayList()
     private var listener: OnLibraryItemSelected? = null
-    private val config: ChipCloudConfig = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single)
+    private val config: ChipCloudConfig =
+        Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single)
     private var homeItemClickListener: OnHomeItemClickListener? = null
     private var ratingChangeListener: OnRatingChangeListener? = null
-    private var isAscending = true
-    private var isTitleAscending = false
     private val tagCache: MutableMap<String, List<RealmTag>> = mutableMapOf()
     private val tagRequestsInProgress: MutableSet<String> = mutableSetOf()
-
-    private data class DiffData(
-        val _id: String?,
-        val _rev: String?,
-        val uploadDate: String?
-    )
 
     companion object {
         private const val TAGS_PAYLOAD = "payload_tags"
         private const val RATING_PAYLOAD = "payload_rating"
         private const val SELECTION_PAYLOAD = "payload_selection"
-    }
 
-    private fun RealmMyLibrary.toDiffData() = DiffData(
-        _id = this._id,
-        _rev = this._rev,
-        uploadDate = this.uploadDate
-    )
+        val ITEM_CALLBACK = DiffUtils.itemCallback<RealmMyLibrary>(
+            areItemsTheSame = { old, new -> old._id == new._id },
+            areContentsTheSame = { old, new -> old._rev == new._rev && old.uploadDate == new.uploadDate }
+        )
+    }
 
     init {
         if (context is OnHomeItemClickListener) {
@@ -82,14 +69,6 @@ class ResourcesAdapter(
 
     fun setRatingChangeListener(ratingChangeListener: OnRatingChangeListener?) {
         this.ratingChangeListener = ratingChangeListener
-    }
-
-    fun getLibraryList(): List<RealmMyLibrary?> {
-        return libraryList
-    }
-
-    fun setLibraryList(libraryList: List<RealmMyLibrary?>, onComplete: (() -> Unit)? = null) {
-        updateList(libraryList, onComplete)
     }
 
     fun setListener(listener: OnLibraryItemSelected?) {
@@ -104,14 +83,15 @@ class ResourcesAdapter(
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         if (holder is ResourcesViewHolder) {
-            val library = libraryList.getOrNull(position) ?: return
+            val library = getItem(position) ?: return
             holder.bind()
             holder.rowLibraryBinding.title.text = library.title ?: ""
             setMarkdownText(holder.rowLibraryBinding.description, library.description ?: "")
             holder.rowLibraryBinding.description.setOnClickListener {
                 openLibrary(library)
             }
-            holder.rowLibraryBinding.timesRated.text = context.getString(R.string.num_total, library.timesRated)
+            holder.rowLibraryBinding.timesRated.text =
+                context.getString(R.string.num_total, library.timesRated)
             holder.rowLibraryBinding.checkbox.isChecked = selectedItems.contains(library)
             val selectedText = context.getString(R.string.selected)
             val libraryTitle = library.title.orEmpty()
@@ -123,7 +103,8 @@ class ResourcesAdapter(
                 } else {
                     String.format(Locale.getDefault(), "%.1f", library.averageRating?.toDouble())
                 }
-            holder.rowLibraryBinding.tvDate.text = library.createdDate?.let { formatDate(it, "MMM dd, yyyy") }
+            holder.rowLibraryBinding.tvDate.text =
+                library.createdDate?.let { formatDate(it, "MMM dd, yyyy") }
             displayTagCloud(holder, position)
             holder.itemView.setOnClickListener {
                 openLibrary(library)
@@ -162,17 +143,17 @@ class ResourcesAdapter(
     }
 
     fun areAllSelected(): Boolean {
-        return selectedItems.size == libraryList.size
+        return selectedItems.size == currentList.size
     }
 
     fun selectAllItems(selectAll: Boolean) {
         if (selectAll) {
             selectedItems.clear()
-            selectedItems.addAll(libraryList)
+            selectedItems.addAll(currentList)
         } else {
             selectedItems.clear()
         }
-        notifyItemRangeChanged(0, libraryList.size, SELECTION_PAYLOAD)
+        notifyItemRangeChanged(0, currentList.size, SELECTION_PAYLOAD)
         if (listener != null) {
             listener?.onSelectedListChange(selectedItems)
         }
@@ -188,7 +169,7 @@ class ResourcesAdapter(
         payloads: MutableList<Any>
     ) {
         if (holder is ResourcesViewHolder && payloads.isNotEmpty()) {
-            val library = libraryList.getOrNull(position) ?: return
+            val library = getItem(position) ?: return
             var handled = false
             if (payloads.contains(TAGS_PAYLOAD)) {
                 val resourceId = library.id
@@ -216,7 +197,7 @@ class ResourcesAdapter(
 
     private fun displayTagCloud(holder: ResourcesViewHolder, position: Int) {
         val flexboxDrawable = holder.rowLibraryBinding.flexboxDrawable
-        val resourceId = libraryList.getOrNull(position)?.id
+        val resourceId = getItem(position)?.id
         if (resourceId == null) {
             flexboxDrawable.removeAllViews()
             return
@@ -244,7 +225,7 @@ class ResourcesAdapter(
                 if (isActive) {
                     val adapterPosition = holder.bindingAdapterPosition
                     if (adapterPosition != RecyclerView.NO_POSITION) {
-                        val currentResourceId = libraryList.getOrNull(adapterPosition)?.id
+                        val currentResourceId = getItem(adapterPosition)?.id
                         if (currentResourceId == resourceId) {
                             renderTagCloud(holder.rowLibraryBinding.flexboxDrawable, tags)
                         }
@@ -278,61 +259,6 @@ class ResourcesAdapter(
         }
     }
 
-    fun toggleTitleSortOrder(onComplete: (() -> Unit)? = null) {
-        isTitleAscending = !isTitleAscending
-        updateList(sortLibraryListByTitle(), onComplete)
-    }
-
-    fun toggleSortOrder(onComplete: (() -> Unit)? = null) {
-        isAscending = !isAscending
-        updateList(sortLibraryList(), onComplete)
-    }
-
-    private fun sortLibraryListByTitle(): List<RealmMyLibrary?> {
-        return if (isTitleAscending) {
-            libraryList.sortedBy { it?.title?.lowercase(Locale.ROOT) }
-        } else {
-            libraryList.sortedByDescending { it?.title?.lowercase(Locale.ROOT) }
-        }
-    }
-
-    private fun sortLibraryList(): List<RealmMyLibrary?> {
-        return if (isAscending) {
-            libraryList.sortedBy { it?.createdDate }
-        } else {
-            libraryList.sortedByDescending { it?.createdDate }
-        }
-    }
-
-    override fun getItemCount(): Int {
-        return libraryList.size
-    }
-
-    private fun updateList(newList: List<RealmMyLibrary?>, onComplete: (() -> Unit)? = null) {
-        diffJob?.cancel()
-        val oldList = libraryList.mapNotNull { it?.toDiffData() }
-        val newListMapped = newList.mapNotNull { it?.toDiffData() }
-
-        diffJob = (context as? LifecycleOwner)?.lifecycleScope?.launch {
-            val diffResult = withContext(Dispatchers.Default) {
-                DiffUtils.calculateDiff(
-                    oldList,
-                    newListMapped,
-                    areItemsTheSame = { old, new -> old._id == new._id },
-                    areContentsTheSame = { old, new ->
-                        old._rev == new._rev && old.uploadDate == new.uploadDate
-                    }
-                )
-            }
-
-            if (isActive) {
-                libraryList = newList
-                diffResult.dispatchUpdatesTo(this@ResourcesAdapter)
-                onComplete?.invoke()
-            }
-        }
-    }
-
     fun setRatingMap(newRatingMap: HashMap<String?, JsonObject>) {
         val updatedResourceIds = mutableSetOf<String?>()
 
@@ -353,7 +279,7 @@ class ResourcesAdapter(
             if (resourceId.isNullOrEmpty()) {
                 return@forEach
             }
-            val index = libraryList.indexOfFirst { it?.resourceId == resourceId }
+            val index = currentList.indexOfFirst { it?.resourceId == resourceId }
             if (index != -1) {
                 notifyItemChanged(index, RATING_PAYLOAD)
             }
@@ -372,7 +298,8 @@ class ResourcesAdapter(
             )
         } else {
             val averageRating = library.averageRating?.toFloatOrNull() ?: 0f
-            holder.rowLibraryBinding.rating.text = String.format(Locale.getDefault(), "%.2f", averageRating)
+            holder.rowLibraryBinding.rating.text =
+                String.format(Locale.getDefault(), "%.2f", averageRating)
             holder.rowLibraryBinding.timesRated.text =
                 context.getString(R.string.rating_count_format, library.timesRated ?: 0)
             holder.rowLibraryBinding.ratingBar.rating = averageRating
@@ -381,58 +308,26 @@ class ResourcesAdapter(
 
     internal inner class ResourcesViewHolder(val rowLibraryBinding: RowLibraryBinding) :
         RecyclerView.ViewHolder(rowLibraryBinding.root) {
-            init {
-                rowLibraryBinding.ratingBar.setOnTouchListener { _: View?, event: MotionEvent ->
-                    if (event.action == MotionEvent.ACTION_UP) {
-                        val adapterPosition = bindingAdapterPosition
-                        if (adapterPosition != RecyclerView.NO_POSITION) {
-                            val library = libraryList.getOrNull(adapterPosition)
-                            if (userModel?.isGuest() == false) {
-                                homeItemClickListener?.showRatingDialog(
-                                    "resource",
-                                    library?.resourceId,
-                                    library?.title,
-                                    ratingChangeListener
-                                )
-                            }
+        init {
+            rowLibraryBinding.ratingBar.setOnTouchListener { _: View?, event: MotionEvent ->
+                if (event.action == MotionEvent.ACTION_UP) {
+                    val adapterPosition = bindingAdapterPosition
+                    if (adapterPosition != RecyclerView.NO_POSITION) {
+                        val library = getItem(adapterPosition)
+                        if (userModel?.isGuest() == false) {
+                            homeItemClickListener?.showRatingDialog(
+                                "resource",
+                                library?.resourceId,
+                                library?.title,
+                                ratingChangeListener
+                            )
                         }
                     }
-                    true
                 }
+                true
             }
+        }
 
         fun bind() {}
-    }
-
-    override fun refreshWithDiff() {
-        (context as? LifecycleOwner)?.lifecycleScope?.launch {
-            val newLibraryList = resourcesRepository.getAllLibraryItems()
-            triggerDiff(newLibraryList)
-        }
-    }
-
-    private fun triggerDiff(newList: List<RealmMyLibrary?>) {
-        val oldList = ArrayList(this.libraryList)
-        diffJob?.cancel()
-        diffJob = (context as? LifecycleOwner)?.lifecycleScope?.launch {
-            val diffResult = withContext(Dispatchers.Default) {
-                DiffUtils.calculateDiff(
-                    oldList,
-                    newList,
-                    areItemsTheSame = { old, new -> old?.id == new?.id },
-                    areContentsTheSame = { old, new -> old == new }
-                )
-            }
-            if (isActive) {
-                libraryList = newList
-                diffResult.dispatchUpdatesTo(this@ResourcesAdapter)
-            }
-        }
-    }
-
-    override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
-        super.onDetachedFromRecyclerView(recyclerView)
-        diffJob?.cancel()
-        diffJob = null
     }
 }
