@@ -219,14 +219,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
-        val allCourses: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>().filter { !it?.courseTitle.isNullOrBlank() }
-
-        val courseList = if (isMyCourseLib) {
-            allCourses.filter { it?.isMyCourse == true }
-        } else {
-            allCourses.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
-        }
-
         val courseList = emptyList<RealmMyCourse?>()
         val map = HashMap<String?, com.google.gson.JsonObject>()
         val progressMap = HashMap<String, com.google.gson.JsonObject>()
