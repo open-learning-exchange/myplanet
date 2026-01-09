@@ -13,7 +13,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.base.BaseMemberFragment
-import org.ole.planet.myplanet.callback.MemberChangeListener
+import org.ole.planet.myplanet.callback.OnMemberChangeListener
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserSessionManager
@@ -26,9 +26,9 @@ class RequestsFragment : BaseMemberFragment() {
 
     private val viewModel: RequestsViewModel by viewModels()
     private lateinit var currentUser: RealmUserModel
-    private var memberChangeListener: MemberChangeListener? = null
-    fun setMemberChangeListener(listener: MemberChangeListener) {
-        this.memberChangeListener = listener
+    private var onMemberChangeListener: OnMemberChangeListener? = null
+    fun setOnMemberChangeListener(listener: OnMemberChangeListener) {
+        this.onMemberChangeListener = listener
     }
 
     override fun onAttach(context: Context) {
@@ -53,7 +53,7 @@ class RequestsFragment : BaseMemberFragment() {
                 }
                 launch {
                     viewModel.successAction.collect {
-                        memberChangeListener?.onMemberChanged()
+                        onMemberChangeListener?.onMemberChanged()
                     }
                 }
             }
