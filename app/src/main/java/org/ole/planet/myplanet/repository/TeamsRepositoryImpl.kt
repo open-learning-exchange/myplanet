@@ -880,6 +880,13 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getJoinedMemberCount(teamId: String): Int {
+        return count(RealmMyTeam::class.java) {
+            equalTo("teamId", teamId)
+            equalTo("docType", "membership")
+        }.toInt()
+    }
+
     override suspend fun getAssignee(userId: String): RealmUserModel? {
         return findByField(RealmUserModel::class.java, "id", userId)
     }
