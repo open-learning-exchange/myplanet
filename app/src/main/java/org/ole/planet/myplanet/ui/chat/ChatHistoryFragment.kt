@@ -391,7 +391,7 @@ class ChatHistoryFragment : Fragment() {
         if (::realtimeSyncListener.isInitialized) {
             syncCoordinator.removeListener(realtimeSyncListener)
         }
-        onBackPressedCallback.remove()
+        onBackPressedCallback.removePanelListener()
         searchBarWatcher?.let { binding.searchBar.removeTextChangedListener(it) }
         _binding = null
         super.onDestroyView()
@@ -411,7 +411,7 @@ class ChatHistoryOnBackPressedCallback(private val slidingPaneLayout: SlidingPan
         slidingPaneLayout.addPanelSlideListener(this)
     }
 
-    fun remove() {
+    fun removePanelListener() {
         slidingPaneLayout.removePanelSlideListener(this)
     }
     override fun handleOnBackPressed() {
