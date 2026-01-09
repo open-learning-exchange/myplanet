@@ -3,6 +3,9 @@ package org.ole.planet.myplanet.di
 import android.content.Context
 import android.content.SharedPreferences
 import com.google.gson.Gson
+import dagger.Binds
+import dagger.Binds
+import dagger.Binds
 import dagger.Lazy
 import dagger.Module
 import dagger.Provides
@@ -29,60 +32,82 @@ annotation class ApplicationScope
 
 @Module
 @InstallIn(SingletonComponent::class)
-object ServiceModule {
-
-    @Provides
+abstract class ServiceModule {
+    @Binds
     @Singleton
-    @ApplicationScope
-    fun provideApplicationScope(): CoroutineScope {
-        return CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    }
+    abstract fun bindDispatcherProvider(
+        dispatcherProvider: DefaultDispatcherProvider
+    ): DispatcherProvider
 
-    @Provides
-    @Singleton
-    fun provideSyncManager(
-        @ApplicationContext context: Context,
-        databaseService: DatabaseService,
-        @AppPreferences preferences: SharedPreferences,
-        apiInterface: ApiInterface,
-        improvedSyncManager: Lazy<ImprovedSyncManager>,
-        transactionSyncManager: TransactionSyncManager,
-        @ApplicationScope scope: CoroutineScope
-    ): SyncManager {
-        return SyncManager(context, databaseService, preferences, apiInterface, improvedSyncManager, transactionSyncManager, scope)
-    }
+    companion object {
+        @Provides
+        @Singleton
+        @ApplicationScope
+        fun provideApplicationScope(): CoroutineScope {
+            return CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        }
 
-    @Provides
-    @Singleton
-    fun provideUploadManager(
-        @ApplicationContext context: Context,
-        databaseService: DatabaseService,
-        submissionsRepository: SubmissionsRepository,
-        @AppPreferences preferences: SharedPreferences,
-        gson: Gson,
-        uploadCoordinator: org.ole.planet.myplanet.service.upload.UploadCoordinator
-    ): UploadManager {
-        return UploadManager(context, databaseService, submissionsRepository, preferences, gson, uploadCoordinator)
-    }
+        @Provides
+        @Singleton
+        fun provideSyncManager(
+            @ApplicationContext context: Context,
+            databaseService: DatabaseService,
+            @AppPreferences preferences: SharedPreferences,
+            apiInterface: ApiInterface,
+            improvedSyncManager: Lazy<ImprovedSyncManager>,
+            transactionSyncManager: TransactionSyncManager,
+            @ApplicationScope scope: CoroutineScope
+        ): SyncManager {
+            return SyncManager(
+                context,
+                databaseService,
+                preferences,
+                apiInterface,
+                improvedSyncManager,
+                transactionSyncManager,
+                scope
+            )
+        }
 
-    @Provides
-    @Singleton
-    fun provideUploadToShelfService(
-        @ApplicationContext context: Context,
-        databaseService: DatabaseService,
-        @AppPreferences preferences: SharedPreferences
-    ): UploadToShelfService {
-        return UploadToShelfService(context, databaseService, preferences)
-    }
+        @Provides
+        @Singleton
+        fun provideUploadManager(
+            @ApplicationContext context: Context,
+            databaseService: DatabaseService,
+            submissionsRepository: SubmissionsRepository,
+            @AppPreferences preferences: SharedPreferences,
+            gson: Gson,
+            uploadCoordinator: org.ole.planet.myplanet.service.upload.UploadCoordinator
+        ): UploadManager {
+            return UploadManager(
+                context,
+                databaseService,
+                submissionsRepository,
+                preferences,
+                gson,
+                uploadCoordinator
+            )
+        }
 
-    @Provides
-    @Singleton
-    fun provideTransactionSyncManager(
-        apiInterface: ApiInterface,
-        databaseService: DatabaseService,
-        @ApplicationContext context: Context,
-        @ApplicationScope scope: CoroutineScope
-    ): TransactionSyncManager {
-        return TransactionSyncManager(apiInterface, databaseService, context, scope)
+        @Provides
+        @Singleton
+        fun provideUploadToShelfService(
+            @ApplicationContext context: Context,
+            databaseService: DatabaseService,
+            @AppPreferences preferences: SharedPreferences
+        ): UploadToShelfService {
+            return UploadToShelfService(context, databaseService, preferences)
+        }
+
+        @Provides
+        @Singleton
+        fun provideTransactionSyncManager(
+            apiInterface: ApiInterface,
+            databaseService: DatabaseService,
+            @ApplicationContext context: Context,
+            @ApplicationScope scope: CoroutineScope
+        ): TransactionSyncManager {
+            return TransactionSyncManager(apiInterface, databaseService, context, scope)
+        }
     }
 }
