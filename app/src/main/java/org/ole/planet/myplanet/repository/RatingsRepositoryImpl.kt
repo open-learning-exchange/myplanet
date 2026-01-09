@@ -5,11 +5,6 @@ import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import kotlin.math.roundToInt
-import com.google.gson.Gson
-import java.util.Date
-import java.util.UUID
-import javax.inject.Inject
-import kotlin.math.roundToInt
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRating
