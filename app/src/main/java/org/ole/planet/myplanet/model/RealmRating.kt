@@ -30,17 +30,6 @@ open class RealmRating : RealmObject() {
 
     companion object {
         @JvmStatic
-        fun getRatings(mRealm: Realm, type: String?, userId: String?): HashMap<String?, JsonObject> {
-            val ratings = mRealm.where(RealmRating::class.java).equalTo("type", type).findAll()
-            val aggregated = aggregateRatings(ratings, userId)
-            val map = HashMap<String?, JsonObject>()
-            for ((item, aggregation) in aggregated) {
-                map[item] = aggregation.toJson()
-            }
-            return map
-        }
-
-        @JvmStatic
         fun getRatingsById(mRealm: Realm, type: String?, id: String?, userid: String?): JsonObject? {
             val ratings = mRealm.where(RealmRating::class.java)
                 .equalTo("type", type)

@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.JsonObject
+
 interface RatingsRepository {
     suspend fun getRatingSummary(type: String, itemId: String, userId: String): RatingSummary
 
@@ -11,6 +13,8 @@ interface RatingsRepository {
         rating: Float,
         comment: String,
     ): RatingSummary
+
+    suspend fun getRatingsMap(type: String, userId: String?): Map<String?, JsonObject>
 }
 
 data class RatingEntry(
