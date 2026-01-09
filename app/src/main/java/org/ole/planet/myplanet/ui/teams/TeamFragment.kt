@@ -33,7 +33,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 class TeamFragment : Fragment(), TeamsAdapter.OnClickTeamItem, OnUpdateCompleteListener,
-    OnTeamActionsListener {
+    OnTeamActionsListener, TeamsAdapter.OnSyncClickListener {
     private var _binding: FragmentTeamBinding? = null
     private val binding get() = _binding!!
     private lateinit var alertCreateTeamBinding: AlertCreateTeamBinding
@@ -223,6 +223,7 @@ class TeamFragment : Fragment(), TeamsAdapter.OnClickTeamItem, OnUpdateCompleteL
             setTeamListener(this@TeamFragment)
             setUpdateCompleteListener(this@TeamFragment)
             setTeamActionsListener(this@TeamFragment)
+            setOnSyncClickListener(this@TeamFragment)
         }
         binding.rvTeamList.adapter = teamListAdapter
     }
@@ -321,6 +322,15 @@ class TeamFragment : Fragment(), TeamsAdapter.OnClickTeamItem, OnUpdateCompleteL
 
     override fun onRequestToJoin(team: TeamDetails, user: RealmUserModel?) {
         viewModel.requestToJoin(team._id!!, user?.id, user?.planetCode, team.teamType)
+    }
+
+    override fun onSyncTeam(team: TeamDetails) {
+        team._id?.let { teamId ->
+            lifecycleScope.launch {
+                teamsRepository.syncTeam(teamId)
+                Utilities.toast(activity, getString(R.string.team_synced))
+            }
+        }
     }
 
     override fun onUpdateComplete(itemCount: Int) {

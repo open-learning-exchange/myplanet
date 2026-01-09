@@ -745,6 +745,7 @@
     <string name="please_enter_a_name">Please enter a name</string>
     <string name="name_is_required">Name is required</string>
     <string name="team_created">Team Created</string>
+    <string name="team_synced">Team synced successfully</string>
     <string name="please_select_gender">Please select gender</string>
     <string name="invalid_username">Invalid username</string>
     <string name="please_enter_a_password">Please enter a password</string>

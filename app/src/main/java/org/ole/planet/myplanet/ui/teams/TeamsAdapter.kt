@@ -35,12 +35,20 @@ class TeamsAdapter(
     private var teamListener: OnClickTeamItem? = null
     private var updateCompleteListener: OnUpdateCompleteListener? = null
     private var teamActionsListener: OnTeamActionsListener? = null
+    private var onSyncClickListener: OnSyncClickListener? = null
     private val teamStatusCache = mutableMapOf<String, TeamStatus>()
 
     interface OnClickTeamItem {
         fun onEditTeam(team: TeamDetails?)
     }
 
+    interface OnSyncClickListener {
+        fun onSyncTeam(team: TeamDetails)
+    }
+
+    fun setOnSyncClickListener(listener: OnSyncClickListener) {
+        this.onSyncClickListener = listener
+    }
 
     fun setTeamListener(teamListener: OnClickTeamItem?) {
         this.teamListener = teamListener
@@ -105,6 +113,10 @@ class TeamsAdapter(
 
             joinLeave.setOnClickListener {
                 handleJoinLeaveClick(team, user)
+            }
+
+            btnSync.setOnClickListener {
+                onSyncClickListener?.onSyncTeam(team)
             }
         }
     }

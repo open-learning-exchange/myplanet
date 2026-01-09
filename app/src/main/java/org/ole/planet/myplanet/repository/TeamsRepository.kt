@@ -103,6 +103,7 @@ interface TeamsRepository {
         createdBy: String,
     ): Boolean
     suspend fun syncTeamActivities()
+    suspend fun syncTeam(teamId: String)
     @Deprecated("Use getTeamTransactionsWithBalance instead", ReplaceWith("getTeamTransactionsWithBalance(teamId, startDate, endDate, sortAscending)"))
     suspend fun getTeamTransactions(
         teamId: String,
